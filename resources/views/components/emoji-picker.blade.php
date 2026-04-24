@@ -61,12 +61,14 @@
                 type: 'custom',
                 defaults: [
                     'https://pustaka.bca.co.id/public-assets/logo-bca.svg',
-                    'defaults/mandiri.png',
-                    'defaults/gopay.png',
+                    'defaults/gopay.jpg',
+                    'defaults/seabank.png',
                     'defaults/dana.png',
-                    'defaults/ovo.png',
-                    'defaults/shopeepay.png',
-                    'defaults/cash.png'
+                    'defaults/ovo.webp',
+                  	'defaults/isaku.png',
+                    'defaults/jago.webp',
+                    'defaults/shopeepay.webp',
+                    'defaults/linkaja.webp'
                 ]
             } 
         ];
