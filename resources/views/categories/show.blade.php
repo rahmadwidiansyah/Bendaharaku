@@ -2,7 +2,7 @@
     <div class="p-5 pb-32 max-w-md mx-auto relative">
         
         {{-- Glow Background Ambient --}}
-        <div class="fixed top-[-5%] left-[50%] -translate-x-1/2 w-[100%] max-w-md h-[400px] bg-gradient-to-b from-[#FCA5FF]/5 to-transparent pointer-events-none z-0"></div>
+        <div class="fixed top-[-5%] left-[50%] -translate-x-1/2 w-[100%] max-w-md h-[400px] pointer-events-none z-0"></div>
 
         {{-- Header Navigation --}}
         <header class="flex justify-between items-center mb-8 pt-4 relative z-10">
@@ -27,9 +27,9 @@
 
         {{-- Profil Kategori Card --}}
         <div class="flex flex-col items-center mb-10 relative z-10">
-            <div class="w-24 h-24 rounded-[2.5rem] bg-[#1A1A1A] border border-[#262626] flex items-center justify-center text-5xl shadow-2xl mb-5 overflow-hidden relative p-1">
+            <div class="w-24 h-24 rounded-xl bg-[#1A1A1A] border border-[#262626] flex items-center justify-center text-5xl shadow-2xl mb-5 overflow-hidden relative p-1">
                 @if($isImage)
-                    <img src="{{ asset('storage/' . $rawIcon) }}" class="w-full h-full object-cover rounded-[2rem]">
+                    <img src="{{ asset('storage/' . $rawIcon) }}" class="w-full h-full object-cover rounded-xl">
                 @else
                     <span class="relative z-10">{{ $rawIcon }}</span>
                 @endif
@@ -46,7 +46,7 @@
         </div>
 
         {{-- Stats Ringkas --}}
-        <div class="bg-gradient-to-br from-[#1E1E1E] to-[#121212] border border-white/5 rounded-[2.5rem] p-7 text-center mb-10 shadow-2xl relative overflow-hidden group z-10">
+        <div class="bg-gradient-to-br from-[#1E1E1E] to-[#121212] border border-white/5 rounded-xl p-7 text-center mb-10 shadow-2xl relative overflow-hidden group z-10">
             <div class="absolute top-0 left-0 w-full h-1 bg-[#FCA5FF]/20"></div>
             <p class="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-2 opacity-60">Total Akumulasi</p>
             <div class="flex items-baseline justify-center gap-1.5">
@@ -59,7 +59,7 @@
         <div class="space-y-4 relative z-10">
             <div class="flex items-center justify-between px-1 mb-2">
                 <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Riwayat Transaksi</h3>
-                <span class="text-[10px] font-bold text-gray-600 bg-[#1A1A1A] px-2 py-0.5 rounded-md border border-[#262626]">{{ count($transactions) }} Record</span>
+                <span class="text-[10px] font-bold text-gray-600 bg-[#1A1A1A] px-2 py-0.5 rounded-xl border border-[#262626]">{{ count($transactions) }} Record</span>
             </div>
             
             @forelse($transactions as $trx)
@@ -91,7 +91,7 @@
                     data-dest="{{ $trx->destinationWallet->name }}" 
                     data-subject="{{ $trx->subject }}" 
                     data-notes="{{ $trx->notes }}"
-                    class="w-full text-left bg-[#1A1A1A] p-4 rounded-[1.8rem] border border-[#262626] flex justify-between items-center active:scale-[0.98] transition-all shadow-sm relative overflow-hidden group">
+                    class="w-full text-left bg-[#1A1A1A] p-4 rounded-xl border border-[#262626] flex justify-between items-center active:scale-[0.98] transition-all shadow-sm relative overflow-hidden group">
                     
                     <div class="flex-1 min-w-0 pr-3 relative z-10">
                         <div class="flex items-center gap-2 mb-2">
@@ -113,7 +113,7 @@
                         </div>
                         
                         <div class="flex items-center gap-2">
-                            <div class="flex items-center gap-1.5 bg-[#262626] px-2 py-1 rounded-lg border border-[#333]">
+                            <div class="flex items-center gap-1.5 bg-[#262626] px-2 py-1 rounded-xl border border-[#333]">
                                 <span class="text-[8px] font-bold text-gray-400 uppercase truncate max-w-[60px]">{{ $trx->sourceWallet->name }}</span>
                                 <svg class="w-2.5 h-2.5 text-[#FCA5FF]/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
                                 <span class="text-[8px] font-bold text-white uppercase truncate max-w-[60px]">{{ $trx->destinationWallet->name }}</span>
@@ -131,7 +131,7 @@
                     </div>
                 </button>
             @empty
-                <div class="text-center py-16 bg-[#1A1A1A] rounded-[2.5rem] border-2 border-dashed border-[#262626]">
+                <div class="text-center py-16 bg-[#1A1A1A] rounded-xl border-2 border-dashed border-[#262626]">
                     <p class="text-xs font-bold text-gray-500 uppercase tracking-widest">Belum ada transaksi</p>
                 </div>
             @endforelse

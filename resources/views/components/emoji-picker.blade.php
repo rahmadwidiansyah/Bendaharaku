@@ -5,10 +5,15 @@
     
     {{-- Tombol Preview (DIPERBAIKI: Overflow Hidden & Image Styling) --}}
     <button type="button" onclick="toggleEmojiPicker_{{ $id }}()" id="{{ $id }}Preview" 
-        class="w-[60px] h-[60px] bg-[#1A1A1A] border border-[#333] text-white rounded-2xl flex items-center justify-center text-3xl hover:border-[#FCA5FF] focus:border-[#FCA5FF] transition-all active:scale-95 shadow-inner overflow-hidden relative">
+        class="w-[60px] h-[60px] bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 text-white rounded-xl flex items-center justify-center text-3xl hover:border-purple-500 focus:border-purple-500 transition-all active:scale-95 shadow-inner overflow-hidden relative">
         
         @if(Str::contains($default, ['.png', '.jpg', '.jpeg', '.webp', '/']))
-            <img src="{{ asset('storage/' . $default) }}" class="absolute inset-0 w-full h-full object-cover">
+            @php 
+                $fullUrl = Str::startsWith($default, 'http') ? $default : asset('storage/' . $default); 
+                $fallbackText = strtoupper(str_replace('logo-', '', pathinfo(basename($default), PATHINFO_FILENAME)));
+            @endphp
+            <img src="{{ $fullUrl }}" class="absolute inset-0 w-full h-full object-contain p-1" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+            <div class="absolute inset-0 hidden items-center justify-center bg-white/5"><span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest text-center px-1">{{ $fallbackText }}</span></div>
         @else
             <span>{{ $default }}</span>
         @endif
@@ -24,20 +29,20 @@
 <div id="emojiOverlay_{{ $id }}" class="fixed inset-0 z-[9998] hidden bg-black/80 backdrop-blur-sm" style="align-items: center; justify-content: center;">
     <div class="absolute inset-0" onclick="toggleEmojiPicker_{{ $id }}()"></div>
 
-    <div id="emojiModal_{{ $id }}" class="relative z-10 w-[90%] max-w-sm bg-[#121212] rounded-3xl border border-[#333] shadow-[0_20px_50px_rgba(0,0,0,0.7)] flex flex-col overflow-hidden transition-all duration-300 ease-out transform scale-95 opacity-0 pointer-events-none" style="max-height: 70vh;">
+    <div id="emojiModal_{{ $id }}" class="relative z-10 w-[90%] max-w-sm bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.7)] flex flex-col overflow-hidden transition-all duration-300 ease-out transform scale-95 opacity-0 pointer-events-none" style="max-height: 70vh;">
         
-        <div class="px-5 py-4 border-b border-[#262626] flex justify-between items-center bg-[#1A1A1A]">
+        <div class="px-5 py-4 border-b border-white/10 flex justify-between items-center bg-gradient-to-br from-gray-900 to-gray-800">
             <h3 class="text-sm font-semibold text-white">Pilih Ikon</h3>
             <button type="button" onclick="toggleEmojiPicker_{{ $id }}()" class="text-gray-400 hover:text-white active:scale-90 transition-transform p-1">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
         </div>
         
-        <div class="p-5 overflow-y-auto no-scrollbar flex-1 bg-[#121212]" id="emojiScrollArea_{{ $id }}">
+        <div class="p-5 overflow-y-auto no-scrollbar flex-1 bg-gradient-to-br from-gray-900 to-gray-800" id="emojiScrollArea_{{ $id }}">
             <div class="grid grid-cols-6 gap-3" id="emojiGrid_{{ $id }}"></div>
         </div>
 
-        <div class="p-2 border-t border-[#262626] bg-[#1A1A1A] flex justify-around items-center" id="emojiCategories_{{ $id }}"></div>
+        <div class="p-2 border-t border-white/10 bg-gradient-to-br from-gray-900 to-gray-800 flex justify-around items-center" id="emojiCategories_{{ $id }}"></div>
     </div>
 </div>
 
@@ -91,7 +96,7 @@
             const btn = document.createElement('button');
             btn.type = 'button'; btn.id = `catBtn_{{ $id }}_${cat.id}`;
             btn.className = "p-2 rounded-xl text-xl transition-all duration-200 opacity-50 hover:opacity-100 active:scale-90 flex items-center justify-center";
-            if (cat.id === window['activeCategory_{{ $id }}']) { btn.classList.remove('opacity-50'); btn.classList.add('bg-[#262626]', 'opacity-100', 'shadow-inner'); }
+            if (cat.id === window['activeCategory_{{ $id }}']) { btn.classList.remove('opacity-50'); btn.classList.add('bg-gray-800', 'opacity-100', 'shadow-inner'); }
             btn.innerText = cat.icon;
             btn.onclick = (e) => { e.stopPropagation(); window['renderEmojis_{{ $id }}'](cat.id); };
             catContainer.appendChild(btn);
@@ -104,8 +109,8 @@
         window.emojiData.forEach(cat => {
             const btn = document.getElementById(`catBtn_{{ $id }}_${cat.id}`);
             if(btn) {
-                if (cat.id === categoryId) { btn.classList.remove('opacity-50'); btn.classList.add('bg-[#262626]', 'opacity-100', 'shadow-inner'); } 
-                else { btn.classList.remove('bg-[#262626]', 'opacity-100', 'shadow-inner'); btn.classList.add('opacity-50'); }
+                if (cat.id === categoryId) { btn.classList.remove('opacity-50'); btn.classList.add('bg-gray-800', 'opacity-100', 'shadow-inner'); } 
+                else { btn.classList.remove('bg-gray-800', 'opacity-100', 'shadow-inner'); btn.classList.add('opacity-50'); }
             }
         });
 
@@ -118,7 +123,7 @@
                 
                 const uploadBtn = document.createElement('button');
                 uploadBtn.type = 'button';
-                uploadBtn.className = "aspect-square bg-[#1A1A1A] border-2 border-dashed border-[#444] hover:border-[#FCA5FF] rounded-2xl flex flex-col items-center justify-center text-gray-400 hover:text-[#FCA5FF] transition-all active:scale-95";
+                uploadBtn.className = "aspect-square bg-gray-800 border-2 border-white/10 hover:border-purple-500 rounded-xl flex flex-col items-center justify-center text-gray-400 hover:text-purple-500 transition-all active:scale-95";
                 uploadBtn.innerHTML = `<svg class="w-8 h-8 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg><span class="text-[9px] font-bold uppercase tracking-widest">Upload</span>`;
                 uploadBtn.onclick = (e) => { e.stopPropagation(); document.getElementById('{{ $id }}File').click(); };
                 grid.appendChild(uploadBtn);
@@ -126,14 +131,23 @@
                 categoryData.defaults.forEach(path => {
                     const imgBtn = document.createElement('button');
                     imgBtn.type = 'button';
-                    imgBtn.className = "aspect-square bg-[#1A1A1A] border border-[#333] rounded-2xl overflow-hidden hover:border-[#FCA5FF] transition-all active:scale-95 p-1";
-                    const fullUrl = `/storage/${path}`;
-                    imgBtn.innerHTML = `<img src="${fullUrl}" class="w-full h-full object-cover rounded-xl">`;
+                    imgBtn.className = "aspect-square bg-gray-800 border border-white/10 rounded-xl overflow-hidden hover:border-purple-500 transition-all active:scale-95 p-1";
+                    
+                    const fullUrl = path.startsWith('http') ? path : `/storage/${path}`;
+                    const fallbackText = path.split('/').pop().split('.')[0].replace('logo-', '');
+                    
+                    imgBtn.innerHTML = `<div class="w-full h-full bg-white/5 rounded-lg flex items-center justify-center overflow-hidden p-1">
+                        <img src="${fullUrl}" class="w-full h-full object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <span class="text-[8px] font-bold text-gray-500 uppercase tracking-widest text-center" style="display:none;">${fallbackText}</span>
+                    </div>`;
                     imgBtn.onclick = (e) => {
                         e.stopPropagation();
                         document.getElementById('{{ $id }}Input').value = path; 
                         document.getElementById('{{ $id }}File').value = ''; 
-                        document.getElementById('{{ $id }}Preview').innerHTML = `<img src="${fullUrl}" class="absolute inset-0 w-full h-full object-cover">`;
+                        document.getElementById('{{ $id }}Preview').innerHTML = `
+                            <img src="${fullUrl}" class="absolute inset-0 w-full h-full object-contain p-1" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                            <div class="absolute inset-0 hidden items-center justify-center bg-white/5"><span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest text-center px-1">${fallbackText}</span></div>
+                        `;
                         window['toggleEmojiPicker_{{ $id }}'](); 
                     };
                     grid.appendChild(imgBtn);
@@ -143,7 +157,7 @@
                 const fragment = document.createDocumentFragment();
                 categoryData.list.forEach(emoji => {
                     const btn = document.createElement('button'); btn.type = 'button';
-                    btn.className = "text-2xl p-2 hover:bg-[#262626] rounded-xl transition-all active:scale-75 flex items-center justify-center transform hover:scale-110 duration-200";
+                    btn.className = "text-2xl p-2 hover:bg-gray-800 rounded-xl transition-all active:scale-75 flex items-center justify-center transform hover:scale-110 duration-200";
                     btn.innerText = emoji;
                     btn.onclick = (e) => {
                         e.stopPropagation();

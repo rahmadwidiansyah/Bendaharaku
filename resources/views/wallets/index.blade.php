@@ -8,7 +8,7 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
             
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-xl">
                 <header>
                     <h2 class="text-lg font-medium text-gray-900">Add New Wallet</h2>
                 </header>
@@ -27,7 +27,7 @@
                         </div>
                         <div>
                             <x-input-label for="group_type" :value="__('Group Type')" />
-                            <select id="group_type" name="group_type" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                            <select id="group_type" name="group_type" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm">
                                 <option value="Liquid">Liquid (Cash/Debit)</option>
                                 <option value="Investment">Investment</option>
                                 <option value="Debt">Debt</option>
@@ -46,7 +46,7 @@
                 </form>
             </div>
 
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-xl">
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="border-b">

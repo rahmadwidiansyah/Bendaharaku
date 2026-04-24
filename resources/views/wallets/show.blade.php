@@ -16,12 +16,12 @@
         @endphp
 
         {{-- Card Dompet Utama --}}
-        <div class="bg-gradient-to-br from-[#1E1E1E] to-[#121212] border border-white/5 rounded-[2.5rem] p-7 text-center mb-10 shadow-2xl relative overflow-hidden group">
+        <div class="bg-gradient-to-br from-[#1E1E1E] to-[#121212] border border-white/5 rounded-xl p-7 text-center mb-10 shadow-2xl relative overflow-hidden group">
             <div class="absolute -top-10 -right-10 w-32 h-32 bg-[#FCA5FF] opacity-[0.05] rounded-full group-hover:scale-150 transition-transform duration-700"></div>
             
-            <div class="w-20 h-20 bg-[#262626] rounded-[2rem] mx-auto flex items-center justify-center text-4xl border border-[#333] mb-4 shadow-inner overflow-hidden p-1">
+            <div class="w-20 h-20 bg-[#262626] rounded-xl mx-auto flex items-center justify-center text-4xl border border-[#333] mb-4 shadow-inner overflow-hidden p-1">
                 @if($isWalletImage)
-                    <img src="{{ asset('storage/' . $walletIcon) }}" class="w-full h-full object-cover rounded-[1.5rem]">
+                    <img src="{{ asset('storage/' . $walletIcon) }}" class="w-full h-full object-cover rounded-xl">
                 @else
                     {{ $walletIcon }}
                 @endif
@@ -69,13 +69,13 @@
                     data-dest="{{ $trx->destinationWallet->name }}" 
                     data-subject="{{ $trx->subject }}" 
                     data-notes="{{ $trx->notes }}"
-                    class="w-full text-left bg-[#1A1A1A] p-4 rounded-[1.8rem] border border-[#262626] flex justify-between items-center active:scale-[0.98] transition-all shadow-sm relative overflow-hidden group">
+                    class="w-full text-left bg-[#1A1A1A] p-4 rounded-xl border border-[#262626] flex justify-between items-center active:scale-[0.98] transition-all shadow-sm relative overflow-hidden group">
                     
                     <div class="flex items-center gap-3 flex-1 min-w-0 relative z-10">
                         {{-- IKON KATEGORI --}}
                         <div class="w-11 h-11 rounded-xl bg-[#262626] flex items-center justify-center text-xl border border-[#333] shrink-0 overflow-hidden p-0.5">
                             @if($isTrxImage)
-                                <img src="{{ asset('storage/' . $trxIcon) }}" class="w-full h-full object-cover rounded-lg">
+                                <img src="{{ asset('storage/' . $trxIcon) }}" class="w-full h-full object-cover rounded-xl">
                             @else
                                 {{ $trxIcon }}
                             @endif
@@ -111,7 +111,7 @@
                     </div>
                 </button>
             @empty
-                <div class="text-center py-12 bg-[#1A1A1A] rounded-[2.5rem] border-2 border-dashed border-[#262626]">
+                <div class="text-center py-12 bg-[#1A1A1A] rounded-xl border-2 border-dashed border-[#262626]">
                     <p class="text-xs font-bold text-gray-500 uppercase tracking-widest">Belum ada mutasi</p>
                 </div>
             @endforelse

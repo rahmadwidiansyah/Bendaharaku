@@ -15,7 +15,7 @@
         </header>
 
         @if ($errors->any())
-            <div class="mb-6 p-4 bg-red-900/20 border border-red-500/30 text-red-200 rounded-2xl text-xs font-medium animate-slide-up opacity-0" style="animation-delay: 100ms;">
+            <div class="mb-6 p-4 bg-red-900/20 border border-red-500/30 text-red-200 rounded-xl text-xs font-medium animate-slide-up opacity-0" style="animation-delay: 100ms;">
                 <ul class="list-disc list-inside">
                     @foreach ($errors->all() as $error) <li>{{ $error }}</li> @endforeach
                 </ul>
@@ -29,7 +29,7 @@
             {{-- INPUT: SALDO SAAT INI (Standar Form, Disesuaikan dengan Tambah Dompet) --}}
             <div class="flex flex-col animate-slide-up opacity-0 relative z-10" style="animation-delay: 150ms;">
                 <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">Saldo Saat Ini</label>
-                <div class="h-[60px] bg-[#1A1A1A] border border-[#333] rounded-2xl px-5 flex items-center group focus-within:border-[#FCA5FF] focus-within:ring-1 focus-within:ring-[#FCA5FF] transition-all shadow-inner">
+                <div class="h-[60px] bg-[#1A1A1A] border border-[#333] rounded-xl px-5 flex items-center group focus-within:border-[#FCA5FF] focus-within:ring-1 focus-within:ring-[#FCA5FF] transition-all shadow-inner">
                     <span class="text-base font-bold text-[#FCA5FF] mr-3 opacity-80">Rp</span>
                     <input type="text" id="display_amount" inputmode="numeric" required 
                         value="{{ number_format($wallet->balance, 0, ',', '.') }}"
@@ -49,7 +49,7 @@
                 {{-- NAME --}}
                 <div class="flex-1 flex flex-col justify-end">
                     <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">Nama Dompet</label>
-                    <div class="h-[60px] bg-[#1A1A1A] border border-[#333] rounded-2xl px-5 flex items-center group focus-within:border-[#FCA5FF] focus-within:ring-1 focus-within:ring-[#FCA5FF] transition-all shadow-inner">
+                    <div class="h-[60px] bg-[#1A1A1A] border border-[#333] rounded-xl px-5 flex items-center group focus-within:border-[#FCA5FF] focus-within:ring-1 focus-within:ring-[#FCA5FF] transition-all shadow-inner">
                         <input type="text" name="name" value="{{ $wallet->name }}" required 
                             class="w-full bg-transparent border-none text-white p-0 text-base font-medium focus:ring-0 focus:outline-none">
                     </div>
@@ -59,7 +59,7 @@
             {{-- KEYWORD AI (Z-Index Lebih Rendah: 40) --}}
             <div class="flex flex-col animate-slide-up opacity-0 relative z-40" style="animation-delay: 250ms;">
                 <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">Keyword AI (Pisahkan Koma)</label>
-                <div class="bg-[#1A1A1A] border border-[#333] rounded-2xl p-4 group focus-within:border-[#FCA5FF] focus-within:ring-1 focus-within:ring-[#FCA5FF] transition-all">
+                <div class="bg-[#1A1A1A] border border-[#333] rounded-xl p-4 group focus-within:border-[#FCA5FF] focus-within:ring-1 focus-within:ring-[#FCA5FF] transition-all">
                     <input type="text" name="keyword" value="{{ $wallet->keyword }}" placeholder="Contoh: bca, transfer, mbanking..." 
                         class="w-full bg-transparent border-none text-white p-0 text-sm placeholder-gray-600 focus:ring-0 focus:outline-none">
                 </div>
@@ -67,7 +67,7 @@
 
             {{-- ACTIONS (Update Button) - Z-Index 30 --}}
             <div class="pt-4 space-y-3 animate-slide-up opacity-0 relative z-30" style="animation-delay: 300ms;">
-                <button type="submit" class="w-full bg-[#FCA5FF] text-[#121212] font-bold text-sm tracking-wide py-4 rounded-2xl shadow-[0_0_20px_rgba(252,165,255,0.15)] hover:shadow-[0_0_25px_rgba(252,165,255,0.3)] hover:-translate-y-0.5 active:scale-95 transition-all duration-200">
+                <button type="submit" class="w-full bg-[#FCA5FF] text-[#121212] font-bold text-sm tracking-wide py-4 rounded-xl shadow-[0_0_20px_rgba(252,165,255,0.15)] hover:shadow-[0_0_25px_rgba(252,165,255,0.3)] hover:-translate-y-0.5 active:scale-95 transition-all duration-200">
                     Update Dompet
                 </button>
             </div>
@@ -77,7 +77,7 @@
         <form action="{{ route('wallets.destroy', $wallet) }}" method="POST" class="mt-4 animate-slide-up opacity-0 relative z-20" style="animation-delay: 350ms;" onsubmit="return confirm('Yakin ingin menghapus dompet ini?');">
             @csrf
             @method('DELETE')
-            <button type="submit" class="w-full bg-transparent border border-red-500/20 text-red-500/70 font-medium text-xs uppercase tracking-widest py-4 rounded-2xl hover:bg-red-500/10 active:scale-95 transition-all">
+            <button type="submit" class="w-full bg-transparent border border-red-500/20 text-red-500/70 font-medium text-xs uppercase tracking-widest py-4 rounded-xl hover:bg-red-500/10 active:scale-95 transition-all">
                 Hapus Dompet
             </button>
         </form>
