@@ -19,7 +19,7 @@
             {{-- PILIH TIPE (Pill Select) - Z-Index 10 --}}
             <div class="animate-slide-up opacity-0 relative z-10" style="animation-delay: 100ms;">
                 <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">Tipe Kategori</label>
-                <div class="grid grid-cols-2 gap-2 p-1.5 bg-[#1A1A1A] border border-[#333] rounded-2xl shadow-inner">
+                <div class="grid grid-cols-2 gap-2 p-1.5 bg-[#1A1A1A] border border-[#333] rounded-xl shadow-inner">
                     @foreach($types as $type)
                         <label class="cursor-pointer">
                             <input type="radio" name="type_id" value="{{ $type->id }}" class="hidden peer" {{ $category->type_id == $type->id ? 'checked' : '' }} required>
@@ -42,7 +42,7 @@
                 {{-- NAMA KATEGORI --}}
                 <div class="flex-1 flex flex-col justify-end">
                     <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">Nama Kategori</label>
-                    <div class="h-[60px] bg-[#1A1A1A] border border-[#333] rounded-2xl px-5 flex items-center group focus-within:border-[#FCA5FF] focus-within:ring-1 focus-within:ring-[#FCA5FF] transition-all shadow-inner">
+                    <div class="h-[60px] bg-[#1A1A1A] border border-[#333] rounded-xl px-5 flex items-center group focus-within:border-[#FCA5FF] focus-within:ring-1 focus-within:ring-[#FCA5FF] transition-all shadow-inner">
                         <input type="text" name="category_name" value="{{ $category->category_name }}" required placeholder="Contoh: Makan Siang..." 
                             class="w-full bg-transparent border-none text-white p-0 text-base font-medium placeholder-gray-600 focus:ring-0 focus:outline-none">
                     </div>
@@ -52,7 +52,7 @@
             {{-- KEYWORD AI (Z-Index 40) --}}
             <div class="flex flex-col animate-slide-up opacity-0 relative z-40" style="animation-delay: 200ms;">
                 <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">Keyword AI (Pisahkan Koma)</label>
-                <div class="bg-[#1A1A1A] border border-[#333] rounded-2xl p-4 group focus-within:border-[#FCA5FF] focus-within:ring-1 focus-within:ring-[#FCA5FF] transition-all shadow-inner">
+                <div class="bg-[#1A1A1A] border border-[#333] rounded-xl p-4 group focus-within:border-[#FCA5FF] focus-within:ring-1 focus-within:ring-[#FCA5FF] transition-all shadow-inner">
                     <input type="text" name="keyword" value="{{ $category->keyword }}" placeholder="Contoh: mcd, kfc, warkop, bensin..." 
                         class="w-full bg-transparent border-none text-white p-0 text-sm placeholder-gray-600 focus:ring-0 focus:outline-none">
                 </div>
@@ -61,7 +61,7 @@
 
             {{-- ACTIONS (Update Button) - Z-Index 30 --}}
             <div class="pt-4 space-y-3 animate-slide-up opacity-0 relative z-30" style="animation-delay: 250ms;">
-                <button type="submit" class="w-full bg-[#FCA5FF] text-[#121212] font-bold text-sm tracking-wide py-4 rounded-2xl shadow-[0_0_20px_rgba(252,165,255,0.15)] hover:shadow-[0_0_25px_rgba(252,165,255,0.3)] hover:-translate-y-0.5 active:scale-95 transition-all duration-200">
+                <button type="submit" class="w-full bg-[#FCA5FF] text-[#121212] font-bold text-sm tracking-wide py-4 rounded-xl shadow-[0_0_20px_rgba(252,165,255,0.15)] hover:shadow-[0_0_25px_rgba(252,165,255,0.3)] hover:-translate-y-0.5 active:scale-95 transition-all duration-200">
                     Update Kategori
                 </button>
             </div>
@@ -71,7 +71,7 @@
         <form action="{{ route('categories.destroy', $category) }}" method="POST" class="mt-4 animate-slide-up opacity-0 relative z-20" style="animation-delay: 300ms;" onsubmit="return confirm('Yakin ingin menghapus kategori ini?');">
             @csrf
             @method('DELETE')
-            <button type="submit" class="w-full bg-transparent border border-red-500/20 text-red-500/70 font-medium text-xs uppercase tracking-widest py-4 rounded-2xl hover:bg-red-500/10 active:scale-95 transition-all">
+            <button type="submit" class="w-full bg-transparent border border-red-500/20 text-red-500/70 font-medium text-xs uppercase tracking-widest py-4 rounded-xl hover:bg-red-500/10 active:scale-95 transition-all">
                 Hapus Kategori
             </button>
         </form>

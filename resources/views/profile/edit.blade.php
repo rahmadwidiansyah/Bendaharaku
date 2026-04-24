@@ -6,7 +6,7 @@
         
         <header class="flex justify-between items-center mb-10 pt-4">
             <h1 class="text-3xl font-bold text-white tracking-tight">Profil Saya</h1>
-            <a href="{{ route('dashboard') }}" wire:navigate class="w-12 h-12 rounded-[1.5rem] bg-[#1A1A1A] border border-[#262626] flex items-center justify-center text-gray-400 hover:text-white active:scale-95 transition-all shadow-inner">
+            <a href="{{ route('dashboard') }}" wire:navigate class="w-12 h-12 rounded-xl bg-[#1A1A1A] border border-[#262626] flex items-center justify-center text-gray-400 hover:text-white active:scale-95 transition-all shadow-inner">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
             </a>
         </header>
@@ -47,12 +47,12 @@
 
             {{-- TOMBOL GOOGLE --}}
             @if(!$user->google_id)
-                <a href="{{ route('google.login') }}" class="flex items-center justify-center gap-3 bg-[#1A1A1A] text-white border border-[#333] text-[11px] font-bold px-6 py-4 rounded-[1.5rem] uppercase tracking-widest active:scale-95 transition-all hover:border-gray-500 mb-6">
+                <a href="{{ route('google.login') }}" class="flex items-center justify-center gap-3 bg-[#1A1A1A] text-white border border-[#333] text-[11px] font-bold px-6 py-4 rounded-xl uppercase tracking-widest active:scale-95 transition-all hover:border-gray-500 mb-6">
                     <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" alt="Google" class="w-4 h-4">
                     Hubungkan Akun Google
                 </a>
             @else
-                <div class="text-center py-3.5 px-4 bg-green-500/10 border border-green-500/20 rounded-[1.5rem] text-[10px] text-green-400 font-bold uppercase tracking-widest flex items-center justify-center gap-2 mb-6">
+                <div class="text-center py-3.5 px-4 bg-green-500/10 border border-green-500/20 rounded-xl text-[10px] text-green-400 font-bold uppercase tracking-widest flex items-center justify-center gap-2 mb-6">
                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"></path></svg>
                     Terkoneksi dengan Google
                 </div>
@@ -63,32 +63,32 @@
                 <div>
                     <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Nama Lengkap</label>
                     <input type="text" name="name" value="{{ old('name', $user->name) }}" required 
-                        class="w-full bg-[#1A1A1A] border border-[#333] text-white rounded-[1.5rem] p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[#FCA5FF] transition-all">
+                        class="w-full bg-[#1A1A1A] border border-[#333] text-white rounded-xl p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[#FCA5FF] transition-all">
                     <x-input-error class="mt-2 text-[10px] text-red-500 font-bold" :messages="$errors->get('name')" />
                 </div>
 
                 <div>
                     <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Email</label>
                     <input type="email" name="email" value="{{ old('email', $user->email) }}" required 
-                        class="w-full bg-[#1A1A1A] border border-[#333] text-white rounded-[1.5rem] p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[#FCA5FF] transition-all">
+                        class="w-full bg-[#1A1A1A] border border-[#333] text-white rounded-xl p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[#FCA5FF] transition-all">
                     <x-input-error class="mt-2 text-[10px] text-red-500 font-bold" :messages="$errors->get('email')" />
                 </div>
 
                 <div>
                     <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">WhatsApp</label>
                     <input type="text" name="whatsapp_number" value="{{ old('whatsapp_number', $user->whatsapp_number) }}" placeholder="0812..."
-                        class="w-full bg-[#1A1A1A] border border-[#333] text-white rounded-[1.5rem] p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[#FCA5FF] transition-all">
+                        class="w-full bg-[#1A1A1A] border border-[#333] text-white rounded-xl p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[#FCA5FF] transition-all">
                     <x-input-error class="mt-2 text-[10px] text-red-500 font-bold" :messages="$errors->get('whatsapp_number')" />
                 </div>
 
                 <div>
                     <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Telegram</label>
                     <input type="text" name="telegram_id" value="{{ old('telegram_id', $user->telegram_id) }}" placeholder="@username"
-                        class="w-full bg-[#1A1A1A] border border-[#333] text-white rounded-[1.5rem] p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[#FCA5FF] transition-all">
+                        class="w-full bg-[#1A1A1A] border border-[#333] text-white rounded-xl p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[#FCA5FF] transition-all">
                     <x-input-error class="mt-2 text-[10px] text-red-500 font-bold" :messages="$errors->get('telegram_id')" />
                 </div>
 
-                <button type="submit" class="w-full bg-[#FCA5FF] text-[#121212] font-bold text-sm uppercase tracking-widest py-4 rounded-[1.5rem] shadow-[0_0_20px_rgba(252,165,255,0.2)] active:scale-95 transition-transform mt-6">
+                <button type="submit" class="w-full bg-[#FCA5FF] text-[#121212] font-bold text-sm uppercase tracking-widest py-4 rounded-xl shadow-[0_0_20px_rgba(252,165,255,0.2)] active:scale-95 transition-transform mt-6">
                     Simpan Perubahan
                 </button>
             </div>
@@ -102,15 +102,15 @@
                 @csrf @method('put')
                 <div>
                     <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Password Saat Ini</label>
-                    <input type="password" name="current_password" required class="w-full bg-[#1A1A1A] border border-[#333] text-white rounded-[1.5rem] p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[#FCA5FF] transition-all">
+                    <input type="password" name="current_password" required class="w-full bg-[#1A1A1A] border border-[#333] text-white rounded-xl p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[#FCA5FF] transition-all">
                     <x-input-error :messages="$errors->updatePassword->get('current_password')" class="mt-2 text-[10px] text-red-500 font-bold" />
                 </div>
                 <div>
                     <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Password Baru</label>
-                    <input type="password" name="password" required class="w-full bg-[#1A1A1A] border border-[#333] text-white rounded-[1.5rem] p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[#FCA5FF] transition-all">
+                    <input type="password" name="password" required class="w-full bg-[#1A1A1A] border border-[#333] text-white rounded-xl p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[#FCA5FF] transition-all">
                     <x-input-error :messages="$errors->updatePassword->get('password')" class="mt-2 text-[10px] text-red-500 font-bold" />
                 </div>
-                <button type="submit" class="w-full bg-[#1A1A1A] text-white border border-[#333] font-bold text-[11px] uppercase tracking-widest py-4 rounded-[1.5rem] hover:border-[#FCA5FF] active:scale-95 transition-all mt-2">
+                <button type="submit" class="w-full bg-[#1A1A1A] text-white border border-[#333] font-bold text-[11px] uppercase tracking-widest py-4 rounded-xl hover:border-[#FCA5FF] active:scale-95 transition-all mt-2">
                     Update Password
                 </button>
             </form>
@@ -119,7 +119,7 @@
         {{-- LOGOUT (STANDALONE) --}}
         <form method="POST" action="{{ route('logout') }}" class="mb-10">
             @csrf
-            <button type="submit" class="w-full bg-[#1A1A1A] text-gray-400 border border-[#333] text-[11px] font-bold px-6 py-4 rounded-[1.5rem] uppercase tracking-widest active:scale-95 transition-all hover:text-white hover:border-gray-500">
+            <button type="submit" class="w-full bg-[#1A1A1A] text-gray-400 border border-[#333] text-[11px] font-bold px-6 py-4 rounded-xl uppercase tracking-widest active:scale-95 transition-all hover:text-white hover:border-gray-500">
                 🚪 Keluar dari Aplikasi
             </button>
         </form>
@@ -132,7 +132,7 @@
                 <span class="hidden group-open:block">Sembunyikan Zona Berbahaya</span>
             </summary>
             
-            <div class="mt-6 bg-red-950/20 border border-red-900/30 rounded-[1.5rem] p-6 shadow-sm animate-slide-up">
+            <div class="mt-6 bg-red-950/20 border border-red-900/30 rounded-xl p-6 shadow-sm animate-slide-up">
                 <h4 class="text-red-400 font-bold text-sm mb-2">Hapus Akun Permanen</h4>
                 <p class="text-[10px] text-gray-400 mb-5 leading-relaxed">Setelah dihapus, semua data keuangan, histori, dan pengaturan kamu akan musnah dan tidak dapat dipulihkan.</p>
                 <form method="post" action="{{ route('profile.destroy') }}" onsubmit="return confirm('YAKIN HAPUS PERMANEN? Semua data keuangan kamu akan hilang.');">

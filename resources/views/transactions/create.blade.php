@@ -3,7 +3,7 @@
         
         <header class="flex justify-between items-center mb-6 pt-2">
             <h1 class="text-2xl font-bold text-white tracking-tight">Catat Transaksi</h1>
-            <button type="button" onclick="handleClose()" class="w-10 h-10 rounded-full bg-[#1A1A1A] border border-[#262626] flex items-center justify-center text-gray-400 hover:text-white active:scale-95 transition-all shadow-md">
+            <button type="button" onclick="handleClose()" class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white active:scale-95 transition-all shadow-md">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -12,77 +12,77 @@
 
         {{-- TABS TIPE --}}
         <div class="grid grid-cols-3 gap-2 mb-2">
-            <button type="button" id="tabExpense" onclick="setType('Expense')" class="w-full text-[10px] font-bold uppercase tracking-widest py-3 rounded-2xl bg-[#262626] text-[#FCA5FF] shadow-md transition-all border border-[#333]">Pengeluaran</button>
-            <button type="button" id="tabIncome" onclick="setType('Income')" class="w-full text-[10px] font-bold uppercase tracking-widest py-3 rounded-2xl bg-[#1A1A1A] text-gray-500 hover:text-white border border-transparent transition-all">Pemasukan</button>
-            <button type="button" id="tabTransfer" onclick="setType('Transfer')" class="w-full text-[10px] font-bold uppercase tracking-widest py-3 rounded-2xl bg-[#1A1A1A] text-gray-500 hover:text-white border border-transparent transition-all">Transfer</button>
+            <button type="button" id="tabExpense" onclick="setType('Expense')" class="w-full text-xs font-bold uppercase tracking-widest py-3 rounded-xl bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 text-red-500 transition-all">Pengeluaran</button>
+            <button type="button" id="tabIncome" onclick="setType('Income')" class="w-full text-xs font-bold uppercase tracking-widest py-3 rounded-xl bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 text-green-500 transition-all">Pemasukan</button>
+            <button type="button" id="tabTransfer" onclick="setType('Transfer')" class="w-full text-xs font-bold uppercase tracking-widest py-3 rounded-xl bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 text-purple-500 transition-all">Transfer</button>
         </div>
         <div class="grid grid-cols-2 gap-2 mb-6">
-            <button type="button" id="tabDebt" onclick="setType('Debt')" class="w-full text-[10px] font-bold uppercase tracking-widest py-3 rounded-2xl bg-[#1A1A1A] text-gray-500 hover:text-white border border-transparent transition-all">Hutang</button>
-            <button type="button" id="tabReceivable" onclick="setType('Receivable')" class="w-full text-[10px] font-bold uppercase tracking-widest py-3 rounded-2xl bg-[#1A1A1A] text-gray-500 hover:text-white border border-transparent transition-all">Piutang</button>
+            <button type="button" id="tabDebt" onclick="setType('Debt')" class="w-full text-xs font-bold uppercase tracking-widest py-3 rounded-xl bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 text-orange-500 transition-all">Hutang</button>
+            <button type="button" id="tabReceivable" onclick="setType('Receivable')" class="w-full text-xs font-bold uppercase tracking-widest py-3 rounded-xl bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 text-yellow-500 hover:text-white border border-transparent transition-all">Piutang</button>
         </div>
 
         <form action="{{ route('transactions.store') }}" method="POST" id="trxForm" class="space-y-4" onsubmit="return validateForm()">
             @csrf
             
             {{-- INPUT NOMINAL --}}
-            <div class="bg-[#1A1A1A] border border-[#262626] rounded-[2rem] p-5 text-center relative shadow-inner group">
+            <div class="bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-5 text-center relative shadow-inner group">
                 <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Nominal (Rp)</label>
                 <input type="text" id="display_amount" inputmode="numeric" required placeholder="0"
-                    class="w-full bg-transparent border-none text-white text-center text-4xl font-bold placeholder-gray-600 focus:ring-0 p-0 focus:outline-none caret-[#FCA5FF]">
+                    class="w-full bg-transparent border-none text-white text-center text-4xl font-bold placeholder-gray-600 focus:ring-0 p-0 focus:outline-none caret-purple-500">
                 <input type="hidden" name="amount" id="raw_amount">
-                <div class="absolute bottom-4 left-1/2 -translate-x-1/2 w-12 h-1 bg-[#FCA5FF] rounded-full opacity-0 group-focus-within:opacity-100 transition-opacity"></div>
+                <div class="absolute bottom-4 left-1/2 -translate-x-1/2 w-12 h-1 bg-purple-500 rounded-full opacity-0 group-focus-within:opacity-100 transition-opacity"></div>
             </div>
 
             {{-- TANGGAL & KATEGORI --}}
             <div class="grid grid-cols-2 gap-3">
-                <div class="bg-[#1A1A1A] border border-[#262626] rounded-[1.5rem] p-3 shadow-sm relative">
+                <div class="bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-3 shadow-sm relative">
                     <label class="block text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Tanggal</label>
                     <input type="date" id="dateInput" name="date" value="{{ date('Y-m-d') }}" required class="w-full bg-transparent border-none text-white p-1 text-sm focus:ring-0" style="color-scheme: dark;">
                     <p id="dateError" class="absolute -bottom-5 left-2 text-[9px] text-red-500 hidden font-bold">Masa depan tidak diizinkan!</p>
                 </div>
                 
-                <div class="bg-[#1A1A1A] border border-[#262626] rounded-[1.5rem] p-3 shadow-sm cursor-pointer active:scale-95 transition-transform" onclick="openBottomSheet('categoryModal')">
+                <div class="bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-3 shadow-sm cursor-pointer active:scale-95 transition-transform" onclick="openBottomSheet('categoryModal')">
                     <label class="block text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Kategori</label>
                     <div class="flex items-center justify-between px-1">
                         <div id="catPreview" class="flex items-center gap-2 truncate">
                             <span id="catLabel" class="text-sm font-bold text-white truncate">-- Pilih --</span>
                         </div>
-                        <svg class="w-4 h-4 text-[#FCA5FF]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        <svg class="w-4 h-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                     </div>
                     <input type="hidden" name="category_id" id="category_id" required>
                 </div>
             </div>
 
             {{-- DOMPET SOURCE & DESTINATION --}}
-            <div class="bg-[#1A1A1A] border border-[#262626] rounded-[2rem] p-4 shadow-inner flex flex-col gap-3">
+            <div class="bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-4 shadow-inner flex flex-col gap-3">
                 <div id="sourceDiv">
                     <label id="sourceLabel" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Dari Dompet</label>
-                    <div class="w-full bg-[#262626] text-white rounded-2xl p-3.5 text-sm cursor-pointer flex items-center justify-between active:scale-95 transition-transform border border-[#333]" onclick="openBottomSheet('walletModal', 'source')">
+                    <div class="w-full bg-gradient-to-br from-gray-900 to-gray-800 text-white rounded-xl p-3.5 text-sm cursor-pointer flex items-center justify-between active:scale-95 transition-transform border border-white/10" onclick="openBottomSheet('walletModal', 'source')">
                         <span id="sourceWalletLabel" class="font-bold">-- Pilih Dompet --</span>
-                        <svg class="w-4 h-4 text-[#FCA5FF]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        <svg class="w-4 h-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                     </div>
                     <input type="hidden" name="source_wallet_id" id="source_wallet_id" required>
                 </div>
                 <div id="destDiv">
                     <label id="destLabel" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Ke Dompet</label>
-                    <div class="w-full bg-[#262626] text-white rounded-2xl p-3.5 text-sm cursor-pointer flex items-center justify-between active:scale-95 transition-transform border border-[#333]" onclick="openBottomSheet('walletModal', 'dest')">
+                    <div class="w-full bg-gradient-to-br from-gray-900 to-gray-800 text-white rounded-xl p-3.5 text-sm cursor-pointer flex items-center justify-between active:scale-95 transition-transform border border-white/10" onclick="openBottomSheet('walletModal', 'dest')">
                         <span id="destWalletLabel" class="font-bold">-- Pilih Dompet --</span>
-                        <svg class="w-4 h-4 text-[#FCA5FF]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                        <svg class="w-4 h-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                     </div>
                     <input type="hidden" name="destination_wallet_id" id="destination_wallet_id" required>
                 </div>
             </div>
 
-            <div id="subjectDiv" style="display: none;" class="bg-[#1A1A1A] border border-[#262626] rounded-[1.5rem] p-3 shadow-sm mt-3">
-                <label id="subjectLabel" class="block text-[9px] font-bold text-[#FCA5FF] uppercase tracking-widest mb-1.5 ml-1">Pihak Terkait</label>
+            <div id="subjectDiv" style="display: none;" class="bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-3 shadow-sm mt-3">
+                <label id="subjectLabel" class="block text-[9px] font-bold text-purple-500 uppercase tracking-widest mb-1.5 ml-1">Pihak Terkait</label>
                 <input type="text" id="subjectInput" name="subject" placeholder="Nama..." class="w-full bg-transparent border-none text-white p-1 text-sm focus:ring-0">
             </div>
 
             <div class="pt-2">
-                <input type="text" name="notes" placeholder="Catatan tambahan (opsional)" class="w-full bg-[#1A1A1A] border border-[#262626] text-white rounded-[1.5rem] p-4 text-sm placeholder-gray-600 focus:border-[#FCA5FF] focus:ring-1 focus:ring-[#FCA5FF]">
+                <input type="text" name="notes" placeholder="Catatan tambahan (opsional)" class="w-full bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 text-white rounded-xl p-4 text-sm placeholder-gray-600 focus:border-purple-500 focus:ring-1 focus:ring-purple-500">
             </div>
 
-            <button type="submit" class="w-full bg-[#FCA5FF] text-[#121212] font-bold text-sm uppercase tracking-widest py-4 rounded-[1.5rem] shadow-lg active:scale-95 transition-all mt-6">
+            <button type="submit" class="w-full bg-gradient-to-br from-purple-500 to-purple-600 text-white font-bold text-sm uppercase tracking-widest py-4 rounded-xl shadow-lg active:scale-95 transition-all mt-6">
                 Simpan Transaksi
             </button>
         </form>
@@ -91,18 +91,18 @@
     {{-- MODAL OVERLAY & BOTTOM SHEETS --}}
     <div id="overlay" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[50] hidden transition-opacity duration-300 opacity-0" onclick="closeAllBottomSheets()"></div>
 
-    <div id="categoryModal" class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-[#121212] rounded-t-[2rem] border-t border-x border-[#262626] z-[60] transform translate-y-full transition-transform duration-300 ease-out pb-safe">
+    <div id="categoryModal" class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-gradient-to-br from-gray-900 to-gray-800 rounded-t-[2rem] border-t border-x border-white/10 z-[60] transform translate-y-full transition-transform duration-300 ease-out pb-safe">
         <div class="p-5 flex flex-col max-h-[80vh]">
-            <div class="w-12 h-1.5 bg-[#333] rounded-full mx-auto mb-4 cursor-pointer" onclick="closeAllBottomSheets()"></div>
-            <h3 class="text-sm font-bold text-[#FCA5FF] mb-4 uppercase tracking-widest text-center">Pilih Kategori</h3>
+            <div class="w-12 h-1.5 bg-white/10 rounded-full mx-auto mb-4 cursor-pointer" onclick="closeAllBottomSheets()"></div>
+            <h3 class="text-sm font-bold text-purple-500 mb-4 uppercase tracking-widest text-center">Pilih Kategori</h3>
             <div id="categoryList" class="overflow-y-auto no-scrollbar space-y-2 pb-6"></div>
         </div>
     </div>
 
-    <div id="walletModal" class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-[#121212] rounded-t-[2rem] border-t border-x border-[#262626] z-[60] transform translate-y-full transition-transform duration-300 ease-out pb-safe">
+    <div id="walletModal" class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-gradient-to-br from-gray-900 to-gray-800 rounded-t-[2rem] border-t border-x border-white/10 z-[60] transform translate-y-full transition-transform duration-300 ease-out pb-safe">
         <div class="p-5 flex flex-col max-h-[80vh]">
-            <div class="w-12 h-1.5 bg-[#333] rounded-full mx-auto mb-4 cursor-pointer" onclick="closeAllBottomSheets()"></div>
-            <h3 id="walletModalTitle" class="text-sm font-bold text-[#FCA5FF] mb-4 uppercase tracking-widest text-center">Pilih Dompet</h3>
+            <div class="w-12 h-1.5 bg-white/10 rounded-full mx-auto mb-4 cursor-pointer" onclick="closeAllBottomSheets()"></div>
+            <h3 id="walletModalTitle" class="text-sm font-bold text-purple-500 mb-4 uppercase tracking-widest text-center">Pilih Dompet</h3>
             <div id="walletList" class="overflow-y-auto no-scrollbar space-y-2 pb-6"></div>
         </div>
     </div>
@@ -139,7 +139,7 @@
         const isImage = icon.includes('/') || icon.includes('.');
         
         if (isImage) {
-            label.innerHTML = `<div class="flex items-center gap-2"><img src="/storage/${icon}" class="w-5 h-5 object-cover rounded-md"><span>${name}</span></div>`;
+            label.innerHTML = `<div class="flex items-center gap-2"><img src="/storage/${icon}" class="w-5 h-5 object-cover rounded-xl"><span>${name}</span></div>`;
         } else {
             label.innerText = icon + ' ' + name;
         }
@@ -156,7 +156,7 @@
         
         input.value = id;
         if (isImage) {
-            label.innerHTML = `<div class="flex items-center gap-2"><img src="/storage/${icon}" class="w-5 h-5 object-cover rounded-md"><span>${name}</span></div>`;
+            label.innerHTML = `<div class="flex items-center gap-2"><img src="/storage/${icon}" class="w-5 h-5 object-cover rounded-xl"><span>${name}</span></div>`;
         } else {
             label.innerText = icon + ' ' + name;
         }
@@ -175,7 +175,7 @@
         const syH = window.systemWallets.find(w => w.name.toLowerCase().includes('hutang'));
         const syP = window.systemWallets.find(w => w.name.toLowerCase().includes('piutang'));
 
-        // Ambil tipe transaksi aktif dari tombol yang punya warna pink (tab aktif)
+        // Ambil tipe transaksi aktif dari tombol yang punya warna purple (tab aktif)
         const activeTab = ['Expense', 'Income', 'Transfer', 'Debt', 'Receivable'].find(t => {
             const btn = document.getElementById('tab' + t);
             return btn && btn.classList.contains('text-[#FCA5FF]');
@@ -218,12 +218,20 @@
 
     // 4. LOGIKA TIPE TRANSAKSI (TABS)
     function setType(type) {
+        const colors = {
+            'Expense': 'text-red-500',
+            'Income': 'text-green-500',
+            'Transfer': 'text-purple-500',
+            'Debt': 'text-orange-500',
+            'Receivable': 'text-yellow-500'
+        };
+
         ['Expense', 'Income', 'Transfer', 'Debt', 'Receivable'].forEach(t => {
             const btn = document.getElementById('tab' + t);
             if (btn) {
                 btn.className = (t === type) 
-                    ? "w-full text-[10px] font-bold uppercase tracking-widest py-3 rounded-2xl bg-[#262626] text-[#FCA5FF] shadow-md transition-all border border-[#333]"
-                    : "w-full text-[10px] font-bold uppercase tracking-widest py-3 rounded-2xl bg-[#1A1A1A] text-gray-500 hover:text-white border border-transparent transition-all";
+                    ? `w-full text-xs font-bold uppercase tracking-widest py-3 rounded-xl bg-gradient-to-br from-gray-800 to-gray-700 border border-white/20 shadow-md transition-all ${colors[t]}`
+                    : "w-full text-xs font-bold uppercase tracking-widest py-3 rounded-xl bg-gradient-to-br from-gray-900 to-gray-800 border border-white/5 text-gray-500 hover:text-white transition-all";
             }
         });
 
@@ -270,7 +278,7 @@
         window.activeCategories.forEach(cat => {
             const icon = cat.icon.includes('/') ? `<img src="/storage/${cat.icon}" class="w-full h-full object-cover rounded-xl">` : cat.icon;
             list.innerHTML += `
-                <div onclick="selectCategory('${cat.id}', '${cat.category_name}', '${cat.icon}')" class="bg-[#1A1A1A] border border-[#262626] p-4 rounded-2xl flex items-center gap-4 cursor-pointer active:scale-95 transition-all">
+                <div onclick="selectCategory('${cat.id}', '${cat.category_name}', '${cat.icon}')" class="bg-[#1A1A1A] border border-[#262626] p-4 rounded-xl flex items-center gap-4 cursor-pointer active:scale-95 transition-all">
                     <div class="w-12 h-12 bg-[#262626] rounded-xl flex items-center justify-center text-xl border border-[#333] overflow-hidden">${icon}</div>
                     <span class="text-sm font-bold text-white">${cat.category_name}</span>
                 </div>`;
@@ -297,7 +305,7 @@
                 : '';
 
             list.innerHTML += `
-                <div onclick="selectWallet('${w.id}', '${w.name}', '${w.icon}')" class="bg-[#1A1A1A] border border-[#262626] p-4 rounded-2xl flex items-center gap-4 cursor-pointer active:scale-95 transition-all group hover:border-[#FCA5FF]/30">
+                <div onclick="selectWallet('${w.id}', '${w.name}', '${w.icon}')" class="bg-[#1A1A1A] border border-[#262626] p-4 rounded-xl flex items-center gap-4 cursor-pointer active:scale-95 transition-all group hover:border-[#FCA5FF]/30">
                     <div class="w-12 h-12 bg-[#262626] rounded-xl flex items-center justify-center text-xl border border-[#333] overflow-hidden shadow-inner group-hover:scale-105 transition-transform">${icon}</div>
                     <div class="flex-1">
                         <span class="text-sm font-bold text-white block">${w.name}</span>

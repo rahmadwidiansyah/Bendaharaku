@@ -8,14 +8,14 @@
             </a>
         </header>
 
-        <div class="flex bg-[#1A1A1A] rounded-[1.5rem] p-1.5 mb-6 border border-[#262626] justify-center opacity-80 pointer-events-none">
-            <button class="w-full text-xs font-bold uppercase tracking-widest py-3 rounded-2xl bg-[#262626] text-[#FCA5FF] shadow-md border border-[#333]">
+        <div class="flex bg-[#1A1A1A] rounded-xl p-1.5 mb-6 border border-[#262626] justify-center opacity-80 pointer-events-none">
+            <button class="w-full text-xs font-bold uppercase tracking-widest py-3 rounded-xl bg-[#262626] text-[#FCA5FF] shadow-md border border-[#333]">
                 Tipe: {{ $transaction->type->name ?? 'Transfer' }}
             </button>
         </div>
 
         @if ($errors->any())
-            <div class="mb-5 p-4 bg-red-900/30 border border-red-500/50 text-red-200 rounded-[2rem] text-xs font-medium">
+            <div class="mb-5 p-4 bg-red-900/30 border border-red-500/50 text-red-200 rounded-xl text-xs font-medium">
                 <ul class="list-disc list-inside">
                     @foreach ($errors->all() as $error) <li>{{ $error }}</li> @endforeach
                 </ul>
@@ -27,7 +27,7 @@
             @method('PUT')
             
             {{-- 1. INPUT NOMINAL FORMATTED --}}
-            <div class="bg-[#1A1A1A] border border-[#262626] rounded-[2rem] p-5 text-center relative shadow-inner group">
+            <div class="bg-[#1A1A1A] border border-[#262626] rounded-xl p-5 text-center relative shadow-inner group">
                 <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Nominal (Rp)</label>
                 <input type="text" id="display_amount" inputmode="numeric" required 
                     value="{{ number_format($transaction->amount, 0, ',', '.') }}"
@@ -37,13 +37,13 @@
 
             <div class="grid grid-cols-2 gap-3">
                 {{-- 2. TANGGAL --}}
-                <div class="bg-[#1A1A1A] border border-[#262626] rounded-[1.5rem] p-3 shadow-sm">
+                <div class="bg-[#1A1A1A] border border-[#262626] rounded-xl p-3 shadow-sm">
                     <label class="block text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Tanggal</label>
                     <input type="date" name="date" value="{{ $transaction->date }}" required class="w-full bg-transparent border-none text-white p-1 text-sm focus:ring-0" style="color-scheme: dark;">
                 </div>
                 
                 {{-- 3. KATEGORI (BOTTOM SHEET) --}}
-                <div class="bg-[#1A1A1A] border border-[#262626] rounded-[1.5rem] p-3 shadow-sm cursor-pointer active:scale-95 transition-transform" onclick="openBottomSheet('categoryModal')">
+                <div class="bg-[#1A1A1A] border border-[#262626] rounded-xl p-3 shadow-sm cursor-pointer active:scale-95 transition-transform" onclick="openBottomSheet('categoryModal')">
                     <label class="block text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Kategori</label>
                     <div id="catLabelContainer" class="flex items-center justify-between px-1">
                         <span id="catLabel" class="text-sm font-bold text-white truncate">
@@ -56,10 +56,10 @@
             </div>
 
             {{-- 4. DOMPET (BOTTOM SHEET) --}}
-            <div class="bg-[#1A1A1A] border border-[#262626] rounded-[2rem] p-4 shadow-inner space-y-3">
+            <div class="bg-[#1A1A1A] border border-[#262626] rounded-xl p-4 shadow-inner space-y-3">
                 <div id="sourceDiv" class="{{ $transaction->type->name === 'Income' ? 'hidden' : 'block' }}">
                     <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Dari Dompet</label>
-                    <div class="w-full bg-[#262626] text-white rounded-2xl p-3.5 text-sm cursor-pointer flex items-center justify-between active:scale-95 transition-transform border border-[#333]" onclick="openBottomSheet('walletModal', 'source')">
+                    <div class="w-full bg-[#262626] text-white rounded-xl p-3.5 text-sm cursor-pointer flex items-center justify-between active:scale-95 transition-transform border border-[#333]" onclick="openBottomSheet('walletModal', 'source')">
                         <span id="sourceWalletLabel" class="font-bold truncate">{{ $transaction->sourceWallet->name }}</span>
                         <svg class="w-4 h-4 text-[#FCA5FF]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                     </div>
@@ -68,7 +68,7 @@
                 
                 <div id="destDiv" class="{{ $transaction->type->name === 'Expense' ? 'hidden' : 'block' }}">
                     <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Ke Dompet</label>
-                    <div class="w-full bg-[#262626] text-white rounded-2xl p-3.5 text-sm cursor-pointer flex items-center justify-between active:scale-95 transition-transform border border-[#333]" onclick="openBottomSheet('walletModal', 'dest')">
+                    <div class="w-full bg-[#262626] text-white rounded-xl p-3.5 text-sm cursor-pointer flex items-center justify-between active:scale-95 transition-transform border border-[#333]" onclick="openBottomSheet('walletModal', 'dest')">
                         <span id="destWalletLabel" class="font-bold truncate">{{ $transaction->destinationWallet->name }}</span>
                         <svg class="w-4 h-4 text-[#FCA5FF]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
                     </div>
@@ -82,7 +82,7 @@
             @endphp
 
             @if($isDebt || $isReceivable)
-                <div class="bg-[#1A1A1A] border border-[#262626] rounded-[1.5rem] p-3 shadow-sm mt-3">
+                <div class="bg-[#1A1A1A] border border-[#262626] rounded-xl p-3 shadow-sm mt-3">
                     <label class="block text-[9px] font-bold text-[#FCA5FF] uppercase tracking-widest mb-1.5 ml-1">
                         {{ $isDebt ? 'Pelaku (Pemberi Hutang)' : 'Korban (Yang Ngutang)' }}
                     </label>
@@ -95,10 +95,10 @@
 
             <div class="pt-2">
                 <input type="text" name="notes" value="{{ $transaction->notes }}" placeholder="Catatan tambahan (opsional)" 
-                    class="w-full bg-[#1A1A1A] border border-[#262626] text-white rounded-[1.5rem] p-4 text-sm placeholder-gray-600 focus:border-[#FCA5FF] focus:ring-1 focus:ring-[#FCA5FF]">
+                    class="w-full bg-[#1A1A1A] border border-[#262626] text-white rounded-xl p-4 text-sm placeholder-gray-600 focus:border-[#FCA5FF] focus:ring-1 focus:ring-[#FCA5FF]">
             </div>
 
-            <button type="submit" class="w-full bg-[#FCA5FF] text-[#121212] font-bold text-sm uppercase tracking-widest py-4 rounded-[1.5rem] shadow-[0_0_20px_rgba(252,165,255,0.2)] active:scale-95 transition-all mt-6">
+            <button type="submit" class="w-full bg-[#FCA5FF] text-[#121212] font-bold text-sm uppercase tracking-widest py-4 rounded-xl shadow-[0_0_20px_rgba(252,165,255,0.2)] active:scale-95 transition-all mt-6">
                 Update Transaksi
             </button>
         </form>
@@ -106,7 +106,7 @@
         <form action="{{ route('transactions.destroy', $transaction) }}" method="POST" class="mt-4" onsubmit="return confirm('Hapus transaksi ini secara permanen?');">
             @csrf
             @method('DELETE')
-            <button type="submit" class="w-full bg-transparent border border-red-900/50 text-red-500 font-bold text-sm uppercase tracking-widest py-4 rounded-[1.5rem] hover:bg-red-900/20 active:scale-95 transition-all">
+            <button type="submit" class="w-full bg-transparent border border-red-900/50 text-red-500 font-bold text-sm uppercase tracking-widest py-4 rounded-xl hover:bg-red-900/20 active:scale-95 transition-all">
                 Hapus Transaksi
             </button>
         </form>
@@ -176,12 +176,12 @@
         
         filtered.forEach(cat => {
             const iconContent = isImagePath(cat.icon) 
-                ? `<img src="/storage/${cat.icon}" class="w-full h-full object-cover rounded-[1rem]">`
+                ? `<img src="/storage/${cat.icon}" class="w-full h-full object-cover rounded-xl">`
                 : cat.icon || '📄';
             list.innerHTML += `
                 <div onclick="selectCategory('${cat.id}', '${cat.category_name}', '${cat.icon || '📄'}')" 
-                    class="bg-[#1A1A1A] border border-[#262626] p-4 rounded-2xl flex items-center gap-4 cursor-pointer hover:bg-[#202020] active:scale-95 transition-all">
-                    <div class="w-12 h-12 bg-[#262626] rounded-[1rem] flex items-center justify-center text-xl border border-[#333] shrink-0 overflow-hidden">${iconContent}</div>
+                    class="bg-[#1A1A1A] border border-[#262626] p-4 rounded-xl flex items-center gap-4 cursor-pointer hover:bg-[#202020] active:scale-95 transition-all">
+                    <div class="w-12 h-12 bg-[#262626] rounded-xl flex items-center justify-center text-xl border border-[#333] shrink-0 overflow-hidden">${iconContent}</div>
                     <span class="text-sm font-bold text-white">${cat.category_name}</span>
                 </div>`;
         });
@@ -234,13 +234,13 @@
     // Render hasil filter
     filtered.forEach(w => {
         const iconContent = isImagePath(w.icon) 
-            ? `<img src="/storage/${w.icon}" class="w-full h-full object-cover rounded-[1rem]">`
+            ? `<img src="/storage/${w.icon}" class="w-full h-full object-cover rounded-xl">`
             : w.icon || '💳';
             
         list.innerHTML += `
             <div onclick="selectWallet('${w.id}', '${w.name}', '${w.icon || '💳'}')" 
-                class="bg-[#1A1A1A] border border-[#262626] p-4 rounded-2xl flex items-center gap-4 cursor-pointer hover:bg-[#202020] active:scale-95 transition-all">
-                <div class="w-12 h-12 bg-[#262626] rounded-[1rem] flex items-center justify-center text-xl border border-[#333] shrink-0 overflow-hidden">${iconContent}</div>
+                class="bg-[#1A1A1A] border border-[#262626] p-4 rounded-xl flex items-center gap-4 cursor-pointer hover:bg-[#202020] active:scale-95 transition-all">
+                <div class="w-12 h-12 bg-[#262626] rounded-xl flex items-center justify-center text-xl border border-[#333] shrink-0 overflow-hidden">${iconContent}</div>
                 <div>
                     <span class="text-sm font-bold text-white">${w.name}</span>
                     <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">${w.group_type}</p>

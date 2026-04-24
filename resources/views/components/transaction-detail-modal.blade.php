@@ -1,18 +1,18 @@
 {{-- Modal Detail Transaksi Reusable --}}
 <div id="detailModal" class="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4 transition-opacity">
-    <div class="w-full max-w-sm bg-[#121212] rounded-[2rem] border border-[#262626] p-6 shadow-2xl animate-pop-in relative">
+    <div class="w-full max-w-sm bg-[#121212] rounded-xl border border-[#262626] p-6 shadow-2xl animate-pop-in relative">
         
         <button onclick="closeDetailModal()" class="absolute top-4 right-4 w-8 h-8 bg-[#1A1A1A] border border-[#333] rounded-full flex items-center justify-center text-gray-400">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
 
         <div class="flex flex-col items-center mb-6 mt-2">
-            <div id="modIcon" class="w-16 h-16 rounded-[1.5rem] bg-[#1A1A1A] flex items-center justify-center text-3xl border border-[#333] shadow-inner mb-3 overflow-hidden p-1"></div>
+            <div id="modIcon" class="w-16 h-16 rounded-xl bg-[#1A1A1A] flex items-center justify-center text-3xl border border-[#333] shadow-inner mb-3 overflow-hidden p-1"></div>
             <p id="modCategory" class="text-xl font-bold text-white text-center"></p>
             <p id="modDate" class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1 text-center"></p>
         </div>
 
-        <div class="bg-[#1A1A1A] border border-[#262626] rounded-[1.5rem] p-5 text-center mb-5">
+        <div class="bg-[#1A1A1A] border border-[#262626] rounded-xl p-5 text-center mb-5">
             <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Nominal</p>
             <h2 id="modAmount" class="text-3xl font-bold tracking-tight"></h2>
         </div>
@@ -53,7 +53,7 @@
 
         // Logic Ikon (Emoji vs Gambar)
         if (data.isImage === 'true') {
-            modIcon.innerHTML = `<img src="${data.iconUrl}" class="w-full h-full object-cover rounded-[1.2rem]">`;
+            modIcon.innerHTML = `<img src="${data.iconUrl}" class="w-full h-full object-cover rounded-xl">`;
         } else {
             modIcon.innerHTML = data.icon;
         }

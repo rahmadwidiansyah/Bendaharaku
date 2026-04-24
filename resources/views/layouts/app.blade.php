@@ -45,8 +45,9 @@
     </head>
     
     <body class="font-sans antialiased bg-black text-white selection:bg-[#FCA5FF] selection:text-black">
+        <div class="w-full max-w-md md:max-w-full mx-auto bg-gray-800 min-h-screen flex flex-col shadow-2xl border-x border-[#1e1e1e] relative">
         
-        <div class="w-full max-w-md mx-auto bg-[#121212] min-h-screen flex flex-col shadow-2xl border-x border-[#1e1e1e] relative">
+        <!-- <div class="w-full max-w-md mx-auto bg-[#121212] min-h-screen flex flex-col shadow-2xl border-x border-[#1e1e1e] relative"> -->
             
             <main id="main-content" class="flex-1 animate-page pb-24"> 
                 {{ $slot }} 

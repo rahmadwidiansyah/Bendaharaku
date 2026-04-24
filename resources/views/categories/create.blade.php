@@ -4,10 +4,10 @@
         {{-- Header --}}
         <header class="flex justify-between items-center mb-8 pt-4">
             <div>
-                <p class="text-xs text-[#FCA5FF] font-semibold mb-1 uppercase tracking-wider">Vault</p>
+                <p class="text-xs text-gray-300 font-semibold mb-1 uppercase tracking-wider">Vault</p>
                 <h1 class="text-2xl font-bold text-white tracking-tight">Tambah Kategori</h1>
             </div>
-            <a href="{{ route('categories.index') }}" wire:navigate class="w-10 h-10 rounded-full bg-[#1A1A1A] border border-[#333] flex items-center justify-center text-gray-400 active:scale-90 transition-all shadow-md hover:text-white hover:border-gray-500">
+            <a href="{{ route('categories.index') }}" wire:navigate class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 flex items-center justify-center text-gray-400 active:scale-90 transition-all shadow-md hover:text-white hover:border-gray-500">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
             </a>
         </header>
@@ -18,11 +18,11 @@
             {{-- PILIH TIPE (Pill Select) - Z-Index 10 --}}
             <div class="animate-slide-up opacity-0 relative z-10" style="animation-delay: 100ms;">
                 <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">Tipe Kategori</label>
-                <div class="grid grid-cols-2 gap-2 p-1.5 bg-[#1A1A1A] border border-[#333] rounded-2xl shadow-inner">
+                <div class="grid grid-cols-2 gap-2 p-1.5 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl shadow-inner">
                     @foreach($types as $type)
                         <label class="cursor-pointer">
-                            <input type="radio" name="type_id" value="{{ $type->id }}" required class="hidden peer">
-                            <div class="text-xs font-semibold py-3 text-center rounded-xl transition-all border border-transparent text-gray-400 peer-checked:bg-[#262626] peer-checked:text-[#FCA5FF] peer-checked:border-[#444] peer-checked:shadow-sm">
+                            <input type="radio" name="type_id" value="{{ $type->id }}" required class="hidden peer" {{ (old('type_id') == $type->id) || (!old('type_id') && $type->name == 'Income') ? 'checked' : '' }}>
+                            <div class="text-xs font-semibold py-3 text-center rounded-xl transition-all border border-transparent text-gray-400 peer-checked:bg-white/5 peer-checked:text-purple-400 peer-checked:border-white/10 peer-checked:shadow-sm">
                                 {{ $type->name == 'Income' ? 'Pemasukan' : 'Pengeluaran' }}
                             </div>
                         </label>
@@ -41,7 +41,7 @@
                 {{-- NAMA KATEGORI --}}
                 <div class="flex-1 flex flex-col justify-end">
                     <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">Nama Kategori</label>
-                    <div class="h-[60px] bg-[#1A1A1A] border border-[#333] rounded-2xl px-5 flex items-center group focus-within:border-[#FCA5FF] focus-within:ring-1 focus-within:ring-[#FCA5FF] transition-all shadow-inner">
+                    <div class="h-[60px] bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl px-5 flex items-center group focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all shadow-inner">
                         <input type="text" name="category_name" required placeholder="Contoh: Makan Siang..." 
                             class="w-full bg-transparent border-none text-white p-0 text-base font-medium placeholder-gray-600 focus:ring-0 focus:outline-none">
                     </div>
@@ -51,7 +51,7 @@
             {{-- KEYWORD AI (Z-Index 40) --}}
             <div class="flex flex-col animate-slide-up opacity-0 relative z-40" style="animation-delay: 200ms;">
                 <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">Keyword AI (Pisahkan Koma)</label>
-                <div class="bg-[#1A1A1A] border border-[#333] rounded-2xl p-4 group focus-within:border-[#FCA5FF] focus-within:ring-1 focus-within:ring-[#FCA5FF] transition-all shadow-inner">
+                <div class="bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-4 group focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all shadow-inner">
                     <input type="text" name="keyword" placeholder="Contoh: mcd, kfc, warkop, bensin..." 
                         class="w-full bg-transparent border-none text-white p-0 text-sm placeholder-gray-600 focus:ring-0 focus:outline-none">
                 </div>
@@ -60,7 +60,7 @@
 
             {{-- SUBMIT --}}
             <div class="pt-4 animate-slide-up opacity-0 relative z-30" style="animation-delay: 250ms;">
-                <button type="submit" class="w-full bg-[#FCA5FF] text-[#121212] font-bold text-sm tracking-wide py-4 rounded-2xl shadow-[0_0_20px_rgba(252,165,255,0.15)] hover:shadow-[0_0_25px_rgba(252,165,255,0.3)] hover:-translate-y-0.5 active:scale-95 transition-all duration-200">
+                <button type="submit" class="w-full bg-gradient-to-br from-gray-900 to-gray-800 text-white font-bold text-sm tracking-wide py-4 rounded-xl shadow-[0_0_20px_rgba(252,165,255,0.15)] hover:shadow-[0_0_25px_rgba(252,165,255,0.3)] hover:-translate-y-0.5 active:scale-95 transition-all duration-200">
                     Simpan Kategori
                 </button>
             </div>

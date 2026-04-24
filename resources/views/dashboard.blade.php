@@ -12,11 +12,11 @@
                     else { $greeting = 'Selamat Malam'; $emoji = '🌙'; }
                 @endphp
                 <p class="text-[10px] text-[#FCA5FF] font-black uppercase tracking-[0.3em] mb-0.5 opacity-80">✨ Hello</p>
+                <h1 class="text-2xl font-black text-white tracking-tight leading-none">{{ Auth::user()->name }}</h1>
                 <div class="flex items-center gap-2 mb-1">
                     <p class="text-[12px] text-gray-400 font-bold uppercase tracking-[0.1em]">{{ $greeting }}</p>
                     <span class="text-sm">{{ $emoji }}</span>
                 </div>
-                <h1 class="text-2xl font-black text-white tracking-tight leading-none">{{ Auth::user()->name }}</h1>
             </div>
 
             @php
@@ -33,144 +33,6 @@
         </header>
 
  
-
-        {{-- HERO CARD: Total Portofolio --}}
-        <div class="relative bg-gradient-to-br from-[#1E1E1E] to-[#121212] rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl mb-5 group animate-fade-in-up delay-200">
-            <div class="absolute inset-x-0 bottom-0 opacity-20 pointer-events-none h-24">
-                <svg viewBox="0 0 400 150" preserveAspectRatio="none" class="w-full h-full">
-                    <defs>
-                        <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" style="stop-color:#FCA5FF; stop-opacity:0.4" />
-                            <stop offset="100%" style="stop-color:#FCA5FF; stop-opacity:0" />
-                        </linearGradient>
-                    </defs>
-                    <path class="main-graph-fill" fill="url(#chartGradient)"></path>
-                    <path class="main-graph-line" d="M0,100 C50,120 100,60 150,90 C200,120 250,40 300,70 C350,100 400,50 400,50" stroke="#FCA5FF" stroke-width="3" fill="none" stroke-linecap="round"></path>
-                </svg>
-            </div>
-
-            <div class="relative z-10 p-7 pb-6">
-                <div class="flex justify-between items-center mb-4">
-                    <div class="flex items-center gap-2">
-                        <div id="status-dot" class="w-1.5 h-1.5 rounded-full bg-gray-600 transition-all duration-700"></div>
-                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">Total Kekayaan</p>
-                    </div>
-                    <span class="text-[9px] font-bold text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full border border-green-400/20">Live</span>
-                </div>
-                
-                <div class="flex items-baseline gap-1.5 mb-2">
-                    <span class="text-lg font-medium text-gray-500">Rp</span>
-                    <h2 class="text-3xl font-black text-white tracking-tight">
-                        {{ number_format($totalPortfolio, 0, ',', '.') }}
-                    </h2>
-                </div>
-            </div>
-        </div>
-
-        {{-- MINI CASHFLOW (Bulan Ini) --}}
-        <div class="grid grid-cols-2 gap-3 mb-10 animate-fade-in-up delay-200">
-            <div class="bg-gradient-to-br from-green-950/20 to-[#121212] border border-green-900/30 rounded-2xl p-4 flex items-center gap-3">
-                <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>
-                </div>
-                <div>
-                    <p class="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Pemasukan</p>
-                    <p class="text-sm font-bold text-white tracking-tight mt-0.5"><span class="text-[9px] text-gray-500 mr-0.5">Rp</span>{{ number_format($thisMonthIncome, 0, ',', '.') }}</p>
-                </div>
-            </div>
-            <div class="bg-gradient-to-br from-red-950/20 to-[#121212] border border-red-900/30 rounded-2xl p-4 flex items-center gap-3">
-                <div class="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center text-red-400">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
-                </div>
-                <div>
-                    <p class="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Pengeluaran</p>
-                    <p class="text-sm font-bold text-white tracking-tight mt-0.5"><span class="text-[9px] text-gray-500 mr-0.5">Rp</span>{{ number_format($thisMonthExpense, 0, ',', '.') }}</p>
-                </div>
-            </div>
-        </div>
-
-        {{-- WALLET SECTION --}}
-        <div class="flex justify-between items-center mb-5 px-1 animate-fade-in-up delay-300">
-            <h2 class="text-[11px] font-bold text-white uppercase tracking-widest flex items-center gap-2">
-                <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span> Aset Saya
-            </h2>
-            <a href="{{ route('wallets.create') }}" wire:navigate class="text-gray-400 hover:text-white transition-colors active:scale-90">
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-            </a>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3 mb-10 animate-fade-in-up delay-300">
-            @forelse($wallets as $wallet)
-                @php
-                    $rawIcon = $wallet->icon ?? '💳';
-                    $isImage = \Illuminate\Support\Str::contains($rawIcon, ['.png', '.jpg', '.jpeg', '.webp', '/']);
-                @endphp
-                <a href="{{ route('wallets.show', $wallet) }}" wire:navigate class="relative group bg-gradient-to-br from-[#1E1E1E] to-[#121212] rounded-[1.8rem] p-4 border border-white/5 active:scale-95 transition-all shadow-xl overflow-hidden h-[100px] flex flex-col justify-between hover:border-blue-500/30">
-                    <div class="absolute inset-x-0 bottom-0 opacity-[0.15] pointer-events-none h-14">
-                        <svg viewBox="0 0 200 100" preserveAspectRatio="none" class="w-full h-full">
-                            <path class="wallet-graph-fill text-blue-400" fill="currentColor"></path>
-                            <path class="wallet-graph-line text-blue-400" stroke="currentColor" stroke-width="2.5" fill="none"></path>
-                        </svg>
-                    </div>
-                    <div class="relative z-10 flex items-center gap-2">
-                        <div class="w-8 h-8 shrink-0 rounded-lg bg-gradient-to-br from-[#2A2A2A] to-[#1A1A1A] flex items-center justify-center text-base border border-white/10 shadow-inner group-hover:scale-110 transition-transform overflow-hidden">
-                            @if($isImage) <img src="{{ asset('storage/' . $rawIcon) }}" class="w-full h-full object-cover"> @else {{ $rawIcon }} @endif
-                        </div>
-                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-tight truncate leading-tight group-hover:text-white transition-colors">{{ $wallet->name }}</p>
-                    </div>
-                    <div class="relative z-10">
-                        <p class="text-lg font-bold text-white tracking-tighter truncate"><span class="text-[10px] text-gray-600 font-medium mr-0.5">Rp</span>{{ number_format($wallet->balance, 0, ',', '.') }}</p>
-                    </div>
-                </a>
-            @empty
-                <div class="col-span-2 text-center py-6 bg-[#1A1A1A]/50 border border-dashed border-[#333] rounded-[1.8rem]">
-                    <span class="text-2xl mb-2 block">🏦</span>
-                    <p class="text-[10px] text-gray-400 uppercase font-bold tracking-widest">Belum Ada Dompet Aktif</p>
-                </div>
-            @endforelse
-        </div>
-
-        {{-- KEWAJIBAN SECTION --}}
-        <h2 class="text-[11px] font-bold text-white mb-4 px-1 uppercase tracking-widest flex items-center gap-2 animate-fade-in-up delay-400">
-            <span class="w-1.5 h-1.5 rounded-full bg-[#E5D07E]"></span> Kewajiban
-        </h2>
-        <div class="grid grid-cols-2 gap-3 mb-10 animate-fade-in-up delay-400">
-            <a href="{{ route('loans.index', ['type' => 'hutang']) }}" wire:navigate class="active:scale-95 transition-transform group">
-                <div class="bg-gradient-to-br from-[#1E1E1E] to-[#121212] p-4 rounded-[2rem] border border-white/5 relative overflow-hidden h-[100px] hover:border-[#E5D07E]/30">
-                    <div class="absolute inset-x-0 bottom-0 opacity-10 pointer-events-none h-12">
-                        <svg viewBox="0 0 200 100" preserveAspectRatio="none" class="w-full h-full">
-                            <path class="loan-graph-fill text-[#E5D07E]" fill="currentColor"></path>
-                            <path class="loan-graph-line text-[#E5D07E]" stroke="currentColor" stroke-width="3" fill="none"></path>
-                        </svg>
-                    </div>
-                    <div class="relative z-10">
-                        <div class="flex items-center gap-2 mb-4">
-                            <div class="loan-dot w-1.5 h-1.5 rounded-full bg-gray-600 transition-all duration-700" data-color="#E5D07E"></div>
-                            <h3 class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Hutang</h3>
-                        </div>
-                        <p class="text-base font-bold text-white tracking-tight truncate"><span class="text-[10px] text-gray-600 mr-0.5">Rp</span>{{ number_format($totalHutang, 0, ',', '.') }}</p>
-                    </div>
-                </div>
-            </a>
-            <a href="{{ route('loans.index', ['type' => 'piutang']) }}" wire:navigate class="active:scale-95 transition-transform group">
-                <div class="bg-gradient-to-br from-[#1E1E1E] to-[#121212] p-4 rounded-[2rem] border border-white/5 relative overflow-hidden h-[100px] hover:border-[#FCA5FF]/30">
-                    <div class="absolute inset-x-0 bottom-0 opacity-10 pointer-events-none h-12">
-                        <svg viewBox="0 0 200 100" preserveAspectRatio="none" class="w-full h-full">
-                            <path class="loan-graph-fill text-[#FCA5FF]" fill="currentColor"></path>
-                            <path class="loan-graph-line text-[#FCA5FF]" stroke="currentColor" stroke-width="3" fill="none"></path>
-                        </svg>
-                    </div>
-                    <div class="relative z-10">
-                        <div class="flex items-center gap-2 mb-4">
-                            <div class="loan-dot w-1.5 h-1.5 rounded-full bg-gray-600 transition-all duration-700" data-color="#FCA5FF"></div>
-                            <h3 class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Piutang</h3>
-                        </div>
-                        <p class="text-base font-bold text-white tracking-tight truncate"><span class="text-[10px] text-gray-600 mr-0.5">Rp</span>{{ number_format($totalPiutang, 0, ',', '.') }}</p>
-                    </div>
-                </div>
-            </a>
-        </div>
-	       {{-- SMART INSIGHT (Pengingat Dinamis) --}}
         @php
             $insightType = 'info'; // default
             $insightMsg = 'Selamat datang di Bendaharaku! Yuk catat keuanganmu hari ini.';
@@ -197,25 +59,209 @@
             }
         @endphp
 
-        <div class="mb-6 p-3 rounded-2xl border flex items-center gap-3 animate-fade-in-up delay-100 text-[10px] uppercase font-bold tracking-widest shadow-sm
-            {{ $insightType == 'danger' ? 'bg-red-950/40 border-red-900/50 text-red-400' : 
-              ($insightType == 'success' ? 'bg-green-950/40 border-green-900/50 text-green-400' : 
-              ($insightType == 'warning' ? 'bg-yellow-950/40 border-yellow-900/50 text-yellow-400' : 
-              'bg-[#1A1A1A]/80 border-[#333] text-gray-400')) }}">
-            <span class="text-base drop-shadow-md">{{ $insightIcon }}</span>
-            <p class="leading-relaxed">{{ $insightMsg }}</p>
+        <div id="insight-box" class="mb-6 p-3 rounded-xl border items-center justify-between gap-3 animate-fade-in-up delay-100 text-[10px] uppercase font-bold tracking-widest shadow-sm
+            {{ $insightType == 'danger' ? 'bg-red-950/40 border-red-900/50 text-red-400 flex' : 
+              ($insightType == 'success' ? 'bg-green-950/40 border-green-900/50 text-green-400 flex' : 
+              ($insightType == 'warning' ? 'bg-yellow-950/40 border-yellow-900/50 text-yellow-400 flex' : 
+              'bg-gray-900/80 border-gray-900/50 text-gray-400 flex')) }}" style="display: none;">
+            <div class="flex items-center gap-3">
+                <span class="text-base drop-shadow-md">{{ $insightIcon }}</span>
+                <p class="leading-relaxed">{{ $insightMsg }}</p>
+            </div>
+            <button onclick="dismissInsight()" class="text-current opacity-70 hover:opacity-100 transition-opacity p-1 focus:outline-none">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
         </div>
-        {{-- RECENT ACTIVITY (AKTIVITAS TERAKHIR) --}}
-        <div class="flex justify-between items-center mb-4 px-1 animate-fade-in-up delay-500">
-            <h2 class="text-[11px] font-bold text-white uppercase tracking-widest flex items-center gap-2">
-                <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span> Aktivitas Terakhir
+
+        <script>
+            document.addEventListener('livewire:navigated', checkInsightVisibility);
+            document.addEventListener('DOMContentLoaded', checkInsightVisibility);
+
+            function checkInsightVisibility() {
+                if (!sessionStorage.getItem('insightDismissed')) {
+                    const box = document.getElementById('insight-box');
+                    if (box) box.style.display = 'flex';
+                }
+            }
+
+            function dismissInsight() {
+                sessionStorage.setItem('insightDismissed', 'true');
+                const box = document.getElementById('insight-box');
+                if (box) box.style.display = 'none';
+            }
+            
+            // Panggil sekali untuk inisialisasi awal jika DOMContentLoaded sudah lewat
+            checkInsightVisibility();
+        </script>
+
+        {{-- HERO CARD: Total Portofolio --}}
+        <div class="relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-white/5 overflow-hidden shadow-2xl mb-5 group animate-fade-in-up delay-200">
+            <div class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div class="absolute inset-x-0 bottom-0 opacity-20 pointer-events-none h-24">
+                <svg viewBox="0 0 400 150" preserveAspectRatio="none" class="w-full h-full">
+                    <defs>
+                        <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#FCA5FF; stop-opacity:0.4" />
+                            <stop offset="100%" style="stop-color:#FCA5FF; stop-opacity:0" />
+                        </linearGradient>
+                    </defs>
+                    <path class="main-graph-fill" fill="url(#chartGradient)"></path>
+                    <path class="main-graph-line" d="M0,100 C50,120 100,60 150,90 C200,120 250,40 300,70 C350,100 400,50 400,50" stroke="#FCA5FF" stroke-width="3" fill="none" stroke-linecap="round"></path>
+                </svg>
+            </div>
+
+            
+
+            <div class="relative z-10 p-7 pb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex items-center gap-2">
+                        <div id="status-dot" class="w-1.5 h-1.5 rounded-xl bg-gray-600 transition-all duration-700"></div>
+                        <p class="text-xs text-gray-400 font-bold uppercase tracking-[0.2em]">Total Kekayaan</p>
+                    </div>
+                    <span class="text-xs font-bold text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full border border-green-400/20">Live</span>
+                </div>
+                
+                <div class="flex items-baseline gap-1.5 mb-2">
+                    <span class="text-lg font-medium text-gray-500">Rp</span>
+                    <h2 class="text-3xl font-black text-white tracking-tight">
+                        {{ number_format($totalPortfolio, 0, ',', '.') }}
+                    </h2>
+                </div>
+            </div>
+        </div>
+        
+
+        {{-- MINI CASHFLOW (Bulan Ini) --}}
+        <div class="grid grid-cols-2 gap-3 mb-10 animate-fade-in-up delay-200">
+            <div class="bg-gradient-to-br from-green-950/20 to-gray-800 border border-green-900/30 rounded-xl p-4 flex items-center gap-3 relative overflow-hidden group">
+                <div class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+                <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 font-bold uppercase tracking-widest">Pemasukan</p>
+                    <p class="text-sm font-bold text-white tracking-tight mt-0.5"><span class="text-xs text-gray-500 mr-1">Rp</span><span class="text-green-400">{{ number_format($thisMonthIncome, 0, ',', '.') }}</span></p>
+                </div>
+            </div>
+            <div class="bg-gradient-to-br from-red-950/20 to-gray-800 border border-red-900/30 rounded-xl p-4 flex items-center gap-3 relative overflow-hidden group">
+                <div class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+                <div class="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center text-red-400">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 font-bold uppercase tracking-widest">Pengeluaran</p>
+                    <p class="text-sm font-bold text-white tracking-tight mt-0.5"><span class="text-xs text-gray-500 mr-1">Rp</span><span class="text-red-400">{{ number_format($thisMonthExpense, 0, ',', '.') }}</span></p>
+                </div>
+            </div>
+        </div>
+
+        {{-- WALLET SECTION --}}
+        <div class="flex justify-between items-center mb-5 px-1 gap-3 animate-fade-in-up delay-300">
+            <h2 class="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span> Aset Saya
             </h2>
-            <a href="{{ route('transactions.index') }}" wire:navigate class="text-[9px] font-bold text-[#FCA5FF] hover:text-white transition-colors uppercase tracking-widest">
-                Semua
+            <div class="flex-1 h-px bg-gradient-to-r from-purple-500 to-transparent"></div>
+            <a href="{{ route('wallets.create') }}" wire:navigate class="text-gray-400 hover:text-white transition-colors active:scale-90">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
             </a>
         </div>
 
-<div class="bg-[#1A1A1A] border border-[#262626] rounded-[2rem] p-2 mb-8 animate-fade-in-up delay-500">
+        <div class="grid grid-cols-2 gap-3 mb-10 animate-fade-in-up delay-300">
+            @forelse($wallets as $wallet)
+                @php
+                    $rawIcon = $wallet->icon ?? '💳';
+                    $isImage = \Illuminate\Support\Str::contains($rawIcon, ['.png', '.jpg', '.jpeg', '.webp', '/']);
+                @endphp
+                <a href="{{ route('wallets.show', $wallet) }}" wire:navigate class="relative group bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-4 border border-white/5 active:scale-95 transition-all shadow-xl overflow-hidden h-[100px] flex flex-col justify-between hover:border-blue-500/30">
+                    <div class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+                    <div class="absolute inset-x-0 bottom-0 opacity-[0.15] pointer-events-none h-14">
+                        <svg viewBox="0 0 200 100" preserveAspectRatio="none" class="w-full h-full">
+                            <path class="wallet-graph-fill text-blue-400" fill="currentColor"></path>
+                            <path class="wallet-graph-line text-blue-400" stroke="currentColor" stroke-width="2.5" fill="none"></path>
+                        </svg>
+                    </div>
+                    <div class="relative z-10 flex items-center gap-2">
+                        <div class="w-8 h-8 shrink-0 rounded-xl bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center text-base border border-white/10 shadow-inner group-hover:scale-110 transition-transform overflow-hidden">
+                            @if($isImage) <img src="{{ asset('storage/' . $rawIcon) }}" class="w-full h-full object-cover"> @else {{ $rawIcon }} @endif
+                        </div>
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-tight truncate leading-tight group-hover:text-white transition-colors">{{ $wallet->name }}</p>
+                    </div>
+                    <div class="relative z-10">
+                        <p class="text-lg font-bold text-white tracking-tighter truncate"><span class="text-[10px] text-gray-600 font-medium mr-0.5">Rp</span>{{ number_format($wallet->balance, 0, ',', '.') }}</p>
+                    </div>
+                </a>
+            @empty
+                <div class="col-span-2 text-center py-6 rounded-xl bg-gradient-to-br from-gray-900 to-gray-800 border border-white/5 relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+                    <span class="text-2xl mb-2 block relative z-10">🏦</span>
+                    <p class="text-xs text-gray-400 uppercase font-bold tracking-widest relative z-10">Belum Ada Dompet Aktif</p>
+                </div>
+            @endforelse
+        </div>
+
+        {{-- KEWAJIBAN SECTION --}}
+        <div class="flex justify-between items-center mb-4 px-1 gap-3 animate-fade-in-up delay-400">
+            <h2 class="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-yellow-400"></span> Kewajiban
+            </h2>
+            <div class="flex-1 h-px bg-gradient-to-r from-purple-500 to-transparent"></div>
+            <a href="{{ route('loans.index', ['type' => 'hutang']) }}" wire:navigate class="text-xs font-bold text-purple-400 hover:text-white transition-colors uppercase tracking-widest">
+                Semua
+            </a>
+        </div>
+        <div class="grid grid-cols-2 gap-3 mb-10 animate-fade-in-up delay-400">
+            <a href="{{ route('loans.index', ['type' => 'hutang']) }}" wire:navigate class="active:scale-95 transition-transform group">
+                <div class="bg-gradient-to-br from-gray-900 to-gray-800 p-4 rounded-xl border border-white/5 relative overflow-hidden h-[100px] hover:border-yellow-400">
+                    <div class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+                    <div class="absolute inset-x-0 bottom-0 opacity-10 pointer-events-none h-12">
+                        <svg viewBox="0 0 200 100" preserveAspectRatio="none" class="w-full h-full">
+                            <path class="loan-graph-fill text-purple-400" fill="currentColor"></path>
+                            <path class="loan-graph-line text-purple-400" stroke="currentColor" stroke-width="3" fill="none"></path>
+                        </svg>
+                    </div>
+                    <div class="relative z-10">
+                        <div class="flex items-center gap-2 mb-4">
+                            <div class="loan-dot w-1.5 h-1.5 rounded-full bg-gray-600 transition-all duration-700" data-color="#E5D07E"></div>
+                            <h3 class="text-xs font-bold uppercase tracking-widest text-gray-500">Hutang</h3>
+                        </div>
+                        <p class="text-base font-bold text-white tracking-tight truncate"><span class="text-xs text-gray-600 mr-1">Rp</span>{{ number_format($totalHutang, 0, ',', '.') }}</p>
+                    </div>
+                </div>
+            </a>
+            <a href="{{ route('loans.index', ['type' => 'piutang']) }}" wire:navigate class="active:scale-95 transition-transform group">
+                <div class="bg-gradient-to-br from-gray-900 to-gray-800 p-4 rounded-xl border border-white/5 relative overflow-hidden h-[100px] hover:border-purple-400">
+                    <div class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+                    <div class="absolute inset-x-0 bottom-0 opacity-10 pointer-events-none h-12">
+                        <svg viewBox="0 0 200 100" preserveAspectRatio="none" class="w-full h-full">
+                            <path class="loan-graph-fill text-purple-400" fill="currentColor"></path>
+                            <path class="loan-graph-line text-purple-400" stroke="currentColor" stroke-width="3" fill="none"></path>
+                        </svg>
+                    </div>
+                    <div class="relative z-10">
+                        <div class="flex items-center gap-2 mb-4">
+                            <div class="loan-dot w-1.5 h-1.5 rounded-full bg-gray-600 transition-all duration-700" data-color="#FCA5FF"></div>
+                            <h3 class="text-xs font-bold uppercase tracking-widest text-gray-500">Piutang</h3>
+                        </div>
+                        <p class="text-base font-bold text-white tracking-tight truncate"><span class="text-xs text-gray-600 mr-1">Rp</span>{{ number_format($totalPiutang, 0, ',', '.') }}</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        {{-- RECENT ACTIVITY (AKTIVITAS TERAKHIR) --}}
+        <div class="flex justify-between items-center mb-4 px-1 gap-3 animate-fade-in-up delay-500">
+            <h2 class="text-[11px] font-bold text-white uppercase tracking-widest flex items-center gap-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span> Aktivitas Terakhir
+            </h2>
+            <div class="flex-1 h-px bg-gradient-to-r from-purple-500 to-transparent"></div>
+            <a href="{{ route('transactions.index') }}" wire:navigate class="text-xs font-bold text-purple-400 hover:text-white transition-colors uppercase tracking-widest">
+                Semua
+            </a>
+            
+        </div>
+
+<div class="bg-gradient-to-br from-gray-900 to-gray-800 border border-white/5 rounded-xl p-2 mb-8 animate-fade-in-up delay-500 relative overflow-hidden group">
+    <div class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
     @forelse($recentTransactions as $trx)
         @php
             $isIncome = $trx->type->name === 'Income';
@@ -246,7 +292,8 @@
             data-dest="{{ $trx->destinationWallet->name }}" 
             data-subject="{{ $trx->subject }}" 
             data-notes="{{ $trx->notes }}"
-            class="w-full flex items-center justify-between p-3 rounded-[1.5rem] hover:bg-[#262626]/50 active:scale-95 transition-all group text-left">
+            class="w-full flex items-center justify-between p-3 rounded-xl hover:bg-[#262626]/50 active:scale-95 transition-all group text-left relative overflow-hidden">
+            <div class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
             
             <div class="flex items-center gap-3 overflow-hidden">
                 <div class="w-10 h-10 shrink-0 bg-[#121212] border border-[#333] rounded-xl flex items-center justify-center text-lg overflow-hidden">
