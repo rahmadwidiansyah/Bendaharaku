@@ -50,7 +50,7 @@
                                 Buka Aplikasi
                             </a>
                         @else
-                            <a href="{{ route('register') }}" class="w-full bg-gradient-to-r from-gray-800 to-gray-900 text-gray-00 border border-white/10 font-bold text-xs uppercase tracking-widest py-4 rounded-xl active:scale-95 transition-transform text-center">
+                            <a href="{{ route('register') }}" class="w-full bg-gradient-to-r from-gray-800 to-gray-900 text-gray-200 border border-white/10 font-bold text-xs uppercase tracking-widest py-4 rounded-xl active:scale-95 transition-transform text-center">
                                 Buat Akun Baru
                             </a>
                             <a href="{{ route('login') }}" class="w-full bg-gradient-to-r from-gray-900 to-gray-800 border border-white/10 text-gray-200 border-white/10 font-bold text-xs uppercase tracking-widest py-4 rounded-xl active:scale-95 transition-all text-center">
