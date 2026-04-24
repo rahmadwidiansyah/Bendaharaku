@@ -1,14 +1,14 @@
 <x-app-layout>
     {{-- Glow Background Ambient --}}
-    <div class="fixed top-[-5%] left-[50%] -translate-x-1/2 w-[100%] max-w-md h-[400px] bg-gradient-to-b from-[#FCA5FF]/5 to-transparent pointer-events-none z-0"></div>
+    <div class="fixed top-[-5%] left-[50%] -translate-x-1/2 w-[100%] max-w-md h-[400px] pointer-events-none z-0"></div>
 
     <div class="p-5 pb-40 max-w-md mx-auto relative z-10 overflow-x-hidden">
         
         {{-- HEADER --}}
         <header class="flex justify-between items-end mb-6 pt-4 animate-fade-in-up">
             <div>
-                <p class="text-[10px] text-[#FCA5FF] font-black mb-1.5 uppercase tracking-[0.2em] flex items-center gap-2">
-                    <span class="w-1.5 h-1.5 rounded-full bg-[#FCA5FF] shadow-[0_0_5px_#FCA5FF]"></span>
+                <p class="text-xs text-purple-500 font-black mb-1.5 uppercase tracking-[0.2em] flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-purple-500 shadow-[0_0_5px_#FCA5FF]"></span>
                     Laporan
                 </p>
                 <h1 class="text-3xl font-black text-white tracking-tight leading-none">Analitik</h1>
@@ -20,35 +20,35 @@
 
         {{-- RINGKASAN --}}
         <div class="grid grid-cols-2 gap-3 mb-6 animate-fade-in-up delay-100">
-            <div class="bg-gradient-to-br from-[#1E1E1E] to-[#121212] p-5 rounded-[1.8rem] border border-white/5 relative overflow-hidden group">
+            <div class="bg-gradient-to-br from-green-500/10 to-green-500/10 p-5 rounded-xl border border-white/5 relative overflow-hidden group">
                 <div class="absolute top-0 right-0 w-16 h-16 bg-green-500/10 rounded-bl-full blur-xl group-hover:bg-green-500/20 transition-colors"></div>
                 <div class="flex items-center gap-2 mb-2">
                     <div class="w-1.5 h-1.5 rounded-full bg-green-400 shadow-[0_0_5px_rgba(74,222,128,0.5)]"></div>
-                    <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Pemasukan</p>
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Pemasukan</p>
                 </div>
                 <p class="text-lg font-bold text-green-400 tracking-tight truncate relative z-10">
-                    <span class="text-[10px] mr-0.5 opacity-70">+Rp</span>{{ number_format($totalIncome, 0, ',', '.') }}
+                    <span class="text-xs mr-1 opacity-70">+Rp</span><span class="text-green-400">{{ number_format($totalIncome, 0, ',', '.') }}</span>
                 </p>
             </div>
-            <div class="bg-gradient-to-br from-[#1E1E1E] to-[#121212] p-5 rounded-[1.8rem] border border-white/5 relative overflow-hidden group">
-                <div class="absolute top-0 right-0 w-16 h-16 bg-gray-500/10 rounded-bl-full blur-xl group-hover:bg-gray-500/20 transition-colors"></div>
+            <div class="bg-gradient-to-br from-red-500/10 to-red-500/10 p-5 rounded-xl border border-white/5 relative overflow-hidden group">
+                <div class="absolute top-0 right-0 w-16 h-16 bg-red-500/10 rounded-bl-full blur-xl group-hover:bg-red-500/20 transition-colors"></div>
                 <div class="flex items-center gap-2 mb-2">
-                    <div class="w-1.5 h-1.5 rounded-full bg-gray-400 shadow-[0_0_5px_rgba(156,163,175,0.5)]"></div>
-                    <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Pengeluaran</p>
+                    <div class="w-1.5 h-1.5 rounded-full bg-red-400 shadow-[0_0_5px_rgba(156,163,175,0.5)]"></div>
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Pengeluaran</p>
                 </div>
-                <p class="text-lg font-bold text-white tracking-tight truncate relative z-10">
-                    <span class="text-[10px] mr-0.5 opacity-70">-Rp</span>{{ number_format($totalExpense, 0, ',', '.') }}
+                <p class="text-lg font-bold text-red-400 tracking-tight truncate relative z-10">
+                    <span class="text-red-400 text-xs mr-1 opacity-70">-Rp</span><span class="text-red-400">{{ number_format($totalExpense, 0, ',', '.') }}</span>
                 </p>
             </div>
         </div>
 
         {{-- CHART CUMULATIVE --}}
-        <div class="bg-gradient-to-br from-[#1E1E1E] to-[#121212] border border-[#FCA5FF]/20 p-6 rounded-[2rem] mb-8 shadow-[0_10px_30px_rgba(252,165,255,0.05)] animate-fade-in-up delay-200 relative overflow-hidden group">
-            <div class="absolute inset-0 bg-[#FCA5FF]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+        <div class="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-500/10 p-6 rounded-xl mb-8 shadow-[0_10px_30px_rgba(252,165,255,0.05)] animate-fade-in-up delay-200 relative overflow-hidden group">
+            <div class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             <div class="flex justify-between items-start mb-6 relative z-10">
                 <div>
-                    <p class="text-[9px] font-bold text-[#FCA5FF] uppercase tracking-[0.2em] mb-1">Saldo Kumulatif</p>
-                    <p class="text-[10px] text-gray-500 font-medium">Pergerakan total kekayaan</p>
+                    <p class="text-xs font-bold text-white uppercase tracking-[0.2em] mb-1">Saldo Kumulatif</p>
+                    <p class="text-xs text-gray-500 font-medium">Pergerakan total kekayaan</p>
                 </div>
                 <p class="text-xl font-black text-white tracking-tight bg-[#121212] px-3 py-1.5 rounded-xl border border-white/5 shadow-inner">
                     <span class="text-xs text-gray-500 mr-1">Rp</span>{{ number_format($cumulativeBalance, 0, ',', '.') }}
@@ -58,52 +58,49 @@
                 <canvas id="cumulativeChart"></canvas>
             </div>
         </div>
-
         {{-- ARUS KAS HARIAN --}}
-     <div class="flex items-center gap-2 mb-4 px-1 animate-fade-in-up delay-300">
-    <h2 class="text-[11px] font-bold text-white uppercase tracking-widest">Arus Kas Harian</h2>
-    <div class="flex-1 h-px bg-gradient-to-r from-white/10 to-transparent"></div>
-</div>
-
-<div class="bg-gradient-to-br from-[#1E1E1E] to-[#121212] rounded-[2rem] border border-white/5 mb-8 p-5 relative overflow-hidden shadow-xl animate-fade-in-up delay-300">
-    {{-- Hapus scroll-smooth di sini --}}
-    <div id="chartScrollBox" class="overflow-x-auto no-scrollbar pb-1" style="scroll-behavior: auto !important;">
-        <div id="chartInnerContent" style="min-width: {{ count($dailyLabels) * 45 }}px; height: 180px;">
-            <canvas id="barChart"></canvas>
+        <div class="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-500/10 p-6 rounded-xl mb-8 shadow-[0_10px_30px_rgba(252,165,255,0.05)] animate-fade-in-up delay-300 relative overflow-hidden group">
+            <div class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+            <div class="flex justify-between items-start mb-6 relative z-10">
+                <h2 class="text-xs font-bold text-white uppercase tracking-widest">Arus Kas Harian</h2>
+            </div>
+            <div id="chartScrollBox" class="overflow-x-auto no-scrollbar pb-1" style="scroll-behavior: auto !important;">
+                <div id="chartInnerContent" style="min-width: {{ count($dailyLabels) * 45 }}px; height: 180px;">
+                    <canvas id="barChart"></canvas>
+                </div>
+            </div>
         </div>
-    </div>
-    {{-- Shadow overlay kanan tetap ada --}}
-    <div class="absolute top-0 right-0 w-8 h-full bg-gradient-to-l from-[#1A1A1A] to-transparent pointer-events-none"></div>
-</div>
+
+
         {{-- TAB KATEGORI --}}
         <div class="flex items-center gap-2 mb-4 px-1 animate-fade-in-up delay-400">
-            <h2 class="text-[11px] font-bold text-white uppercase tracking-widest">Rincian Kategori</h2>
-            <div class="flex-1 h-px bg-gradient-to-r from-white/10 to-transparent"></div>
+            <h2 class="text-xs font-bold text-white uppercase tracking-widest">Rincian Kategori</h2>
+            <div class="flex-1 h-px bg-gradient-to-r from-purple-500 to-transparent"></div>
         </div>
-        <div class="flex bg-[#121212] border border-white/5 rounded-[1.2rem] p-1.5 mb-5 shadow-inner animate-fade-in-up delay-400 relative">
-            <div id="tabIndicator" class="absolute top-1.5 bottom-1.5 left-1.5 w-[calc(50%-0.375rem)] bg-[#262626] border border-white/5 shadow-md rounded-xl transition-all duration-300 ease-out z-0"></div>
-            <button id="btnExpense" onclick="switchChart('expense')" class="relative z-10 flex-1 text-[10px] font-bold uppercase tracking-widest py-3 text-white transition-colors duration-300">Pengeluaran</button>
-            <button id="btnIncome" onclick="switchChart('income')" class="relative z-10 flex-1 text-[10px] font-bold uppercase tracking-widest py-3 text-gray-500 transition-colors duration-300">Pemasukan</button>
+        <div class="flex bg-gray-900 border border-white/5 rounded-xl p-1.5 mb-5 shadow-inner animate-fade-in-up delay-400 relative">
+            <div id="tabIndicator" class="absolute top-1.5 bottom-1.5 left-1.5 w-[calc(50%-0.375rem)] bg-gray-800 border border-white/5 shadow-md rounded-xl transition-all duration-300 ease-out z-0"></div>
+            <button id="btnExpense" onclick="switchChart('expense')" class="relative z-10 flex-1 text-xs font-bold uppercase tracking-widest py-3 text-white transition-colors duration-300">Pengeluaran</button>
+            <button id="btnIncome" onclick="switchChart('income')" class="relative z-10 flex-1 text-xs font-bold uppercase tracking-widest py-3 text-gray-500 transition-colors duration-300">Pemasukan</button>
         </div>
 
         {{-- DOUGHNUT CHART --}}
-        <div class="bg-gradient-to-br from-[#1E1E1E] to-[#121212] p-6 rounded-[2.5rem] border border-white/5 mb-8 relative shadow-xl animate-fade-in-up delay-500">
-            <div id="emptyState" class="absolute inset-0 flex flex-col items-center justify-center hidden bg-[#1A1A1A]/80 backdrop-blur-sm rounded-[2.5rem] z-20">
-                <span class="w-12 h-12 bg-[#262626] rounded-2xl flex items-center justify-center text-xl mb-3 border border-white/5">📭</span>
-                <p class="text-[10px] font-bold text-white uppercase tracking-widest">Tidak Ada Data</p>
+        <div class="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-500/10 p-6 rounded-xl mb-8 shadow-[0_10px_30px_rgba(252,165,255,0.05)] animate-fade-in-up delay-500 relative overflow-hidden group">
+            <div class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+            <div id="emptyState" class="absolute inset-0 flex flex-col items-center justify-center hidden rounded-xl z-20">
+                <span class="w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center text-xl mb-3 border border-white/5">📭</span>
+                <p class="text-xs font-bold text-white uppercase tracking-widest">Tidak Ada Data</p>
             </div>
             <div id="chartContainer" class="relative w-full h-56 mb-6">
                 <canvas id="mainChart" class="relative z-10 w-full h-full"></canvas>
                 <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center pointer-events-none z-0">
-                    <div class="w-[110px] h-[110px] rounded-full bg-[#121212] border border-white/5 shadow-inner flex flex-col items-center justify-center text-center px-2">
-                        <span id="chartCenterLabel" class="text-[8px] text-gray-500 font-bold uppercase tracking-widest mb-0.5">Total</span>
+                    <div class="w-[110px] h-[110px] rounded-full bg-gray-900 border border-white/5 shadow-inner flex flex-col items-center justify-center text-center px-2">
+                        <span id="chartCenterLabel" class="text-[8px] text-gray-500 font-bold uppercase tracking-widest mb-1">Total</span>
                         <span id="chartCenterValue" class="text-base font-black text-white tracking-tight line-clamp-1 w-full truncate">Rp 0</span>
                     </div>
                 </div>
             </div>
             <div id="chartLegend" class="space-y-4"></div>
         </div>
-
     </div>
 
 <script>
@@ -146,11 +143,11 @@
             let percentage = dataObj.total > 0 ? ((val / dataObj.total) * 100).toFixed(1) : 0;
             let bgColor = colors[i % colors.length];
             let rawIcon = dataObj.icons[i] || '📁';
-            html += `<a href="/categories/${dataObj.ids[i]}" class="relative flex items-center justify-between bg-[#1A1A1A] p-3 rounded-2xl border border-white/5 overflow-hidden group hover:border-[#FCA5FF]/30 transition-all duration-300">
+            html += `<a href="/categories/${dataObj.ids[i]}" class="relative flex items-center justify-between bg-[#1A1A1A] p-3 rounded-xl border border-white/5 overflow-hidden group hover:border-[#FCA5FF]/30 transition-all duration-300">
                         <div class="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-[${bgColor}]/20 to-transparent w-[${percentage}%] opacity-30"></div>
                         <div class="flex items-center gap-3 relative z-10 w-full">
                             <div class="w-1.5 h-6 rounded-full" style="background-color: ${bgColor};"></div>
-                            <div class="w-8 h-8 rounded-lg bg-[#2A2A2A] flex items-center justify-center border border-white/5 overflow-hidden p-0.5">
+                            <div class="w-8 h-8 rounded-xl bg-[#2A2A2A] flex items-center justify-center border border-white/5 overflow-hidden p-0.5">
                                 ${rawIcon.includes('/') ? `<img src="/storage/${rawIcon}" class="w-full h-full object-cover">` : `<span class="text-sm">${rawIcon}</span>`}
                             </div>
                             <div class="flex-1 min-w-0 pr-2"><p class="text-[11px] font-bold text-gray-200 truncate">${label}</p><p class="text-[9px] text-gray-500 font-bold">${percentage}%</p></div>

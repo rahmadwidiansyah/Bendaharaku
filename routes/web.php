@@ -38,4 +38,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/loans/{type}', [LoanController::class, 'index'])->name('loans.index');
 });
 
+Route::get('/test-error/{code}', function ($code) {
+    abort($code);
+});
+
 require __DIR__ . '/auth.php';

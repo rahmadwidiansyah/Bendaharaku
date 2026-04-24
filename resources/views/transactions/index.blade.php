@@ -10,8 +10,8 @@
             
             <div class="relative flex-1">
                 <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari catatan..." 
-                    class="w-full bg-[#1A1A1A] border border-[#262626] text-white rounded-[1rem] p-3.5 pl-11 text-xs focus:ring-1 focus:ring-[#FCA5FF] shadow-inner transition-colors">
-                <svg class="w-4 h-4 text-gray-500 absolute left-4 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    class="w-full bg-gradient-to-br from-gray-900 to-gray-800 border border-white/5 text-white rounded-xl p-3.5 pl-11 text-xs focus:ring-1 focus:ring-[#FCA5FF] shadow-inner transition-colors">
+                <svg class="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             </div>
             
             {{-- PAKAI COMPONENT DATE MODAL BIAR GAYA TETEP SAMA TAPI POSISI BENER --}}
@@ -23,11 +23,11 @@
 
         <div class="flex justify-between items-center mb-4">
             {{-- Klik teks periode ini juga bisa buka modal tanggal --}}
-            <button onclick="toggleDateModal()" class="text-[10px] font-bold text-[#FCA5FF] uppercase tracking-widest active:opacity-50 transition-all">
+            <button onclick="toggleDateModal()" class="text-[10px] font-bold text-purple-400 uppercase tracking-widest active:opacity-50 transition-all">
                 Periode: {{ \Carbon\Carbon::parse($startDate)->format('d M') }} - {{ \Carbon\Carbon::parse($endDate)->format('d M Y') }}
             </button>
             
-            <button type="button" onclick="toggleModal('sortModal')" class="flex items-center gap-1.5 bg-[#1A1A1A] border border-[#262626] px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest {{ request('type') ? 'text-[#FCA5FF] border-[#FCA5FF]/50' : 'text-gray-500' }} active:scale-95 transition-all">
+            <button type="button" onclick="toggleModal('sortModal')" class="flex items-center gap-1.5 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest {{ request('type') ? 'text-[#FCA5FF] border-[#FCA5FF]/50' : 'text-gray-500' }} active:scale-95 transition-all">
                 <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h9.75m4.5-4.5v12m0 0l-3.75-3.75M17.25 21L21 17.25" /></svg>
                 {{ request('type') ? request('type') : 'Semua Tipe' }}
             </button>
@@ -45,8 +45,8 @@
                     $dayIncome = $dayTransactions->where('type.name', 'Income')->sum('amount');
                     $dayExpense = $dayTransactions->where('type.name', 'Expense')->sum('amount');
                     
-                    $hText = $isToday ? 'text-[#FCA5FF]' : 'text-purple-400';
-                    $hBorder = $isToday ? 'border-[#FCA5FF]/40' : 'border-purple-400/30';
+                    $hText = $isToday ? 'text-purple-400' : 'text-purple-400';
+                    $hBorder = $isToday ? 'border-purple-400/40' : 'border-purple-400/30';
                 @endphp
 
                 <div>
@@ -69,18 +69,19 @@
                             
                             <button type="button" onclick="openDetailModal(this)"
                                 data-id="{{ $trx->id }}" data-type="{{ $trx->type->name }}" data-amount="{{ number_format($trx->amount, 0, ',', '.') }}" data-category="{{ $trx->category->category_name }}" data-icon="{{ $rawIcon }}" data-is-image="{{ $isImage ? 'true' : 'false' }}" data-icon-url="{{ $isImage ? asset('storage/' . $rawIcon) : '' }}" data-date="{{ \Carbon\Carbon::parse($trx->date)->translatedFormat('d M Y') }}" data-time="{{ \Carbon\Carbon::parse($trx->created_at)->format('H:i') }} WIB" data-source="{{ $trx->sourceWallet->name }}" data-dest="{{ $trx->destinationWallet->name }}" data-subject="{{ $trx->subject }}" data-notes="{{ $trx->notes }}"
-                                class="w-full text-left bg-[#1A1A1A] p-3 rounded-2xl border border-[#262626] hover:bg-[#202020] active:scale-[0.98] transition-all relative overflow-hidden shadow-sm group">
-                                
+                                class="w-full text-left bg-gradient-to-br from-gray-900 to-gray-800 p-3 rounded-xl border border-white/5 hover:border-purple-400/30 hover:shadow-[0_0_15px_rgba(192,132,252,0.1)] active:scale-[0.98] transition-all relative overflow-hidden shadow-sm group">
+                                <div class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+
                                 <div class="flex items-center gap-3 relative z-10">
-                                    <div class="w-10 h-10 rounded-xl bg-[#262626] flex items-center justify-center text-lg border border-[#333] shrink-0 shadow-inner overflow-hidden p-0.5">
-                                        @if($isImage) <img src="{{ asset('storage/' . $rawIcon) }}" class="w-full h-full object-cover rounded-[0.6rem]"> @else {{ $rawIcon }} @endif
+                                    <div class="w-10 h-10 rounded-xl bg-gray-900 flex items-center justify-center text-lg border border-white/5 shrink-0 shadow-inner overflow-hidden p-0.5">
+                                        @if($isImage) <img src="{{ asset('storage/' . $rawIcon) }}" class="w-full h-full object-cover rounded-xl"> @else {{ $rawIcon }} @endif
                                     </div>
 
                                     <div class="flex-1 min-w-0 pr-2">
                                         <p class="text-xs font-bold text-white leading-tight mb-1.5">{{ $trx->category->category_name }}</p>
                                         <div class="flex items-center gap-2 opacity-80">
                                             <span class="text-[9px] text-gray-400 font-bold uppercase tracking-tight whitespace-nowrap">{{ $trx->sourceWallet->name }}</span>
-                                            <svg class="w-2.5 h-2.5 text-[#FCA5FF] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="4"><path d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+                                            <svg class="w-2.5 h-2.5 text-purple-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="4"><path d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
                                             <span class="text-[9px] text-white font-bold uppercase tracking-tight whitespace-nowrap">{{ $trx->destinationWallet->name }}</span>
                                         </div>
                                     </div>
@@ -100,8 +101,9 @@
                     </div>
                 </div>
             @empty
-                <div class="text-center py-12 bg-[#1A1A1A] rounded-[2rem] border-2 border-dashed border-[#262626]">
-                    <p class="text-xs font-bold text-gray-500 uppercase tracking-widest">Data Kosong</p>
+                <div class="text-center py-12 bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-white/5 shadow-[0_10px_30px_rgba(192,132,252,0.05)] animate-fade-in-up delay-300 relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+                    <p class="text-xs font-bold text-gray-500 uppercase tracking-widest relative z-10">Data Kosong</p>
                 </div>
             @endforelse
         </div>
@@ -111,15 +113,15 @@
 
     {{-- MODAL SORT TIPE (Ciri Khas Abang) --}}
     <div id="sortModal" class="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4" onclick="if(event.target === this) toggleModal('sortModal')">
-        <div class="w-full max-w-sm bg-[#1A1A1A] rounded-[2rem] border border-[#262626] p-6 animate-pop-in relative">
+        <div class="w-full max-w-sm bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 p-6 animate-pop-in relative">
             <h3 class="text-sm font-bold text-white mb-6 text-center uppercase tracking-widest">Filter Tipe</h3>
             <div class="grid grid-cols-2 gap-3">
-                <button onclick="setSortType('')" class="col-span-2 py-3 rounded-xl border {{ !request('type') ? 'bg-[#FCA5FF] text-black border-transparent' : 'bg-[#262626] text-white border-[#333]' }} text-[10px] font-bold uppercase tracking-widest">Semua Tipe</button>
+                <button onclick="setSortType('')" class="col-span-2 py-3 rounded-xl border {{ !request('type') ? 'bg-gradient-to-tl from-gray-900 to-gray-800 text-white border-white/10' : 'bg-gradient-to-tl from-gray-900 to-gray-800 text-white border-white/10' }} text-xs text-gray-300 font-bold uppercase tracking-widest">Semua Tipe</button>
                 @foreach(['Income' => 'Pemasukan', 'Expense' => 'Pengeluaran', 'Transfer' => 'Transfer', 'Debt' => 'Hutang', 'Receivable' => 'Piutang'] as $key => $label)
-                    <button onclick="setSortType('{{ $key }}')" class="py-3 rounded-xl border {{ request('type') == $key ? 'bg-[#FCA5FF] text-black border-transparent' : 'bg-[#262626] text-white border-[#333]' }} text-[10px] font-bold uppercase tracking-widest">{{ $label }}</button>
+                    <button onclick="setSortType('{{ $key }}')" class="py-3 rounded-xl border {{ request('type') == $key ? 'bg-gradient-to-br from-gray-900 to-gray-800 text-white border-white/10' : 'bg-gradient-to-tl from-gray-900 to-gray-800 text-white border-white/10' }} text-xs font-bold uppercase tracking-widest">{{ $label }}</button>
                 @endforeach
             </div>
-            <button type="button" onclick="toggleModal('sortModal')" class="w-full mt-6 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Batal</button>
+            <button type="button" onclick="toggleModal('sortModal')" class="w-full mt-6 text-xs font-bold text-gray-300 uppercase tracking-widest">Tutup</button>
         </div>
     </div>
 <x-create-transaction />

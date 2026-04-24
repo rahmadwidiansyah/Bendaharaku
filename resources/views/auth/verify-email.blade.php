@@ -17,7 +17,7 @@
 </head>
 <body class="antialiased selection:bg-[#FCA5FF] selection:text-black relative flex justify-center min-h-screen">
 
-    {{-- Efek Glow Pink di tengah layar --}}
+    {{-- Efek Glow purple di tengah layar --}}
     <div class="fixed top-[20%] left-[50%] -translate-x-1/2 w-[300px] h-[300px] bg-[#FCA5FF] blur-[120px] opacity-[0.15] rounded-full pointer-events-none z-0"></div>
 
     {{-- CONTAINER MOBILE UTAMA --}}
@@ -25,7 +25,7 @@
         
         <div class="animate-slide-up w-full">
             <div class="text-center mb-8">
-                <x-app-logo class="w-20 h-20 rounded-[2rem] mx-auto mb-5" />
+                <x-app-logo class="w-20 h-20 rounded-xl mx-auto mb-5" />
                 <h1 class="text-3xl font-bold text-white tracking-tight">Cek Email Anda</h1>
                 <p class="text-[10px] text-gray-500 uppercase tracking-widest mt-2 font-bold">Verifikasi untuk melanjutkan</p>
             </div>
@@ -35,7 +35,7 @@
             </p>
 
             @if (session('status') == 'verification-link-sent')
-                <div class="mb-6 p-4 rounded-2xl bg-[#1A1A1A] border border-green-500/30 text-[11px] font-bold text-green-400 text-center shadow-sm">
+                <div class="mb-6 p-4 rounded-xl bg-[#1A1A1A] border border-green-500/30 text-[11px] font-bold text-green-400 text-center shadow-sm">
                     Link verifikasi baru telah dikirim ke alamat email yang Anda daftarkan.
                 </div>
             @endif
@@ -43,7 +43,7 @@
             <div class="space-y-4 mt-8">
                 <form method="POST" action="{{ route('verification.send') }}">
                     @csrf
-                    <button type="submit" class="w-full bg-[#FCA5FF] text-[#121212] font-bold text-sm uppercase tracking-widest py-4 rounded-[1.5rem] shadow-[0_0_20px_rgba(252,165,255,0.2)] active:scale-95 transition-transform">
+                    <button type="submit" class="w-full bg-[#FCA5FF] text-[#121212] font-bold text-sm uppercase tracking-widest py-4 rounded-xl shadow-[0_0_20px_rgba(252,165,255,0.2)] active:scale-95 transition-transform">
                         Kirim Ulang Email
                     </button>
                 </form>
