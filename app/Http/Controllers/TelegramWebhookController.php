@@ -87,7 +87,7 @@ class TelegramWebhookController extends Controller
                 $msg .= "🔴 *Pengeluaran:* \n`Beli nasi goreng 15k bca`\n`Es jeruk 5000 dana`\n\n";
                 $msg .= "🟢 *Pemasukan:* \n`Gajian 5jt mandiri`\n`Dikasih emak 50rb cash`\n\n";
                 $msg .= "🔵 *Transfer:* \n`Transfer bca ke dana 100k`\n`Pindah bca ke gopay 50rb`\n\n";
-                $msg .= "🤝 *Hutang & Piutang (Wajib #Nama):* \n`Pinjam duit 100k bca #Budi`\n`Bayar utang ke #Budi 50k dana`\n`Ngasih pinjaman 20k cash #Agus` \n\n";
+                $msg .= "🤝 *Hutang & Piutang (Wajib #Nama):* \n`Pinjam duit 100k bca #Budi`\n`Bayar utang ke #Budi 50k dana`\n`Ngasih pinjaman 20k cash #Agus` \n`nagih utang ke #Budi 50k dana` \n\n";
                 $msg .= "📊 *PERINTAH BOT:*\n";
                 $msg .= "▫️ `/saldo` - Cek sisa uangmu saat ini.\n";
                 $msg .= "▫️ `/web` - Buka dashboard web.\n";
