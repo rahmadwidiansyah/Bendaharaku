@@ -1,4 +1,7 @@
+name: python-test
+
 services:
+  # --- SERVICE LARAVEL APP ---
   app:
     build: .
     container_name: laravel_app
@@ -9,6 +12,7 @@ services:
     networks:
       - laravel
 
+  # --- SERVICE NGINX ---
   nginx:
     image: nginx:latest
     container_name: laravel_nginx
@@ -23,7 +27,45 @@ services:
     networks:
       - laravel
 
-# INI BAGIAN YANG KURANG TADI:
+  # --- SERVICE PYTHON AI (PENCATAT KEUANGAN) ---
+  api:
+    cpu_shares: 90
+    command: []
+    container_name: script-pencatat-keuangan
+    hostname: script-pencatat-keuangan
+    image: ghcr.io/rahmadwidiansyah/script_pencatat_keuangan_api:v4
+    deploy:
+      resources:
+        limits:
+          memory: "1946157056"
+    labels:
+      icon: https://raw.githubusercontent.com/rahmadwidiansyah/script_pencatat_keuangan/refs/heads/main/logo.png
+    ports:
+      - mode: ingress
+        target: 3987
+        published: "3987"
+        protocol: tcp
+    env_file:
+      - .env
+    restart: unless-stopped
+    networks:
+      - laravel
+
+# --- KONFIGURASI NETWORK ---
 networks:
   laravel:
     driver: bridge
+    name: python-test_default
+
+# --- METADATA CASAOS ---
+x-casaos:
+  author: self
+  category: self
+  hostname: ""
+  icon: https://raw.githubusercontent.com/rahmadwidiansyah/script_pencatat_keuangan/refs/heads/main/logo.png
+  index: /
+  is_uncontrolled: false
+  port_map: "3987"
+  scheme: http
+  title:
+    custom: Pencatat Keuangan
