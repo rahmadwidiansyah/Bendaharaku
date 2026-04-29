@@ -32,9 +32,11 @@ class TelegramWebhookController extends Controller
                 return response()->json(['status' => 'unauthorized']);
             }
 
+           // ==========================================
+            // 1. CEK PERINTAH /SALDO, /WEB, /HELP
             // ==========================================
-            // 1. CEK PERINTAH CEK SALDO (/saldo)
-            // ==========================================
+            
+            // Perintah /saldo (Sudah kita buat sebelumnya)
             if ($textLower === '/saldo') {
                 $wallets = Wallet::where('user_id', $user->id)
                     ->whereIn('group_type', ['Asset', 'Liquid'])
@@ -46,46 +48,52 @@ class TelegramWebhookController extends Controller
                     return response()->json(['status' => 'success']);
                 }
 
-                $totalBalance = 0;
-                $walletData = [];
-                $maxNameLen = 11; 
-                $maxBalLen = 0;
-
+                $totalBalance = 0; $walletData = []; $maxNameLen = 11; $maxBalLen = 0;
                 foreach ($wallets as $w) {
-                    $name = strtoupper($w->name);
-                    $bal = $w->balance;
-                    $totalBalance += $bal;
-
+                    $name = strtoupper($w->name); $bal = $w->balance; $totalBalance += $bal;
                     $balStr = number_format($bal, 0, ',', '.');
-
                     if (strlen($name) > $maxNameLen) $maxNameLen = strlen($name);
                     if (strlen($balStr) > $maxBalLen) $maxBalLen = strlen($balStr);
-
-                    $walletData[] = [
-                        'name' => $name,
-                        'balStr' => $balStr
-                    ];
+                    $walletData[] = ['name' => $name, 'balStr' => $balStr];
                 }
-
                 $totalStr = number_format($totalBalance, 0, ',', '.');
                 if (strlen($totalStr) > $maxBalLen) $maxBalLen = strlen($totalStr);
 
                 $textMsg = "```text\n";
                 foreach ($walletData as $wd) {
-                    $paddedName = str_pad($wd['name'], $maxNameLen, " ", STR_PAD_RIGHT);
-                    $paddedBal = str_pad($wd['balStr'], $maxBalLen, " ", STR_PAD_LEFT);
-                    $textMsg .= "{$paddedName}: Rp {$paddedBal}\n";
+                    $textMsg .= str_pad($wd['name'], $maxNameLen, " ", STR_PAD_RIGHT) . ": Rp " . str_pad($wd['balStr'], $maxBalLen, " ", STR_PAD_LEFT) . "\n";
                 }
-
-                $dividerLen = $maxNameLen + 2 + 3 + $maxBalLen; 
-                $textMsg .= str_repeat("-", $dividerLen) . "\n";
-
-                $paddedTotalLabel = str_pad("Total Saldo", $maxNameLen, " ", STR_PAD_RIGHT);
-                $paddedTotalBal = str_pad($totalStr, $maxBalLen, " ", STR_PAD_LEFT);
-                $textMsg .= "{$paddedTotalLabel}: Rp {$paddedTotalBal}\n";
-                $textMsg .= "```";
+                $textMsg .= str_repeat("-", $maxNameLen + 5 + $maxBalLen) . "\n";
+                $textMsg .= str_pad("Total Saldo", $maxNameLen, " ", STR_PAD_RIGHT) . ": Rp " . str_pad($totalStr, $maxBalLen, " ", STR_PAD_LEFT) . "\n```";
 
                 $this->sendMessage($chatId, "💳 *Laporan Saldo Saat Ini:*\n" . $textMsg);
+                return response()->json(['status' => 'success']);
+            }
+
+            // Perintah /web (Sudah kita buat sebelumnya)
+            if ($textLower === '/web') {
+                $appUrl = env('APP_URL', 'https://widihhh.my.id'); 
+                $msg = "🌐 *Link Akses Web*\n\nBuka dashboard di browser:\n👉 [Buka Bendaharaku]({$appUrl})";
+                $this->sendMessage($chatId, $msg);
+                return response()->json(['status' => 'success']);
+            }
+
+            // Perintah /help atau /start atau sapaan
+            $greetings = ['/start', '/help', 'hai', 'halo', 'hello', 'p', 'ping', 'tes', 'test', 'help', 'tolong'];
+            if (in_array($textLower, $greetings)) {
+                $msg = "👋 *Halo Bos {$user->name}!* \nSaya adalah asisten *Bendaharaku V4*. Saya akan mencatat semua keuanganmu secara otomatis.\n\n";
+                $msg .= "📖 *PANDUAN CATAT TRANSAKSI:*\n";
+                $msg .= "Cukup ketik kalimat santai, contoh:\n\n";
+                $msg .= "🔴 *Pengeluaran:* \n`Beli nasi goreng 15k bca`\n`Es jeruk 5000 dana`\n\n";
+                $msg .= "🟢 *Pemasukan:* \n`Gajian 5jt mandiri`\n`Dikasih emak 50rb cash`\n\n";
+                $msg .= "🔵 *Transfer:* \n`Transfer bca ke dana 100k`\n`Pindah bca ke gopay 50rb`\n\n";
+                $msg .= "🤝 *Hutang & Piutang (Wajib #Nama):* \n`Pinjam duit 100k bca #Budi`\n`Bayar utang ke #Budi 50k dana`\n`Ngasih pinjaman 20k cash #Agus` \n\n";
+                $msg .= "📊 *PERINTAH BOT:*\n";
+                $msg .= "▫️ `/saldo` - Cek sisa uangmu saat ini.\n";
+                $msg .= "▫️ `/web` - Buka dashboard web.\n";
+                $msg .= "▫️ `/help` - Tampilkan panduan ini.";
+
+                $this->sendMessage($chatId, $msg);
                 return response()->json(['status' => 'success']);
             }
               
