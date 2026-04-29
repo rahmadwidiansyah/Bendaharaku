@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -13,11 +13,12 @@ class AnalyticsController extends Controller
     {
         $user = Auth::user();
 
-    // DEFAULT START: Awal bulan
-    $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->format('Y-m-d'));
-    
-    // DEFAULT END: Ganti ke Today (bukan endOfMonth) agar grafik tidak bablas ke masa depan
-    $endDate = $request->input('end_date', Carbon::now()->format('Y-m-d'));
+        // DEFAULT START: Awal bulan
+        $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->format('Y-m-d'));
+        
+        // DEFAULT END: Ganti ke Today (bukan endOfMonth) agar grafik tidak bablas ke masa depan
+        $endDate = $request->input('end_date', Carbon::now()->format('Y-m-d'));
+        
         // Tarik transaksi HANYA MILIK USER SAAT INI (Aman 100%)
         $transactions = $user->transactionLogs()
             ->with(['type', 'category'])
@@ -71,7 +72,6 @@ class AnalyticsController extends Controller
 
         $cumulativeBalance = $runningBalance;
 
-        // GANTI DENGAN KODE BARU INI:
         $expensesByCategory = $transactions->where('type.name', 'Expense')
             ->groupBy('category_id')
             ->map(function ($rows) {
@@ -95,6 +95,23 @@ class AnalyticsController extends Controller
                     'total' => $rows->sum('amount')
                 ];
             })->sortByDesc('total')->values();
+        
+        // --- KODE TAMBAHAN KHUSUS ARUS KAS ALL TIME ---
+        // REVISI 1: Pakai $user->transactionLogs() biar aman!
+        $allTransactions = $user->transactionLogs()->orderBy('date', 'asc')->get(); 
+        $allKasGrouped = $allTransactions->groupBy('date');
+
+        $allDailyLabels = [];
+        $allDailyIncome = [];
+        $allDailyExpense = [];
+
+        foreach ($allKasGrouped as $date => $trxs) {
+            $allDailyLabels[] = \Carbon\Carbon::parse($date)->format('d M Y');
+            $allDailyIncome[] = $trxs->where('type.name', 'Income')->sum('amount');
+            $allDailyExpense[] = $trxs->where('type.name', 'Expense')->sum('amount');
+        }
+        // ----------------------------------------------
+
         return view('analytics.index', compact(
             'startDate',
             'endDate',
@@ -107,7 +124,11 @@ class AnalyticsController extends Controller
             'dailyIncome',
             'dailyExpense',
             'cumulativeData',
-            'todayIndex' // Passing index hari ini ke view
+            'todayIndex',
+            // REVISI 2: Jangan lupa variabel baru dimasukkan ke compact
+            'allDailyLabels',
+            'allDailyIncome',
+            'allDailyExpense'
         ));
     }
 }

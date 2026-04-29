@@ -121,11 +121,34 @@
                     <span class="text-xs font-bold text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full border border-green-400/20">Live</span>
                 </div>
                 
-                <div class="flex items-baseline gap-1.5 mb-2">
+                <div class="flex items-baseline gap-1.5 mb-4">
                     <span class="text-lg font-medium text-gray-500">Rp</span>
                     <h2 class="text-3xl font-black text-white tracking-tight">
                         {{ number_format($totalPortfolio, 0, ',', '.') }}
                     </h2>
+                </div>
+
+                {{-- BREAKDOWN: Liquid & Investasi --}}
+                <div class="flex items-center gap-4 pt-3 border-t border-white/10 mt-1">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-1.5 mb-1">
+                            <div class="w-1.5 h-1.5 rounded-full bg-blue-400 shadow-[0_0_5px_rgba(96,165,250,0.5)]"></div>
+                            <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Liquid</p>
+                        </div>
+                        <p class="text-sm font-bold text-white tracking-tight">
+                            <span class="text-[10px] text-gray-500 mr-0.5">Rp</span>{{ number_format($totalLiquid ?? 0, 0, ',', '.') }}
+                        </p>
+                    </div>
+                    <div class="w-px h-8 bg-gradient-to-b from-transparent via-white/10 to-transparent"></div>
+                    <div class="flex-1">
+                        <div class="flex items-center gap-1.5 mb-1">
+                            <div class="w-1.5 h-1.5 rounded-full bg-purple-400 shadow-[0_0_5px_rgba(192,132,252,0.5)]"></div>
+                            <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Investasi</p>
+                        </div>
+                        <p class="text-sm font-bold text-white tracking-tight">
+                            <span class="text-[10px] text-gray-500 mr-0.5">Rp</span>{{ number_format($totalInvest ?? 0, 0, ',', '.') }}
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
