@@ -71,31 +71,33 @@ class CategoryController extends Controller
     }
 
     // PROSES UPDATE DATA LAMA
+   // PROSES UPDATE DATA LAMA
     public function update(Request $request, Category $category)
-{
-    if ($category->user_id !== Auth::id()) abort(403);
-    
-    $validated = $request->validate([
-        'category_name' => 'required|string|max:255',
-        'type_id' => 'required|exists:transaction_types,id',
-        'icon' => 'nullable|string|max:255',
-        'icon_file' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-    ]);
+    {
+        if ($category->user_id !== Auth::id()) abort(403);
+        
+        $validated = $request->validate([
+            'category_name' => 'required|string|max:255',
+            'type_id'       => 'required|exists:transaction_types,id',
+            'icon'          => 'nullable|string|max:255',
+            'icon_file'     => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'keyword'       => 'nullable|string|max:255', // INI YANG KETINGGALAN! 🔥
+        ]);
 
-    // Jika user upload file baru
-    if ($request->hasFile('icon_file')) {
-        // Hapus foto lama jika itu adalah file gambar (bukan teks emoji)
-        if ($category->icon && \Str::contains($category->icon, '/')) {
-            Storage::disk('public')->delete($category->icon);
+        // Jika user upload file baru
+        if ($request->hasFile('icon_file')) {
+            // Hapus foto lama jika itu adalah file gambar (bukan teks emoji)
+            if ($category->icon && \Str::contains($category->icon, '/')) {
+                Storage::disk('public')->delete($category->icon);
+            }
+            // Simpan foto baru
+            $path = $request->file('icon_file')->store('icons/categories', 'public');
+            $validated['icon'] = $path;
         }
-        // Simpan foto baru
-        $path = $request->file('icon_file')->store('icons/categories', 'public');
-        $validated['icon'] = $path;
-    }
 
-    $category->update($validated);
-    return redirect()->route('categories.index')->with('success', 'Kategori diupdate!');
-}
+        $category->update($validated);
+        return redirect()->route('categories.index')->with('success', 'Kategori diupdate!');
+    }
 
     // HAPUS DATA
     public function destroy(Category $category)

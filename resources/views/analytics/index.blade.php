@@ -20,24 +20,24 @@
 
         {{-- RINGKASAN --}}
         <div class="grid grid-cols-2 gap-3 mb-6 animate-fade-in-up delay-100">
-            <div class="bg-gradient-to-br from-green-500/10 to-green-500/10 p-5 rounded-xl border border-white/5 relative overflow-hidden group">
+            <div class="bg-gradient-to-br from-green-500/10 to-green-500/10 p-4 rounded-xl border border-white/5 relative overflow-hidden group">
                 <div class="absolute top-0 right-0 w-16 h-16 bg-green-500/10 rounded-bl-full blur-xl group-hover:bg-green-500/20 transition-colors"></div>
                 <div class="flex items-center gap-2 mb-2">
                     <div class="w-1.5 h-1.5 rounded-full bg-green-400 shadow-[0_0_5px_rgba(74,222,128,0.5)]"></div>
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Pemasukan</p>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Pemasukan</p>
                 </div>
-                <p class="text-lg font-bold text-green-400 tracking-tight truncate relative z-10">
-                    <span class="text-xs mr-1 opacity-70">+Rp</span><span class="text-green-400">{{ number_format($totalIncome, 0, ',', '.') }}</span>
+                <p class="text-[15px] font-black text-green-400 tracking-tighter break-words relative z-10 leading-tight">
+                    <span class="text-[10px] mr-0.5 opacity-70">+Rp</span>{{ number_format($totalIncome, 0, ',', '.') }}
                 </p>
             </div>
-            <div class="bg-gradient-to-br from-red-500/10 to-red-500/10 p-5 rounded-xl border border-white/5 relative overflow-hidden group">
+            <div class="bg-gradient-to-br from-red-500/10 to-red-500/10 p-4 rounded-xl border border-white/5 relative overflow-hidden group">
                 <div class="absolute top-0 right-0 w-16 h-16 bg-red-500/10 rounded-bl-full blur-xl group-hover:bg-red-500/20 transition-colors"></div>
                 <div class="flex items-center gap-2 mb-2">
                     <div class="w-1.5 h-1.5 rounded-full bg-red-400 shadow-[0_0_5px_rgba(156,163,175,0.5)]"></div>
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Pengeluaran</p>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Pengeluaran</p>
                 </div>
-                <p class="text-lg font-bold text-red-400 tracking-tight truncate relative z-10">
-                    <span class="text-red-400 text-xs mr-1 opacity-70">-Rp</span><span class="text-red-400">{{ number_format($totalExpense, 0, ',', '.') }}</span>
+                <p class="text-[15px] font-black text-red-400 tracking-tighter break-words relative z-10 leading-tight">
+                    <span class="text-red-400 text-[10px] mr-0.5 opacity-70">-Rp</span>{{ number_format($totalExpense, 0, ',', '.') }}
                 </p>
             </div>
         </div>
@@ -48,29 +48,38 @@
             <div class="flex justify-between items-start mb-6 relative z-10">
                 <div>
                     <p class="text-xs font-bold text-white uppercase tracking-[0.2em] mb-1">Saldo Kumulatif</p>
-                    <p class="text-xs text-gray-500 font-medium">Pergerakan total kekayaan</p>
+                    <p class="text-[10px] text-gray-500 font-medium">Pergerakan total kekayaan</p>
                 </div>
-                <p class="text-xl font-black text-white tracking-tight bg-[#121212] px-3 py-1.5 rounded-xl border border-white/5 shadow-inner">
-                    <span class="text-xs text-gray-500 mr-1">Rp</span>{{ number_format($cumulativeBalance, 0, ',', '.') }}
+                <p class="text-lg font-black text-white tracking-tight bg-[#121212] px-3 py-1.5 rounded-xl border border-white/5 shadow-inner">
+                    <span class="text-[10px] text-gray-500 mr-1">Rp</span>{{ number_format($cumulativeBalance, 0, ',', '.') }}
                 </p>
             </div>
             <div class="w-full h-[140px] relative z-10">
                 <canvas id="cumulativeChart"></canvas>
             </div>
         </div>
+
         {{-- ARUS KAS HARIAN --}}
         <div class="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-500/10 p-6 rounded-xl mb-8 shadow-[0_10px_30px_rgba(252,165,255,0.05)] animate-fade-in-up delay-300 relative overflow-hidden group">
             <div class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-            <div class="flex justify-between items-start mb-6 relative z-10">
-                <h2 class="text-xs font-bold text-white uppercase tracking-widest">Arus Kas Harian</h2>
+            
+            <div class="flex justify-between items-center mb-6 relative z-10">
+                <h2 class="text-xs font-bold text-white uppercase tracking-widest">Arus Kas</h2>
+                
+                {{-- Toggle Grouping --}}
+                <div class="flex bg-[#121212] rounded-lg p-1 border border-white/5 shadow-inner">
+                    <button id="btnHarian" onclick="renderBarChart('harian')" class="text-[9px] font-bold uppercase tracking-widest px-2.5 py-1.5 rounded-md transition-colors bg-[#FCA5FF] text-[#121212]">Hari</button>
+                    <button id="btnMingguan" onclick="renderBarChart('mingguan')" class="text-[9px] font-bold uppercase tracking-widest px-2.5 py-1.5 rounded-md transition-colors text-gray-500 hover:text-white">Pekan</button>
+                    <button id="btnBulanan" onclick="renderBarChart('bulanan')" class="text-[9px] font-bold uppercase tracking-widest px-2.5 py-1.5 rounded-md transition-colors text-gray-500 hover:text-white">Bulan</button>
+                </div>
             </div>
+
             <div id="chartScrollBox" class="overflow-x-auto no-scrollbar pb-1" style="scroll-behavior: auto !important;">
-                <div id="chartInnerContent" style="min-width: {{ count($dailyLabels) * 45 }}px; height: 180px;">
+                <div id="chartInnerContent" style="min-width: 100%; height: 180px; transition: min-width 0.3s ease;">
                     <canvas id="barChart"></canvas>
                 </div>
             </div>
         </div>
-
 
         {{-- TAB KATEGORI --}}
         <div class="flex items-center gap-2 mb-4 px-1 animate-fade-in-up delay-400">
@@ -93,9 +102,9 @@
             <div id="chartContainer" class="relative w-full h-56 mb-6">
                 <canvas id="mainChart" class="relative z-10 w-full h-full"></canvas>
                 <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center pointer-events-none z-0">
-                    <div class="w-[110px] h-[110px] rounded-full bg-gray-900 border border-white/5 shadow-inner flex flex-col items-center justify-center text-center px-2">
+                    <div class="w-[110px] h-[110px] rounded-full bg-gray-900 border border-white/5 shadow-inner flex flex-col items-center justify-center text-center px-1">
                         <span id="chartCenterLabel" class="text-[8px] text-gray-500 font-bold uppercase tracking-widest mb-1">Total</span>
-                        <span id="chartCenterValue" class="text-base font-black text-white tracking-tight line-clamp-1 w-full truncate">Rp 0</span>
+                        <span id="chartCenterValue" class="text-sm font-black text-white tracking-tighter leading-tight w-full break-words">Rp 0</span>
                     </div>
                 </div>
             </div>
@@ -108,6 +117,13 @@
     
     const expenseData = { labels: @json($expensesByCategory->pluck('name')), values: @json($expensesByCategory->pluck('total')), ids: @json($expensesByCategory->pluck('id')), icons: @json($expensesByCategory->pluck('icon')), total: {{ $totalExpense }}, labelName: 'Total Pengeluaran' };
     const incomeData = { labels: @json($incomesByCategory->pluck('name')), values: @json($incomesByCategory->pluck('total')), ids: @json($incomesByCategory->pluck('id')), icons: @json($incomesByCategory->pluck('icon')), total: {{ $totalIncome }}, labelName: 'Total Pemasukan' };
+
+    // FIX PENGECUALIAN FILTER: 
+    // Menggunakan fallback '??' agar jika kamu belum mengupdate Controller, dia tidak akan Error (Hanya menggunakan data bulan ini). 
+    // Jika Controller sudah di-update, dia akan otomatis pakai data ALL TIME!
+    const rawBarLabels = @json($allDailyLabels ?? $dailyLabels);
+    const rawBarIncome = @json($allDailyIncome ?? $dailyIncome);
+    const rawBarExpense = @json($allDailyExpense ?? $dailyExpense);
 
     function destroyChart(id) {
         if (window.myCharts[id]) { window.myCharts[id].destroy(); delete window.myCharts[id]; }
@@ -151,7 +167,7 @@
                                 ${rawIcon.includes('/') ? `<img src="/storage/${rawIcon}" class="w-full h-full object-cover">` : `<span class="text-sm">${rawIcon}</span>`}
                             </div>
                             <div class="flex-1 min-w-0 pr-2"><p class="text-[11px] font-bold text-gray-200 truncate">${label}</p><p class="text-[9px] text-gray-500 font-bold">${percentage}%</p></div>
-                            <div class="text-right shrink-0"><span class="text-xs font-black text-white block">Rp ${val.toLocaleString('id-ID')}</span></div>
+                            <div class="text-right shrink-0"><span class="text-[11px] font-black text-white block">Rp ${val.toLocaleString('id-ID')}</span></div>
                         </div>
                     </a>`;
         });
@@ -174,10 +190,110 @@
         }
     }
 
+    // Fungsi Pembantu Untuk Scroll Paksa ke Ujung Kanan
+    function forceScrollToRight() {
+        const scrollBox = document.getElementById('chartScrollBox');
+        if (scrollBox) {
+            scrollBox.style.scrollBehavior = 'auto'; // Matikan smooth sementara
+            scrollBox.scrollLeft = scrollBox.scrollWidth;
+        }
+    }
+
+    window.renderBarChart = function(view) {
+        let labels = [], incomes = [], expenses = [];
+
+        if (view === 'harian') {
+            labels = rawBarLabels; incomes = rawBarIncome; expenses = rawBarExpense;
+        } 
+        else if (view === 'mingguan') {
+            let tempInc = 0, tempExp = 0;
+            let startLabel = rawBarLabels[0];
+            for(let i = 0; i < rawBarLabels.length; i++) {
+                tempInc += rawBarIncome[i];
+                tempExp += rawBarExpense[i];
+                if ((i + 1) % 7 === 0 || i === rawBarLabels.length - 1) {
+                    let endLabel = rawBarLabels[i];
+                    labels.push(startLabel.split(' ')[0] + '-' + endLabel);
+                    incomes.push(tempInc);
+                    expenses.push(tempExp);
+                    tempInc = 0; tempExp = 0;
+                    if (i + 1 < rawBarLabels.length) startLabel = rawBarLabels[i + 1];
+                }
+            }
+        } 
+        else if (view === 'bulanan') {
+            let currentMonth = '';
+            let tempInc = 0, tempExp = 0;
+            
+            for(let i = 0; i < rawBarLabels.length; i++) {
+                // FIX: Ekstrak nama bulan dan TAHUN agar presisi (Misal: "12 Apr 2026" -> ambil "Apr 2026")
+                let parts = rawBarLabels[i].split(' ');
+                let month = parts.length > 2 ? parts[1] + ' ' + parts[2] : (parts.length > 1 ? parts[1] : rawBarLabels[i]);
+                
+                if (i === 0) currentMonth = month; // Inisialisasi awal
+                
+                if (month !== currentMonth) {
+                    labels.push(currentMonth);
+                    incomes.push(tempInc);
+                    expenses.push(tempExp);
+                    currentMonth = month;
+                    tempInc = 0; tempExp = 0;
+                }
+                tempInc += rawBarIncome[i];
+                tempExp += rawBarExpense[i];
+            }
+            // Masukkan sisa bulan terakhir di loop
+            if(currentMonth) { 
+                labels.push(currentMonth); 
+                incomes.push(tempInc); 
+                expenses.push(tempExp); 
+            }
+        }
+
+        const innerContent = document.getElementById('chartInnerContent');
+        let calculatedWidth = view === 'harian' ? labels.length * 45 : labels.length * 60;
+        innerContent.style.minWidth = `max(100%, ${calculatedWidth}px)`;
+
+        destroyChart('bar');
+        const ctxBar = document.getElementById('barChart')?.getContext('2d');
+        if (ctxBar) {
+            window.myCharts['bar'] = new Chart(ctxBar, {
+                type: 'bar',
+                data: { 
+                    labels: labels, 
+                    datasets: [
+                        { label: 'In', data: incomes, backgroundColor: '#34D399', borderRadius: 4 }, 
+                        { label: 'Out', data: expenses, backgroundColor: '#4B5563', borderRadius: 4 }
+                    ] 
+                },
+                options: { 
+                    responsive: true, maintainAspectRatio: false, 
+                    plugins: { legend: { display: false } }, 
+                    scales: { 
+                        x: { grid: { display: false }, ticks: { color: '#6B7280', font: { size: 9 } } }, 
+                        y: { display: false } 
+                    } 
+                }
+            });
+        }
+
+        const activeClass = "text-[9px] font-bold uppercase tracking-widest px-2.5 py-1.5 rounded-md transition-colors bg-[#FCA5FF] text-[#121212]";
+        const inactiveClass = "text-[9px] font-bold uppercase tracking-widest px-2.5 py-1.5 rounded-md transition-colors text-gray-500 hover:text-white";
+        
+        document.getElementById('btnHarian').className = view === 'harian' ? activeClass : inactiveClass;
+        document.getElementById('btnMingguan').className = view === 'mingguan' ? activeClass : inactiveClass;
+        document.getElementById('btnBulanan').className = view === 'bulanan' ? activeClass : inactiveClass;
+
+        // Failsafe eksekusi scroll paksa setelah render (Ditendang berkali-kali biar tidak balik ke awal)
+        forceScrollToRight();
+        setTimeout(forceScrollToRight, 50);
+        setTimeout(forceScrollToRight, 200);
+        setTimeout(forceScrollToRight, 800); 
+    };
+
     function initCharts() {
         destroyChart('cumulative'); destroyChart('bar'); destroyChart('main');
         
-        // Render Line Chart
         const ctxCum = document.getElementById('cumulativeChart')?.getContext('2d');
         if (ctxCum) {
             let grad = ctxCum.createLinearGradient(0, 0, 0, 140);
@@ -189,33 +305,8 @@
             });
         }
 
-        // Render Bar Chart
-        const ctxBar = document.getElementById('barChart')?.getContext('2d');
-        if (ctxBar) {
-            window.myCharts['bar'] = new Chart(ctxBar, {
-                type: 'bar',
-                data: { labels: @json($dailyLabels), datasets: [{ label: 'In', data: @json($dailyIncome), backgroundColor: '#34D399', borderRadius: 4 }, { label: 'Out', data: @json($dailyExpense), backgroundColor: '#4B5563', borderRadius: 4 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#6B7280', font: { size: 9 } } }, y: { display: false } } }
-            });
-        }
-
+        renderBarChart('harian');
         switchChart('expense');
-
-        // LOGIKA REM PAKSA (INSTAN)
-        const scrollBox = document.getElementById('chartScrollBox');
-        if (scrollBox) {
-            // Matikan smooth scroll lewat JS biar gak bablas
-            scrollBox.style.scrollBehavior = 'auto'; 
-            
-            const forceScroll = () => {
-                scrollBox.scrollLeft = scrollBox.scrollWidth;
-            };
-
-            // Hajar 3 kali di waktu berbeda biar gak ada alasan canvas telat render
-            forceScroll(); 
-            setTimeout(forceScroll, 50);
-            setTimeout(forceScroll, 300);
-        }
     }
 
     document.addEventListener('livewire:navigated', initCharts);

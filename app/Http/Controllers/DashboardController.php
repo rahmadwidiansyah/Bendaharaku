@@ -22,6 +22,13 @@ class DashboardController extends Controller
         // 2. TOTAL PORTOFOLIO (Jumlah aset riil)
         $totalPortfolio = $wallets->sum('balance');
 
+        // ==========================================
+        // TAMBAHAN: BREAKDOWN LIQUID & INVESTASI
+        // ==========================================
+        // Menggunakan Collection filter agar tidak perlu query ke database dua kali
+        $totalLiquid = $wallets->where('group_type', 'Liquid')->sum('balance');
+        $totalInvest = $wallets->where('group_type', 'Asset')->sum('balance');
+
         // 3. LOGIKA HITUNG HUTANG
         $systemHutang = $user->wallets()->where('name', 'like', '%Hutang%')->first();
         $totalHutang = 0;
@@ -64,12 +71,14 @@ class DashboardController extends Controller
 
         return view('dashboard', [
             'totalPortfolio' => $totalPortfolio,
+            'totalLiquid' => $totalLiquid, // Passing data Liquid
+            'totalInvest' => $totalInvest, // Passing data Investasi
             'wallets' => $wallets,
             'totalHutang' => max(0, $totalHutang),
             'totalPiutang' => max(0, $totalPiutang),
             'thisMonthIncome' => $thisMonthIncome,
             'thisMonthExpense' => $thisMonthExpense,
-            'recentTransactions' => $recentTransactions // Passing ke View
+            'recentTransactions' => $recentTransactions 
         ]);
     }
 }

@@ -1,4 +1,4 @@
-<nav class="fixed bottom-3 rounded-xl left-1/2 -translate-x-1/2 w-full max-w-md bg-gray-900/90 backdrop-blur-xl border-t border-white/5 pb-safe z-50">
+<nav class="fixed bottom-0 rounded-t-2xl left-1/2 -translate-x-1/2 w-full max-w-md bg-gray-900/90 backdrop-blur-xl border-t border-white/5 pb-safe z-50">
     <div class="flex justify-around items-center pt-3 pb-4 px-2">
         
         {{-- Home --}}
