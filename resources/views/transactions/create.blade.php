@@ -12,13 +12,13 @@
 
         {{-- TABS TIPE --}}
         <div class="grid grid-cols-3 gap-2 mb-2">
-            <button type="button" id="tabExpense" onclick="setType('Expense')" class="w-full text-[10px] font-bold uppercase tracking-widest py-3 rounded-2xl bg-[#262626] text-[#FCA5FF] shadow-md transition-all border border-[#333]">Pengeluaran</button>
-            <button type="button" id="tabIncome" onclick="setType('Income')" class="w-full text-[10px] font-bold uppercase tracking-widest py-3 rounded-2xl bg-[#1A1A1A] text-gray-500 hover:text-white border border-transparent transition-all">Pemasukan</button>
-            <button type="button" id="tabTransfer" onclick="setType('Transfer')" class="w-full text-[10px] font-bold uppercase tracking-widest py-3 rounded-2xl bg-[#1A1A1A] text-gray-500 hover:text-white border border-transparent transition-all">Transfer</button>
+            <button type="button" id="tabExpense" onclick="setType('Expense')" class="w-full text-xs font-bold uppercase tracking-widest py-3 rounded-2xl bg-[#262626] text-[#FCA5FF] shadow-md transition-all border border-[#333]">Pengeluaran</button>
+            <button type="button" id="tabIncome" onclick="setType('Income')" class="w-full text-xs font-bold uppercase tracking-widest py-3 rounded-2xl bg-[#1A1A1A] text-gray-500 hover:text-white border border-transparent transition-all">Pemasukan</button>
+            <button type="button" id="tabTransfer" onclick="setType('Transfer')" class="w-full text-xs font-bold uppercase tracking-widest py-3 rounded-2xl bg-[#1A1A1A] text-gray-500 hover:text-white border border-transparent transition-all">Transfer</button>
         </div>
         <div class="grid grid-cols-2 gap-2 mb-6">
-            <button type="button" id="tabDebt" onclick="setType('Debt')" class="w-full text-[10px] font-bold uppercase tracking-widest py-3 rounded-2xl bg-[#1A1A1A] text-gray-500 hover:text-white border border-transparent transition-all">Hutang</button>
-            <button type="button" id="tabReceivable" onclick="setType('Receivable')" class="w-full text-[10px] font-bold uppercase tracking-widest py-3 rounded-2xl bg-[#1A1A1A] text-gray-500 hover:text-white border border-transparent transition-all">Piutang</button>
+            <button type="button" id="tabDebt" onclick="setType('Debt')" class="w-full text-xs font-bold uppercase tracking-widest py-3 rounded-2xl bg-[#1A1A1A] text-gray-500 hover:text-white border border-transparent transition-all">Hutang</button>
+            <button type="button" id="tabReceivable" onclick="setType('Receivable')" class="w-full text-xs font-bold uppercase tracking-widest py-3 rounded-2xl bg-[#1A1A1A] text-gray-500 hover:text-white border border-transparent transition-all">Piutang</button>
         </div>
 
         <form action="{{ route('transactions.store') }}" method="POST" id="trxForm" class="space-y-4" onsubmit="return validateForm()">
@@ -26,7 +26,7 @@
             
             {{-- INPUT NOMINAL --}}
             <div class="bg-[#1A1A1A] border border-[#262626] rounded-[2rem] p-5 text-center relative shadow-inner group">
-                <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Nominal (Rp)</label>
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Nominal (Rp)</label>
                 <input type="text" id="display_amount" inputmode="numeric" required placeholder="0"
                     class="w-full bg-transparent border-none text-white text-center text-4xl font-bold placeholder-gray-600 focus:ring-0 p-0 focus:outline-none caret-[#FCA5FF]">
                 <input type="hidden" name="amount" id="raw_amount">
@@ -56,7 +56,7 @@
             {{-- DOMPET SOURCE & DESTINATION --}}
             <div class="bg-[#1A1A1A] border border-[#262626] rounded-[2rem] p-4 shadow-inner flex flex-col gap-3">
                 <div id="sourceDiv">
-                    <label id="sourceLabel" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Dari Dompet</label>
+                    <label id="sourceLabel" class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Dari Dompet</label>
                     <div class="w-full bg-[#262626] text-white rounded-2xl p-3.5 text-sm cursor-pointer flex items-center justify-between active:scale-95 transition-transform border border-[#333]" onclick="openBottomSheet('walletModal', 'source')">
                         <span id="sourceWalletLabel" class="font-bold">-- Pilih Dompet --</span>
                         <svg class="w-4 h-4 text-[#FCA5FF]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
@@ -64,7 +64,7 @@
                     <input type="hidden" name="source_wallet_id" id="source_wallet_id" required>
                 </div>
                 <div id="destDiv">
-                    <label id="destLabel" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Ke Dompet</label>
+                    <label id="destLabel" class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Ke Dompet</label>
                     <div class="w-full bg-[#262626] text-white rounded-2xl p-3.5 text-sm cursor-pointer flex items-center justify-between active:scale-95 transition-transform border border-[#333]" onclick="openBottomSheet('walletModal', 'dest')">
                         <span id="destWalletLabel" class="font-bold">-- Pilih Dompet --</span>
                         <svg class="w-4 h-4 text-[#FCA5FF]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
@@ -222,8 +222,8 @@
             const btn = document.getElementById('tab' + t);
             if (btn) {
                 btn.className = (t === type) 
-                    ? "w-full text-[10px] font-bold uppercase tracking-widest py-3 rounded-2xl bg-[#262626] text-[#FCA5FF] shadow-md transition-all border border-[#333]"
-                    : "w-full text-[10px] font-bold uppercase tracking-widest py-3 rounded-2xl bg-[#1A1A1A] text-gray-500 hover:text-white border border-transparent transition-all";
+                    ? "w-full text-xs font-bold uppercase tracking-widest py-3 rounded-2xl bg-[#262626] text-[#FCA5FF] shadow-md transition-all border border-[#333]"
+                    : "w-full text-xs font-bold uppercase tracking-widest py-3 rounded-2xl bg-[#1A1A1A] text-gray-500 hover:text-white border border-transparent transition-all";
             }
         });
 
@@ -293,7 +293,7 @@
             // Tampilkan saldo kalau dia dompet Aset/Liquid (Bukan System)
             const isAsset = ['Asset', 'Liquid'].includes(w.group_type);
             const balanceInfo = isAsset 
-                ? `<p class="text-[10px] text-gray-500 font-bold tracking-widest mt-0.5 uppercase">Saldo: <span class="text-[#FCA5FF]">Rp ${new Intl.NumberFormat('id-ID').format(w.balance)}</span></p>` 
+                ? `<p class="text-xs text-gray-500 font-bold tracking-widest mt-0.5 uppercase">Saldo: <span class="text-[#FCA5FF]">Rp ${new Intl.NumberFormat('id-ID').format(w.balance)}</span></p>` 
                 : '';
 
             list.innerHTML += `

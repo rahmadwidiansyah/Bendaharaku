@@ -40,15 +40,15 @@
                 <h1 class="text-3xl font-black text-white tracking-tight leading-none mb-2">{{ $category->category_name }}</h1>
                 <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#1A1A1A] border border-[#262626]">
                     <span class="w-1.5 h-1.5 rounded-full {{ $category->type->name == 'Income' ? 'bg-green-400 shadow-[0_0_8px_#4ade80]' : 'bg-gray-500' }}"></span>
-                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">{{ $category->type->name == 'Income' ? 'Pemasukan' : 'Pengeluaran' }}</p>
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-[0.2em]">{{ $category->type->name == 'Income' ? 'Pemasukan' : 'Pengeluaran' }}</p>
                 </div>
             </div>
         </div>
 
         {{-- Stats Ringkas --}}
-        <div class="bg-gradient-to-br from-[#1E1E1E] to-[#121212] border border-white/5 rounded-xl p-7 text-center mb-10 shadow-2xl relative overflow-hidden group z-10">
+        <div class="bg-gradient-to-br from-[#1E1E1E] to-[#121212] border border-white/10 rounded-xl p-7 text-center mb-10 shadow-2xl relative overflow-hidden group z-10">
             <div class="absolute top-0 left-0 w-full h-1 bg-[#FCA5FF]/20"></div>
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-2 opacity-60">Total Akumulasi</p>
+            <p class="text-xs font-bold text-gray-500 uppercase tracking-[0.2em] mb-2 opacity-60">Total Akumulasi</p>
             <div class="flex items-baseline justify-center gap-1.5">
                 <span class="text-sm font-bold text-gray-600">Rp</span>
                 <h2 class="text-3xl font-black text-white tracking-tight">{{ number_format($totalUsage, 0, ',', '.') }}</h2>
@@ -59,7 +59,7 @@
         <div class="space-y-4 relative z-10">
             <div class="flex items-center justify-between px-1 mb-2">
                 <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Riwayat Transaksi</h3>
-                <span class="text-[10px] font-bold text-gray-600 bg-[#1A1A1A] px-2 py-0.5 rounded-xl border border-[#262626]">{{ count($transactions) }} Record</span>
+                <span class="text-xs font-bold text-gray-600 bg-[#1A1A1A] px-2 py-0.5 rounded-xl border border-[#262626]">{{ count($transactions) }} Record</span>
             </div>
             
             @forelse($transactions as $trx)
@@ -105,7 +105,7 @@
                         <div class="mb-2">
                             <p class="text-sm font-bold text-white truncate">{{ $trx->notes ?? 'Tanpa catatan' }}</p>
                             @if($trx->subject && $trx->subject !== '-')
-                                <p class="text-[10px] text-[#E5D07E] font-bold mt-0.5 flex items-center gap-1">
+                                <p class="text-xs text-[#E5D07E] font-bold mt-0.5 flex items-center gap-1">
                                     <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                                     {{ $trx->subject }}
                                 </p>

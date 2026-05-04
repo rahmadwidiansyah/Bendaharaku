@@ -10,15 +10,19 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
+use Inertia\Inertia;
+use Inertia\Response;
+use Carbon\Carbon;
+
 class TransactionController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): Response
     {
         $user = Auth::user();
 
         // 1. Setup Default Tanggal (Bulan Ini)
-        $startDate = $request->input('start_date', \Carbon\Carbon::now()->startOfMonth()->format('Y-m-d'));
-        $endDate = $request->input('end_date', \Carbon\Carbon::now()->endOfMonth()->format('Y-m-d'));
+        $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->format('Y-m-d'));
+        $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->format('Y-m-d'));
 
         // 2. Mulai Query dasar
         $query = $user->transactionLogs()->with(['type', 'category', 'sourceWallet', 'destinationWallet']);
@@ -26,15 +30,14 @@ class TransactionController extends Controller
         // 3. Filter berdasarkan Tanggal
         $query->whereBetween('date', [$startDate, $endDate]);
 
-        // --- TAMBAHAN: FILTER BERDASARKAN TIPE (BIAR SORT JALAN) ---
+        // 4. Filter berdasarkan Tipe
         if ($request->has('type') && $request->type != '') {
             $query->whereHas('type', function($q) use ($request) {
                 $q->where('name', $request->type);
             });
         }
-        // ----------------------------------------------------------
 
-        // 4. Filter berdasarkan Pencarian (Search)
+        // 5. Filter berdasarkan Pencarian
         if ($request->has('search') && $request->search != '') {
             $search = strtolower($request->search);
             $query->where(function($q) use ($search) {
@@ -46,35 +49,55 @@ class TransactionController extends Controller
             });
         }
 
-        // Urutkan dari yang terbaru, lalu jalankan pagination
         $transactions = $query->orderBy('date', 'desc')
                               ->orderBy('created_at', 'desc')
-                              ->paginate(50)
-                              ->appends($request->all());
+                              ->get()
+                              ->map(function ($trx) {
+                                  return [
+                                      'id' => $trx->id,
+                                      'amount' => (float) $trx->amount,
+                                      'notes' => $trx->notes,
+                                      'subject' => $trx->subject,
+                                      'date' => Carbon::parse($trx->date)->translatedFormat('d M Y'),
+                                      'raw_date' => $trx->date,
+                                      'time' => Carbon::parse($trx->created_at)->format('H:i'),
+                                      'type' => $trx->type,
+                                      'category' => $trx->category,
+                                      'source_wallet' => $trx->sourceWallet,
+                                      'destination_wallet' => $trx->destinationWallet,
+                                  ];
+                              });
 
-        return view('transactions.index', compact('transactions', 'startDate', 'endDate'));
+        return Inertia::render('Transactions/Index', [
+            'transactions' => [
+                'data' => $transactions
+            ],
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'filters' => $request->only(['search', 'type']),
+        ]);
     }
 
-    public function create()
+    public function create(): Response
     {
         $wallets = Auth::user()->wallets()->where('group_type', '!=', 'System')->get();
         $systemWallets = Auth::user()->wallets()->where('group_type', 'System')->get();
-        
-        // Ambil semua kategori user beserta tipenya
         $categories = Auth::user()->categories()->with('type')->get();
         
-        // Hitung frekuensi penggunaan kategori dari tabel transaction_logs
         $categoryCounts = Auth::user()->transactionLogs()
             ->selectRaw('category_id, count(*) as count')
             ->groupBy('category_id')
             ->pluck('count', 'category_id');
 
-        // Urutkan kategori: Yang paling sering dipakai ada di paling atas
         $categories = $categories->sortByDesc(function($cat) use ($categoryCounts) {
             return $categoryCounts->get($cat->id, 0);
-        })->values(); // values() dipakai supaya array-nya rapi saat dikirim ke Javascript
+        })->values();
 
-        return view('transactions.create', compact('wallets', 'categories', 'systemWallets'));
+        return Inertia::render('Transactions/Create', [
+            'wallets' => $wallets,
+            'categories' => $categories,
+            'systemWallets' => $systemWallets,
+        ]);
     }
 
     public function store(Request $request)
@@ -91,7 +114,6 @@ class TransactionController extends Controller
         $category = Category::findOrFail($request->category_id);
 
         try {
-            // Bungkus proses database saja dalam transaksi
             DB::transaction(function () use ($request, $category) {
                 $source = Wallet::findOrFail($request->source_wallet_id);
                 $destination = Wallet::findOrFail($request->destination_wallet_id);
@@ -99,11 +121,9 @@ class TransactionController extends Controller
                 $mainWallet = ($source->group_type !== 'System') ? $source : $destination;
                 $balanceBefore = $mainWallet->balance;
 
-                // UPDATE: Pakai decrement & increment biar 100% aman dari bug saldo telat
                 Wallet::where('id', $source->id)->decrement('balance', $request->amount);
                 Wallet::where('id', $destination->id)->increment('balance', $request->amount);
 
-                // Ambil saldo paling update setelah dieksekusi di database
                 $balanceAfter = Wallet::where('id', $mainWallet->id)->value('balance');
 
                 TransactionLog::create([
@@ -123,11 +143,10 @@ class TransactionController extends Controller
                 ]);
             });
 
-            // PINDAHKAN REDIRECT KE LUAR TRANSACTION
             return redirect()->route('transactions.index')->with('success', 'Transaksi Berhasil!');
 
         } catch (\Exception $e) {
-            dd('Error ditangkap: ' . $e->getMessage()); 
+            return back()->with('error', $e->getMessage());
         }
     }
 
@@ -135,30 +154,31 @@ class TransactionController extends Controller
     {
         try {
             DB::transaction(function () use ($transaction) {
-                // PENTING: Hanya kembalikan saldo JIKA transaksinya sudah masuk pembukuan (is_cleared = true)
                 if ($transaction->is_cleared) {
-                    // Pakai increment/decrement agar eksekusi langsung mutlak di level Database (Anti-Ngacau)
                     Wallet::where('id', $transaction->source_wallet_id)->increment('balance', $transaction->amount);
                     Wallet::where('id', $transaction->destination_wallet_id)->decrement('balance', $transaction->amount);
                 }
-
-                // Hapus log transaksi
                 $transaction->delete();
             });
 
-            return redirect()->route('transactions.index')->with('success', 'Transaksi dihapus dan saldo dikembalikan!');
+            return redirect()->route('transactions.index')->with('success', 'Transaksi dihapus!');
         } catch (\Exception $e) {
-            dd('Gagal hapus: ' . $e->getMessage());
+            return back()->with('error', $e->getMessage());
         }
     }
 
-    public function edit(TransactionLog $transaction)
+    public function edit(TransactionLog $transaction): Response
     {
         $wallets = Auth::user()->wallets()->where('group_type', '!=', 'System')->get();
         $systemWallets = Auth::user()->wallets()->where('group_type', 'System')->get();
         $categories = Auth::user()->categories()->with('type')->get();
 
-        return view('transactions.edit', compact('transaction', 'wallets', 'systemWallets', 'categories'));
+        return Inertia::render('Transactions/Edit', [
+            'transaction' => $transaction,
+            'wallets' => $wallets,
+            'systemWallets' => $systemWallets,
+            'categories' => $categories,
+        ]);
     }
 
     public function update(Request $request, TransactionLog $transaction)
@@ -174,17 +194,14 @@ class TransactionController extends Controller
 
         try {
             DB::transaction(function () use ($request, $transaction) {
-                // 1. BALIKKAN SALDO LAMA (Reset) - Hanya jika transaksi sebelumnya valid/cleared
                 if ($transaction->is_cleared) {
                     Wallet::where('id', $transaction->source_wallet_id)->increment('balance', $transaction->amount);
                     Wallet::where('id', $transaction->destination_wallet_id)->decrement('balance', $transaction->amount);
                 }
 
-                // 2. HITUNG SALDO BARU
                 Wallet::where('id', $request->source_wallet_id)->decrement('balance', $request->amount);
                 Wallet::where('id', $request->destination_wallet_id)->increment('balance', $request->amount);
 
-                // 3. UPDATE LOG TRANSAKSI
                 $newSource = Wallet::find($request->source_wallet_id);
                 $newDest = Wallet::find($request->destination_wallet_id);
                 $mainWallet = ($newSource->group_type !== 'System') ? $newSource : $newDest;
@@ -196,17 +213,17 @@ class TransactionController extends Controller
                     'source_wallet_id' => $newSource->id,
                     'destination_wallet_id' => $newDest->id,
                     'amount' => $request->amount,
-                    'balance_before' => $mainWallet->balance + $request->amount, // Estimasi sederhana
+                    'balance_before' => $mainWallet->balance + $request->amount,
                     'balance_after' => $mainWallet->balance,
                     'subject' => $request->subject ?? '-',
                     'notes' => $request->notes,
-                    'is_cleared' => true, // Karena di-edit via web, otomatis statusnya jadi Valid (Cleared)
+                    'is_cleared' => true,
                 ]);
             });
 
-            return redirect()->route('transactions.index')->with('success', 'Transaksi berhasil diupdate!');
+            return redirect()->route('transactions.index')->with('success', 'Transaksi diupdate!');
         } catch (\Exception $e) {
-            dd($e->getMessage());
+            return back()->with('error', $e->getMessage());
         }
     }
 }

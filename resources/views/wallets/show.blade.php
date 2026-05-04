@@ -16,7 +16,7 @@
         @endphp
 
         {{-- Card Dompet Utama --}}
-        <div class="bg-gradient-to-br from-[#1E1E1E] to-[#121212] border border-white/5 rounded-xl p-7 text-center mb-10 shadow-2xl relative overflow-hidden group">
+        <div class="bg-gradient-to-br from-[#1E1E1E] to-[#121212] border border-white/10 rounded-xl p-7 text-center mb-10 shadow-2xl relative overflow-hidden group">
             <div class="absolute -top-10 -right-10 w-32 h-32 bg-[#FCA5FF] opacity-[0.05] rounded-full group-hover:scale-150 transition-transform duration-700"></div>
             
             <div class="w-20 h-20 bg-[#262626] rounded-xl mx-auto flex items-center justify-center text-4xl border border-[#333] mb-4 shadow-inner overflow-hidden p-1">
@@ -27,10 +27,10 @@
                 @endif
             </div>
 
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-1">{{ $wallet->name }}</p>
+            <p class="text-xs font-bold text-gray-500 uppercase tracking-[0.2em] mb-1">{{ $wallet->name }}</p>
             <h2 class="text-3xl font-black text-white tracking-tight mb-6">Rp {{ number_format($wallet->balance, 0, ',', '.') }}</h2>
             
-            <a href="{{ route('wallets.edit', $wallet) }}" wire:navigate class="inline-block bg-[#1A1A1A] border border-[#333] text-[#FCA5FF] text-[10px] font-bold px-6 py-2.5 rounded-xl uppercase tracking-widest active:scale-95 transition-all">
+            <a href="{{ route('wallets.edit', $wallet) }}" wire:navigate class="inline-block bg-[#1A1A1A] border border-[#333] text-[#FCA5FF] text-xs font-bold px-6 py-2.5 rounded-xl uppercase tracking-widest active:scale-95 transition-all">
                 ✏️ Edit Dompet
             </a>
         </div>

@@ -13,8 +13,13 @@ use App\Http\Controllers\GoogleController; // Pastikan ini di-import
 // Route Google Auth (Taruh di luar middleware 'auth')
 Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])->name('google.login');
 Route::get('auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
+use Inertia\Inertia;
+
 Route::get('/', function () {
-    return view('welcome');
+    return Inertia::render('Welcome', [
+        'canLogin' => Route::has('login'),
+        'canRegister' => Route::has('register'),
+    ]);
 });
 
 // Semua route yang butuh login digabung jadi satu grup

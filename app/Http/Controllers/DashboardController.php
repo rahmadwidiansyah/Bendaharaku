@@ -7,9 +7,12 @@ use App\Models\TransactionLog;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
+use Inertia\Inertia;
+use Inertia\Response;
+
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(): Response
     {
         $user = Auth::user();
 
@@ -22,10 +25,7 @@ class DashboardController extends Controller
         // 2. TOTAL PORTOFOLIO (Jumlah aset riil)
         $totalPortfolio = $wallets->sum('balance');
 
-        // ==========================================
-        // TAMBAHAN: BREAKDOWN LIQUID & INVESTASI
-        // ==========================================
-        // Menggunakan Collection filter agar tidak perlu query ke database dua kali
+        // Breakdown Liquid & Investasi
         $totalLiquid = $wallets->where('group_type', 'Liquid')->sum('balance');
         $totalInvest = $wallets->where('group_type', 'Asset')->sum('balance');
 
@@ -63,21 +63,36 @@ class DashboardController extends Controller
 
         // 6. TRANSAKSI TERAKHIR (5 Data Terbaru)
         $recentTransactions = $user->transactionLogs()
-            ->with(['category', 'type']) // Eager load relasi biar cepat
+            ->with(['category', 'type', 'sourceWallet', 'destinationWallet']) // Eager load relasi biar cepat
             ->orderByDesc('date')
             ->orderByDesc('created_at')
             ->limit(5)
-            ->get();
+            ->get()
+            ->map(function ($trx) {
+                return [
+                    'id' => $trx->id,
+                    'amount' => $trx->amount,
+                    'notes' => $trx->notes,
+                    'subject' => $trx->subject,
+                    'date' => Carbon::parse($trx->date)->translatedFormat('d M Y'),
+                    'time' => Carbon::parse($trx->created_at)->format('H:i'),
+                    'short_date' => Carbon::parse($trx->date)->format('d M'),
+                    'type' => $trx->type,
+                    'category' => $trx->category,
+                    'source_wallet' => $trx->sourceWallet,
+                    'destination_wallet' => $trx->destinationWallet,
+                ];
+            });
 
-        return view('dashboard', [
-            'totalPortfolio' => $totalPortfolio,
-            'totalLiquid' => $totalLiquid, // Passing data Liquid
-            'totalInvest' => $totalInvest, // Passing data Investasi
+        return Inertia::render('Dashboard', [
+            'totalPortfolio' => (int) $totalPortfolio,
+            'totalLiquid' => (int) $totalLiquid,
+            'totalInvest' => (int) $totalInvest,
             'wallets' => $wallets,
-            'totalHutang' => max(0, $totalHutang),
-            'totalPiutang' => max(0, $totalPiutang),
-            'thisMonthIncome' => $thisMonthIncome,
-            'thisMonthExpense' => $thisMonthExpense,
+            'totalHutang' => (int) max(0, $totalHutang),
+            'totalPiutang' => (int) max(0, $totalPiutang),
+            'thisMonthIncome' => (int) $thisMonthIncome,
+            'thisMonthExpense' => (int) $thisMonthExpense,
             'recentTransactions' => $recentTransactions 
         ]);
     }

@@ -27,7 +27,7 @@
             <div class="text-center mb-8">
                 <x-app-logo class="w-20 h-20 rounded-xl mx-auto mb-5" />
                 <h1 class="text-3xl font-bold text-white tracking-tight">Cek Email Anda</h1>
-                <p class="text-[10px] text-gray-500 uppercase tracking-widest mt-2 font-bold">Verifikasi untuk melanjutkan</p>
+                <p class="text-xs text-gray-500 uppercase tracking-widest mt-2 font-bold">Verifikasi untuk melanjutkan</p>
             </div>
 
             <p class="text-[11px] text-gray-400 text-center mb-6 leading-relaxed px-2">

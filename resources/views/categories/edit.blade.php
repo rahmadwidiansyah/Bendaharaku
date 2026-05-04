@@ -56,7 +56,7 @@
                     <input type="text" name="keyword" value="{{ $category->keyword }}" placeholder="Contoh: mcd, kfc, warkop, bensin..." 
                         class="w-full bg-transparent border-none text-white p-0 text-sm placeholder-gray-600 focus:ring-0 focus:outline-none">
                 </div>
-                <p class="text-[10px] text-gray-500 mt-2 ml-1 italic">* Digunakan untuk deteksi otomatis oleh sistem AI.</p>
+                <p class="text-xs text-gray-500 mt-2 ml-1 italic">* Digunakan untuk deteksi otomatis oleh sistem AI.</p>
             </div>
 
             {{-- ACTIONS (Update Button) - Z-Index 30 --}}

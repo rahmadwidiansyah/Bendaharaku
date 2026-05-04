@@ -28,35 +28,35 @@
             <div class="text-center mb-10">
                 <x-app-logo class="w-20 h-20 rounded-xl mx-auto mb-5" />
                 <h1 class="text-3xl font-bold text-white tracking-tight">Buat Akun</h1>
-                <p class="text-[10px] text-gray-500 uppercase tracking-widest mt-2 font-bold">Mulai kelola keuanganmu</p>
+                <p class="text-xs text-gray-500 uppercase tracking-widest mt-2 font-bold">Mulai kelola keuanganmu</p>
             </div>
 
             <form method="POST" action="{{ route('register') }}" class="space-y-4">
                 @csrf
 
                 <div>
-                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Nama Lengkap</label>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Nama Lengkap</label>
                     <input type="text" name="name" value="{{ old('name') }}" required autofocus
                         class="w-full bg-[#1A1A1A] border border-[#333] text-white rounded-xl p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[#FCA5FF] transition-all shadow-inner" placeholder="John Doe">
-                    @error('name') <span class="text-[10px] text-red-500 mt-1 block font-bold">{{ $message }}</span> @enderror
+                    @error('name') <span class="text-xs text-red-500 mt-1 block font-bold">{{ $message }}</span> @enderror
                 </div>
 
                 <div>
-                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Email</label>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Email</label>
                     <input type="email" name="email" value="{{ old('email') }}" required
                         class="w-full bg-[#1A1A1A] border border-[#333] text-white rounded-xl p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[#FCA5FF] transition-all shadow-inner" placeholder="email@contoh.com">
-                    @error('email') <span class="text-[10px] text-red-500 mt-1 block font-bold">{{ $message }}</span> @enderror
+                    @error('email') <span class="text-xs text-red-500 mt-1 block font-bold">{{ $message }}</span> @enderror
                 </div>
 
                 <div>
-                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Password</label>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Password</label>
                     <input type="password" name="password" required
                         class="w-full bg-[#1A1A1A] border border-[#333] text-white rounded-xl p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[#FCA5FF] transition-all shadow-inner" placeholder="Minimal 8 karakter">
-                    @error('password') <span class="text-[10px] text-red-500 mt-1 block font-bold">{{ $message }}</span> @enderror
+                    @error('password') <span class="text-xs text-red-500 mt-1 block font-bold">{{ $message }}</span> @enderror
                 </div>
 
                 <div>
-                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Konfirmasi Password</label>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Konfirmasi Password</label>
                     <input type="password" name="password_confirmation" required
                         class="w-full bg-[#1A1A1A] border border-[#333] text-white rounded-xl p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[#FCA5FF] transition-all shadow-inner" placeholder="Ulangi password">
                 </div>

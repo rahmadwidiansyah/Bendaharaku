@@ -9,11 +9,11 @@
         <div class="flex flex-col items-center mb-6 mt-2">
             <div id="modIcon" class="w-16 h-16 rounded-xl bg-[#1A1A1A] flex items-center justify-center text-3xl border border-[#333] shadow-inner mb-3 overflow-hidden p-1"></div>
             <p id="modCategory" class="text-xl font-bold text-white text-center"></p>
-            <p id="modDate" class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1 text-center"></p>
+            <p id="modDate" class="text-xs font-bold text-gray-500 uppercase tracking-widest mt-1 text-center"></p>
         </div>
 
         <div class="bg-[#1A1A1A] border border-[#262626] rounded-xl p-5 text-center mb-5">
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Nominal</p>
+            <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Nominal</p>
             <h2 id="modAmount" class="text-3xl font-bold tracking-tight"></h2>
         </div>
 
@@ -37,10 +37,10 @@
         </div>
 
         <div class="flex gap-3 mt-4">
-            <a href="#" id="modEditBtn" class="flex-1 bg-[#1A1A1A] border border-[#333] py-3 rounded-xl flex items-center justify-center gap-2 text-gray-300 text-[10px] font-bold uppercase" wire:navigate>Edit</a>
+            <a href="#" id="modEditBtn" class="flex-1 bg-[#1A1A1A] border border-[#333] py-3 rounded-xl flex items-center justify-center gap-2 text-gray-300 text-xs font-bold uppercase" wire:navigate>Edit</a>
             <form id="modDeleteForm" action="#" method="POST" class="flex-1" onsubmit="return confirm('Hapus transaksi ini?');">
                 @csrf @method('DELETE')
-                <button type="submit" class="w-full bg-[#1A1A1A] border border-[#333] py-3 rounded-xl text-red-500 text-[10px] font-bold uppercase">Hapus</button>
+                <button type="submit" class="w-full bg-[#1A1A1A] border border-[#333] py-3 rounded-xl text-red-500 text-xs font-bold uppercase">Hapus</button>
             </form>
         </div>
     </div>
