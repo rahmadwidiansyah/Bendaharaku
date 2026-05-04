@@ -7,27 +7,29 @@ use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 
+use Inertia\Inertia;
+use Inertia\Response;
+
 class AnalyticsController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): Response
     {
         $user = Auth::user();
 
         // DEFAULT START: Awal bulan
         $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->format('Y-m-d'));
         
-        // DEFAULT END: Ganti ke Today (bukan endOfMonth) agar grafik tidak bablas ke masa depan
+        // DEFAULT END: Ganti ke Today
         $endDate = $request->input('end_date', Carbon::now()->format('Y-m-d'));
         
-        // Tarik transaksi HANYA MILIK USER SAAT INI (Aman 100%)
         $transactions = $user->transactionLogs()
             ->with(['type', 'category'])
             ->whereBetween('date', [$startDate, $endDate])
             ->orderBy('date', 'asc')
             ->get();
 
-        $totalIncome = $transactions->where('type.name', 'Income')->sum('amount');
-        $totalExpense = $transactions->where('type.name', 'Expense')->sum('amount');
+        $totalIncome = (float) $transactions->where('type.name', 'Income')->sum('amount');
+        $totalExpense = (float) $transactions->where('type.name', 'Expense')->sum('amount');
 
         // Saldo Kumulatif
         $initialIncome = $user->transactionLogs()->whereHas('type', fn($q) => $q->where('name', 'Income'))->where('date', '<', $startDate)->sum('amount');
@@ -42,7 +44,6 @@ class AnalyticsController extends Controller
         $txByDate = $transactions->groupBy('date');
         $period = CarbonPeriod::create($startDate, $endDate);
 
-        // --- DETEKSI TANGGAL HARI INI ---
         $todayStr = Carbon::now()->format('Y-m-d');
         $todayIndex = -1;
         $currentIndex = 0;
@@ -50,7 +51,6 @@ class AnalyticsController extends Controller
         foreach ($period as $dateObj) {
             $dateStr = $dateObj->format('Y-m-d');
 
-            // Tandai index kalau tanggalnya cocok sama hari ini
             if ($dateStr === $todayStr) {
                 $todayIndex = $currentIndex;
             }
@@ -58,14 +58,14 @@ class AnalyticsController extends Controller
             $dailyLabels[] = $dateObj->format('d M');
 
             $dayTx = $txByDate->get($dateStr, collect());
-            $dInc = $dayTx->where('type.name', 'Income')->sum('amount');
-            $dExp = $dayTx->where('type.name', 'Expense')->sum('amount');
+            $dInc = (float) $dayTx->where('type.name', 'Income')->sum('amount');
+            $dExp = (float) $dayTx->where('type.name', 'Expense')->sum('amount');
 
             $dailyIncome[] = $dInc;
             $dailyExpense[] = $dExp;
 
             $runningBalance += ($dInc - $dExp);
-            $cumulativeData[] = $runningBalance;
+            $cumulativeData[] = (float) $runningBalance;
 
             $currentIndex++;
         }
@@ -80,7 +80,7 @@ class AnalyticsController extends Controller
                     'id' => $category->id,
                     'name' => $category->category_name,
                     'icon' => $category->icon,
-                    'total' => $rows->sum('amount')
+                    'total' => (float) $rows->sum('amount')
                 ];
             })->sortByDesc('total')->values();
 
@@ -92,12 +92,10 @@ class AnalyticsController extends Controller
                     'id' => $category->id,
                     'name' => $category->category_name,
                     'icon' => $category->icon,
-                    'total' => $rows->sum('amount')
+                    'total' => (float) $rows->sum('amount')
                 ];
             })->sortByDesc('total')->values();
         
-        // --- KODE TAMBAHAN KHUSUS ARUS KAS ALL TIME ---
-        // REVISI 1: Pakai $user->transactionLogs() biar aman!
         $allTransactions = $user->transactionLogs()->orderBy('date', 'asc')->get(); 
         $allKasGrouped = $allTransactions->groupBy('date');
 
@@ -107,28 +105,26 @@ class AnalyticsController extends Controller
 
         foreach ($allKasGrouped as $date => $trxs) {
             $allDailyLabels[] = \Carbon\Carbon::parse($date)->format('d M Y');
-            $allDailyIncome[] = $trxs->where('type.name', 'Income')->sum('amount');
-            $allDailyExpense[] = $trxs->where('type.name', 'Expense')->sum('amount');
+            $allDailyIncome[] = (float) $trxs->where('type.name', 'Income')->sum('amount');
+            $allDailyExpense[] = (float) $trxs->where('type.name', 'Expense')->sum('amount');
         }
-        // ----------------------------------------------
 
-        return view('analytics.index', compact(
-            'startDate',
-            'endDate',
-            'totalIncome',
-            'totalExpense',
-            'cumulativeBalance',
-            'expensesByCategory',
-            'incomesByCategory',
-            'dailyLabels',
-            'dailyIncome',
-            'dailyExpense',
-            'cumulativeData',
-            'todayIndex',
-            // REVISI 2: Jangan lupa variabel baru dimasukkan ke compact
-            'allDailyLabels',
-            'allDailyIncome',
-            'allDailyExpense'
-        ));
+        return Inertia::render('Analytics/Index', [
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'totalIncome' => $totalIncome,
+            'totalExpense' => $totalExpense,
+            'cumulativeBalance' => (float) $cumulativeBalance,
+            'expensesByCategory' => $expensesByCategory,
+            'incomesByCategory' => $incomesByCategory,
+            'dailyLabels' => $dailyLabels,
+            'dailyIncome' => $dailyIncome,
+            'dailyExpense' => $dailyExpense,
+            'cumulativeData' => $cumulativeData,
+            'todayIndex' => $todayIndex,
+            'allDailyLabels' => $allDailyLabels,
+            'allDailyIncome' => $allDailyIncome,
+            'allDailyExpense' => $allDailyExpense
+        ]);
     }
 }

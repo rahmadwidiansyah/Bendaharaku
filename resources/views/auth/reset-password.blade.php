@@ -27,7 +27,7 @@
             <div class="text-center mb-10">
                 <x-app-logo class="w-20 h-20 rounded-xl mx-auto mb-5" />
                 <h1 class="text-3xl font-bold text-white tracking-tight">Reset Password</h1>
-                <p class="text-[10px] text-gray-500 uppercase tracking-widest mt-2 font-bold">Buat sandi baru Anda</p>
+                <p class="text-xs text-gray-500 uppercase tracking-widest mt-2 font-bold">Buat sandi baru Anda</p>
             </div>
 
             <form method="POST" action="{{ route('password.store') }}" class="space-y-5">
@@ -36,24 +36,24 @@
                 <input type="hidden" name="token" value="{{ $request->route('token') }}">
 
                 <div>
-                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Email</label>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Email</label>
                     <input type="email" name="email" value="{{ old('email', $request->email) }}" required autofocus autocomplete="username"
                         class="w-full bg-[#1A1A1A] border border-[#333] text-white rounded-xl p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[#FCA5FF] transition-all shadow-inner">
-                    @error('email') <span class="text-[10px] text-red-500 mt-1 block font-bold">{{ $message }}</span> @enderror
+                    @error('email') <span class="text-xs text-red-500 mt-1 block font-bold">{{ $message }}</span> @enderror
                 </div>
 
                 <div>
-                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Password Baru</label>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Password Baru</label>
                     <input type="password" name="password" required autocomplete="new-password"
                         class="w-full bg-[#1A1A1A] border border-[#333] text-white rounded-xl p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[#FCA5FF] transition-all shadow-inner">
-                    @error('password') <span class="text-[10px] text-red-500 mt-1 block font-bold">{{ $message }}</span> @enderror
+                    @error('password') <span class="text-xs text-red-500 mt-1 block font-bold">{{ $message }}</span> @enderror
                 </div>
 
                 <div>
-                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Konfirmasi Password</label>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Konfirmasi Password</label>
                     <input type="password" name="password_confirmation" required autocomplete="new-password"
                         class="w-full bg-[#1A1A1A] border border-[#333] text-white rounded-xl p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[#FCA5FF] transition-all shadow-inner">
-                    @error('password_confirmation') <span class="text-[10px] text-red-500 mt-1 block font-bold">{{ $message }}</span> @enderror
+                    @error('password_confirmation') <span class="text-xs text-red-500 mt-1 block font-bold">{{ $message }}</span> @enderror
                 </div>
 
                 <button type="submit" class="w-full bg-[#FCA5FF] text-[#121212] font-bold text-sm uppercase tracking-widest py-4 rounded-xl shadow-[0_0_20px_rgba(252,165,255,0.2)] active:scale-95 transition-transform mt-6">

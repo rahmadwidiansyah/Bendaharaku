@@ -23,9 +23,9 @@
             <div class="flex items-center gap-3">
                 @if (Route::has('login'))
                     @auth
-                        <a href="{{ url('/dashboard') }}" class="text-[10px] font-bold bg-transparent-to-br from-gray-900 to-gray-800 border border-white/10 text-purple-400 px-4 py-2 rounded-xl hover:bg-gray-700 transition-all uppercase tracking-widest">Dashboard</a>
+                        <a href="{{ url('/dashboard') }}" class="text-xs font-bold bg-transparent-to-br from-gray-900 to-gray-800 border border-white/10 text-purple-400 px-4 py-2 rounded-xl hover:bg-gray-700 transition-all uppercase tracking-widest">Dashboard</a>
                     @else
-                        <a href="{{ route('login') }}" class="text-[10px] font-bold text-gray-400 hover:text-white transition-colors uppercase tracking-widest">Login</a>
+                        <a href="{{ route('login') }}" class="text-xs font-bold text-gray-400 hover:text-white transition-colors uppercase tracking-widest">Login</a>
                     @endauth
                 @endif
             </div>

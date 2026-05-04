@@ -9,9 +9,12 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\StoreCategoryRequest;
 use Illuminate\Support\Facades\Storage;
 
+use Inertia\Inertia;
+use Inertia\Response;
+
 class CategoryController extends Controller
 {
-    public function index()
+    public function index(): Response
     {
         $groupedCategories = Auth::user()->categories()
             ->with('type')
@@ -23,55 +26,55 @@ class CategoryController extends Controller
 
         $totalCategories = Auth::user()->categories()->count();
 
-        return view('categories.index', compact('groupedCategories', 'totalCategories'));
+        return Inertia::render('Categories/Index', [
+            'groupedCategories' => $groupedCategories,
+            'totalCategories' => $totalCategories,
+        ]);
     }
     
-    // NAMPILIN FORM TAMBAH
-    public function create()
+    public function create(): Response
     {
-        // HANYA ambil tipe Income dan Expense untuk user
         $types = \App\Models\TransactionType::whereIn('name', ['Income', 'Expense'])->get();
-        return view('categories.create', compact('types'));
+        return Inertia::render('Categories/Create', [
+            'types' => $types,
+        ]);
     }
 
-    // PROSES SIMPAN DATA BARU
     public function store(Request $request)
-{
-    $validated = $request->validate([
-        'category_name' => 'required|string|max:255',
-        'type_id' => 'required|exists:transaction_types,id',
-        'icon' => 'nullable|string|max:255',
-        'icon_file' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048', // Maks 2MB
-        'keyword' => 'nullable|string|max:255',
-    ]);
+    {
+        $validated = $request->validate([
+            'category_name' => 'required|string|max:255',
+            'type_id' => 'required|exists:transaction_types,id',
+            'icon' => 'nullable|string|max:255',
+            'icon_file' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'keyword' => 'nullable|string|max:255',
+        ]);
 
-    // Jika user upload file, timpa $validated['icon'] dengan path gambar
-    if ($request->hasFile('icon_file')) {
-        $path = $request->file('icon_file')->store('icons/categories', 'public');
-        $validated['icon'] = $path;
+        if ($request->hasFile('icon_file')) {
+            $path = $request->file('icon_file')->store('icons/categories', 'public');
+            $validated['icon'] = $path;
+        }
+
+        Auth::user()->categories()->create($validated);
+        return redirect()->route('categories.index')->with('success', 'Kategori ditambahkan!');
     }
 
-    Auth::user()->categories()->create($validated);
-    return redirect()->route('categories.index')->with('success', 'Kategori berhasil ditambahkan!');
-}
-
-    // NAMPILIN FORM EDIT
-    public function edit(Category $category)
+    public function edit(Category $category): Response
     {
         if ($category->user_id !== Auth::id()) abort(403);
 
-        // Proteksi: Jika ini kategori sistem (Transfer/Debt/Receivable), arahkan balik atau kunci
         $systemTypes = ['Transfer', 'Debt', 'Receivable'];
         if (in_array($category->type->name, $systemTypes)) {
             return redirect()->route('categories.index')->with('error', 'Kategori sistem tidak boleh diubah.');
         }
 
         $types = \App\Models\TransactionType::whereIn('name', ['Income', 'Expense'])->get();
-        return view('categories.edit', compact('category', 'types'));
+        return Inertia::render('Categories/Edit', [
+            'category' => $category,
+            'types' => $types,
+        ]);
     }
 
-    // PROSES UPDATE DATA LAMA
-   // PROSES UPDATE DATA LAMA
     public function update(Request $request, Category $category)
     {
         if ($category->user_id !== Auth::id()) abort(403);
@@ -81,16 +84,13 @@ class CategoryController extends Controller
             'type_id'       => 'required|exists:transaction_types,id',
             'icon'          => 'nullable|string|max:255',
             'icon_file'     => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'keyword'       => 'nullable|string|max:255', // INI YANG KETINGGALAN! 🔥
+            'keyword'       => 'nullable|string|max:255',
         ]);
 
-        // Jika user upload file baru
         if ($request->hasFile('icon_file')) {
-            // Hapus foto lama jika itu adalah file gambar (bukan teks emoji)
             if ($category->icon && \Str::contains($category->icon, '/')) {
                 Storage::disk('public')->delete($category->icon);
             }
-            // Simpan foto baru
             $path = $request->file('icon_file')->store('icons/categories', 'public');
             $validated['icon'] = $path;
         }
@@ -99,12 +99,10 @@ class CategoryController extends Controller
         return redirect()->route('categories.index')->with('success', 'Kategori diupdate!');
     }
 
-    // HAPUS DATA
     public function destroy(Category $category)
     {
         if ($category->user_id !== Auth::id()) abort(403);
 
-        // Jangan izinkan hapus kategori sistem
         if (in_array($category->type->name, ['Transfer', 'Debt', 'Receivable'])) {
             return redirect()->route('categories.index')->with('error', 'Kategori sistem tidak bisa dihapus.');
         }
@@ -113,11 +111,10 @@ class CategoryController extends Controller
         return redirect()->route('categories.index')->with('success', 'Kategori dihapus!');
     }
 
-    public function show(Category $category)
+    public function show(Category $category): Response
     {
         if ($category->user_id !== Auth::id()) abort(403);
 
-        // Ambil riwayat transaksi khusus kategori ini
         $transactions = Auth::user()->transactionLogs()
             ->where('category_id', $category->id)
             ->with(['type', 'sourceWallet', 'destinationWallet'])
@@ -125,12 +122,14 @@ class CategoryController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Hitung total penggunaan kategori ini
-        $totalUsage = $transactions->sum('amount');
-        
-        // Cek apakah kategori sistem (untuk sembunyikan tombol edit/hapus)
+        $totalUsage = (float) $transactions->sum('amount');
         $isSystem = in_array($category->type->name, ['Transfer', 'Debt', 'Receivable']);
 
-        return view('categories.show', compact('category', 'transactions', 'totalUsage', 'isSystem'));
+        return Inertia::render('Categories/Show', [
+            'category' => $category->load('type'),
+            'transactions' => $transactions,
+            'totalUsage' => $totalUsage,
+            'isSystem' => $isSystem,
+        ]);
     }
 }

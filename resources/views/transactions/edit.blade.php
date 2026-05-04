@@ -28,7 +28,7 @@
             
             {{-- 1. INPUT NOMINAL FORMATTED --}}
             <div class="bg-[#1A1A1A] border border-[#262626] rounded-xl p-5 text-center relative shadow-inner group">
-                <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Nominal (Rp)</label>
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Nominal (Rp)</label>
                 <input type="text" id="display_amount" inputmode="numeric" required 
                     value="{{ number_format($transaction->amount, 0, ',', '.') }}"
                     class="w-full bg-transparent border-none text-white text-center text-4xl font-bold placeholder-gray-600 focus:ring-0 p-0 focus:outline-none caret-[#FCA5FF]">
@@ -58,7 +58,7 @@
             {{-- 4. DOMPET (BOTTOM SHEET) --}}
             <div class="bg-[#1A1A1A] border border-[#262626] rounded-xl p-4 shadow-inner space-y-3">
                 <div id="sourceDiv" class="{{ $transaction->type->name === 'Income' ? 'hidden' : 'block' }}">
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Dari Dompet</label>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Dari Dompet</label>
                     <div class="w-full bg-[#262626] text-white rounded-xl p-3.5 text-sm cursor-pointer flex items-center justify-between active:scale-95 transition-transform border border-[#333]" onclick="openBottomSheet('walletModal', 'source')">
                         <span id="sourceWalletLabel" class="font-bold truncate">{{ $transaction->sourceWallet->name }}</span>
                         <svg class="w-4 h-4 text-[#FCA5FF]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
@@ -67,7 +67,7 @@
                 </div>
                 
                 <div id="destDiv" class="{{ $transaction->type->name === 'Expense' ? 'hidden' : 'block' }}">
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Ke Dompet</label>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Ke Dompet</label>
                     <div class="w-full bg-[#262626] text-white rounded-xl p-3.5 text-sm cursor-pointer flex items-center justify-between active:scale-95 transition-transform border border-[#333]" onclick="openBottomSheet('walletModal', 'dest')">
                         <span id="destWalletLabel" class="font-bold truncate">{{ $transaction->destinationWallet->name }}</span>
                         <svg class="w-4 h-4 text-[#FCA5FF]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
@@ -243,7 +243,7 @@
                 <div class="w-12 h-12 bg-[#262626] rounded-xl flex items-center justify-center text-xl border border-[#333] shrink-0 overflow-hidden">${iconContent}</div>
                 <div>
                     <span class="text-sm font-bold text-white">${w.name}</span>
-                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">${w.group_type}</p>
+                    <p class="text-xs text-gray-500 font-bold uppercase tracking-widest mt-0.5">${w.group_type}</p>
                 </div>
             </div>`;
     });
