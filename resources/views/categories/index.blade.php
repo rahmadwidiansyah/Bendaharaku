@@ -73,7 +73,7 @@
                     'Transfer' => ['text' => 'text-blue-400', 'bg' => 'bg-blue-500', 'glow' => 'group-hover:shadow-[0_0_15px_rgba(59,130,246,0.2)]', 'border' => 'group-hover:border-blue-500/50'],
                     'Debt' => ['text' => 'text-yellow-400', 'bg' => 'bg-yellow-500', 'glow' => 'group-hover:shadow-[0_0_15px_rgba(229,208,126,0.2)]', 'border' => 'group-hover:border-[#E5D07E]/50'],
                     'Receivable' => ['text' => 'text-pink-400', 'bg' => 'bg-pink-500', 'glow' => 'group-hover:shadow-[0_0_15px_rgba(252,165,255,0.2)]', 'border' => 'group-hover:border-[#FCA5FF]/50'],
-                    default => ['text' => 'text-white', 'bg' => 'bg-white', 'glow' => 'group-hover:shadow-[0_0_15px_rgba(255,255,255,0.2)]', 'border' => 'group-hover:border-white/50']
+                    default => ['text' => 'text-white', 'bg' => 'bg-white', 'glow' => 'group-hover:shadow-[0_0_15px_rgba(255,255,255,0.2)]', 'border' => 'group-hover:border-white/100']
                 };
                 
                 // Tentukan teks judul berdasarkan tipe
@@ -108,10 +108,10 @@
                         @endphp
 
                         <a href="{{ route('categories.show', $category) }}" wire:navigate 
-                           class="relative group bg-gradient-to-br from-gray-900 to-gray-800 border border-white/5 rounded-xl p-4 flex flex-col items-center justify-center text-center active:scale-95 transition-all duration-300 {{ $theme['glow'] }} {{ $theme['border'] }}">
+                           class="relative group bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center active:scale-95 transition-all duration-300 {{ $theme['glow'] }} {{ $theme['border'] }}">
                             
                             {{-- Kotak Icon / Gambar --}}
-                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center text-2xl border border-white/5 shrink-0 shadow-inner overflow-hidden p-0.5 mb-2.5 transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-1">
+                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center text-2xl border border-white/10 shrink-0 shadow-inner overflow-hidden p-0.5 mb-2.5 transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-1">
                                 @if($isImage)
                                     @php
                                         $fullUrl = Str::startsWith($rawIcon, 'http') ? $rawIcon : asset('storage/' . $rawIcon);

@@ -12,7 +12,7 @@
 </header>
 
         <div class="border rounded-xl p-6 text-center mb-8 {{ $isDebt ? 'bg-[#E5D07E]/10 border-[#E5D07E]/30' : 'bg-[#FCA5FF]/10 border-[#FCA5FF]/30' }}">
-            <p class="text-[10px] font-bold uppercase tracking-widest mb-1 {{ $isDebt ? 'text-[#E5D07E]' : 'text-[#FCA5FF]' }}">Total Aktif</p>
+            <p class="text-xs font-bold uppercase tracking-widest mb-1 {{ $isDebt ? 'text-[#E5D07E]' : 'text-[#FCA5FF]' }}">Total Aktif</p>
             <h2 class="text-3xl font-bold text-white tracking-tight">Rp {{ number_format($total, 0, ',', '.') }}</h2>
         </div>
 
@@ -39,7 +39,7 @@
                     
                     <div class="flex items-center gap-1 mt-3 pt-3 border-t border-[#262626]">
                         <svg class="w-3 h-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                        <p class="text-[10px] text-gray-400">Transaksi terakhir: <span class="font-bold">{{ \Carbon\Carbon::parse($loan->latest_date)->format('d M Y') }}</span></p>
+                        <p class="text-xs text-gray-400">Transaksi terakhir: <span class="font-bold">{{ \Carbon\Carbon::parse($loan->latest_date)->format('d M Y') }}</span></p>
                     </div>
                 </div>
             @empty

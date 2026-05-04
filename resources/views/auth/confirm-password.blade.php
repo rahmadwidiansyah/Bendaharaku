@@ -27,7 +27,7 @@
             <div class="text-center mb-8">
                 <x-app-logo class="w-20 h-20 rounded-xl mx-auto mb-5" />
                 <h1 class="text-3xl font-bold text-white tracking-tight">Area Aman</h1>
-                <p class="text-[10px] text-gray-500 uppercase tracking-widest mt-2 font-bold">Verifikasi Identitas Anda</p>
+                <p class="text-xs text-gray-500 uppercase tracking-widest mt-2 font-bold">Verifikasi Identitas Anda</p>
             </div>
 
             <p class="text-[11px] text-gray-400 text-center mb-8 leading-relaxed px-2">
@@ -38,10 +38,10 @@
                 @csrf
 
                 <div>
-                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Password Anda</label>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Password Anda</label>
                     <input type="password" name="password" required autocomplete="current-password" autofocus
                         class="w-full bg-[#1A1A1A] border border-[#333] text-white rounded-xl p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[#FCA5FF] transition-all shadow-inner">
-                    @error('password') <span class="text-[10px] text-red-500 mt-1 block font-bold">{{ $message }}</span> @enderror
+                    @error('password') <span class="text-xs text-red-500 mt-1 block font-bold">{{ $message }}</span> @enderror
                 </div>
 
                 <button type="submit" class="w-full bg-[#FCA5FF] text-[#121212] font-bold text-sm uppercase tracking-widest py-4 rounded-xl shadow-[0_0_20px_rgba(252,165,255,0.2)] active:scale-95 transition-transform mt-6">

@@ -11,7 +11,7 @@
                     elseif ($hour < 18) { $greeting = 'Selamat Sore'; $emoji = '🌇'; } 
                     else { $greeting = 'Selamat Malam'; $emoji = '🌙'; }
                 @endphp
-                <p class="text-[10px] text-[#FCA5FF] font-black uppercase tracking-[0.3em] mb-0.5 opacity-80">✨ Hello</p>
+                <p class="text-xs text-[#FCA5FF] font-black uppercase tracking-[0.3em] mb-0.5 opacity-80">✨ Hello</p>
                 <h1 class="text-2xl font-black text-white tracking-tight leading-none">{{ Auth::user()->name }}</h1>
                 <div class="flex items-center gap-2 mb-1">
                     <p class="text-[12px] text-gray-400 font-bold uppercase tracking-[0.1em]">{{ $greeting }}</p>
@@ -59,7 +59,7 @@
             }
         @endphp
 
-        <div id="insight-box" class="mb-6 p-3 rounded-xl border items-center justify-between gap-3 animate-fade-in-up delay-100 text-[10px] uppercase font-bold tracking-widest shadow-sm
+        <div id="insight-box" class="mb-6 p-3 rounded-xl border items-center justify-between gap-3 animate-fade-in-up delay-100 text-xs uppercase font-bold tracking-widest shadow-sm
             {{ $insightType == 'danger' ? 'bg-red-950/40 border-red-900/50 text-red-400 flex' : 
               ($insightType == 'success' ? 'bg-green-950/40 border-green-900/50 text-green-400 flex' : 
               ($insightType == 'warning' ? 'bg-yellow-950/40 border-yellow-900/50 text-yellow-400 flex' : 
@@ -95,7 +95,7 @@
         </script>
 
         {{-- HERO CARD: Total Portofolio --}}
-        <div class="relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-white/5 overflow-hidden shadow-2xl mb-5 group animate-fade-in-up delay-200">
+        <div class="relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 overflow-hidden shadow-2xl mb-5 group animate-fade-in-up delay-200">
             <div class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             <div class="absolute inset-x-0 bottom-0 opacity-20 pointer-events-none h-24">
                 <svg viewBox="0 0 400 150" preserveAspectRatio="none" class="w-full h-full">
@@ -136,7 +136,7 @@
                             <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Liquid</p>
                         </div>
                         <p class="text-sm font-bold text-white tracking-tight">
-                            <span class="text-[10px] text-gray-500 mr-0.5">Rp</span>{{ number_format($totalLiquid ?? 0, 0, ',', '.') }}
+                            <span class="text-xs text-gray-500 mr-0.5">Rp</span>{{ number_format($totalLiquid ?? 0, 0, ',', '.') }}
                         </p>
                     </div>
                     <div class="w-px h-8 bg-gradient-to-b from-transparent via-white/10 to-transparent"></div>
@@ -146,7 +146,7 @@
                             <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Investasi</p>
                         </div>
                         <p class="text-sm font-bold text-white tracking-tight">
-                            <span class="text-[10px] text-gray-500 mr-0.5">Rp</span>{{ number_format($totalInvest ?? 0, 0, ',', '.') }}
+                            <span class="text-xs text-gray-500 mr-0.5">Rp</span>{{ number_format($totalInvest ?? 0, 0, ',', '.') }}
                         </p>
                     </div>
                 </div>
@@ -195,7 +195,7 @@
                     $rawIcon = $wallet->icon ?? '💳';
                     $isImage = \Illuminate\Support\Str::contains($rawIcon, ['.png', '.jpg', '.jpeg', '.webp', '/']);
                 @endphp
-                <a href="{{ route('wallets.show', $wallet) }}" wire:navigate class="relative group bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-4 border border-white/5 active:scale-95 transition-all shadow-xl overflow-hidden h-[100px] flex flex-col justify-between hover:border-blue-500/30">
+                <a href="{{ route('wallets.show', $wallet) }}" wire:navigate class="relative group bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-4 border border-white/10 active:scale-95 transition-all shadow-xl overflow-hidden h-[100px] flex flex-col justify-between hover:border-blue-500/30">
                     <div class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
                     <div class="absolute inset-x-0 bottom-0 opacity-[0.15] pointer-events-none h-14">
                         <svg viewBox="0 0 200 100" preserveAspectRatio="none" class="w-full h-full">
@@ -207,14 +207,14 @@
                         <div class="w-8 h-8 shrink-0 rounded-xl bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center text-base border border-white/10 shadow-inner group-hover:scale-110 transition-transform overflow-hidden">
                             @if($isImage) <img src="{{ asset('storage/' . $rawIcon) }}" class="w-full h-full object-cover"> @else {{ $rawIcon }} @endif
                         </div>
-                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-tight truncate leading-tight group-hover:text-white transition-colors">{{ $wallet->name }}</p>
+                        <p class="text-xs font-black text-gray-400 uppercase tracking-tight truncate leading-tight group-hover:text-white transition-colors">{{ $wallet->name }}</p>
                     </div>
                     <div class="relative z-10">
-                        <p class="text-lg font-bold text-white tracking-tighter truncate"><span class="text-[10px] text-gray-600 font-medium mr-0.5">Rp</span>{{ number_format($wallet->balance, 0, ',', '.') }}</p>
+                        <p class="text-lg font-bold text-white tracking-tighter truncate"><span class="text-xs text-gray-600 font-medium mr-0.5">Rp</span>{{ number_format($wallet->balance, 0, ',', '.') }}</p>
                     </div>
                 </a>
             @empty
-                <div class="col-span-2 text-center py-6 rounded-xl bg-gradient-to-br from-gray-900 to-gray-800 border border-white/5 relative overflow-hidden group">
+                <div class="col-span-2 text-center py-6 rounded-xl bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 relative overflow-hidden group">
                     <div class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
                     <span class="text-2xl mb-2 block relative z-10">🏦</span>
                     <p class="text-xs text-gray-400 uppercase font-bold tracking-widest relative z-10">Belum Ada Dompet Aktif</p>
@@ -234,7 +234,7 @@
         </div>
         <div class="grid grid-cols-2 gap-3 mb-10 animate-fade-in-up delay-400">
             <a href="{{ route('loans.index', ['type' => 'hutang']) }}" wire:navigate class="active:scale-95 transition-transform group">
-                <div class="bg-gradient-to-br from-gray-900 to-gray-800 p-4 rounded-xl border border-white/5 relative overflow-hidden h-[100px] hover:border-yellow-400">
+                <div class="bg-gradient-to-br from-gray-900 to-gray-800 p-4 rounded-xl border border-white/10 relative overflow-hidden h-[100px] hover:border-yellow-400">
                     <div class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
                     <div class="absolute inset-x-0 bottom-0 opacity-10 pointer-events-none h-12">
                         <svg viewBox="0 0 200 100" preserveAspectRatio="none" class="w-full h-full">
@@ -252,7 +252,7 @@
                 </div>
             </a>
             <a href="{{ route('loans.index', ['type' => 'piutang']) }}" wire:navigate class="active:scale-95 transition-transform group">
-                <div class="bg-gradient-to-br from-gray-900 to-gray-800 p-4 rounded-xl border border-white/5 relative overflow-hidden h-[100px] hover:border-purple-400">
+                <div class="bg-gradient-to-br from-gray-900 to-gray-800 p-4 rounded-xl border border-white/10 relative overflow-hidden h-[100px] hover:border-purple-400">
                     <div class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
                     <div class="absolute inset-x-0 bottom-0 opacity-10 pointer-events-none h-12">
                         <svg viewBox="0 0 200 100" preserveAspectRatio="none" class="w-full h-full">
@@ -283,7 +283,7 @@
             
         </div>
 
-<div class="bg-gradient-to-br from-gray-900 to-gray-800 border border-white/5 rounded-xl p-2 mb-8 animate-fade-in-up delay-500 relative overflow-hidden group">
+<div class="bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-2 mb-8 animate-fade-in-up delay-500 relative overflow-hidden group">
     <div class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
     @forelse($recentTransactions as $trx)
         @php
@@ -338,7 +338,7 @@
     @empty
         <div class="text-center py-6">
             <span class="text-2xl mb-2 block opacity-50">💸</span>
-            <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Belum Ada Transaksi</p>
+            <p class="text-xs text-gray-500 font-bold uppercase tracking-widest">Belum Ada Transaksi</p>
         </div>
     @endforelse
 </div>

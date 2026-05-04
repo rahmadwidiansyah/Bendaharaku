@@ -20,24 +20,24 @@
 
         {{-- RINGKASAN --}}
         <div class="grid grid-cols-2 gap-3 mb-6 animate-fade-in-up delay-100">
-            <div class="bg-gradient-to-br from-green-500/10 to-green-500/10 p-4 rounded-xl border border-white/5 relative overflow-hidden group">
+            <div class="bg-gradient-to-br from-green-500/10 to-green-500/10 p-4 rounded-xl border border-white/10 relative overflow-hidden group">
                 <div class="absolute top-0 right-0 w-16 h-16 bg-green-500/10 rounded-bl-full blur-xl group-hover:bg-green-500/20 transition-colors"></div>
                 <div class="flex items-center gap-2 mb-2">
                     <div class="w-1.5 h-1.5 rounded-full bg-green-400 shadow-[0_0_5px_rgba(74,222,128,0.5)]"></div>
-                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Pemasukan</p>
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Pemasukan</p>
                 </div>
                 <p class="text-[15px] font-black text-green-400 tracking-tighter break-words relative z-10 leading-tight">
-                    <span class="text-[10px] mr-0.5 opacity-70">+Rp</span>{{ number_format($totalIncome, 0, ',', '.') }}
+                    <span class="text-xs mr-0.5 opacity-70">+Rp</span>{{ number_format($totalIncome, 0, ',', '.') }}
                 </p>
             </div>
-            <div class="bg-gradient-to-br from-red-500/10 to-red-500/10 p-4 rounded-xl border border-white/5 relative overflow-hidden group">
+            <div class="bg-gradient-to-br from-red-500/10 to-red-500/10 p-4 rounded-xl border border-white/10 relative overflow-hidden group">
                 <div class="absolute top-0 right-0 w-16 h-16 bg-red-500/10 rounded-bl-full blur-xl group-hover:bg-red-500/20 transition-colors"></div>
                 <div class="flex items-center gap-2 mb-2">
                     <div class="w-1.5 h-1.5 rounded-full bg-red-400 shadow-[0_0_5px_rgba(156,163,175,0.5)]"></div>
-                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Pengeluaran</p>
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Pengeluaran</p>
                 </div>
                 <p class="text-[15px] font-black text-red-400 tracking-tighter break-words relative z-10 leading-tight">
-                    <span class="text-red-400 text-[10px] mr-0.5 opacity-70">-Rp</span>{{ number_format($totalExpense, 0, ',', '.') }}
+                    <span class="text-red-400 text-xs mr-0.5 opacity-70">-Rp</span>{{ number_format($totalExpense, 0, ',', '.') }}
                 </p>
             </div>
         </div>
@@ -48,10 +48,10 @@
             <div class="flex justify-between items-start mb-6 relative z-10">
                 <div>
                     <p class="text-xs font-bold text-white uppercase tracking-[0.2em] mb-1">Saldo Kumulatif</p>
-                    <p class="text-[10px] text-gray-500 font-medium">Pergerakan total kekayaan</p>
+                    <p class="text-xs text-gray-500 font-medium">Pergerakan total kekayaan</p>
                 </div>
-                <p class="text-lg font-black text-white tracking-tight bg-[#121212] px-3 py-1.5 rounded-xl border border-white/5 shadow-inner">
-                    <span class="text-[10px] text-gray-500 mr-1">Rp</span>{{ number_format($cumulativeBalance, 0, ',', '.') }}
+                <p class="text-lg font-black text-white tracking-tight bg-[#121212] px-3 py-1.5 rounded-xl border border-white/10 shadow-inner">
+                    <span class="text-xs text-gray-500 mr-1">Rp</span>{{ number_format($cumulativeBalance, 0, ',', '.') }}
                 </p>
             </div>
             <div class="w-full h-[140px] relative z-10">
@@ -67,7 +67,7 @@
                 <h2 class="text-xs font-bold text-white uppercase tracking-widest">Arus Kas</h2>
                 
                 {{-- Toggle Grouping --}}
-                <div class="flex bg-[#121212] rounded-lg p-1 border border-white/5 shadow-inner">
+                <div class="flex bg-[#121212] rounded-lg p-1 border border-white/10 shadow-inner">
                     <button id="btnHarian" onclick="renderBarChart('harian')" class="text-[9px] font-bold uppercase tracking-widest px-2.5 py-1.5 rounded-md transition-colors bg-[#FCA5FF] text-[#121212]">Hari</button>
                     <button id="btnMingguan" onclick="renderBarChart('mingguan')" class="text-[9px] font-bold uppercase tracking-widest px-2.5 py-1.5 rounded-md transition-colors text-gray-500 hover:text-white">Pekan</button>
                     <button id="btnBulanan" onclick="renderBarChart('bulanan')" class="text-[9px] font-bold uppercase tracking-widest px-2.5 py-1.5 rounded-md transition-colors text-gray-500 hover:text-white">Bulan</button>
@@ -86,8 +86,8 @@
             <h2 class="text-xs font-bold text-white uppercase tracking-widest">Rincian Kategori</h2>
             <div class="flex-1 h-px bg-gradient-to-r from-purple-500 to-transparent"></div>
         </div>
-        <div class="flex bg-gray-900 border border-white/5 rounded-xl p-1.5 mb-5 shadow-inner animate-fade-in-up delay-400 relative">
-            <div id="tabIndicator" class="absolute top-1.5 bottom-1.5 left-1.5 w-[calc(50%-0.375rem)] bg-gray-800 border border-white/5 shadow-md rounded-xl transition-all duration-300 ease-out z-0"></div>
+        <div class="flex bg-gray-900 border border-white/10 rounded-xl p-1.5 mb-5 shadow-inner animate-fade-in-up delay-400 relative">
+            <div id="tabIndicator" class="absolute top-1.5 bottom-1.5 left-1.5 w-[calc(50%-0.375rem)] bg-gray-800 border border-white/10 shadow-md rounded-xl transition-all duration-300 ease-out z-0"></div>
             <button id="btnExpense" onclick="switchChart('expense')" class="relative z-10 flex-1 text-xs font-bold uppercase tracking-widest py-3 text-white transition-colors duration-300">Pengeluaran</button>
             <button id="btnIncome" onclick="switchChart('income')" class="relative z-10 flex-1 text-xs font-bold uppercase tracking-widest py-3 text-gray-500 transition-colors duration-300">Pemasukan</button>
         </div>
@@ -96,13 +96,13 @@
         <div class="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-500/10 p-6 rounded-xl mb-8 shadow-[0_10px_30px_rgba(252,165,255,0.05)] animate-fade-in-up delay-500 relative overflow-hidden group">
             <div class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
             <div id="emptyState" class="absolute inset-0 flex flex-col items-center justify-center hidden rounded-xl z-20">
-                <span class="w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center text-xl mb-3 border border-white/5">📭</span>
+                <span class="w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center text-xl mb-3 border border-white/10">📭</span>
                 <p class="text-xs font-bold text-white uppercase tracking-widest">Tidak Ada Data</p>
             </div>
             <div id="chartContainer" class="relative w-full h-56 mb-6">
                 <canvas id="mainChart" class="relative z-10 w-full h-full"></canvas>
                 <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center pointer-events-none z-0">
-                    <div class="w-[110px] h-[110px] rounded-full bg-gray-900 border border-white/5 shadow-inner flex flex-col items-center justify-center text-center px-1">
+                    <div class="w-[110px] h-[110px] rounded-full bg-gray-900 border border-white/10 shadow-inner flex flex-col items-center justify-center text-center px-1">
                         <span id="chartCenterLabel" class="text-[8px] text-gray-500 font-bold uppercase tracking-widest mb-1">Total</span>
                         <span id="chartCenterValue" class="text-sm font-black text-white tracking-tighter leading-tight w-full break-words">Rp 0</span>
                     </div>
@@ -159,11 +159,11 @@
             let percentage = dataObj.total > 0 ? ((val / dataObj.total) * 100).toFixed(1) : 0;
             let bgColor = colors[i % colors.length];
             let rawIcon = dataObj.icons[i] || '📁';
-            html += `<a href="/categories/${dataObj.ids[i]}" class="relative flex items-center justify-between bg-[#1A1A1A] p-3 rounded-xl border border-white/5 overflow-hidden group hover:border-[#FCA5FF]/30 transition-all duration-300">
+            html += `<a href="/categories/${dataObj.ids[i]}" class="relative flex items-center justify-between bg-[#1A1A1A] p-3 rounded-xl border border-white/10 overflow-hidden group hover:border-[#FCA5FF]/30 transition-all duration-300">
                         <div class="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-[${bgColor}]/20 to-transparent w-[${percentage}%] opacity-30"></div>
                         <div class="flex items-center gap-3 relative z-10 w-full">
                             <div class="w-1.5 h-6 rounded-full" style="background-color: ${bgColor};"></div>
-                            <div class="w-8 h-8 rounded-xl bg-[#2A2A2A] flex items-center justify-center border border-white/5 overflow-hidden p-0.5">
+                            <div class="w-8 h-8 rounded-xl bg-[#2A2A2A] flex items-center justify-center border border-white/10 overflow-hidden p-0.5">
                                 ${rawIcon.includes('/') ? `<img src="/storage/${rawIcon}" class="w-full h-full object-cover">` : `<span class="text-sm">${rawIcon}</span>`}
                             </div>
                             <div class="flex-1 min-w-0 pr-2"><p class="text-[11px] font-bold text-gray-200 truncate">${label}</p><p class="text-[9px] text-gray-500 font-bold">${percentage}%</p></div>
@@ -179,13 +179,13 @@
         const tabIndicator = document.getElementById('tabIndicator');
         if (type === 'expense') {
             tabIndicator.style.transform = 'translateX(0)'; 
-            btnEx.className = "relative z-10 flex-1 text-[10px] font-bold uppercase tracking-widest py-3 text-white transition-all";
-            btnIn.className = "relative z-10 flex-1 text-[10px] font-bold uppercase tracking-widest py-3 text-gray-500 transition-all";
+            btnEx.className = "relative z-10 flex-1 text-xs font-bold uppercase tracking-widest py-3 text-white transition-all";
+            btnIn.className = "relative z-10 flex-1 text-xs font-bold uppercase tracking-widest py-3 text-gray-500 transition-all";
             renderMainChart(expenseData, 'expense');
         } else {
             tabIndicator.style.transform = 'translateX(100%)'; 
-            btnIn.className = "relative z-10 flex-1 text-[10px] font-bold uppercase tracking-widest py-3 text-white transition-all";
-            btnEx.className = "relative z-10 flex-1 text-[10px] font-bold uppercase tracking-widest py-3 text-gray-500 transition-all";
+            btnIn.className = "relative z-10 flex-1 text-xs font-bold uppercase tracking-widest py-3 text-white transition-all";
+            btnEx.className = "relative z-10 flex-1 text-xs font-bold uppercase tracking-widest py-3 text-gray-500 transition-all";
             renderMainChart(incomeData, 'income');
         }
     }

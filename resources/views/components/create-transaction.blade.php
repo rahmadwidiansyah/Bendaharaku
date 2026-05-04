@@ -10,7 +10,7 @@
             </svg>
             
             {{-- Tooltip Nama Bot (Muncul pas di-hover) --}}
-            <div class="absolute right-14 bg-[#1A1A1A] border border-[#333] text-gray-300 text-[10px] font-bold px-2.5 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-md">
+            <div class="absolute right-14 bg-[#1A1A1A] border border-[#333] text-gray-300 text-xs font-bold px-2.5 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-md">
                 Catat via Telegram
             </div>
         </a>

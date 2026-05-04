@@ -26,20 +26,20 @@
             
             <div class="grid grid-cols-2 gap-3 text-left">
                 <div class="space-y-1">
-                    <label class="text-[10px] font-bold text-purple-400 uppercase tracking-widest pl-1">Dari</label>
+                    <label class="text-xs font-bold text-purple-400 uppercase tracking-widest pl-1">Dari</label>
                     <input type="date" name="start_date" id="modal_start_date" value="{{ $startDate }}" class="w-full bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 text-white rounded-xl p-3 text-xs" style="color-scheme: dark;">
                 </div>
                 <div class="space-y-1">
-                    <label class="text-[10px] font-bold text-purple-400 uppercase tracking-widest pl-1">Sampai</label>
+                    <label class="text-xs font-bold text-purple-400 uppercase tracking-widest pl-1">Sampai</label>
                     <input type="date" name="end_date" id="modal_end_date" value="{{ $endDate }}" class="w-full bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 text-white rounded-xl p-3 text-xs" style="color-scheme: dark;">
                 </div>
             </div>
             
             <div class="grid grid-cols-3 gap-2 pt-2">
                 {{-- TOMBOL DIUBAH MENJADI TAHUN INI --}}
-                <button type="button" onclick="setQuickDate('thisYear')" class="bg-[#1A1A1A] text-[10px] font-bold text-gray-400 py-3 rounded-xl border border-white/5 uppercase hover:text-white transition-colors">Tahun Ini</button>
-                <button type="button" onclick="setQuickDate('thisMonth')" class="bg-[#1A1A1A] text-[10px] font-bold text-gray-400 py-3 rounded-xl border border-white/5 uppercase hover:text-white transition-colors">Bulan Ini</button>
-                <button type="button" onclick="setQuickDate('lastMonth')" class="bg-[#1A1A1A] text-[10px] font-bold text-gray-400 py-3 rounded-xl border border-white/5 uppercase hover:text-white transition-colors">Bulan Lalu</button>
+                <button type="button" onclick="setQuickDate('thisYear')" class="bg-[#1A1A1A] text-xs font-bold text-gray-400 py-3 rounded-xl border border-white/10 uppercase hover:text-white transition-colors">Tahun Ini</button>
+                <button type="button" onclick="setQuickDate('thisMonth')" class="bg-[#1A1A1A] text-xs font-bold text-gray-400 py-3 rounded-xl border border-white/10 uppercase hover:text-white transition-colors">Bulan Ini</button>
+                <button type="button" onclick="setQuickDate('lastMonth')" class="bg-[#1A1A1A] text-xs font-bold text-gray-400 py-3 rounded-xl border border-white/10 uppercase hover:text-white transition-colors">Bulan Lalu</button>
             </div>
             
             <button type="submit" class="w-full bg-gradient-to-br from-purple-600 to-purple-500 text-white font-black text-xs uppercase py-3.5 rounded-xl shadow-[0_0_15px_rgba(168,85,247,0.4)] active:scale-95 transition-all mt-2">Terapkan Filter</button>
