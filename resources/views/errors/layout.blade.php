@@ -9,10 +9,10 @@
         <!-- Styles -->
         <style>
             html, body {
-                background-color: #fff;
-                color: #636b6f;
+                background-color: #121212;
+                color: #ffffff;
                 font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-                font-weight: 100;
+                font-weight: 400;
                 height: 100vh;
                 margin: 0;
             }
@@ -38,6 +38,7 @@
             .title {
                 font-size: 36px;
                 padding: 20px;
+                font-weight: 700;
             }
         </style>
     </head>

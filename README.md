@@ -56,3 +56,49 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+## Installation
+
+1. **Clone the repository**
+```bash
+git clone https://github.com/zackbrawn/Bendaharaku.git
+cd Bendaharaku
+```
+
+2. **Install Composer Dependencies (Initial)**
+Gunakan kontainer sementara untuk mengunduh dependensi awal:
+```bash
+docker run --rm \
+-u "$(id -u):$(id -g)" \
+-v "$(pwd):/var/www/html" \
+-w /var/www/html \
+laravelsail/php82-composer:latest \
+composer install --ignore-platform-reqs
+```
+
+3. **Setup Environment File**
+```bash
+cp .env.example .env
+```
+
+4. **Start the Containers**
+Nyalakan semua layanan di latar belakang:
+```bash
+docker compose up -d
+```
+
+5. **Generate Application Key**
+```bash
+docker compose exec app php artisan key:generate
+```
+
+6. **Run Database Migrations**
+```bash
+docker compose exec app php artisan migrate
+```
+
+7. **Install & Build Frontend Assets**
+```bash
+docker compose exec app npm install
+docker compose exec app npm run dev
+```

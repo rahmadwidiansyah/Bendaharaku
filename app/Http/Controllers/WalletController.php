@@ -6,13 +6,21 @@ use App\Models\Wallet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
 
 class WalletController extends Controller
 {
+    // Menampilkan daftar Wallet (opsional jika dibutuhkan)
+    public function index()
+    {
+        $wallets = Auth::user()->wallets;
+        return Inertia::render('Wallets/Index', ['wallets' => $wallets]);
+    }
+
     // Tampilkan Form Tambah Wallet
     public function create()
     {
-        return view('wallets.create');
+        return Inertia::render('Wallets/Create');
     }
 
     // Proses Simpan Wallet Baru
@@ -50,14 +58,19 @@ class WalletController extends Controller
             })
             ->orderBy('date', 'desc')->orderBy('created_at', 'desc')->paginate(20);
 
-        return view('wallets.show', compact('wallet', 'transactions'));
+        return Inertia::render('Wallets/Show', [
+            'wallet' => $wallet,
+            'transactions' => $transactions
+        ]);
     }
 
     // Tampilkan Form Edit
     public function edit(Wallet $wallet)
     {
         if ($wallet->user_id !== Auth::id()) abort(403);
-        return view('wallets.edit', compact('wallet'));
+        return Inertia::render('Wallets/Edit', [
+            'wallet' => $wallet
+        ]);
     }
 
     // Proses Update

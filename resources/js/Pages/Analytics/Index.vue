@@ -296,7 +296,7 @@ onMounted(() => {
                 class="bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 p-6 rounded-xl mb-8 animate-fade-in-up delay-300 relative overflow-hidden group">
                 <div class="flex justify-between items-center mb-6 relative z-10">
                     <h2 class="text-sm font-bold text-white uppercase tracking-widest">Arus Kas</h2>
-                    <div class="flex bg-gray-800 border border-white/10 rounded-lg p-1 relative overflow-hidden">
+                    <div class="flex bg-gray-900 border border-white/10 rounded-lg p-1 relative overflow-hidden">
                         <div class="absolute top-1 bottom-1 left-1 w-[calc(33.33%-0.25rem)] bg-gradient-to-br from-purple-500 to-purple-800 rounded-md transition-all duration-300 ease-out z-0"
                             :style="{ transform: barView === 'harian' ? 'translateX(0)' : (barView === 'mingguan' ? 'translateX(100%)' : 'translateX(200%)') }">
                         </div>
@@ -326,9 +326,9 @@ onMounted(() => {
                 <div class="absolute top-1.5 bottom-1.5 left-1.5 w-[calc(50%-0.375rem)] bg-gradient-to-br from-purple-500 to-purple-800 border border-white/10 rounded-xl transition-all duration-300 ease-out z-0"
                     :style="{ transform: categoryView === 'income' ? 'translateX(100%)' : 'translateX(0)' }"></div>
                 <button @click="switchCategory('expense')"
-                    :class="['relative z-10 flex-1 text-xs font-bold uppercase tracking-widest py-3 transition-colors duration-300', categoryView === 'expense' ? 'text-white' : 'text-gray-500']">Pengeluaran</button>
+                    :class="['relative z-10 flex-1 text-xs font-bold uppercase tracking-widest py-3 transition-colors duration-300', categoryView === 'expense' ? 'text-white' : 'text-gray-500 hover:text-white']">Pengeluaran</button>
                 <button @click="switchCategory('income')"
-                    :class="['relative z-10 flex-1 text-xs font-bold uppercase tracking-widest py-3 transition-colors duration-300', categoryView === 'income' ? 'text-white' : 'text-gray-500']">Pemasukan</button>
+                    :class="['relative z-10 flex-1 text-xs font-bold uppercase tracking-widest py-3 transition-colors duration-300', categoryView === 'income' ? 'text-white' : 'text-gray-500 hover:text-white']">Pemasukan</button>
             </div>
 
             <!-- DOUGHNUT CHART -->
@@ -356,7 +356,7 @@ onMounted(() => {
                     <div class="space-y-4">
                         <Link v-for="(label, i) in activeCategoryData.labels" :key="activeCategoryData.ids[i]"
                             :href="route('categories.show', activeCategoryData.ids[i])"
-                            class="relative flex items-center justify-between bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 p-3 rounded-xl overflow-hidden group hover:border-[#FCA5FF]/30 transition-all duration-300">
+                            class="relative flex items-center justify-between bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 p-3 rounded-xl overflow-hidden group hover:border-purple-500/30 transition-all duration-300">
                             <div class="flex items-center gap-3 relative z-10 w-full">
                                 <div class="w-1.5 h-6 rounded-full"
                                     :style="{ backgroundColor: ['#FCA5FF', '#A78BFA', '#818CF8', '#60A5FA', '#38BDF8', '#4ADE80'][i % 6] }">
