@@ -66,7 +66,6 @@ cd Bendaharaku
 ```
 
 2. **Install Composer Dependencies (Initial)**
-Gunakan kontainer sementara untuk mengunduh dependensi awal:
 ```bash
 docker run --rm \
 -u "$(id -u):$(id -g)" \
@@ -82,7 +81,6 @@ cp .env.example .env
 ```
 
 4. **Start the Containers**
-Nyalakan semua layanan di latar belakang:
 ```bash
 docker compose up -d
 ```
