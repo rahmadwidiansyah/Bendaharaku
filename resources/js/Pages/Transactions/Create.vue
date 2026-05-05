@@ -137,7 +137,7 @@ const handleBack = () => {
         <div class="p-5 pb-32 max-w-md mx-auto relative">
             <header class="flex justify-between items-center mb-6 pt-2">
                 <h1 class="text-2xl font-bold text-white tracking-tight">Catat Transaksi</h1>
-                <button type="button" @click="handleBack" class="w-10 h-10 rounded-full bg-[#1A1A1A] border border-[#262626] flex items-center justify-center text-gray-400 hover:text-white active:scale-95 transition-all shadow-md">
+                <button type="button" @click="handleBack" class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white active:scale-95 transition-all shadow-md">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
             </header>
@@ -156,7 +156,7 @@ const handleBack = () => {
 
             <form @submit.prevent="submit" class="space-y-4">
                 <!-- NOMINAL -->
-                <div class="bg-[#1A1A1A] border border-[#262626] rounded-[2rem] p-5 text-center relative shadow-inner group">
+                <div class="bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-[2rem] p-5 text-center relative shadow-inner group">
                     <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Nominal (Rp)</label>
                     <input type="text" :value="displayAmount" @input="formatAmountInput" inputmode="numeric" required placeholder="0"
                         class="w-full bg-transparent border-none text-white text-center text-4xl font-bold placeholder-gray-600 focus:ring-0 p-0 focus:outline-none caret-purple-500">
