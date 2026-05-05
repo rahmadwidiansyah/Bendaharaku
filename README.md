@@ -1,71 +1,57 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+<div align="center">
+  <img src="https://img.shields.io/badge/Laravel-FF2D20?style=for-the-badge&logo=laravel&logoColor=white" alt="Laravel">
+  <img src="https://img.shields.io/badge/Vue.js-35495E?style=for-the-badge&logo=vuedotjs&logoColor=4FC08D" alt="Vue">
+  <img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL">
+  <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+  <h1>🏦 Bendaharaku V4</h1>
+  <p>Aplikasi manajemen keuangan pribadi cerdas yang memadukan pencatatan Web Dashboard dengan pemrosesan bahasa natural (NLP) via AI Telegram Bot.</p>
+</div>
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 🌐 Live Demo
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Ingin melihat dan mencoba Bendaharaku V4 secara langsung? Silakan kunjungi tautan berikut:  
+👉 **[bendaharaku.widihhh.my.id](https://bendaharaku.widihhh.my.id)**
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## 🔗 Arsitektur & Repositori
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Sistem ini berjalan dengan arsitektur terpisah untuk memastikan performa yang maksimal:
+- **Core Web & Backend (Repo Ini):** Menggunakan Laravel, Vue 3, Inertia.js, Tailwind CSS, dan PostgreSQL.
+- **AI Microservice:** Menangani pemrosesan teks Telegram menggunakan Python FastAPI. Source code dapat diakses di repositori berikut:  
+  👉 **[script_pencatat_keuangan](https://github.com/rahmadwidiansyah/script_pencatat_keuangan.git)**
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## ✨ Fitur Utama
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+- 🤖 **AI Telegram Bot (Natural Language):** Catat transaksi hanya dengan *chat* santai. Sistem mencocokkan teks ke Kategori dan Dompet di *database* secara dinamis tanpa *hardcoded keyword*.
+- 💼 **Smart Wallet Management:** Manajemen dompet yang terstruktur, memisahkan tab **Liquid** dan **Investment / Asset** secara otomatis.
+- 🤝 **Debt & Receivable Tracker:** Sistem cerdas untuk mendeteksi dan menghitung hutang/piutang berdasarkan *hashtag* (contoh: *"Pinjam duit 100k bca #Budi"*).
+- 🔐 **SSO Google Authentication:** Registrasi dan login yang cepat, aman, dan mulus terintegrasi langsung dengan akun Google.
 
-## Agentic Development
+---
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## 🛠️ Prasyarat
 
+Karena aplikasi ini sudah dikonfigurasi penuh menggunakan kontainer, Anda hanya membutuhkan:
+- **Git** (Untuk kloning repositori)
+- **Docker & Docker Compose** (Untuk menjalankan aplikasi, *database*, Node.js, dan Composer tanpa *install* di sistem lokal Anda)
+
+---
+
+## 🚀 Panduan Instalasi (Docker Setup)
+
+Ikuti langkah-langkah di bawah ini untuk menjalankan aplikasi di lingkungan lokal Anda menggunakan Docker:
+
+**1. Clone the repository**
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
-```
-
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
-
-## Installation
-
-1. **Clone the repository**
-```bash
-git clone https://github.com/zackbrawn/Bendaharaku.git
+git clone [https://github.com/ZackBrawn/Bendaharaku.git](https://github.com/ZackBrawn/Bendaharaku.git)
 cd Bendaharaku
 ```
 
-2. **Install Composer Dependencies (Initial)**
+**2. Install Composer Dependencies (Initial)**
 ```bash
 docker run --rm \
 -u "$(id -u):$(id -g)" \
@@ -75,28 +61,65 @@ laravelsail/php83-composer:latest \
 composer install --ignore-platform-reqs
 ```
 
-3. **Setup Environment File**
+**3. Setup Environment File**
 ```bash
 cp .env.example .env
 ```
+*(Lihat bagian [Konfigurasi Environment](#-konfigurasi-environment) di bawah untuk mengatur API Keys).*
 
-4. **Start the Containers**
+**4. Start the Containers**
 ```bash
 docker compose up -d
 ```
 
-5. **Generate Application Key**
+**5. Generate Application Key**
 ```bash
 docker compose exec app php artisan key:generate
 ```
 
-6. **Run Database Migrations**
+**6. Run Database Migrations**
 ```bash
 docker compose exec app php artisan migrate
 ```
 
-7. **Install & Build Frontend Assets**
+**7. Install & Build Frontend Assets**
 ```bash
 docker compose exec app npm install
 docker compose exec app npm run dev
 ```
+
+---
+
+## ⚙️ Konfigurasi Environment
+
+Setelah melakukan *copy* file `.env` (Langkah 3), pastikan Anda melengkapi kredensial berikut di dalam file `.env` agar seluruh fitur aplikasi dapat berjalan normal:
+
+```env
+# Koneksi Database (Sudah diatur otomatis oleh Docker Compose)
+DB_CONNECTION=pgsql
+DB_HOST=pgsql
+DB_PORT=5432
+DB_DATABASE=bendaharaku
+DB_USERNAME=sail
+DB_PASSWORD=password
+
+# Google OAuth (Untuk Fitur Login)
+GOOGLE_CLIENT_ID="your_google_client_id"
+GOOGLE_CLIENT_SECRET="your_google_client_secret"
+GOOGLE_REDIRECT_URI="http://localhost:8000/auth/google/callback"
+
+# Integrasi Telegram & AI Python
+TELEGRAM_BOT_TOKEN="your_telegram_bot_token"
+PYTHON_AI_URL="http://ip_atau_domain_python_ai_kalian:8001"
+PYTHON_AI_KEY="your_ai_secret_key"
+```
+
+> 💡 **Catatan untuk Testing Telegram:** Saat *development* di `localhost`, URL web Anda tidak bisa diakses langsung oleh Telegram. Gunakan Ngrok atau Cloudflare Tunnel, lalu setel webhook Telegram ke URL tersebut.
+
+---
+
+## 👨‍💻 Kontributor
+
+Proyek ini dibangun dan dikembangkan secara kolaboratif oleh:
+- **Rahmad Widiansyah** - [@rahmadwidiansyah](https://github.com/rahmadwidiansyah)
+- **Frakhan** - [@ZackBrawn](https://github.com/ZackBrawn)
