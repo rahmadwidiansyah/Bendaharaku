@@ -18,6 +18,11 @@ const type = ref(props.filters.type || '');
 const showSortModal = ref(false);
 const showDetailModal = ref(false);
 const selectedTransaction = ref(null);
+const collapsedDates = ref({});
+
+const toggleDate = (dateKey) => {
+    collapsedDates.value[dateKey] = !collapsedDates.value[dateKey];
+};
 
 const formatNumber = (num) => {
     return new Intl.NumberFormat('id-ID').format(num);
@@ -116,10 +121,11 @@ const getTypeName = (typeName) => {
                 </button>
             </div>
 
-            <div class="space-y-6">
-                <div v-for="(group, dateKey) in groupedTransactions" :key="dateKey">
-                    <div class="flex justify-between items-center mb-2.5 px-1 border-b border-purple-500/50 pb-1.5 transition-colors">
-                        <h3 class="text-xs font-bold text-purple-500 uppercase tracking-widest flex items-center gap-1.5"> 
+            <div class="space-y-4">
+                <div v-for="(group, dateKey) in groupedTransactions" :key="dateKey" class="bg-gradient-to-br from-gray-900 to-gray-800 p-3 rounded-xl border border-white/5 transition-all duration-300">
+                    <div @click="toggleDate(dateKey)" class="flex justify-between items-center px-1 border-b pb-2 transition-colors cursor-pointer group/header" :class="collapsedDates[dateKey] ? 'border-transparent' : 'border-purple-500/30'">
+                        <h3 class="text-xs font-bold text-purple-500 uppercase tracking-widest flex items-center gap-1.5 group-hover/header:text-purple-400 transition-colors"> 
+                            <svg class="w-3.5 h-3.5 transition-transform duration-300" :class="!collapsedDates[dateKey] ? 'rotate-90' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
                             {{ group.date }} 
                         </h3>
                         <div class="text-xs font-bold flex gap-2.5 tracking-wide">
@@ -128,13 +134,15 @@ const getTypeName = (typeName) => {
                         </div>
                     </div>
 
-                    <div class="space-y-2.5">
-                        <button v-for="trx in group.transactions" :key="trx.id" @click="openDetail(trx)"
-                            class="w-full text-left bg-gradient-to-br from-gray-900 to-gray-800 p-3 rounded-xl border border-white/10 hover:border-purple-400/30 active:scale-[0.98] transition-all relative overflow-hidden group">
+                    <div class="grid transition-all duration-300 ease-in-out" :style="{ gridTemplateRows: collapsedDates[dateKey] ? '0fr' : '1fr' }">
+                        <div class="overflow-hidden transition-all duration-300" :class="collapsedDates[dateKey] ? 'opacity-0' : 'opacity-100'">
+                            <div class="space-y-2.5 pt-3">
+                                <button v-for="trx in group.transactions" :key="trx.id" @click="openDetail(trx)"
+                                    class="w-full text-left bg-gradient-to-br from-gray-800 to-gray-900 p-3 rounded-xl border border-white/10 hover:border-purple-400/30 active:scale-[0.98] transition-all relative overflow-hidden group">
                             <div class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
 
                             <div class="flex items-center gap-3 relative z-10">
-                                <div class="w-10 h-10 rounded-xl bg-gray-900 flex items-center justify-center text-lg border border-white/10 shrink-0 overflow-hidden p-0.5">
+                                <div class="w-10 h-10 rounded-xl bg-gradient flex items-center justify-center text-lg border border-white/10 shrink-0 overflow-hidden p-0.5">
                                     <img v-if="trx.category?.icon?.includes('.')" :src="'/storage/' + trx.category.icon" class="w-full h-full object-cover rounded-xl">
                                     <span v-else>{{ trx.category?.icon || '📄' }}</span>
                                 </div>
@@ -161,6 +169,8 @@ const getTypeName = (typeName) => {
                                 </div>
                             </div>
                         </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -168,8 +178,6 @@ const getTypeName = (typeName) => {
                     <p class="text-xs font-bold text-gray-500 uppercase tracking-widest relative z-10">Data Kosong</p>
                 </div>
             </div>
-
-
         </div>
 
         <!-- SORT MODAL -->

@@ -16,10 +16,11 @@ class ProfileController extends Controller
     /**
      * Display the user's profile form.
      */
-    public function edit(Request $request): View
+    public function edit(Request $request)
     {
-        return view('profile.edit', [
+        return \Inertia\Inertia::render('Profile/Edit', [
             'user' => $request->user(),
+            'status' => session('status'),
         ]);
     }
 

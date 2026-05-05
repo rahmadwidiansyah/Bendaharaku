@@ -66,6 +66,6 @@ class LoanController extends Controller
     $title = $isDebt ? 'Rincian Hutang' : 'Rincian Piutang';
     $total = $loanDetails->sum('balance');
 
-    return view('loans.index', compact('loanDetails', 'title', 'isDebt', 'total'));
+    return \Inertia\Inertia::render('Loans/Index', compact('loanDetails', 'title', 'isDebt', 'total'));
 }
 }
