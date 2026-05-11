@@ -1,22 +1,23 @@
 name: python-test
 
 services:
-  # --- SERVICE DATABASE (POSTGRESQL) ---
-  db:
-    image: postgres:15-alpine
-    container_name: laravel_db
-    restart: always
-    environment:
-      POSTGRES_DB: ${DB_DATABASE:-laravel}
-      POSTGRES_USER: ${DB_USERNAME:-sail}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
-    ports:
-      - "8000:8000"
-      - "5432:5432"
-    volumes:
-      - db_data:/var/lib/postgresql/data
-    networks:
-      - laravel
+
+    # --- SERVICE DATABASE (POSTGRESQL) ---
+  # db:
+  #   image: postgres:15-alpine
+  #   container_name: laravel_db
+  #   restart: always
+  #   environment:
+  #     POSTGRES_DB: ${DB_DATABASE:-laravel}
+  #     POSTGRES_USER: ${DB_USERNAME:-sail}
+  #     POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+  #   ports:
+  #     - "8000:8000"
+  #     - "5432:5432"
+  #   volumes:
+  #     - db_data:/var/lib/postgresql/data
+  #   networks:
+  #     - laravel
 
   # --- SERVICE LARAVEL APP ---
   app:
@@ -28,8 +29,6 @@ services:
     volumes: 
       - .:/var/www
       - /var/www/vendor
-    depends_on:
-      - db
     networks:
       - laravel
 
@@ -68,8 +67,6 @@ services:
         protocol: tcp
     env_file:
       - .env
-    depends_on:
-      - db
     restart: unless-stopped
     networks:
       - laravel
