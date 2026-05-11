@@ -47,7 +47,7 @@ Ikuti langkah-langkah di bawah ini untuk menjalankan aplikasi di lingkungan loka
 
 **1. Clone the repository**
 ```bash
-git clone [https://github.com/ZackBrawn/Bendaharaku.git](https://github.com/ZackBrawn/Bendaharaku.git)
+git clone https://github.com/rahmadwidiansyah/Bendaharaku.git
 cd Bendaharaku
 ```
 
