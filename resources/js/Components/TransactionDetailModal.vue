@@ -1,5 +1,5 @@
 <script setup>
-import { Link } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
 
 const props = defineProps({
     show: Boolean,
@@ -10,6 +10,18 @@ const emit = defineEmits(['close']);
 
 const formatAmount = (amount) => {
     return new Intl.NumberFormat('id-ID').format(amount);
+};
+
+// Fungsi eksekusi Delete tetap sama
+const deleteTransaction = () => {
+    if (confirm('Yakin nih Bos mau menghapus transaksi ini?')) {
+        router.delete(route('transactions.destroy', props.transaction.id), {
+            preserveScroll: true,
+            onSuccess: () => {
+                emit('close'); // Tutup modal otomatis kalau sukses dihapus
+            }
+        });
+    }
 };
 </script>
 
@@ -59,12 +71,13 @@ const formatAmount = (amount) => {
             </div>
 
             <div class="flex gap-3 mt-4">
-                <Link :href="route('transactions.edit', transaction.id)" class="flex-1 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 py-3 rounded-xl flex items-center justify-center gap-2 text-gray-300 text-xs font-bold uppercase">
+                <Link :href="route('transactions.edit', transaction.id)" class="flex-1 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 py-3 rounded-xl flex items-center justify-center gap-2 text-gray-300 text-xs font-bold uppercase hover:bg-gray-800 transition-colors">
                     Edit
                 </Link>
-                <form class="flex-1" @submit.prevent="">
-                    <button type="submit" class="w-full bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 py-3 rounded-xl text-red-500 text-xs font-bold uppercase">Hapus</button>
-                </form>
+                <!-- Form dihapus, diganti menjadi Button dengan @click -->
+                <button type="button" @click="deleteTransaction" class="flex-1 w-full bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 py-3 rounded-xl text-red-500 text-xs font-bold uppercase hover:bg-red-500/10 transition-colors">
+                    Hapus
+                </button>
             </div>
         </div>
     </div>
