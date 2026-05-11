@@ -23,8 +23,12 @@ const setQuickDate = (type) => {
     const today = new Date();
     let start, end;
 
+    // FIX: Format tanggal secara manual dengan padStart agar tetap menggunakan Local Timezone
     const formatDate = (date) => {
-        return date.toISOString().split('T')[0];
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     };
 
     if (type === 'thisYear') {
