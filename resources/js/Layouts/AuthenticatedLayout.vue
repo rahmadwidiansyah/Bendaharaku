@@ -1,5 +1,6 @@
 <script setup>
 import BottomNav from '@/Components/BottomNav.vue';
+import GoogleAd from '@/Components/GoogleAd.vue';
 import { onMounted } from 'vue';
 
 onMounted(() => {
@@ -17,11 +18,30 @@ onMounted(() => {
 
 <template>
     <div class="font-sans antialiased bg-black text-white selection:bg-[#FCA5FF] selection:text-black">
-        <div class="w-full max-w-md md:max-w-full mx-auto bg-gray-800 min-h-screen flex flex-col border-x border-[#1e1e1e] relative overflow-x-hidden">
-            <main id="main-content" class="flex-1 pb-24">
-                <slot />
-            </main>
-            <BottomNav />
+        <div class="flex justify-center min-h-screen">
+            
+            <!-- LEFT AD SIDEBAR (Desktop Only) -->
+            <aside class="hidden xl:flex flex-col w-64 p-4 sticky top-0 h-screen justify-center items-center">
+                <div class="w-full h-[600px] bg-gray-900/20 border border-white/5 rounded-xl flex items-center justify-center overflow-hidden">
+                    <GoogleAd ad-slot="LEFT_SIDEBAR_SLOT" ad-format="vertical" />
+                </div>
+            </aside>
+
+            <!-- MAIN CONTENT (Centered) -->
+            <div class="w-full max-w-md bg-gray-800 min-h-screen flex flex-col border-x border-[#1e1e1e] relative overflow-x-hidden shadow-2xl shadow-black">
+                <main id="main-content" class="flex-1 pb-24">
+                    <slot />
+                </main>
+                <BottomNav />
+            </div>
+
+            <!-- RIGHT AD SIDEBAR (Desktop Only) -->
+            <aside class="hidden xl:flex flex-col w-64 p-4 sticky top-0 h-screen justify-center items-center">
+                <div class="w-full h-[600px] bg-gray-900/20 border border-white/5 rounded-xl flex items-center justify-center overflow-hidden">
+                    <GoogleAd ad-slot="RIGHT_SIDEBAR_SLOT" ad-format="vertical" />
+                </div>
+            </aside>
+
         </div>
     </div>
 </template>
