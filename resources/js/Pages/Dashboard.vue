@@ -2,6 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import CreateTransactionFab from '@/Components/CreateTransactionFab.vue';
 import TransactionDetailModal from '@/Components/TransactionDetailModal.vue';
+import GoogleAd from '@/Components/GoogleAd.vue';
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 
@@ -197,6 +198,9 @@ const avatarSrc = computed(() => {
                     </div>
                 </div>
             </div>
+            
+            <!-- GOOGLE ADS EXAMPLE -->
+            <GoogleAd ad-slot="1234567890" />
 
             <!-- WALLETS -->
             <div class="flex justify-between items-center mb-5 px-1 gap-3 animate-fade-in-up delay-300">
