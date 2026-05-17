@@ -13,8 +13,32 @@ class WalletController extends Controller
     // Menampilkan daftar Wallet (opsional jika dibutuhkan)
     public function index()
     {
-        $wallets = Auth::user()->wallets;
-        return Inertia::render('Wallets/Index', ['wallets' => $wallets]);
+        $user = Auth::user();
+        $wallets = $user->wallets;
+
+        // LOGIKA HITUNG HUTANG
+        $systemHutang = $user->wallets()->where('name', 'like', '%Hutang%')->first();
+        $totalHutang = 0;
+        if ($systemHutang) {
+            $debtIn = $user->transactionLogs()->where('source_wallet_id', $systemHutang->id)->sum('amount');
+            $debtPaid = $user->transactionLogs()->where('destination_wallet_id', $systemHutang->id)->sum('amount');
+            $totalHutang = max(0, $debtIn - $debtPaid);
+        }
+
+        // LOGIKA HITUNG PIUTANG
+        $systemPiutang = $user->wallets()->where('name', 'like', '%Piutang%')->first();
+        $totalPiutang = 0;
+        if ($systemPiutang) {
+            $receivableOut = $user->transactionLogs()->where('destination_wallet_id', $systemPiutang->id)->sum('amount');
+            $receivableIn = $user->transactionLogs()->where('source_wallet_id', $systemPiutang->id)->sum('amount');
+            $totalPiutang = max(0, $receivableOut - $receivableIn);
+        }
+
+        return Inertia::render('Wallets/Index', [
+            'wallets' => $wallets,
+            'totalHutang' => (int) $totalHutang,
+            'totalPiutang' => (int) $totalPiutang,
+        ]);
     }
 
     // Tampilkan Form Tambah Wallet

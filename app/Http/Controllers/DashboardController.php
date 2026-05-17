@@ -7,45 +7,23 @@ use App\Models\TransactionLog;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
         $user = Auth::user();
 
-        // 1. DOMPET AKTIF (Diurutkan dari saldo paling besar)
-        $wallets = $user->wallets()
+        // 1. DATA ANALISIS ARUS KAS BULAN INI (Hanya untuk ringkasan di Dashboard)
+        $totalPortfolio = $user->wallets()
             ->whereIn('group_type', ['Asset', 'Liquid'])
-            ->orderByDesc('balance') 
-            ->get();
-
-        // 2. TOTAL PORTOFOLIO (Jumlah aset riil)
-        $totalPortfolio = $wallets->sum('balance');
-
-        // Breakdown Liquid & Investasi
-        $totalLiquid = $wallets->where('group_type', 'Liquid')->sum('balance');
-        $totalInvest = $wallets->where('group_type', 'Asset')->sum('balance');
-
-        // 3. LOGIKA HITUNG HUTANG
-        $systemHutang = $user->wallets()->where('name', 'like', '%Hutang%')->first();
-        $totalHutang = 0;
-        if ($systemHutang) {
-            $debtIn = $user->transactionLogs()->where('source_wallet_id', $systemHutang->id)->sum('amount');
-            $debtPaid = $user->transactionLogs()->where('destination_wallet_id', $systemHutang->id)->sum('amount');
-            $totalHutang = $debtIn - $debtPaid;
-        }
-
-        // 4. LOGIKA HITUNG PIUTANG
-        $systemPiutang = $user->wallets()->where('name', 'like', '%Piutang%')->first();
-        $totalPiutang = 0;
-        if ($systemPiutang) {
-            $receivableOut = $user->transactionLogs()->where('destination_wallet_id', $systemPiutang->id)->sum('amount');
-            $receivableIn = $user->transactionLogs()->where('source_wallet_id', $systemPiutang->id)->sum('amount');
-            $totalPiutang = $receivableOut - $receivableIn;
-        }
+            ->sum('balance');
+        
+        $totalLiquid = $user->wallets()->where('group_type', 'Liquid')->sum('balance');
+        $totalInvest = $user->wallets()->where('group_type', 'Asset')->sum('balance');
 
         // 5. DATA ANALISIS ARUS KAS BULAN INI
         $now = Carbon::now();
@@ -61,39 +39,61 @@ class DashboardController extends Controller
             ->whereYear('date', $now->year)
             ->sum('amount');
 
-        // 6. TRANSAKSI TERAKHIR (5 Data Terbaru)
-        $recentTransactions = $user->transactionLogs()
-            ->with(['category', 'type', 'sourceWallet', 'destinationWallet']) // Eager load relasi biar cepat
-            ->orderByDesc('date')
-            ->orderByDesc('created_at')
-            ->limit(5)
-            ->get()
-            ->map(function ($trx) {
-                return [
-                    'id' => $trx->id,
-                    'amount' => $trx->amount,
-                    'notes' => $trx->notes,
-                    'subject' => $trx->subject,
-                    'date' => Carbon::parse($trx->date)->translatedFormat('d M Y'),
-                    'time' => Carbon::parse($trx->created_at)->format('H:i'),
-                    'short_date' => Carbon::parse($trx->date)->format('d M'),
-                    'type' => $trx->type,
-                    'category' => $trx->category,
-                    'source_wallet' => $trx->sourceWallet,
-                    'destination_wallet' => $trx->destinationWallet,
-                ];
+        // 6. LOGIKA HISTORI TRANSAKSI (Pindahan dari TransactionController)
+        $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->format('Y-m-d'));
+        $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->format('Y-m-d'));
+
+        $query = $user->transactionLogs()->with(['type', 'category', 'sourceWallet', 'destinationWallet']);
+        $query->whereBetween('date', [$startDate, $endDate]);
+
+        if ($request->has('type') && $request->type != '') {
+            $query->whereHas('type', function($q) use ($request) {
+                $q->where('name', $request->type);
             });
+        }
+
+        if ($request->has('search') && $request->search != '') {
+            $search = strtolower($request->search);
+            $query->where(function($q) use ($search) {
+                $q->whereRaw('LOWER(notes) LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(subject) LIKE ?', ["%{$search}%"])
+                  ->orWhereHas('category', function($qCat) use ($search) {
+                      $qCat->whereRaw('LOWER(category_name) LIKE ?', ["%{$search}%"]);
+                  });
+            });
+        }
+
+        $transactions = $query->orderBy('date', 'desc')
+                              ->orderBy('created_at', 'desc')
+                              ->get()
+                              ->map(function ($trx) {
+                                  return [
+                                      'id' => $trx->id,
+                                      'amount' => (float) $trx->amount,
+                                      'notes' => $trx->notes,
+                                      'subject' => $trx->subject,
+                                      'date' => Carbon::parse($trx->date)->translatedFormat('d M Y'),
+                                      'raw_date' => $trx->date,
+                                      'time' => Carbon::parse($trx->created_at)->format('H:i'),
+                                      'type' => $trx->type,
+                                      'category' => $trx->category,
+                                      'source_wallet' => $trx->sourceWallet,
+                                      'destination_wallet' => $trx->destinationWallet,
+                                  ];
+                              });
 
         return Inertia::render('Dashboard', [
             'totalPortfolio' => (int) $totalPortfolio,
             'totalLiquid' => (int) $totalLiquid,
             'totalInvest' => (int) $totalInvest,
-            'wallets' => $wallets,
-            'totalHutang' => (int) max(0, $totalHutang),
-            'totalPiutang' => (int) max(0, $totalPiutang),
             'thisMonthIncome' => (int) $thisMonthIncome,
             'thisMonthExpense' => (int) $thisMonthExpense,
-            'recentTransactions' => $recentTransactions 
+            'transactions' => [
+                'data' => $transactions
+            ],
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'filters' => $request->only(['search', 'type']),
         ]);
     }
 }
