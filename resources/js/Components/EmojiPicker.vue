@@ -23,18 +23,7 @@ const emojiData = [
     { 
         id: 'images', 
         icon: '🖼️', 
-        type: 'custom',
-        defaults: [
-            'https://pustaka.bca.co.id/public-assets/logo-bca.svg',
-            'defaults/gopay.jpg',
-            'defaults/seabank.png',
-            'defaults/dana.png',
-            'defaults/ovo.webp',
-            'defaults/isaku.png',
-            'defaults/jago.webp',
-            'defaults/shopeepay.webp',
-            'defaults/linkaja.webp'
-        ]
+        type: 'custom'
     } 
 ];
 
@@ -104,11 +93,7 @@ const getImageUrl = (val) => {
                         </button>
                         <input type="file" ref="fileInput" @change="handleFileUpload" class="hidden" accept="image/*">
                         
-                        <button v-for="path in emojiData.find(c => c.id === 'images').defaults" :key="path" type="button" @click="selectCustom(path)" class="aspect-square bg-gray-800 border border-white/10 rounded-xl overflow-hidden hover:border-purple-500 transition-all p-1">
-                            <div class="w-full h-full bg-white/5 rounded-lg flex items-center justify-center overflow-hidden p-1">
-                                <img :src="path.startsWith('http') ? path : '/storage/' + path" class="w-full h-full object-contain">
-                            </div>
-                        </button>
+
                     </div>
                     <div v-else class="grid grid-cols-6 gap-3">
                         <button v-for="emoji in emojiData.find(c => c.id === activeCategory).list" :key="emoji" type="button" @click="selectEmoji(emoji)" class="text-2xl p-2 hover:bg-gray-800 rounded-xl transition-all active:scale-75 flex items-center justify-center hover:scale-110">

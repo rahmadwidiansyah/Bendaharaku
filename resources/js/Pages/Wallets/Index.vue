@@ -7,7 +7,9 @@ import { useBalanceVisibility } from '@/Composables/useBalanceVisibility';
 const { isBalanceVisible, toggleVisibility } = useBalanceVisibility();
 
 const props = defineProps({
-    wallets: Array
+    wallets: Array,
+    totalHutang: Number,
+    totalPiutang: Number,
 });
 
 const formatNumber = (num) => {
@@ -73,8 +75,11 @@ const handleImageError = (e, fallback) => {
                     <Link v-for="wallet in liquidWallets" :key="wallet.id" :href="route('wallets.show', wallet.id)" 
                         class="flex items-center justify-between p-4 bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 active:scale-[0.98] transition-all group">
                         <div class="flex items-center gap-4">
-                            <div class="w-12 h-12 rounded-xl bg-gray-900 border border-white/10 flex items-center justify-center text-xl group-hover:scale-110 transition-transform overflow-hidden">
-                                <img v-if="wallet.icon?.includes('.')" :src="'/storage/' + wallet.icon" class="w-full h-full object-cover" @error="(e) => handleImageError(e, wallet.keyword?.substring(0,1) || '💳')">
+                            <div class="w-12 h-12 rounded-xl bg-gray-900 border border-white/10 flex items-center justify-center text-xl group-hover:scale-110 transition-transform overflow-hidden" :class="wallet.icon?.includes('.') ? 'p-2' : ''">
+                                <img v-if="wallet.icon?.includes('.')" 
+                                    :src="wallet.icon.startsWith('http') ? wallet.icon : '/storage/' + wallet.icon" 
+                                    class="w-full h-full object-contain" 
+                                    @error="(e) => handleImageError(e, wallet.keyword?.substring(0,1) || '💳')">
                                 <span v-else>{{ wallet.icon || '💳' }}</span>
                             </div>
                             <div>
@@ -102,8 +107,11 @@ const handleImageError = (e, fallback) => {
                     <Link v-for="wallet in assetWallets" :key="wallet.id" :href="route('wallets.show', wallet.id)" 
                         class="flex items-center justify-between p-4 bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 active:scale-[0.98] transition-all group">
                         <div class="flex items-center gap-4">
-                            <div class="w-12 h-12 rounded-xl bg-gray-900 border border-white/10 flex items-center justify-center text-xl group-hover:scale-110 transition-transform overflow-hidden">
-                                <img v-if="wallet.icon?.includes('.')" :src="'/storage/' + wallet.icon" class="w-full h-full object-cover" @error="(e) => handleImageError(e, wallet.keyword?.substring(0,1) || '💰')">
+                            <div class="w-12 h-12 rounded-xl bg-gray-900 border border-white/10 flex items-center justify-center text-xl group-hover:scale-110 transition-transform overflow-hidden" :class="wallet.icon?.includes('.') ? 'p-2' : ''">
+                                <img v-if="wallet.icon?.includes('.')" 
+                                    :src="wallet.icon.startsWith('http') ? wallet.icon : '/storage/' + wallet.icon" 
+                                    class="w-full h-full object-contain" 
+                                    @error="(e) => handleImageError(e, wallet.keyword?.substring(0,1) || '💰')">
                                 <span v-else>{{ wallet.icon || '💰' }}</span>
                             </div>
                             <div>
@@ -131,8 +139,11 @@ const handleImageError = (e, fallback) => {
                     <Link v-for="wallet in otherWallets" :key="wallet.id" :href="route('wallets.show', wallet.id)" 
                         class="flex items-center justify-between p-4 bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 active:scale-[0.98] transition-all group">
                         <div class="flex items-center gap-4">
-                            <div class="w-12 h-12 rounded-xl bg-gray-900 border border-white/10 flex items-center justify-center text-xl group-hover:scale-110 transition-transform overflow-hidden">
-                                <img v-if="wallet.icon?.includes('.')" :src="'/storage/' + wallet.icon" class="w-full h-full object-cover" @error="(e) => handleImageError(e, wallet.keyword?.substring(0,1) || '🏦')">
+                            <div class="w-12 h-12 rounded-xl bg-gray-900 border border-white/10 flex items-center justify-center text-xl group-hover:scale-110 transition-transform overflow-hidden" :class="wallet.icon?.includes('.') ? 'p-2' : ''">
+                                <img v-if="wallet.icon?.includes('.')" 
+                                    :src="wallet.icon.startsWith('http') ? wallet.icon : '/storage/' + wallet.icon" 
+                                    class="w-full h-full object-contain" 
+                                    @error="(e) => handleImageError(e, wallet.keyword?.substring(0,1) || '🏦')">
                                 <span v-else>{{ wallet.icon || '🏦' }}</span>
                             </div>
                             <div>
@@ -141,6 +152,45 @@ const handleImageError = (e, fallback) => {
                         </div>
                         <div class="text-right">
                             <p class="text-sm font-bold text-white tracking-tight">Rp{{ isBalanceVisible ? formatNumber(wallet.balance) : '••••' }}</p>
+                        </div>
+                    </Link>
+                </div>
+            </section>
+
+            <!-- KEWAJIBAN (Pindahan dari Dashboard) -->
+            <section class="mb-10 animate-fade-in-up delay-400">
+                <div class="flex justify-between items-center mb-5 px-1 gap-3">
+                    <h2 class="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 rounded-full bg-yellow-400"></span> Kewajiban
+                    </h2>
+                    <div class="flex-1 h-px bg-gradient-to-r from-yellow-500/30 to-transparent"></div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <Link :href="route('loans.index', { type: 'hutang' })" class="active:scale-95 transition-transform group">
+                        <div class="bg-gradient-to-br from-gray-900 to-gray-800 p-4 rounded-xl border border-white/10 relative overflow-hidden h-[110px] hover:border-yellow-400">
+                            <div class="relative z-10 flex flex-col justify-between h-full">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-1.5 h-1.5 rounded-full bg-[#E5D07E]"></div>
+                                    <h3 class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Hutang</h3>
+                                </div>
+                                <p class="text-base font-bold text-white tracking-tight truncate">
+                                    <span class="text-xs text-gray-600 mr-1">Rp</span>{{ isBalanceVisible ? formatNumber(totalHutang) : '••••' }}
+                                </p>
+                            </div>
+                        </div>
+                    </Link>
+                    <Link :href="route('loans.index', { type: 'piutang' })" class="active:scale-95 transition-transform group">
+                        <div class="bg-gradient-to-br from-gray-900 to-gray-800 p-4 rounded-xl border border-white/10 relative overflow-hidden h-[110px] hover:border-purple-400">
+                            <div class="relative z-10 flex flex-col justify-between h-full">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-1.5 h-1.5 rounded-full bg-[#FCA5FF]"></div>
+                                    <h3 class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Piutang</h3>
+                                </div>
+                                <p class="text-base font-bold text-white tracking-tight truncate">
+                                    <span class="text-xs text-gray-600 mr-1">Rp</span>{{ isBalanceVisible ? formatNumber(totalPiutang) : '••••' }}
+                                </p>
+                            </div>
                         </div>
                     </Link>
                 </div>
