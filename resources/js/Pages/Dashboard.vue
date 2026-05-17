@@ -73,7 +73,7 @@ const groupedTransactions = computed(() => {
 const getTypeColor = (typeName) => {
     return {
         'Income': 'text-green-400 bg-green-400/10 border-green-400/20',
-        'Expense': 'text-gray-400 bg-gray-400/10 border-gray-400/20',
+        'Expense': 'text-red-400 bg-red-400/10 border-red-400/20',
         'Transfer': 'text-blue-400 bg-blue-400/10 border-blue-400/20',
         'Debt': 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20',
         'Receivable': 'text-purple-400 bg-purple-400/10 border-purple-400/20'
@@ -226,9 +226,20 @@ const avatarSrc = computed(() => {
                         <div class="flex items-center gap-2">
                             <div class="w-1.5 h-1.5 rounded-xl bg-purple-500"></div>
                             <p class="text-xs text-gray-400 font-bold uppercase tracking-[0.2em]">Total Kekayaan</p>
-                            <button @click="toggleVisibility" class="text-gray-500 hover:text-white transition-colors p-1 -m-1 ml-1">
-                                <svg v-if="isBalanceVisible" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                                <svg v-else class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" /></svg>
+                            <button @click="toggleVisibility"
+                                class="text-gray-500 hover:text-white transition-colors p-1 -m-1 ml-1">
+                                <svg v-if="isBalanceVisible" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                                <svg v-else class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                                </svg>
                             </button>
                         </div>
                         <span
@@ -249,7 +260,8 @@ const avatarSrc = computed(() => {
                                 <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Liquid</p>
                             </div>
                             <p class="text-sm font-bold text-white tracking-tight">
-                                <span class="text-xs text-gray-500 mr-0.5">Rp</span>{{ isBalanceVisible ? formatNumber(totalLiquid) : '••••' }}
+                                <span class="text-xs text-gray-500 mr-0.5">Rp</span>{{ isBalanceVisible ?
+                                formatNumber(totalLiquid) : '••••' }}
                             </p>
                         </div>
                         <div class="w-px h-8 bg-gradient-to-b from-transparent via-white/10 to-transparent"></div>
@@ -259,7 +271,8 @@ const avatarSrc = computed(() => {
                                 <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Investasi</p>
                             </div>
                             <p class="text-sm font-bold text-white tracking-tight">
-                                <span class="text-xs text-gray-500 mr-0.5">Rp</span>{{ isBalanceVisible ? formatNumber(totalInvest) : '••••' }}
+                                <span class="text-xs text-gray-500 mr-0.5">Rp</span>{{ isBalanceVisible ?
+                                formatNumber(totalInvest) : '••••' }}
                             </p>
                         </div>
                     </div>
@@ -358,9 +371,9 @@ const avatarSrc = computed(() => {
                         </h3>
                         <div class="text-xs font-bold flex gap-2.5 tracking-wide">
                             <span v-if="group.income > 0" class="text-green-400/90">+{{ formatNumber(group.income)
-                                }}</span>
-                            <span v-if="group.expense > 0" class="text-white/90">-{{ formatNumber(group.expense)
-                                }}</span>
+                            }}</span>
+                            <span v-if="group.expense > 0" class="text-red-400/90">-{{ formatNumber(group.expense)
+                            }}</span>
                         </div>
                     </div>
 
@@ -403,15 +416,15 @@ const avatarSrc = computed(() => {
 
                                         <div class="text-right shrink-0">
                                             <p class="text-xs font-black"
-                                                :class="trx.type.name === 'Income' ? 'text-green-400' : 'text-white'">
+                                                :class="trx.type.name === 'Income' ? 'text-green-400' : 'text-red-400'">
                                                 {{ trx.type.name === 'Income' ? '+' : '-' }}{{ formatNumber(trx.amount)
                                                 }}
                                             </p>
                                             <div class="flex items-center justify-end gap-1.5 mt-1">
-                                                <span class="text-[10px] text-gray-600 font-medium italic"> {{ trx.time
-                                                    }} </span>
+                                                <span class="text-xs text-gray-600 font-medium italic"> {{ trx.time
+                                                }} </span>
                                                 <span
-                                                    class="text-[9px] uppercase tracking-widest font-black px-1 py-0.5 rounded border"
+                                                    class="text-xs uppercase tracking-widest font-black px-1 py-0.5 rounded border"
                                                     :class="getTypeColor(trx.type.name)">
                                                     {{ getTypeName(trx.type.name) }}
                                                 </span>
