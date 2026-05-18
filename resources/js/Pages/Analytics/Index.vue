@@ -230,11 +230,11 @@ onMounted(() => {
 </script>
 
 <template>
-    <AuthenticatedLayout>
+    <AuthenticatedLayout :fullWidth="true">
 
         <Head title="Analitik" />
 
-        <div class="p-5 pb-40 max-w-md mx-auto relative z-10 overflow-x-hidden">
+        <div class="p-5 pb-40 w-full lg:max-w-4xl mx-auto lg:px-8 relative z-10 overflow-x-hidden">
 
             <header class="flex justify-between items-end mb-6 pt-4 animate-fade-in-up">
                 <div>
