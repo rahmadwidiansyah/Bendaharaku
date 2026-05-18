@@ -53,10 +53,10 @@ const getTypeColor = (typeName) => {
 </script>
 
 <template>
-    <AuthenticatedLayout>
+    <AuthenticatedLayout :fullWidth="true">
         <Head :title="category.category_name" />
 
-        <div class="p-5 pb-32 max-w-md mx-auto relative animate-fade-in-up">
+        <div class="p-5 pb-32 w-full lg:max-w-4xl mx-auto lg:px-8 relative animate-fade-in-up">
             
             <header class="flex justify-between items-center mb-8 pt-4 relative z-10">
                 <button type="button" @click="handleBack" class="w-10 h-10 rounded-full bg-[#1A1A1A] border border-[#262626] flex items-center justify-center text-gray-400 hover:text-white active:scale-95 transition-all shadow-md">

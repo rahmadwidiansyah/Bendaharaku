@@ -190,10 +190,10 @@ const destroy = () => {
 </script>
 
 <template>
-    <AuthenticatedLayout>
+    <AuthenticatedLayout :fullWidth="true">
         <Head title="Edit Transaksi" />
 
-        <div class="p-5 pb-32 max-w-md mx-auto relative">
+        <div class="p-5 pb-32 w-full lg:max-w-4xl mx-auto lg:px-8 relative">
             <header class="flex justify-between items-center mb-6 pt-2">
                 <h1 class="text-2xl font-bold text-white tracking-tight">Edit Transaksi</h1>
                 <button type="button" @click="handleBack" class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white active:scale-95 transition-all shadow-md">
@@ -308,7 +308,7 @@ const destroy = () => {
 
         <!-- CATEGORY MODAL -->
         <div v-if="showCategoryModal" class="fixed inset-0 z-[100] flex flex-col justify-end bg-black/70 backdrop-blur-sm" @click.self="showCategoryModal = false">
-            <div class="w-full max-w-md mx-auto bg-gray-900 rounded-t-2xl border-t border-x border-white/10 p-5 pb-safe animate-slide-up">
+            <div class="w-full w-full lg:max-w-4xl mx-auto lg:px-8 bg-gray-900 rounded-t-2xl border-t border-x border-white/10 p-5 pb-safe animate-slide-up">
                 <div class="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-4 cursor-pointer" @click="showCategoryModal = false"></div>
                 <h3 class="text-sm font-bold text-purple-500 mb-4 uppercase tracking-widest text-center">Pilih Kategori</h3>
                 <div class="overflow-y-auto no-scrollbar space-y-2 max-h-[60vh] pb-6">
@@ -325,7 +325,7 @@ const destroy = () => {
 
         <!-- WALLET MODAL -->
         <div v-if="showWalletModal" class="fixed inset-0 z-[100] flex flex-col justify-end bg-black/70 backdrop-blur-sm" @click.self="showWalletModal = false">
-            <div class="w-full max-w-md mx-auto bg-gray-900 rounded-t-2xl border-t border-x border-white/10 p-5 pb-safe animate-slide-up">
+            <div class="w-full w-full lg:max-w-4xl mx-auto lg:px-8 bg-gray-900 rounded-t-2xl border-t border-x border-white/10 p-5 pb-safe animate-slide-up">
                 <div class="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-4 cursor-pointer" @click="showWalletModal = false"></div>
                 <h3 class="text-sm font-bold text-purple-500 mb-4 uppercase tracking-widest text-center">Pilih Dompet</h3>
                 <div class="overflow-y-auto no-scrollbar space-y-2 max-h-[60vh] pb-6">

@@ -29,10 +29,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->middleware('verified')->name('dashboard');
     Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
 
-    // Profile
+    // Profile & Settings
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/settings', function () {
+        return Inertia::render('Settings/Index');
+    })->name('settings.index');
 
     // Resources CRUD
     Route::resource('wallets', WalletController::class);

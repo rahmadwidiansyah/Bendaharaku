@@ -1,8 +1,10 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
 import { ref } from 'vue';
+import { useLayoutPreference } from '@/Composables/useLayoutPreference';
 
 const isOpen = ref(false);
+const { isDesktopLayout } = useLayoutPreference();
 
 const toggleMenu = () => {
     isOpen.value = !isOpen.value;
@@ -10,7 +12,7 @@ const toggleMenu = () => {
 </script>
 
 <template>
-    <div class="fixed bottom-24 left-1/2 -translate-x-1/2 w-full max-w-md pointer-events-none flex justify-end px-5 z-40">
+    <div :class="['fixed bottom-24 left-1/2 -translate-x-1/2 w-full max-w-md pointer-events-none flex justify-end px-5 z-40', isDesktopLayout ? 'lg:hidden' : '']">
         <div class="flex flex-col gap-4 items-end pointer-events-auto">
             
             <!-- SUB BUTTONS (STAGGERED ANIMATION) -->
