@@ -59,9 +59,9 @@ const getTypeColor = (typeName) => {
 </script>
 
 <template>
-    <AuthenticatedLayout>
+    <AuthenticatedLayout :fullWidth="true">
         <Head title="Detail Dompet" />
-        <div class="p-5 pb-32 max-w-md mx-auto relative">
+        <div class="p-5 pb-32 w-full lg:max-w-4xl mx-auto lg:px-8 relative">
             <header class="flex justify-between items-center mb-6 pt-2">
                 <h1 class="text-2xl font-bold text-white tracking-tight">Detail Dompet</h1>
                 <Link :href="route('dashboard')" class="w-10 h-10 rounded-full bg-[#1A1A1A] border border-[#262626] flex items-center justify-center text-gray-400 hover:text-white active:scale-95 transition-all shadow-md">

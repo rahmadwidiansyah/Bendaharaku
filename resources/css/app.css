@@ -2,3 +2,16 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+    /* Mencegah background input berubah menjadi putih saat autofill di browser WebKit (Chrome, Safari, dll) */
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover, 
+    input:-webkit-autofill:focus, 
+    input:-webkit-autofill:active {
+        -webkit-box-shadow: 0 0 0px 1000px #1f2937 inset !important;
+        -webkit-text-fill-color: white !important;
+        caret-color: white !important;
+        transition: background-color 0s, box-shadow 0s, color 0s !important;
+    }
+}

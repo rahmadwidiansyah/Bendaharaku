@@ -40,9 +40,9 @@ const deleteWallet = () => {
 </script>
 
 <template>
-    <AuthenticatedLayout>
+    <AuthenticatedLayout :fullWidth="true">
         <Head title="Edit Dompet" />
-        <div class="p-5 pb-32 max-w-md mx-auto relative animate-slide-up opacity-0" style="animation-delay: 50ms;">
+        <div class="p-5 pb-32 w-full lg:max-w-4xl mx-auto lg:px-8 relative animate-slide-up opacity-0" style="animation-delay: 50ms;">
             
             <header class="flex justify-between items-center mb-8 pt-4">
                 <div>
