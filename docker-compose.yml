@@ -1,6 +1,14 @@
 name: python-test
 
 services:
+  # node:
+  #   image: node:20-alpine
+  #   volumes:
+  #     - .:/usr/src/app
+  #   working_dir: /usr/src/app
+  #   entrypoint: [ "npm" ]
+  #   networks:
+  #     - laravel
 
   #   # --- SERVICE DATABASE (POSTGRESQL) ---
   # db:
