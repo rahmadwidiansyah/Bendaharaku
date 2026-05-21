@@ -75,10 +75,10 @@ const getImageUrl = (val) => {
         </button>
         
         <!-- MODAL -->
-        <div v-if="showModal" class="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" @click.self="toggleModal">
+        <div v-if="showModal" class="fixed inset-0 z-[9999] bg-transparent flex items-center justify-center p-4" @click.self="toggleModal">
             <div class="relative w-full max-w-sm bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 shadow-2xl flex flex-col overflow-hidden max-h-[70vh] animate-pop-in">
                 
-                <div class="px-5 py-4 border-b border-white/10 flex justify-between items-center bg-gray-900">
+                <div class="px-5 py-4 border-b border-white/10 flex justify-between items-center bg-transparent">
                     <h3 class="text-sm font-semibold text-white uppercase tracking-widest">Pilih Ikon</h3>
                     <button type="button" @click="toggleModal" class="text-gray-400 hover:text-white p-1">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>

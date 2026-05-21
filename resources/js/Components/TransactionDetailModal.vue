@@ -7,21 +7,26 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['close']);
+import { ref } from 'vue';
+
+const showDeleteConfirm = ref(false);
 
 const formatAmount = (amount) => {
     return new Intl.NumberFormat('id-ID').format(amount);
 };
 
-// Fungsi eksekusi Delete tetap sama
+const showConfirm = () => {
+    showDeleteConfirm.value = true;
+};
+
 const deleteTransaction = () => {
-    if (confirm('Yakin nih Bos mau menghapus transaksi ini?')) {
-        router.delete(route('transactions.destroy', props.transaction.id), {
-            preserveScroll: true,
-            onSuccess: () => {
-                emit('close'); // Tutup modal otomatis kalau sukses dihapus
-            }
-        });
-    }
+    showDeleteConfirm.value = false;
+    router.delete(route('transactions.destroy', props.transaction.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            emit('close'); // Tutup modal otomatis kalau sukses dihapus
+        }
+    });
 };
 </script>
 
@@ -75,8 +80,31 @@ const deleteTransaction = () => {
                     Edit
                 </Link>
                 <!-- Form dihapus, diganti menjadi Button dengan @click -->
-                <button type="button" @click="deleteTransaction" class="flex-1 w-full bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 py-3 rounded-xl text-red-500 text-xs font-bold uppercase hover:bg-red-500/10 transition-colors">
+                <button type="button" @click="showConfirm" class="flex-1 w-full bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 py-3 rounded-xl text-red-500 text-xs font-bold uppercase hover:bg-red-500/10 transition-colors">
                     Hapus
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DELETE CONFIRMATION TOAST/MODAL -->
+    <div v-if="showDeleteConfirm" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm transition-opacity" @click.self="showDeleteConfirm = false">
+        <div class="w-full max-w-sm bg-gradient-to-br from-red-900 to-gray-900 rounded-2xl border border-red-500/30 p-6 animate-pop-in relative shadow-2xl">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 rounded-full bg-red-500/20 text-red-400 mx-auto flex items-center justify-center mb-4">
+                    <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </div>
+                <h3 class="text-lg font-bold text-white tracking-tight mb-2">Hapus Transaksi?</h3>
+                <p class="text-sm text-red-200">Yakin mau menghapus transaksi ini? Data yang dihapus tidak bisa dikembalikan.</p>
+            </div>
+            <div class="flex gap-3">
+                <button type="button" @click="showDeleteConfirm = false" class="flex-1 bg-gray-800 text-white font-bold text-sm uppercase tracking-widest py-4 rounded-xl active:scale-95 transition-all">
+                    Batal
+                </button>
+                <button type="button" @click="deleteTransaction" class="flex-1 bg-gradient-to-br from-red-600 to-red-500 text-white font-bold text-sm uppercase tracking-widest py-4 rounded-xl shadow-lg shadow-red-500/20 active:scale-95 transition-all">
+                    Ya, Hapus
                 </button>
             </div>
         </div>

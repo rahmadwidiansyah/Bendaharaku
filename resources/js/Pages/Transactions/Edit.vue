@@ -23,6 +23,7 @@ const form = useForm({
 const activeType = ref('Expense');
 const showCategoryModal = ref(false);
 const showWalletModal = ref(false);
+const showDeleteConfirm = ref(false);
 const walletModalMode = ref('source');
 const displayAmount = ref(new Intl.NumberFormat('id-ID').format(props.transaction.amount));
 const walletFrequency = ref({});
@@ -178,14 +179,17 @@ const handleBack = () => {
     if (window.history.length > 1) {
         window.history.back();
     } else {
-        router.visit(route('transactions.index'));
+        router.visit(route('dashboard'));
     }
 };
 
 const destroy = () => {
-    if (confirm('Yakin nih Bos mau menghapus transaksi ini?')) {
-        router.delete(route('transactions.destroy', props.transaction.id));
-    }
+    showDeleteConfirm.value = true;
+};
+
+const confirmDelete = () => {
+    showDeleteConfirm.value = false;
+    router.delete(route('transactions.destroy', props.transaction.id));
 };
 </script>
 
@@ -308,7 +312,7 @@ const destroy = () => {
 
         <!-- CATEGORY MODAL -->
         <div v-if="showCategoryModal" class="fixed inset-0 z-[100] flex flex-col justify-end bg-black/70 backdrop-blur-sm" @click.self="showCategoryModal = false">
-            <div class="w-full w-full lg:max-w-4xl mx-auto lg:px-8 bg-gray-900 rounded-t-2xl border-t border-x border-white/10 p-5 pb-safe animate-slide-up">
+            <div class="w-full lg:max-w-4xl mx-auto lg:px-8 bg-gray-900 rounded-t-2xl border-t border-x border-white/10 p-5 pb-safe animate-slide-up">
                 <div class="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-4 cursor-pointer" @click="showCategoryModal = false"></div>
                 <h3 class="text-sm font-bold text-purple-500 mb-4 uppercase tracking-widest text-center">Pilih Kategori</h3>
                 <div class="overflow-y-auto no-scrollbar space-y-2 max-h-[60vh] pb-6">
@@ -325,7 +329,7 @@ const destroy = () => {
 
         <!-- WALLET MODAL -->
         <div v-if="showWalletModal" class="fixed inset-0 z-[100] flex flex-col justify-end bg-black/70 backdrop-blur-sm" @click.self="showWalletModal = false">
-            <div class="w-full w-full lg:max-w-4xl mx-auto lg:px-8 bg-gray-900 rounded-t-2xl border-t border-x border-white/10 p-5 pb-safe animate-slide-up">
+            <div class="w-full lg:max-w-4xl mx-auto lg:px-8 bg-gray-900 rounded-t-2xl border-t border-x border-white/10 p-5 pb-safe animate-slide-up">
                 <div class="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-4 cursor-pointer" @click="showWalletModal = false"></div>
                 <h3 class="text-sm font-bold text-purple-500 mb-4 uppercase tracking-widest text-center">Pilih Dompet</h3>
                 <div class="overflow-y-auto no-scrollbar space-y-2 max-h-[60vh] pb-6">
@@ -345,10 +349,35 @@ const destroy = () => {
             </div>
         </div>
 
+        <!-- DELETE CONFIRMATION TOAST/MODAL -->
+        <div v-if="showDeleteConfirm" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm transition-opacity" @click.self="showDeleteConfirm = false">
+            <div class="w-full max-w-sm bg-gradient-to-br from-red-900 to-gray-900 rounded-2xl border border-red-500/30 p-6 animate-pop-in relative shadow-2xl">
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 rounded-full bg-red-500/20 text-red-400 mx-auto flex items-center justify-center mb-4">
+                        <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-white tracking-tight mb-2">Hapus Transaksi?</h3>
+                    <p class="text-sm text-red-200">Yakin mau menghapus transaksi ini? Data yang dihapus tidak bisa dikembalikan.</p>
+                </div>
+                <div class="flex gap-3">
+                    <button type="button" @click="showDeleteConfirm = false" class="flex-1 bg-gray-800 text-white font-bold text-sm uppercase tracking-widest py-4 rounded-xl active:scale-95 transition-all">
+                        Batal
+                    </button>
+                    <button type="button" @click="confirmDelete" class="flex-1 bg-gradient-to-br from-red-600 to-red-500 text-white font-bold text-sm uppercase tracking-widest py-4 rounded-xl shadow-lg shadow-red-500/20 active:scale-95 transition-all">
+                        Ya, Hapus
+                    </button>
+                </div>
+            </div>
+        </div>
+
     </AuthenticatedLayout>
 </template>
 
 <style scoped>
+@keyframes pop-in { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+.animate-pop-in { animation: pop-in 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
 @keyframes slide-up { 0% { transform: translateY(100%); } 100% { transform: translateY(0); } }
 .animate-slide-up { animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 .no-scrollbar::-webkit-scrollbar { display: none; }

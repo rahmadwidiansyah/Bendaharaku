@@ -23,12 +23,12 @@ const sortedGroups = computed(() => {
 
 const getTheme = (typeName) => {
     return {
-        'Income': { text: 'text-green-400', bg: 'bg-green-500', glow: 'hover:shadow-[0_0_15px_rgba(74,222,128,0.2)]', border: 'hover:border-green-500/50' },
-        'Expense': { text: 'text-gray-300', bg: 'bg-gray-400', glow: 'hover:shadow-[0_0_15px_rgba(156,163,175,0.2)]', border: 'hover:border-gray-500/50' },
-        'Transfer': { text: 'text-blue-400', bg: 'bg-blue-500', glow: 'hover:shadow-[0_0_15px_rgba(59,130,246,0.2)]', border: 'hover:border-blue-500/50' },
-        'Debt': { text: 'text-yellow-400', bg: 'bg-yellow-500', glow: 'hover:shadow-[0_0_15px_rgba(229,208,126,0.2)]', border: 'hover:border-yellow-500/50' },
-        'Receivable': { text: 'text-pink-400', bg: 'bg-pink-500', glow: 'hover:shadow-[0_0_15px_rgba(252,165,255,0.2)]', border: 'hover:border-purple-500/50' },
-    }[typeName] || { text: 'text-white', bg: 'bg-white', glow: 'hover:shadow-[0_0_15px_rgba(255,255,255,0.2)]', border: 'hover:border-white/100' };
+        'Income': { text: 'text-green-400', bg: 'bg-green-500', border: 'hover:border-green-500/50' },
+        'Expense': { text: 'text-gray-300', bg: 'bg-gray-400', border: 'hover:border-gray-500/50' },
+        'Transfer': { text: 'text-blue-400', bg: 'bg-blue-500', border: 'hover:border-blue-500/50' },
+        'Debt': { text: 'text-yellow-400', bg: 'bg-yellow-500', border: 'hover:border-yellow-500/50' },
+        'Receivable': { text: 'text-pink-400', bg: 'bg-pink-500', border: 'hover:border-purple-500/50' },
+    }[typeName] || { text: 'text-white', bg: 'bg-white', border: 'hover:border-white/100' };
 };
 
 const getHeaderText = (typeName) => {
@@ -130,7 +130,7 @@ const getHeaderText = (typeName) => {
                 <div :class="['grid grid-cols-3 gap-3', isDesktopLayout ? 'lg:grid-cols-6 lg:gap-5' : '']">
                     <Link v-for="category in categories" :key="category.id" :href="route('categories.show', category.id)"
                        class="relative group bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center active:scale-95 transition-all duration-300"
-                       :class="[getTheme(typeName).glow, getTheme(typeName).border]">
+                       :class="[getTheme(typeName).border]">
                         
                         <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center text-2xl border border-white/10 shrink-0 shadow-inner overflow-hidden p-0.5 mb-2.5 transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-1">
                             <img v-if="category.icon?.includes('.')" :src="'/storage/' + category.icon" class="w-full h-full object-contain p-1">

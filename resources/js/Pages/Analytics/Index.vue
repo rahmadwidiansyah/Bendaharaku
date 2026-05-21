@@ -56,8 +56,8 @@ const initCumulativeChart = async () => {
     if (!ctx) return;
     
     let grad = ctx.createLinearGradient(0, 0, 0, 140);
-    grad.addColorStop(0, 'rgba(252,165,255,0.4)');
-    grad.addColorStop(1, 'rgba(252,165,255,0)');
+    grad.addColorStop(0, 'rgba(168,85,247,0.4)');
+    grad.addColorStop(1, 'rgba(168,85,247,0)');
 
     charts.value['cumulative'] = new Chart(ctx, {
         type: 'line',
@@ -65,7 +65,7 @@ const initCumulativeChart = async () => {
             labels: props.dailyLabels,
             datasets: [{
                 data: props.cumulativeData,
-                borderColor: '#FCA5FF',
+                borderColor: '#A855F7',
                 borderWidth: 2.5,
                 backgroundColor: grad,
                 fill: true,
@@ -154,8 +154,8 @@ const renderBarChart = async (view) => {
         data: {
             labels: labels,
             datasets: [
-                { label: 'In', data: incomes, backgroundColor: '#34D399', borderRadius: 4 },
-                { label: 'Out', data: expenses, backgroundColor: '#FCA5FF', borderRadius: 4 }
+                { label: 'In', data: incomes, backgroundColor: '#4CAF50', borderRadius: 4 },
+                { label: 'Out', data: expenses, backgroundColor: '#A855F7', borderRadius: 4 }
             ]
         },
         options: {
@@ -193,8 +193,8 @@ const renderDoughnutChart = async () => {
     if (!ctx || !dataObj.labels.length) return;
 
     const colors = categoryView.value === 'expense'
-        ? ['#FCA5FF', '#A78BFA', '#818CF8', '#60A5FA', '#38BDF8', '#4ADE80']
-        : ['#34D399', '#6EE7B7', '#A7F3D0', '#10B981'];
+        ? ['#A855F7', '#A78BFA', '#818CF8', '#60A5FA', '#38BDF8', '#4ADE80']
+        : ['#4CAF50', '#6EE7B7', '#A7F3D0', '#10B981'];
 
     charts.value['doughnut'] = new Chart(ctx, {
         type: 'doughnut',
@@ -258,7 +258,7 @@ onMounted(() => {
                     </div>
                     <p
                         class="text-md font-black text-green-400 tracking-tighter break-words relative z-10 leading-tight">
-                        <span class="text-xs mr-0.5 opacity-70">+Rp</span>{{ formatNumber(totalIncome) }}
+                        <span class="text-xs mr-0.5 opacity-70">Rp</span>{{ formatNumber(totalIncome) }}
                     </p>
                 </div>
                 <div
@@ -268,7 +268,7 @@ onMounted(() => {
                         <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Pengeluaran</p>
                     </div>
                     <p class="text-md font-black text-red-400 tracking-tighter break-words relative z-10 leading-tight">
-                        <span class="text-red-400 text-xs mr-0.5 opacity-70">-Rp</span>{{ formatNumber(totalExpense) }}
+                        <span class="text-red-400 text-xs mr-0.5 opacity-70">Rp</span>{{ formatNumber(totalExpense) }}
                     </p>
                 </div>
             </div>
@@ -359,7 +359,7 @@ onMounted(() => {
                             class="relative flex items-center justify-between bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 p-3 rounded-xl overflow-hidden group hover:border-purple-500/30 transition-all duration-300">
                             <div class="flex items-center gap-3 relative z-10 w-full">
                                 <div class="w-1.5 h-6 rounded-full"
-                                    :style="{ backgroundColor: ['#FCA5FF', '#A78BFA', '#818CF8', '#60A5FA', '#38BDF8', '#4ADE80'][i % 6] }">
+                                    :style="{ backgroundColor: ['#A855F7', '#A78BFA', '#818CF8', '#60A5FA', '#38BDF8', '#4ADE80'][i % 6] }">
                                 </div>
                                 <div
                                     class="w-8 h-8 rounded-xl bg-gray-900 flex items-center justify-center border border-white/10 overflow-hidden p-0.5">

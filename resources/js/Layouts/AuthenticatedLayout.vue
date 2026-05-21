@@ -1,5 +1,6 @@
 <script setup>
 import BottomNav from '@/Components/BottomNav.vue';
+import Toast from '@/Components/Toast.vue';
 import { useLayoutPreference } from '@/Composables/useLayoutPreference';
 import { onMounted, ref, computed } from 'vue';
 
@@ -32,6 +33,7 @@ onMounted(() => {
 
 <template>
     <div class="font-sans antialiased bg-black text-white selection:bg-purple-400 selection:text-black">
+        <Toast />
         <div class="flex justify-center min-h-screen">
             
             <!-- MAIN CONTENT (Centered) -->
