@@ -1,10 +1,21 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { useBalanceVisibility } from '@/Composables/useBalanceVisibility';
+import { useLayoutPreference } from '@/Composables/useLayoutPreference';
+
+const { isDesktopLayout } = useLayoutPreference();
 
 const { isBalanceVisible, toggleVisibility } = useBalanceVisibility();
+
+const togglePin = (wallet) => {
+    const newState = wallet.is_pinned === true ? false : true;
+    router.patch(route('wallets.set-pin', wallet.id), { state: newState }, {
+        preserveScroll: true,
+        preserveState: true,
+    });
+};
 
 const props = defineProps({
     wallets: Array,
@@ -47,10 +58,10 @@ const handleImageError = (e, fallback) => {
 </script>
 
 <template>
-    <AuthenticatedLayout>
+    <AuthenticatedLayout :fullWidth="true">
         <Head title="Aset Saya" />
 
-        <div class="p-5 pb-32 max-w-md mx-auto">
+        <div class="p-5 pb-32 w-full lg:max-w-4xl mx-auto lg:px-8">
             <header class="mb-8 pt-4 animate-fade-in-up">
                 <p class="text-xs text-purple-500 font-black uppercase tracking-[0.3em] mb-1 opacity-80">Portfolio</p>
                 <h1 class="text-2xl font-black text-white tracking-tight leading-none mb-4">Aset & Dompet</h1>
@@ -81,7 +92,7 @@ const handleImageError = (e, fallback) => {
                     <div class="flex-1 h-px bg-gradient-to-r from-blue-500/30 to-transparent"></div>
                 </div>
                 
-                <div class="grid grid-cols-1 gap-3">
+                <div :class="['grid grid-cols-1 gap-3', isDesktopLayout ? 'lg:grid-cols-2 lg:gap-5' : '']">
                     <Link v-for="wallet in liquidWallets" :key="wallet.id" :href="route('wallets.show', wallet.id)" 
                         class="flex items-center justify-between p-4 bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 active:scale-[0.98] transition-all group">
                         <div class="flex items-center gap-4">
@@ -97,8 +108,13 @@ const handleImageError = (e, fallback) => {
                                 <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">{{ wallet.keyword || 'Dompet' }}</p>
                             </div>
                         </div>
-                        <div class="text-right">
+                        <div class="text-right flex items-center justify-end gap-3">
                             <p class="text-sm font-bold text-white tracking-tight">Rp{{ isBalanceVisible ? formatNumber(wallet.balance) : '••••' }}</p>
+                            <button @click.stop.prevent="togglePin(wallet)" class="p-1 rounded-full z-10 transition-colors" :class="wallet.is_pinned ? 'text-[#FCA5FF] bg-white/5' : 'text-gray-500 hover:text-white'">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5v6l1 2 1-2v-6h5v-2l-2-2z"/>
+                                </svg>
+                            </button>
                         </div>
                     </Link>
                 </div>
@@ -113,7 +129,7 @@ const handleImageError = (e, fallback) => {
                     <div class="flex-1 h-px bg-gradient-to-r from-purple-500/30 to-transparent"></div>
                 </div>
                 
-                <div class="grid grid-cols-1 gap-3">
+                <div :class="['grid grid-cols-1 gap-3', isDesktopLayout ? 'lg:grid-cols-2 lg:gap-5' : '']">
                     <Link v-for="wallet in assetWallets" :key="wallet.id" :href="route('wallets.show', wallet.id)" 
                         class="flex items-center justify-between p-4 bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 active:scale-[0.98] transition-all group">
                         <div class="flex items-center gap-4">
@@ -129,8 +145,13 @@ const handleImageError = (e, fallback) => {
                                 <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">{{ wallet.keyword || 'Aset' }}</p>
                             </div>
                         </div>
-                        <div class="text-right">
+                        <div class="text-right flex items-center justify-end gap-3">
                             <p class="text-sm font-bold text-white tracking-tight">Rp{{ isBalanceVisible ? formatNumber(wallet.balance) : '••••' }}</p>
+                            <button @click.stop.prevent="togglePin(wallet)" class="p-1 rounded-full z-10 transition-colors" :class="wallet.is_pinned ? 'text-[#FCA5FF] bg-white/5' : 'text-gray-500 hover:text-white'">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5v6l1 2 1-2v-6h5v-2l-2-2z"/>
+                                </svg>
+                            </button>
                         </div>
                     </Link>
                 </div>
@@ -145,7 +166,7 @@ const handleImageError = (e, fallback) => {
                     <div class="flex-1 h-px bg-gradient-to-r from-gray-500/30 to-transparent"></div>
                 </div>
                 
-                <div class="grid grid-cols-1 gap-3">
+                <div :class="['grid grid-cols-1 gap-3', isDesktopLayout ? 'lg:grid-cols-2 lg:gap-5' : '']">
                     <Link v-for="wallet in otherWallets" :key="wallet.id" :href="route('wallets.show', wallet.id)" 
                         class="flex items-center justify-between p-4 bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 active:scale-[0.98] transition-all group">
                         <div class="flex items-center gap-4">
@@ -160,8 +181,13 @@ const handleImageError = (e, fallback) => {
                                 <h3 class="text-sm font-bold text-white leading-tight">{{ wallet.name }}</h3>
                             </div>
                         </div>
-                        <div class="text-right">
+                        <div class="text-right flex items-center justify-end gap-3">
                             <p class="text-sm font-bold text-white tracking-tight">Rp{{ isBalanceVisible ? formatNumber(wallet.balance) : '••••' }}</p>
+                            <button @click.stop.prevent="togglePin(wallet)" class="p-1 rounded-full z-10 transition-colors" :class="wallet.is_pinned ? 'text-[#FCA5FF] bg-white/5' : 'text-gray-500 hover:text-white'">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5v6l1 2 1-2v-6h5v-2l-2-2z"/>
+                                </svg>
+                            </button>
                         </div>
                     </Link>
                 </div>

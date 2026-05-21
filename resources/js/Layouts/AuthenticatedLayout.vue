@@ -1,7 +1,21 @@
 <script setup>
 import BottomNav from '@/Components/BottomNav.vue';
-import GoogleAd from '@/Components/GoogleAd.vue';
-import { onMounted } from 'vue';
+import { useLayoutPreference } from '@/Composables/useLayoutPreference';
+import { onMounted, ref, computed } from 'vue';
+
+const props = defineProps({
+    fullWidth: {
+        type: Boolean,
+        default: false
+    }
+});
+
+const isSidebarOpen = ref(true);
+const { isDesktopLayout } = useLayoutPreference();
+
+const computedFullWidth = computed(() => {
+    return isDesktopLayout.value ? props.fullWidth : false;
+});
 
 onMounted(() => {
     // Basic page entry animation logic
@@ -17,30 +31,20 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="font-sans antialiased bg-black text-white selection:bg-[#FCA5FF] selection:text-black">
+    <div class="font-sans antialiased bg-black text-white selection:bg-purple-400 selection:text-black">
         <div class="flex justify-center min-h-screen">
             
-            <!-- LEFT AD SIDEBAR (Desktop Only) -->
-            <aside class="hidden xl:flex flex-col w-64 p-4 sticky top-0 h-screen justify-center items-center">
-                <div class="w-full h-[600px] bg-gray-900/20 border border-white/5 rounded-xl flex items-center justify-center overflow-hidden">
-                    <GoogleAd ad-slot="LEFT_SIDEBAR_SLOT" ad-format="vertical" />
-                </div>
-            </aside>
-
             <!-- MAIN CONTENT (Centered) -->
-            <div class="w-full max-w-md bg-gray-800 min-h-screen flex flex-col border-x border-[#1e1e1e] relative overflow-x-hidden shadow-2xl shadow-black">
-                <main id="main-content" class="flex-1 pb-24">
+            <div :class="[
+                'w-full bg-gray-800 min-h-screen flex flex-col border-x border-[#1e1e1e] relative overflow-x-hidden shadow-2xl shadow-black transition-all duration-300',
+                computedFullWidth ? 'max-w-md lg:max-w-full' : 'max-w-md',
+                computedFullWidth && isSidebarOpen ? 'lg:pl-64' : (computedFullWidth ? 'lg:pl-20' : '')
+            ]">
+                <main id="main-content" :class="['flex-1 pb-24', computedFullWidth ? 'lg:pb-8' : '']">
                     <slot />
                 </main>
-                <BottomNav />
+                <BottomNav :is-sidebar-open="isSidebarOpen" @toggle="isSidebarOpen = $event" />
             </div>
-
-            <!-- RIGHT AD SIDEBAR (Desktop Only) -->
-            <aside class="hidden xl:flex flex-col w-64 p-4 sticky top-0 h-screen justify-center items-center">
-                <div class="w-full h-[600px] bg-gray-900/20 border border-white/5 rounded-xl flex items-center justify-center overflow-hidden">
-                    <GoogleAd ad-slot="RIGHT_SIDEBAR_SLOT" ad-format="vertical" />
-                </div>
-            </aside>
 
         </div>
     </div>
