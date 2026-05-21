@@ -240,7 +240,7 @@ const handleBack = () => {
                             class="w-full bg-transparent border-none text-white p-1 text-sm focus:ring-0"
                             style="color-scheme: dark;">
                         <div v-if="form.errors.date" class="text-red-500 text-[10px] mt-1 font-bold">{{ form.errors.date
-                            }}</div>
+                        }}</div>
                     </div>
 
                     <div class="bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-3 shadow-sm cursor-pointer active:scale-95 transition-transform"
@@ -397,7 +397,7 @@ const handleBack = () => {
                                 class="text-xs text-gray-500 font-bold tracking-widest mt-0.5 uppercase">
                                 Saldo: <span class="text-purple-500">Rp {{ new
                                     Intl.NumberFormat('id-ID').format(w.balance)
-                                    }}</span>
+                                }}</span>
                             </p>
                         </div>
                     </div>
