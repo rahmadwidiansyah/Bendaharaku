@@ -50,10 +50,25 @@ class Wallet extends Model
         'icon',
         'keyword',
         'is_active',
+        'is_pinned',
+    ];
+
+    protected $casts = [
+        'is_pinned' => 'boolean',
     ];
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function sourceTransactions()
+    {
+        return $this->hasMany(TransactionLog::class, 'source_wallet_id');
+    }
+
+    public function destinationTransactions()
+    {
+        return $this->hasMany(TransactionLog::class, 'destination_wallet_id');
     }
 }

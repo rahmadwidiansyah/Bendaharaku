@@ -38,6 +38,7 @@ Route::middleware(['auth'])->group(function () {
     })->name('settings.index');
 
     // Resources CRUD
+    Route::patch('wallets/{wallet}/set-pin', [WalletController::class, 'setPin'])->name('wallets.set-pin');
     Route::resource('wallets', WalletController::class);
     Route::resource('categories', CategoryController::class);
     Route::resource('transactions', TransactionController::class);

@@ -14,7 +14,7 @@ class WalletController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $wallets = $user->wallets;
+        $wallets = $user->wallets()->orderBy('id')->get();
 
         // LOGIKA HITUNG HUTANG
         $systemHutang = $user->wallets()->where('name', 'like', '%Hutang%')->first();
@@ -56,7 +56,8 @@ class WalletController extends Controller
             'icon' => 'nullable|string|max:255',
             'icon_file' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'keyword' => 'nullable|string|max:255',
-            'group_type' => 'required|string'
+            'group_type' => 'required|string',
+            'is_pinned' => 'nullable|boolean'
         ]);
 
         if ($request->hasFile('icon_file')) {
@@ -108,6 +109,7 @@ class WalletController extends Controller
             'icon' => 'nullable|string|max:255',
             'icon_file' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'keyword' => 'nullable|string|max:255',
+            'is_pinned' => 'nullable|boolean',
         ]);
 
         // Logika Update Gambar (Hapus yang lama jika ada upload baru)
@@ -143,5 +145,19 @@ class WalletController extends Controller
             // Jika gagal karena ada relasi transaksi, kirim pesan error
             return back()->withErrors(['error' => 'Gagal menghapus dompet. Pastikan tidak ada transaksi yang terhubung.']);
         }
+    }
+
+    // SET PIN
+    public function setPin(Request $request, Wallet $wallet)
+    {
+        if ($wallet->user_id !== Auth::id()) abort(403);
+
+        $validated = $request->validate([
+            'state' => 'required|boolean'
+        ]);
+
+        $wallet->update(['is_pinned' => $validated['state']]);
+
+        return back();
     }
 }
