@@ -158,6 +158,7 @@ class WalletController extends Controller
 
         $wallet->update(['is_pinned' => $validated['state']]);
 
-        return back();
+        $message = $validated['state'] ? 'Dompet dipin ke Dashboard!' : 'Dompet diunpin dari Dashboard!';
+        return back()->with('success', $message);
     }
 }

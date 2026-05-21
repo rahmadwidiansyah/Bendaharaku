@@ -49,7 +49,7 @@ const deleteWallet = () => {
                 <div>
                     <h1 class="text-2xl font-bold text-white tracking-tight">Edit Dompet</h1>
                 </div>
-                <Link :href="route('wallets.show', wallet.id)" class="w-10 h-10 rounded-full bg-[#1A1A1A] border border-[#333] flex items-center justify-center text-gray-400 active:scale-90 transition-all shadow-md hover:text-white hover:border-gray-500">
+                <Link :href="route('wallets.show', wallet.id)" class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 flex items-center justify-center text-gray-400 active:scale-90 transition-all shadow-md hover:text-white hover:border-gray-500">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -60,10 +60,10 @@ const deleteWallet = () => {
                 
                 <div class="flex flex-col animate-slide-up opacity-0 relative z-10" style="animation-delay: 150ms;">
                     <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">Saldo Saat Ini</label>
-                    <div class="h-[60px] bg-[#1A1A1A] border border-[#333] rounded-xl px-5 flex items-center group focus-within:border-[#FCA5FF] focus-within:ring-1 focus-within:ring-[#FCA5FF] transition-all shadow-inner">
-                        <span class="text-base font-bold text-[#FCA5FF] mr-3 opacity-80">Rp</span>
+                    <div class="h-[60px] bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl px-5 flex items-center group focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all shadow-inner">
+                        <span class="text-base font-bold text-purple-500 mr-3 opacity-80">Rp</span>
                         <input type="text" inputmode="numeric" required v-model="displayAmount"
-                            class="w-full bg-transparent border-none text-white p-0 text-xl font-bold placeholder-gray-600 focus:ring-0 focus:outline-none caret-[#FCA5FF]">
+                            class="w-full bg-transparent border-none text-white p-0 text-xl font-bold placeholder-gray-600 focus:ring-0 focus:outline-none caret-purple-500">
                     </div>
                     <div v-if="form.errors.balance" class="text-red-500 text-xs mt-1">{{ form.errors.balance }}</div>
                     <p class="text-xs text-gray-500 mt-2 ml-1 italic">* Ubah manual jika ada selisih saldo.</p>
@@ -76,7 +76,7 @@ const deleteWallet = () => {
 
                     <div class="flex-1 flex flex-col justify-end">
                         <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">Nama Dompet</label>
-                        <div class="h-[60px] bg-[#1A1A1A] border border-[#333] rounded-xl px-5 flex items-center group focus-within:border-[#FCA5FF] focus-within:ring-1 focus-within:ring-[#FCA5FF] transition-all shadow-inner">
+                        <div class="h-[60px] bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl px-5 flex items-center group focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all shadow-inner">
                             <input type="text" v-model="form.name" required placeholder="Contoh: BCA Utama" 
                                 class="w-full bg-transparent border-none text-white p-0 text-base font-medium focus:ring-0 focus:outline-none">
                         </div>
@@ -86,33 +86,33 @@ const deleteWallet = () => {
 
                 <div class="flex flex-col animate-slide-up opacity-0 relative z-40" style="animation-delay: 250ms;">
                     <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">Keyword AI (Pisahkan Koma)</label>
-                    <div class="bg-[#1A1A1A] border border-[#333] rounded-xl p-4 group focus-within:border-[#FCA5FF] focus-within:ring-1 focus-within:ring-[#FCA5FF] transition-all">
+                    <div class="bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-4 group focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all">
                         <input type="text" v-model="form.keyword" placeholder="Contoh: bca, transfer, mbanking..." 
                             class="w-full bg-transparent border-none text-white p-0 text-sm placeholder-gray-600 focus:ring-0 focus:outline-none">
                     </div>
                     <div v-if="form.errors.keyword" class="text-red-500 text-xs mt-1">{{ form.errors.keyword }}</div>
                 </div>
 
-                <div class="flex items-center justify-between bg-[#1A1A1A] border border-[#333] rounded-xl p-4 animate-slide-up opacity-0 relative z-35" style="animation-delay: 275ms;">
+                <div class="flex items-center justify-between bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-4 animate-slide-up opacity-0 relative z-35" style="animation-delay: 275ms;">
                     <div>
                         <label class="block text-sm font-medium text-gray-300">Pin ke Dashboard</label>
                         <p class="text-xs text-gray-500 mt-0.5">Tampilkan dompet ini di halaman utama</p>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" v-model="form.is_pinned" class="sr-only peer">
-                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#FCA5FF]"></div>
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500"></div>
                     </label>
                 </div>
 
                 <div class="pt-4 space-y-3 animate-slide-up opacity-0 relative z-30" style="animation-delay: 300ms;">
-                    <button type="submit" :disabled="form.processing" class="w-full bg-[#FCA5FF] text-[#121212] font-bold text-sm tracking-wide py-4 rounded-xl shadow-[0_0_20px_rgba(252,165,255,0.15)] hover:shadow-[0_0_25px_rgba(252,165,255,0.3)] hover:-translate-y-0.5 active:scale-95 transition-all duration-200">
+                    <button type="submit" :disabled="form.processing" class="w-full bg-gradient-to-br from-purple-600 to-purple-500 text-white font-bold text-sm tracking-wide py-4 rounded-xl hover:-translate-y-0.5 active:scale-95 transition-all duration-200">
                         Update Dompet
                     </button>
                 </div>
             </form>
 
             <form @submit.prevent="deleteWallet" class="mt-4 animate-slide-up opacity-0 relative z-20" style="animation-delay: 350ms;">
-                <button type="submit" :disabled="deleteForm.processing" class="w-full bg-transparent border border-red-500/20 text-red-500/70 font-medium text-xs uppercase tracking-widest py-4 rounded-xl hover:bg-red-500/10 active:scale-95 transition-all">
+                <button type="submit" :disabled="deleteForm.processing" class="w-full bg-gradient-to-br from-red-800 to-red-900 text-white font-bold text-sm tracking-wide py-4 rounded-xl hover:-translate-y-0.5 active:scale-95 transition-all duration-200">
                     Hapus Dompet
                 </button>
             </form>

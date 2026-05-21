@@ -91,7 +91,7 @@ const destroy = () => {
                     <button type="button" @click="destroy" class="flex-1 bg-red-950/30 border border-red-900/50 text-red-500 font-bold text-sm tracking-wide py-4 rounded-xl active:scale-95 transition-all">
                         Hapus
                     </button>
-                    <button type="submit" :disabled="form.processing" class="flex-[2] bg-purple-500 text-[#121212] font-bold text-sm tracking-wide py-4 rounded-xl shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all">
+                    <button type="submit" :disabled="form.processing" class="flex-[2] bg-gradient-to-br from-purple-600 to-purple-500 text-white font-bold text-sm tracking-wide py-4 rounded-xl shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all">
                         {{ form.processing ? 'Menyimpan...' : 'Update Kategori' }}
                     </button>
                 </div>

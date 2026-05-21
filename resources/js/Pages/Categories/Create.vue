@@ -48,7 +48,7 @@ const submit = () => {
                     <div class="grid grid-cols-2 gap-2 p-1.5 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl shadow-inner">
                         <label v-for="type in types" :key="type.id" class="cursor-pointer">
                             <input type="radio" v-model="form.type_id" :value="type.id" class="hidden peer">
-                            <div class="text-xs font-semibold py-3 text-center rounded-xl transition-all border border-transparent text-gray-400 peer-checked:bg-white/5 peer-checked:text-purple-400 peer-checked:border-white/10">
+                            <div class="text-xs font-semibold py-3 text-center rounded-xl transition-all border border-transparent text-gray-400 peer-checked:bg-white/5 peer-checked:text-purple-500 peer-checked:border-white/10">
                                 {{ type.name === 'Income' ? 'Pemasukan' : 'Pengeluaran' }}
                             </div>
                         </label>
@@ -77,7 +77,7 @@ const submit = () => {
                 </div>
 
                 <div class="pt-4">
-                    <button type="submit" :disabled="form.processing" class="w-full bg-gradient-to-br from-gray-900 to-gray-800 text-white font-bold text-sm tracking-wide py-4 rounded-xl shadow-[0_0_20px_rgba(168,85,247,0.15)] hover:shadow-[0_0_25px_rgba(168,85,247,0.3)] hover:-translate-y-0.5 active:scale-95 transition-all duration-200">
+                    <button type="submit" :disabled="form.processing" class="w-full bg-gradient-to-br from-purple-600 to-purple-500 text-white font-bold text-sm tracking-wide py-4 rounded-xl hover:-translate-y-0.5 active:scale-95 transition-all duration-200">
                         {{ form.processing ? 'Menyimpan...' : 'Simpan Kategori' }}
                     </button>
                 </div>
