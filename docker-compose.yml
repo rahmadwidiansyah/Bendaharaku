@@ -2,22 +2,46 @@ name: python-test
 
 services:
 
-  #   # --- SERVICE DATABASE (POSTGRESQL) ---
-  # db:
-  #   image: postgres:15-alpine
-  #   container_name: laravel_db
-  #   restart: always
-  #   environment:
-  #     POSTGRES_DB: ${DB_DATABASE:-laravel}
-  #     POSTGRES_USER: ${DB_USERNAME:-sail}
-  #     POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
-  #   ports:
-  #     - "8000:8000"
-  #     - "5432:5432"
-  #   volumes:
-  #     - db_data:/var/lib/postgresql/data
-  #   networks:
-  #     - laravel
+  node:
+    image: node:20-alpine
+    volumes:
+      - .:/usr/src/app
+    working_dir: /usr/src/app
+    entrypoint: [ "npm" ]
+
+  db:
+    image: postgres:15-alpine
+    container_name: laravel_db
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-laravel}
+      POSTGRES_USER: ${DB_USERNAME:-sail}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+    ports:
+      - "8000:8000"
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - laravel
+=======
+    # --- SERVICE DATABASE (POSTGRESQL) ---
+  db:
+    image: postgres:15-alpine
+    container_name: laravel_db
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-laravel}
+      POSTGRES_USER: ${DB_USERNAME:-sail}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+    ports:
+      - "8000:8000"
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - laravel
+
 
   # --- SERVICE LARAVEL APP ---
   app:
@@ -26,7 +50,7 @@ services:
     restart: always
     ports:
       - "5173:5173"
-    volumes: 
+    volumes:
       - .:/var/www
     networks:
       - laravel
@@ -80,7 +104,7 @@ networks:
 volumes:
   db_data:
 
-# --- METADATA CASAOS ---
+    # --- METADATA CASAOS ---
 x-casaos:
   author: self
   category: self

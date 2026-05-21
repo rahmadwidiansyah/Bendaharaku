@@ -2,6 +2,9 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import { useLayoutPreference } from '@/Composables/useLayoutPreference';
+
+const { isDesktopLayout } = useLayoutPreference();
 
 const props = defineProps({
     groupedCategories: Object,
@@ -23,7 +26,7 @@ const getTheme = (typeName) => {
         'Income': { text: 'text-green-400', bg: 'bg-green-500', glow: 'hover:shadow-[0_0_15px_rgba(74,222,128,0.2)]', border: 'hover:border-green-500/50' },
         'Expense': { text: 'text-gray-300', bg: 'bg-gray-400', glow: 'hover:shadow-[0_0_15px_rgba(156,163,175,0.2)]', border: 'hover:border-gray-500/50' },
         'Transfer': { text: 'text-blue-400', bg: 'bg-blue-500', glow: 'hover:shadow-[0_0_15px_rgba(59,130,246,0.2)]', border: 'hover:border-blue-500/50' },
-        'Debt': { text: 'text-yellow-400', bg: 'bg-yellow-500', glow: 'hover:shadow-[0_0_15px_rgba(229,208,126,0.2)]', border: 'hover:border-[#E5D07E]/50' },
+        'Debt': { text: 'text-yellow-400', bg: 'bg-yellow-500', glow: 'hover:shadow-[0_0_15px_rgba(229,208,126,0.2)]', border: 'hover:border-yellow-500/50' },
         'Receivable': { text: 'text-pink-400', bg: 'bg-pink-500', glow: 'hover:shadow-[0_0_15px_rgba(252,165,255,0.2)]', border: 'hover:border-purple-500/50' },
     }[typeName] || { text: 'text-white', bg: 'bg-white', glow: 'hover:shadow-[0_0_15px_rgba(255,255,255,0.2)]', border: 'hover:border-white/100' };
 };
@@ -40,10 +43,10 @@ const getHeaderText = (typeName) => {
 </script>
 
 <template>
-    <AuthenticatedLayout>
+    <AuthenticatedLayout :fullWidth="true">
         <Head title="Vault Kategori" />
 
-        <div class="p-5 pb-32 max-w-md mx-auto relative z-10 min-h-screen">
+        <div class="p-5 pb-32 w-full lg:max-w-4xl mx-auto lg:px-8 relative z-10 min-h-screen">
             
             <header class="mb-10 pt-4 animate-fade-in-up">
                 <div class="flex justify-between items-end mb-8 px-1">
@@ -61,30 +64,58 @@ const getHeaderText = (typeName) => {
                     </div>
                 </div>
 
-                <Link :href="route('categories.create')" 
-                   class="relative w-full h-16 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl flex items-center justify-between px-6 active:scale-[0.97] transition-all group overflow-hidden shadow-2xl">
-                    <div class="absolute inset-0 bg-gradient-to-r from-purple-900/0 via-purple-500/5 to-purple-900/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
-                    
-                    <div class="relative z-10 flex items-center gap-4">
-                        <div class="w-8 h-8 rounded-lg bg-purple-500 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M12 5v14M5 12h14"/>
-                            </svg>
+                <div :class="['grid grid-cols-1 gap-4', isDesktopLayout ? 'sm:grid-cols-2' : '']">
+                    <Link :href="route('categories.create')" 
+                       class="relative w-full min-h-[4rem] py-3 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl flex items-center justify-between px-4 sm:px-6 active:scale-[0.97] transition-all group overflow-hidden shadow-2xl">
+                        <div class="absolute inset-0 bg-gradient-to-r from-purple-900/0 via-purple-500/5 to-purple-900/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
+                        
+                        <div class="relative z-10 flex items-center gap-3 sm:gap-4 w-full pr-8">
+                            <div class="w-8 h-8 shrink-0 rounded-lg bg-purple-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 5v14M5 12h14"/>
+                                </svg>
+                            </div>
+                            <div class="flex flex-col min-w-0">
+                                <span class="text-sm font-bold text-white uppercase tracking-wide truncate">Tambah Kategori</span>
+                                <span class="text-[10px] sm:text-xs text-gray-500 font-bold uppercase tracking-widest mt-0.5 leading-tight">Organisir pengeluaran baru</span>
+                            </div>
                         </div>
-                        <div class="flex flex-col">
-                            <span class="text-sm font-bold text-white uppercase tracking-wide">Tambah Kategori</span>
-                            <span class="text-xs text-gray-500 font-bold uppercase tracking-widest mt-0.5">Organisir pengeluaran baru</span>
-                        </div>
-                    </div>
 
-                    <div class="relative z-10 flex items-center">
-                        <div class="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center group-hover:border-purple-500/50 transition-colors">
-                            <svg class="w-4 h-4 text-gray-500 group-hover:text-purple-500 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
-                                <path d="M9 5l7 7-7 7"/>
-                            </svg>
+                        <div class="absolute right-4 sm:right-6 z-10 flex items-center top-1/2 -translate-y-1/2">
+                            <div class="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center group-hover:border-purple-500/50 transition-colors">
+                                <svg class="w-4 h-4 text-gray-500 group-hover:text-purple-500 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                                    <path d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </div>
                         </div>
-                    </div>
-                </Link>
+                    </Link>
+
+                    <Link :href="route('settings.index')" 
+                       class="relative w-full min-h-[4rem] py-3 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl flex items-center justify-between px-4 sm:px-6 active:scale-[0.97] transition-all group overflow-hidden shadow-2xl">
+                        <div class="absolute inset-0 bg-gradient-to-r from-blue-900/0 via-blue-500/5 to-blue-900/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
+                        
+                        <div class="relative z-10 flex items-center gap-3 sm:gap-4 w-full pr-8">
+                            <div class="w-8 h-8 shrink-0 rounded-lg bg-blue-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                    <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                            </div>
+                            <div class="flex flex-col min-w-0">
+                                <span class="text-sm font-bold text-white uppercase tracking-wide truncate">Pengaturan</span>
+                                <span class="text-[10px] sm:text-xs text-gray-500 font-bold uppercase tracking-widest mt-0.5 leading-tight">Konfigurasi Web</span>
+                            </div>
+                        </div>
+
+                        <div class="absolute right-4 sm:right-6 z-10 flex items-center top-1/2 -translate-y-1/2">
+                            <div class="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center group-hover:border-blue-500/50 transition-colors">
+                                <svg class="w-4 h-4 text-gray-500 group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                                    <path d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </Link>
+                </div>
             </header>
 
             <div v-for="([typeName, categories], index) in sortedGroups" :key="typeName" class="mb-10 animate-fade-in-up" :style="{ animationDelay: (index * 100) + 'ms' }">
@@ -96,7 +127,7 @@ const getHeaderText = (typeName) => {
                     <div class="flex-1 h-px bg-gradient-to-r from-purple-500 to-transparent"></div>
                 </div>
 
-                <div class="grid grid-cols-3 gap-3">
+                <div :class="['grid grid-cols-3 gap-3', isDesktopLayout ? 'lg:grid-cols-6 lg:gap-5' : '']">
                     <Link v-for="category in categories" :key="category.id" :href="route('categories.show', category.id)"
                        class="relative group bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center active:scale-95 transition-all duration-300"
                        :class="[getTheme(typeName).glow, getTheme(typeName).border]">

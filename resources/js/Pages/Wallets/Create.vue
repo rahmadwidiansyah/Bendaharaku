@@ -11,6 +11,7 @@ const form = useForm({
     icon_file: null,
     keyword: '',
     group_type: 'Liquid',
+    is_pinned: false,
 });
 
 const submit = () => {
@@ -33,9 +34,9 @@ const displayAmount = computed({
 </script>
 
 <template>
-    <AuthenticatedLayout>
+    <AuthenticatedLayout :fullWidth="true">
         <Head title="Tambah Dompet" />
-        <div class="p-5 pb-32 max-w-md mx-auto relative animate-slide-up opacity-0" style="animation-delay: 50ms;">
+        <div class="p-5 pb-32 w-full lg:max-w-4xl mx-auto lg:px-8 relative animate-slide-up opacity-0" style="animation-delay: 50ms;">
             
             <header class="flex justify-between items-center mb-8 pt-4">
                 <div>
@@ -91,6 +92,17 @@ const displayAmount = computed({
                             class="w-full bg-transparent border-none text-white p-0 text-sm placeholder-gray-600 focus:ring-0 focus:outline-none">
                     </div>
                     <p class="text-xs text-gray-500 mt-2 ml-1 italic">* Digunakan untuk deteksi otomatis oleh sistem AI.</p>
+                </div>
+
+                <div class="flex items-center justify-between bg-[#1A1A1A] border border-[#333] rounded-xl p-4 animate-slide-up opacity-0 relative z-35" style="animation-delay: 275ms;">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300">Pin ke Dashboard</label>
+                        <p class="text-xs text-gray-500 mt-0.5">Tampilkan dompet ini di halaman utama</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" v-model="form.is_pinned" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#FCA5FF]"></div>
+                    </label>
                 </div>
 
                 <div class="pt-4 animate-slide-up opacity-0 relative z-30" style="animation-delay: 300ms;">

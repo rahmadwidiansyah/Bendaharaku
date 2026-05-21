@@ -8,6 +8,9 @@ import { Head, Link, usePage, router } from '@inertiajs/vue3';
 import { ref, computed, watch } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { useBalanceVisibility } from '@/Composables/useBalanceVisibility';
+import { useLayoutPreference } from '@/Composables/useLayoutPreference';
+
+const { isDesktopLayout } = useLayoutPreference();
 
 
 const props = defineProps({
@@ -17,10 +20,22 @@ const props = defineProps({
     thisMonthIncome: Number,
     thisMonthExpense: Number,
     transactions: Object,
+    pinnedWallets: Array,
     startDate: String,
     endDate: String,
     filters: Object,
 });
+
+const handleImageError = (e, fallback) => {
+    e.target.style.display = 'none';
+    const parent = e.target.parentElement;
+    if (parent) {
+        const span = document.createElement('span');
+        span.innerText = fallback;
+        span.className = 'text-xl animate-pulse';
+        parent.appendChild(span);
+    }
+};
 
 const { isBalanceVisible, toggleVisibility } = useBalanceVisibility();
 
@@ -149,14 +164,21 @@ const avatarSrc = computed(() => {
     if (avatar && (avatar.startsWith('http://') || avatar.startsWith('https://'))) return avatar;
     return avatar ? `/storage/${avatar}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=1A1A1A&color=FCA5FF&bold=true`;
 });
+
+const togglePin = (wallet) => {
+    router.patch(route('wallets.set-pin', wallet.id), { state: false }, {
+        preserveScroll: true,
+        preserveState: true,
+    });
+};
 </script>
 
 <template>
-    <AuthenticatedLayout>
+    <AuthenticatedLayout :fullWidth="true">
 
         <Head title="Dashboard" />
 
-        <div class="p-5 pb-32 max-w-md mx-auto">
+        <div class="p-5 pb-32 w-full mx-auto">
 
             <!-- HEADER -->
             <header class="flex justify-between items-center mb-6 pt-4 animate-fade-in-up">
@@ -197,9 +219,12 @@ const avatarSrc = computed(() => {
                 </button>
             </div>
 
-            <!-- HERO CARD -->
-            <div
-                class="relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 overflow-hidden mb-5 group animate-fade-in-up delay-200">
+            <div :class="isDesktopLayout ? 'lg:flex lg:gap-8 lg:items-start' : ''">
+                <!-- LEFT COLUMN (Desktop) -->
+                <div :class="isDesktopLayout ? 'lg:w-1/3 lg:sticky lg:top-5' : ''">
+                    <!-- HERO CARD -->
+                    <div
+                        class="relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 overflow-hidden mb-5 group animate-fade-in-up delay-200">
                 <div
                     class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
                 </div>
@@ -279,6 +304,41 @@ const avatarSrc = computed(() => {
                 </div>
             </div>
 
+            <!-- PINNED WALLETS -->
+            <div v-if="pinnedWallets && pinnedWallets.length > 0" class="mb-5 animate-fade-in-up delay-200">
+                <div class="flex justify-between items-center mb-3 px-1 gap-3">
+                    <h2 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                        <svg class="w-3 h-3 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg> Dompet Utama
+                    </h2>
+                    <div class="flex-1 h-px bg-gradient-to-r from-purple-500/20 to-transparent"></div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <Link v-for="wallet in pinnedWallets" :key="wallet.id" :href="route('wallets.show', wallet.id)" 
+                        class="bg-gradient-to-br from-gray-900 to-gray-800 p-3.5 rounded-xl border border-white/10 relative overflow-hidden active:scale-95 transition-transform group hover:border-purple-400/50">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex items-center gap-2 truncate">
+                                <div class="w-6 h-6 rounded-md bg-gray-900 border border-white/10 flex items-center justify-center text-xs overflow-hidden shrink-0" :class="wallet.icon?.includes('.') ? 'p-1' : ''">
+                                    <img v-if="wallet.icon?.includes('.')" :src="wallet.icon.startsWith('http') ? wallet.icon : '/storage/' + wallet.icon" class="w-full h-full object-contain" @error="(e) => handleImageError(e, wallet.keyword?.substring(0,1) || '💳')">
+                                    <span v-else>{{ wallet.icon || '💳' }}</span>
+                                </div>
+                                <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate">{{ wallet.name }}</h3>
+                            </div>
+                            <button @click.stop.prevent="togglePin(wallet)" class="text-[#FCA5FF] hover:text-white transition-colors p-1 bg-white/5 rounded-full z-10 shrink-0 -mt-1 -mr-1" title="Unpin dari Dashboard">
+                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5v6l1 2 1-2v-6h5v-2l-2-2z"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <p class="text-sm font-bold text-white tracking-tight truncate">
+                            <span class="text-[10px] text-gray-500 mr-1">Rp</span>{{ isBalanceVisible ? formatNumber(wallet.balance) : '••••' }}
+                        </p>
+                    </Link>
+                </div>
+            </div>
+
             <!-- MINI CASHFLOW -->
             <div class="grid grid-cols-2 gap-3 mb-10 animate-fade-in-up delay-200">
                 <div
@@ -311,15 +371,22 @@ const avatarSrc = computed(() => {
                 </div>
             </div>
 
-            <!-- GOOGLE ADS EXAMPLE -->
-            <GoogleAd ad-slot="8115784699" />
+            <!-- GOOGLE ADS -->
+            <div :class="['mb-6', isDesktopLayout ? 'hidden lg:block' : 'hidden']">
+                <GoogleAd ad-slot="2448030513"/>
+            </div>
+            <div :class="isDesktopLayout ? 'lg:hidden' : ''">
+                <GoogleAd ad-slot="2448030513"/>
+            </div>
 
+                </div> <!-- END LEFT COLUMN -->
 
-
-            <!-- TRANSACTION HISTORY -->
-            <div class="flex justify-between items-center mb-4 px-1 gap-3 animate-fade-in-up delay-500">
-                <h2 class="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
-                    <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span> Histori Transaksi
+                <!-- RIGHT COLUMN (Desktop) -->
+                <div :class="isDesktopLayout ? 'lg:w-2/3 lg:bg-gray-900/30 lg:p-6 lg:rounded-2xl lg:border lg:border-white/5' : 'mt-8'">
+                    <!-- TRANSACTION HISTORY -->
+                    <div class="flex justify-between items-center mb-4 px-1 gap-3 animate-fade-in-up delay-500">
+                        <h2 class="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span> Histori Transaksi
                 </h2>
                 <div class="flex-1 h-px bg-gradient-to-r from-purple-500 to-transparent"></div>
             </div>
@@ -441,6 +508,9 @@ const avatarSrc = computed(() => {
                     class="text-center py-12 bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 relative overflow-hidden group">
                     <p class="text-xs font-bold text-gray-500 uppercase tracking-widest relative z-10">Data Kosong</p>
                 </div>
+            </div>
+            
+                </div> <!-- END RIGHT COLUMN -->
             </div>
 
             <!-- SORT MODAL -->
