@@ -14,6 +14,7 @@ const form = useForm({
     icon: props.wallet.icon || '💳',
     icon_file: null,
     keyword: props.wallet.keyword || '',
+    is_pinned: !!props.wallet.is_pinned,
     _method: 'PUT'
 });
 
@@ -90,6 +91,17 @@ const deleteWallet = () => {
                             class="w-full bg-transparent border-none text-white p-0 text-sm placeholder-gray-600 focus:ring-0 focus:outline-none">
                     </div>
                     <div v-if="form.errors.keyword" class="text-red-500 text-xs mt-1">{{ form.errors.keyword }}</div>
+                </div>
+
+                <div class="flex items-center justify-between bg-[#1A1A1A] border border-[#333] rounded-xl p-4 animate-slide-up opacity-0 relative z-35" style="animation-delay: 275ms;">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300">Pin ke Dashboard</label>
+                        <p class="text-xs text-gray-500 mt-0.5">Tampilkan dompet ini di halaman utama</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" v-model="form.is_pinned" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#FCA5FF]"></div>
+                    </label>
                 </div>
 
                 <div class="pt-4 space-y-3 animate-slide-up opacity-0 relative z-30" style="animation-delay: 300ms;">

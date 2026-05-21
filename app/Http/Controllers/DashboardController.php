@@ -39,6 +39,35 @@ class DashboardController extends Controller
             ->whereYear('date', $now->year)
             ->sum('amount');
 
+        // Pinned Wallets (Atau default dompet paling sering digunakan hingga maksimal 4)
+        $pinnedWallets = $user->wallets()->where('is_pinned', true)->get();
+
+        if ($pinnedWallets->count() < 4) {
+            $pinnedIds = $pinnedWallets->pluck('id')->toArray();
+            
+            $fallbackWallets = $user->wallets()
+                ->whereNotIn('id', $pinnedIds)
+                ->whereNull('is_pinned') // Hanya ambil dompet yang belum pernah di-pin atau di-unpin secara manual
+                ->where('group_type', '!=', 'System')
+                ->withCount(['sourceTransactions', 'destinationTransactions'])
+                ->get()
+                ->sortByDesc(function ($wallet) {
+                    return $wallet->source_transactions_count + $wallet->destination_transactions_count;
+                })
+                ->take(4 - $pinnedWallets->count())
+                ->values();
+            
+            // Tandai dompet fallback agar frontend tahu bahwa ini adalah "virtual pin"
+            $fallbackWallets->each(function($w) {
+                $w->is_virtual_pin = true;
+            });
+                
+            $pinnedWallets = $pinnedWallets->concat($fallbackWallets)->values();
+        }
+
+        // Pastikan maksimal hanya 4 yang ditampilkan
+        $pinnedWallets = $pinnedWallets->take(4);
+
         // 6. LOGIKA HISTORI TRANSAKSI (Pindahan dari TransactionController)
         $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->format('Y-m-d'));
         $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->format('Y-m-d'));
@@ -88,6 +117,7 @@ class DashboardController extends Controller
             'totalInvest' => (int) $totalInvest,
             'thisMonthIncome' => (int) $thisMonthIncome,
             'thisMonthExpense' => (int) $thisMonthExpense,
+            'pinnedWallets' => $pinnedWallets,
             'transactions' => [
                 'data' => $transactions
             ],
