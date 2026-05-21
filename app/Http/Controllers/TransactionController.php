@@ -143,7 +143,7 @@ class TransactionController extends Controller
                 ]);
             });
 
-            return redirect()->route('transactions.index')->with('success', 'Transaksi Berhasil!');
+            return redirect()->route('dashboard')->with('success', 'Transaksi Berhasil!');
 
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
@@ -161,7 +161,7 @@ class TransactionController extends Controller
                 $transaction->delete();
             });
 
-            return redirect()->route('transactions.index')->with('success', 'Transaksi dihapus!');
+            return redirect()->route('dashboard')->with('success', 'Transaksi dihapus!');
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
         }
@@ -221,7 +221,7 @@ class TransactionController extends Controller
                 ]);
             });
 
-            return redirect()->route('transactions.index')->with('success', 'Transaksi diupdate!');
+            return redirect()->route('dashboard')->with('success', 'Transaksi diupdate!');
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
         }
