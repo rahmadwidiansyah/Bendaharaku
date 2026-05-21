@@ -312,7 +312,7 @@ const confirmDelete = () => {
 
         <!-- CATEGORY MODAL -->
         <div v-if="showCategoryModal" class="fixed inset-0 z-[100] flex flex-col justify-end bg-black/70 backdrop-blur-sm" @click.self="showCategoryModal = false">
-            <div class="w-full w-full lg:max-w-4xl mx-auto lg:px-8 bg-gray-900 rounded-t-2xl border-t border-x border-white/10 p-5 pb-safe animate-slide-up">
+            <div class="w-full lg:max-w-4xl mx-auto lg:px-8 bg-gray-900 rounded-t-2xl border-t border-x border-white/10 p-5 pb-safe animate-slide-up">
                 <div class="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-4 cursor-pointer" @click="showCategoryModal = false"></div>
                 <h3 class="text-sm font-bold text-purple-500 mb-4 uppercase tracking-widest text-center">Pilih Kategori</h3>
                 <div class="overflow-y-auto no-scrollbar space-y-2 max-h-[60vh] pb-6">
@@ -329,7 +329,7 @@ const confirmDelete = () => {
 
         <!-- WALLET MODAL -->
         <div v-if="showWalletModal" class="fixed inset-0 z-[100] flex flex-col justify-end bg-black/70 backdrop-blur-sm" @click.self="showWalletModal = false">
-            <div class="w-full w-full lg:max-w-4xl mx-auto lg:px-8 bg-gray-900 rounded-t-2xl border-t border-x border-white/10 p-5 pb-safe animate-slide-up">
+            <div class="w-full lg:max-w-4xl mx-auto lg:px-8 bg-gray-900 rounded-t-2xl border-t border-x border-white/10 p-5 pb-safe animate-slide-up">
                 <div class="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-4 cursor-pointer" @click="showWalletModal = false"></div>
                 <h3 class="text-sm font-bold text-purple-500 mb-4 uppercase tracking-widest text-center">Pilih Dompet</h3>
                 <div class="overflow-y-auto no-scrollbar space-y-2 max-h-[60vh] pb-6">
