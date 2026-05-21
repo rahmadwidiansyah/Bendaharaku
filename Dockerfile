@@ -36,18 +36,19 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www
 COPY . .
 
+# Build Backend (Laravel)
 ENV COMPOSER_MEMORY_LIMIT=-1
 RUN composer install --no-dev --no-scripts
 
-# 1. Buat Symlink Storage (PENTING untuk gambar!)
-RUN php artisan storage:link
-
-# 2. Atur Ownership ke user www-data (Nginx/Apache)
-RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache /var/www/public/storage
-
-# 3. Atur Permission Folder agar bisa dibaca & ditulis
-RUN chmod -R 775 /var/www/storage /var/www/bootstrap/cache /var/www/public/storage
+# Build Frontend (Vue/Inertia) - INI YANG SEBELUMNYA KURANG
+RUN npm install
+RUN npm run build
 
 EXPOSE 9000
 
-CMD ["php-fpm"]
+# Eksekusi Symlink dan Permission SAAT container start (mengatasi masalah Volume CasaOS), lalu jalankan PHP-FPM
+CMD sh -c "rm -rf public/storage && \
+    php artisan storage:link && \
+    chown -R www-data:www-data storage bootstrap/cache public/storage && \
+    chmod -R 775 storage bootstrap/cache public/storage && \
+    php-fpm"
