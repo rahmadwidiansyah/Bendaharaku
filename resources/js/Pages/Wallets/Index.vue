@@ -1,6 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { useBalanceVisibility } from '@/Composables/useBalanceVisibility';
 import { useLayoutPreference } from '@/Composables/useLayoutPreference';
@@ -8,6 +8,14 @@ import { useLayoutPreference } from '@/Composables/useLayoutPreference';
 const { isDesktopLayout } = useLayoutPreference();
 
 const { isBalanceVisible, toggleVisibility } = useBalanceVisibility();
+
+const togglePin = (wallet) => {
+    const newState = wallet.is_pinned === true ? false : true;
+    router.patch(route('wallets.set-pin', wallet.id), { state: newState }, {
+        preserveScroll: true,
+        preserveState: true,
+    });
+};
 
 const props = defineProps({
     wallets: Array,
@@ -90,8 +98,13 @@ const handleImageError = (e, fallback) => {
                                 <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">{{ wallet.keyword || 'Dompet' }}</p>
                             </div>
                         </div>
-                        <div class="text-right">
+                        <div class="text-right flex items-center justify-end gap-3">
                             <p class="text-sm font-bold text-white tracking-tight">Rp{{ isBalanceVisible ? formatNumber(wallet.balance) : '••••' }}</p>
+                            <button @click.stop.prevent="togglePin(wallet)" class="p-1 rounded-full z-10 transition-colors" :class="wallet.is_pinned ? 'text-[#FCA5FF] bg-white/5' : 'text-gray-500 hover:text-white'">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5v6l1 2 1-2v-6h5v-2l-2-2z"/>
+                                </svg>
+                            </button>
                         </div>
                     </Link>
                 </div>
@@ -122,8 +135,13 @@ const handleImageError = (e, fallback) => {
                                 <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">{{ wallet.keyword || 'Aset' }}</p>
                             </div>
                         </div>
-                        <div class="text-right">
+                        <div class="text-right flex items-center justify-end gap-3">
                             <p class="text-sm font-bold text-white tracking-tight">Rp{{ isBalanceVisible ? formatNumber(wallet.balance) : '••••' }}</p>
+                            <button @click.stop.prevent="togglePin(wallet)" class="p-1 rounded-full z-10 transition-colors" :class="wallet.is_pinned ? 'text-[#FCA5FF] bg-white/5' : 'text-gray-500 hover:text-white'">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5v6l1 2 1-2v-6h5v-2l-2-2z"/>
+                                </svg>
+                            </button>
                         </div>
                     </Link>
                 </div>
@@ -153,8 +171,13 @@ const handleImageError = (e, fallback) => {
                                 <h3 class="text-sm font-bold text-white leading-tight">{{ wallet.name }}</h3>
                             </div>
                         </div>
-                        <div class="text-right">
+                        <div class="text-right flex items-center justify-end gap-3">
                             <p class="text-sm font-bold text-white tracking-tight">Rp{{ isBalanceVisible ? formatNumber(wallet.balance) : '••••' }}</p>
+                            <button @click.stop.prevent="togglePin(wallet)" class="p-1 rounded-full z-10 transition-colors" :class="wallet.is_pinned ? 'text-[#FCA5FF] bg-white/5' : 'text-gray-500 hover:text-white'">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5v6l1 2 1-2v-6h5v-2l-2-2z"/>
+                                </svg>
+                            </button>
                         </div>
                     </Link>
                 </div>

@@ -2,7 +2,13 @@ name: python-test
 
 services:
 
-    # --- SERVICE DATABASE (POSTGRESQL) ---
+  node:
+    image: node:20-alpine
+    volumes:
+      - .:/usr/src/app
+    working_dir: /usr/src/app
+    entrypoint: [ "npm" ]
+
   db:
     image: postgres:15-alpine
     container_name: laravel_db
@@ -26,7 +32,7 @@ services:
     restart: always
     ports:
       - "5173:5173"
-    volumes: 
+    volumes:
       - .:/var/www
     networks:
       - laravel
@@ -80,7 +86,7 @@ networks:
 volumes:
   db_data:
 
-# --- METADATA CASAOS ---
+    # --- METADATA CASAOS ---
 x-casaos:
   author: self
   category: self
