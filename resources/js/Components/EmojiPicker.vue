@@ -20,10 +20,34 @@ const emojiData = [
     { id: 'transport', icon: '🚗', list: ['🚗','🛵','🚲','✈️','🚀','🛳️','⛽','🚆','🚜'] },
     { id: 'places', icon: '🏠', list: ['🏠','🏢','🏥','🏪','🏫','🏖️','⛺','🎡','⛩️'] },
     { id: 'objects', icon: '💡', list: ['📱','💻','🛍️','🎁','🔑','🔓','💊','🛒','📸','🎮','🔧'] },
+    { id: 'animals', icon: '🐾', list: ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🦁', '🐸', '🐢', '🐍', '🦄', '🐝', '🦋'] },
     { 
         id: 'images', 
         icon: '🖼️', 
-        type: 'custom'
+        type: 'custom',
+        list: [
+            '/storage/icons/wallets/bca.png',
+            '/storage/icons/wallets/bni.webp',
+            '/storage/icons/wallets/bri.svg',
+            '/storage/icons/wallets/mandiri.png',
+            '/storage/icons/wallets/gopay2.webp',
+            '/storage/icons/wallets/dana.png'
+            '/storage/icons/wallets/linkaja.png',
+            '/storage/icons/wallets/ocbc.png',
+            '/storage/icons/wallets/neobank.jpeg',
+            '/storage/icons/wallets/blue.webp',
+            '/storage/icons/wallets/byond.png',
+            '/storage/icons/wallets/bsi.png',
+            '/storage/icons/wallets/wonder.webp',
+            '/storage/icons/wallets/cimb.png',
+            '/storage/icons/wallets/btn.webp',
+            '/storage/icons/wallets/livin.png',
+            '/storage/icons/wallets/brimo.png',
+            '/storage/icons/wallets/jagobank.webp',
+            '/storage/icons/wallets/seabank.webp',
+            '/storage/icons/wallets/shopeepay.webp',
+            '/storage/icons/wallets/ovo.webp',  
+        ]
     } 
 ];
 
