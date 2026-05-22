@@ -31,7 +31,7 @@ const emojiData = [
             '/storage/icons/wallets/bri.svg',
             '/storage/icons/wallets/mandiri.png',
             '/storage/icons/wallets/gopay2.webp',
-            '/storage/icons/wallets/dana.png'
+            '/storage/icons/wallets/dana.png',
             '/storage/icons/wallets/linkaja.png',
             '/storage/icons/wallets/ocbc.png',
             '/storage/icons/wallets/neobank.jpeg',
@@ -46,7 +46,7 @@ const emojiData = [
             '/storage/icons/wallets/jagobank.webp',
             '/storage/icons/wallets/seabank.webp',
             '/storage/icons/wallets/shopeepay.webp',
-            '/storage/icons/wallets/ovo.webp',  
+            '/storage/icons/wallets/ovo.webp' 
         ]
     } 
 ];
