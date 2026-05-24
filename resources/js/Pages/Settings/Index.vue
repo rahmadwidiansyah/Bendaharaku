@@ -37,14 +37,14 @@ const { isDesktopLayout } = useLayoutPreference();
                             <h2 class="text-lg font-bold text-white mb-1">Tata Letak Layar Lebar</h2>
                             <p class="text-xs text-gray-400 mb-4 leading-relaxed">Pilih tampilan UI untuk layar desktop Anda. Ingin tampilan lebar bersidebar atau kembali seperti tampilan minimalis ala mobile?</p>
                             
-                            <div class="flex gap-3 mt-2">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
                                 <button @click="isDesktopLayout = true" 
-                                    :class="['flex-1 px-4 py-3 text-xs font-bold uppercase tracking-widest rounded-xl transition-all border', 
+                                    :class="['w-full py-3 px-4 text-xs font-bold uppercase tracking-widest rounded-xl transition-all border flex items-center justify-center text-center', 
                                     isDesktopLayout ? 'bg-orange-500 text-white border-orange-500 shadow-lg shadow-orange-500/20' : 'bg-gray-800 text-gray-400 border-white/5 hover:border-orange-500/30']">
                                     Desktop (Sidebar)
                                 </button>
                                 <button @click="isDesktopLayout = false" 
-                                    :class="['flex-1 px-4 py-3 text-xs font-bold uppercase tracking-widest rounded-xl transition-all border', 
+                                    :class="['w-full py-3 px-4 text-xs font-bold uppercase tracking-widest rounded-xl transition-all border flex items-center justify-center text-center', 
                                     !isDesktopLayout ? 'bg-orange-500 text-white border-orange-500 shadow-lg shadow-orange-500/20' : 'bg-gray-800 text-gray-400 border-white/5 hover:border-orange-500/30']">
                                     Mobile (Minimalis)
                                 </button>
@@ -65,9 +65,9 @@ const { isDesktopLayout } = useLayoutPreference();
                             <h2 class="text-lg font-bold text-white mb-1">Tema Tampilan</h2>
                             <p class="text-xs text-gray-400 mb-4 leading-relaxed">Sesuaikan nuansa warna aplikasi dengan preferensi Anda. Saat ini hanya tema gelap yang didukung untuk pengalaman premium.</p>
                             
-                            <div class="flex flex-wrap gap-3">
-                                <button class="px-5 py-2.5 bg-purple-500 text-white text-xs font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-purple-500/20">Dark Mode (Aktif)</button>
-                                <button class="px-5 py-2.5 bg-gray-800 text-gray-500 text-xs font-bold uppercase tracking-widest rounded-xl border border-white/5 cursor-not-allowed">Light Mode</button>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                                <button class="w-full py-3 px-4 bg-purple-500 text-white text-xs font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-purple-500/20 flex items-center justify-center text-center">Dark Mode (Aktif)</button>
+                                <button class="w-full py-3 px-4 bg-gray-800 text-gray-500 text-xs font-bold uppercase tracking-widest rounded-xl border border-white/5 cursor-not-allowed flex items-center justify-center text-center">Light Mode</button>
                             </div>
                         </div>
                     </div>
@@ -126,12 +126,14 @@ const { isDesktopLayout } = useLayoutPreference();
                             <h2 class="text-lg font-bold text-white mb-1">Ekspor & Pencadangan Data</h2>
                             <p class="text-xs text-gray-400 mb-4 leading-relaxed">Unduh semua rekam jejak finansial Anda ke dalam format CSV untuk diolah di Excel.</p>
                             
-                            <button class="flex items-center gap-2 px-5 py-3 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-yellow-500 hover:text-gray-900 transition-all">
-                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                </svg>
-                                Ekspor Data (CSV)
-                            </button>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                                <button class="w-full py-3 px-4 flex items-center justify-center gap-2 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-yellow-500 hover:text-gray-900 transition-all">
+                                    <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                    </svg>
+                                    <span class="truncate">Ekspor Data (CSV)</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

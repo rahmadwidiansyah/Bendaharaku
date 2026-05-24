@@ -200,8 +200,17 @@ const groupedTransactions = computed(() => {
         props.transactions.data.forEach(trx => {
             if (!groups[trx.raw_date]) groups[trx.raw_date] = { date: trx.date, transactions: [], income: 0, expense: 0 };
             groups[trx.raw_date].transactions.push(trx);
-            if (trx.type.name === 'Income') groups[trx.raw_date].income += trx.amount;
-            if (trx.type.name === 'Expense') groups[trx.raw_date].expense += trx.amount;
+            
+            let isIncome = trx.type.name === 'Income';
+            let isExpense = trx.type.name === 'Expense';
+            
+            if (['Debt', 'Receivable'].includes(trx.type.name)) {
+                if (trx.source_wallet?.group_type === 'System') isIncome = true;
+                else isExpense = true;
+            }
+            
+            if (isIncome) groups[trx.raw_date].income += trx.amount;
+            if (isExpense) groups[trx.raw_date].expense += trx.amount;
         });
     }
     return groups;
@@ -732,8 +741,8 @@ const togglePin = (wallet) => {
 
                                             <div class="text-right shrink-0">
                                                 <p class="text-xs font-black"
-                                                    :class="trx.type.name === 'Income' ? 'text-green-400' : 'text-red-400'">
-                                                    {{ trx.type.name === 'Income' ? '+' : '-' }}{{
+                                                    :class="(trx.type.name === 'Income' || (['Debt', 'Receivable'].includes(trx.type.name) && trx.source_wallet?.group_type === 'System')) ? 'text-green-400' : ((trx.type.name === 'Transfer' && !['Debt', 'Receivable'].includes(trx.type.name)) ? 'text-blue-400' : 'text-red-400')">
+                                                    {{ (trx.type.name === 'Income' || (['Debt', 'Receivable'].includes(trx.type.name) && trx.source_wallet?.group_type === 'System')) ? '+' : ((trx.type.name === 'Transfer' && !['Debt', 'Receivable'].includes(trx.type.name)) ? '' : '-') }}{{
                                                     formatNumber(trx.amount) }}
                                                 </p>
                                                 <div class="flex items-center justify-end gap-1.5 mt-1">
@@ -820,8 +829,8 @@ const togglePin = (wallet) => {
 
                                                 <div class="text-right shrink-0">
                                                     <p class="text-xs font-black"
-                                                        :class="trx.type.name === 'Income' ? 'text-green-400' : 'text-red-400'">
-                                                        {{ trx.type.name === 'Income' ? '+' : '-' }}{{
+                                                        :class="(trx.type.name === 'Income' || (['Debt', 'Receivable'].includes(trx.type.name) && trx.source_wallet?.group_type === 'System')) ? 'text-green-400' : ((trx.type.name === 'Transfer' && !['Debt', 'Receivable'].includes(trx.type.name)) ? 'text-blue-400' : 'text-red-400')">
+                                                        {{ (trx.type.name === 'Income' || (['Debt', 'Receivable'].includes(trx.type.name) && trx.source_wallet?.group_type === 'System')) ? '+' : ((trx.type.name === 'Transfer' && !['Debt', 'Receivable'].includes(trx.type.name)) ? '' : '-') }}{{
                                                             formatNumber(trx.amount)
                                                         }}
                                                     </p>

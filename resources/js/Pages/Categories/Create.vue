@@ -1,15 +1,16 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import EmojiPicker from '@/Components/EmojiPicker.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, router } from '@inertiajs/vue3';
 
 const props = defineProps({
     types: Array,
+    defaultType: String,
 });
 
 const form = useForm({
     category_name: '',
-    type_id: props.types.find(t => t.name === 'Income')?.id || '',
+    type_id: props.types.find(t => t.name === props.defaultType)?.id || props.types.find(t => t.name === 'Expense')?.id || '',
     icon: '📁',
     icon_file: null,
     keyword: '',
@@ -22,6 +23,10 @@ const handleFileSelected = (file) => {
 
 const submit = () => {
     form.post(route('categories.store'));
+};
+
+const goBack = () => {
+    router.visit(route('transactions.create'));
 };
 </script>
 
@@ -36,22 +41,19 @@ const submit = () => {
                     <p class="text-xs text-gray-300 font-semibold mb-1 uppercase tracking-wider">Vault</p>
                     <h1 class="text-2xl font-bold text-white tracking-tight">Tambah Kategori</h1>
                 </div>
-                <Link :href="route('categories.index')" class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 flex items-center justify-center text-gray-400 active:scale-90 transition-all shadow-md hover:text-white">
+                <button type="button" @click="goBack" class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 flex items-center justify-center text-gray-400 active:scale-90 transition-all shadow-md hover:text-white">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                </Link>
+                </button>
             </header>
 
             <form @submit.prevent="submit" class="space-y-6">
                 
                 <div>
                     <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">Tipe Kategori</label>
-                    <div class="grid grid-cols-2 gap-2 p-1.5 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl shadow-inner">
-                        <label v-for="type in types" :key="type.id" class="cursor-pointer">
-                            <input type="radio" v-model="form.type_id" :value="type.id" class="hidden peer">
-                            <div class="text-xs font-semibold py-3 text-center rounded-xl transition-all border border-transparent text-gray-400 peer-checked:bg-white/5 peer-checked:text-purple-400 peer-checked:border-white/10">
-                                {{ type.name === 'Income' ? 'Pemasukan' : 'Pengeluaran' }}
-                            </div>
-                        </label>
+                    <div class="p-1.5 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl shadow-inner">
+                        <div class="text-xs font-semibold py-3 text-center rounded-xl bg-white/5 text-purple-500 border border-white/10">
+                            {{ defaultType === 'Income' ? 'Pemasukan' : 'Pengeluaran' }}
+                        </div>
                     </div>
                 </div>
 
@@ -74,10 +76,10 @@ const submit = () => {
                             class="w-full bg-transparent border-none text-white p-0 text-sm placeholder-gray-600 focus:ring-0 focus:outline-none">
                     </div>
                     <p class="text-xs text-gray-500 mt-2 ml-1 italic">* Digunakan untuk deteksi otomatis oleh sistem AI.</p>
-                </div>
+                </div> 
 
                 <div class="pt-4">
-                    <button type="submit" :disabled="form.processing" class="w-full bg-gradient-to-br from-gray-900 to-gray-800 text-white font-bold text-sm tracking-wide py-4 rounded-xl shadow-[0_0_20px_rgba(168,85,247,0.15)] hover:shadow-[0_0_25px_rgba(168,85,247,0.3)] hover:-translate-y-0.5 active:scale-95 transition-all duration-200">
+                    <button type="submit" :disabled="form.processing" class="w-full bg-gradient-to-br from-purple-800 to-purple-600 text-white font-bold text-sm tracking-wide py-4 rounded-xl hover:-translate-y-0.5 active:scale-95 transition-all duration-200">
                         {{ form.processing ? 'Menyimpan...' : 'Simpan Kategori' }}
                     </button>
                 </div>
