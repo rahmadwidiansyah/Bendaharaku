@@ -554,14 +554,12 @@ const handleBack = () => {
                                     <path stroke-linecap="round" stroke-linejoin="round"
                                         d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
-                                <span class="pointer-events-none tracking-wide">{{ new Date(form.date).toDateString()
-                                    ===
-                                    new
-                                        Date().toDateString() ? 'Hari Ini' : new Date(form.date).toLocaleDateString('id-ID',
-                                            {
-                                                day: 'numeric',
-                                                month: 'short', year: 'numeric'
-                                            }) }}</span>
+                                <span class="pointer-events-none tracking-wide">{{
+                                    new Date(form.date).toDateString() === new Date().toDateString() ? 'Hari Ini' : new
+                                        Date(form.date).toLocaleDateString('id-ID', {
+                                            day: 'numeric',
+                                            month: 'short', year: 'numeric'
+                                        }) }}</span>
                             </div>
                             <button type="button" @click="showKeypad = !showKeypad"
                                 class="flex w-12 h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-transform"
@@ -674,7 +672,7 @@ const handleBack = () => {
                                 </button>
                                 <span class="text-sm font-bold text-white tracking-wide">{{ monthNames[currentMonth] }}
                                     {{
-                                    currentYear }}</span>
+                                        currentYear }}</span>
                                 <button type="button" @click="nextMonth"
                                     class="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors active:scale-95">
                                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"
