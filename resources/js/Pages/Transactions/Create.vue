@@ -328,7 +328,7 @@ const handleBack = () => {
                         (Rp)</label>
                     <input type="text" :value="displayAmount" @input="formatAmountInput" inputmode="numeric" required
                         placeholder="0"
-                        class="w-full bg-transparent border-none text-white text-center text-4xl font-bold placeholder-gray-600 focus:ring-0 p-0 focus:outline-none caret-purple-500">
+                        class="w-full bg-transparent border-none text-white text-center text-4xl font-bold placeholder-gray-600 focus:ring-0 p-0 focus:outline-none caret-purple-500" /> <!-- 🟢 Diedit tambah /> -->
                     <div
                         class="absolute bottom-4 left-1/2 -translate-x-1/2 w-12 h-1 bg-purple-500 rounded-full opacity-0 group-focus-within:opacity-100 transition-opacity">
                     </div>
@@ -344,7 +344,7 @@ const handleBack = () => {
                             class="block text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Tanggal</label>
                         <input type="date" v-model="form.date" required
                             class="w-full bg-transparent border-none text-white p-1 text-sm focus:ring-0"
-                            style="color-scheme: dark;">
+                            style="color-scheme: dark;" /> <!-- 🟢 Diedit tambah /> -->
                         <div v-if="form.errors.date" class="text-red-500 text-[10px] mt-1 font-bold">{{ form.errors.date
                         }}</div>
                     </div>
@@ -358,7 +358,7 @@ const handleBack = () => {
                                 <template v-if="selectedCategory">
                                     <img v-if="selectedCategory.icon.includes('.')"
                                         :src="'/storage/' + selectedCategory.icon"
-                                        class="w-5 h-5 object-cover rounded-md">
+                                        class="w-5 h-5 object-cover rounded-md" /> <!-- 🟢 Diedit tambah /> -->
                                     <span v-else>{{ selectedCategory.icon }}</span>
                                     <span class="text-sm font-bold text-white truncate">{{
                                         selectedCategory.category_name }}</span>
@@ -376,29 +376,29 @@ const handleBack = () => {
                 </div>
 
                 <!-- WALLETS -->
-                <div
-                    class="bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-2xl p-4 shadow-inner flex flex-col gap-3">
+                <!-- WALLETS -->
+                <div class="bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-2xl p-4 shadow-inner flex flex-col gap-3">
                     <div v-if="showSourceWallet">
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Dari
-                            Dompet</label>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Dari Dompet</label>
                         <div @click="openWalletModal('source')"
                             class="w-full bg-gradient-to-br from-gray-800 to-gray-900 text-white rounded-xl p-3.5 text-sm cursor-pointer flex items-center justify-between active:scale-95 transition-transform border border-white/10">
+                            
                             <div class="flex items-center gap-2 truncate">
                                 <template v-if="selectedSourceWallet">
                                     <img v-if="selectedSourceWallet.icon.includes('.')"
                                         :src="'/storage/' + selectedSourceWallet.icon"
-                                        class="w-5 h-5 object-cover rounded-md">
+                                        class="w-5 h-5 object-cover rounded-md" /> <!-- 🟢 Diedit tambah /> -->
                                     <span v-else>{{ selectedSourceWallet.icon }}</span>
                                     <span class="font-bold truncate">{{ selectedSourceWallet.name }}</span>
                                 </template>
                                 <svg v-else class="w-12 h-12 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
-                                    <path
-                                        d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" />
+                                    <path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" />
                                 </svg>
-                            </button>
-                            <span
-                                class="text-xs font-bold text-gray-500 uppercase tracking-widest truncate max-w-fit text-center">{{
-                                    selectedDestWallet ? selectedDestWallet.name : 'Tujuan' }}</span>
+                            </div>
+                            
+                            <span class="text-xs font-bold text-gray-500 uppercase tracking-widest truncate max-w-fit text-center">
+                                {{ selectedDestWallet ? selectedDestWallet.name : 'Tujuan' }}
+                            </span>
                         </div>
                     </div>
 
@@ -426,14 +426,14 @@ const handleBack = () => {
                                 / Nama
                                 Terkait</label>
                             <input type="text" v-model="form.subject" placeholder="Masukkan nama..."
-                                class="w-full bg-gradient-to-br from-gray-900 to-gray-800 border-xl border-white/10 focus:border-purple-500 rounded-xl px-6 py-5 text-center text-xl font-bold text-white focus:ring-0 placeholder-gray-700 transition-colors outline-none">
+                                class="w-full bg-gradient-to-br from-gray-900 to-gray-800 border-xl border-white/10 focus:border-purple-500 rounded-xl px-6 py-5 text-center text-xl font-bold text-white focus:ring-0 placeholder-gray-700 transition-colors outline-none" /> <!-- 🟢 Diedit tambah /> -->
                         </div>
                         <div v-else-if="mainTab !== 'Transfer'" class="grid grid-cols-4 gap-x-3 gap-y-4 pb-4">
                             <div v-for="cat in activeCategories" :key="cat.id" @click="selectCategory(cat)"
                                 :class="['flex flex-col items-center justify-center p-3 rounded-xl border transition-all cursor-pointer aspect-square',
                                     form.category_id === cat.id ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-purple-500' : 'bg-transparent border-white/10 hover:border-white/20']">
                                 <img v-if="cat.icon.includes('.')" :src="'/storage/' + cat.icon"
-                                    class="w-8 h-8 object-cover mb-2">
+                                    class="w-8 h-8 object-cover mb-2" /> <!-- 🟢 Diedit tambah /> -->
                                 <span v-else class="text-2xl mb-1.5">{{ cat.icon }}</span>
                                 <span
                                     :class="['text-xs font-bold text-center leading-tight truncate w-full px-1', form.category_id === cat.id ? 'text-white' : 'text-gray-500']">{{
@@ -449,23 +449,25 @@ const handleBack = () => {
                     </div>
 
                     <div v-if="showDestWallet">
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Ke
-                            Dompet</label>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Ke Dompet</label>
                         <div @click="openWalletModal('dest')"
                             class="w-full bg-gradient-to-br from-gray-800 to-gray-900 text-white rounded-xl p-3.5 text-sm cursor-pointer flex items-center justify-between active:scale-95 transition-transform border border-white/10">
+                            
                             <div class="flex items-center gap-2 truncate">
                                 <template v-if="selectedDestWallet">
                                     <img v-if="selectedDestWallet.icon.includes('.')"
                                         :src="'/storage/' + selectedDestWallet.icon"
-                                        class="w-5 h-5 object-cover rounded-md">
+                                        class="w-5 h-5 object-cover rounded-md" /> <!-- 🟢 Diedit tambah /> -->
                                     <span v-else>{{ selectedDestWallet.icon }}</span>
                                     <span class="font-bold truncate">{{ selectedDestWallet.name }}</span>
                                 </template>
                                 <svg v-else class="w-5 h-5 text-purple-500" fill="currentColor" viewBox="0 0 24 24">
-                                    <path
-                                        d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" />
+                                    <path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" />
                                 </svg>
-                            </button>
+                            </div> 
+                            
+                        </div>
+                    </div>
 
                             <!-- NOTE INPUT (Auto-expanding) -->
                             <div class="flex-1 min-w-0 grid relative">
@@ -490,9 +492,9 @@ const handleBack = () => {
                                     class="col-start-1 row-start-1 w-full h-full bg-transparent border-none focus:ring-0 text-xl font-bold text-white p-0 text-right resize-none overflow-hidden break-all whitespace-pre-wrap"
                                     placeholder="0"></textarea>
                             </div>
-                        </div>
+                        </div> <!-- 🟢 INI DIV PENUTUP DARI CONTAINER WALLETS BESAR -->
 
-                        <!-- QUICK ACTIONS ROW -->
+                       <!-- QUICK ACTIONS ROW -->
                         <div class="flex gap-2 mb-2">
                             <!-- Date Picker -->
                             <div @click="showDateModal = true"
@@ -518,25 +520,27 @@ const handleBack = () => {
                         </div>
                         <div v-if="form.errors.destination_wallet_id" class="text-red-500 text-[10px] mt-1 font-bold">{{
                             form.errors.destination_wallet_id }}</div>
-                    </div>
-                </form>
-            </div>
+            
+            <!-- 🟢 TIGA BARIS DI BAWAH INI DIEDIT MENJADI KOMENTAR AGAR TIDAK ERROR (Tanpa dihapus kodenya) -->
+            <!-- </div> --> 
+            <!-- </form> -->
+            <!-- </div> -->
 
-                <!-- PIHAK TERKAIT -->
+            <!-- PIHAK TERKAIT -->
                 <div v-if="['Debt', 'Receivable'].includes(activeType)"
                     class="bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-3 shadow-sm">
                     <label
                         class="block text-[9px] font-bold text-purple-500 uppercase tracking-widest mb-1.5 ml-1">Pihak
                         Terkait</label>
                     <input type="text" v-model="form.subject" placeholder="Nama..."
-                        class="w-full bg-transparent border-none text-white p-1 text-sm focus:ring-0">
+                        class="w-full bg-transparent border-none text-white p-1 text-sm focus:ring-0" /> <!-- 🟢 Diedit tambah /> -->
                     <div v-if="form.errors.subject" class="text-red-500 text-[10px] mt-1 font-bold">{{
                         form.errors.subject }}</div>
                 </div>
 
                 <div class="pt-2">
                     <input type="text" v-model="form.notes" placeholder="Catatan tambahan (opsional)"
-                        class="w-full bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 text-white rounded-xl p-4 text-sm placeholder-gray-600 focus:border-purple-500 focus:ring-1 focus:ring-purple-500">
+                        class="w-full bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 text-white rounded-xl p-4 text-sm placeholder-gray-600 focus:border-purple-500 focus:ring-1 focus:ring-purple-500" /> <!-- 🟢 Diedit tambah /> -->
                     <div v-if="form.errors.notes" class="text-red-500 text-[10px] mt-1">{{ form.errors.notes }}</div>
                 </div>
 
@@ -544,9 +548,9 @@ const handleBack = () => {
                     class="w-full bg-gradient-to-br from-purple-600 to-purple-500 text-white font-bold text-sm tracking-wide py-4 rounded-xl mt-6 disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 active:scale-95 transition-all duration-200">
                     {{ form.processing ? 'Menyimpan...' : 'Simpan Transaksi' }}
                 </button>
-            </form>
-        </div>
-
+            </form> <!-- 🟢 DIEDIT DARI </div> MENJADI </form> AGAR FORM TERTUTUP SEMPURNA -->
+        </div> <!-- 🟢 DITAMBAHKAN DIV INI UNTUK MENUTUP CONTAINER UTAMA -->
+            
         <!-- CATEGORY MODAL -->
         <div v-if="showCategoryModal"
             class="fixed inset-0 z-[100] flex flex-col justify-end bg-black/70 backdrop-blur-sm"
@@ -564,7 +568,7 @@ const handleBack = () => {
                         <div
                             class="w-12 h-12 bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl flex items-center justify-center text-xl border border-white/10 overflow-hidden">
                             <img v-if="cat.icon.includes('.')" :src="'/storage/' + cat.icon"
-                                class="w-full h-full object-cover">
+                                class="w-full h-full object-cover" /> <!-- 🟢 Diedit tambah /> -->
                             <span v-else>{{ cat.icon }}</span>
                         </div>
                     </div>
@@ -587,7 +591,7 @@ const handleBack = () => {
                         <div
                             class="w-12 h-12 bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl flex items-center justify-center text-xl border border-white/10 overflow-hidden shadow-inner group-hover:scale-105 transition-transform">
                             <img v-if="w.icon.includes('.')" :src="'/storage/' + w.icon"
-                                class="w-full h-full object-cover">
+                                class="w-full h-full object-cover" /> <!-- 🟢 Diedit tambah /> -->
                             <span v-else>{{ w.icon }}</span>
                         </div>
                         <div class="flex-1">
