@@ -27,12 +27,22 @@ const formatNumber = (num) => {
     return new Intl.NumberFormat('id-ID').format(num);
 };
 
+// Filter dompet berdasarkan grup
 const liquidWallets = computed(() => props.wallets.filter(w => w.group_type === 'Liquid'));
 const assetWallets = computed(() => props.wallets.filter(w => w.group_type === 'Asset'));
-const otherWallets = computed(() => props.wallets.filter(w => w.group_type !== 'Liquid' && w.group_type !== 'Asset'));
 
+// Pastikan dompet dengan group_type 'System' TIDAK MASUK ke daftar dompet "Lainnya"
+const otherWallets = computed(() => props.wallets.filter(w => 
+    w.group_type !== 'Liquid' && 
+    w.group_type !== 'Asset' && 
+    w.group_type !== 'System'
+));
+
+// Hitung total saldo HANYA dari dompet non-system
 const totalBalance = computed(() => {
-    return props.wallets.reduce((sum, w) => sum + parseFloat(w.balance), 0);
+    return props.wallets
+        .filter(w => w.group_type !== 'System') // Abaikan saldo dari dompet system
+        .reduce((sum, w) => sum + parseFloat(w.balance), 0);
 });
 
 const handleImageError = (e, fallback) => {
