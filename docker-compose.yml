@@ -82,7 +82,7 @@ services:
 networks:
   laravel:
     driver: bridge
-    name: python-test_default
+    # name: python-test_default
 
 # --- PERSISTENT STORAGE ---
 volumes:

@@ -79,7 +79,7 @@ const displayAmount = computed({
                     <div v-if="form.errors.balance" class="text-red-500 text-xs mt-1">{{ form.errors.balance }}</div>
                 </div>
 
-                <div class="flex gap-3 items-end animate-slide-up opacity-0 relative z-50" style="animation-delay: 200ms;">
+                <div class="flex gap-5 items-end animate-slide-up opacity-0 relative z-50" style="animation-delay: 200ms;">
                     <div class="flex-none">
                         <EmojiPicker v-model="form.icon" @file-selected="(file) => form.icon_file = file" />
                     </div>
