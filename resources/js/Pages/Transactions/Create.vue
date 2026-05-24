@@ -570,7 +570,7 @@ const handleBack = () => {
                     </div>
                 </div>
             </div>
-
+        </div>
         <!-- WALLET MODAL -->
         <div v-if="showWalletModal" class="fixed inset-0 z-[100] flex flex-col justify-end bg-black/70 backdrop-blur-sm"
             @click.self="showWalletModal = false">
