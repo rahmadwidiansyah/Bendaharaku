@@ -2,7 +2,8 @@ FROM php:8.4-apache
 
 LABEL org.opencontainers.image.source=https://github.com/rahmadwidiansyah/Bendaharaku
 
-# --- 1. Install Dependencies Sistem ---
+# --- 1. Install Dependencies Sistem & Node.js 20 (LTS) ---
+# Menggunakan Nodesource agar mendapatkan versi Node.js yang modern dan stabil untuk Vite/Rolldown
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -13,8 +14,9 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     libpq-dev \
     libzip-dev \
-    nodejs \
-    npm
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # --- 2. Install Ekstensi PHP ---
 RUN docker-php-ext-install \
@@ -32,8 +34,8 @@ RUN docker-php-ext-install \
 RUN pecl install redis && docker-php-ext-enable redis
 
 # --- 3. Konfigurasi Apache untuk Laravel ---
-# Arahkan DocumentRoot Apache ke folder /var/www/public
-ENV APACHE_DOCUMENT_ROOT /var/www/public
+# Perbaikan Warning: Menggunakan format "ENV key=value" (bukan spasi)
+ENV APACHE_DOCUMENT_ROOT=/var/www/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
@@ -52,17 +54,15 @@ ENV COMPOSER_MEMORY_LIMIT=-1
 RUN composer install --no-dev --no-scripts
 
 # --- 6. Build Frontend (Vue/Inertia) ---
-RUN npm install
+# Alokasi memori tambahan agar proses kompilasi bundler tidak crash/out-of-memory
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+# Menggunakan 'npm ci' menggantikan 'npm install' untuk menjamin replikasi dependensi yang identik
+RUN npm ci
 RUN npm run build
 
 # --- 7. Expose Port ---
-# Apache berjalan di port 80 (bukan 9000 seperti fpm)
 EXPOSE 80
 
 # --- 8. Command Startup ---
-# Jalankan symlink, atur permission, lalu jalankan Apache di foreground
-CMD sh -c "rm -rf public/storage && \
-    php artisan storage:link && \
-    chown -R www-data:www-data storage bootstrap/cache public/storage && \
-    chmod -R 775 storage bootstrap/cache public/storage && \
-    apache2-foreground"
+# Perbaikan Warning: Menggunakan format JSON Args [] untuk mencegah masalah sinyal OS
+CMD ["sh", "-c", "rm -rf public/storage && php artisan storage:link && chown -R www-data:www-data storage bootstrap/cache public/storage && chmod -R 775 storage bootstrap/cache public/storage && apache2-foreground"]
