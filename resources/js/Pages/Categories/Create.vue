@@ -50,10 +50,13 @@ const goBack = () => {
                 
                 <div>
                     <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">Tipe Kategori</label>
-                    <div class="p-1.5 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl shadow-inner">
-                        <div class="text-xs font-semibold py-3 text-center rounded-xl bg-white/5 text-purple-500 border border-white/10">
-                            {{ defaultType === 'Income' ? 'Pemasukan' : 'Pengeluaran' }}
-                        </div>
+                    <div class="grid grid-cols-2 gap-2 p-1.5 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl shadow-inner">
+                        <label v-for="type in types" :key="type.id" class="cursor-pointer">
+                            <input type="radio" v-model="form.type_id" :value="type.id" class="hidden peer">
+                            <div class="text-xs font-semibold py-3 text-center rounded-xl transition-all border border-transparent text-gray-400 peer-checked:bg-white/5 peer-checked:text-purple-500 peer-checked:border-white/10">
+                                {{ type.name === 'Income' ? 'Pemasukan' : 'Pengeluaran' }}
+                            </div>
+                        </label>
                     </div>
                 </div>
 
@@ -79,7 +82,7 @@ const goBack = () => {
                 </div> 
 
                 <div class="pt-4">
-                    <button type="submit" :disabled="form.processing" class="w-full bg-gradient-to-br from-purple-800 to-purple-600 text-white font-bold text-sm tracking-wide py-4 rounded-xl hover:-translate-y-0.5 active:scale-95 transition-all duration-200">
+                    <button type="submit" :disabled="form.processing" class="w-full bg-gradient-to-br from-purple-600 to-purple-500 text-white font-bold text-sm tracking-wide py-4 rounded-xl hover:-translate-y-0.5 active:scale-95 transition-all duration-200">
                         {{ form.processing ? 'Menyimpan...' : 'Simpan Kategori' }}
                     </button>
                 </div>

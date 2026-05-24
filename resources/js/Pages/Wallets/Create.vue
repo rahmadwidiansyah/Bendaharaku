@@ -42,30 +42,39 @@ const displayAmount = computed({
                 <div>
                     <h1 class="text-2xl font-bold text-white tracking-tight">Tambah Dompet</h1>
                 </div>
-                <Link :href="route('dashboard')" class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 flex items-center justify-center text-gray-400 active:scale-90 transition-all hover:text-white hover:border-white/50">
+                <Link :href="route('dashboard')" class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 flex items-center justify-center text-gray-400 active:scale-90 transition-all shadow-md hover:text-white hover:border-gray-500">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </Link>
             </header>
 
-            <div class="grid grid-cols-2 gap-2 mb-8 p-1.5 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl animate-slide-up opacity-0" style="animation-delay: 100ms;">
-                <button type="button" @click="setGroup('Liquid')" :class="form.group_type === 'Liquid' ? 'w-full text-xs font-semibold py-3 rounded-xl bg-gradient-to-br from-gray-800 to-gray-700 text-white shadow-sm transition-all border border-white/10' : 'w-full text-xs font-semibold py-3 rounded-xl text-gray-400 hover:text-white transition-all' ">
-                    Liquid
-                </button>
-                <button type="button" @click="setGroup('Asset')" :class="form.group_type === 'Asset' ? 'w-full text-xs font-semibold py-3 rounded-xl bg-gradient-to-br from-gray-800 to-gray-700 text-white shadow-sm transition-all border border-white/10' : 'w-full text-xs font-semibold py-3 rounded-xl text-gray-400 hover:text-white transition-all' ">
-                    Investment
-                </button>
+            <div class="mb-8 animate-slide-up opacity-0" style="animation-delay: 100ms;">
+                <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">Tipe Dompet</label>
+                <div class="grid grid-cols-2 gap-2 p-1.5 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl shadow-inner">
+                    <label class="cursor-pointer">
+                        <input type="radio" v-model="form.group_type" value="Liquid" class="hidden peer">
+                        <div class="text-xs font-semibold py-3 text-center rounded-xl transition-all border border-transparent text-gray-400 peer-checked:bg-white/5 peer-checked:text-[#FCA5FF] peer-checked:border-white/10">
+                            Liquid
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" v-model="form.group_type" value="Asset" class="hidden peer">
+                        <div class="text-xs font-semibold py-3 text-center rounded-xl transition-all border border-transparent text-gray-400 peer-checked:bg-white/5 peer-checked:text-[#FCA5FF] peer-checked:border-white/10">
+                            Investment
+                        </div>
+                    </label>
+                </div>
             </div>
 
             <form @submit.prevent="submit" class="space-y-6">
                 
                 <div class="flex flex-col animate-slide-up opacity-0 relative z-10" style="animation-delay: 150ms;">
                     <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">Saldo Awal</label>
-                    <div class="h-[60px] bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl px-5 flex items-center group focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all">
+                    <div class="h-[60px] bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl px-5 flex items-center group focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all shadow-inner">
                         <span class="text-base font-bold text-purple-500 mr-3 opacity-80">Rp</span>
                         <input type="text" inputmode="numeric" required placeholder="0" v-model="displayAmount"
-                            class="w-full bg-transparent border-none text-white p-0 text-xl font-bold placeholder-gray-700 focus:ring-0 focus:outline-none caret-purple-500">
+                            class="w-full bg-transparent border-none text-white p-0 text-xl font-bold placeholder-gray-600 focus:ring-0 focus:outline-none caret-purple-500">
                     </div>
                     <div v-if="form.errors.balance" class="text-red-500 text-xs mt-1">{{ form.errors.balance }}</div>
                 </div>
@@ -77,7 +86,7 @@ const displayAmount = computed({
 
                     <div class="flex-1 flex flex-col justify-end">
                         <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">Nama Dompet</label>
-                        <div class="h-[60px] bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 rounded-xl px-5 flex items-center group focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all caret-purple-500">
+                        <div class="h-[60px] bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 rounded-xl px-5 flex items-center group focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all shadow-inner">
                             <input type="text" v-model="form.name" required placeholder="Contoh: BCA Utama" 
                                 class="w-full bg-transparent border-none text-white p-0 text-base font-medium placeholder-gray-600 focus:ring-0 focus:outline-none">
                         </div>
@@ -87,8 +96,8 @@ const displayAmount = computed({
 
                 <div class="flex flex-col animate-slide-up opacity-0 relative z-40" style="animation-delay: 250ms;">
                     <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">Keyword AI (Pisahkan Koma)</label>
-                    <div class="bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-4 group focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all caret-purple-500">
-                        <input type="text" v-model="form.keyword" placeholder="Contoh: BCA, Transfer, Mbanking..." 
+                    <div class="bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-4 group focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all">
+                        <input type="text" v-model="form.keyword" placeholder="Contoh: bca, transfer, mbanking..." 
                             class="w-full bg-transparent border-none text-white p-0 text-sm placeholder-gray-600 focus:ring-0 focus:outline-none">
                     </div>
                     <p class="text-xs text-gray-500 mt-2 ml-1 italic">* Digunakan untuk deteksi otomatis oleh sistem AI.</p>
@@ -106,7 +115,7 @@ const displayAmount = computed({
                 </div>
 
                 <div class="pt-4 animate-slide-up opacity-0 relative z-30" style="animation-delay: 300ms;">
-                    <button type="submit" :disabled="form.processing" class="w-full bg-gradient-to-br from-purple-800 to-purple-600 text-white font-bold text-sm tracking-wide py-4 rounded-xl hover:-translate-y-0.5 active:scale-95 transition-all duration-200">
+                    <button type="submit" :disabled="form.processing" class="w-full bg-gradient-to-br from-purple-600 to-purple-500 text-white font-bold text-sm tracking-wide py-4 rounded-xl hover:-translate-y-0.5 active:scale-95 transition-all duration-200">
                         Simpan Dompet
                     </button>
                 </div>

@@ -105,7 +105,7 @@ const getHeaderText = (typeName) => {
                 <div :class="['grid grid-cols-3 gap-3', isDesktopLayout ? 'lg:grid-cols-6 lg:gap-5' : '']">
                     <Link v-for="category in categories" :key="category.id" :href="route('categories.show', category.id)"
                        class="relative group bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center active:scale-95 transition-all duration-300"
-                       :class="[getTheme(typeName).glow, getTheme(typeName).border]">
+                       :class="[getTheme(typeName).border]">
                         
                         <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center text-2xl border border-white/10 shrink-0 shadow-inner overflow-hidden p-0.5 mb-2.5 transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-1">
                             <img v-if="category.icon?.includes('.')" :src="'/storage/' + category.icon" class="w-full h-full object-contain p-1">
