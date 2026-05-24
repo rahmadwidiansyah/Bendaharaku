@@ -64,32 +64,7 @@ const getHeaderText = (typeName) => {
                     </div>
                 </div>
 
-                <div :class="['grid grid-cols-1 gap-4', isDesktopLayout ? 'sm:grid-cols-2' : '']">
-                    <Link :href="route('categories.create')" 
-                       class="relative w-full min-h-[4rem] py-3 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl flex items-center justify-between px-4 sm:px-6 active:scale-[0.97] transition-all group overflow-hidden shadow-2xl">
-                        <div class="absolute inset-0 bg-gradient-to-r from-purple-900/0 via-purple-500/5 to-purple-900/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
-                        
-                        <div class="relative z-10 flex items-center gap-3 sm:gap-4 w-full pr-8">
-                            <div class="w-8 h-8 shrink-0 rounded-lg bg-purple-500 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M12 5v14M5 12h14"/>
-                                </svg>
-                            </div>
-                            <div class="flex flex-col min-w-0">
-                                <span class="text-sm font-bold text-white uppercase tracking-wide truncate">Tambah Kategori</span>
-                                <span class="text-[10px] sm:text-xs text-gray-500 font-bold uppercase tracking-widest mt-0.5 leading-tight">Organisir pengeluaran baru</span>
-                            </div>
-                        </div>
-
-                        <div class="absolute right-4 sm:right-6 z-10 flex items-center top-1/2 -translate-y-1/2">
-                            <div class="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center group-hover:border-purple-500/50 transition-colors">
-                                <svg class="w-4 h-4 text-gray-500 group-hover:text-purple-500 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
-                                    <path d="M9 5l7 7-7 7"/>
-                                </svg>
-                            </div>
-                        </div>
-                    </Link>
-
+                <div :class="['grid grid-cols-1 gap-4', isDesktopLayout ? 'sm:grid-cols-1' : '']">
                     <Link :href="route('settings.index')" 
                        class="relative w-full min-h-[4rem] py-3 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl flex items-center justify-between px-4 sm:px-6 active:scale-[0.97] transition-all group overflow-hidden shadow-2xl">
                         <div class="absolute inset-0 bg-gradient-to-r from-blue-900/0 via-blue-500/5 to-blue-900/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>

@@ -232,7 +232,7 @@ const handleImageError = (e, fallback) => {
                 </div>
             </section>
 
-            <Link :href="route('wallets.create')" class="w-full flex items-center justify-center gap-2 p-4 rounded-xl border-2 border-dashed border-white/10 text-gray-500 hover:text-white hover:border-purple-500/50 transition-all font-bold uppercase tracking-widest text-xs animate-fade-in-up delay-400">
+            <Link :href="route('wallets.create')" class="w-full flex items-center justify-center gap-2 p-4 rounded-xl bg-gradient-to-br from-purple-800 to-purple-600 border border-white/10 text-white hover:border-purple-500/50 font-bold uppercase tracking-widest text-xs hover:-translate-y-0.5 active:scale-95 transition-all duration-200">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
                 Tambah Dompet / Aset
             </Link>
