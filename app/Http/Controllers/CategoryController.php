@@ -32,11 +32,12 @@ class CategoryController extends Controller
         ]);
     }
     
-    public function create(): Response
+    public function create(Request $request): Response
     {
         $types = \App\Models\TransactionType::whereIn('name', ['Income', 'Expense'])->get();
         return Inertia::render('Categories/Create', [
             'types' => $types,
+            'defaultType' => $request->query('type', 'Expense'),
         ]);
     }
 
@@ -56,7 +57,7 @@ class CategoryController extends Controller
         }
 
         Auth::user()->categories()->create($validated);
-        return redirect()->route('categories.index')->with('success', 'Kategori ditambahkan!');
+        return redirect()->route('transactions.create')->with('success', 'Kategori ditambahkan!');
     }
 
     public function edit(Category $category): Response
