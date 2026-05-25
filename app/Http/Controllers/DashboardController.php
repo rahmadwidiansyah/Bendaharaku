@@ -123,21 +123,13 @@ class DashboardController extends Controller
         $processedSubjects = []; // Track to avoid duplicate checks per subject/type
 
         foreach ($debtsWithDueDate as $trx) {
-            // FIX: Lindungi dari SoftDeletes Category yang menyebabkan relasi menjadi null
-            if (!$trx->category) {
-                continue;
-            }
-
             $catName = strtolower($trx->category->category_name);
             $isDebt = str_contains($catName, 'dapat hutang');
             $isReceivable = str_contains($catName, 'ngasih piutang');
             
             if (!$isDebt && !$isReceivable) continue;
             
-            // FIX: Lindungi dari nilai subject yang null atau kosong bawaan dari sistem
-            $subject = $trx->subject ?? '-';
-            
-            $cacheKey = $subject . '_' . ($isDebt ? 'debt' : 'receivable');
+            $cacheKey = $trx->subject . '_' . ($isDebt ? 'debt' : 'receivable');
             if (isset($processedSubjects[$cacheKey])) continue;
             $processedSubjects[$cacheKey] = true;
 
@@ -171,7 +163,7 @@ class DashboardController extends Controller
                 // Show if it's due within 7 days, or overdue (negative)
                 if ($daysUntilDue <= 7) {
                     $allSubjectTrxs = $user->transactionLogs()->with('category')
-                        ->where('subject', $subject) // Gunakan variabel aman yang sudah di-cek
+                        ->where('subject', $trx->subject)
                         ->get();
                         
                     $totalBorrowed = 0;
@@ -189,7 +181,7 @@ class DashboardController extends Controller
                     
                     if ($remaining > 0) {
                         $upcomingDebts[] = [
-                            'subject' => $subject, // Gunakan variabel aman
+                            'subject' => $trx->subject,
                             'type' => $isDebt ? 'Hutang' : 'Piutang',
                             'remaining' => $remaining,
                             'days_until' => $daysUntilDue,
