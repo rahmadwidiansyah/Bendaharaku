@@ -72,6 +72,9 @@ class TransactionLog extends Model
         'subject',
         'notes',
         'is_cleared',
+        'due_date',
+        'due_date_type',
+        'due_date_interval',
     ];
 
     // Relasi

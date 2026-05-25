@@ -30,6 +30,8 @@ class AnalyticsController extends Controller
 
         $totalIncome = (float) $transactions->where('type.name', 'Income')->sum('amount');
         $totalExpense = (float) $transactions->where('type.name', 'Expense')->sum('amount');
+        $totalDebt = (float) $transactions->where('type.name', 'Debt')->sum('amount');
+        $totalReceivable = (float) $transactions->where('type.name', 'Receivable')->sum('amount');
 
         // Saldo Kumulatif
         $initialIncome = $user->transactionLogs()->whereHas('type', fn($q) => $q->where('name', 'Income'))->where('date', '<', $startDate)->sum('amount');
@@ -95,6 +97,30 @@ class AnalyticsController extends Controller
                     'total' => (float) $rows->sum('amount')
                 ];
             })->sortByDesc('total')->values();
+
+        $debtsByCategory = $transactions->where('type.name', 'Debt')
+            ->groupBy('category_id')
+            ->map(function ($rows) {
+                $category = $rows->first()->category;
+                return [
+                    'id' => $category->id,
+                    'name' => $category->category_name,
+                    'icon' => $category->icon,
+                    'total' => (float) $rows->sum('amount')
+                ];
+            })->sortByDesc('total')->values();
+
+        $receivablesByCategory = $transactions->where('type.name', 'Receivable')
+            ->groupBy('category_id')
+            ->map(function ($rows) {
+                $category = $rows->first()->category;
+                return [
+                    'id' => $category->id,
+                    'name' => $category->category_name,
+                    'icon' => $category->icon,
+                    'total' => (float) $rows->sum('amount')
+                ];
+            })->sortByDesc('total')->values();
         
         $allTransactions = $user->transactionLogs()->orderBy('date', 'asc')->get(); 
         $allKasGrouped = $allTransactions->groupBy('date');
@@ -102,11 +128,15 @@ class AnalyticsController extends Controller
         $allDailyLabels = [];
         $allDailyIncome = [];
         $allDailyExpense = [];
+        $allDailyDebt = [];
+        $allDailyReceivable = [];
 
         foreach ($allKasGrouped as $date => $trxs) {
             $allDailyLabels[] = \Carbon\Carbon::parse($date)->format('d M Y');
             $allDailyIncome[] = (float) $trxs->where('type.name', 'Income')->sum('amount');
             $allDailyExpense[] = (float) $trxs->where('type.name', 'Expense')->sum('amount');
+            $allDailyDebt[] = (float) $trxs->where('type.name', 'Debt')->sum('amount');
+            $allDailyReceivable[] = (float) $trxs->where('type.name', 'Receivable')->sum('amount');
         }
 
         return Inertia::render('Analytics/Index', [
@@ -114,9 +144,13 @@ class AnalyticsController extends Controller
             'endDate' => $endDate,
             'totalIncome' => $totalIncome,
             'totalExpense' => $totalExpense,
+            'totalDebt' => $totalDebt,
+            'totalReceivable' => $totalReceivable,
             'cumulativeBalance' => (float) $cumulativeBalance,
             'expensesByCategory' => $expensesByCategory,
             'incomesByCategory' => $incomesByCategory,
+            'debtsByCategory' => $debtsByCategory,
+            'receivablesByCategory' => $receivablesByCategory,
             'dailyLabels' => $dailyLabels,
             'dailyIncome' => $dailyIncome,
             'dailyExpense' => $dailyExpense,
@@ -124,7 +158,9 @@ class AnalyticsController extends Controller
             'todayIndex' => $todayIndex,
             'allDailyLabels' => $allDailyLabels,
             'allDailyIncome' => $allDailyIncome,
-            'allDailyExpense' => $allDailyExpense
+            'allDailyExpense' => $allDailyExpense,
+            'allDailyDebt' => $allDailyDebt,
+            'allDailyReceivable' => $allDailyReceivable
         ]);
     }
 }
