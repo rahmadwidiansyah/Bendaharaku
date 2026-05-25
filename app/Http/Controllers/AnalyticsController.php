@@ -22,12 +22,8 @@ class AnalyticsController extends Controller
         // DEFAULT END: Ganti ke Today
         $endDate = $request->input('end_date', Carbon::now()->format('Y-m-d'));
         
-        // 1. FILTER TRANSAKSI: Blokir dompet dengan group_type 'System'
         $transactions = $user->transactionLogs()
             ->with(['type', 'category'])
-            ->whereHas('sourceWallet', function ($query) {
-                $query->where('group_type', '!=', 'System');
-            })
             ->whereBetween('date', [$startDate, $endDate])
             ->orderBy('date', 'asc')
             ->get();
@@ -37,19 +33,9 @@ class AnalyticsController extends Controller
         $totalDebt = (float) $transactions->where('type.name', 'Debt')->sum('amount');
         $totalReceivable = (float) $transactions->where('type.name', 'Receivable')->sum('amount');
 
-        // 2. FILTER SALDO KUMULATIF: Blokir dompet System dari perhitungan awal
-        $initialIncome = $user->transactionLogs()
-            ->whereHas('type', fn($q) => $q->where('name', 'Income'))
-            ->whereHas('sourceWallet', fn($q) => $q->where('group_type', '!=', 'System'))
-            ->where('date', '<', $startDate)
-            ->sum('amount');
-            
-        $initialExpense = $user->transactionLogs()
-            ->whereHas('type', fn($q) => $q->where('name', 'Expense'))
-            ->whereHas('sourceWallet', fn($q) => $q->where('group_type', '!=', 'System'))
-            ->where('date', '<', $startDate)
-            ->sum('amount');
-            
+        // Saldo Kumulatif
+        $initialIncome = $user->transactionLogs()->whereHas('type', fn($q) => $q->where('name', 'Income'))->where('date', '<', $startDate)->sum('amount');
+        $initialExpense = $user->transactionLogs()->whereHas('type', fn($q) => $q->where('name', 'Expense'))->where('date', '<', $startDate)->sum('amount');
         $runningBalance = $initialIncome - $initialExpense;
 
         $dailyLabels = [];
@@ -91,68 +77,52 @@ class AnalyticsController extends Controller
         $expensesByCategory = $transactions->where('type.name', 'Expense')
             ->groupBy('category_id')
             ->map(function ($rows) {
-                // Tambahkan fallback check jika kategori terhapus (SoftDeletes)
                 $category = $rows->first()->category;
-                if (!$category) return null;
-                
                 return [
                     'id' => $category->id,
                     'name' => $category->category_name,
                     'icon' => $category->icon,
                     'total' => (float) $rows->sum('amount')
                 ];
-            })->filter()->sortByDesc('total')->values();
+            })->sortByDesc('total')->values();
 
         $incomesByCategory = $transactions->where('type.name', 'Income')
             ->groupBy('category_id')
             ->map(function ($rows) {
                 $category = $rows->first()->category;
-                if (!$category) return null;
-                
                 return [
                     'id' => $category->id,
                     'name' => $category->category_name,
                     'icon' => $category->icon,
                     'total' => (float) $rows->sum('amount')
                 ];
-            })->filter()->sortByDesc('total')->values();
+            })->sortByDesc('total')->values();
 
         $debtsByCategory = $transactions->where('type.name', 'Debt')
             ->groupBy('category_id')
             ->map(function ($rows) {
                 $category = $rows->first()->category;
-                if (!$category) return null;
-                
                 return [
                     'id' => $category->id,
                     'name' => $category->category_name,
                     'icon' => $category->icon,
                     'total' => (float) $rows->sum('amount')
                 ];
-            })->filter()->sortByDesc('total')->values();
+            })->sortByDesc('total')->values();
 
         $receivablesByCategory = $transactions->where('type.name', 'Receivable')
             ->groupBy('category_id')
             ->map(function ($rows) {
                 $category = $rows->first()->category;
-                if (!$category) return null;
-                
                 return [
                     'id' => $category->id,
                     'name' => $category->category_name,
                     'icon' => $category->icon,
                     'total' => (float) $rows->sum('amount')
                 ];
-            })->filter()->sortByDesc('total')->values();
+            })->sortByDesc('total')->values();
         
-        // 3. FILTER HISTORI KESELURUHAN: Blokir dompet System dari raw data
-        $allTransactions = $user->transactionLogs()
-            ->whereHas('sourceWallet', function ($query) {
-                $query->where('group_type', '!=', 'System');
-            })
-            ->orderBy('date', 'asc')
-            ->get(); 
-            
+        $allTransactions = $user->transactionLogs()->orderBy('date', 'asc')->get(); 
         $allKasGrouped = $allTransactions->groupBy('date');
 
         $allDailyLabels = [];
