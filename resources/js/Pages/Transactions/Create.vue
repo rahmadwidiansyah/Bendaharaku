@@ -22,7 +22,7 @@ const form = useForm({
     subject: '-',
     notes: '',
     due_date: null,
-    due_date_type: null, // null means no due date, or 'fixed', 'monthly', 'daily'
+    due_date_type: null,
     due_date_interval: null,
 });
 
@@ -47,7 +47,6 @@ const handleDesktopInput = (e) => {
         clean = clean.slice(0, 15);
     }
 
-    // Selalu paksa kembalikan value menjadi format angka agar teks terhapus otomatis
     e.target.value = clean ? parseInt(clean, 10).toLocaleString('id-ID') : '';
 
     rawAmount.value = clean || '0';
@@ -66,7 +65,6 @@ const handleKeypad = (key) => {
         else rawAmount.value += key;
     }
 
-    // limit max length
     if (rawAmount.value.length > 15) rawAmount.value = rawAmount.value.slice(0, 15);
 
     form.amount = parseInt(rawAmount.value, 10) || 0;
@@ -92,6 +90,14 @@ const formatAmountInput = (e) => {
     displayAmount.value = val ? new Intl.NumberFormat('id-ID').format(parseInt(val)) : '';
 };
 
+// DETEKSI LOGIC UANG MASUK ATAU KELUAR (UNTUK DOMPET PANEL BAWAH)
+const isMoneyIn = computed(() => {
+    if (activeType.value === 'Income') return true;
+    if (activeType.value === 'Debt' && debtSubTab.value === 'income') return true; // Dapat Hutangan
+    if (activeType.value === 'Receivable' && debtSubTab.value === 'income') return true; // Terima Bayar Piutang
+    return false;
+});
+
 const activeCategories = computed(() => {
     let cats = props.categories.filter(cat => cat.type.name === activeType.value);
 
@@ -113,7 +119,7 @@ const selectedCategory = computed(() => {
 const showKeypad = ref(true);
 const showBottomPanel = ref(true);
 const showDateModal = ref(false);
-const dateModalTarget = ref('transaction'); // 'transaction' or 'due_date'
+const dateModalTarget = ref('transaction');
 
 const currentMonth = ref(new Date().getMonth());
 const currentYear = ref(new Date().getFullYear());
@@ -122,7 +128,7 @@ const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Jul
 const daysInMonth = computed(() => new Date(currentYear.value, currentMonth.value + 1, 0).getDate());
 const firstDayOfMonth = computed(() => {
     let day = new Date(currentYear.value, currentMonth.value, 1).getDay();
-    return day === 0 ? 6 : day - 1; // Mon=0, Sun=6
+    return day === 0 ? 6 : day - 1; 
 });
 
 const prevMonth = () => {
@@ -186,24 +192,6 @@ const selectedSourceWallet = computed(() => {
 const selectedDestWallet = computed(() => {
     const all = [...props.wallets, ...props.systemWallets];
     return all.find(w => w.id == form.destination_wallet_id);
-});
-
-const showSourceWallet = computed(() => {
-    if (activeType.value === 'Income') return false;
-    if (['Debt', 'Receivable'].includes(activeType.value)) {
-        const catName = selectedCategory.value?.category_name;
-        if (catName === 'Dapat Hutangan' || catName === 'Terima Bayar Piutang') return false;
-    }
-    return true;
-});
-
-const showDestWallet = computed(() => {
-    if (activeType.value === 'Expense') return false;
-    if (['Debt', 'Receivable'].includes(activeType.value)) {
-        const catName = selectedCategory.value?.category_name;
-        if (catName === 'Bayar Cicilan Hutang' || catName === 'Ngasih Piutang') return false;
-    }
-    return true;
 });
 
 const setMainTab = (t) => {
@@ -286,11 +274,6 @@ const selectCategory = (cat) => {
     form.category_id = cat.id;
     showCategoryModal.value = false;
     form.clearErrors('category_id');
-
-    // Removed aggressive nulling to preserve the user's personal wallet defaults
-
-    const syH = props.systemWallets.find(w => w.name.toLowerCase().includes('hutang'));
-    const syP = props.systemWallets.find(w => w.name.toLowerCase().includes('piutang'));
 };
 
 const availableWallets = computed(() => {
@@ -355,20 +338,6 @@ const submitAndClose = () => submit(true);
 const submitAndStay = () => submit(false);
 
 const dateInput = ref(null);
-const openDatePicker = () => {
-    if (dateInput.value) {
-        try {
-            if (typeof dateInput.value.showPicker === 'function') {
-                dateInput.value.showPicker();
-            } else {
-                dateInput.value.focus();
-                dateInput.value.click();
-            }
-        } catch (e) {
-            console.error('Failed to open date picker', e);
-        }
-    }
-};
 
 const handleBack = () => {
     router.visit(route('dashboard'));
@@ -389,17 +358,15 @@ const handleBack = () => {
             <div class="flex flex-col h-full w-full max-w-md mx-auto relative bg-gray-800 overflow-hidden">
                 <form @submit.prevent="submit" class="flex flex-col h-full min-h-0 overflow-hidden relative lg:pt-8">
 
-                    <!-- CLOSE BUTTON -->
                     <button type="button" @click="handleBack"
-                        class="absolute top-12 right-4 z-50 p-2 text-gray-400 active:scale-95 transition-transform bg-gradient-to-br from-gray-900 to-gray-800 rounded-full border border-white/10 hover:border-white/50"
+                        class="absolute top-4 right-4 z-50 p-2 text-gray-400 active:scale-95 transition-transform bg-gradient-to-br from-gray-900 to-gray-800 rounded-full border border-white/10 hover:border-white/50"
                         title="Tutup">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
 
-                    <!-- TABS UTAMA -->
-                    <div class="px-4 pt-28 pb-2 shrink-0">
+                    <div class="px-4 pt-16 pb-2 shrink-0">
                         <div
                             class="flex bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-2 border border-white/10 overflow-x-auto no-scrollbar gap-1">
                             <button v-for="t in ['Expense', 'Income', 'Transfer', 'Debt', 'Receivable']" :key="t" @click="setMainTab(t)"
@@ -410,7 +377,6 @@ const handleBack = () => {
                         </div>
                     </div>
 
-                    <!-- SUB TABS -->
                     <div v-if="['Expense', 'Income'].includes(mainTab)" class="px-4 py-1 flex flex-col gap-2 shrink-0">
                         <div class="flex gap-2">
                             <Link :href="route('categories.create', { type: mainTab })"
@@ -446,8 +412,7 @@ const handleBack = () => {
                         </div>
                     </div>
 
-                    <div v-if="mainTab === 'Transfer'" class="px-4 mt-12 pb-4 flex items-center justify-center gap-10 shrink-0">
-                        <!-- Dompet Sumber -->
+                    <div v-if="mainTab === 'Transfer'" class="px-4 mt-6 pb-4 flex items-center justify-center gap-10 shrink-0">
                         <div class="flex flex-col items-center gap-3">
                             <button type="button" @click="openWalletModal('source')"
                                 class="flex items-center justify-center w-20 h-20 active:scale-95 transition-transform"
@@ -468,7 +433,6 @@ const handleBack = () => {
                                     selectedSourceWallet ? selectedSourceWallet.name : 'Sumber' }}</span>
                         </div>
 
-                        <!-- Arrow -->
                         <div class="flex flex-col items-center justify-center text-gray-500 pb-7">
                             <svg class="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"
                                 stroke-width="2">
@@ -476,7 +440,6 @@ const handleBack = () => {
                             </svg>
                         </div>
 
-                        <!-- Dompet Tujuan -->
                         <div class="flex flex-col items-center gap-3">
                             <button type="button" @click="openWalletModal('dest')"
                                 class="flex items-center justify-center w-20 h-20 active:scale-95 transition-transform"
@@ -498,10 +461,8 @@ const handleBack = () => {
                         </div>
                     </div>
 
-                    <!-- CATEGORY GRID -->
-                    <div class="flex-1 min-h-0 overflow-y-auto px-4 py-4 no-scrollbar">
+                    <div class="flex-1 min-h-0 overflow-y-auto px-4 py-4 no-scrollbar relative">
 
-                        <!-- ERROR BANNER -->
                         <div v-if="Object.keys(form.errors).length > 0"
                             class="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl">
                             <div v-for="(err, key) in form.errors" :key="key"
@@ -516,7 +477,7 @@ const handleBack = () => {
                         </div>
 
                         <div v-if="['Debt', 'Receivable'].includes(activeType)"
-                            class="flex flex-col justify-start h-full pb-10 gap-4">
+                            class="flex flex-col justify-start h-full pb-32 gap-4">
                             
                             <div class="flex flex-col items-center">
                                 <label class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 text-center">Pihak / Nama Terkait</label>
@@ -570,21 +531,20 @@ const handleBack = () => {
                             </div>
 
                         </div>
-                        <div v-else-if="mainTab !== 'Transfer'" class="grid grid-cols-4 gap-x-3 gap-y-4 pb-4">
+                        <div v-else-if="mainTab !== 'Transfer'" class="grid grid-cols-4 gap-x-2 gap-y-3 pb-32">
                             <div v-for="cat in activeCategories" :key="cat.id" @click="selectCategory(cat)"
-                                :class="['flex flex-col items-center justify-center p-3 rounded-xl border transition-all cursor-pointer aspect-square',
+                                :class="['flex flex-col items-center justify-center p-2 rounded-xl border transition-all cursor-pointer aspect-square',
                                     form.category_id === cat.id ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-purple-500' : 'bg-transparent border-white/10 hover:border-white/20']">
                                 <img v-if="cat.icon.includes('.')" :src="'/storage/' + cat.icon"
-                                    class="w-8 h-8 object-cover mb-2">
+                                    class="w-7 h-7 object-cover mb-2">
                                 <span v-else class="text-2xl mb-1.5">{{ cat.icon }}</span>
                                 <span
-                                    :class="['text-xs font-bold text-center leading-tight truncate w-full px-1', form.category_id === cat.id ? 'text-white' : 'text-gray-500']">{{
+                                    :class="['text-[11px] font-bold text-center leading-tight w-full px-1 line-clamp-2 text-wrap break-words', form.category_id === cat.id ? 'text-white' : 'text-gray-500']">{{
                                         cat.category_name }}</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- SHOW PANEL BUTTON -->
                     <button v-if="!showBottomPanel" type="button" @click="showBottomPanel = true"
                         class="flex absolute bottom-8 left-1/2 -translate-x-1/2 z-50 px-2 py-3 bg-gradient-to-br from-gray-900 to-gray-800 text-gray-500 border border-white/10 font-bold rounded-xl active:scale-95 transition-transform items-center gap-2 hover:text-white shadow-xl"
                         title="Tampilkan Panel">
@@ -592,22 +552,18 @@ const handleBack = () => {
                         <span>Tampilkan Panel Input</span>
                     </button>
 
-                    <!-- BOTTOM KEYPAD AREA -->
                     <div v-show="showBottomPanel"
                         class="bg-gradient-to-br from-gray-800 to-gray-900 border-t border-white/10 rounded-t-3xl md:border md:rounded-xl md:mb-10 md:mx-4 p-4 z-20 shrink-0 relative transition-all shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.5)]">
-                        <!-- NOTE & AMOUNT ROW -->
                         <div
                             class="flex flex-wrap items-center gap-x-3 gap-y-2 mb-4 bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-2 pr-4 border border-white/10">
-                            <!-- WALLET ICON (CLICKABLE) -->
-                            <button type="button" @click="openWalletModal(mainTab === 'Income' ? 'dest' : 'source')"
-                                class="w-12 h-12 1flex items-center justify-center shrink-0 active:scale-95 transition-transform overflow-hidden relative"
+                            <button type="button" @click="openWalletModal(isMoneyIn ? 'dest' : 'source')"
+                                class="w-12 h-12 flex items-center justify-center shrink-0 active:scale-95 transition-transform overflow-hidden relative"
                                 title="Pilih Dompet">
-                                <template v-if="mainTab === 'Income' ? selectedDestWallet : selectedSourceWallet">
-                                    <img v-if="(mainTab === 'Income' ? selectedDestWallet : selectedSourceWallet).icon.includes('.')"
-                                        :src="'/storage/' + (mainTab === 'Income' ? selectedDestWallet : selectedSourceWallet).icon"
+                                <template v-if="isMoneyIn ? selectedDestWallet : selectedSourceWallet">
+                                    <img v-if="(isMoneyIn ? selectedDestWallet : selectedSourceWallet).icon.includes('.')"
+                                        :src="'/storage/' + (isMoneyIn ? selectedDestWallet : selectedSourceWallet).icon"
                                         class="w-full h-full object-cover">
-                                    <span v-else class="text-2xl">{{ (mainTab === 'Income' ? selectedDestWallet :
-                                        selectedSourceWallet).icon }}</span>
+                                    <span v-else class="text-2xl">{{ (isMoneyIn ? selectedDestWallet : selectedSourceWallet).icon }}</span>
                                 </template>
                                 <svg v-else class="w-5 h-5 text-purple-500" fill="currentColor" viewBox="0 0 24 24">
                                     <path
@@ -615,7 +571,6 @@ const handleBack = () => {
                                 </svg>
                             </button>
 
-                            <!-- NOTE INPUT (Auto-expanding) -->
                             <div class="flex-1 min-w-0 grid relative">
                                 <span
                                     class="invisible whitespace-pre-wrap break-all text-sm p-0 min-h-[20px] col-start-1 row-start-1">{{
@@ -624,7 +579,6 @@ const handleBack = () => {
                                     class="col-start-1 row-start-1 w-full h-full bg-transparent border-none focus:ring-0 text-md text-gray-500 placeholder-gray-700 border-r-2 border-white p-0 resize-none overflow-hidden break-all whitespace-pre-wrap"></textarea>
                             </div>
 
-                            <!-- AMOUNT -->
                             <div class="flex items-baseline shrink-0 ml-2 md:hidden max-w-full">
                                 <span class="text-xl font-bold text-white break-all">{{ parseInt(rawAmount ||
                                     0).toLocaleString('id-ID') }}</span>
@@ -640,9 +594,7 @@ const handleBack = () => {
                             </div>
                         </div>
 
-                        <!-- QUICK ACTIONS ROW -->
                         <div class="flex gap-2 mb-2">
-                            <!-- Date Picker -->
                             <div @click="dateModalTarget = 'transaction'; showDateModal = true"
                                 class="flex-1 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-gray-500 relative overflow-hidden cursor-pointer">
                                 <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"
@@ -693,7 +645,6 @@ const handleBack = () => {
 
                         </div>
 
-                        <!-- KEYPAD GRID -->
                         <div v-show="showKeypad" class="grid grid-cols-3 gap-2">
                             <button @click="handleKeypad('7')" type="button"
                                 class="h-[52px] bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">7</button>
@@ -717,7 +668,6 @@ const handleBack = () => {
                                 class="h-[52px] bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">0</button>
                             <button @click="handleKeypad('del')" type="button"
                                 class="h-[52px] bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl flex items-center justify-center relative">
-                                <!-- Custom back delete button -->
                                 <div class="w-8 h-8 flex items-center justify-center">
                                     <svg class="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24"
                                         stroke="currentColor" stroke-width="3">
@@ -730,7 +680,6 @@ const handleBack = () => {
                 </form>
             </div>
 
-            <!-- DATE MODALS (Overlay) -->
             <div v-if="showDateModal"
                 class="fixed inset-0 z-[100] flex flex-col justify-end bg-black/70 backdrop-blur-sm"
                 @click.self="showDateModal = false">
@@ -754,10 +703,8 @@ const handleBack = () => {
                             </button>
                         </div>
 
-                        <!-- CUSTOM CALENDAR -->
                         <div
                             class="w-full bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-4 shadow-inner">
-                            <!-- Header -->
                             <div class="flex justify-between items-center mb-4">
                                 <button type="button" @click="prevMonth"
                                     class="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors active:scale-95">
@@ -778,17 +725,13 @@ const handleBack = () => {
                                 </button>
                             </div>
 
-                            <!-- Days of week -->
                             <div class="grid grid-cols-7 mb-2">
                                 <span v-for="d in ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']" :key="d"
                                     class="text-center text-[10px] font-black uppercase text-gray-500">{{ d }}</span>
                             </div>
 
-                            <!-- Grid -->
                             <div class="grid grid-cols-7 gap-1">
-                                <!-- Empty slots -->
                                 <div v-for="n in firstDayOfMonth" :key="'empty-' + n" class="h-8"></div>
-                                <!-- Days -->
                                 <button v-for="day in daysInMonth" :key="day" @click="selectSpecificDate(day)" :class="[
                                     'h-8 w-full flex items-center justify-center text-sm font-bold rounded-lg transition-all active:scale-90',
                                     (dateModalTarget === 'due_date' ? form.due_date : form.date) === [currentYear, String(currentMonth + 1).padStart(2, '0'), String(day).padStart(2, '0')].join('-')
@@ -803,7 +746,6 @@ const handleBack = () => {
                 </div>
             </div>
 
-            <!-- WALLET MODALS (Overlay) -->
             <div v-if="showWalletModal"
                 class="fixed inset-0 z-[100] flex flex-col justify-end bg-black/70 backdrop-blur-sm"
                 @click.self="showWalletModal = false">
