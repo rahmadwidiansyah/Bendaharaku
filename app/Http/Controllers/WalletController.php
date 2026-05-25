@@ -14,10 +14,15 @@ class WalletController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $wallets = $user->wallets()->orderBy('id')->get();
+        
+        // FIX: Blokir dompet 'System' agar tidak tampil di list UI frontend
+        $wallets = $user->wallets()
+            ->where('group_type', '!=', 'System')
+            ->orderBy('id')
+            ->get();
 
-        // LOGIKA HITUNG HUTANG
-        $systemHutang = $user->wallets()->where('name', 'like', '%Hutang%')->first();
+        // LOGIKA HITUNG HUTANG (Tetap butuh akses ke dompet System di backend)
+        $systemHutang = $user->wallets()->where('name', 'like', '%Hutang%')->where('group_type', 'System')->first();
         $totalHutang = 0;
         if ($systemHutang) {
             $debtIn = $user->transactionLogs()->where('source_wallet_id', $systemHutang->id)->sum('amount');
@@ -25,8 +30,8 @@ class WalletController extends Controller
             $totalHutang = max(0, $debtIn - $debtPaid);
         }
 
-        // LOGIKA HITUNG PIUTANG
-        $systemPiutang = $user->wallets()->where('name', 'like', '%Piutang%')->first();
+        // LOGIKA HITUNG PIUTANG (Tetap butuh akses ke dompet System di backend)
+        $systemPiutang = $user->wallets()->where('name', 'like', '%Piutang%')->where('group_type', 'System')->first();
         $totalPiutang = 0;
         if ($systemPiutang) {
             $receivableOut = $user->transactionLogs()->where('destination_wallet_id', $systemPiutang->id)->sum('amount');
@@ -74,6 +79,9 @@ class WalletController extends Controller
     public function show(Wallet $wallet)
     {
         if ($wallet->user_id !== Auth::id()) abort(403);
+        
+        // FIX: Blokir akses direct URL ke dompet System
+        if ($wallet->group_type === 'System') abort(403, 'Akses ke Dompet Sistem tidak diizinkan.');
 
         $transactions = Auth::user()->transactionLogs()
             ->with(['type', 'category', 'sourceWallet', 'destinationWallet'])
@@ -93,6 +101,10 @@ class WalletController extends Controller
     public function edit(Wallet $wallet)
     {
         if ($wallet->user_id !== Auth::id()) abort(403);
+        
+        // FIX: Blokir edit dompet System via URL
+        if ($wallet->group_type === 'System') abort(403, 'Dompet Sistem tidak boleh diedit.');
+
         return Inertia::render('Wallets/Edit', [
             'wallet' => $wallet
         ]);
@@ -102,6 +114,7 @@ class WalletController extends Controller
     public function update(Request $request, Wallet $wallet)
     {
         if ($wallet->user_id !== Auth::id()) abort(403);
+        if ($wallet->group_type === 'System') abort(403, 'Dompet Sistem tidak boleh diedit.');
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -131,6 +144,9 @@ class WalletController extends Controller
     public function destroy(Wallet $wallet)
     {
         if ($wallet->user_id !== Auth::id()) abort(403);
+        
+        // FIX: Blokir hapus dompet System
+        if ($wallet->group_type === 'System') abort(403, 'Dompet Sistem tidak boleh dihapus.');
 
         try {
             // Hapus file icon jika itu adalah hasil upload (bukan emoji)
@@ -151,6 +167,7 @@ class WalletController extends Controller
     public function setPin(Request $request, Wallet $wallet)
     {
         if ($wallet->user_id !== Auth::id()) abort(403);
+        if ($wallet->group_type === 'System') abort(403);
 
         $validated = $request->validate([
             'state' => 'required|boolean'
