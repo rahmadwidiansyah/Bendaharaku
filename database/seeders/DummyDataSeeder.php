@@ -10,6 +10,7 @@ use App\Models\TransactionLog;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class DummyDataSeeder extends Seeder
 {
@@ -24,14 +25,14 @@ class DummyDataSeeder extends Seeder
             ]
         );
 
-        // 2. Ensure Types exist (Calling the existing seeder)
+        // 2. Ensure Types exist
         $this->call(TransactionTypeSeeder::class);
         $types = TransactionType::all()->pluck('id', 'name');
 
-        // 3. Create Wallets
+        // 3. Create Wallets (9 wallets)
         $wallets = [
             ['name' => 'Dompet Utama', 'balance' => 5000000, 'group_type' => 'Liquid', 'icon' => '💰'],
-            ['name' => 'BCA', 'balance' => 10000000, 'group_type' => 'Liquid', 'icon' => 'https://pustaka.bca.co.id/public-assets/logo-bca.svg'],
+            ['name' => 'BCA', 'balance' => 10000000, 'group_type' => 'Liquid', 'icon' => '💳'],
             ['name' => 'Mandiri', 'balance' => 2500000, 'group_type' => 'Liquid', 'icon' => '💳'],
             ['name' => 'Tabungan Rumah', 'balance' => 50000000, 'group_type' => 'Asset', 'icon' => '🏠'],
             ['name' => 'Investasi Saham', 'balance' => 15000000, 'group_type' => 'Asset', 'icon' => '📈'],
@@ -49,20 +50,72 @@ class DummyDataSeeder extends Seeder
             );
         }
 
-        // 4. Create Categories
+        // 4. Create Categories (10 Income, 40 Expense)
         $categories = [
+            // Income (10)
             ['name' => 'Gaji', 'type' => 'Income', 'icon' => '💵'],
             ['name' => 'Bonus', 'type' => 'Income', 'icon' => '🧧'],
             ['name' => 'Dividen', 'type' => 'Income', 'icon' => '📈'],
+            ['name' => 'Freelance', 'type' => 'Income', 'icon' => '💻'],
+            ['name' => 'Hadiah', 'type' => 'Income', 'icon' => '🎁'],
+            ['name' => 'Jual Barang', 'type' => 'Income', 'icon' => '📦'],
+            ['name' => 'Bunga Bank', 'type' => 'Income', 'icon' => '🏦'],
+            ['name' => 'Hasil Investasi', 'type' => 'Income', 'icon' => '✨'],
+            ['name' => 'Uang Saku', 'type' => 'Income', 'icon' => '👛'],
+            ['name' => 'Pendapatan Lain', 'type' => 'Income', 'icon' => '💰'],
+            
+            // Expense (40)
             ['name' => 'Makan & Minum', 'type' => 'Expense', 'icon' => '🍔'],
             ['name' => 'Transportasi', 'type' => 'Expense', 'icon' => '🚗'],
             ['name' => 'Belanja', 'type' => 'Expense', 'icon' => '🛍️'],
             ['name' => 'Hiburan', 'type' => 'Expense', 'icon' => '🎮'],
             ['name' => 'Kesehatan', 'type' => 'Expense', 'icon' => '💊'],
             ['name' => 'Listrik & Air', 'type' => 'Expense', 'icon' => '💡'],
+            ['name' => 'Internet', 'type' => 'Expense', 'icon' => '🌐'],
+            ['name' => 'Bensin', 'type' => 'Expense', 'icon' => '⛽'],
+            ['name' => 'Edukasi', 'type' => 'Expense', 'icon' => '📚'],
+            ['name' => 'Donasi', 'type' => 'Expense', 'icon' => '🤲'],
+            ['name' => 'Pajak', 'type' => 'Expense', 'icon' => '🏛️'],
+            ['name' => 'Asuransi', 'type' => 'Expense', 'icon' => '🛡️'],
+            ['name' => 'Kosmetik', 'type' => 'Expense', 'icon' => '💄'],
+            ['name' => 'Olahraga', 'type' => 'Expense', 'icon' => '🏃'],
+            ['name' => 'Hewan Peliharaan', 'type' => 'Expense', 'icon' => '🐶'],
+            ['name' => 'Perawatan Rumah', 'type' => 'Expense', 'icon' => '🛠️'],
+            ['name' => 'Parkir & Tol', 'type' => 'Expense', 'icon' => '🅿️'],
+            ['name' => 'Nongkrong', 'type' => 'Expense', 'icon' => '☕'],
+            ['name' => 'Liburan', 'type' => 'Expense', 'icon' => '🏖️'],
+            ['name' => 'Lain-lain', 'type' => 'Expense', 'icon' => '📦'],
+            ['name' => 'Cuci Kendaraan', 'type' => 'Expense', 'icon' => '🧽'],
+            ['name' => 'Pakaian', 'type' => 'Expense', 'icon' => '👕'],
+            ['name' => 'Sepatu', 'type' => 'Expense', 'icon' => '👟'],
+            ['name' => 'Subscription', 'type' => 'Expense', 'icon' => '📺'],
+            ['name' => 'Obat-obatan', 'type' => 'Expense', 'icon' => '🩺'],
+            ['name' => 'Perawatan Gigi', 'type' => 'Expense', 'icon' => '🦷'],
+            ['name' => 'Potong Rambut', 'type' => 'Expense', 'icon' => '✂️'],
+            ['name' => 'Service Kendaraan', 'type' => 'Expense', 'icon' => '🔧'],
+            ['name' => 'Uang Kas', 'type' => 'Expense', 'icon' => '💵'],
+            ['name' => 'Kondangan', 'type' => 'Expense', 'icon' => '💌'],
+            ['name' => 'Popok & Susu', 'type' => 'Expense', 'icon' => '🍼'],
+            ['name' => 'Mainan Anak', 'type' => 'Expense', 'icon' => '🧸'],
+            ['name' => 'Jajan Pasar', 'type' => 'Expense', 'icon' => '🍡'],
+            ['name' => 'Pulsa & Data', 'type' => 'Expense', 'icon' => '📱'],
+            ['name' => 'Keamanan/Sampah', 'type' => 'Expense', 'icon' => '🗑️'],
+            ['name' => 'Tiket Nonton', 'type' => 'Expense', 'icon' => '🎟️'],
+            ['name' => 'Buku & Majalah', 'type' => 'Expense', 'icon' => '📖'],
+            ['name' => 'Cicilan Gadget', 'type' => 'Expense', 'icon' => '📱'],
+            ['name' => 'Perawatan Wajah', 'type' => 'Expense', 'icon' => '🧖‍♀️'],
+            ['name' => 'Bayar Kost/Sewa', 'type' => 'Expense', 'icon' => '🏢'],
+            
+            // Transfer (1)
             ['name' => 'Transfer Saldo', 'type' => 'Transfer', 'icon' => '🔄'],
+            
+            // Debt (2)
             ['name' => 'Dapat Hutangan', 'type' => 'Debt', 'icon' => '🤝'],
+            ['name' => 'Bayar Cicilan Hutang', 'type' => 'Debt', 'icon' => '💸'],
+            
+            // Receivable (2)
             ['name' => 'Ngasih Piutang', 'type' => 'Receivable', 'icon' => '📄'],
+            ['name' => 'Terima Bayar Piutang', 'type' => 'Receivable', 'icon' => '💰'],
         ];
 
         $createdCategories = [];
@@ -77,42 +130,79 @@ class DummyDataSeeder extends Seeder
             );
         }
 
-        // 5. Create Transaction Logs (Random data for the current month)
+        // Delete existing transactions for the user to start fresh
+        TransactionLog::where('user_id', $user->id)->delete();
+
+        // 5. Create Transaction Logs (Full 2 months of transactions)
         $now = Carbon::now();
-        $startOfMonth = $now->copy()->startOfMonth();
+        // Go exactly 2 full months ago
+        $startOfPeriod = $now->copy()->subMonth()->startOfMonth(); 
+        $daysPassed = $startOfPeriod->diffInDays($now) + 1;
         
-        for ($i = 0; $i < 100; $i++) {
-            $date = $startOfMonth->copy()->addDays(rand(0, $now->day - 1));
-            $typeNames = ['Income', 'Expense', 'Transfer'];
-            $typeName = $typeNames[array_rand($typeNames)];
+        $transactionsToInsert = [];
+        // Generate 400 transactions to thoroughly populate the 2 month span
+        for ($i = 0; $i < 400; $i++) {
+            $date = $startOfPeriod->copy()->addDays(rand(0, $daysPassed - 1));
+            
+            // Weighted randomization
+            $rand = rand(1, 100);
+            if ($rand <= 60) $typeName = 'Expense';
+            elseif ($rand <= 80) $typeName = 'Income';
+            elseif ($rand <= 85) $typeName = 'Transfer';
+            elseif ($rand <= 92) $typeName = 'Debt';
+            else $typeName = 'Receivable';
             
             $amount = rand(10000, 500000);
-            if (rand(1, 10) > 8) $amount = rand(1000000, 5000000); // Occasional big amount
+            if (rand(1, 10) > 8) $amount = rand(1000000, 5000000);
 
             $cat = null;
             $source = null;
             $dest = null;
 
             if ($typeName === 'Income') {
-                $incomeCats = ['Gaji', 'Bonus', 'Dividen'];
-                $cat = $createdCategories[$incomeCats[array_rand($incomeCats)]];
+                $incomeCats = array_values(array_filter($categories, fn($c) => $c['type'] === 'Income'));
+                $catName = $incomeCats[array_rand($incomeCats)]['name'];
+                $cat = $createdCategories[$catName];
                 $source = $createdWallets['External'];
-                $dest = array_values($createdWallets)[rand(0, 2)]; // Main, BCA, or Mandiri
+                $dest = array_values($createdWallets)[rand(0, 2)];
             } elseif ($typeName === 'Expense') {
-                $expenseCats = ['Makan & Minum', 'Transportasi', 'Belanja', 'Hiburan', 'Kesehatan', 'Listrik & Air'];
-                $cat = $createdCategories[$expenseCats[array_rand($expenseCats)]];
+                $expenseCats = array_values(array_filter($categories, fn($c) => $c['type'] === 'Expense'));
+                $catName = $expenseCats[array_rand($expenseCats)]['name'];
+                $cat = $createdCategories[$catName];
                 $source = array_values($createdWallets)[rand(0, 2)];
                 $dest = $createdWallets['Merchant'];
-            } else {
+            } elseif ($typeName === 'Transfer') {
                 $cat = $createdCategories['Transfer Saldo'];
                 $walletsPool = [$createdWallets['Dompet Utama'], $createdWallets['BCA'], $createdWallets['Mandiri']];
                 $source = $walletsPool[array_rand($walletsPool)];
                 do {
                     $dest = $walletsPool[array_rand($walletsPool)];
                 } while ($dest->id === $source->id);
+            } elseif ($typeName === 'Debt') {
+                $isGettingDebt = rand(0, 1) === 1;
+                if ($isGettingDebt) {
+                    $cat = $createdCategories['Dapat Hutangan'];
+                    $source = $createdWallets['Hutang System'];
+                    $dest = array_values($createdWallets)[rand(0, 2)];
+                } else {
+                    $cat = $createdCategories['Bayar Cicilan Hutang'];
+                    $source = array_values($createdWallets)[rand(0, 2)];
+                    $dest = $createdWallets['Hutang System'];
+                }
+            } elseif ($typeName === 'Receivable') {
+                $isGivingReceivable = rand(0, 1) === 1;
+                if ($isGivingReceivable) {
+                    $cat = $createdCategories['Ngasih Piutang'];
+                    $source = array_values($createdWallets)[rand(0, 2)];
+                    $dest = $createdWallets['Piutang System'];
+                } else {
+                    $cat = $createdCategories['Terima Bayar Piutang'];
+                    $source = $createdWallets['Piutang System'];
+                    $dest = array_values($createdWallets)[rand(0, 2)];
+                }
             }
 
-            TransactionLog::create([
+            $transactionsToInsert[] = [
                 'reference_number' => 'TRX-' . strtoupper(Str::random(10)),
                 'user_id' => $user->id,
                 'date' => $date->format('Y-m-d'),
@@ -123,11 +213,17 @@ class DummyDataSeeder extends Seeder
                 'amount' => $amount,
                 'balance_before' => 0,
                 'balance_after' => 0,
-                'subject' => '-',
+                'subject' => in_array($typeName, ['Debt', 'Receivable']) ? 'Teman ' . rand(1, 5) : '-',
                 'notes' => 'Testing ' . $cat->category_name . ' (' . ($i + 1) . ')',
                 'is_cleared' => true,
                 'created_at' => $date->copy()->addHours(rand(8, 20))->addMinutes(rand(0, 59)),
-            ]);
+                'updated_at' => Carbon::now(),
+            ];
+        }
+
+        // Insert in batches
+        foreach (array_chunk($transactionsToInsert, 50) as $chunk) {
+            TransactionLog::insert($chunk);
         }
     }
 }

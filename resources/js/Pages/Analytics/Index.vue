@@ -13,9 +13,13 @@ const props = defineProps({
     endDate: String,
     totalIncome: Number,
     totalExpense: Number,
+    totalDebt: Number,
+    totalReceivable: Number,
     cumulativeBalance: Number,
     expensesByCategory: Array,
     incomesByCategory: Array,
+    debtsByCategory: Array,
+    receivablesByCategory: Array,
     dailyLabels: Array,
     dailyIncome: Array,
     dailyExpense: Array,
@@ -23,7 +27,9 @@ const props = defineProps({
     todayIndex: Number,
     allDailyLabels: Array,
     allDailyIncome: Array,
-    allDailyExpense: Array
+    allDailyExpense: Array,
+    allDailyDebt: Array,
+    allDailyReceivable: Array
 });
 
 const charts = shallowRef({});
@@ -85,25 +91,31 @@ const initCumulativeChart = async () => {
 
 const renderBarChart = async (view) => {
     barView.value = view;
-    let labels = [], incomes = [], expenses = [];
+    let labels = [], incomes = [], expenses = [], debts = [], receivables = [];
 
     if (view === 'harian') {
         labels = props.allDailyLabels || [];
         incomes = props.allDailyIncome || [];
         expenses = props.allDailyExpense || [];
+        debts = props.allDailyDebt || [];
+        receivables = props.allDailyReceivable || [];
     } else if (view === 'mingguan') {
         if (props.allDailyLabels && props.allDailyLabels.length > 0) {
-            let tempInc = 0, tempExp = 0;
+            let tempInc = 0, tempExp = 0, tempDebt = 0, tempRecv = 0;
             let startLabel = props.allDailyLabels[0];
             for (let i = 0; i < props.allDailyLabels.length; i++) {
                 tempInc += (props.allDailyIncome[i] || 0);
                 tempExp += (props.allDailyExpense[i] || 0);
+                tempDebt += (props.allDailyDebt[i] || 0);
+                tempRecv += (props.allDailyReceivable[i] || 0);
                 if ((i + 1) % 7 === 0 || i === props.allDailyLabels.length - 1) {
                     let endLabel = props.allDailyLabels[i];
                     labels.push(startLabel.split(' ')[0] + '-' + endLabel);
                     incomes.push(tempInc);
                     expenses.push(tempExp);
-                    tempInc = 0; tempExp = 0;
+                    debts.push(tempDebt);
+                    receivables.push(tempRecv);
+                    tempInc = 0; tempExp = 0; tempDebt = 0; tempRecv = 0;
                     if (i + 1 < props.allDailyLabels.length) startLabel = props.allDailyLabels[i + 1];
                 }
             }
@@ -111,7 +123,7 @@ const renderBarChart = async (view) => {
     } else if (view === 'bulanan') {
         if (props.allDailyLabels && props.allDailyLabels.length > 0) {
             let currentMonth = '';
-            let tempInc = 0, tempExp = 0;
+            let tempInc = 0, tempExp = 0, tempDebt = 0, tempRecv = 0;
             props.allDailyLabels.forEach((lbl, i) => {
                 let parts = lbl.split(' ');
                 let month = parts.length >= 2 ? parts[1] + ' ' + (parts[2] || '') : lbl;
@@ -120,16 +132,22 @@ const renderBarChart = async (view) => {
                     labels.push(currentMonth);
                     incomes.push(tempInc);
                     expenses.push(tempExp);
+                    debts.push(tempDebt);
+                    receivables.push(tempRecv);
                     currentMonth = month;
-                    tempInc = 0; tempExp = 0;
+                    tempInc = 0; tempExp = 0; tempDebt = 0; tempRecv = 0;
                 }
                 tempInc += (props.allDailyIncome[i] || 0);
                 tempExp += (props.allDailyExpense[i] || 0);
+                tempDebt += (props.allDailyDebt[i] || 0);
+                tempRecv += (props.allDailyReceivable[i] || 0);
             });
             if (currentMonth) {
                 labels.push(currentMonth);
                 incomes.push(tempInc);
                 expenses.push(tempExp);
+                debts.push(tempDebt);
+                receivables.push(tempRecv);
             }
         }
     }
@@ -155,7 +173,9 @@ const renderBarChart = async (view) => {
             labels: labels,
             datasets: [
                 { label: 'In', data: incomes, backgroundColor: '#34D399', borderRadius: 4 },
-                { label: 'Out', data: expenses, backgroundColor: '#FCA5FF', borderRadius: 4 }
+                { label: 'Out', data: expenses, backgroundColor: '#FCA5FF', borderRadius: 4 },
+                { label: 'Hutang', data: debts, backgroundColor: '#FBBF24', borderRadius: 4 },
+                { label: 'Piutang', data: receivables, backgroundColor: '#C084FC', borderRadius: 4 }
             ]
         },
         options: {
@@ -178,9 +198,25 @@ const renderBarChart = async (view) => {
 };
 
 const activeCategoryData = computed(() => {
+    if (categoryView.value === 'expense') {
+        return { labels: props.expensesByCategory.map(x => x.name), values: props.expensesByCategory.map(x => x.total), ids: props.expensesByCategory.map(x => x.id), icons: props.expensesByCategory.map(x => x.icon), total: props.totalExpense, labelName: 'Total Pengeluaran' };
+    } else if (categoryView.value === 'income') {
+        return { labels: props.incomesByCategory.map(x => x.name), values: props.incomesByCategory.map(x => x.total), ids: props.incomesByCategory.map(x => x.id), icons: props.incomesByCategory.map(x => x.icon), total: props.totalIncome, labelName: 'Total Pemasukan' };
+    } else if (categoryView.value === 'debt') {
+        return { labels: props.debtsByCategory.map(x => x.name), values: props.debtsByCategory.map(x => x.total), ids: props.debtsByCategory.map(x => x.id), icons: props.debtsByCategory.map(x => x.icon), total: props.totalDebt, labelName: 'Total Hutang' };
+    } else {
+        return { labels: props.receivablesByCategory.map(x => x.name), values: props.receivablesByCategory.map(x => x.total), ids: props.receivablesByCategory.map(x => x.id), icons: props.receivablesByCategory.map(x => x.icon), total: props.totalReceivable, labelName: 'Total Piutang' };
+    }
+});
+
+const activeColors = computed(() => {
     return categoryView.value === 'expense'
-        ? { labels: props.expensesByCategory.map(x => x.name), values: props.expensesByCategory.map(x => x.total), ids: props.expensesByCategory.map(x => x.id), icons: props.expensesByCategory.map(x => x.icon), total: props.totalExpense, labelName: 'Total Pengeluaran' }
-        : { labels: props.incomesByCategory.map(x => x.name), values: props.incomesByCategory.map(x => x.total), ids: props.incomesByCategory.map(x => x.id), icons: props.incomesByCategory.map(x => x.icon), total: props.totalIncome, labelName: 'Total Pemasukan' };
+        ? ['#FCA5FF', '#A78BFA', '#818CF8', '#60A5FA', '#38BDF8', '#4ADE80']
+        : categoryView.value === 'income'
+            ? ['#34D399', '#6EE7B7', '#A7F3D0', '#10B981']
+            : categoryView.value === 'debt'
+                ? ['#FBBF24', '#FCD34D', '#FDE68A', '#FEF3C7']
+                : ['#C084FC', '#D8B4FE', '#E9D5FF', '#F3E8FF'];
 });
 
 const renderDoughnutChart = async () => {
@@ -192,9 +228,7 @@ const renderDoughnutChart = async () => {
     const ctx = document.getElementById('mainChart')?.getContext('2d');
     if (!ctx || !dataObj.labels.length) return;
 
-    const colors = categoryView.value === 'expense'
-        ? ['#FCA5FF', '#A78BFA', '#818CF8', '#60A5FA', '#38BDF8', '#4ADE80']
-        : ['#34D399', '#6EE7B7', '#A7F3D0', '#10B981'];
+    const colors = activeColors.value;
 
     charts.value['doughnut'] = new Chart(ctx, {
         type: 'doughnut',
@@ -323,12 +357,16 @@ onMounted(() => {
             </div>
             <div
                 class="flex bg-gray-900 border border-white/10 rounded-xl p-1.5 mb-5 animate-fade-in-up delay-400 relative">
-                <div class="absolute top-1.5 bottom-1.5 left-1.5 w-[calc(50%-0.375rem)] bg-gradient-to-br from-purple-500 to-purple-800 border border-white/10 rounded-xl transition-all duration-300 ease-out z-0"
-                    :style="{ transform: categoryView === 'income' ? 'translateX(100%)' : 'translateX(0)' }"></div>
+                <div class="absolute top-1.5 bottom-1.5 left-1.5 w-[calc(25%-0.375rem)] bg-gradient-to-br from-purple-500 to-purple-800 border border-white/10 rounded-xl transition-all duration-300 ease-out z-0"
+                    :style="{ transform: categoryView === 'expense' ? 'translateX(0)' : categoryView === 'income' ? 'translateX(100%)' : categoryView === 'debt' ? 'translateX(200%)' : 'translateX(300%)' }"></div>
                 <button @click="switchCategory('expense')"
-                    :class="['relative z-10 flex-1 text-xs font-bold uppercase tracking-widest py-3 transition-colors duration-300', categoryView === 'expense' ? 'text-white' : 'text-gray-500 hover:text-white']">Pengeluaran</button>
+                    :class="['relative z-10 flex-1 text-xs font-bold uppercase tracking-widest py-3 transition-colors duration-300', categoryView === 'expense' ? 'text-white' : 'text-gray-500 hover:text-white']">Keluar</button>
                 <button @click="switchCategory('income')"
-                    :class="['relative z-10 flex-1 text-xs font-bold uppercase tracking-widest py-3 transition-colors duration-300', categoryView === 'income' ? 'text-white' : 'text-gray-500 hover:text-white']">Pemasukan</button>
+                    :class="['relative z-10 flex-1 text-xs font-bold uppercase tracking-widest py-3 transition-colors duration-300', categoryView === 'income' ? 'text-white' : 'text-gray-500 hover:text-white']">Masuk</button>
+                <button @click="switchCategory('debt')"
+                    :class="['relative z-10 flex-1 text-xs font-bold uppercase tracking-widest py-3 transition-colors duration-300', categoryView === 'debt' ? 'text-white' : 'text-gray-500 hover:text-white']">Hutang</button>
+                <button @click="switchCategory('receivable')"
+                    :class="['relative z-10 flex-1 text-xs font-bold uppercase tracking-widest py-3 transition-colors duration-300', categoryView === 'receivable' ? 'text-white' : 'text-gray-500 hover:text-white']">Piutang</button>
             </div>
 
             <!-- DOUGHNUT CHART -->
@@ -359,7 +397,7 @@ onMounted(() => {
                             class="relative flex items-center justify-between bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 p-3 rounded-xl overflow-hidden group hover:border-purple-500/30 transition-all duration-300">
                             <div class="flex items-center gap-3 relative z-10 w-full">
                                 <div class="w-1.5 h-6 rounded-full"
-                                    :style="{ backgroundColor: ['#FCA5FF', '#A78BFA', '#818CF8', '#60A5FA', '#38BDF8', '#4ADE80'][i % 6] }">
+                                    :style="{ backgroundColor: activeColors[i % activeColors.length] }">
                                 </div>
                                 <div
                                     class="w-8 h-8 rounded-xl bg-gray-900 flex items-center justify-center border border-white/10 overflow-hidden p-0.5">

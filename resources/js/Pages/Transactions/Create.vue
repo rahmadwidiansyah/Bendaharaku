@@ -10,6 +10,7 @@ const props = defineProps({
     wallets: Array,
     categories: Array,
     systemWallets: Array,
+    debtSubjects: Array,
 });
 
 const form = useForm({
@@ -20,10 +21,14 @@ const form = useForm({
     date: new Date().toISOString().split('T')[0],
     subject: '-',
     notes: '',
+    due_date: null,
+    due_date_type: null, // null means no due date, or 'fixed', 'monthly', 'daily'
+    due_date_interval: null,
 });
 
 const mainTab = ref('Expense');
 const activeType = ref('Expense');
+const debtSubTab = ref('income');
 const showCategoryModal = ref(false);
 const showWalletModal = ref(false);
 const walletModalMode = ref('source');
@@ -91,11 +96,11 @@ const activeCategories = computed(() => {
     let cats = props.categories.filter(cat => cat.type.name === activeType.value);
 
     if (activeType.value === 'Debt') {
-        if (mainTab.value === 'Expense') cats = cats.filter(c => c.category_name === 'Bayar Cicilan Hutang');
-        else if (mainTab.value === 'Income') cats = cats.filter(c => c.category_name === 'Dapat Hutangan');
+        if (debtSubTab.value === 'expense') cats = cats.filter(c => c.category_name === 'Bayar Cicilan Hutang');
+        else if (debtSubTab.value === 'income') cats = cats.filter(c => c.category_name === 'Dapat Hutangan');
     } else if (activeType.value === 'Receivable') {
-        if (mainTab.value === 'Expense') cats = cats.filter(c => c.category_name === 'Ngasih Piutang');
-        else if (mainTab.value === 'Income') cats = cats.filter(c => c.category_name === 'Terima Bayar Piutang');
+        if (debtSubTab.value === 'expense') cats = cats.filter(c => c.category_name === 'Ngasih Piutang');
+        else if (debtSubTab.value === 'income') cats = cats.filter(c => c.category_name === 'Terima Bayar Piutang');
     }
 
     return cats;
@@ -108,6 +113,7 @@ const selectedCategory = computed(() => {
 const showKeypad = ref(true);
 const showBottomPanel = ref(true);
 const showDateModal = ref(false);
+const dateModalTarget = ref('transaction'); // 'transaction' or 'due_date'
 
 const currentMonth = ref(new Date().getMonth());
 const currentYear = ref(new Date().getFullYear());
@@ -139,7 +145,7 @@ const nextMonth = () => {
 
 watch(showDateModal, (val) => {
     if (val) {
-        const d = new Date(form.date);
+        const d = dateModalTarget.value === 'due_date' && form.due_date ? new Date(form.due_date) : new Date(form.date);
         currentMonth.value = d.getMonth();
         currentYear.value = d.getFullYear();
     }
@@ -148,7 +154,13 @@ watch(showDateModal, (val) => {
 const selectSpecificDate = (day) => {
     const d = new Date(currentYear.value, currentMonth.value, day);
     const offset = d.getTimezoneOffset() * 60000;
-    form.date = (new Date(d - offset)).toISOString().slice(0, 10);
+    const dateStr = (new Date(d - offset)).toISOString().slice(0, 10);
+    
+    if (dateModalTarget.value === 'due_date') {
+        form.due_date = dateStr;
+    } else {
+        form.date = dateStr;
+    }
     showDateModal.value = false;
 };
 
@@ -156,7 +168,13 @@ const setDate = (offsetDays) => {
     const d = new Date();
     d.setDate(d.getDate() + offsetDays);
     const offset = d.getTimezoneOffset() * 60000;
-    form.date = (new Date(d - offset)).toISOString().slice(0, 10);
+    const dateStr = (new Date(d - offset)).toISOString().slice(0, 10);
+    
+    if (dateModalTarget.value === 'due_date') {
+        form.due_date = dateStr;
+    } else {
+        form.date = dateStr;
+    }
     showDateModal.value = false;
 };
 
@@ -190,6 +208,9 @@ const showDestWallet = computed(() => {
 
 const setMainTab = (t) => {
     mainTab.value = t;
+    if (['Debt', 'Receivable'].includes(t)) {
+        debtSubTab.value = 'income';
+    }
     setType(t);
 };
 
@@ -218,22 +239,47 @@ const setType = (type) => {
     let filteredCats = props.categories.filter(cat => cat.type.name === type);
 
     if (['Debt', 'Receivable'].includes(type) && filteredCats.length > 0) {
-        form.category_id = filteredCats[0].id;
-        form.clearErrors('category_id');
+        let targetCatName = '';
+        if (type === 'Debt') {
+            targetCatName = debtSubTab.value === 'expense' ? 'Bayar Cicilan Hutang' : 'Dapat Hutangan';
+        } else {
+            targetCatName = debtSubTab.value === 'expense' ? 'Ngasih Piutang' : 'Terima Bayar Piutang';
+        }
+
+        const cat = filteredCats.find(c => c.category_name === targetCatName);
+        if (cat) {
+            form.category_id = cat.id;
+            form.clearErrors('category_id');
+        }
 
         const syH = props.systemWallets.find(w => w.name.toLowerCase().includes('hutang'));
         const syP = props.systemWallets.find(w => w.name.toLowerCase().includes('piutang'));
 
         if (type === 'Debt') {
-            if (mainTab.value === 'Expense') form.destination_wallet_id = syH?.id;
-            else form.source_wallet_id = syH?.id;
+            if (debtSubTab.value === 'expense') {
+                form.source_wallet_id = lastSource || null;
+                form.destination_wallet_id = syH?.id;
+            } else {
+                form.source_wallet_id = syH?.id;
+                form.destination_wallet_id = lastDest || null;
+            }
         } else {
-            if (mainTab.value === 'Expense') form.destination_wallet_id = syP?.id;
-            else form.source_wallet_id = syP?.id;
+            if (debtSubTab.value === 'expense') {
+                form.source_wallet_id = lastSource || null;
+                form.destination_wallet_id = syP?.id;
+            } else {
+                form.source_wallet_id = syP?.id;
+                form.destination_wallet_id = lastDest || null;
+            }
         }
     } else if (filteredCats.length === 1) {
         selectCategory(filteredCats[0]);
     }
+};
+
+const setDebtSubTab = (subTab) => {
+    debtSubTab.value = subTab;
+    setType(mainTab.value);
 };
 
 const selectCategory = (cat) => {
@@ -336,14 +382,12 @@ const handleBack = () => {
 
         <div :class="[
             'flex flex-col bg-gray-800 w-full text-white overflow-hidden',
-            // Base is fixed covering screen (Mobile & Desktop Minimalist)
-            'fixed inset-0 z-[60]',
-            // If standard Desktop Layout, reset to relative inside main container
-            isDesktopLayout ? 'lg:relative lg:inset-auto lg:z-0 lg:h-full lg:min-h-screen' : ''
+            'fixed inset-0 z-[60] h-[100dvh] max-h-[100dvh]',
+            isDesktopLayout ? 'lg:relative lg:inset-auto lg:z-0 lg:h-screen lg:max-h-[100vh]' : ''
         ]" style="padding-bottom: env(safe-area-inset-bottom)">
 
-            <div class="flex flex-col flex-1 w-full max-w-md mx-auto relative bg-gray-800">
-                <form @submit.prevent="submit" class="flex flex-col flex-1 min-h-0 relative lg:pt-8">
+            <div class="flex flex-col h-full w-full max-w-md mx-auto relative bg-gray-800 overflow-hidden">
+                <form @submit.prevent="submit" class="flex flex-col h-full min-h-0 overflow-hidden relative lg:pt-8">
 
                     <!-- CLOSE BUTTON -->
                     <button type="button" @click="handleBack"
@@ -355,48 +399,54 @@ const handleBack = () => {
                     </button>
 
                     <!-- TABS UTAMA -->
-                    <div class="px-4 py-20 pb-2 shrink-0">
+                    <div class="px-4 pt-28 pb-2 shrink-0">
                         <div
-                            class="flex bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-2 border border-white/10">
-                            <button v-for="t in ['Expense', 'Income', 'Transfer']" :key="t" @click="setMainTab(t)"
+                            class="flex bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-2 border border-white/10 overflow-x-auto no-scrollbar gap-1">
+                            <button v-for="t in ['Expense', 'Income', 'Transfer', 'Debt', 'Receivable']" :key="t" @click="setMainTab(t)"
                                 type="button"
-                                :class="['flex-1 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all', mainTab === t ? 'bg-gray-800 text-purple-500 border border-white/10' : 'text-gray-500 hover:text-white']">
-                                {{ t === 'Expense' ? 'Pengeluaran' : (t === 'Income' ? 'Pemasukan' : 'Transfer') }}
+                                :class="['flex-1 px-3 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap', mainTab === t ? 'bg-gray-800 text-purple-500 border border-white/10' : 'text-gray-500 hover:text-white']">
+                                {{ t === 'Expense' ? 'Keluar' : (t === 'Income' ? 'Masuk' : (t === 'Transfer' ? 'Transfer' : (t === 'Debt' ? 'Hutang' : 'Piutang'))) }}
                             </button>
                         </div>
                     </div>
 
                     <!-- SUB TABS -->
-                    <div v-if="mainTab === 'Expense' || mainTab === 'Income'"
-                        class="px-4 py-1 flex flex-col gap-2 shrink-0">
+                    <div v-if="['Expense', 'Income'].includes(mainTab)" class="px-4 py-1 flex flex-col gap-2 shrink-0">
                         <div class="flex gap-2">
-                            <button type="button" @click="setType(mainTab)"
-                                :class="['flex-1 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap', activeType === mainTab ? 'bg-gradient-to-br from-gray-900 to-gray-800 text-purple-500 border border-white/10' : 'bg-transparent text-gray-400 border border-white/10']">
-                                Biasa
-                            </button>
-                            <button type="button" @click="setType('Debt')"
-                                :class="['flex-1 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap', ['Debt', 'Receivable'].includes(activeType) ? 'bg-gradient-to-br from-gray-900 to-gray-800 text-purple-500 border border-white/10' : 'bg-transparent text-gray-400 border border-white/10']">
-                                Hutang
-                            </button>
                             <Link :href="route('categories.create', { type: mainTab })"
                                 class="flex-1 flex items-center justify-center py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap bg-transparent text-purple-500 border border-white/10 hover:bg-gray-900">
                                 + Kategori
                             </Link>
                         </div>
+                    </div>
 
-                        <!-- SUB-SUB TABS -->
-                        <div v-if="['Debt', 'Receivable'].includes(activeType)" class="flex gap-2 transition-all">
-                            <button type="button" @click="setType('Debt')"
-                                :class="['flex-1 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap', activeType === 'Debt' ? 'bg-gradient-to-br from-gray-800 to-gray-900 text-purple-500 border border-white/10' : 'bg-transparent text-gray-400 border border-white/10 hover:text-gray-400']">
-                                {{ mainTab === 'Expense' ? 'Bayar Hutang' : 'Dapat Hutang' }}
+                    <div v-if="mainTab === 'Debt'" class="px-4 py-1 flex flex-col gap-2 shrink-0">
+                        <div class="flex gap-2 transition-all">
+                            <button type="button" @click="setDebtSubTab('income')"
+                                :class="['flex-1 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap', debtSubTab === 'income' ? 'bg-gradient-to-br from-gray-800 to-gray-900 text-purple-500 border border-white/10' : 'bg-transparent text-gray-400 border border-white/10 hover:text-gray-400']">
+                                Dapat Hutang
                             </button>
-                            <button type="button" @click="setType('Receivable')"
-                                :class="['flex-1 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap', activeType === 'Receivable' ? 'bg-gradient-to-br from-gray-800 to-gray-900 text-purple-500 border-white/10' : 'bg-transparent text-gray-400 border border-white/10 hover:text-gray-400']">
-                                {{ mainTab === 'Expense' ? 'Beri Piutang' : 'Terima Piutang' }}
+                            <button type="button" @click="setDebtSubTab('expense')"
+                                :class="['flex-1 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap', debtSubTab === 'expense' ? 'bg-gradient-to-br from-gray-800 to-gray-900 text-purple-500 border border-white/10' : 'bg-transparent text-gray-400 border border-white/10 hover:text-gray-400']">
+                                Bayar Hutang
                             </button>
                         </div>
                     </div>
-                    <div v-else class="px-4 mt-12 pb-4 flex items-center justify-center gap-10 shrink-0">
+
+                    <div v-if="mainTab === 'Receivable'" class="px-4 py-1 flex flex-col gap-2 shrink-0">
+                        <div class="flex gap-2 transition-all">
+                            <button type="button" @click="setDebtSubTab('expense')"
+                                :class="['flex-1 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap', debtSubTab === 'expense' ? 'bg-gradient-to-br from-gray-800 to-gray-900 text-purple-500 border border-white/10' : 'bg-transparent text-gray-400 border border-white/10 hover:text-gray-400']">
+                                Beri Piutang
+                            </button>
+                            <button type="button" @click="setDebtSubTab('income')"
+                                :class="['flex-1 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap', debtSubTab === 'income' ? 'bg-gradient-to-br from-gray-800 to-gray-900 text-purple-500 border border-white/10' : 'bg-transparent text-gray-400 border border-white/10 hover:text-gray-400']">
+                                Terima Piutang
+                            </button>
+                        </div>
+                    </div>
+
+                    <div v-if="mainTab === 'Transfer'" class="px-4 mt-12 pb-4 flex items-center justify-center gap-10 shrink-0">
                         <!-- Dompet Sumber -->
                         <div class="flex flex-col items-center gap-3">
                             <button type="button" @click="openWalletModal('source')"
@@ -449,7 +499,7 @@ const handleBack = () => {
                     </div>
 
                     <!-- CATEGORY GRID -->
-                    <div class="flex-1 overflow-y-auto px-4 py-4 no-scrollbar">
+                    <div class="flex-1 min-h-0 overflow-y-auto px-4 py-4 no-scrollbar">
 
                         <!-- ERROR BANNER -->
                         <div v-if="Object.keys(form.errors).length > 0"
@@ -466,13 +516,59 @@ const handleBack = () => {
                         </div>
 
                         <div v-if="['Debt', 'Receivable'].includes(activeType)"
-                            class="flex flex-col justify-center h-full pb-10">
-                            <label
-                                class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 text-center">Pihak
-                                / Nama
-                                Terkait</label>
-                            <input type="text" v-model="form.subject" placeholder="Masukkan nama..."
-                                class="w-full bg-gradient-to-br from-gray-900 to-gray-800 border-xl border-white/10 focus:border-purple-500 rounded-xl px-6 py-5 text-center text-xl font-bold text-white focus:ring-0 placeholder-gray-700 transition-colors outline-none">
+                            class="flex flex-col justify-start h-full pb-10 gap-4">
+                            
+                            <div class="flex flex-col items-center">
+                                <label class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 text-center">Pihak / Nama Terkait</label>
+                                <input type="text" v-model="form.subject" placeholder="Masukkan nama..."
+                                    class="w-full bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 focus:border-purple-500 rounded-xl px-4 py-3 text-center text-lg font-bold text-white focus:ring-0 placeholder-gray-700 transition-colors outline-none">
+                                
+                                <div v-if="debtSubjects && debtSubjects.length > 0 && ((activeType === 'Debt' && debtSubTab === 'expense') || (activeType === 'Receivable' && debtSubTab === 'income'))" class="flex flex-wrap gap-2 justify-center mt-3">
+                                    <button type="button" v-for="sub in debtSubjects" :key="sub" @click="form.subject = sub"
+                                        class="px-3 py-1.5 rounded-full text-[10px] font-bold border transition-all active:scale-95"
+                                        :class="form.subject === sub ? 'bg-purple-600/20 text-purple-400 border-purple-500/50' : 'bg-gray-800 text-gray-400 border-white/5 hover:bg-gray-700'">
+                                        {{ sub }}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div v-if="(activeType === 'Debt' && debtSubTab === 'income') || (activeType === 'Receivable' && debtSubTab === 'expense')" class="flex flex-col items-center p-4 bg-gray-900/50 rounded-xl border border-white/5">
+                                <div class="flex items-center gap-2 mb-3 w-full justify-center">
+                                    <input type="checkbox" id="has_due" :checked="form.due_date_type !== null" @change="form.due_date_type = $event.target.checked ? 'fixed' : null" class="rounded bg-gray-800 border-white/10 text-purple-600 focus:ring-purple-600">
+                                    <label for="has_due" class="text-xs font-bold text-purple-400 uppercase tracking-widest cursor-pointer">Ada Jatuh Tempo?</label>
+                                </div>
+                                
+                                <template v-if="form.due_date_type !== null">
+                                    <div class="w-full flex gap-2 mb-3">
+                                        <button type="button" @click="form.due_date_type = 'fixed'" :class="['flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all', form.due_date_type === 'fixed' ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-500']">Tgl Pasti</button>
+                                        <button type="button" @click="form.due_date_type = 'monthly'" :class="['flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all', form.due_date_type === 'monthly' ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-500']">Tiap Bulan</button>
+                                        <button type="button" @click="form.due_date_type = 'daily'" :class="['flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all', form.due_date_type === 'daily' ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-500']">Per Hari</button>
+                                    </div>
+
+                                    <div v-if="form.due_date_type === 'fixed'" class="w-full flex flex-col gap-2">
+                                        <div @click="dateModalTarget = 'due_date'; showDateModal = true"
+                                            class="w-full bg-gray-800 border border-white/10 transition-colors rounded-lg flex items-center justify-center gap-2 text-sm font-bold text-white relative overflow-hidden cursor-pointer py-2">
+                                            <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                            <span class="pointer-events-none tracking-wide">
+                                                {{ form.due_date ? (new Date(form.due_date).toDateString() === new Date().toDateString() ? 'Hari Ini' : new Date(form.due_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })) : 'Pilih Tanggal' }}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div v-if="form.due_date_type === 'monthly'" class="w-full flex flex-col gap-2 items-center">
+                                        <label class="text-xs text-gray-500">Tanggal Jatuh Tempo (1-31)</label>
+                                        <input type="number" min="1" max="31" v-model="form.due_date_interval" placeholder="15" class="w-full bg-gray-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:ring-0 focus:border-purple-500 text-center">
+                                    </div>
+
+                                    <div v-if="form.due_date_type === 'daily'" class="w-full flex flex-col gap-2 items-center">
+                                        <label class="text-xs text-gray-500">Siklus Per Berapa Hari?</label>
+                                        <input type="number" min="1" v-model="form.due_date_interval" placeholder="7" class="w-full bg-gray-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:ring-0 focus:border-purple-500 text-center">
+                                    </div>
+                                </template>
+                            </div>
+
                         </div>
                         <div v-else-if="mainTab !== 'Transfer'" class="grid grid-cols-4 gap-x-3 gap-y-4 pb-4">
                             <div v-for="cat in activeCategories" :key="cat.id" @click="selectCategory(cat)"
@@ -525,7 +621,7 @@ const handleBack = () => {
                                     class="invisible whitespace-pre-wrap break-all text-sm p-0 min-h-[20px] col-start-1 row-start-1">{{
                                         (form.notes || 'Note') + ' ' }}</span>
                                 <textarea v-model="form.notes" placeholder="Note" rows="1"
-                                    class="col-start-1 row-start-1 w-full h-full bg-transparent border-none focus:ring-0 text-md text-gray-500 placeholder-gray-700 p-0 resize-none overflow-hidden break-all whitespace-pre-wrap"></textarea>
+                                    class="col-start-1 row-start-1 w-full h-full bg-transparent border-none focus:ring-0 text-md text-gray-500 placeholder-gray-700 border-r-2 border-white p-0 resize-none overflow-hidden break-all whitespace-pre-wrap"></textarea>
                             </div>
 
                             <!-- AMOUNT -->
@@ -547,7 +643,7 @@ const handleBack = () => {
                         <!-- QUICK ACTIONS ROW -->
                         <div class="flex gap-2 mb-2">
                             <!-- Date Picker -->
-                            <div @click="showDateModal = true"
+                            <div @click="dateModalTarget = 'transaction'; showDateModal = true"
                                 class="flex-1 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-gray-500 relative overflow-hidden cursor-pointer">
                                 <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"
                                     stroke-width="2">
@@ -695,7 +791,7 @@ const handleBack = () => {
                                 <!-- Days -->
                                 <button v-for="day in daysInMonth" :key="day" @click="selectSpecificDate(day)" :class="[
                                     'h-8 w-full flex items-center justify-center text-sm font-bold rounded-lg transition-all active:scale-90',
-                                    form.date === [currentYear, String(currentMonth + 1).padStart(2, '0'), String(day).padStart(2, '0')].join('-')
+                                    (dateModalTarget === 'due_date' ? form.due_date : form.date) === [currentYear, String(currentMonth + 1).padStart(2, '0'), String(day).padStart(2, '0')].join('-')
                                         ? 'bg-gradient-to-br from-purple-600 to-purple-800 text-white shadow-md border border-purple-400/50'
                                         : 'text-gray-300 hover:bg-gray-800 border border-transparent'
                                 ]">

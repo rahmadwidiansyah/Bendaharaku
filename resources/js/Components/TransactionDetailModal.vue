@@ -69,6 +69,17 @@ const deleteTransaction = () => {
                     <span class="text-gray-500 uppercase font-bold tracking-widest text-xs">Pelaku</span>
                     <span class="font-bold text-xs">{{ transaction.subject }}</span>
                 </div>
+                <div v-if="transaction.due_date_type" class="flex justify-between items-center border-b border-white/30 pb-3 text-white">
+                    <span class="text-gray-500 uppercase font-bold tracking-widest text-xs">Jatuh Tempo</span>
+                    <div class="text-right flex flex-col items-end">
+                        <span class="font-bold text-xs text-yellow-400">
+                            {{ transaction.due_date_type === 'fixed' ? 'Sekali' : (transaction.due_date_type === 'monthly' ? 'Bulanan' : 'Per Hari') }}
+                        </span>
+                        <span class="text-[10px] text-gray-400">
+                            {{ transaction.due_date_type === 'fixed' ? transaction.due_date : (transaction.due_date_type === 'monthly' ? `Tgl ${transaction.due_date_interval}` : `Setiap ${transaction.due_date_interval} Hari`) }}
+                        </span>
+                    </div>
+                </div>
                 <div class="flex justify-between items-start text-white">
                     <span class="text-gray-500 uppercase font-bold tracking-widest text-xs">Catatan</span>
                     <span class="text-right italic text-gray-400 text-xs">{{ transaction.notes || 'Tidak ada catatan.' }}</span>

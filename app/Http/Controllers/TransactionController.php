@@ -93,10 +93,25 @@ class TransactionController extends Controller
             return $categoryCounts->get($cat->id, 0);
         })->values();
 
+        $rawSubjects = Auth::user()->transactionLogs()
+            ->whereHas('category', function($q) {
+                $q->whereIn('category_name', ['Dapat Hutangan', 'Ngasih Piutang']);
+            })
+            ->whereNotNull('subject')
+            ->where('subject', '!=', '-')
+            ->pluck('subject');
+
+        $debtSubjects = $rawSubjects->map(function($s) {
+            return trim($s);
+        })->unique(function ($item) {
+            return strtolower($item);
+        })->values();
+
         return Inertia::render('Transactions/Create', [
             'wallets' => $wallets,
             'categories' => $categories,
             'systemWallets' => $systemWallets,
+            'debtSubjects' => $debtSubjects,
         ]);
     }
 
@@ -109,6 +124,9 @@ class TransactionController extends Controller
             'destination_wallet_id' => 'required|exists:wallets,id',
             'amount' => 'required|numeric|min:0',
             'subject' => 'nullable|string|max:255',
+            'due_date' => 'nullable|date',
+            'due_date_type' => 'nullable|in:fixed,monthly,daily',
+            'due_date_interval' => 'nullable|integer',
         ]);
 
         $category = Category::findOrFail($request->category_id);
@@ -140,6 +158,9 @@ class TransactionController extends Controller
                     'subject' => $request->subject ?? '-',
                     'notes' => $request->notes,
                     'is_cleared' => true,
+                    'due_date' => $request->due_date,
+                    'due_date_type' => $request->due_date_type,
+                    'due_date_interval' => $request->due_date_interval,
                 ]);
             });
 
@@ -173,11 +194,26 @@ class TransactionController extends Controller
         $systemWallets = Auth::user()->wallets()->where('group_type', 'System')->get();
         $categories = Auth::user()->categories()->with('type')->get();
 
+        $rawSubjects = Auth::user()->transactionLogs()
+            ->whereHas('category', function($q) {
+                $q->whereIn('category_name', ['Dapat Hutangan', 'Ngasih Piutang']);
+            })
+            ->whereNotNull('subject')
+            ->where('subject', '!=', '-')
+            ->pluck('subject');
+
+        $debtSubjects = $rawSubjects->map(function($s) {
+            return trim($s);
+        })->unique(function ($item) {
+            return strtolower($item);
+        })->values();
+
         return Inertia::render('Transactions/Edit', [
             'transaction' => $transaction,
             'wallets' => $wallets,
             'systemWallets' => $systemWallets,
             'categories' => $categories,
+            'debtSubjects' => $debtSubjects,
         ]);
     }
 
@@ -190,6 +226,9 @@ class TransactionController extends Controller
             'destination_wallet_id' => 'required|exists:wallets,id',
             'amount' => 'required|numeric|min:0',
             'subject' => 'nullable|string|max:255',
+            'due_date' => 'nullable|date',
+            'due_date_type' => 'nullable|in:fixed,monthly,daily',
+            'due_date_interval' => 'nullable|integer',
         ]);
 
         try {
@@ -218,6 +257,9 @@ class TransactionController extends Controller
                     'subject' => $request->subject ?? '-',
                     'notes' => $request->notes,
                     'is_cleared' => true,
+                    'due_date' => $request->due_date,
+                    'due_date_type' => $request->due_date_type,
+                    'due_date_interval' => $request->due_date_interval,
                 ]);
             });
 

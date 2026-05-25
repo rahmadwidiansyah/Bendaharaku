@@ -108,8 +108,94 @@ class DashboardController extends Controller
                                       'category' => $trx->category,
                                       'source_wallet' => $trx->sourceWallet,
                                       'destination_wallet' => $trx->destinationWallet,
+                                      'due_date' => $trx->due_date,
+                                      'due_date_type' => $trx->due_date_type,
+                                      'due_date_interval' => $trx->due_date_interval,
                                   ];
                               });
+
+        // 7. NOTIFIKASI JATUH TEMPO HUTANG/PIUTANG
+        $upcomingDebts = [];
+        $debtsWithDueDate = $user->transactionLogs()->with('category')
+            ->whereNotNull('due_date_type')
+            ->get();
+            
+        $processedSubjects = []; // Track to avoid duplicate checks per subject/type
+
+        foreach ($debtsWithDueDate as $trx) {
+            $catName = strtolower($trx->category->category_name);
+            $isDebt = str_contains($catName, 'dapat hutang');
+            $isReceivable = str_contains($catName, 'ngasih piutang');
+            
+            if (!$isDebt && !$isReceivable) continue;
+            
+            $cacheKey = $trx->subject . '_' . ($isDebt ? 'debt' : 'receivable');
+            if (isset($processedSubjects[$cacheKey])) continue;
+            $processedSubjects[$cacheKey] = true;
+
+            $now = Carbon::now()->startOfDay();
+            $nextDueDate = null;
+            
+            if ($trx->due_date_type === 'fixed' && $trx->due_date) {
+                $nextDueDate = Carbon::parse($trx->due_date)->startOfDay();
+            } elseif ($trx->due_date_type === 'monthly' && $trx->due_date_interval) {
+                $day = min(31, max(1, $trx->due_date_interval));
+                $nextDueDate = Carbon::now()->setDay($day)->startOfDay();
+                if ($nextDueDate->isBefore($now)) {
+                    $nextDueDate->addMonth();
+                }
+            } elseif ($trx->due_date_type === 'daily' && $trx->due_date_interval) {
+                $start = Carbon::parse($trx->date)->startOfDay();
+                $interval = $trx->due_date_interval;
+                $diff = $now->diffInDays($start);
+                
+                if ($start->isAfter($now)) {
+                    $nextDueDate = $start;
+                } else {
+                    $cyclesPassed = floor($diff / $interval);
+                    $nextDueDate = $start->copy()->addDays(($cyclesPassed + 1) * $interval);
+                }
+            }
+
+            if ($nextDueDate) {
+                $daysUntilDue = (int) $now->diffInDays($nextDueDate, false);
+                
+                // Show if it's due within 7 days, or overdue (negative)
+                if ($daysUntilDue <= 7) {
+                    $allSubjectTrxs = $user->transactionLogs()->with('category')
+                        ->where('subject', $trx->subject)
+                        ->get();
+                        
+                    $totalBorrowed = 0;
+                    $totalPaid = 0;
+                    
+                    if ($isDebt) {
+                        $totalBorrowed = $allSubjectTrxs->where('category.category_name', 'Dapat Hutangan')->sum('amount');
+                        $totalPaid = $allSubjectTrxs->where('category.category_name', 'Bayar Cicilan Hutang')->sum('amount');
+                    } else {
+                        $totalBorrowed = $allSubjectTrxs->where('category.category_name', 'Ngasih Piutang')->sum('amount');
+                        $totalPaid = $allSubjectTrxs->where('category.category_name', 'Terima Bayar Piutang')->sum('amount');
+                    }
+                    
+                    $remaining = $totalBorrowed - $totalPaid;
+                    
+                    if ($remaining > 0) {
+                        $upcomingDebts[] = [
+                            'subject' => $trx->subject,
+                            'type' => $isDebt ? 'Hutang' : 'Piutang',
+                            'remaining' => $remaining,
+                            'days_until' => $daysUntilDue,
+                            'next_due_date' => $nextDueDate->format('d M Y'),
+                        ];
+                    }
+                }
+            }
+        }
+        
+        // Sort upcoming debts by closest due date
+        usort($upcomingDebts, function($a, $b) {
+            return $a['days_until'] <=> $b['days_until'];
+        });
 
         return Inertia::render('Dashboard', [
             'totalPortfolio' => (int) $totalPortfolio,
@@ -124,6 +210,7 @@ class DashboardController extends Controller
             'startDate' => $startDate,
             'endDate' => $endDate,
             'filters' => $request->only(['search', 'type']),
+            'upcomingDebts' => $upcomingDebts,
         ]);
     }
 }
