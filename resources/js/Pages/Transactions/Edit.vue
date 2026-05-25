@@ -84,7 +84,7 @@ onMounted(() => {
         if (['Expense', 'Income', 'Transfer'].includes(cat.type.name)) {
             mainTab.value = cat.type.name;
         } else {
-            mainTab.value = 'Debt/Receivable';
+            mainTab.value = cat.type.name;
             if (cat.category_name === 'Bayar Cicilan Hutang' || cat.category_name === 'Ngasih Piutang') {
                 debtSubTab.value = 'expense';
             } else {
@@ -410,37 +410,63 @@ const handleBack = () => {
             <div class="flex flex-col h-full w-full max-w-md mx-auto relative bg-gray-800 overflow-hidden">
                 <form @submit.prevent="submit" class="flex flex-col h-full min-h-0 overflow-hidden relative lg:pt-8">
 
-                    <!-- TOP RIGHT ACTIONS -->
-                    <div class="absolute top-12 right-4 z-50 flex items-center gap-2">
+                    <!-- TABS UTAMA -->
+                    <div class="px-4 pt-6 md:pt-10 pb-2 shrink-0 flex gap-2 items-stretch">
                         <!-- DELETE BUTTON -->
                         <button type="button" @click="destroy"
-                            class="p-2 text-red-500 active:scale-95 transition-transform bg-gradient-to-br from-red-900/30 to-gray-800 rounded-full border border-red-500/30 hover:border-red-500/50"
+                            class="w-[40px] shrink-0 flex items-center justify-center text-red-500 active:scale-95 transition-transform bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 hover:bg-red-500/10 hover:text-red-300"
                             title="Hapus Transaksi">
-                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
                         </button>
+
+                        <div
+                            class="flex-1 flex bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-1.5 border border-white/10 overflow-x-auto no-scrollbar gap-1">
+                            <button v-for="t in ['Expense', 'Income', 'Transfer', 'Debt', 'Receivable']" :key="t" @click="setMainTab(t)"
+                                type="button"
+                                :class="['flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap overflow-hidden', mainTab === t ? 'bg-gray-800 text-purple-500 border border-white/10 flex-1 px-3' : 'text-gray-500 hover:text-white px-3']">
+                                
+                                <template v-if="t === 'Expense'">
+                                    <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                                    </svg>
+                                </template>
+                                <template v-else-if="t === 'Income'">
+                                    <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                                    </svg>
+                                </template>
+                                <template v-else-if="t === 'Transfer'">
+                                    <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                                    </svg>
+                                </template>
+                                <template v-else-if="t === 'Debt'">
+                                    <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </template>
+                                <template v-else-if="t === 'Receivable'">
+                                    <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </template>
+
+                                <span v-show="mainTab === t" class="transition-all duration-300">
+                                    {{ t === 'Expense' ? 'Keluar' : (t === 'Income' ? 'Masuk' : (t === 'Transfer' ? 'Transfer' : (t === 'Debt' ? 'Hutang' : 'Piutang'))) }}
+                                </span>
+                            </button>
+                        </div>
                         
                         <!-- CLOSE BUTTON -->
                         <button type="button" @click="handleBack"
-                            class="p-2 text-gray-400 active:scale-95 transition-transform bg-gradient-to-br from-gray-900 to-gray-800 rounded-full border border-white/10 hover:border-white/50"
+                            class="w-[40px] shrink-0 flex items-center justify-center text-red-400 active:scale-95 transition-transform bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 hover:bg-red-500/10 hover:text-red-300"
                             title="Tutup">
                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
-                    </div>
-
-                    <!-- TABS UTAMA -->
-                    <div class="px-4 pt-28 pb-2 shrink-0">
-                        <div
-                            class="flex bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-2 border border-white/10 overflow-x-auto no-scrollbar gap-1">
-                            <button v-for="t in ['Expense', 'Income', 'Transfer', 'Debt', 'Receivable']" :key="t" @click="setMainTab(t)"
-                                type="button"
-                                :class="['flex-1 px-3 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap', mainTab === t ? 'bg-gray-800 text-purple-500 border border-white/10' : 'text-gray-500 hover:text-white']">
-                                {{ t === 'Expense' ? 'Keluar' : (t === 'Income' ? 'Masuk' : (t === 'Transfer' ? 'Transfer' : (t === 'Debt' ? 'Hutang' : 'Piutang'))) }}
-                            </button>
-                        </div>
                     </div>
 
                     <!-- SUB TABS -->
@@ -603,15 +629,15 @@ const handleBack = () => {
                             </div>
 
                         </div>
-                        <div v-else-if="mainTab !== 'Transfer'" class="grid grid-cols-4 gap-x-3 gap-y-4 pb-4">
+                        <div v-else-if="mainTab !== 'Transfer'" class="grid grid-cols-4 gap-3 m-3 justify-center">
                             <div v-for="cat in activeCategories" :key="cat.id" @click="selectCategory(cat)"
-                                :class="['flex flex-col items-center justify-center p-3 rounded-xl border transition-all cursor-pointer aspect-square',
+                                :class="['flex flex-col items-center justify-center p-2 rounded-xl border transition-all cursor-pointer h-[80px] w-[80px]',
                                     form.category_id === cat.id ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-purple-500' : 'bg-transparent border-white/10 hover:border-white/20']">
                                 <img v-if="cat.icon.includes('.')" :src="'/storage/' + cat.icon"
-                                    class="w-8 h-8 object-cover mb-2">
-                                <span v-else class="text-2xl mb-1.5">{{ cat.icon }}</span>
+                                    class="w-6 h-6 object-cover mb-1.5">
+                                <span v-else class="text-lg mb-1">{{ cat.icon }}</span>
                                 <span
-                                    :class="['text-xs font-bold text-center leading-tight truncate w-full px-1', form.category_id === cat.id ? 'text-white' : 'text-gray-500']">{{
+                                    :class="['text-[10px] font-bold text-center leading-tight w-full px-0.5 line-clamp-2 text-wrap break-words', form.category_id === cat.id ? 'text-white' : 'text-gray-500']">{{
                                         cat.category_name }}</span>
                             </div>
                         </div>
@@ -627,13 +653,12 @@ const handleBack = () => {
 
                     <!-- BOTTOM KEYPAD AREA -->
                     <div v-show="showBottomPanel"
-                        class="bg-gradient-to-br from-gray-800 to-gray-900 border-t border-white/10 rounded-t-3xl md:border md:rounded-xl md:mb-10 md:mx-4 p-4 z-20 shrink-0 relative transition-all shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.5)]">
-                        <!-- NOTE & AMOUNT ROW -->
+                        class="bg-gradient-to-br from-gray-900 to-gray-800 border-t border-white/10 rounded-t-xl md:border md:rounded-xl md:mb-10 md:mx-4 p-3 z-20 shrink-0 relative transition-all">
                         <div
-                            class="flex flex-wrap items-center gap-x-3 gap-y-2 mb-4 bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-2 pr-4 border border-white/10">
+                            class="flex flex-wrap items-center gap-x-2 gap-y-1 mb-2 bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-1.5 pr-3 border border-white/10">
                             <!-- WALLET ICON (CLICKABLE) -->
                             <button type="button" @click="openWalletModal(mainTab === 'Income' ? 'dest' : 'source')"
-                                class="w-12 h-12 1flex items-center justify-center shrink-0 active:scale-95 transition-transform overflow-hidden relative"
+                                class="w-10 h-10 flex items-center justify-center shrink-0 active:scale-95 transition-transform overflow-hidden relative rounded-lg"
                                 title="Pilih Dompet">
                                 <template v-if="mainTab === 'Income' ? selectedDestWallet : selectedSourceWallet">
                                     <img v-if="(mainTab === 'Income' ? selectedDestWallet : selectedSourceWallet).icon.includes('.')"
@@ -673,11 +698,9 @@ const handleBack = () => {
                             </div>
                         </div>
 
-                        <!-- QUICK ACTIONS ROW -->
                         <div class="flex gap-2 mb-2">
-                            <!-- Date Picker -->
                             <div @click="dateModalTarget = 'transaction'; showDateModal = true"
-                                class="flex-1 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-gray-500 relative overflow-hidden cursor-pointer">
+                                class="flex-1 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-gray-500 relative overflow-hidden cursor-pointer h-12">
                                 <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"
                                     stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -709,41 +732,38 @@ const handleBack = () => {
                                 </svg>
                             </button>
                             <button type="button" @click="submit(true)"
-                                class="w-[72px] h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl flex items-center justify-center text-green-500 shrink-0 active:scale-95 transition-transform"
+                                class="w-[84px] h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl flex items-center justify-center text-green-500 shrink-0 active:scale-95 transition-transform"
                                 title="Simpan Perubahan">
                                 <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"
                                     stroke-width="3">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                                 </svg>
                             </button>
-
                         </div>
 
-                        <!-- KEYPAD GRID -->
-                        <div v-show="showKeypad" class="grid grid-cols-3 gap-2">
+                        <div v-show="showKeypad" class="grid grid-cols-3 gap-y-2 gap-x-4">
                             <button @click="handleKeypad('7')" type="button"
-                                class="h-[52px] bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">7</button>
+                                class="h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">7</button>
                             <button @click="handleKeypad('8')" type="button"
-                                class="h-[52px] bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">8</button>
+                                class="h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">8</button>
                             <button @click="handleKeypad('9')" type="button"
-                                class="h-[52px] bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">9</button>
+                                class="h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">9</button>
                             <button @click="handleKeypad('4')" type="button"
-                                class="h-[52px] bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">4</button>
+                                class="h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">4</button>
                             <button @click="handleKeypad('5')" type="button"
-                                class="h-[52px] bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">5</button>
+                                class="h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">5</button>
                             <button @click="handleKeypad('6')" type="button"
-                                class="h-[52px] bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">6</button>
+                                class="h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">6</button>
                             <button @click="handleKeypad('1')" type="button"
-                                class="h-[52px] bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">1</button>
+                                class="h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">1</button>
                             <button @click="handleKeypad('2')" type="button"
-                                class="h-[52px] bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">2</button>
+                                class="h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">2</button>
                             <button @click="handleKeypad('3')" type="button"
-                                class="h-[52px] bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">3</button>
+                                class="h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">3</button>
                             <button @click="handleKeypad('0')" type="button"
-                                class="h-[52px] bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">0</button>
+                                class="h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">0</button>
                             <button @click="handleKeypad('del')" type="button"
-                                class="h-[52px] bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl flex items-center justify-center relative">
-                                <!-- Custom back delete button -->
+                                class="h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl flex items-center justify-center relative">
                                 <div class="w-8 h-8 flex items-center justify-center">
                                     <svg class="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24"
                                         stroke="currentColor" stroke-width="3">

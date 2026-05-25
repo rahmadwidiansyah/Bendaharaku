@@ -21,22 +21,31 @@ class WalletController extends Controller
             ->orderBy('id')
             ->get();
 
-        // LOGIKA HITUNG HUTANG (Tetap butuh akses ke dompet System di backend)
-        $systemHutang = $user->wallets()->where('name', 'like', '%Hutang%')->where('group_type', 'System')->first();
+        // LOGIKA HITUNG HUTANG DAN PIUTANG BERDASARKAN SUBJEK
         $totalHutang = 0;
-        if ($systemHutang) {
-            $debtIn = $user->transactionLogs()->where('source_wallet_id', $systemHutang->id)->sum('amount');
-            $debtPaid = $user->transactionLogs()->where('destination_wallet_id', $systemHutang->id)->sum('amount');
-            $totalHutang = max(0, $debtIn - $debtPaid);
-        }
-
-        // LOGIKA HITUNG PIUTANG (Tetap butuh akses ke dompet System di backend)
-        $systemPiutang = $user->wallets()->where('name', 'like', '%Piutang%')->where('group_type', 'System')->first();
         $totalPiutang = 0;
-        if ($systemPiutang) {
-            $receivableOut = $user->transactionLogs()->where('destination_wallet_id', $systemPiutang->id)->sum('amount');
-            $receivableIn = $user->transactionLogs()->where('source_wallet_id', $systemPiutang->id)->sum('amount');
-            $totalPiutang = max(0, $receivableOut - $receivableIn);
+
+        $subjectGroups = $user->transactionLogs()->with('category')
+            ->whereHas('category', function($q) {
+                $q->whereIn('category_name', ['Dapat Hutangan', 'Bayar Cicilan Hutang', 'Ngasih Piutang', 'Terima Bayar Piutang']);
+            })
+            ->whereNotNull('subject')
+            ->where('subject', '!=', '-')
+            ->get()
+            ->groupBy('subject');
+
+        foreach ($subjectGroups as $subject => $group) {
+            $totalDebtBorrowed = $group->where('category.category_name', 'Dapat Hutangan')->sum('amount');
+            $totalDebtPaid = $group->where('category.category_name', 'Bayar Cicilan Hutang')->sum('amount');
+            if ($totalDebtBorrowed > 0) {
+                $totalHutang += max(0, $totalDebtBorrowed - $totalDebtPaid);
+            }
+
+            $totalRecBorrowed = $group->where('category.category_name', 'Ngasih Piutang')->sum('amount');
+            $totalRecPaid = $group->where('category.category_name', 'Terima Bayar Piutang')->sum('amount');
+            if ($totalRecBorrowed > 0) {
+                $totalPiutang += max(0, $totalRecBorrowed - $totalRecPaid);
+            }
         }
 
         return Inertia::render('Wallets/Index', [
