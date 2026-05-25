@@ -558,13 +558,14 @@ const togglePin = (wallet) => {
 
                         <div class="flex flex-col gap-3">
                             <div v-for="debt in activeUpcomingDebts" :key="debt.subject + debt.type" 
-                                class="bg-gradient-to-br from-gray-900 to-gray-800 p-3.5 rounded-xl border relative overflow-hidden transition-transform group"
-                                :class="debt.days_until <= 0 ? 'border-red-500/50' : 'border-yellow-500/30'">
+                                class="p-3.5 rounded-xl border relative overflow-hidden transition-transform group"
+                                :class="debt.days_until <= 3 ? 'bg-gradient-to-br from-red-900/30 to-gray-800 border-red-500/50' : 'bg-gradient-to-br from-yellow-900/30 to-gray-800 border-yellow-500/30'">
                                 <div class="flex justify-between items-start mb-1">
                                     <h3 class="text-xs font-bold text-white tracking-widest truncate mr-2">{{ debt.type }} - {{ debt.subject }}</h3>
                                     <div class="flex items-center gap-2">
                                         <span v-if="debt.days_until < 0" class="text-[10px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-bold shrink-0">Terlewat</span>
                                         <span v-else-if="debt.days_until === 0" class="text-[10px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-bold shrink-0">Hari Ini!</span>
+                                        <span v-else-if="debt.days_until <= 3" class="text-[10px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-bold shrink-0">{{ debt.days_until }} Hari Lagi</span>
                                         <span v-else class="text-[10px] bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full font-bold shrink-0">{{ debt.days_until }} Hari Lagi</span>
                                         <button @click.stop.prevent="dismissDebt(debt.subject + debt.type)" class="text-gray-500 hover:text-white shrink-0 p-1 bg-white/5 rounded-full z-10 transition-colors" title="Sembunyikan Sementara">
                                             <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -572,10 +573,10 @@ const togglePin = (wallet) => {
                                     </div>
                                 </div>
                                 <div class="flex justify-between items-center mt-2">
-                                    <p class="text-sm font-bold tracking-tight" :class="debt.days_until <= 0 ? 'text-red-400' : 'text-yellow-400'">
+                                    <p class="text-sm font-bold tracking-tight" :class="debt.days_until <= 3 ? 'text-red-400' : 'text-yellow-400'">
                                         <span class="text-[10px] mr-1 opacity-70">Rp</span>{{ isBalanceVisible ? formatNumber(debt.remaining) : '••••' }}
                                     </p>
-                                    <p class="text-[10px] text-gray-500">{{ debt.next_due_date }}</p>
+                                    <p class="text-[10px] text-gray-400 font-medium">{{ debt.next_due_date }}</p>
                                 </div>
                             </div>
                         </div>
