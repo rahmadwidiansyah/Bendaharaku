@@ -93,25 +93,63 @@ class TransactionController extends Controller
             return $categoryCounts->get($cat->id, 0);
         })->values();
 
-        $rawSubjects = Auth::user()->transactionLogs()
+        $transactions = Auth::user()->transactionLogs()->with('category')
             ->whereHas('category', function($q) {
-                $q->whereIn('category_name', ['Dapat Hutangan', 'Ngasih Piutang']);
+                $q->whereIn('category_name', [
+                    'Dapat Hutangan',
+                    'Bayar Cicilan Hutang',
+                    'Ngasih Piutang',
+                    'Terima Bayar Piutang'
+                ]);
             })
             ->whereNotNull('subject')
             ->where('subject', '!=', '-')
-            ->pluck('subject');
+            ->get();
 
-        $debtSubjects = $rawSubjects->map(function($s) {
-            return trim($s);
-        })->unique(function ($item) {
-            return strtolower($item);
-        })->values();
+        $debtBalances = [];
+        $receivableBalances = [];
+
+        foreach ($transactions as $tx) {
+            $subject = trim($tx->subject);
+            $subjectKey = strtolower($subject);
+            $catName = $tx->category->category_name;
+
+            if (!isset($debtBalances[$subjectKey])) {
+                $debtBalances[$subjectKey] = ['name' => $subject, 'balance' => 0];
+            }
+            if (!isset($receivableBalances[$subjectKey])) {
+                $receivableBalances[$subjectKey] = ['name' => $subject, 'balance' => 0];
+            }
+
+            if ($catName === 'Dapat Hutangan') {
+                $debtBalances[$subjectKey]['balance'] += $tx->amount;
+            } elseif ($catName === 'Bayar Cicilan Hutang') {
+                $debtBalances[$subjectKey]['balance'] -= $tx->amount;
+            } elseif ($catName === 'Ngasih Piutang') {
+                $receivableBalances[$subjectKey]['balance'] += $tx->amount;
+            } elseif ($catName === 'Terima Bayar Piutang') {
+                $receivableBalances[$subjectKey]['balance'] -= $tx->amount;
+            }
+        }
+
+        $activeDebtSubjects = collect($debtBalances)
+            ->filter(fn($item) => $item['balance'] > 0)
+            ->pluck('name')
+            ->values()
+            ->all();
+
+        $activeReceivableSubjects = collect($receivableBalances)
+            ->filter(fn($item) => $item['balance'] > 0)
+            ->pluck('name')
+            ->values()
+            ->all();
 
         return Inertia::render('Transactions/Create', [
             'wallets' => $wallets,
             'categories' => $categories,
             'systemWallets' => $systemWallets,
-            'debtSubjects' => $debtSubjects,
+            'debtSubjects' => $activeDebtSubjects,
+            'receivableSubjects' => $activeReceivableSubjects,
         ]);
     }
 
@@ -194,26 +232,64 @@ class TransactionController extends Controller
         $systemWallets = Auth::user()->wallets()->where('group_type', 'System')->get();
         $categories = Auth::user()->categories()->with('type')->get();
 
-        $rawSubjects = Auth::user()->transactionLogs()
+        $transactions = Auth::user()->transactionLogs()->with('category')
             ->whereHas('category', function($q) {
-                $q->whereIn('category_name', ['Dapat Hutangan', 'Ngasih Piutang']);
+                $q->whereIn('category_name', [
+                    'Dapat Hutangan',
+                    'Bayar Cicilan Hutang',
+                    'Ngasih Piutang',
+                    'Terima Bayar Piutang'
+                ]);
             })
             ->whereNotNull('subject')
             ->where('subject', '!=', '-')
-            ->pluck('subject');
+            ->get();
 
-        $debtSubjects = $rawSubjects->map(function($s) {
-            return trim($s);
-        })->unique(function ($item) {
-            return strtolower($item);
-        })->values();
+        $debtBalances = [];
+        $receivableBalances = [];
+
+        foreach ($transactions as $tx) {
+            $subject = trim($tx->subject);
+            $subjectKey = strtolower($subject);
+            $catName = $tx->category->category_name;
+
+            if (!isset($debtBalances[$subjectKey])) {
+                $debtBalances[$subjectKey] = ['name' => $subject, 'balance' => 0];
+            }
+            if (!isset($receivableBalances[$subjectKey])) {
+                $receivableBalances[$subjectKey] = ['name' => $subject, 'balance' => 0];
+            }
+
+            if ($catName === 'Dapat Hutangan') {
+                $debtBalances[$subjectKey]['balance'] += $tx->amount;
+            } elseif ($catName === 'Bayar Cicilan Hutang') {
+                $debtBalances[$subjectKey]['balance'] -= $tx->amount;
+            } elseif ($catName === 'Ngasih Piutang') {
+                $receivableBalances[$subjectKey]['balance'] += $tx->amount;
+            } elseif ($catName === 'Terima Bayar Piutang') {
+                $receivableBalances[$subjectKey]['balance'] -= $tx->amount;
+            }
+        }
+
+        $activeDebtSubjects = collect($debtBalances)
+            ->filter(fn($item) => $item['balance'] > 0)
+            ->pluck('name')
+            ->values()
+            ->all();
+
+        $activeReceivableSubjects = collect($receivableBalances)
+            ->filter(fn($item) => $item['balance'] > 0)
+            ->pluck('name')
+            ->values()
+            ->all();
 
         return Inertia::render('Transactions/Edit', [
             'transaction' => $transaction,
             'wallets' => $wallets,
             'systemWallets' => $systemWallets,
             'categories' => $categories,
-            'debtSubjects' => $debtSubjects,
+            'debtSubjects' => $activeDebtSubjects,
+            'receivableSubjects' => $activeReceivableSubjects,
         ]);
     }
 

@@ -29,28 +29,27 @@ class DummyDataSeeder extends Seeder
         $this->call(TransactionTypeSeeder::class);
         $types = TransactionType::all()->pluck('id', 'name');
 
-        // 3. Create Wallets (9 wallets)
-        $wallets = [
-            ['name' => 'Dompet Utama', 'balance' => 5000000, 'group_type' => 'Liquid', 'icon' => '💰'],
-            ['name' => 'BCA', 'balance' => 10000000, 'group_type' => 'Liquid', 'icon' => '💳'],
-            ['name' => 'Mandiri', 'balance' => 2500000, 'group_type' => 'Liquid', 'icon' => '💳'],
-            ['name' => 'Tabungan Rumah', 'balance' => 50000000, 'group_type' => 'Asset', 'icon' => '🏠'],
-            ['name' => 'Investasi Saham', 'balance' => 15000000, 'group_type' => 'Asset', 'icon' => '📈'],
-            ['name' => 'Merchant', 'balance' => 0, 'group_type' => 'System', 'icon' => '🏪'],
-            ['name' => 'External', 'balance' => 0, 'group_type' => 'System', 'icon' => '🌍'],
-            ['name' => 'Hutang System', 'balance' => 0, 'group_type' => 'System', 'icon' => '🤝'],
-            ['name' => 'Piutang System', 'balance' => 0, 'group_type' => 'System', 'icon' => '📄'],
-        ];
+        // 3. Get or Create Wallets
+        $createdWallets = Wallet::where('user_id', $user->id)->get()->keyBy('name')->all();
+        if (empty($createdWallets)) {
+            $wallets = [
+                ['name' => 'Dompet Utama', 'balance' => 5000000, 'group_type' => 'Liquid', 'icon' => '💰'],
+                ['name' => 'BCA', 'balance' => 10000000, 'group_type' => 'Liquid', 'icon' => '💳'],
+                ['name' => 'Mandiri', 'balance' => 2500000, 'group_type' => 'Liquid', 'icon' => '💳'],
+                ['name' => 'Tabungan Rumah', 'balance' => 50000000, 'group_type' => 'Asset', 'icon' => '🏠'],
+                ['name' => 'Investasi Saham', 'balance' => 15000000, 'group_type' => 'Asset', 'icon' => '📈'],
+                ['name' => 'Merchant', 'balance' => 0, 'group_type' => 'System', 'icon' => '🏪'],
+                ['name' => 'External', 'balance' => 0, 'group_type' => 'System', 'icon' => '🌍'],
+                ['name' => 'Hutang System', 'balance' => 0, 'group_type' => 'System', 'icon' => '🤝'],
+                ['name' => 'Piutang System', 'balance' => 0, 'group_type' => 'System', 'icon' => '📄'],
+            ];
 
-        $createdWallets = [];
-        foreach ($wallets as $w) {
-            $createdWallets[$w['name']] = Wallet::updateOrCreate(
-                ['user_id' => $user->id, 'name' => $w['name']],
-                $w
-            );
+            foreach ($wallets as $w) {
+                $createdWallets[$w['name']] = Wallet::create(array_merge($w, ['user_id' => $user->id]));
+            }
         }
 
-        // 4. Create Categories (10 Income, 40 Expense)
+        // 4. Get or Create Categories
         $categories = [
             // Income (10)
             ['name' => 'Gaji', 'type' => 'Income', 'icon' => '💵'],
@@ -118,17 +117,25 @@ class DummyDataSeeder extends Seeder
             ['name' => 'Terima Bayar Piutang', 'type' => 'Receivable', 'icon' => '💰'],
         ];
 
-        $createdCategories = [];
-        foreach ($categories as $c) {
-            $createdCategories[$c['name']] = Category::updateOrCreate(
-                ['user_id' => $user->id, 'category_name' => $c['name']],
-                [
+        $createdCategories = Category::where('user_id', $user->id)->get()->keyBy('category_name')->all();
+        if (empty($createdCategories)) {
+            foreach ($categories as $c) {
+                $createdCategories[$c['name']] = Category::create([
+                    'user_id' => $user->id,
+                    'category_name' => $c['name'],
                     'type_id' => $types[$c['type']],
                     'icon' => $c['icon'],
                     'is_active' => true,
-                ]
-            );
+                ]);
+            }
         }
+
+        // Liquid wallets pool for easy picking
+        $liquidWallets = [
+            $createdWallets['Dompet Utama'],
+            $createdWallets['BCA'],
+            $createdWallets['Mandiri']
+        ];
 
         // Delete existing transactions for the user to start fresh
         TransactionLog::where('user_id', $user->id)->delete();
@@ -164,41 +171,40 @@ class DummyDataSeeder extends Seeder
                 $catName = $incomeCats[array_rand($incomeCats)]['name'];
                 $cat = $createdCategories[$catName];
                 $source = $createdWallets['External'];
-                $dest = array_values($createdWallets)[rand(0, 2)];
+                $dest = $liquidWallets[rand(0, count($liquidWallets) - 1)];
             } elseif ($typeName === 'Expense') {
                 $expenseCats = array_values(array_filter($categories, fn($c) => $c['type'] === 'Expense'));
                 $catName = $expenseCats[array_rand($expenseCats)]['name'];
                 $cat = $createdCategories[$catName];
-                $source = array_values($createdWallets)[rand(0, 2)];
+                $source = $liquidWallets[rand(0, count($liquidWallets) - 1)];
                 $dest = $createdWallets['Merchant'];
             } elseif ($typeName === 'Transfer') {
                 $cat = $createdCategories['Transfer Saldo'];
-                $walletsPool = [$createdWallets['Dompet Utama'], $createdWallets['BCA'], $createdWallets['Mandiri']];
-                $source = $walletsPool[array_rand($walletsPool)];
+                $source = $liquidWallets[rand(0, count($liquidWallets) - 1)];
                 do {
-                    $dest = $walletsPool[array_rand($walletsPool)];
+                    $dest = $liquidWallets[rand(0, count($liquidWallets) - 1)];
                 } while ($dest->id === $source->id);
             } elseif ($typeName === 'Debt') {
                 $isGettingDebt = rand(0, 1) === 1;
                 if ($isGettingDebt) {
                     $cat = $createdCategories['Dapat Hutangan'];
                     $source = $createdWallets['Hutang System'];
-                    $dest = array_values($createdWallets)[rand(0, 2)];
+                    $dest = $liquidWallets[rand(0, count($liquidWallets) - 1)];
                 } else {
                     $cat = $createdCategories['Bayar Cicilan Hutang'];
-                    $source = array_values($createdWallets)[rand(0, 2)];
+                    $source = $liquidWallets[rand(0, count($liquidWallets) - 1)];
                     $dest = $createdWallets['Hutang System'];
                 }
             } elseif ($typeName === 'Receivable') {
                 $isGivingReceivable = rand(0, 1) === 1;
                 if ($isGivingReceivable) {
                     $cat = $createdCategories['Ngasih Piutang'];
-                    $source = array_values($createdWallets)[rand(0, 2)];
+                    $source = $liquidWallets[rand(0, count($liquidWallets) - 1)];
                     $dest = $createdWallets['Piutang System'];
                 } else {
                     $cat = $createdCategories['Terima Bayar Piutang'];
                     $source = $createdWallets['Piutang System'];
-                    $dest = array_values($createdWallets)[rand(0, 2)];
+                    $dest = $liquidWallets[rand(0, count($liquidWallets) - 1)];
                 }
             }
 
