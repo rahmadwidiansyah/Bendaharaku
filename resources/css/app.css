@@ -1,7 +1,16 @@
 @import url('https://googleapis.com');
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@plugin "@tailwindcss/forms";
+
+@theme {
+    --font-sans: "MesloLGL Nerd Font", sans-serif;
+    
+    --text-3xs: 0.5rem;
+    --text-3xs--line-height: 0.625rem;
+    
+    --text-2xs: 0.625rem;
+    --text-2xs--line-height: 0.75rem;
+}
 
 @layer base {
     /* Mencegah background input berubah menjadi putih saat autofill di browser WebKit (Chrome, Safari, dll) */

@@ -86,128 +86,179 @@ const deleteUser = () => {
 
 <template>
     <AuthenticatedLayout :fullWidth="true">
+
         <Head title="Profil Saya" />
 
-        <div class="fixed top-[-10%] left-[50%] -translate-x-1/2 w-[400px] h-[400px] bg-[#FCA5FF] blur-[150px] opacity-[0.15] rounded-full pointer-events-none z-0"></div>
+        <div
+            class="fixed top-[-10%] left-[50%] -translate-x-1/2 w-[400px] h-[400px] bg-purple-500 blur-[150px] opacity-[0.15] rounded-full pointer-events-none z-0">
+        </div>
 
         <div class="p-5 pb-32 w-full lg:max-w-4xl mx-auto lg:px-8 relative z-10 animate-slide-up">
-            
+
             <header class="flex justify-between items-center mb-10 pt-4">
                 <h1 class="text-3xl font-bold text-white tracking-tight">Profil Saya</h1>
-                <Link :href="route('dashboard')" class="w-12 h-12 rounded-xl bg-[#1A1A1A] border border-[#262626] flex items-center justify-center text-gray-400 hover:text-white active:scale-95 transition-all shadow-inner">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                <Link :href="route('dashboard')"
+                    class="w-12 h-12 rounded-xl bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white active:scale-95 transition-all">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                 </Link>
             </header>
 
             <form @submit.prevent="updateProfile" class="space-y-6">
-                
+
                 <div class="flex flex-col items-center mb-8">
                     <div class="relative mb-5 group">
-                        <div class="absolute inset-0 bg-[#FCA5FF]/20 rounded-full blur-xl scale-90 group-hover:scale-110 transition-all duration-300"></div>
-                        
-                        <div class="relative w-28 h-28 rounded-full border-4 border-[#1A1A1A] p-0.5 bg-[#121212] shadow-2xl overflow-hidden flex items-center justify-center group-hover:border-[#FCA5FF] transition-colors duration-300">
-                            <img :src="currentAvatarDisplay" :alt="user.name" class="w-full h-full object-cover rounded-full" style="transition: opacity 0.3s; opacity: 1;">
-                            
-                            <label for="avatar_file" class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer text-white/90 backdrop-blur-sm">
-                                <svg class="w-7 h-7 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+
+                        <div
+                            class="relative w-28 h-28 rounded-full border-4 border-gray-900 p-0.5 shadow-2xl overflow-hidden flex items-center justify-center group-hover:border-purple-500 transition-colors duration-300">
+                            <img :src="currentAvatarDisplay" :alt="user.name"
+                                class="w-full h-full object-cover rounded-full"
+                                style="transition: opacity 0.3s; opacity: 1;">
+
+                            <label for="avatar_file"
+                                class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer text-white/90 backdrop-blur-sm">
+                                <svg class="w-7 h-7 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
                                 <span class="text-[9px] font-bold uppercase tracking-widest">Pilih Foto</span>
                             </label>
                         </div>
                     </div>
-                    
+
                     <input type="file" id="avatar_file" accept="image/*" class="hidden" @change="handleAvatarChange">
-                    <div v-if="profileForm.errors.avatar_file" class="mt-2 text-xs text-red-500 font-bold">{{ profileForm.errors.avatar_file }}</div>
+                    <div v-if="profileForm.errors.avatar_file" class="mt-2 text-2xs text-red-500 font-bold">{{
+                        profileForm.errors.avatar_file }}</div>
                 </div>
 
-                <a v-if="!user.google_id" :href="route('google.login')" class="flex items-center justify-center gap-3 bg-[#1A1A1A] text-white border border-[#333] text-[11px] font-bold px-6 py-4 rounded-xl uppercase tracking-widest active:scale-95 transition-all hover:border-gray-500 mb-6">
-                    <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" alt="Google" class="w-4 h-4">
+                <a v-if="!user.google_id" :href="route('google.login')"
+                    class="flex items-center justify-center gap-3 bg-linear-to-br from-gray-900 to-gray-800 text-white border border-white/10 text-xs font-bold px-6 py-4 rounded-xl uppercase tracking-widest active:scale-95 transition-all hover:border-gray-500 mb-6">
+                    <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" alt="Google"
+                        class="w-4 h-4">
                     Hubungkan Akun Google
                 </a>
-                <div v-else class="text-center py-3.5 px-4 bg-green-500/10 border border-green-500/20 rounded-xl text-xs text-green-400 font-bold uppercase tracking-widest flex items-center justify-center gap-2 mb-6">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"></path></svg>
+                <div v-else
+                    class="text-center py-3.5 px-4 bg-green-500/10 border border-green-500/20 rounded-xl text-2xs text-green-400 font-bold uppercase tracking-widest flex items-center justify-center gap-2 mb-6">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z">
+                        </path>
+                    </svg>
                     Terkoneksi dengan Google
                 </div>
 
                 <div class="space-y-5">
                     <div>
-                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Nama Lengkap</label>
-                        <input type="text" v-model="profileForm.name" required 
-                            class="w-full bg-[#1A1A1A] border border-[#333] text-white rounded-xl p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[#FCA5FF] transition-all">
-                        <div v-if="profileForm.errors.name" class="mt-2 text-xs text-red-500 font-bold">{{ profileForm.errors.name }}</div>
+                        <label class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Nama
+                            Lengkap</label>
+                        <input type="text" v-model="profileForm.name" required
+                            class="w-full bg-linear-to-br from-gray-800 to-gray-900 text-white border border-white/10 rounded-xl p-4 text-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 transition-all caret-purple-500">
+                        <div v-if="profileForm.errors.name" class="mt-2 text-2xs text-red-500 font-bold">{{
+                            profileForm.errors.name }}</div>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Email</label>
-                        <input type="email" v-model="profileForm.email" required 
-                            class="w-full bg-[#1A1A1A] border border-[#333] text-white rounded-xl p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[#FCA5FF] transition-all">
-                        <div v-if="profileForm.errors.email" class="mt-2 text-xs text-red-500 font-bold">{{ profileForm.errors.email }}</div>
+                        <label
+                            class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Email</label>
+                        <input type="email" v-model="profileForm.email" required
+                            class="w-full bg-linear-to-br from-gray-900 to-gray-800 text-white border border-white/10 rounded-xl p-4 text-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 transition-all caret-purple-500">
+                        <div v-if="profileForm.errors.email" class="mt-2 text-2xs text-red-500 font-bold">{{
+                            profileForm.errors.email }}</div>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">WhatsApp</label>
+                        <label
+                            class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">WhatsApp</label>
                         <input type="text" v-model="profileForm.whatsapp_number" placeholder="0812..."
-                            class="w-full bg-[#1A1A1A] border border-[#333] text-white rounded-xl p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[#FCA5FF] transition-all">
-                        <div v-if="profileForm.errors.whatsapp_number" class="mt-2 text-xs text-red-500 font-bold">{{ profileForm.errors.whatsapp_number }}</div>
+                            class="w-full bg-linear-to-br from-gray-800 to-gray-900 text-white border border-white/10 rounded-xl p-4 text-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 transition-all caret-purple-500">
+                        <div v-if="profileForm.errors.whatsapp_number" class="mt-2 text-2xs text-red-500 font-bold">{{
+                            profileForm.errors.whatsapp_number }}</div>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Telegram</label>
+                        <label
+                            class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Telegram</label>
                         <input type="text" v-model="profileForm.telegram_id" placeholder="@username"
-                            class="w-full bg-[#1A1A1A] border border-[#333] text-white rounded-xl p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[#FCA5FF] transition-all">
-                        <div v-if="profileForm.errors.telegram_id" class="mt-2 text-xs text-red-500 font-bold">{{ profileForm.errors.telegram_id }}</div>
+                            class="w-full bg-linear-to-br from-gray-900 to-gray-800 text-white border border-white/10 rounded-xl p-4 text-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 transition-all caret-purple-500">
+                        <div v-if="profileForm.errors.telegram_id" class="mt-2 text-2xs text-red-500 font-bold">{{
+                            profileForm.errors.telegram_id }}</div>
                     </div>
 
-                    <div v-if="status === 'profile-updated'" class="text-green-400 text-xs font-bold mt-2 ml-1">Profil berhasil diperbarui.</div>
+                    <div v-if="status === 'profile-updated'" class="text-green-400 text-2xs font-bold mt-2 ml-1">Profil
+                        berhasil diperbarui.</div>
 
-                    <button type="submit" :disabled="profileForm.processing" class="w-full bg-[#FCA5FF] text-[#121212] font-bold text-sm uppercase tracking-widest py-4 rounded-xl shadow-[0_0_20px_rgba(252,165,255,0.2)] active:scale-95 transition-transform mt-6">
+                    <button type="submit" :disabled="profileForm.processing"
+                        class="w-full bg-linear-to-br from-purple-800 to-purple-600 text-white font-bold text-sm uppercase tracking-widest py-4 rounded-xl active:scale-95 transition-transform mt-6 hover:-translate-y-1">
                         Simpan Perubahan
                     </button>
                 </div>
             </form>
 
-            <div class="mt-10 mb-10 pt-8 border-t border-[#262626]">
+            <div class="mt-10 mb-10 pt-8 border-t border-white/10">
                 <h3 class="text-lg font-bold text-white mb-6 tracking-tight">Ubah Password</h3>
-                
+
                 <form @submit.prevent="updatePassword" class="space-y-5">
                     <div>
-                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Password Saat Ini</label>
-                        <input type="password" v-model="passwordForm.current_password" required class="w-full bg-[#1A1A1A] border border-[#333] text-white rounded-xl p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[#FCA5FF] transition-all">
-                        <div v-if="passwordForm.errors.current_password" class="mt-2 text-xs text-red-500 font-bold">{{ passwordForm.errors.current_password }}</div>
+                        <label
+                            class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Password
+                            Saat Ini</label>
+                        <input type="password" v-model="passwordForm.current_password" required
+                            class="w-full bg-linear-to-br from-gray-900 to-gray-800 text-white border border-white/10 rounded-xl p-4 text-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 transition-all caret-purple-500">
+                        <div v-if="passwordForm.errors.current_password" class="mt-2 text-2xs text-red-500 font-bold">{{
+                            passwordForm.errors.current_password }}</div>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Password Baru</label>
-                        <input type="password" v-model="passwordForm.password" required class="w-full bg-[#1A1A1A] border border-[#333] text-white rounded-xl p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[#FCA5FF] transition-all">
-                        <div v-if="passwordForm.errors.password" class="mt-2 text-xs text-red-500 font-bold">{{ passwordForm.errors.password }}</div>
+                        <label
+                            class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Password
+                            Baru</label>
+                        <input type="password" v-model="passwordForm.password" required
+                            class="w-full bg-linear-to-br from-gray-800 to-gray-900 text-white border border-white/10 rounded-xl p-4 text-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 transition-all caret-purple-500">
+                        <div v-if="passwordForm.errors.password" class="mt-2 text-2xs text-red-500 font-bold">{{
+                            passwordForm.errors.password }}</div>
                     </div>
-                    
-                    <div v-if="page.props.status === 'password-updated'" class="text-green-400 text-xs font-bold mt-2 ml-1">Password berhasil diperbarui.</div>
 
-                    <button type="submit" :disabled="passwordForm.processing" class="w-full bg-[#1A1A1A] text-white border border-[#333] font-bold text-[11px] uppercase tracking-widest py-4 rounded-xl hover:border-[#FCA5FF] active:scale-95 transition-all mt-2">
+                    <div v-if="page.props.status === 'password-updated'"
+                        class="text-green-400 text-2xs font-bold mt-2 ml-1">Password berhasil diperbarui.</div>
+
+                    <button type="submit" :disabled="passwordForm.processing"
+                        class="w-full bg-linear-to-br from-purple-900 to-purple-800 text-white border border-white/10 font-bold text-xs uppercase tracking-widest py-4 rounded-xl hover:border-purple-500 active:scale-95 transition-all mt-2">
                         Update Password
                     </button>
                 </form>
             </div>
 
             <form @submit.prevent="useForm().post(route('logout'))" class="mb-10">
-                <button type="submit" class="w-full bg-[#1A1A1A] text-gray-400 border border-[#333] text-[11px] font-bold px-6 py-4 rounded-xl uppercase tracking-widest active:scale-95 transition-all hover:text-white hover:border-gray-500">
-                    🚪 Keluar dari Aplikasi
+                <button type="submit"
+                    class="w-full bg-linear-to-br from-red-900 to-red-800 text-white border border-white/10 font-bold text-[11px] uppercase tracking-widest py-4 rounded-xl hover:border-purple-500 active:scale-95 transition-all mt-2">
+                    Keluar dari Aplikasi
                 </button>
             </form>
 
-            <details class="group border-t border-[#262626] pt-6">
-                <summary class="list-none cursor-pointer text-xs text-gray-500 hover:text-red-400 font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-colors select-none">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+            <details class="group pt-6">
+                <summary
+                    class="list-none cursor-pointer text-2xs text-gray-500 hover:text-red-400 font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-colors select-none">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
                     <span class="group-open:hidden">Tampilkan Zona Berbahaya</span>
                     <span class="hidden group-open:block">Sembunyikan Zona Berbahaya</span>
                 </summary>
-                
+
                 <div class="mt-6 bg-red-950/20 border border-red-900/30 rounded-xl p-6 shadow-sm animate-slide-up">
                     <h4 class="text-red-400 font-bold text-sm mb-2">Hapus Akun Permanen</h4>
-                    <p class="text-xs text-gray-400 mb-5 leading-relaxed">Setelah dihapus, semua data keuangan, histori, dan pengaturan kamu akan musnah dan tidak dapat dipulihkan.</p>
-                    
+                    <p class="text-2xs text-gray-400 mb-5 leading-relaxed">Setelah dihapus, semua data keuangan,
+                        histori, dan pengaturan kamu akan musnah dan tidak dapat dipulihkan.</p>
+
                     <form @submit.prevent="deleteUser">
-                        <div v-if="deleteForm.errors.password" class="mb-4 text-xs text-red-500 font-bold">{{ deleteForm.errors.password }}</div>
-                        <button type="submit" :disabled="deleteForm.processing" class="w-full bg-red-900/40 border border-red-900/50 text-red-200 font-bold text-xs uppercase tracking-widest py-3.5 rounded-xl active:scale-95 transition-all hover:bg-red-600 hover:text-white">
+                        <div v-if="deleteForm.errors.password" class="mb-4 text-2xs text-red-500 font-bold">{{
+                            deleteForm.errors.password }}</div>
+                        <button type="submit" :disabled="deleteForm.processing"
+                            class="w-full bg-red-900/40 border border-red-900/50 text-red-200 font-bold text-2xs uppercase tracking-widest py-3.5 rounded-xl active:scale-95 transition-all hover:bg-red-600 hover:text-white">
                             Ya, Hapus Akun Saya
                         </button>
                     </form>
@@ -220,7 +271,23 @@ const deleteUser = () => {
 </template>
 
 <style scoped>
-@keyframes slide-up { from { transform: translateY(15px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-.animate-slide-up { animation: slide-up 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
-details > summary::-webkit-details-marker { display: none; }
+@keyframes slide-up {
+    from {
+        transform: translateY(15px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.animate-slide-up {
+    animation: slide-up 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+details>summary::-webkit-details-marker {
+    display: none;
+}
 </style>
