@@ -11,6 +11,7 @@ const props = defineProps({
     categories: Array,
     systemWallets: Array,
     debtSubjects: Array,
+    receivableSubjects: Array,
 });
 
 const form = useForm({
@@ -116,7 +117,16 @@ const selectedCategory = computed(() => {
     return props.categories.find(c => c.id === form.category_id);
 });
 
-const showKeypad = ref(true);
+const activeSubjects = computed(() => {
+    if (activeType.value === 'Debt') {
+        return props.debtSubjects || [];
+    } else if (activeType.value === 'Receivable') {
+        return props.receivableSubjects || [];
+    }
+    return [];
+});
+
+const showKeypad = ref(!isDesktopLayout.value);
 const showBottomPanel = ref(true);
 const showDateModal = ref(false);
 const dateModalTarget = ref('transaction');
@@ -351,8 +361,8 @@ const handleBack = () => {
 
         <div :class="[
             'flex flex-col bg-gray-800 w-full text-white overflow-hidden',
-            'fixed inset-0 z-[60] h-[100dvh] max-h-[100dvh]',
-            isDesktopLayout ? 'lg:relative lg:inset-auto lg:z-0 lg:h-screen lg:max-h-[100vh]' : ''
+            'fixed inset-0 z-60 h-dvh max-h-dvh',
+            isDesktopLayout ? 'lg:relative lg:inset-auto lg:z-0 lg:h-screen lg:max-h-screen' : ''
         ]" style="padding-bottom: env(safe-area-inset-bottom)">
 
             <div class="flex flex-col h-full w-full max-w-md mx-auto relative bg-gray-800 overflow-hidden">
@@ -360,10 +370,10 @@ const handleBack = () => {
 
                     <div class="px-4 pt-6 md:pt-10 pb-2 shrink-0 flex gap-2 items-stretch">
                         <div
-                            class="flex-1 flex bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-1.5 border border-white/10 overflow-x-auto no-scrollbar gap-1">
+                            class="flex-1 flex bg-linear-to-br from-gray-900 to-gray-800 rounded-xl p-1.5 border border-white/10 overflow-x-auto no-scrollbar gap-1">
                             <button v-for="t in ['Expense', 'Income', 'Transfer', 'Debt', 'Receivable']" :key="t"
                                 @click="setMainTab(t)" type="button"
-                                :class="['flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap overflow-hidden', mainTab === t ? 'bg-gray-800 text-purple-500 border border-white/10 flex-1 px-3' : 'text-gray-500 hover:text-white px-3']">
+                                :class="['flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-2xs font-bold uppercase tracking-wider transition-all whitespace-nowrap overflow-hidden', mainTab === t ? 'bg-gray-800 text-purple-500 border border-white/10 flex-1 px-3' : 'text-gray-500 hover:text-white px-3']">
 
                                 <template v-if="t === 'Expense'">
                                     <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"
@@ -409,7 +419,7 @@ const handleBack = () => {
                             </button>
                         </div>
                         <button type="button" @click="handleBack"
-                            class="w-[46px] shrink-0 flex items-center justify-center text-red-400 active:scale-95 transition-transform bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 hover:bg-red-500/10 hover:text-red-300"
+                            class="w-[46px] shrink-0 flex items-center justify-center text-red-400 active:scale-95 transition-transform bg-linear-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 hover:bg-red-500/10 hover:text-red-300"
                             title="Tutup">
                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -420,7 +430,7 @@ const handleBack = () => {
                     <div v-if="['Expense', 'Income'].includes(mainTab)" class="px-4 py-1 flex flex-col gap-2 shrink-0">
                         <div class="flex gap-2">
                             <Link :href="route('categories.create', { type: mainTab })"
-                                class="flex-1 flex items-center justify-center py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap bg-transparent text-purple-500 border border-white/10 hover:bg-gray-900">
+                                class="flex-1 flex items-center justify-center py-3 rounded-xl text-2xs font-bold transition-all whitespace-nowrap bg-transparent text-purple-500 border border-white/10 hover:bg-gray-900">
                                 + Kategori
                             </Link>
                         </div>
@@ -429,11 +439,11 @@ const handleBack = () => {
                     <div v-if="mainTab === 'Debt'" class="px-4 py-1 flex flex-col gap-2 shrink-0">
                         <div class="flex gap-2 transition-all">
                             <button type="button" @click="setDebtSubTab('income')"
-                                :class="['flex-1 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap', debtSubTab === 'income' ? 'bg-gradient-to-br from-gray-800 to-gray-900 text-purple-500 border border-white/10' : 'bg-transparent text-gray-400 border border-white/10 hover:text-gray-400']">
+                                :class="['flex-1 py-2 rounded-xl text-2xs font-bold transition-all whitespace-nowrap', debtSubTab === 'income' ? 'bg-linear-to-br from-gray-800 to-gray-900 text-purple-500 border border-white/10' : 'bg-transparent text-gray-400 border border-white/10 hover:text-gray-400']">
                                 Dapat Hutang
                             </button>
                             <button type="button" @click="setDebtSubTab('expense')"
-                                :class="['flex-1 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap', debtSubTab === 'expense' ? 'bg-gradient-to-br from-gray-800 to-gray-900 text-purple-500 border border-white/10' : 'bg-transparent text-gray-400 border border-white/10 hover:text-gray-400']">
+                                :class="['flex-1 py-2 rounded-xl text-2xs font-bold transition-all whitespace-nowrap', debtSubTab === 'expense' ? 'bg-linear-to-br from-gray-800 to-gray-900 text-purple-500 border border-white/10' : 'bg-transparent text-gray-400 border border-white/10 hover:text-gray-400']">
                                 Bayar Hutang
                             </button>
                         </div>
@@ -442,11 +452,11 @@ const handleBack = () => {
                     <div v-if="mainTab === 'Receivable'" class="px-4 py-1 flex flex-col gap-2 shrink-0">
                         <div class="flex gap-2 transition-all">
                             <button type="button" @click="setDebtSubTab('expense')"
-                                :class="['flex-1 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap', debtSubTab === 'expense' ? 'bg-gradient-to-br from-gray-800 to-gray-900 text-purple-500 border border-white/10' : 'bg-transparent text-gray-400 border border-white/10 hover:text-gray-400']">
+                                :class="['flex-1 py-2 rounded-xl text-2xs font-bold transition-all whitespace-nowrap', debtSubTab === 'expense' ? 'bg-linear-to-br from-gray-800 to-gray-900 text-purple-500 border border-white/10' : 'bg-transparent text-gray-400 border border-white/10 hover:text-gray-400']">
                                 Beri Piutang
                             </button>
                             <button type="button" @click="setDebtSubTab('income')"
-                                :class="['flex-1 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap', debtSubTab === 'income' ? 'bg-gradient-to-br from-gray-800 to-gray-900 text-purple-500 border border-white/10' : 'bg-transparent text-gray-400 border border-white/10 hover:text-gray-400']">
+                                :class="['flex-1 py-2 rounded-xl text-2xs font-bold transition-all whitespace-nowrap', debtSubTab === 'income' ? 'bg-linear-to-br from-gray-800 to-gray-900 text-purple-500 border border-white/10' : 'bg-transparent text-gray-400 border border-white/10 hover:text-gray-400']">
                                 Terima Piutang
                             </button>
                         </div>
@@ -470,7 +480,7 @@ const handleBack = () => {
                                 </svg>
                             </button>
                             <span
-                                class="text-xs font-bold text-gray-500 uppercase tracking-widest truncate max-w-fit text-center">{{
+                                class="text-2xs font-bold text-gray-500 uppercase tracking-widest truncate max-w-fit text-center">{{
                                     selectedSourceWallet ? selectedSourceWallet.name : 'Sumber' }}</span>
                         </div>
 
@@ -497,7 +507,7 @@ const handleBack = () => {
                                 </svg>
                             </button>
                             <span
-                                class="text-xs font-bold text-gray-500 uppercase tracking-widest truncate max-w-fit text-center">{{
+                                class="text-2xs font-bold text-gray-500 uppercase tracking-widest truncate max-w-fit text-center">{{
                                     selectedDestWallet ? selectedDestWallet.name : 'Tujuan' }}</span>
                         </div>
                     </div>
@@ -507,7 +517,7 @@ const handleBack = () => {
                         <div v-if="Object.keys(form.errors).length > 0"
                             class="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl">
                             <div v-for="(err, key) in form.errors" :key="key"
-                                class="text-red-400 text-xs font-bold flex items-center gap-1.5 mb-1 last:mb-0">
+                                class="text-red-400 text-2xs font-bold flex items-center gap-1.5 mb-1 last:mb-0">
                                 <svg class="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"
                                     stroke-width="3">
                                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -522,17 +532,17 @@ const handleBack = () => {
 
                             <div class="flex flex-col items-center">
                                 <label
-                                    class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 text-center">Pihak
+                                    class="text-2xs font-bold text-gray-500 uppercase tracking-widest mb-2 text-center">Pihak
                                     / Nama
                                     Terkait</label>
                                 <input type="text" v-model="form.subject" placeholder="Masukkan nama..."
-                                    class="w-full bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 focus:border-purple-500 rounded-xl px-4 py-3 text-center text-lg font-bold text-white focus:ring-0 placeholder-gray-700 transition-colors outline-none">
+                                    class="w-full bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 focus:border-purple-500 rounded-xl px-4 py-3 text-center text-lg font-bold text-white focus:ring-0 placeholder-gray-700 transition-colors outline-none">
 
-                                <div v-if="debtSubjects && debtSubjects.length > 0 && ((activeType === 'Debt' && debtSubTab === 'expense') || (activeType === 'Receivable' && debtSubTab === 'income'))"
+                                <div v-if="activeSubjects && activeSubjects.length > 0 && ((activeType === 'Debt' && debtSubTab === 'expense') || (activeType === 'Receivable' && debtSubTab === 'income'))"
                                     class="flex flex-wrap gap-2 justify-center mt-3">
-                                    <button type="button" v-for="sub in debtSubjects" :key="sub"
+                                    <button type="button" v-for="sub in activeSubjects" :key="sub"
                                         @click="form.subject = sub"
-                                        class="px-3 py-1.5 rounded-full text-[10px] font-bold border transition-all active:scale-95"
+                                        class="px-3 py-1.5 rounded-full text-2xs font-bold border transition-all active:scale-95"
                                         :class="form.subject === sub ? 'bg-purple-600/20 text-purple-400 border-purple-500/50' : 'bg-gray-800 text-gray-400 border-white/5 hover:bg-gray-700'">
                                         {{ sub }}
                                     </button>
@@ -546,7 +556,7 @@ const handleBack = () => {
                                         @change="form.due_date_type = $event.target.checked ? 'fixed' : null"
                                         class="rounded bg-gray-800 border-white/10 text-purple-600 focus:ring-purple-600">
                                     <label for="has_due"
-                                        class="text-xs font-bold text-purple-400 uppercase tracking-widest cursor-pointer">Ada
+                                        class="text-2xs font-bold text-purple-400 uppercase tracking-widest cursor-pointer">Ada
                                         Jatuh
                                         Tempo?</label>
                                 </div>
@@ -554,13 +564,13 @@ const handleBack = () => {
                                 <template v-if="form.due_date_type !== null">
                                     <div class="w-full flex gap-2 mb-3">
                                         <button type="button" @click="form.due_date_type = 'fixed'"
-                                            :class="['flex-1 py-2 text-xs font-bold uppercase rounded-lg transition-all', form.due_date_type === 'fixed' ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-500']">Tgl
+                                            :class="['flex-1 py-2 text-2xs font-bold uppercase rounded-lg transition-all', form.due_date_type === 'fixed' ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-500']">Tgl
                                             Pasti</button>
                                         <button type="button" @click="form.due_date_type = 'monthly'"
-                                            :class="['flex-1 py-2 text-xs font-bold uppercase rounded-lg transition-all', form.due_date_type === 'monthly' ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-500']">Tiap
+                                            :class="['flex-1 py-2 text-2xs font-bold uppercase rounded-lg transition-all', form.due_date_type === 'monthly' ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-500']">Tiap
                                             Bulan</button>
                                         <button type="button" @click="form.due_date_type = 'daily'"
-                                            :class="['flex-1 py-2 text-xs font-bold uppercase rounded-lg transition-all', form.due_date_type === 'daily' ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-500']">Per
+                                            :class="['flex-1 py-2 text-2xs font-bold uppercase rounded-lg transition-all', form.due_date_type === 'daily' ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-500']">Per
                                             Hari</button>
                                     </div>
 
@@ -585,7 +595,7 @@ const handleBack = () => {
 
                                     <div v-if="form.due_date_type === 'monthly'"
                                         class="w-full flex flex-col gap-2 items-center">
-                                        <label class="text-xs text-gray-500">Tanggal Jatuh Tempo (1-31)</label>
+                                        <label class="text-2xs text-gray-500">Tanggal Jatuh Tempo (1-31)</label>
                                         <input type="number" min="1" max="31" v-model="form.due_date_interval"
                                             placeholder="15"
                                             class="w-full bg-gray-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:ring-0 focus:border-purple-500 text-center">
@@ -593,7 +603,7 @@ const handleBack = () => {
 
                                     <div v-if="form.due_date_type === 'daily'"
                                         class="w-full flex flex-col gap-2 items-center">
-                                        <label class="text-xs text-gray-500">Siklus Per Berapa Hari?</label>
+                                        <label class="text-2xs text-gray-500">Siklus Per Berapa Hari?</label>
                                         <input type="number" min="1" v-model="form.due_date_interval" placeholder="7"
                                             class="w-full bg-gray-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:ring-0 focus:border-purple-500 text-center">
                                     </div>
@@ -604,28 +614,28 @@ const handleBack = () => {
                         <div v-else-if="mainTab !== 'Transfer'" class="grid grid-cols-4 gap-3 m-3 justify-center">
                             <div v-for="cat in activeCategories" :key="cat.id" @click="selectCategory(cat)"
                                 :class="['flex flex-col items-center justify-center p-2 rounded-xl border transition-all cursor-pointer h-[80px] w-[80px]',
-                                    form.category_id === cat.id ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-purple-500' : 'bg-transparent border-white/10 hover:border-white/20']">
+                                    form.category_id === cat.id ? 'bg-linear-to-br from-gray-800 to-gray-900 border-purple-500' : 'bg-transparent border-white/10 hover:border-white/20']">
                                 <img v-if="cat.icon.includes('.')" :src="'/storage/' + cat.icon"
                                     class="w-6 h-6 object-cover mb-1.5">
                                 <span v-else class="text-lg mb-1">{{ cat.icon }}</span>
                                 <span
-                                    :class="['text-[10px] font-bold text-center leading-tight w-full px-0.5 line-clamp-2 text-wrap break-words', form.category_id === cat.id ? 'text-white' : 'text-gray-500']">{{
+                                    :class="['text-2xs font-bold text-center leading-tight w-full px-0.5 line-clamp-2 text-wrap warp-break-words', form.category_id === cat.id ? 'text-white' : 'text-gray-500']">{{
                                         cat.category_name }}</span>
                             </div>
                         </div>
                     </div>
 
                     <button v-if="!showBottomPanel" type="button" @click="showBottomPanel = true"
-                        class="flex absolute bottom-8 left-1/2 -translate-x-1/2 z-50 px-2 py-3 bg-gradient-to-br from-gray-900 to-gray-800 text-gray-500 border border-white/10 font-bold rounded-xl active:scale-95 transition-transform items-center gap-2 hover:text-white shadow-xl"
+                        class="flex absolute bottom-8 left-1/2 -translate-x-1/2 z-50 px-2 py-3 bg-linear-to-br from-gray-900 to-gray-800 text-gray-500 border border-white/10 font-bold rounded-xl active:scale-95 transition-transform items-center gap-2 hover:text-white shadow-xl"
                         title="Tampilkan Panel">
 
                         <span>Tampilkan Panel Input</span>
                     </button>
 
                     <div v-show="showBottomPanel"
-                        class="bg-gradient-to-br from-gray-800 to-gray-900 border-t border-white/10 rounded-t-xl md:border md:rounded-xl md:mb-10 md:mx-4 p-4 z-20 shrink-0 relative transition-all">
+                        class="bg-linear-to-br from-gray-800 to-gray-900 border-t border-white/10 rounded-t-xl md:border md:rounded-xl md:mb-10 md:mx-4 p-4 z-20 shrink-0 relative transition-all">
                         <div
-                            class="flex flex-wrap items-center gap-x-2 gap-y-1 mb-2 bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-1.5 pr-3 border border-white/10">
+                            class="flex flex-wrap items-center gap-x-2 gap-y-1 mb-2 bg-linear-to-br from-gray-900 to-gray-800 rounded-xl p-1.5 pr-3 border border-white/10">
                             <button type="button" @click="openWalletModal(isMoneyIn ? 'dest' : 'source')"
                                 class="w-10 h-10 flex items-center justify-center shrink-0 active:scale-95 transition-transform overflow-hidden relative rounded-lg"
                                 title="Pilih Dompet">
@@ -667,7 +677,7 @@ const handleBack = () => {
 
                         <div class="flex gap-2 mb-2">
                             <div @click="dateModalTarget = 'transaction'; showDateModal = true"
-                                class="flex-1 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-gray-500 relative overflow-hidden cursor-pointer h-12">
+                                class="flex-1 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl flex items-center justify-center gap-2 text-2xs font-bold text-gray-500 relative overflow-hidden cursor-pointer h-12">
                                 <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"
                                     stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -681,7 +691,7 @@ const handleBack = () => {
                                         }) }}</span>
                             </div>
                             <button type="button" @click="showKeypad = !showKeypad"
-                                class="flex w-12 h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-transform"
+                                class="flex w-12 h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-transform"
                                 :title="showKeypad ? 'Sembunyikan Keypad' : 'Tampilkan Keypad'">
                                 <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
                                     width="24px" fill="#ad46ff"
@@ -690,7 +700,7 @@ const handleBack = () => {
                                 </svg>
                             </button>
                             <button type="button" @click="showBottomPanel = false"
-                                class="flex w-12 h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-transform"
+                                class="flex w-12 h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-transform"
                                 title="Sembunyikan Panel">
                                 <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
                                     width="24px" fill="#ff6467">
@@ -699,14 +709,14 @@ const handleBack = () => {
                                 </svg>
                             </button>
                             <button type="button" @click="submitAndClose"
-                                class="w-12 h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-transform"
+                                class="w-12 h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-transform"
                                 title="Simpan & Tambah Lagi">
                                 <div
-                                    class="w-6 h-6 rounded-full border-[2px] border-green-300 flex items-center justify-center text-green-300 text-xl leading-none font-black pt-0.5">
+                                    class="w-6 h-6 rounded-full border-2 border-green-300 flex items-center justify-center text-green-300 text-xl leading-none font-black pt-0.5">
                                     +</div>
                             </button>
                             <button type="button" @click="submitAndStay"
-                                class="w-[60px] h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl flex items-center justify-center text-green-500 shrink-0 active:scale-95 transition-transform"
+                                class="w-[60px] h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl flex items-center justify-center text-green-500 shrink-0 active:scale-95 transition-transform"
                                 title="Simpan & Tutup">
                                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"
                                     stroke-width="3">
@@ -717,42 +727,42 @@ const handleBack = () => {
 
                         <div v-show="showKeypad" class="grid grid-cols-3 gap-y-2 gap-x-4">
                             <button @click="handleKeypad('7')" type="button"
-                                class="h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">7</button>
+                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">7</button>
                             <button @click="handleKeypad('8')" type="button"
-                                class="h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">8</button>
+                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">8</button>
                             <button @click="handleKeypad('9')" type="button"
-                                class="h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">9</button>
+                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">9</button>
                             <button @click="handleKeypad('4')" type="button"
-                                class="h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">4</button>
+                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">4</button>
                             <button @click="handleKeypad('5')" type="button"
-                                class="h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">5</button>
+                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">5</button>
                             <button @click="handleKeypad('6')" type="button"
-                                class="h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">6</button>
+                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">6</button>
                             <button @click="handleKeypad('1')" type="button"
-                                class="h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">1</button>
+                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">1</button>
                             <button @click="handleKeypad('2')" type="button"
-                                class="h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">2</button>
+                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">2</button>
                             <button @click="handleKeypad('3')" type="button"
-                                class="h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">3</button>
+                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">3</button>
                             <button @click="handleKeypad('del')" type="button"
-                                class="h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl flex items-center justify-center relative">
+                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl flex items-center justify-center relative">
                                 <div class="w-8 h-8 flex items-center justify-center"> <svg class="w-4 h-4 text-red-500"
                                         fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                                     </svg> </div>
                             </button>
                             <button @click="handleKeypad('0')" type="button"
-                                class="h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">0</button>
+                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">0</button>
                         </div>
                     </div>
                 </form>
             </div>
 
             <div v-if="showDateModal"
-                class="fixed inset-0 z-[100] flex flex-col justify-end bg-black/70 backdrop-blur-sm"
+                class="fixed inset-0 z-100 flex flex-col justify-end bg-black/70 backdrop-blur-sm"
                 @click.self="showDateModal = false">
                 <div
-                    class="w-full max-w-md mx-auto bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-t-2xl p-5 pb-safe animate-slide-up">
+                    class="w-full max-w-md mx-auto bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-t-2xl p-5 pb-safe animate-slide-up">
                     <div class="w-12 h-1.5 bg-white/20 rounded-xl mx-auto mb-4 cursor-pointer"
                         @click="showDateModal = false">
                     </div>
@@ -772,7 +782,7 @@ const handleBack = () => {
                         </div>
 
                         <div
-                            class="w-full bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-4 shadow-inner">
+                            class="w-full bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-4 shadow-inner">
                             <div class="flex justify-between items-center mb-4">
                                 <button type="button" @click="prevMonth"
                                     class="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors active:scale-95">
@@ -795,7 +805,7 @@ const handleBack = () => {
 
                             <div class="grid grid-cols-7 mb-2">
                                 <span v-for="d in ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']" :key="d"
-                                    class="text-center text-[10px] font-black uppercase text-gray-500">{{ d }}</span>
+                                    class="text-center text-2xs font-black uppercase text-gray-500">{{ d }}</span>
                             </div>
 
                             <div class="grid grid-cols-7 gap-1">
@@ -803,7 +813,7 @@ const handleBack = () => {
                                 <button v-for="day in daysInMonth" :key="day" @click="selectSpecificDate(day)" :class="[
                                     'h-8 w-full flex items-center justify-center text-sm font-bold rounded-lg transition-all active:scale-90',
                                     (dateModalTarget === 'due_date' ? form.due_date : form.date) === [currentYear, String(currentMonth + 1).padStart(2, '0'), String(day).padStart(2, '0')].join('-')
-                                        ? 'bg-gradient-to-br from-purple-600 to-purple-800 text-white shadow-md border border-purple-400/50'
+                                        ? 'bg-linear-to-br from-purple-600 to-purple-800 text-white shadow-md border border-purple-400/50'
                                         : 'text-gray-300 hover:bg-gray-800 border border-transparent'
                                 ]">
                                     {{ day }}
@@ -815,10 +825,10 @@ const handleBack = () => {
             </div>
 
             <div v-if="showWalletModal"
-                class="fixed inset-0 z-[100] flex flex-col justify-end bg-black/70 backdrop-blur-sm"
+                class="fixed inset-0 z-100 flex flex-col justify-end bg-black/70 backdrop-blur-sm"
                 @click.self="showWalletModal = false">
                 <div
-                    class="w-full max-w-md mx-auto bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-5 pb-safe animate-slide-up">
+                    class="w-full max-w-md mx-auto bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-5 pb-safe animate-slide-up">
                     <div class="w-12 h-1.5 bg-white/20 rounded-xl mx-auto mb-4 cursor-pointer"
                         @click="showWalletModal = false">
                     </div>
@@ -829,7 +839,7 @@ const handleBack = () => {
                         <div v-for="w in availableWallets" :key="w.id" @click="selectWallet(w)"
                             class="bg-gray-900 border border-white/10 p-4 rounded-xl flex items-center gap-4 cursor-pointer active:scale-95 transition-all">
                             <div
-                                class="w-12 h-12 bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 rounded-xl flex items-center justify-center text-xl overflow-hidden">
+                                class="w-12 h-12 bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 rounded-xl flex items-center justify-center text-xl overflow-hidden">
                                 <img v-if="w.icon.includes('.')" :src="'/storage/' + w.icon"
                                     class="w-full h-full object-cover">
                                 <span v-else>{{ w.icon }}</span>
@@ -837,7 +847,7 @@ const handleBack = () => {
                             <div class="flex-1">
                                 <span class="text-sm font-bold text-white block">{{ w.name }}</span>
                                 <p v-if="['Asset', 'Liquid'].includes(w.group_type)"
-                                    class="text-xs text-purple-500 font-bold tracking-widest mt-0.5">
+                                    class="text-2xs text-purple-500 font-bold tracking-widest mt-0.5">
                                     Rp {{ new Intl.NumberFormat('id-ID').format(w.balance) }}
                                 </p>
                             </div>
