@@ -2,75 +2,185 @@
 
 namespace App\Actions;
 
-use App\DTO\ParsedTransaction;
 use App\Models\TransactionLog;
 use App\Models\Wallet;
-use App\Services\Finance\TransactionResolver;
+use App\Models\Category;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use InvalidArgumentException;
+use RuntimeException;
 
 class ProcessTransactionAction
 {
-    public function __construct(
-        private TransactionResolver $resolver
-    ) {}
+    // Pada app/Actions/ProcessTransactionAction.php
 
     /**
-     * Mengorkestrasi resolusi string data ke database ID dan memproses mutasi keuangan.
+     * Membuat data transaksi baru, memutasi saldo dompet, dan mencatat log transaksi.
+     * Concurrency safe dengan pessimistics locking (lockForUpdate).
      */
-    public function execute(ParsedTransaction $dto): TransactionLog
+    public function create(array $data, int $userId, string $sourcePrefix = 'TRX'): TransactionLog
     {
-        return DB::transaction(function () use ($dto) {
-            
-            // Resolusi string/keyword murni menjadi ID riil yang aman
-            $resolved = $this->resolver->resolve(
-                $dto->userId,
-                $dto->transactionType,
-                $dto->categoryKeyword,
-                $dto->sourceWalletKeyword,
-                $dto->destinationWalletKeyword
-            );
+        if ($data['source_wallet_id'] === $data['destination_wallet_id']) {
+            throw new InvalidArgumentException("Transaksi gagal: Dompet asal dan dompet tujuan tidak boleh sama.");
+        }
 
-            // Ambil data Model Wallet dengan penguncian scope user_id demi aspek integritas
-            $source = Wallet::where('user_id', $dto->userId)->findOrFail($resolved['source_wallet_id']);
-            $destination = Wallet::where('user_id', $dto->userId)->findOrFail($resolved['destination_wallet_id']);
+        if ($data['amount'] <= 0) {
+            throw new InvalidArgumentException("Transaksi gagal: Nominal transaksi harus lebih besar dari nol.");
+        }
+
+        return DB::transaction(function () use ($data, $userId, $sourcePrefix) {
+            $category = Category::where('user_id', $userId)->where('id', $data['category_id'])->firstOrFail();
+            
+            $source = Wallet::where('user_id', $userId)->where('id', $data['source_wallet_id'])->lockForUpdate()->firstOrFail();
+            $destination = Wallet::where('user_id', $userId)->where('id', $data['destination_wallet_id'])->lockForUpdate()->firstOrFail();
 
             $mainWallet = ($source->group_type !== 'System') ? $source : $destination;
             $balanceBefore = $mainWallet->balance;
 
-            if ($dto->isCleared) {
-                // Mutasi nilai saldo riil
-                $source->decrement('balance', $dto->amount);
-                $destination->increment('balance', $dto->amount);
-                
-                // Ambil ulang saldo terbaru dari database demi akurasi log
-                $balanceAfter = Wallet::where('user_id', $dto->userId)->where('id', $mainWallet->id)->value('balance');
-            } else {
-                $balanceAfter = $balanceBefore;
+            // Eksekusi mutasi saldo hanya jika transaksi berstatus cleared
+            $isCleared = $data['is_cleared'] ?? true;
+            if ($isCleared) {
+                $this->applyTransaction($source, $destination, $data['amount']);
             }
 
-            $refNumber = $dto->sourceType === 'TELEGRAM'
-                ? 'TEL' . date('YmdHis') . rand(100, 999)
-                : 'TRX-' . strtoupper(Str::random(10));
+            // Jika masuk draft (false), balance After = balance Before karena belum termutasi
+            $balanceAfter = $isCleared ? Wallet::where('id', $mainWallet->id)->value('balance') : $balanceBefore;
+
+            $subjectInput = isset($data['subject']) ? trim($data['subject']) : '';
+            $finalSubject = $subjectInput === '' ? '-' : $data['subject'];
 
             return TransactionLog::create([
-                'reference_number'      => $refNumber,
-                'user_id'               => $dto->userId,
-                'date'                  => $dto->date ?? now()->format('Y-m-d'),
-                'type_id'               => $resolved['type_id'],
-                'category_id'           => $resolved['category_id'],
-                'source_wallet_id'      => $resolved['source_wallet_id'],
-                'destination_wallet_id' => $resolved['destination_wallet_id'],
-                'amount'                => $dto->amount,
+                'reference_number'      => $sourcePrefix . '-' . Str::ulid(), // Dinamis menggunakan prefix dari orchestrator
+                'user_id'               => $userId,
+                'date'                  => $data['date'],
+                'type_id'               => $category->type_id,
+                'category_id'           => $category->id,
+                'source_wallet_id'      => $source->id,
+                'destination_wallet_id' => $destination->id,
+                'amount'                => $data['amount'],
                 'balance_before'        => $balanceBefore,
                 'balance_after'         => $balanceAfter,
-                'subject'               => $dto->subject,
-                'notes'                 => $dto->notes,
-                'is_cleared'            => $dto->isCleared,
-                'due_date'              => $dto->dueDate,
-                'due_date_type'         => $dto->dueDateType,
-                'due_date_interval'     => $dto->dueDateInterval,
+                'subject'               => $finalSubject,
+                'notes'                 => $data['notes'] ?? null,
+                'is_cleared'            => $isCleared, // Menggunakan nilai dinamis
+                'due_date'              => $data['due_date'] ?? null,
+                'due_date_type'         => $data['due_date_type'] ?? null,
+                'due_date_interval'     => $data['due_date_interval'] ?? null,
             ]);
         });
+    }
+
+    /**
+     * Memperbarui data transaksi, mengembalikan efek saldo lama, dan menerapkan efek saldo baru.
+     * Proteksi penuh dari race condition saat pemulihan saldo lama dan penerapan saldo baru.
+     */
+    public function update(TransactionLog $transaction, array $data): TransactionLog
+    {
+        $userId = $transaction->user_id;
+
+        if ($data['source_wallet_id'] === $data['destination_wallet_id']) {
+            throw new InvalidArgumentException("Update gagal: Dompet asal dan dompet tujuan tidak boleh sama.");
+        }
+
+        if ($data['amount'] <= 0) {
+            throw new InvalidArgumentException("Update gagal: Nominal transaksi harus lebih besar dari nol.");
+        }
+
+        return DB::transaction(function () use ($transaction, $data, $userId) {
+            $newCategory = Category::where('user_id', $userId)->where('id', $data['category_id'])->firstOrFail();
+
+            // 1. Rollback efek saldo dari transaksi lama dengan baris terkunci (lockForUpdate)
+            if ($transaction->is_cleared) {
+                $oldSource = Wallet::where('user_id', $userId)->where('id', $transaction->source_wallet_id)->lockForUpdate()->first();
+                $oldDest = Wallet::where('user_id', $userId)->where('id', $transaction->destination_wallet_id)->lockForUpdate()->first();
+                
+                if ($oldSource && $oldDest) {
+                    $this->reverseTransaction($oldSource, $oldDest, $transaction->amount);
+                }
+            }
+
+            // 2. Kunci dan ambil state terbaru untuk Wallet Baru
+            $newSource = Wallet::where('user_id', $userId)->where('id', $data['source_wallet_id'])->lockForUpdate()->firstOrFail();
+            $newDest = Wallet::where('user_id', $userId)->where('id', $data['destination_wallet_id'])->lockForUpdate()->firstOrFail();
+
+            // 3. Terapkan perubahan efek saldo dari transaksi baru
+            $this->applyTransaction($newSource, $newDest, $data['amount']);
+
+            // 4. Ambil instansiasi wallet utama untuk re-kalkulasi log
+            $mainWallet = ($newSource->group_type !== 'System') ? $newSource : $newDest;
+            $currentBalance = Wallet::where('id', $mainWallet->id)->value('balance');
+
+            // 5. Normalisasi Subject Kosong/Spasi menjadi '-'
+            $subjectInput = isset($data['subject']) ? trim($data['subject']) : '';
+            $finalSubject = $subjectInput === '' ? '-' : $data['subject'];
+
+            // 6. Update rekaman data Transaction Log (Reference Number lama dipertahankan)
+            $transaction->update([
+                'date'                  => $data['date'],
+                'category_id'           => $data['category_id'],
+                'type_id'               => $newCategory->type_id,
+                'source_wallet_id'      => $newSource->id,
+                'destination_wallet_id' => $newDest->id,
+                'amount'                => $data['amount'],
+                'balance_before'        => $currentBalance + $data['amount'], // Kompatibilitas rumus bawaan controller web
+                'balance_after'         => $currentBalance,
+                'subject'               => $finalSubject,
+                'notes'                 => $data['notes'] ?? null,
+                'is_cleared'            => true,
+                'due_date'              => $data['due_date'] ?? null,
+                'due_date_type'         => $data['due_date_type'] ?? null,
+                'due_date_interval'     => $data['due_date_interval'] ?? null,
+            ]);
+
+            return $transaction;
+        });
+    }
+
+    /**
+     * Menghapus transaksi, membalikkan kondisi saldo dompet, dan mengeksekusi soft delete.
+     */
+    public function delete(TransactionLog $transaction): bool
+    {
+        return DB::transaction(function () use ($transaction) {
+            if ($transaction->is_cleared) {
+                // Kunci baris data wallet saat pemulihan penghapusan transaksi
+                $source = Wallet::where('user_id', $transaction->user_id)->where('id', $transaction->source_wallet_id)->lockForUpdate()->first();
+                $destination = Wallet::where('user_id', $transaction->user_id)->where('id', $transaction->destination_wallet_id)->lockForUpdate()->first();
+                
+                if ($source && $destination) {
+                    $this->reverseTransaction($source, $destination, $transaction->amount);
+                }
+            }
+            return $transaction->delete();
+        });
+    }
+
+    /**
+     * Method Internal: Menerapkan mutasi nominal dengan proteksi minus balance.
+     */
+    private function applyTransaction(Wallet $source, Wallet $destination, float|int $amount): void
+    {
+        // Aturan Bisnis: Dompet fisik pengguna (bukan akun internal system) tidak boleh bernilai negatif
+        if ($source->group_type !== 'System' && ($source->balance - $amount) < 0) {
+            throw new RuntimeException("Transaksi ditolak: Saldo pada dompet '{$source->name}' tidak mencukupi.");
+        }
+
+        $source->decrement('balance', $amount);
+        $destination->increment('balance', $amount);
+    }
+
+    /**
+     * Method Internal: Memulihkan kondisi saldo (kebalikan dari applyTransaction).
+     */
+    private function reverseTransaction(Wallet $source, Wallet $destination, float|int $amount): void
+    {
+        // Proteksi sisi sebaliknya saat rollback dilakukan (jika akun tujuan non-system mendadak minus karena ditarik kembali)
+        if ($destination->group_type !== 'System' && ($destination->balance - $amount) < 0) {
+            throw new RuntimeException("Rollback gagal: Saldo pada dompet '{$destination->name}' tidak mencukupi untuk proses pembalikan.");
+        }
+
+        $source->increment('balance', $amount);
+        $destination->decrement('balance', $amount);
     }
 }
