@@ -1,23 +1,25 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\DTO;
 
+use App\Enums\TransactionIntent;
+
+/**
+ * DTO Immutabel hasil ekstraksi AI.
+ * Menggunakan strong-typing Enum untuk mendefinisikan intent transaksi.
+ */
 readonly class ParsedTransaction
 {
     public function __construct(
-        public int $userId,
-        public string $transactionType, // 'Income', 'Expense', 'Transfer', 'Debt', 'Receivable'
-        public string $categoryKeyword,  // Nama kategori atau kata kunci unik
-        public string $sourceWalletKeyword, // Nama dompet sumber atau kata kunci unik
-        public string $destinationWalletKeyword, // Nama dompet tujuan atau kata kunci unik
         public float|int $amount,
-        public string $subject,
+        public ?TransactionIntent $transactionType = null, // Strongly-typed Enum
+        public ?string $category = null,
+        public ?string $sourceWallet = null,
+        public ?string $destinationWallet = null,
+        public ?string $subject = null,
         public ?string $notes = null,
-        public bool $isCleared = true,
-        public string $sourceType = 'WEB', // 'WEB' atau 'TELEGRAM'
-        public ?string $date = null,
-        public ?string $dueDate = null,
-        public ?string $dueDateType = null,
-        public ?int $dueDateInterval = null
+        public bool $isCleared = true
     ) {}
 }

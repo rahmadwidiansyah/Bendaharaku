@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class User extends Authenticatable
 {
@@ -41,6 +42,21 @@ class User extends Authenticatable
         return $this->hasMany(TransactionLog::class);
     }
 
+    public function aiCredentials(): HasMany
+    {
+        return $this->hasMany(UserAiCredential::class);
+    }
+
+    public function aiPreferences(): HasMany
+    {
+        return $this->hasMany(UserAiPreference::class);
+    }
+
+    public function activeAiPreference(): HasOne
+    {
+        return $this->hasOne(UserAiPreference::class)->where('is_active_provider', true);
+    }
+
     protected function casts(): array
     {
         return [
@@ -48,7 +64,13 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
-
+    /**
+     * Relasi untuk mengambil preferensi AI yang bertindak sebagai provider aktif.
+     */
+    // public function activeAiPreference(): \Illuminate\Database\Eloquent\Relations\HasOne
+    // {
+    //     return $this->hasOne(UserAiPreference::class)->where('is_active_provider', true);
+    // }
     /**
      * Jalankan aksi otomatis setelah User baru terdaftar
      */

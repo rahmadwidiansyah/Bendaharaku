@@ -7,13 +7,14 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\LoanController;
+use App\Http\Controllers\Settings\AiSettingsController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\GoogleController; // Pastikan ini di-import
+use Inertia\Inertia;
 
 // Route Google Auth (Taruh di luar middleware 'auth')
 Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])->name('google.login');
 Route::get('auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
-use Inertia\Inertia;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -36,6 +37,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/settings', function () {
         return Inertia::render('Settings/Index');
     })->name('settings.index');
+
+    Route::prefix('settings/ai')->name('settings.ai.')->group(function () {
+        Route::get('/', [AiSettingsController::class, 'index'])->name('index');
+        Route::patch('/', [AiSettingsController::class, 'store'])->name('store');
+        Route::post('/test', [AiSettingsController::class, 'testConnection'])->name('test');
+    });
 
     // Resources CRUD
     Route::patch('wallets/{wallet}/set-pin', [WalletController::class, 'setPin'])->name('wallets.set-pin');
