@@ -1,6 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import { useLayoutPreference } from '@/Composables/useLayoutPreference';
 
 const { isDesktopLayout } = useLayoutPreference();
@@ -29,6 +29,38 @@ const { isDesktopLayout } = useLayoutPreference();
             </header>
 
             <div class="space-y-6">
+                <!-- Integrasi AI -->
+                <div
+                    class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 p-6 rounded-2xl relative overflow-hidden group">
+                    <div class="flex items-start gap-4">
+                        <div
+                            class="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20 shrink-0">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <h2 class="text-lg font-bold text-white mb-1">Integrasi Kecerdasan Buatan (AI)</h2>
+                            <p class="text-2xs text-gray-400 mb-4 leading-relaxed">Konfigurasikan API Key personal
+                                Anda dan pilih model AI untuk asisten finansial cerdas.</p>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                                <Link :href="route('settings.ai.index')"
+                                    class="w-full py-3 px-4 flex items-center justify-center gap-2 bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 text-2xs font-bold uppercase tracking-widest rounded-xl hover:bg-indigo-500 hover:text-white transition-all shadow-lg shadow-indigo-500/10">
+                                    <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                        stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    <span class="truncate">Konfigurasi AI</span>
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Preferensi Tata Letak (Desktop Only) -->
                 <div
                     class="hidden lg:block bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 p-6 rounded-2xl relative overflow-hidden group">
