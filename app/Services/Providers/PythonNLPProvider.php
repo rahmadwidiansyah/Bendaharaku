@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Services\AI\Providers;
+namespace App\Services\Providers;
 
 use App\DTO\AIParseResult;
 use App\DTO\AiProviderRequest;
