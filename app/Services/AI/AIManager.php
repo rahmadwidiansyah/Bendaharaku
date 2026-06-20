@@ -6,51 +6,40 @@ namespace App\Services\AI;
 
 use App\Models\User;
 use App\Models\AiUsageLog;
-use App\Models\AiParseLog;
 use App\DTO\AIParseResult;
 use App\DTO\AiProviderRequest;
 use App\Exceptions\AiConfigurationException;
-use App\Services\AI\Providers\PythonNLPProvider; // Pastikan use class Python Anda
+use App\Services\AI\Providers\PythonNLPProvider;
+use Illuminate\Support\Facades\Log;
 
-class AIManager
+readonly class AIManager
 {
     public function __construct(
-        private readonly AiPreferenceManager $preferenceManager,
-        private readonly AiCredentialManager $credentialManager,
-        private readonly AiProviderFactory $providerFactory,
-        private readonly TransactionValidationService $validator,
-        private readonly PythonNLPProvider $pythonNlp // Inject Python Provider
+        private AiPreferenceManager $preferenceManager,
+        private AiCredentialManager $credentialManager,
+        private AiProviderFactory $providerFactory,
+        private TransactionValidationService $validator,
+        private PythonNLPProvider $pythonNlp
     ) {}
 
-    public function parseTransaction(User $user, string $text, array $wallets = [], array $categories = []): AIParseResult
+    public function parseTransaction(User $user, string $text, array $wallets = [], array $categories = [], array $activeMemories = []): AIParseResult
     {
-        // ==========================================
-        // FASE 1: ACTIVE LEARNING (PYTHON NLP)
-        // ==========================================
-        // Model dan API Key dikosongkan karena Python membaca dari .env
-        $pythonRequest = new AiProviderRequest(
-            text: $text, apiKey: '', model: '', wallets: $wallets, categories: $categories
-        );
-
-        $pythonResult = $this->pythonNlp->parseTransaction($pythonRequest);
-
-        // Jika Python berhasil dan sangat yakin, potong kompas langsung return! (Hemat Token)
-        if ($pythonResult->success && $pythonResult->confidence >= 0.8) {
-            $this->logParse($user, 'python-nlp', 'regex-fuzzy', $text, $pythonResult);
-            return $this->validator->validateAndGuard($pythonResult);
-        }
-
-        // Jika Python berhasil jalan tapi ragu (Confidence < 0.8), kita catat dulu 
-        // sebagai 'Draft Dataset' biar Anda tahu kelemahan regex-nya di mana.
-        if ($pythonResult->success) {
-            $this->logParse($user, 'python-nlp', 'regex-fuzzy', $text, $pythonResult);
-        }
-
-        // ==========================================
-        // FASE 2: FALLBACK KE LLM (GEMINI / OPENAI)
-        // ==========================================
-        $preference = $this->preferenceManager->getActivePreference($user);
+        // 1. CIRCUIT BREAKER 1: PYTHON NLP LOKAL (TANPA BIAYA)
+        // Kita tidak mengirimkan memori ke Python karena model Spacy/Regex tidak mendukung RAG
+        $pythonRequest = new AiProviderRequest($text, '', 'local-nlp', $wallets, $categories, []);
         
+        try {
+            $pythonResult = $this->pythonNlp->parseTransaction($pythonRequest);
+            // Hanya terima hasil Python jika AI "Sangat Yakin" (Skor > 0.85)
+            if ($pythonResult->success && $pythonResult->confidence >= 0.85) {
+                return $this->validator->validateAndGuard($pythonResult);
+            }
+        } catch (\Throwable $e) {
+            Log::warning("Python NLP Service Down/Timeout: " . $e->getMessage());
+        }
+
+        // 2. CIRCUIT BREAKER 2: FALLBACK KE LLM (GEMINI/OPENAI)
+        $preference = $this->preferenceManager->getActivePreference($user);
         if (!$preference) {
             throw new AiConfigurationException("Python gagal/ragu, dan tidak ada AI Provider aktif untuk Fallback.");
         }
@@ -59,51 +48,42 @@ class AIManager
         $credential = $this->credentialManager->getCredential($user, $providerEnum);
 
         if (!$credential || blank($credential->api_key) || !$credential->is_valid) {
-            throw new AiConfigurationException("Python gagal memproses, dan API Key untuk '{$providerEnum->value}' bermasalah.");
+            throw new AiConfigurationException("API Key untuk '{$providerEnum->value}' bermasalah.");
         }
 
         $providerInstance = $this->providerFactory->make($providerEnum);
         $model = $preference->selected_model ?? $providerEnum->defaultModel();
 
+        // LLM Menerima injeksi memori (RAG)
         $llmRequest = new AiProviderRequest(
-            text: $text, apiKey: $credential->api_key, model: $model, wallets: $wallets, categories: $categories
+            text: $text, 
+            apiKey: $credential->api_key, 
+            model: $model, 
+            wallets: $wallets, 
+            categories: $categories, 
+            activeMemories: $activeMemories 
         );
 
-        // Eksekusi LLM
-        $llmResult = $providerInstance->parseTransaction($llmRequest);
+        try {
+            $llmResult = $providerInstance->parseTransaction($llmRequest);
+            
+            // Catat Token Usage hanya jika pakai LLM Eksternal
+            if ($llmResult->usage['total'] > 0) {
+                AiUsageLog::create([
+                    'user_id' => $user->id,
+                    'provider' => $providerEnum->value,
+                    'model' => $model,
+                    'prompt_tokens' => $llmResult->usage['prompt'],
+                    'completion_tokens' => $llmResult->usage['completion'],
+                    'total_tokens' => $llmResult->usage['total'],
+                ]);
+            }
 
-        // Simpan Hasil LLM (Ini yang akan jadi Kunci Jawaban / Dataset buat training Python nanti)
-        $this->logParse($user, $providerEnum->value, $model, $text, $llmResult);
+            return $this->validator->validateAndGuard($llmResult);
 
-        // Catat Usage Token LLM
-        if ($llmResult->usage['total'] > 0) {
-            AiUsageLog::create([
-                'user_id' => $user->id,
-                'provider' => $providerEnum->value,
-                'model' => $model,
-                'prompt_tokens' => $llmResult->usage['prompt'],
-                'completion_tokens' => $llmResult->usage['completion'],
-                'total_tokens' => $llmResult->usage['total'],
-            ]);
+        } catch (\Throwable $e) {
+            Log::error("LLM Provider {$providerEnum->value} Crash: " . $e->getMessage());
+            return AIParseResult::failure("Semua jalur AI (Lokal & Cloud) gagal memproses transaksi.");
         }
-
-        return $this->validator->validateAndGuard($llmResult);
-    }
-
-    /**
-     * Helper memisahkan logika insert ke DB agar kode utama tetap bersih
-     */
-    private function logParse(User $user, string $provider, string $model, string $text, AIParseResult $result): void
-    {
-        AiParseLog::create([
-            'user_id' => $user->id,
-            'provider' => $provider,
-            'model' => $model,
-            'input_text' => $text,
-            'raw_response' => $result->transaction ? json_encode($result->transaction) : null,
-            'confidence' => $result->confidence,
-            'is_success' => $result->success,
-            'error_message' => $result->error,
-        ]);
     }
 }
