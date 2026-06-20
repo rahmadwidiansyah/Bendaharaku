@@ -11,6 +11,7 @@ readonly class AiProviderRequest
         public string $apiKey,
         public string $model,
         public array $wallets = [],
-        public array $categories = []
+        public array $categories = [],
+        public array $activeMemories = [] // Ditambahkan untuk menyambung pipeline
     ) {}
 }

@@ -18,7 +18,7 @@ class User extends Authenticatable
         'password',
         'telegram_id',
         'whatsapp_number',
-        'google_id', // Tambahkan ini
+        'google_id',
         'avatar',
     ];
 
@@ -52,6 +52,9 @@ class User extends Authenticatable
         return $this->hasMany(UserAiPreference::class);
     }
 
+    /**
+     * Relasi untuk mengambil preferensi AI yang bertindak sebagai provider aktif.
+     */
     public function activeAiPreference(): HasOne
     {
         return $this->hasOne(UserAiPreference::class)->where('is_active_provider', true);
@@ -64,26 +67,20 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
-    /**
-     * Relasi untuk mengambil preferensi AI yang bertindak sebagai provider aktif.
-     */
-    // public function activeAiPreference(): \Illuminate\Database\Eloquent\Relations\HasOne
-    // {
-    //     return $this->hasOne(UserAiPreference::class)->where('is_active_provider', true);
-    // }
+
     /**
      * Jalankan aksi otomatis setelah User baru terdaftar
      */
-protected static function booted(): void
+    protected static function booted(): void
     {
         static::created(function (User $user) {
             
-            // 1. Buatkan Dompet (Sama seperti sebelumnya)
+            // 1. Buatkan Dompet (Terintegrasi dengan Config SSOT)
             $user->wallets()->createMany([
-                ['name' => 'System Hutang', 'balance' => 0, 'group_type' => 'System', 'icon' => '🏦', 'keyword' => 'sistem hutang'],
-                ['name' => 'System Piutang', 'balance' => 0, 'group_type' => 'System', 'icon' => '🏦', 'keyword' => 'sistem piutang'],
-                ['name' => 'External System', 'balance' => 0, 'group_type' => 'System', 'icon' => '🌐', 'keyword' => 'external'],
-                ['name' => 'Merchant System', 'balance' => 0, 'group_type' => 'System', 'icon' => '🏪', 'keyword' => 'merchant'],
+                ['name' => config('bendaharaku.system_wallets.debt', 'System Hutang'), 'balance' => 0, 'group_type' => 'System', 'icon' => '🏦', 'keyword' => 'sistem hutang'],
+                ['name' => config('bendaharaku.system_wallets.receivable', 'System Piutang'), 'balance' => 0, 'group_type' => 'System', 'icon' => '🏦', 'keyword' => 'sistem piutang'],
+                ['name' => config('bendaharaku.system_wallets.external', 'External System'), 'balance' => 0, 'group_type' => 'System', 'icon' => '🌐', 'keyword' => 'external'],
+                ['name' => config('bendaharaku.system_wallets.merchant', 'Merchant System'), 'balance' => 0, 'group_type' => 'System', 'icon' => '🏪', 'keyword' => 'merchant'],
                 ['name' => 'Dompet Cash', 'balance' => 0, 'group_type' => 'Liquid', 'icon' => '💵', 'keyword' => 'cash, tunai, dompet'],
             ]);
 
@@ -120,8 +117,7 @@ protected static function booted(): void
                 ]);
             }
 
-            
-                      // 6. Kategori Starter Expense (Pengeluaran)
+            // 6. Kategori Starter Expense (Pengeluaran)
             if ($expenseType) {
                 $user->categories()->createMany([
                     [
@@ -197,19 +193,17 @@ protected static function booted(): void
                         'keyword' => 'kuota, pulsa, paket data, wifi, indihome, langganan, top up, voucher, kartu perdana, roaming'
                     ],
                     [
-    'category_name' => 'Langganan Digital', 
-    'type_id' => $expenseType->id, 
-    'icon' => '💳', 
-    'keyword' => 'spotify, youtube premium, netflix, langganan, auto debit, gemini, ai, aplikasi, cloud, hosting, disney, zoom'
-],
-                  [
-    'category_name' => 'Tagihan & Utilitas', 
-    'type_id' => $expenseType->id, 
-    'icon' => '⚡', 
-    'keyword' => 'listrik, air, pln, pdam, token, pascabayar, prabayar, pam, iuran, meteran, bpjs, iuran sampah'
-],
-
-
+                        'category_name' => 'Langganan Digital', 
+                        'type_id' => $expenseType->id, 
+                        'icon' => '💳', 
+                        'keyword' => 'spotify, youtube premium, netflix, langganan, auto debit, gemini, ai, aplikasi, cloud, hosting, disney, zoom'
+                    ],
+                    [
+                        'category_name' => 'Tagihan & Utilitas', 
+                        'type_id' => $expenseType->id, 
+                        'icon' => '⚡', 
+                        'keyword' => 'listrik, air, pln, pdam, token, pascabayar, prabayar, pam, iuran, meteran, bpjs, iuran sampah'
+                    ],
                 ]);
             }
 
