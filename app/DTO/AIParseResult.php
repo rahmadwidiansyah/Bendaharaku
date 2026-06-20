@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\DTO;
 
 readonly class AIParseResult
@@ -7,19 +9,15 @@ readonly class AIParseResult
     public function __construct(
         public bool $success,
         public float $confidence,
-        public ?string $error = null,
-        public ?ParsedTransaction $transaction = null,
-        public array $usage = ['prompt' => 0, 'completion' => 0, 'total' => 0] // Tambahan untuk Usage Log
+        public ?string $error,
+        public ?ParsedTransaction $transaction,
+        public array $usage = [],
+        public string $provider = 'system', // Wajib diisi oleh Provider
+        public string $model = 'unknown'    // Wajib diisi oleh Provider
     ) {}
 
-    public static function failure(string $errorMessage): self
+    public static function failure(string $message, string $provider = 'system', string $model = 'unknown'): self
     {
-        return new self(
-            success: false,
-            confidence: 0.0,
-            error: $errorMessage,
-            transaction: null,
-            usage: ['prompt' => 0, 'completion' => 0, 'total' => 0]
-        );
+        return new self(false, 0.0, $message, null, [], $provider, $model);
     }
 }
