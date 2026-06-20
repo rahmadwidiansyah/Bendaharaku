@@ -9,7 +9,14 @@ use App\Models\TransactionLog;
 use App\Services\AI\AIManager;
 use App\Services\AI\TransactionResolver;
 use App\Actions\ProcessTransactionAction;
+use App\Services\AI\Memory\UserMemoryService;
+use App\Services\AI\Scoring\ConfidenceScoringEngine;
+use App\Services\AI\AiParseLogService;
 use App\Enums\TransactionIntent;
+use App\Events\TransactionPosted;
+use App\Exceptions\CategoryNotFoundException;
+use App\Exceptions\WalletNotFoundException;
+use App\DTO\ConfidenceScoreContext;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 use InvalidArgumentException;
@@ -19,7 +26,11 @@ class ChatTransactionOrchestrator
     public function __construct(
         private readonly AIManager $aiManager,
         private readonly TransactionResolver $resolver,
-        private readonly ProcessTransactionAction $transactionAction
+        private readonly ProcessTransactionAction $transactionAction,
+        // Injeksi komponen Sprint 4E
+        private readonly UserMemoryService $memoryService,
+        private readonly ConfidenceScoringEngine $scoringEngine,
+        private readonly AiParseLogService $parseLogService
     ) {}
 
     /**
@@ -28,11 +39,15 @@ class ChatTransactionOrchestrator
     public function process(User $user, string $text, string $source = 'TEL'): array
     {
         try {
-            // Efisiensi Query menggunakan relasi
-            $wallets = $user->wallets()->get(['name'])->toArray();
-            $categories = $user->categories()->get(['category_name'])->toArray();
+            // 1. Ambil Konteks (Sekarang butuh keyword dan group_type untuk Scoring Engine)
+            $wallets = $user->wallets()->get(['id', 'name', 'group_type', 'keyword'])->toArray();
+            $categories = $user->categories()->get(['id', 'category_name', 'type_id', 'keyword'])->toArray();
 
-            $aiResult = $this->aiManager->parseTransaction($user, $text, $wallets, $categories);
+            // 2. Tarik Memori Personal (Decay On Read)
+            $activeMemories = $this->memoryService->getTopRelevantMemories($user->id);
+
+            // 3. AI Layer (Prompting + Parsing)
+            $aiResult = $this->aiManager->parseTransaction($user, $text, $wallets, $categories, $activeMemories);
 
             if (!$aiResult->success || !$aiResult->transaction) {
                 return [
@@ -43,6 +58,7 @@ class ChatTransactionOrchestrator
 
             $parsed = $aiResult->transaction;
 
+            // 4. Validasi Dasar (Dipertahankan dari kode aslimu)
             if (!$parsed->amount) {
                 return ['success' => false, 'message' => "🤔 *Nominalnya berapa Bos?*\nAku bingung nih, kamu belum nyebutin jumlah uangnya."];
             }
@@ -50,10 +66,7 @@ class ChatTransactionOrchestrator
                 return ['success' => false, 'message' => "🧐 *Masuk kategori apa nih?*\nSebutkan nama barang atau kegiatannya ya."];
             }
 
-            $resolved = $this->resolver->resolve($user, $parsed);
-
             $isDebtRelated = in_array($parsed->transactionType, [TransactionIntent::Debt, TransactionIntent::Receivable]);
-            
             preg_match('/#([a-zA-Z0-9_]+)/', $text, $matches);
             $extractedSubject = $matches[1] ?? null;
 
@@ -66,6 +79,54 @@ class ChatTransactionOrchestrator
 
             $finalSubject = $extractedSubject ?? $user->name;
 
+// ... (Kode sebelum resolver tetap sama)
+            
+            // 5. Resolving Layer dengan Fallback DRAFT
+            try {
+                $resolved = $this->resolver->resolve($user, $parsed);
+                // 6. Confidence Scoring Engine
+                // ... hitung skor final ...
+                $resolved->isCleared = ($finalConfidence >= $threshold);
+            } catch (CategoryNotFoundException | WalletNotFoundException $e) {
+                // FALLBACK: Paksa jadi DRAFT jika kategori/dompet ngawur, JANGAN di-return false!
+                $resolved = new \App\DTO\ResolvedTransaction(
+                    amount: $parsed->amount,
+                    categoryId: null, // Kosong agar diedit manual
+                    sourceWalletId: null, 
+                    destinationWalletId: null,
+                    subject: $finalSubject,
+                    notes: $text . "\n[ERROR AI: " . $e->getMessage() . "]",
+                    isCleared: false // HARD DRAFT
+                );
+                
+                $finalConfidence = 0.0; // Skor jatuh ke 0
+            }
+            
+            // ... (Lanjut ke Parse Logging dan Simpan Database)
+            // 6. Confidence Scoring Engine Layer
+            $scoreContext = new ConfidenceScoreContext(
+                user: $user,
+                inputText: $text,
+                parseResult: $aiResult,
+                resolvedTransaction: $resolved,
+                activeMemories: $activeMemories
+            );
+
+            $finalConfidence = $this->scoringEngine->calculateFinalScore($scoreContext);
+            $threshold = (float) config('bendaharaku.ai.confidence.threshold_auto_clear', 0.85);
+            
+            // Timpa status isCleared dengan hasil hitung matematis dari Scoring Engine
+            $resolved->isCleared = ($finalConfidence >= $threshold);
+
+            // 7. Parse Logging (Sinkronus - Catat Kejujuran AI vs Hasil Sistem)
+            $parseLogId = $this->parseLogService->createLog(
+                user: $user,
+                inputText: $text,
+                result: $aiResult,
+                finalConfidence: $finalConfidence
+            );
+
+            // 8. DB Action Layer
             $actionData = [
                 'date'                  => now()->format('Y-m-d'),
                 'category_id'           => $resolved->categoryId,
@@ -77,16 +138,23 @@ class ChatTransactionOrchestrator
                 'is_cleared'            => $resolved->isCleared,
             ];
 
-            // Tidak ada update dua kali, prefix langsung dilempar
             $transactionLog = $this->transactionAction->create($actionData, $user->id, $source);
 
-            // Load 'type' untuk kebutuhan visualisasi di controller nanti
+            // 9. Trigger Event Learning (Asinkronus / Menuju Memori & Dataset)
+            event(new TransactionPosted($user, $transactionLog, $parseLogId));
+
             return [
                 'success' => true,
                 'message' => 'Transaksi berhasil dicatat.',
                 'transaction' => $transactionLog->load(['category', 'sourceWallet', 'destinationWallet', 'type'])
             ];
 
+        } catch (CategoryNotFoundException | WalletNotFoundException $e) {
+            // Tangkap Error dari Resolver agar Telegram bisa membalas dengan rapi
+            return [
+                'success' => false,
+                'message' => "🔍 *Data Tidak Ditemukan:*\n" . $e->getMessage() . "\n\nPastikan keyword dompet/kategori sudah kamu daftarkan di Web."
+            ];
         } catch (InvalidArgumentException $e) {
             return [
                 'success' => false,
