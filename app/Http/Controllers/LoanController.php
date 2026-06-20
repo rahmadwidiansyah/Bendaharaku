@@ -57,12 +57,13 @@ class LoanController extends Controller
                 'latest_date' => $latestDate
             ];
         })
-    ->filter(fn($item) => $item->balance > 0) // Hanya muncul yang belum lunas
-    ->values()
-    ->sortBy('subject'); // SORT BERDASARKAN NAMA (A-Z)
+        ->filter(fn($item) => $item->balance > 0) // Hanya muncul yang belum lunas
+        ->sortBy('subject') // SORT BERDASARKAN NAMA (A-Z)
+        ->values(); // Reset key agar Inertia mengirim JSON array, bukan object
 
     $title = $isDebt ? 'Rincian Hutang' : 'Rincian Piutang';
     $total = $loanDetails->sum('balance');
+    $loanDetails = $loanDetails->all();
 
     return \Inertia\Inertia::render('Loans/Index', compact('loanDetails', 'title', 'isDebt', 'total'));
 }
