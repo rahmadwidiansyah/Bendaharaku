@@ -394,7 +394,11 @@ onMounted(() => {
                     </div>
                     <div class="space-y-4">
                         <Link v-for="(label, i) in activeCategoryData.labels" :key="activeCategoryData.ids[i]"
-                            :href="route('categories.show', activeCategoryData.ids[i])"
+                            :href="route('categories.show', {
+                                category: activeCategoryData.ids[i],
+                                start_date: startDate,
+                                end_date: endDate,
+                            })"
                             class="relative flex items-center justify-between bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 p-3 rounded-xl overflow-hidden group hover:border-purple-500/30 transition-all duration-300">
                             <div class="flex items-center gap-3 relative z-10 w-full">
                                 <div class="w-1.5 h-6 rounded-full"
