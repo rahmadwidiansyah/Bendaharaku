@@ -36,7 +36,9 @@ const debtSubTab = ref('income');
 const showCategoryModal = ref(false);
 const showWalletModal = ref(false);
 const walletModalMode = ref('source');
-const rawAmount = ref(props.transaction.amount.toString());
+// Nilai decimal dari database dapat terserialisasi sebagai "10000.00".
+// Jadikan digit rupiah utuh agar ".00" tidak terbaca sebagai dua nol tambahan.
+const rawAmount = ref(String(Math.trunc(Number(props.transaction.amount) || 0)));
 
 const formattedAmount = computed(() => {
     if (!rawAmount.value || rawAmount.value === '0') return '';
@@ -813,6 +815,8 @@ const handleBack = () => {
                                 class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">2</button>
                             <button @click="handleKeypad('3')" type="button"
                                 class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">3</button>
+                            <button @click="handleKeypad('000')" type="button"
+                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-sm font-bold text-purple-400 flex items-center justify-center">000</button>
                             <button @click="handleKeypad('0')" type="button"
                                 class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">0</button>
                             <button @click="handleKeypad('del')" type="button"

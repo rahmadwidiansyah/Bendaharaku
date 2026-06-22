@@ -744,6 +744,10 @@ const handleBack = () => {
                                 class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">2</button>
                             <button @click="handleKeypad('3')" type="button"
                                 class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">3</button>
+                            <button @click="handleKeypad('000')" type="button"
+                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-sm font-bold text-purple-400 flex items-center justify-center">000</button>
+                            <button @click="handleKeypad('0')" type="button"
+                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">0</button>
                             <button @click="handleKeypad('del')" type="button"
                                 class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl flex items-center justify-center relative">
                                 <div class="w-8 h-8 flex items-center justify-center"> <svg class="w-4 h-4 text-red-500"
@@ -751,8 +755,6 @@ const handleBack = () => {
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                                     </svg> </div>
                             </button>
-                            <button @click="handleKeypad('0')" type="button"
-                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">0</button>
                         </div>
                     </div>
                 </form>
