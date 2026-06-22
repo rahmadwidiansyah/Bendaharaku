@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\StoreCategoryRequest;
 use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
 
 use Inertia\Inertia;
 use Inertia\Response;
@@ -112,13 +113,26 @@ class CategoryController extends Controller
         return redirect()->route('categories.index')->with('success', 'Kategori dihapus!');
     }
 
-    public function show(Category $category): Response
+    public function show(Request $request, Category $category): Response
     {
         if ($category->user_id !== Auth::id()) abort(403);
+
+        // Detail dari Vault selalu fokus ke bulan berjalan. Saat dibuka dari
+        // Analytics, rentang tanggal pada URL dipakai supaya angkanya konsisten.
+        $defaultStartDate = Carbon::now()->startOfMonth()->format('Y-m-d');
+        $defaultEndDate = Carbon::now()->format('Y-m-d');
+        $validated = $request->validate([
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+        ]);
+
+        $startDate = $validated['start_date'] ?? $defaultStartDate;
+        $endDate = $validated['end_date'] ?? $defaultEndDate;
 
         $transactions = Auth::user()->transactionLogs()
             ->where('category_id', $category->id)
             ->with(['type', 'sourceWallet', 'destinationWallet'])
+            ->whereBetween('date', [$startDate, $endDate])
             ->orderBy('date', 'desc')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -131,6 +145,8 @@ class CategoryController extends Controller
             'transactions' => $transactions,
             'totalUsage' => $totalUsage,
             'isSystem' => $isSystem,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
         ]);
     }
 }
