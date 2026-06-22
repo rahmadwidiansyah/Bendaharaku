@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import DateModal from '@/Components/DateModal.vue';
 import TransactionDetailModal from '@/Components/TransactionDetailModal.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
@@ -9,6 +10,8 @@ const props = defineProps({
     transactions: Array,
     totalUsage: Number,
     isSystem: Boolean,
+    startDate: String,
+    endDate: String,
 });
 
 const showDetailModal = ref(false);
@@ -49,6 +52,14 @@ const getTypeColor = (typeName) => {
         'Debt': 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20',
         'Receivable': 'text-purple-400 bg-purple-400/10 border-purple-400/20'
     }[typeName] || 'text-gray-500';
+};
+
+const formatDateRange = () => {
+    const formatDate = (date) => new Intl.DateTimeFormat('id-ID', {
+        day: 'numeric', month: 'short', year: 'numeric'
+    }).format(new Date(`${date}T00:00:00`));
+
+    return `${formatDate(props.startDate)} – ${formatDate(props.endDate)}`;
 };
 </script>
 
@@ -99,10 +110,15 @@ const getTypeColor = (typeName) => {
             </div>
 
             <div
-                class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-7 text-center mb-10 shadow-2xl relative overflow-hidden group z-10">
+                class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-6 text-center mb-10 shadow-2xl relative overflow-hidden group z-10">
                 <div class="absolute top-0 left-0 w-full h-1 bg-purple-500/20"></div>
-                <p class="text-2xs font-bold text-white uppercase tracking-[0.2em] mb-2 opacity-60">Total Akumulasi
-                </p>
+                <div class="flex items-center justify-between gap-3 mb-5">
+                    <div class="text-left min-w-0">
+                        <p class="text-2xs font-bold text-white uppercase tracking-[0.2em] mb-1 opacity-60">Total Periode</p>
+                        <p class="text-2xs font-bold text-purple-400 truncate">{{ formatDateRange() }}</p>
+                    </div>
+                    <DateModal :action="route('categories.show', category.id)" :start-date="startDate" :end-date="endDate" />
+                </div>
                 <div class="flex items-baseline justify-center gap-1.5">
                     <span class="text-sm font-bold text-gray-600">Rp</span>
                     <h2 class="text-3xl font-black text-white tracking-tight">{{ formatNumber(totalUsage) }}</h2>
