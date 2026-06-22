@@ -368,7 +368,15 @@ const handleBack = () => {
             <div class="flex flex-col h-full w-full max-w-md mx-auto relative bg-gray-800 overflow-hidden">
                 <form @submit.prevent="submit" class="flex flex-col h-full min-h-0 overflow-hidden relative lg:pt-8">
 
-                    <div class="px-4 pt-6 md:pt-10 pb-2 shrink-0 flex gap-2 items-stretch">
+                    <header class="px-5 pt-6 md:pt-10 pb-3 shrink-0 flex items-center justify-between">
+                        <div>
+                            <p class="text-2xs font-black text-purple-500 uppercase tracking-[0.2em] mb-1">Pencatatan baru</p>
+                            <h1 class="text-2xl font-black tracking-tight text-white">Catat transaksi</h1>
+                        </div>
+                        <span class="text-2xs font-bold text-gray-500">Lengkapi yang diperlukan</span>
+                    </header>
+
+                    <div class="px-4 pt-1 pb-2 shrink-0 flex gap-2 items-stretch">
                         <div
                             class="flex-1 flex bg-linear-to-br from-gray-900 to-gray-800 rounded-xl p-1.5 border border-white/10 overflow-x-auto no-scrollbar gap-1">
                             <button v-for="t in ['Expense', 'Income', 'Transfer', 'Debt', 'Receivable']" :key="t"
@@ -425,15 +433,6 @@ const handleBack = () => {
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
-                    </div>
-
-                    <div v-if="['Expense', 'Income'].includes(mainTab)" class="px-4 py-1 flex flex-col gap-2 shrink-0">
-                        <div class="flex gap-2">
-                            <Link :href="route('categories.create', { type: mainTab })"
-                                class="flex-1 flex items-center justify-center py-3 rounded-xl text-2xs font-bold transition-all whitespace-nowrap bg-transparent text-purple-500 border border-white/10 hover:bg-gray-900">
-                                + Kategori
-                            </Link>
-                        </div>
                     </div>
 
                     <div v-if="mainTab === 'Debt'" class="px-4 py-1 flex flex-col gap-2 shrink-0">
@@ -611,18 +610,39 @@ const handleBack = () => {
                             </div>
 
                         </div>
-                        <div v-else-if="mainTab !== 'Transfer'" class="grid grid-cols-4 gap-3 m-3 justify-center">
-                            <div v-for="cat in activeCategories" :key="cat.id" @click="selectCategory(cat)"
-                                :class="['flex flex-col items-center justify-center p-2 rounded-xl border transition-all cursor-pointer h-[80px] w-[80px]',
-                                    form.category_id === cat.id ? 'bg-linear-to-br from-gray-800 to-gray-900 border-purple-500' : 'bg-transparent border-white/10 hover:border-white/20']">
+                        <section v-else-if="mainTab !== 'Transfer'" class="space-y-3">
+                            <div class="flex items-end justify-between px-1">
+                                <div>
+                                    <p class="text-2xs font-black text-purple-500 uppercase tracking-[0.18em]">Langkah 1</p>
+                                    <h2 class="text-sm font-bold text-white">Pilih kategori</h2>
+                                </div>
+                                <span v-if="selectedCategory" class="text-2xs font-bold text-green-400">✓ {{ selectedCategory.category_name }}</span>
+                                <span v-else class="text-2xs font-bold text-gray-600">Wajib dipilih</span>
+                            </div>
+
+                            <div v-if="activeCategories.length || ['Expense', 'Income'].includes(mainTab)" class="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                            <button v-for="cat in activeCategories" :key="cat.id" type="button" @click="selectCategory(cat)"
+                                :class="['relative flex flex-col items-center justify-center p-2 rounded-xl border transition-all active:scale-95 min-h-[88px]',
+                                    form.category_id === cat.id ? 'bg-purple-500/10 border-purple-500 shadow-lg shadow-purple-500/10' : 'bg-linear-to-br from-gray-900 to-gray-800 border-white/10 hover:border-purple-500/40']">
                                 <img v-if="cat.icon.includes('.')" :src="'/storage/' + cat.icon"
-                                    class="w-6 h-6 object-cover mb-1.5">
+                                    class="w-7 h-7 object-cover rounded-lg mb-1.5">
                                 <span v-else class="text-lg mb-1">{{ cat.icon }}</span>
                                 <span
                                     :class="['text-2xs font-bold text-center leading-tight w-full px-0.5 line-clamp-2 text-wrap warp-break-words', form.category_id === cat.id ? 'text-white' : 'text-gray-500']">{{
                                         cat.category_name }}</span>
+                                <span v-if="form.category_id === cat.id" class="absolute top-2 right-2 w-4 h-4 rounded-full bg-purple-500 text-white text-[10px] flex items-center justify-center">✓</span>
+                            </button>
+                            <Link v-if="['Expense', 'Income'].includes(mainTab)" :href="route('categories.create', { type: mainTab })"
+                                class="flex flex-col items-center justify-center gap-2 p-2 rounded-xl border border-dashed border-purple-500/50 bg-purple-500/5 text-purple-400 transition-all active:scale-95 min-h-[88px] hover:bg-purple-500/10 hover:border-purple-400">
+                                <span class="w-7 h-7 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-xl leading-none">+</span>
+                                <span class="text-2xs font-black text-center leading-tight">Tambah Kategori</span>
+                            </Link>
                             </div>
-                        </div>
+                            <div v-else class="rounded-xl border border-dashed border-white/10 bg-gray-900/50 p-6 text-center">
+                                <p class="text-sm font-bold text-gray-400">Kategori belum tersedia</p>
+                                <Link :href="route('categories.create', { type: mainTab })" class="inline-flex mt-2 text-2xs font-black text-purple-400 uppercase tracking-wider">Tambah kategori</Link>
+                            </div>
+                        </section>
                     </div>
 
                     <button v-if="!showBottomPanel" type="button" @click="showBottomPanel = true"
@@ -634,6 +654,10 @@ const handleBack = () => {
 
                     <div v-show="showBottomPanel"
                         class="bg-linear-to-br from-gray-800 to-gray-900 border-t border-white/10 rounded-t-xl md:border md:rounded-xl md:mb-10 md:mx-4 p-4 z-20 shrink-0 relative transition-all">
+                        <div class="flex items-center justify-between px-1 mb-2">
+                            <p class="text-2xs font-black text-purple-500 uppercase tracking-[0.18em] truncate pr-2">Langkah 2 · {{ (isMoneyIn ? selectedDestWallet : selectedSourceWallet)?.name || 'Pilih dompet' }}</p>
+                            <span :class="form.amount > 0 ? 'text-green-400' : 'text-gray-600'" class="text-2xs font-bold">{{ form.amount > 0 ? '✓ Nominal terisi' : 'Nominal wajib' }}</span>
+                        </div>
                         <div
                             class="flex flex-wrap items-center gap-x-2 gap-y-1 mb-2 bg-linear-to-br from-gray-900 to-gray-800 rounded-xl p-1.5 pr-3 border border-white/10">
                             <button type="button" @click="openWalletModal(isMoneyIn ? 'dest' : 'source')"
@@ -656,7 +680,7 @@ const handleBack = () => {
                                 <span
                                     class="invisible whitespace-pre-wrap break-all text-sm p-0 min-h-[20px] col-start-1 row-start-1">{{
                                         (form.notes || 'Note') + ' ' }}</span>
-                                <textarea v-model="form.notes" placeholder="Note" rows="1"
+                                <textarea v-model="form.notes" placeholder="Catatan (opsional)" rows="1" aria-label="Catatan transaksi"
                                     class="col-start-1 row-start-1 w-full h-full bg-transparent border-none focus:ring-0 text-sm text-gray-500 placeholder-gray-700 border-r-2 border-white p-0 resize-none overflow-hidden break-all whitespace-pre-wrap"></textarea>
                             </div>
 
@@ -676,8 +700,8 @@ const handleBack = () => {
                         </div>
 
                         <div class="flex gap-2 mb-2">
-                            <div @click="dateModalTarget = 'transaction'; showDateModal = true"
-                                class="flex-1 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl flex items-center justify-center gap-2 text-2xs font-bold text-gray-500 relative overflow-hidden cursor-pointer h-12">
+                            <button type="button" @click="dateModalTarget = 'transaction'; showDateModal = true"
+                                class="flex-1 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl flex items-center justify-center gap-2 text-2xs font-bold text-gray-500 relative overflow-hidden cursor-pointer h-12" aria-label="Pilih tanggal transaksi">
                                 <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"
                                     stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -689,7 +713,7 @@ const handleBack = () => {
                                             day: 'numeric',
                                             month: 'short', year: 'numeric'
                                         }) }}</span>
-                            </div>
+                            </button>
                             <button type="button" @click="showKeypad = !showKeypad"
                                 class="flex w-12 h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-transform"
                                 :title="showKeypad ? 'Sembunyikan Keypad' : 'Tampilkan Keypad'">
@@ -708,14 +732,14 @@ const handleBack = () => {
                                         d="M480-40 320-200h320L480-40ZM160-280q-33 0-56.5-23.5T80-360v-400q0-33 23.5-56.5T160-840h640q33 0 56.5 23.5T880-760v400q0 33-23.5 56.5T800-280H160Zm0-80h640v-400H160v400Zm160-40h320v-80H320v80ZM200-520h80v-80h-80v80Zm120 0h80v-80h-80v80Zm120 0h80v-80h-80v80Zm120 0h80v-80h-80v80Zm120 0h80v-80h-80v80ZM200-640h80v-80h-80v80Zm120 0h80v-80h-80v80Zm120 0h80v-80h-80v80Zm120 0h80v-80h-80v80Zm120 0h80v-80h-80v80ZM160-360v-400 400Z" />
                                 </svg>
                             </button>
-                            <button type="button" @click="submitAndClose"
+                            <button type="button" @click="submitAndStay"
                                 class="w-12 h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-transform"
                                 title="Simpan & Tambah Lagi">
                                 <div
                                     class="w-6 h-6 rounded-full border-2 border-green-300 flex items-center justify-center text-green-300 text-xl leading-none font-black pt-0.5">
                                     +</div>
                             </button>
-                            <button type="button" @click="submitAndStay"
+                            <button type="button" @click="submitAndClose"
                                 class="w-[60px] h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl flex items-center justify-center text-green-500 shrink-0 active:scale-95 transition-transform"
                                 title="Simpan & Tutup">
                                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"
