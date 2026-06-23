@@ -20,6 +20,7 @@ class User extends Authenticatable
         'whatsapp_number',
         'google_id',
         'avatar',
+        'allow_negative_balance',
     ];
 
     protected $hidden = [
@@ -65,6 +66,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'allow_negative_balance' => 'boolean',
         ];
     }
 
