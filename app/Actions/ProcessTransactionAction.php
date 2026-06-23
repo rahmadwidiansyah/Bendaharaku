@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Models\TransactionLog;
 use App\Models\Wallet;
 use App\Models\Category;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -30,6 +31,7 @@ class ProcessTransactionAction
         }
 
         return DB::transaction(function () use ($data, $userId, $sourcePrefix) {
+            $user = User::findOrFail($userId);
             $category = Category::where('user_id', $userId)->where('id', $data['category_id'])->firstOrFail();
             
             $source = Wallet::where('user_id', $userId)->where('id', $data['source_wallet_id'])->lockForUpdate()->firstOrFail();
@@ -41,7 +43,7 @@ class ProcessTransactionAction
             // Eksekusi mutasi saldo hanya jika transaksi berstatus cleared
             $isCleared = $data['is_cleared'] ?? true;
             if ($isCleared) {
-                $this->applyTransaction($source, $destination, $data['amount']);
+                $this->applyTransaction($source, $destination, $data['amount'], $user->allow_negative_balance);
             }
 
             // Jika masuk draft (false), balance After = balance Before karena belum termutasi
@@ -88,6 +90,7 @@ class ProcessTransactionAction
         }
 
         return DB::transaction(function () use ($transaction, $data, $userId) {
+            $user = User::findOrFail($userId);
             $newCategory = Category::where('user_id', $userId)->where('id', $data['category_id'])->firstOrFail();
 
             // 1. Rollback efek saldo dari transaksi lama dengan baris terkunci (lockForUpdate)
@@ -96,7 +99,7 @@ class ProcessTransactionAction
                 $oldDest = Wallet::where('user_id', $userId)->where('id', $transaction->destination_wallet_id)->lockForUpdate()->first();
                 
                 if ($oldSource && $oldDest) {
-                    $this->reverseTransaction($oldSource, $oldDest, $transaction->amount);
+                    $this->reverseTransaction($oldSource, $oldDest, $transaction->amount, $user->allow_negative_balance);
                 }
             }
 
@@ -105,7 +108,7 @@ class ProcessTransactionAction
             $newDest = Wallet::where('user_id', $userId)->where('id', $data['destination_wallet_id'])->lockForUpdate()->firstOrFail();
 
             // 3. Terapkan perubahan efek saldo dari transaksi baru
-            $this->applyTransaction($newSource, $newDest, $data['amount']);
+            $this->applyTransaction($newSource, $newDest, $data['amount'], $user->allow_negative_balance);
 
             // 4. Ambil instansiasi wallet utama untuk re-kalkulasi log
             $mainWallet = ($newSource->group_type !== 'System') ? $newSource : $newDest;
@@ -143,13 +146,14 @@ class ProcessTransactionAction
     public function delete(TransactionLog $transaction): bool
     {
         return DB::transaction(function () use ($transaction) {
+            $allowNegativeBalance = (bool) User::whereKey($transaction->user_id)->value('allow_negative_balance');
             if ($transaction->is_cleared) {
                 // Kunci baris data wallet saat pemulihan penghapusan transaksi
                 $source = Wallet::where('user_id', $transaction->user_id)->where('id', $transaction->source_wallet_id)->lockForUpdate()->first();
                 $destination = Wallet::where('user_id', $transaction->user_id)->where('id', $transaction->destination_wallet_id)->lockForUpdate()->first();
                 
                 if ($source && $destination) {
-                    $this->reverseTransaction($source, $destination, $transaction->amount);
+                    $this->reverseTransaction($source, $destination, $transaction->amount, $allowNegativeBalance);
                 }
             }
             return $transaction->delete();
@@ -157,12 +161,11 @@ class ProcessTransactionAction
     }
 
     /**
-     * Method Internal: Menerapkan mutasi nominal dengan proteksi minus balance.
+     * Method Internal: Menerapkan mutasi nominal sesuai preferensi saldo pengguna.
      */
-    private function applyTransaction(Wallet $source, Wallet $destination, float|int $amount): void
+    private function applyTransaction(Wallet $source, Wallet $destination, float|int $amount, bool $allowNegativeBalance): void
     {
-        // Aturan Bisnis: Dompet fisik pengguna (bukan akun internal system) tidak boleh bernilai negatif
-        if ($source->group_type !== 'System' && ($source->balance - $amount) < 0) {
+        if (!$allowNegativeBalance && $source->group_type !== 'System' && ($source->balance - $amount) < 0) {
             throw new RuntimeException("Transaksi ditolak: Saldo pada dompet '{$source->name}' tidak mencukupi.");
         }
 
@@ -173,10 +176,9 @@ class ProcessTransactionAction
     /**
      * Method Internal: Memulihkan kondisi saldo (kebalikan dari applyTransaction).
      */
-    private function reverseTransaction(Wallet $source, Wallet $destination, float|int $amount): void
+    private function reverseTransaction(Wallet $source, Wallet $destination, float|int $amount, bool $allowNegativeBalance): void
     {
-        // Proteksi sisi sebaliknya saat rollback dilakukan (jika akun tujuan non-system mendadak minus karena ditarik kembali)
-        if ($destination->group_type !== 'System' && ($destination->balance - $amount) < 0) {
+        if (!$allowNegativeBalance && $destination->group_type !== 'System' && ($destination->balance - $amount) < 0) {
             throw new RuntimeException("Rollback gagal: Saldo pada dompet '{$destination->name}' tidak mencukupi untuk proses pembalikan.");
         }
 
