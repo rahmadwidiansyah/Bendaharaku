@@ -26,7 +26,13 @@ const submit = () => {
 };
 
 const goBack = () => {
-    router.visit(route('transactions.create'));
+    // Mengecek apakah ada riwayat halaman sebelumnya di browser
+    if (window.history.length > 1) {
+        window.history.back();
+    } else {
+        // Fallback jika user membuka link ini secara langsung (direct access)
+        router.visit(route('transactions.create'));
+    }
 };
 </script>
 
