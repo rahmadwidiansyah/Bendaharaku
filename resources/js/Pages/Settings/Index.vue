@@ -1,9 +1,23 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 import { useLayoutPreference } from '@/Composables/useLayoutPreference';
 
 const { isDesktopLayout } = useLayoutPreference();
+
+const props = defineProps({
+    allowNegativeBalance: Boolean,
+});
+
+const transactionLogicForm = useForm({
+    allow_negative_balance: props.allowNegativeBalance,
+});
+
+const updateTransactionLogic = () => {
+    transactionLogicForm.patch(route('settings.transaction-logic.update'), {
+        preserveScroll: true,
+    });
+};
 </script>
 
 <template>
@@ -29,39 +43,59 @@ const { isDesktopLayout } = useLayoutPreference();
             </header>
 
             <div class="space-y-6">
-                <!-- Integrasi AI -->
+                
                 <div
                     class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 p-6 rounded-2xl relative overflow-hidden group">
                     <div class="flex items-start gap-4">
                         <div
-                            class="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20 shrink-0">
+                            class="w-12 h-12 rounded-xl bg-green-500/10 text-green-400 flex items-center justify-center border border-green-500/20 shrink-0">
                             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </div>
                         <div class="flex-1">
-                            <h2 class="text-lg font-bold text-white mb-1">Integrasi Kecerdasan Buatan (AI)</h2>
-                            <p class="text-2xs text-gray-400 mb-4 leading-relaxed">Konfigurasikan API Key personal
-                                Anda dan pilih model AI untuk asisten finansial cerdas.</p>
+                            <h2 class="text-lg font-bold text-white mb-1">Format Mata Uang & Bahasa</h2>
+                            <p class="text-2xs text-gray-400 mb-4 leading-relaxed">Pilih format regional dan mata uang
+                                utama untuk seluruh laporan keuangan Anda.</p>
+
+                            <select
+                                class="w-full bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 text-white rounded-xl p-4 text-sm transition-all focus:ring-2 focus:ring-green-500/50 focus:outline-none">
+                                <option value="id-ID">Rupiah (Rp) - Bahasa Indonesia</option>
+                                <option value="en-US">US Dollar ($) - English</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 p-6 rounded-2xl relative overflow-hidden group">
+                    <div class="flex items-start gap-4">
+                        <div
+                            class="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center border border-purple-500/20 shrink-0">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <h2 class="text-lg font-bold text-white mb-1">Tema Tampilan</h2>
+                            <p class="text-2xs text-gray-400 mb-4 leading-relaxed">Sesuaikan nuansa warna aplikasi
+                                dengan preferensi Anda. Saat ini hanya tema gelap yang didukung untuk pengalaman
+                                premium.</p>
 
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
-                                <Link :href="route('settings.ai.index')"
-                                    class="w-full py-3 px-4 flex items-center justify-center gap-2 bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 text-2xs font-bold uppercase tracking-widest rounded-xl hover:bg-indigo-500 hover:text-white transition-all shadow-lg shadow-indigo-500/10">
-                                    <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    </svg>
-                                    <span class="truncate">Konfigurasi AI</span>
-                                </Link>
+                                <button
+                                    class="w-full py-3 px-4 bg-purple-500 text-white text-2xs font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-purple-500/20 flex items-center justify-center text-center">Dark
+                                    Mode (Aktif)</button>
+                                <button
+                                    class="w-full py-3 px-4 bg-gray-800 text-gray-500 text-2xs font-bold uppercase tracking-widest rounded-xl border border-white/5 cursor-not-allowed flex items-center justify-center text-center">Light
+                                    Mode</button>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Preferensi Tata Letak (Desktop Only) -->
                 <div
                     class="hidden lg:block bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 p-6 rounded-2xl relative overflow-hidden group">
                     <div class="flex items-start gap-4">
@@ -94,36 +128,68 @@ const { isDesktopLayout } = useLayoutPreference();
                     </div>
                 </div>
 
-                <!-- Tema Aplikasi -->
+                <div class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 p-6 rounded-2xl relative overflow-hidden">
+                    <div class="flex items-start gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20 shrink-0">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2m4-2a8 8 0 11-16 0 8 8 0 0116 0z" />
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <p class="text-2xs font-black text-amber-400 uppercase tracking-[0.2em] mb-1">Logika transaksi</p>
+                                    <h2 class="text-lg font-bold text-white mb-1">Izinkan saldo dompet minus</h2>
+                                    <p class="text-2xs text-gray-400 leading-relaxed">Cocok untuk pencatatan kerja harian: pengeluaran atau modal bisa dicatat lebih dulu, lalu pemasukan direkap saat selesai bekerja.</p>
+                                </div>
+                                <button type="button" role="switch" 
+                                    :aria-checked="transactionLogicForm.allow_negative_balance"
+                                    :disabled="transactionLogicForm.processing"
+                                    @click="transactionLogicForm.allow_negative_balance = !transactionLogicForm.allow_negative_balance; updateTransactionLogic()"
+                                    :class="['relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-amber-500/60 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed', 
+                                    transactionLogicForm.allow_negative_balance ? 'bg-amber-500' : 'bg-gray-700']">
+                                    <span :class="['pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out', 
+                                        transactionLogicForm.allow_negative_balance ? 'translate-x-5' : 'translate-x-0']"></span>
+                                </button>
+                            </div>
+                            <p :class="transactionLogicForm.allow_negative_balance ? 'text-amber-300' : 'text-gray-500'" class="mt-4 text-2xs font-bold">
+                                {{ transactionLogicForm.allow_negative_balance ? 'Aktif — saldo negatif diperbolehkan.' : 'Nonaktif — transaksi ditolak bila saldo tidak mencukupi.' }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 <div
                     class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 p-6 rounded-2xl relative overflow-hidden group">
                     <div class="flex items-start gap-4">
                         <div
-                            class="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center border border-purple-500/20 shrink-0">
+                            class="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20 shrink-0">
                             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                             </svg>
                         </div>
                         <div class="flex-1">
-                            <h2 class="text-lg font-bold text-white mb-1">Tema Tampilan</h2>
-                            <p class="text-2xs text-gray-400 mb-4 leading-relaxed">Sesuaikan nuansa warna aplikasi
-                                dengan preferensi Anda. Saat ini hanya tema gelap yang didukung untuk pengalaman
-                                premium.</p>
+                            <h2 class="text-lg font-bold text-white mb-1">Integrasi Kecerdasan Buatan (AI)</h2>
+                            <p class="text-2xs text-gray-400 mb-4 leading-relaxed">Konfigurasikan API Key personal
+                                Anda dan pilih model AI untuk asisten finansial cerdas.</p>
 
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
-                                <button
-                                    class="w-full py-3 px-4 bg-purple-500 text-white text-2xs font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-purple-500/20 flex items-center justify-center text-center">Dark
-                                    Mode (Aktif)</button>
-                                <button
-                                    class="w-full py-3 px-4 bg-gray-800 text-gray-500 text-2xs font-bold uppercase tracking-widest rounded-xl border border-white/5 cursor-not-allowed flex items-center justify-center text-center">Light
-                                    Mode</button>
+                                <Link :href="route('settings.ai.index')"
+                                    class="w-full py-3 px-4 flex items-center justify-center gap-2 bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 text-2xs font-bold uppercase tracking-widest rounded-xl hover:bg-indigo-500 hover:text-white transition-all shadow-lg shadow-indigo-500/10">
+                                    <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                        stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    <span class="truncate">Konfigurasi AI</span>
+                                </Link>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Notifikasi -->
                 <div
                     class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 p-6 rounded-2xl relative overflow-hidden group">
                     <div class="flex items-start gap-4">
@@ -151,32 +217,6 @@ const { isDesktopLayout } = useLayoutPreference();
                     </div>
                 </div>
 
-                <!-- Format Mata Uang -->
-                <div
-                    class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 p-6 rounded-2xl relative overflow-hidden group">
-                    <div class="flex items-start gap-4">
-                        <div
-                            class="w-12 h-12 rounded-xl bg-green-500/10 text-green-400 flex items-center justify-center border border-green-500/20 shrink-0">
-                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <div class="flex-1">
-                            <h2 class="text-lg font-bold text-white mb-1">Format Mata Uang & Bahasa</h2>
-                            <p class="text-2xs text-gray-400 mb-4 leading-relaxed">Pilih format regional dan mata uang
-                                utama untuk seluruh laporan keuangan Anda.</p>
-
-                            <select
-                                class="w-full bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 text-white rounded-xl p-4 text-sm transition-all">
-                                <option value="id-ID">Rupiah (Rp) - Bahasa Indonesia</option>
-                                <option value="en-US">US Dollar ($) - English</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Ekspor Data -->
                 <div
                     class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 p-6 rounded-2xl relative overflow-hidden group">
                     <div class="flex items-start gap-4">
