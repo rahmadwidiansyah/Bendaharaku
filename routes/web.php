@@ -36,9 +36,17 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    Route::get('/settings', function () {
-        return Inertia::render('Settings/Index');
+    Route::get('/settings', function (\Illuminate\Http\Request $request) {
+        return Inertia::render('Settings/Index', [
+            'allowNegativeBalance' => $request->user()->allow_negative_balance,
+        ]);
     })->name('settings.index');
+    Route::patch('/settings/transaction-logic', function (\Illuminate\Http\Request $request) {
+        $validated = $request->validate(['allow_negative_balance' => ['required', 'boolean']]);
+        $request->user()->update($validated);
+
+        return back()->with('success', 'Logika transaksi diperbarui.');
+    })->name('settings.transaction-logic.update');
 
     // AI Settings & Analytics (Gabungan)
     Route::prefix('settings/ai')->name('settings.ai.')->group(function () {

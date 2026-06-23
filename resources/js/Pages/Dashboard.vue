@@ -59,6 +59,21 @@ const handleImageError = (e, fallback) => {
 const { isBalanceVisible, toggleVisibility } = useBalanceVisibility()
 
 const user = usePage().props.auth.user
+const showProfileMenu = ref(false)
+const profileMenuPosition = ref({ top: 76, right: 16 })
+const toggleProfileMenu = (event) => {
+	if (showProfileMenu.value) {
+		showProfileMenu.value = false
+		return
+	}
+
+	const rect = event.currentTarget.getBoundingClientRect()
+	profileMenuPosition.value = {
+		top: Math.min(rect.bottom + 12, window.innerHeight - 190),
+		right: Math.max(16, window.innerWidth - rect.right),
+	}
+	showProfileMenu.value = true
+}
 const showModal = ref(false)
 const selectedTransaction = ref(null)
 const search = ref(props.filters?.search || '')
@@ -399,9 +414,40 @@ const togglePin = (wallet) => {
 						<span class="text-sm">{{ greeting.emoji }}</span>
 					</div>
 				</div>
-				<Link :href="route('profile.edit')" class="relative block w-12 h-12 rounded-full border-2 border-purple-500 p-0.5 bg-gray-900 active:scale-90 transition-transform">
-					<img :src="avatarSrc" :alt="user.name" class="w-full h-full rounded-full object-cover" />
-				</Link>
+				<div class="relative">
+					<button type="button" @click="toggleProfileMenu"
+						:aria-expanded="showProfileMenu" aria-haspopup="menu" aria-label="Buka menu akun"
+						class="relative block w-12 h-12 rounded-full border-2 border-purple-500 p-0.5 bg-gray-900 active:scale-90 transition-transform focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 focus:ring-offset-gray-800">
+						<img :src="avatarSrc" :alt="user.name" class="w-full h-full rounded-full object-cover" />
+					</button>
+
+					<Teleport to="body">
+						<div v-if="showProfileMenu" class="fixed inset-0 z-[9999]" @click.self="showProfileMenu = false">
+							<div role="menu" :style="{ top: `${profileMenuPosition.top}px`, right: `${profileMenuPosition.right}px` }"
+								class="absolute w-[calc(100vw-2rem)] max-w-72 overflow-hidden rounded-xl border border-white/10 bg-linear-to-br from-gray-900 to-gray-800 p-1.5 shadow-2xl shadow-black/70 animate-pop-in sm:w-64">
+						<div class="px-3 py-2.5 border-b border-white/10 mb-1">
+							<p class="text-sm font-bold text-white truncate">{{ user.name }}</p>
+							<p class="text-2xs text-gray-500 truncate">{{ user.email }}</p>
+						</div>
+						<Link :href="route('profile.edit')" role="menuitem" @click="showProfileMenu = false"
+							class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-bold text-gray-300 transition-colors hover:bg-white/5 hover:text-white">
+							<svg class="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M5.121 17.804A9.967 9.967 0 0112 15c2.21 0 4.252.716 5.879 1.929M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+							</svg>
+							Profil Saya
+						</Link>
+						<Link :href="route('settings.index')" role="menuitem" @click="showProfileMenu = false"
+							class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-bold text-gray-300 transition-colors hover:bg-white/5 hover:text-white">
+							<svg class="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+								<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+							</svg>
+							Pengaturan
+						</Link>
+							</div>
+						</div>
+					</Teleport>
+				</div>
 			</header>
 
 			<!-- INSIGHT BOX -->
