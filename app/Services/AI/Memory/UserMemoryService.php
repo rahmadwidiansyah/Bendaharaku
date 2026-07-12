@@ -66,7 +66,8 @@ readonly class UserMemoryService
 // Ganti fungsi getTopRelevantMemories menjadi ini:
     public function getTopRelevantMemories(int $userId, string $inputText): array
     {
-        $memories = \Illuminate\Support\Facades\Cache::remember("ai-mem-{$userId}", 300, function () use ($userId) {
+        // Ganti cache key menjadi v2 agar tidak tabrakan dengan format cache lama yang berupa array of string
+        $memories = \Illuminate\Support\Facades\Cache::remember("ai-mem-v2-{$userId}", 300, function () use ($userId) {
             return \App\Models\UserAiMemory::where('user_id', $userId)
                 ->with('category:id,category_name')
                 ->orderByDesc('weight')
@@ -78,6 +79,11 @@ readonly class UserMemoryService
 
         // Filter: Hanya ambil memori yang keyword-nya benar-benar diucapkan user saat ini
         foreach ($memories as $memory) {
+            // Bypass jika format cache salah (string/array bukan object)
+            if (!is_object($memory) || !isset($memory->keyword_pattern)) {
+                continue;
+            }
+            
             if (preg_match("/\b" . preg_quote(strtolower($memory->keyword_pattern), '/') . "\b/i", $textLower)) {
                 $matched[] = [
                     'keyword'  => $memory->keyword_pattern,
