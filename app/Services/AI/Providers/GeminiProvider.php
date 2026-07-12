@@ -10,6 +10,9 @@ use App\DTO\AIParseResult;
 use App\DTO\AiProviderRequest;
 use App\DTO\ParsedTransaction;
 use App\Enums\TransactionIntent;
+use App\Exceptions\AiRateLimitException;
+use App\Exceptions\AiTimeoutException;
+use App\Exceptions\AiProviderException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Client\ConnectionException;
 use Throwable;
@@ -49,15 +52,18 @@ class GeminiProvider implements AIProviderInterface
 
             if (!$response->successful()) {
                 $statusCode = $response->status();
-                
+
                 if ($statusCode === 429) {
-                    return AIParseResult::failure("❌ Token API Gemini habis atau menyentuh limit. Silakan cek kuota di dashboard Google AI Studio Anda.");
+                    throw new AiRateLimitException('Gemini');
                 }
                 if (in_array($statusCode, [408, 503, 504])) {
-                    return AIParseResult::failure("⏳ Server Gemini sedang sibuk atau Timeout. Coba lagi dalam beberapa menit ya.");
+                    throw new AiTimeoutException('Gemini');
                 }
-                
-                return AIParseResult::failure("Gemini API Error ({$statusCode}): " . $response->body());
+                if ($statusCode === 401 || $statusCode === 403) {
+                    throw new AiProviderException('Gemini', "API Key tidak valid atau tidak punya akses (HTTP {$statusCode}).");
+                }
+
+                throw new AiProviderException('Gemini', "HTTP {$statusCode}: " . substr($response->body(), 0, 200));
             }
 
             $jsonString = $response->json('candidates.0.content.parts.0.text');
@@ -66,7 +72,7 @@ class GeminiProvider implements AIProviderInterface
             $aiRaw = json_decode($jsonString, true);
 
             if (!$aiRaw || !isset($aiRaw['amount'])) {
-                return AIParseResult::failure("Gemini gagal mengekstrak format transaksi secara valid.");
+                throw new AiProviderException('Gemini', 'Response tidak mengandung format transaksi yang valid.');
             }
 
             // Ekstrak Confidence
@@ -103,16 +109,15 @@ class GeminiProvider implements AIProviderInterface
                 model:       $request->model,
             );
 
+        } catch (AiRateLimitException | AiTimeoutException | AiProviderException $e) {
+            // Exception spesifik — biarkan naik ke AIManager
+            throw $e;
         } catch (ConnectionException $e) {
-            Log::error('Gemini Connection Timeout', ['exception' => $e, 'message' => $e->getMessage()]);
-            return AIParseResult::failure("⏳ Waktu request ke API Gemini habis (Timeout). Coba lagi nanti Bos.");
+            Log::warning('Gemini Connection Timeout', ['message' => $e->getMessage()]);
+            throw new AiTimeoutException('Gemini');
         } catch (Throwable $e) {
-            Log::error('Gemini Provider Error', [
-                'exception' => $e,
-                'message' => $e->getMessage(),
-                'text' => $request->text
-            ]);
-            return AIParseResult::failure("Kesalahan internal Gemini Provider: " . $e->getMessage());
+            Log::error('Gemini Provider Error', ['message' => $e->getMessage(), 'text' => $request->text]);
+            throw new AiProviderException('Gemini', $e->getMessage());
         }
     }
 }

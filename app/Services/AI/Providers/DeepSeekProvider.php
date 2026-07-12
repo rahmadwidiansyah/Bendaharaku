@@ -10,6 +10,9 @@ use App\DTO\AIParseResult;
 use App\DTO\AiProviderRequest;
 use App\DTO\ParsedTransaction;
 use App\Enums\TransactionIntent;
+use App\Exceptions\AiRateLimitException;
+use App\Exceptions\AiTimeoutException;
+use App\Exceptions\AiProviderException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Client\ConnectionException;
 use Throwable;
@@ -43,15 +46,18 @@ class DeepSeekProvider implements AIProviderInterface
 
             if (!$response->successful()) {
                 $statusCode = $response->status();
-                
+
                 if ($statusCode === 429) {
-                    return AIParseResult::failure("❌ Saldo token DeepSeek Anda habis. Silakan cek dashboard DeepSeek Platform Anda.");
+                    throw new AiRateLimitException('DeepSeek');
                 }
                 if (in_array($statusCode, [408, 503, 504])) {
-                    return AIParseResult::failure("⏳ Server DeepSeek sedang sibuk (Timeout). Coba lagi nanti.");
+                    throw new AiTimeoutException('DeepSeek');
                 }
-                
-                return AIParseResult::failure("DeepSeek API Error ({$statusCode}): " . $response->body());
+                if ($statusCode === 401 || $statusCode === 403) {
+                    throw new AiProviderException('DeepSeek', "API Key tidak valid atau tidak punya akses (HTTP {$statusCode}).");
+                }
+
+                throw new AiProviderException('DeepSeek', "HTTP {$statusCode}: " . substr($response->body(), 0, 200));
             }
 
             $jsonString = $response->json('choices.0.message.content');
@@ -60,7 +66,7 @@ class DeepSeekProvider implements AIProviderInterface
             $aiRaw = json_decode($jsonString, true);
 
             if (!$aiRaw || !isset($aiRaw['amount'])) {
-                return AIParseResult::failure("DeepSeek gagal mengekstrak format transaksi secara valid.");
+                throw new AiProviderException('DeepSeek', 'Response tidak mengandung format transaksi yang valid.');
             }
 
             // Ekstrak Confidence
@@ -97,16 +103,14 @@ class DeepSeekProvider implements AIProviderInterface
                 model:       $request->model,
             );
 
+        } catch (AiRateLimitException | AiTimeoutException | AiProviderException $e) {
+            throw $e;
         } catch (ConnectionException $e) {
-            Log::error('DeepSeek Connection Timeout', ['exception' => $e, 'message' => $e->getMessage()]);
-            return AIParseResult::failure("⏳ Waktu request ke API DeepSeek habis (Timeout). Coba lagi nanti Bos.");
+            Log::warning('DeepSeek Connection Timeout', ['message' => $e->getMessage()]);
+            throw new AiTimeoutException('DeepSeek');
         } catch (Throwable $e) {
-            Log::error('DeepSeek Provider Error', [
-                'exception' => $e,
-                'message' => $e->getMessage(),
-                'text' => $request->text
-            ]);
-            return AIParseResult::failure("Kesalahan internal DeepSeek Provider: " . $e->getMessage());
+            Log::error('DeepSeek Provider Error', ['message' => $e->getMessage(), 'text' => $request->text]);
+            throw new AiProviderException('DeepSeek', $e->getMessage());
         }
     }
 }
