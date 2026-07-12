@@ -49,8 +49,8 @@ class ProcessTransactionAction
             // Jika masuk draft (false), balance After = balance Before karena belum termutasi
             $balanceAfter = $isCleared ? Wallet::where('id', $mainWallet->id)->value('balance') : $balanceBefore;
 
-            $subjectInput = isset($data['subject']) ? trim($data['subject']) : '';
-            $finalSubject = $subjectInput === '' ? '-' : $data['subject'];
+            $subjectInput = isset($data['subject']) ? strtoupper(trim($data['subject'])) : '';
+            $finalSubject = $subjectInput === '' ? '-' : $subjectInput;
 
             return TransactionLog::create([
                 'reference_number'      => $sourcePrefix . '-' . Str::ulid(), // Dinamis menggunakan prefix dari orchestrator
@@ -115,8 +115,8 @@ class ProcessTransactionAction
             $currentBalance = Wallet::where('id', $mainWallet->id)->value('balance');
 
             // 5. Normalisasi Subject Kosong/Spasi menjadi '-'
-            $subjectInput = isset($data['subject']) ? trim($data['subject']) : '';
-            $finalSubject = $subjectInput === '' ? '-' : $data['subject'];
+            $subjectInput = isset($data['subject']) ? strtoupper(trim($data['subject'])) : '';
+            $finalSubject = $subjectInput === '' ? '-' : $subjectInput;
 
             // 6. Update rekaman data Transaction Log (Reference Number lama dipertahankan)
             $transaction->update([
