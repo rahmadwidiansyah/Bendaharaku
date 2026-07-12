@@ -6,6 +6,7 @@ namespace App\Services\AI\Scoring;
 
 use App\Models\User;
 use App\DTO\AIParseResult;
+use App\DTO\ConfidenceScoreContext;
 use App\Enums\TransactionIntent;
 use App\Services\AI\Scoring\Matchers\CategoryMatchService;
 use App\Services\AI\Scoring\Matchers\WalletMatchService;
@@ -19,8 +20,17 @@ readonly class ConfidenceScoringEngine
         private MemoryMatchService $memoryMatch
     ) {}
 
-    public function calculateFinalScore(User $user, string $inputText, AIParseResult $parseResult, array $activeMemories): float
+    /**
+     * Kalkulasi skor kepercayaan final dari ConfidenceScoreContext.
+     * BUG-01 fix: menerima DTO tunggal agar konsisten dengan Orchestrator.
+     */
+    public function calculateFinalScore(ConfidenceScoreContext $context): float
     {
+        $user          = $context->user;
+        $inputText     = $context->inputText;
+        $parseResult   = $context->parseResult;
+        $activeMemories = $context->activeMemories;
+
         $weights = config('bendaharaku.ai.confidence.weights');
         $finalScore = 0.0000;
 
