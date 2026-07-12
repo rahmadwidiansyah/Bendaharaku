@@ -40,8 +40,14 @@ readonly class AIManager
 
         // 2. CIRCUIT BREAKER 2: FALLBACK KE LLM (GEMINI/OPENAI)
         $preference = $this->preferenceManager->getActivePreference($user);
+        
+        // Jika user belum setup AI Gemini/OpenAI di web, jangan crash! 
+        // Kembalikan saja hasil dari Python (walaupun confidence-nya rendah).
         if (!$preference) {
-            throw new AiConfigurationException("Python gagal/ragu, dan tidak ada AI Provider aktif untuk Fallback.");
+            if (isset($pythonResult) && $pythonResult->success) {
+                return $this->validator->validateAndGuard($pythonResult);
+            }
+            throw new AiConfigurationException("Sistem AI gagal memproses transaksi (Python offline & LLM tidak disetup).");
         }
 
         $providerEnum = $preference->provider;
