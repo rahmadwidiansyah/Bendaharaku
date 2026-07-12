@@ -38,16 +38,13 @@ class GeminiProvider implements AIProviderInterface
 
             $response = Http::timeout(15)
                 ->retry(2, 1000) // Retry 2x jika timeout/5xx
-                ->withHeaders([
-                    'Content-Type' => 'application/json',
-                ])
+                ->withHeaders(['Content-Type' => 'application/json'])
                 ->post($url . '?key=' . $request->apiKey, [
                     'contents' => [
                         ['parts' => [['text' => $prompt]]]
                     ],
-                    'generationConfig' => [
-                        'responseMimeType' => 'application/json',
-                    ]
+                    // responseMimeType TIDAK didukung di v1 endpoint
+                    // JSON tetap diparsing manual via regex cleanup di bawah
                 ]);
 
             if (!$response->successful()) {
