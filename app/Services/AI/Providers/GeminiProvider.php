@@ -25,18 +25,27 @@ class GeminiProvider implements AIProviderInterface
     {
         try {
             $url = "https://generativelanguage.googleapis.com/v1beta/models/{$request->model}:generateContent";
-            $prompt = $this->promptBuilder->build($request->text, $request->wallets, $request->categories);
+            // WARN-03 fix: teruskan activeMemories agar RAG berfungsi
+            $prompt = $this->promptBuilder->build(
+                $request->text,
+                $request->wallets,
+                $request->categories,
+                $request->activeMemories
+            );
 
-            $response = Http::timeout(15)->withHeaders([
-                'Content-Type' => 'application/json',
-            ])->post($url . '?key=' . $request->apiKey, [
-                'contents' => [
-                    ['parts' => [['text' => $prompt]]]
-                ],
-                'generationConfig' => [
-                    'responseMimeType' => 'application/json',
-                ]
-            ]);
+            $response = Http::timeout(15)
+                ->retry(2, 1000) // Retry 2x jika timeout/5xx
+                ->withHeaders([
+                    'Content-Type' => 'application/json',
+                ])
+                ->post($url . '?key=' . $request->apiKey, [
+                    'contents' => [
+                        ['parts' => [['text' => $prompt]]]
+                    ],
+                    'generationConfig' => [
+                        'responseMimeType' => 'application/json',
+                    ]
+                ]);
 
             if (!$response->successful()) {
                 $statusCode = $response->status();
@@ -84,7 +93,15 @@ class GeminiProvider implements AIProviderInterface
                 isCleared: (bool) ($aiRaw['isCleared'] ?? true)
             );
 
-            return new AIParseResult(true, $confidence, null, $parsedTransaction, $usage);
+            return new AIParseResult(
+                success:     true,
+                confidence:  $confidence,
+                error:       null,
+                transaction: $parsedTransaction,
+                usage:       $usage,
+                provider:    'gemini',
+                model:       $request->model,
+            );
 
         } catch (ConnectionException $e) {
             Log::error('Gemini Connection Timeout', ['exception' => $e, 'message' => $e->getMessage()]);

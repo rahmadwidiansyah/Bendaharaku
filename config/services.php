@@ -41,6 +41,11 @@ return [
 ],
   'telegram' => [
     'token' => env('TELEGRAM_BOT_TOKEN'),
-],
+  ],
+
+  'python_ai' => [
+    'url' => env('PYTHON_AI_URL'),
+    'key' => env('PYTHON_AI_KEY', 'kunci-rahasia-v4'),
+  ],
 
 ];
