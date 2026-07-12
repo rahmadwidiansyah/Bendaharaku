@@ -176,8 +176,8 @@ class AiSettingsController extends Controller
     private function modelsFor(AiProvider $provider): array
     {
         return match ($provider) {
-            AiProvider::Gemini => ['gemini-2.5-flash', 'gemini-2.5-pro'],
-            AiProvider::OpenAI => ['gpt-5', 'gpt-5-mini'],
+            AiProvider::Gemini => ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro'],
+            AiProvider::OpenAI => ['gpt-4o-mini', 'gpt-4o'],
             AiProvider::DeepSeek => ['deepseek-chat'],
         };
     }
