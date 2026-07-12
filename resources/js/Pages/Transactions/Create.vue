@@ -535,13 +535,14 @@ const handleBack = () => {
                                     / Nama
                                     Terkait</label>
                                 <input type="text" v-model="form.subject" placeholder="Masukkan nama..."
-                                    class="w-full bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 focus:border-purple-500 rounded-xl px-4 py-3 text-center text-lg font-bold text-white focus:ring-0 placeholder-gray-700 transition-colors outline-none">
+                                    @input="form.subject = $event.target.value.toUpperCase()"
+                                    class="w-full bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 focus:border-purple-500 rounded-xl px-4 py-3 text-center text-lg font-bold text-white focus:ring-0 placeholder-gray-700 transition-colors outline-none uppercase">
 
                                 <div v-if="activeSubjects && activeSubjects.length > 0 && ((activeType === 'Debt' && debtSubTab === 'expense') || (activeType === 'Receivable' && debtSubTab === 'income'))"
                                     class="flex flex-wrap gap-2 justify-center mt-3">
                                     <button type="button" v-for="sub in activeSubjects" :key="sub"
                                         @click="form.subject = sub"
-                                        class="px-3 py-1.5 rounded-full text-2xs font-bold border transition-all active:scale-95"
+                                        class="px-3 py-1.5 rounded-full text-2xs font-bold border transition-all active:scale-95 uppercase"
                                         :class="form.subject === sub ? 'bg-purple-600/20 text-purple-400 border-purple-500/50' : 'bg-gray-800 text-gray-400 border-white/5 hover:bg-gray-700'">
                                         {{ sub }}
                                     </button>
