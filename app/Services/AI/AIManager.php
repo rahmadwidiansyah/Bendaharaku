@@ -25,8 +25,19 @@ readonly class AIManager
     public function parseTransaction(User $user, string $text, array $wallets = [], array $categories = [], array $activeMemories = []): AIParseResult
     {
         // 1. CIRCUIT BREAKER 1: PYTHON NLP LOKAL (TANPA BIAYA)
-        // Kita tidak mengirimkan memori ke Python karena model Spacy/Regex tidak mendukung RAG
-        $pythonRequest = new AiProviderRequest($text, '', 'local-nlp', $wallets, $categories, []);
+        // Injeksi memori (RAG) ke dalam array categories agar Python bisa mencocokkan kata gaul dari sejarah memori!
+        $pythonCategories = $categories;
+        foreach ($activeMemories as $memory) {
+            if (!empty($memory['category']) && !empty($memory['keyword'])) {
+                foreach ($pythonCategories as &$cat) {
+                    if ($cat['category_name'] === $memory['category']) {
+                        $cat['keyword'] = ($cat['keyword'] ?? '') . ',' . $memory['keyword'];
+                    }
+                }
+            }
+        }
+
+        $pythonRequest = new AiProviderRequest($text, '', 'local-nlp', $wallets, $pythonCategories, []);
         
         try {
             $pythonResult = $this->pythonNlp->parseTransaction($pythonRequest);
