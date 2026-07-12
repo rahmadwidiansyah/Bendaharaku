@@ -43,8 +43,8 @@ class ChatTransactionOrchestrator
             $wallets = $user->wallets()->get(['id', 'name', 'group_type', 'keyword'])->toArray();
             $categories = $user->categories()->get(['id', 'category_name', 'type_id', 'keyword'])->toArray();
 
-            // 2. Tarik Memori Personal (Decay On Read)
-            $activeMemories = $this->memoryService->getTopRelevantMemories($user->id);
+            // 2. Tarik Memori Personal (Decay On Read) — WARN-01 fix: tambahkan $text
+            $activeMemories = $this->memoryService->getTopRelevantMemories($user->id, $text);
 
             // 3. AI Layer (Prompting + Parsing)
             $aiResult = $this->aiManager->parseTransaction($user, $text, $wallets, $categories, $activeMemories);
@@ -79,9 +79,10 @@ class ChatTransactionOrchestrator
 
             $finalSubject = $extractedSubject ?? $user->name;
 
-// ... (Kode sebelum resolver tetap sama)
-            
             // 5. Resolving Layer dengan Fallback DRAFT
+            // BUG-02 fix: $finalConfidence wajib dideklarasikan SEBELUM try-catch agar
+            // tidak undefined di dalam catch block.
+            $finalConfidence = 0.0;
             try {
                 $resolved = $this->resolver->resolve($user, $parsed);
                 // 6. Confidence Scoring Engine
@@ -99,7 +100,7 @@ class ChatTransactionOrchestrator
                     isCleared: false // HARD DRAFT
                 );
                 
-                $finalConfidence = 0.0; // Skor jatuh ke 0
+                $finalConfidence = 0.0; // Skor jatuh ke 0 — eksplisit
             }
             
             // ... (Lanjut ke Parse Logging dan Simpan Database)
