@@ -177,12 +177,17 @@ class AiSettingsController extends Controller
     {
         return match ($provider) {
             AiProvider::Gemini => [
-                'gemini-1.5-flash-001',
-                'gemini-1.5-flash-002',
+                // Gemini 2.5 (Terbaru)
+                'gemini-2.5-pro',
+                'gemini-2.5-flash',
+                'gemini-2.5-flash-lite',
+                // Gemini 2.0
+                'gemini-2.0-flash',
+                'gemini-2.0-flash-lite',
+                // Gemini 1.5
+                'gemini-1.5-flash',
                 'gemini-1.5-flash-8b',
-                'gemini-1.5-pro-001',
-                'gemini-1.5-pro-002',
-                'gemini-1.0-pro'
+                'gemini-1.5-pro',
             ],
             AiProvider::OpenAI => ['gpt-4o-mini', 'gpt-4o'],
             AiProvider::DeepSeek => ['deepseek-chat'],
