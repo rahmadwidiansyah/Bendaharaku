@@ -16,6 +16,10 @@ use App\Enums\TransactionIntent;
 use App\Events\TransactionPosted;
 use App\Exceptions\CategoryNotFoundException;
 use App\Exceptions\WalletNotFoundException;
+use App\Exceptions\AiConfigurationException;
+use App\Exceptions\AiRateLimitException;
+use App\Exceptions\AiTimeoutException;
+use App\Exceptions\AiProviderException;
 use App\DTO\ConfidenceScoreContext;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -156,6 +160,56 @@ class ChatTransactionOrchestrator
                 'success' => false,
                 'message' => "🔍 *Data Tidak Ditemukan:*\n" . $e->getMessage() . "\n\nPastikan keyword dompet/kategori sudah kamu daftarkan di Web."
             ];
+        } catch (AiConfigurationException $e) {
+            Log::warning('AI tidak dikonfigurasi', ['user_id' => $user->id, 'message' => $e->getMessage()]);
+            return [
+                'success' => false,
+                'message' => implode("\n", [
+                    "⚙️ *AI Belum Dikonfigurasi*",
+                    "",
+                    "Python sedang offline dan belum ada AI cadangan yang aktif.",
+                    "",
+                    "👉 Buka *Dashboard Web → Settings → AI* lalu centang *\"Aktifkan sebagai AI Cadangan\"* pada provider yang sudah kamu isi API key-nya.",
+                ])
+            ];
+        } catch (AiRateLimitException $e) {
+            $provider = $e->getMessage(); // Message berisi nama provider
+            Log::warning("Rate limit tercapai", ['provider' => $provider, 'user_id' => $user->id]);
+            return [
+                'success' => false,
+                'message' => implode("\n", [
+                    "⚠️ *Kuota API {$provider} Habis*",
+                    "",
+                    "Limit token/request harian kamu sudah tercapai. Transaksi ini tidak bisa diproses sementara.",
+                    "",
+                    "💡 *Solusi:*",
+                    "• Tunggu reset kuota (biasanya tengah malam)",
+                    "• Atau topup/upgrade plan API kamu di dashboard {$provider}",
+                ])
+            ];
+        } catch (AiTimeoutException $e) {
+            $provider = $e->getMessage();
+            Log::warning("Provider timeout", ['provider' => $provider, 'user_id' => $user->id]);
+            return [
+                'success' => false,
+                'message' => implode("\n", [
+                    "⏳ *Server {$provider} Sedang Sibuk*",
+                    "",
+                    "Request ke AI {$provider} timeout. Coba kirim ulang pesanmu dalam 1-2 menit ya Bos.",
+                ])
+            ];
+        } catch (AiProviderException $e) {
+            Log::error('AI provider error', ['user_id' => $user->id, 'message' => $e->getMessage()]);
+            return [
+                'success' => false,
+                'message' => implode("\n", [
+                    "❌ *Terjadi Error pada AI*",
+                    "",
+                    "`" . $e->getMessage() . "`",
+                    "",
+                    "Coba lagi nanti. Jika terus berulang, cek API key kamu di *Settings → AI*.",
+                ])
+            ];
         } catch (InvalidArgumentException $e) {
             return [
                 'success' => false,
@@ -163,10 +217,10 @@ class ChatTransactionOrchestrator
             ];
         } catch (Throwable $e) {
             Log::error('Chat Orchestrator Error', [
-                'user_id' => $user->id,
-                'text' => $text,
+                'user_id'   => $user->id,
+                'text'      => $text,
                 'exception' => $e,
-                'message' => $e->getMessage()
+                'message'   => $e->getMessage()
             ]);
 
             return [

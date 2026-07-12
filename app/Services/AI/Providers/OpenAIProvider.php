@@ -10,6 +10,9 @@ use App\DTO\AIParseResult;
 use App\DTO\AiProviderRequest;
 use App\DTO\ParsedTransaction;
 use App\Enums\TransactionIntent;
+use App\Exceptions\AiRateLimitException;
+use App\Exceptions\AiTimeoutException;
+use App\Exceptions\AiProviderException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Client\ConnectionException;
 use Throwable;
@@ -43,15 +46,18 @@ class OpenAIProvider implements AIProviderInterface
 
             if (!$response->successful()) {
                 $statusCode = $response->status();
-                
+
                 if ($statusCode === 429) {
-                    return AIParseResult::failure("❌ Saldo API OpenAI (ChatGPT) Anda habis. Silakan cek billing/tagihan di dashboard platform OpenAI.");
+                    throw new AiRateLimitException('OpenAI');
                 }
                 if (in_array($statusCode, [408, 503, 504])) {
-                    return AIParseResult::failure("⏳ Server OpenAI sedang Timeout. Coba lagi nanti ya.");
+                    throw new AiTimeoutException('OpenAI');
                 }
-                
-                return AIParseResult::failure("OpenAI API Error ({$statusCode}): " . $response->body());
+                if ($statusCode === 401 || $statusCode === 403) {
+                    throw new AiProviderException('OpenAI', "API Key tidak valid atau tidak punya akses (HTTP {$statusCode}).");
+                }
+
+                throw new AiProviderException('OpenAI', "HTTP {$statusCode}: " . substr($response->body(), 0, 200));
             }
 
             $jsonString = $response->json('choices.0.message.content');
@@ -60,7 +66,7 @@ class OpenAIProvider implements AIProviderInterface
             $aiRaw = json_decode($jsonString, true);
 
             if (!$aiRaw || !isset($aiRaw['amount'])) {
-                return AIParseResult::failure("OpenAI gagal mengekstrak format transaksi secara valid.");
+                throw new AiProviderException('OpenAI', 'Response tidak mengandung format transaksi yang valid.');
             }
 
             // Ekstrak Confidence
@@ -97,16 +103,14 @@ class OpenAIProvider implements AIProviderInterface
                 model:       $request->model,
             );
 
+        } catch (AiRateLimitException | AiTimeoutException | AiProviderException $e) {
+            throw $e;
         } catch (ConnectionException $e) {
-            Log::error('OpenAI Connection Timeout', ['exception' => $e, 'message' => $e->getMessage()]);
-            return AIParseResult::failure("⏳ Waktu request ke API OpenAI habis (Timeout). Coba lagi nanti Bos.");
+            Log::warning('OpenAI Connection Timeout', ['message' => $e->getMessage()]);
+            throw new AiTimeoutException('OpenAI');
         } catch (Throwable $e) {
-            Log::error('OpenAI Provider Error', [
-                'exception' => $e,
-                'message' => $e->getMessage(),
-                'text' => $request->text
-            ]);
-            return AIParseResult::failure("Kesalahan internal OpenAI Provider: " . $e->getMessage());
+            Log::error('OpenAI Provider Error', ['message' => $e->getMessage(), 'text' => $request->text]);
+            throw new AiProviderException('OpenAI', $e->getMessage());
         }
     }
 }

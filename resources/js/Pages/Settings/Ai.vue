@@ -211,7 +211,10 @@ onMounted(() => {
 
                         <label class="flex items-start gap-3 bg-gray-900/80 p-4 rounded-xl border border-white/10 cursor-pointer">
                             <input type="checkbox" v-model="form.is_active_provider" class="mt-1 h-4 w-4 rounded border-white/10 text-indigo-500 bg-gray-800 focus:ring-indigo-500" />
-                            <span><span class="block text-sm font-bold text-white">Jadikan otak pemrosesan utama</span></span>
+                            <span>
+                                <span class="block text-sm font-bold text-white">Aktifkan sebagai AI Cadangan</span>
+                                <span class="block text-xs text-gray-400 mt-0.5">AI lokal (Python) tetap berjalan pertama. Provider ini hanya digunakan jika Python tidak yakin atau sedang offline.</span>
+                            </span>
                         </label>
 
                         <div v-if="testResult" :class="['p-3 rounded-lg text-sm border', testResult.success ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' : 'bg-rose-500/10 text-rose-300 border-rose-500/20']">
@@ -259,9 +262,81 @@ onMounted(() => {
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Panel Kiri: Token Usage per Provider -->
                     <div class="lg:col-span-1 bg-gray-900/50 border border-white/10 p-6 rounded-2xl h-fit">
+                        <h3 class="text-sm font-bold text-white mb-4">Pemakaian Token per Provider</h3>
+                        <div v-if="Object.keys(props.usageStats).length === 0" class="text-center py-8">
+                            <p class="text-gray-500 text-xs">Belum ada pemakaian LLM tercatat.</p>
+                            <p class="text-gray-600 text-2xs mt-1">Token hanya dihitung saat memakai Gemini/OpenAI/DeepSeek.</p>
+                        </div>
+                        <div v-else class="space-y-3">
+                            <div v-for="(stat, provider) in props.usageStats" :key="provider" class="bg-gray-800/60 rounded-xl p-3">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-xs font-bold text-white uppercase">{{ provider }}</span>
+                                    <span class="text-xs text-indigo-300 font-mono">{{ formatNumber(stat.total_used) }} token</span>
+                                </div>
+                                <div class="flex gap-2 text-2xs text-gray-400">
+                                    <span>Prompt: <span class="text-gray-300">{{ formatNumber(stat.total_prompt) }}</span></span>
+                                    <span class="text-gray-600">·</span>
+                                    <span>Completion: <span class="text-gray-300">{{ formatNumber(stat.total_completion) }}</span></span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
+                    <!-- Panel Kanan: Activity Log -->
                     <div class="lg:col-span-2 bg-gray-900/50 border border-white/10 p-6 rounded-2xl">
+                        <h3 class="text-sm font-bold text-white mb-4">Riwayat Aktivitas AI</h3>
+                        <div v-if="props.recentLogs.length === 0" class="text-center py-10">
+                            <p class="text-gray-500 text-xs">Belum ada aktivitas AI yang tercatat.</p>
+                        </div>
+                        <div v-else class="space-y-2">
+                            <div
+                                v-for="log in props.recentLogs"
+                                :key="log.id"
+                                class="flex items-start gap-3 p-3 rounded-xl border transition-colors"
+                                :class="{
+                                    'bg-emerald-500/5 border-emerald-500/10': log.status === 'Executed',
+                                    'bg-amber-500/5 border-amber-500/10': log.status === 'Draft',
+                                    'bg-rose-500/5 border-rose-500/10': log.status === 'Failed',
+                                    'bg-orange-500/5 border-orange-500/10': log.status === 'Rate Limit',
+                                    'bg-blue-500/5 border-blue-500/10': log.status === 'Timeout',
+                                    'bg-gray-800/40 border-white/5': !['Executed','Draft','Failed','Rate Limit','Timeout'].includes(log.status),
+                                }"
+                            >
+                                <!-- Ikon status -->
+                                <span class="text-base flex-shrink-0 mt-0.5">
+                                    <template v-if="log.status === 'Executed'">✅</template>
+                                    <template v-else-if="log.status === 'Draft'">📝</template>
+                                    <template v-else-if="log.status === 'Rate Limit'">⚠️</template>
+                                    <template v-else-if="log.status === 'Timeout'">⏳</template>
+                                    <template v-else-if="log.status === 'Failed'">❌</template>
+                                    <template v-else>⚙️</template>
+                                </span>
+                                <div class="flex-1 min-w-0">
+                                    <!-- Teks input user -->
+                                    <p class="text-xs text-white truncate font-medium">{{ log.input_text }}</p>
+                                    <!-- Error message jika ada -->
+                                    <p v-if="log.error" class="text-2xs text-rose-300 mt-0.5 line-clamp-2">{{ log.error }}</p>
+                                    <!-- Meta info -->
+                                    <div class="flex flex-wrap items-center gap-2 mt-1">
+                                        <span class="text-2xs font-bold uppercase px-1.5 py-0.5 rounded"
+                                            :class="{
+                                                'bg-emerald-500/20 text-emerald-300': log.status === 'Executed',
+                                                'bg-amber-500/20 text-amber-300': log.status === 'Draft',
+                                                'bg-rose-500/20 text-rose-300': log.status === 'Failed',
+                                                'bg-orange-500/20 text-orange-300': log.status === 'Rate Limit',
+                                                'bg-blue-500/20 text-blue-300': log.status === 'Timeout',
+                                                'bg-gray-700 text-gray-300': !['Executed','Draft','Failed','Rate Limit','Timeout'].includes(log.status),
+                                            }"
+                                        >{{ log.status }}</span>
+                                        <span class="text-2xs text-gray-500 uppercase">{{ log.provider }}</span>
+                                        <span v-if="log.confidence" class="text-2xs text-gray-500">{{ log.confidence }}% yakin</span>
+                                        <span class="text-2xs text-gray-600 ml-auto">{{ log.date }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
