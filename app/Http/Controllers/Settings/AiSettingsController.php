@@ -62,16 +62,33 @@ class AiSettingsController extends Controller
             ->limit(10)
             ->get()
             ->map(function ($log) {
-                $isDraft = $log->is_success && $log->confidence < 0.80; // Sesuaikan dengan batas Confidence Guard
-                
+                $isDraft = $log->is_success && $log->final_confidence < 0.80;
+
+                // Deteksi jenis error dari error_message untuk tampilan dashboard yang informatif
+                $status = 'Executed';
+                if (!$log->is_success) {
+                    $errorMsg = strtolower((string) $log->error_message);
+                    if (str_contains($errorMsg, 'rate limit') || str_contains($errorMsg, 'quota') || str_contains($errorMsg, 'limit tercapai') || str_contains($errorMsg, '429')) {
+                        $status = 'Rate Limit';
+                    } elseif (str_contains($errorMsg, 'timeout') || str_contains($errorMsg, 'sibuk') || str_contains($errorMsg, 'connection')) {
+                        $status = 'Timeout';
+                    } elseif (str_contains($errorMsg, 'konfigurasi') || str_contains($errorMsg, 'tidak disetup') || str_contains($errorMsg, 'belum dikonfigurasi')) {
+                        $status = 'Not Configured';
+                    } else {
+                        $status = 'Failed';
+                    }
+                } elseif ($isDraft) {
+                    $status = 'Draft';
+                }
+
                 return [
-                    'id' => $log->id,
-                    'provider' => strtoupper($log->provider),
+                    'id'         => $log->id,
+                    'provider'   => strtoupper($log->provider ?? 'python'),
                     'input_text' => $log->input_text,
-                    'confidence' => round($log->confidence * 100), // Jadikan persentase (0-100)
-                    'status' => $log->is_success ? ($isDraft ? 'Draft' : 'Executed') : 'Failed',
-                    'error' => $log->error_message,
-                    'date' => $log->created_at->diffForHumans(),
+                    'confidence' => $log->final_confidence ? round($log->final_confidence * 100) : null,
+                    'status'     => $status,
+                    'error'      => $log->error_message,
+                    'date'       => $log->created_at->diffForHumans(),
                 ];
             });
 
@@ -97,7 +114,9 @@ class AiSettingsController extends Controller
             $this->credentialManager->setCredential($user, $provider, $request->validated('api_key'));
         }
 
-        if ($request->boolean('is_active_provider')) {
+        // Jadikan aktif jika: user centang checkbox ATAU belum ada provider aktif sama sekali
+        $hasNoActiveProvider = !$user->aiPreferences()->where('is_active_provider', true)->exists();
+        if ($request->boolean('is_active_provider') || $hasNoActiveProvider) {
             $this->preferenceManager->switchActiveProvider($user, $provider);
         }
 

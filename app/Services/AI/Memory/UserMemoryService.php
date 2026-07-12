@@ -63,30 +63,47 @@ readonly class UserMemoryService
     /**
      * Mengambil Top-N memori terkuat untuk disuntikkan ke Prompt AI (Sprint 4E.5).
      */
-// Ganti fungsi getTopRelevantMemories menjadi ini:
     public function getTopRelevantMemories(int $userId, string $inputText): array
     {
-        // Ganti cache key menjadi v2 agar tidak tabrakan dengan format cache lama yang berupa array of string
-        $memories = \Illuminate\Support\Facades\Cache::remember("ai-mem-v2-{$userId}", 300, function () use ($userId) {
+        $cacheKey = "ai-mem-v2-{$userId}";
+
+        $memories = \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function () use ($userId) {
             return \App\Models\UserAiMemory::where('user_id', $userId)
                 ->with('category:id,category_name')
                 ->orderByDesc('weight')
                 ->get();
         });
 
+        // Validasi: Jika cache return bukan Collection (corrupt), clear dan re-fetch
+        if (!($memories instanceof \Illuminate\Support\Collection)) {
+            \Illuminate\Support\Facades\Cache::forget($cacheKey);
+            $memories = \App\Models\UserAiMemory::where('user_id', $userId)
+                ->with('category:id,category_name')
+                ->orderByDesc('weight')
+                ->get();
+        }
+
         $matched = [];
         $textLower = strtolower($inputText);
 
         // Filter: Hanya ambil memori yang keyword-nya benar-benar diucapkan user saat ini
         foreach ($memories as $memory) {
-            // Bypass jika format cache salah (string/array bukan object)
-            if (!is_object($memory) || !isset($memory->keyword_pattern)) {
+            // Guard ketat: pastikan ia betul-betul Eloquent model UserAiMemory
+            // (bukan string, array, __PHP_Incomplete_Class, atau object lain)
+            if (!($memory instanceof \App\Models\UserAiMemory)) {
                 continue;
             }
-            
-            if (preg_match("/\b" . preg_quote(strtolower($memory->keyword_pattern), '/') . "\b/i", $textLower)) {
+
+            $pattern = $memory->keyword_pattern;
+
+            // Pastikan keyword_pattern adalah string yang valid
+            if (!is_string($pattern) || $pattern === '') {
+                continue;
+            }
+
+            if (preg_match("/\b" . preg_quote(strtolower($pattern), '/') . "\b/i", $textLower)) {
                 $matched[] = [
-                    'keyword'  => $memory->keyword_pattern,
+                    'keyword'  => $pattern,
                     'category' => $memory->category?->category_name,
                 ];
             }
