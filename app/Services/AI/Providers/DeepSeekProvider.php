@@ -25,7 +25,12 @@ class DeepSeekProvider implements AIProviderInterface
     {
         try {
             $url = "https://api.deepseek.com/chat/completions";
-            $prompt = $this->promptBuilder->build($request->text, $request->wallets, $request->categories);
+            $prompt = $this->promptBuilder->build(
+                $request->text, 
+                $request->wallets, 
+                $request->categories,
+                $request->activeMemories
+            );
 
             $response = Http::timeout(15)->withToken($request->apiKey)
                 ->post($url, [
@@ -82,7 +87,15 @@ class DeepSeekProvider implements AIProviderInterface
                 isCleared: (bool) ($aiRaw['isCleared'] ?? true)
             );
 
-            return new AIParseResult(true, $confidence, null, $parsedTransaction, $usage);
+            return new AIParseResult(
+                success:     true,
+                confidence:  $confidence,
+                error:       null,
+                transaction: $parsedTransaction,
+                usage:       $usage,
+                provider:    'deepseek',
+                model:       $request->model,
+            );
 
         } catch (ConnectionException $e) {
             Log::error('DeepSeek Connection Timeout', ['exception' => $e, 'message' => $e->getMessage()]);
