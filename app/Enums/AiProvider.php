@@ -13,7 +13,7 @@ enum AiProvider: string
     public function defaultModel(): string
     {
         return match ($this) {
-            self::Gemini => 'gemini-1.5-flash',
+            self::Gemini => 'gemini-1.5-flash-002',
             self::OpenAI => 'gpt-4o-mini',
             self::DeepSeek => 'deepseek-chat',
         };
