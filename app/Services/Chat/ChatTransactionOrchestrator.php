@@ -83,45 +83,72 @@ class ChatTransactionOrchestrator
 
             $finalSubject = $extractedSubject ?? $user->name;
 
-            // 5. Resolving Layer dengan Fallback DRAFT
-            // BUG-02 fix: $finalConfidence wajib dideklarasikan SEBELUM try-catch agar
-            // tidak undefined di dalam catch block.
+            // 5. Resolving Layer + Confidence Scoring Engine
+            // $threshold dan $finalConfidence dideklarasikan di sini (BUG-02 fix)
+            $threshold       = (float) config('bendaharaku.ai.confidence.threshold_auto_clear', 0.85);
             $finalConfidence = 0.0;
+            $resolved        = null;
+
             try {
                 $resolved = $this->resolver->resolve($user, $parsed);
-                // 6. Confidence Scoring Engine
-                // ... hitung skor final ...
+
+                // 6. Confidence Scoring Engine — hanya jalan jika resolve sukses
+                $scoreContext = new ConfidenceScoreContext(
+                    user: $user,
+                    inputText: $text,
+                    parseResult: $aiResult,
+                    resolvedTransaction: $resolved,
+                    activeMemories: $activeMemories
+                );
+
+                $finalConfidence = $this->scoringEngine->calculateFinalScore($scoreContext);
+
+                // Timpa status isCleared dengan hasil hitung matematis dari Scoring Engine
                 $resolved->isCleared = ($finalConfidence >= $threshold);
+
             } catch (CategoryNotFoundException | WalletNotFoundException $e) {
                 // FALLBACK: Paksa jadi DRAFT jika kategori/dompet ngawur, JANGAN di-return false!
+                // $resolved dibuat dengan null IDs agar bisa disimpan sebagai draft tanpa relasi DB.
                 $resolved = new \App\DTO\ResolvedTransaction(
                     amount: $parsed->amount,
-                    categoryId: null, // Kosong agar diedit manual
-                    sourceWalletId: null, 
+                    categoryId: null,
+                    sourceWalletId: null,
                     destinationWalletId: null,
                     subject: $finalSubject,
                     notes: $text . "\n[ERROR AI: " . $e->getMessage() . "]",
-                    isCleared: false // HARD DRAFT
+                    isCleared: false // HARD DRAFT — skor confidence 0
                 );
-                
-                $finalConfidence = 0.0; // Skor jatuh ke 0 — eksplisit
+                $finalConfidence = 0.0;
             }
-            
-            // ... (Lanjut ke Parse Logging dan Simpan Database)
-            // 6. Confidence Scoring Engine Layer
-            $scoreContext = new ConfidenceScoreContext(
-                user: $user,
-                inputText: $text,
-                parseResult: $aiResult,
-                resolvedTransaction: $resolved,
-                activeMemories: $activeMemories
-            );
 
-            $finalConfidence = $this->scoringEngine->calculateFinalScore($scoreContext);
-            $threshold = (float) config('bendaharaku.ai.confidence.threshold_auto_clear', 0.85);
-            
-            // Timpa status isCleared dengan hasil hitung matematis dari Scoring Engine
-            $resolved->isCleared = ($finalConfidence >= $threshold);
+            // Jika resolved masih null (shouldn't happen, tapi safety net)
+            if ($resolved === null) {
+                return ['success' => false, 'message' => '❌ Gagal menyiapkan data transaksi.'];
+            }
+
+            // Transaksi DRAFT dengan null IDs tidak bisa disimpan ke DB (constraint FK),
+            // kembalikan pesan khusus agar user tahu perlu cek dan lengkapi via Web.
+            if ($resolved->isCleared === false && ($resolved->categoryId === null || $resolved->sourceWalletId === null)) {
+                // Catat parse log dulu
+                $this->parseLogService->createLog(
+                    user: $user,
+                    inputText: $text,
+                    result: $aiResult,
+                    finalConfidence: $finalConfidence
+                );
+
+                return [
+                    'success' => false,
+                    'message' => implode("\n", [
+                        "📝 *MASUK DRAFT (Butuh Cek Web)*",
+                        "",
+                        "AI tidak dapat mengenali kategori atau dompet dari: _{$text}_",
+                        "",
+                        "Coba sebutkan nama dompet (contoh: *bca*, *dana*, *cash*) dan kategori yang sudah terdaftar.",
+                        "Atau cek & lengkapi transaksi draft-nya di 👉 *Dashboard Web*.",
+                    ]),
+                ];
+            }
 
             // 7. Parse Logging (Sinkronus - Catat Kejujuran AI vs Hasil Sistem)
             $parseLogId = $this->parseLogService->createLog(
