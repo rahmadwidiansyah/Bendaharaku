@@ -177,7 +177,16 @@ class AiSettingsController extends Controller
     {
         return match ($provider) {
             AiProvider::Gemini => [
-                // Gemini 2.5 (Terbaru)
+                // Gemini 3.5 (Terbaru)
+                'gemini-3.5-flash',
+                // Gemini 3.1
+                'gemini-3.1-pro-preview',
+                'gemini-3.1-flash-lite',
+                'gemini-3.1-flash-image',
+                // Gemini 3.0
+                'gemini-3-flash-preview',
+                'gemini-3-pro-image',
+                // Gemini 2.5
                 'gemini-2.5-pro',
                 'gemini-2.5-flash',
                 'gemini-2.5-flash-lite',
