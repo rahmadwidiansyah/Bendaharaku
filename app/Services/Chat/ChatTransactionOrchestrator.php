@@ -237,7 +237,7 @@ class ChatTransactionOrchestrator
                     "Coba lagi nanti. Jika terus berulang, cek API key kamu di *Settings → AI*.",
                 ])
             ];
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException | \RuntimeException $e) {
             return [
                 'success' => false,
                 'message' => "⚠️ *Gagal diproses:*\n" . $e->getMessage()

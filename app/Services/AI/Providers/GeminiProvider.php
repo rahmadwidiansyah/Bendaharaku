@@ -27,7 +27,7 @@ class GeminiProvider implements AIProviderInterface
     public function parseTransaction(AiProviderRequest $request): AIParseResult
     {
         try {
-            $url = "https://generativelanguage.googleapis.com/v1/models/{$request->model}:generateContent";
+            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$request->model}:generateContent";
             // WARN-03 fix: teruskan activeMemories agar RAG berfungsi
             $prompt = $this->promptBuilder->build(
                 $request->text,
