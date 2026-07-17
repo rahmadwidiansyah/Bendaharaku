@@ -115,6 +115,26 @@ class TransactionController extends Controller
     }
 
     /**
+     * Mengkonfirmasi transaksi Draft menjadi transaksi terkonfirmasi.
+     * Memutasi saldo dompet yang sebelumnya ditahan.
+     */
+    public function confirm(TransactionLog $transaction, ProcessTransactionAction $action)
+    {
+        $this->authorizeOwnership($transaction);
+
+        if ($transaction->is_cleared) {
+            return back()->with('error', 'Transaksi ini sudah terkonfirmasi.');
+        }
+
+        try {
+            $action->confirm($transaction);
+            return back()->with('success', 'Transaksi berhasil dikonfirmasi!');
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
      * Menghapus transaksi.
      */
     public function destroy(TransactionLog $transaction, ProcessTransactionAction $action)

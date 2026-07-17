@@ -48,7 +48,7 @@ const handleImageError = (e, fallback) => {
 
         <Head title="Aset Saya" />
 
-        <div class="p-5 pb-32 w-full lg:max-w-4xl mx-auto lg:px-8">
+        <div class="p-5 w-full lg:max-w-4xl mx-auto lg:px-8">
             <header class="mb-8 pt-4 animate-fade-in-up">
                 <p class="text-2xs text-purple-500 font-black uppercase tracking-[0.3em] mb-1 opacity-80">Portfolio</p>
                 <h1 class="text-2xl font-black text-white tracking-tight leading-none mb-4">Aset & Dompet</h1>
