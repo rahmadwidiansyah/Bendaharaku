@@ -126,21 +126,13 @@ const handleBack = () => router.visit(route('dashboard'))
             'flex flex-col bg-gray-800 w-full text-white overflow-hidden',
             'fixed inset-0 z-60 h-dvh max-h-dvh',
             isDesktopLayout ? 'lg:relative lg:inset-auto lg:z-0 lg:h-screen lg:max-h-screen' : ''
-        ]" style="padding-bottom: env(safe-area-inset-bottom)">
+        ]" style="padding-bottom: max(7rem, calc(3.5rem + env(safe-area-inset-bottom, 0px) + 1rem))">
 
             <div class="flex flex-col h-full w-full max-w-md mx-auto relative bg-gray-800 overflow-hidden">
                 <form @submit.prevent="submit" class="flex flex-col h-full min-h-0 overflow-hidden relative lg:pt-8">
 
-                    <header class="px-5 pt-6 md:pt-10 pb-3 shrink-0 flex items-center justify-between">
-                        <div>
-                            <p class="text-2xs font-black text-purple-500 uppercase tracking-[0.2em] mb-1">Perbarui catatan</p>
-                            <h1 class="text-2xl font-black tracking-tight text-white">Edit transaksi</h1>
-                        </div>
-                        <span class="text-2xs font-bold text-gray-500">Pastikan kembali sebelum simpan</span>
-                    </header>
-
                     <!-- TABS UTAMA -->
-                    <div class="px-4 pt-1 pb-2 shrink-0 flex gap-2 items-stretch">
+                    <div class="px-4 pt-4 pb-2 shrink-0 flex gap-2 items-stretch">
                         <!-- DELETE BUTTON -->
                         <button type="button" @click="destroy"
                             class="w-[40px] shrink-0 flex items-center justify-center text-red-500 active:scale-95 transition-transform bg-linear-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 hover:bg-red-500/10 hover:text-red-300"
