@@ -319,6 +319,11 @@ const selectWallet = (w) => {
 };
 
 const submit = (closeAfter = true) => {
+    if (!form.amount || form.amount <= 0) {
+        form.setError('amount', 'Nominal harus lebih dari 0');
+        return;
+    }
+
     if (new Date(form.date) > new Date()) {
         form.setError('date', 'Masa depan tidak diizinkan!');
         return;
