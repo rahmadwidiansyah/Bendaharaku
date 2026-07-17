@@ -96,7 +96,7 @@ const handleBack = () => router.visit(route('dashboard'))
             'flex flex-col bg-gray-800 w-full text-white overflow-hidden',
             'fixed inset-0 z-60 h-dvh max-h-dvh',
             isDesktopLayout ? 'lg:relative lg:inset-auto lg:z-0 lg:h-screen lg:max-h-screen' : ''
-        ]" style="padding-bottom: env(safe-area-inset-bottom)">
+        ]" style="padding-bottom: max(7rem, calc(3.5rem + env(safe-area-inset-bottom, 0px) + 1rem))">
 
             <div class="flex flex-col h-full w-full max-w-md mx-auto relative bg-gray-800 overflow-hidden">
                 <form @submit.prevent="submit" class="flex flex-col h-full min-h-0 overflow-hidden relative lg:pt-8">
@@ -199,7 +199,7 @@ const handleBack = () => router.visit(route('dashboard'))
                         </div>
                     </div>
 
-                    <div class="flex-1 min-h-0 overflow-y-auto px-4 py-4 no-scrollbar relative">
+                    <div class="flex-1 min-h-0 overflow-y-auto px-4 py-4 pb-20 no-scrollbar relative">
 
                         <div v-if="Object.keys(form.errors).length > 0"
                             class="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl">
@@ -215,7 +215,7 @@ const handleBack = () => router.visit(route('dashboard'))
                         </div>
 
                         <div v-if="['Debt', 'Receivable'].includes(activeType)"
-                            class="flex flex-col justify-start h-full pb-32 gap-4">
+                            class="flex flex-col justify-start h-full gap-4">
 
                             <div class="flex flex-col items-center">
                                 <label
@@ -342,7 +342,8 @@ const handleBack = () => router.visit(route('dashboard'))
                     </button>
 
                     <div v-show="showBottomPanel"
-                        class="bg-linear-to-br from-gray-800 to-gray-900 border-t border-white/10 rounded-t-xl md:border md:rounded-xl md:mb-10 md:mx-4 p-4 z-20 shrink-0 relative transition-all">
+                        class="sticky bottom-0 bg-linear-to-br from-gray-800 to-gray-900 border-t border-white/10 rounded-t-xl md:border md:rounded-xl md:mb-10 md:mx-4 p-4 z-20 shrink-0 relative transition-all"
+                        style="box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5)">
                         <div class="flex items-center justify-between px-1 mb-2">
                             <p class="text-2xs font-black text-purple-500 uppercase tracking-[0.18em] truncate pr-2">Langkah 2 · {{ (isMoneyIn ? selectedDestWallet : selectedSourceWallet)?.name || 'Pilih dompet' }}</p>
                             <span :class="form.amount > 0 ? 'text-green-400' : 'text-gray-600'" class="text-2xs font-bold">{{ form.amount > 0 ? '✓ Nominal terisi' : 'Nominal wajib' }}</span>

@@ -108,8 +108,8 @@ defineEmits(['toggle'])
 
         <!-- ── Nav Items ── -->
         <div :class="[
-            'flex justify-around items-center pt-3 pb-1.5 px-2',
-            isDesktopLayout ? 'lg:flex-col lg:justify-start lg:gap-0.5 lg:px-3 lg:pt-0' : '',
+            'flex items-center pt-2 pb-1 px-1',
+            isDesktopLayout ? 'lg:flex-col lg:justify-start lg:gap-0.5 lg:px-3 lg:pt-0 lg:items-stretch' : 'justify-around',
         ]">
 
             <!-- Home -->
@@ -142,12 +142,13 @@ defineEmits(['toggle'])
                 </template>
             </NavItem>
 
-            <!-- Catat (Transaksi) — center position, CTA utama -->
+            <!-- Catat (Transaksi) — CTA utama bergaya e-wallet, hanya icon + di mobile -->
             <NavItem
+                v-if="isDesktopLayout"
                 :href="route('transactions.create')"
                 label="Catat"
                 :active="route().current('transactions.*')"
-                :is-desktop="isDesktopLayout"
+                :is-desktop="true"
                 :sidebar-open="isSidebarOpen"
             >
                 <template #icon>
@@ -156,6 +157,25 @@ defineEmits(['toggle'])
                     </svg>
                 </template>
             </NavItem>
+
+            <!-- Catat mobile — tombol CTA menonjol seperti Pay/Scan di e-wallet -->
+            <div v-if="!isDesktopLayout" class="flex flex-col items-center justify-center flex-1 relative">
+                <Link
+                    :href="route('transactions.create')"
+                    class="absolute -top-7 flex flex-col items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-purple-700 shadow-lg shadow-purple-500/50 active:scale-90 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 border-4 border-gray-900"
+                    :class="route().current('transactions.*') ? 'from-purple-400 to-purple-600' : ''"
+                    aria-label="Catat transaksi baru"
+                >
+                    <svg class="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                </Link>
+                <!-- Label di bawah tombol -->
+                <span class="mt-7 text-[10px] font-bold tracking-wide uppercase leading-none"
+                    :class="route().current('transactions.*') ? 'text-purple-400' : 'text-gray-500'">
+                    Catat
+                </span>
+            </div>
 
             <!-- Grafik (Analytics) -->
             <NavItem
@@ -187,18 +207,18 @@ defineEmits(['toggle'])
                 </template>
             </NavItem>
 
-            <!-- Hutang/Piutang — Desktop Only -->
+            <!-- Tanggungan (Hutang & Piutang) — Desktop Only -->
             <NavItem
                 v-if="isDesktopLayout"
                 :href="route('loans.index', { type: 'debt' })"
-                label="Hutang"
+                label="Tanggungan"
                 :active="route().current('loans.*')"
                 :is-desktop="true"
                 :sidebar-open="isSidebarOpen"
             >
                 <template #icon>
                     <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75" />
                     </svg>
                 </template>
             </NavItem>

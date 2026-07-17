@@ -61,7 +61,7 @@ const formatDateRange = () => {
 
         <Head :title="category.category_name" />
 
-        <div class="p-5 pb-32 w-full lg:max-w-4xl mx-auto lg:px-8 relative animate-fade-in-up">
+        <div class="p-5 w-full lg:max-w-4xl mx-auto lg:px-8 relative animate-fade-in-up">
 
             <header class="flex justify-between items-center mb-8 pt-4 relative z-10">
                 <button type="button" @click="handleBack"

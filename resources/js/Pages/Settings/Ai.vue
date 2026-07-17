@@ -148,7 +148,7 @@ onMounted(() => {
         
         <div class="fixed top-[-10%] left-[50%] -translate-x-1/2 w-[400px] h-[400px] bg-indigo-500 blur-[150px] opacity-[0.14] rounded-full pointer-events-none z-0"></div>
 
-        <div class="p-5 pb-32 w-full lg:max-w-4xl mx-auto lg:px-8 relative z-10 animate-slide-up min-h-screen">
+        <div class="p-5 w-full lg:max-w-4xl mx-auto lg:px-8 relative z-10 animate-slide-up min-h-screen">
             <header class="flex justify-between items-center mb-8 pt-4">
                 <div>
                     <p class="text-2xs text-indigo-400 font-black mb-1.5 uppercase tracking-[0.2em] flex items-center gap-2">
