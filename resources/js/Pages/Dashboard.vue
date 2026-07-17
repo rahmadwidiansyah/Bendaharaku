@@ -80,7 +80,8 @@ const closeProfileMenuOnEscape = (e) => {
 	if (e.key === 'Escape') showProfileMenu.value = false
 }
 
-const showModal = ref(false)const selectedTransaction = ref(null)
+const showModal = ref(false)
+const selectedTransaction = ref(null)
 const search = ref(props.filters?.search || '')
 const type = ref(props.filters?.type || '')
 const showSortModal = ref(false)
