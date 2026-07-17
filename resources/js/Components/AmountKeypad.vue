@@ -14,11 +14,11 @@
 
 defineEmits(['key'])
 
-// Urutan tombol keypad
+// Urutan tombol keypad — standar bank & e-wallet (1 di kiri atas, bukan kiri bawah)
 const keys = [
-    '7', '8', '9',
-    '4', '5', '6',
     '1', '2', '3',
+    '4', '5', '6',
+    '7', '8', '9',
     '000', '0', 'del',
 ]
 </script>

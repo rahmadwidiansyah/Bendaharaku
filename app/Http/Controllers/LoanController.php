@@ -10,8 +10,9 @@ class LoanController extends Controller
 {
     public function index($type)
     {
-        $user = Auth::user();
-        $isDebt = $type === 'hutang';
+        $user   = Auth::user();
+        // Support 'debt' (baru) dan 'hutang' (lama) agar backward compatible
+        $isDebt = in_array($type, ['debt', 'hutang']);
 
         $transactions = $user->transactionLogs()->with('category')
             ->whereHas('category', function($q) use ($isDebt) {
