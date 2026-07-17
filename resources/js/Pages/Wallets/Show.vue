@@ -4,6 +4,7 @@ import { Head, Link, usePage } from '@inertiajs/vue3'
 import BottomNav from '@/Components/BottomNav.vue'
 import TransactionDetailModal from '@/Components/TransactionDetailModal.vue'
 import { ref } from 'vue'
+import { formatNumber, formatDate } from '@/utils/format.js'
 
 const props = defineProps({
 	wallet: Object,
@@ -13,18 +14,8 @@ const props = defineProps({
 const isModalOpen = ref(false)
 const selectedTransaction = ref({})
 
-const formatAmount = (amount) => {
-	return new Intl.NumberFormat('id-ID').format(amount)
-}
-
 const getIcon = (icon) => {
 	return icon && (icon.includes('.') || icon.includes('/')) ? true : false
-}
-
-const formatDate = (dateString) => {
-	if (!dateString) return ''
-	const date = new Date(dateString)
-	return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })
 }
 
 const formatTime = (timeString) => {
@@ -96,7 +87,7 @@ const getTypeName = (typeName) => {
 				</div>
 
 				<p class="text-2xs font-bold text-gray-500 uppercase tracking-[0.2em] mb-1">{{ wallet.name }}</p>
-				<h2 class="text-3xl font-black text-white tracking-tight mb-6">Rp {{ formatAmount(wallet.balance) }}</h2>
+				<h2 class="text-3xl font-black text-white tracking-tight mb-6">Rp {{ formatNumber(wallet.balance) }}</h2>
 
 				<Link
 					:href="route('wallets.edit', wallet.id)"
@@ -143,7 +134,7 @@ const getTypeName = (typeName) => {
 								<p
 									class="text-2xs font-black"
 									:class="trx.destination_wallet_id === wallet.id ? 'text-green-400' : 'text-red-400'">
-									{{ trx.destination_wallet_id === wallet.id ? '+' : '-' }}{{ formatAmount(trx.amount) }}
+									{{ trx.destination_wallet_id === wallet.id ? '+' : '-' }}{{ formatNumber(trx.amount) }}
 								</p>
 								<div class="flex items-center justify-end gap-1.5 mt-1">
 									<span class="text-xs text-gray-600 font-medium italic">

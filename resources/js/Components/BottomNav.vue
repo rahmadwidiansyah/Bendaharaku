@@ -3,13 +3,14 @@
  * BottomNav.vue
  *
  * Navigasi utama aplikasi:
- *   - Mobile: bottom navigation bar
- *   - Desktop: collapsible sidebar
+ *   - Mobile: bottom navigation bar (5 item: Home, Transaksi, Aset, Grafik, Label)
+ *   - Desktop: collapsible sidebar dengan logo/brand area
  *
- * Perubahan dari v1 (Prioritas 1):
- *   - Hapus v-html untuk icon → setiap item punya komponen icon slot eksplisit
- *   - Fix route loans → route('loans.index', { type: 'debt' })
- *   - Tambah route settings.index
+ * Phase 4 changes:
+ *   - Tambah "Transaksi" ke mobile nav (gantikan "Label" yang dipindah ke desktop)
+ *   - Tambah brand/logo area di sidebar desktop saat terbuka
+ *   - Perbaiki active indicator: pill background lebih jelas di mobile
+ *   - Desktop: Loan + Settings + Label tetap ada di sidebar
  */
 
 import { Link } from '@inertiajs/vue3'
@@ -33,30 +34,46 @@ defineEmits(['toggle'])
         :class="[
             'fixed z-50 transition-all duration-300',
             'bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md',
-            'bg-gray-900/90 backdrop-blur-xl border-t border-white/10 rounded-t-2xl pb-safe',
-            isDesktopLayout ? 'lg:bottom-auto lg:top-0 lg:left-0 lg:translate-x-0 lg:h-screen lg:border-t-0 lg:border-r lg:rounded-none lg:bg-gray-900 lg:flex lg:flex-col lg:justify-start lg:pt-8' : '',
+            'bg-gray-900/90 backdrop-blur-xl border-t border-white/10 rounded-t-2xl',
+            '[padding-bottom:env(safe-area-inset-bottom,0px)]',
+            isDesktopLayout ? 'lg:bottom-auto lg:top-0 lg:left-0 lg:translate-x-0 lg:h-screen lg:border-t-0 lg:border-r lg:rounded-none lg:bg-gray-900 lg:flex lg:flex-col lg:justify-start' : '',
             isDesktopLayout && isSidebarOpen ? 'lg:w-64' : (isDesktopLayout ? 'lg:w-20' : ''),
         ]"
         aria-label="Navigasi utama"
         role="navigation"
     >
 
-        <!-- ── Toggle Button (Desktop Only) ── -->
-        <div :class="['px-4 mb-8 justify-end', isDesktopLayout ? 'hidden lg:flex' : 'hidden']">
+        <!-- ── Brand Area (Desktop Sidebar Only) ── -->
+        <div :class="['items-center mb-6 pt-5 px-4', isDesktopLayout ? 'hidden lg:flex' : 'hidden']">
+            <!-- Logo icon — selalu tampil -->
+            <div class="w-9 h-9 shrink-0 bg-gradient-to-br from-purple-800 to-purple-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/30">
+                <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <!-- Nama app — hanya saat sidebar terbuka -->
+            <div :class="['ml-3 overflow-hidden transition-all duration-300', isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0']">
+                <p class="text-sm font-black text-white tracking-tight leading-none whitespace-nowrap">Bendaharaku</p>
+                <p class="text-2xs text-purple-400 font-bold uppercase tracking-widest mt-0.5 whitespace-nowrap">Finance Manager</p>
+            </div>
+            <!-- Toggle collapse button -->
             <button
                 @click="$emit('toggle', !isSidebarOpen)"
                 :aria-expanded="isSidebarOpen"
                 :aria-label="isSidebarOpen ? 'Tutup sidebar' : 'Buka sidebar'"
-                class="text-gray-400 hover:text-white transition-colors bg-gray-800 p-2 rounded-xl border border-white/10 hover:border-purple-500/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400"
+                :class="['ml-auto shrink-0 text-gray-500 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400', isSidebarOpen ? '' : 'mx-auto']"
             >
-                <svg v-if="isSidebarOpen" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <svg v-if="isSidebarOpen" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
                 </svg>
-                <svg v-else class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                <svg v-else class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
                 </svg>
             </button>
         </div>
+
+        <!-- Divider bawah brand area -->
+        <div :class="['mx-4 mb-4 border-t border-white/5', isDesktopLayout ? 'hidden lg:block' : 'hidden']" />
 
         <!-- ── Quick Action Buttons (Desktop Only) ── -->
         <div :class="['w-full mb-4 flex-col gap-2 px-4', isDesktopLayout ? 'hidden lg:flex' : 'hidden']">
@@ -91,8 +108,8 @@ defineEmits(['toggle'])
 
         <!-- ── Nav Items ── -->
         <div :class="[
-            'flex justify-around items-center pt-4 pb-1.5 px-3',
-            isDesktopLayout ? 'lg:flex-col lg:justify-start lg:gap-1 lg:px-4 lg:pt-0' : '',
+            'flex justify-around items-center pt-3 pb-1.5 px-2',
+            isDesktopLayout ? 'lg:flex-col lg:justify-start lg:gap-0.5 lg:px-3 lg:pt-0' : '',
         ]">
 
             <!-- Home -->
@@ -125,6 +142,21 @@ defineEmits(['toggle'])
                 </template>
             </NavItem>
 
+            <!-- Catat (Transaksi) — center position, CTA utama -->
+            <NavItem
+                :href="route('transactions.create')"
+                label="Catat"
+                :active="route().current('transactions.*')"
+                :is-desktop="isDesktopLayout"
+                :sidebar-open="isSidebarOpen"
+            >
+                <template #icon>
+                    <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </template>
+            </NavItem>
+
             <!-- Grafik (Analytics) -->
             <NavItem
                 :href="route('analytics.index')"
@@ -140,7 +172,7 @@ defineEmits(['toggle'])
                 </template>
             </NavItem>
 
-            <!-- Label (Categories) -->
+            <!-- Label (Categories) — mobile + desktop -->
             <NavItem
                 :href="route('categories.index')"
                 label="Label"
