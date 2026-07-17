@@ -141,6 +141,37 @@ class ProcessTransactionAction
     }
 
     /**
+     * Mengkonfirmasi transaksi Draft menjadi transaksi terkonfirmasi.
+     * Memutasi saldo dompet yang sebelumnya ditahan karena status draft.
+     */
+    public function confirm(TransactionLog $transaction): TransactionLog
+    {
+        if ($transaction->is_cleared) {
+            throw new InvalidArgumentException("Konfirmasi gagal: Transaksi ini sudah terkonfirmasi.");
+        }
+
+        return DB::transaction(function () use ($transaction) {
+            $user = User::findOrFail($transaction->user_id);
+
+            $source      = Wallet::where('user_id', $transaction->user_id)->where('id', $transaction->source_wallet_id)->lockForUpdate()->firstOrFail();
+            $destination = Wallet::where('user_id', $transaction->user_id)->where('id', $transaction->destination_wallet_id)->lockForUpdate()->firstOrFail();
+
+            // Terapkan mutasi saldo yang sebelumnya ditahan
+            $this->applyTransaction($source, $destination, $transaction->amount, $user->allow_negative_balance);
+
+            $mainWallet   = ($source->group_type !== 'System') ? $source : $destination;
+            $balanceAfter = Wallet::where('id', $mainWallet->id)->value('balance');
+
+            $transaction->update([
+                'is_cleared'     => true,
+                'balance_after'  => $balanceAfter,
+            ]);
+
+            return $transaction;
+        });
+    }
+
+    /**
      * Menghapus transaksi, membalikkan kondisi saldo dompet, dan mengeksekusi soft delete.
      */
     public function delete(TransactionLog $transaction): bool
