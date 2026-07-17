@@ -39,6 +39,7 @@ defineEmits(['toggle'])
             isDesktopLayout ? 'lg:bottom-auto lg:top-0 lg:left-0 lg:translate-x-0 lg:h-screen lg:border-t-0 lg:border-r lg:rounded-none lg:bg-gray-900 lg:flex lg:flex-col lg:justify-start' : '',
             isDesktopLayout && isSidebarOpen ? 'lg:w-64' : (isDesktopLayout ? 'lg:w-20' : ''),
         ]"
+        style="overflow: visible;"
         aria-label="Navigasi utama"
         role="navigation"
     >
@@ -108,9 +109,9 @@ defineEmits(['toggle'])
 
         <!-- ── Nav Items ── -->
         <div :class="[
-            'flex items-center pt-2 pb-1 px-1',
+            'flex items-end pt-2 pb-1 px-1',
             isDesktopLayout ? 'lg:flex-col lg:justify-start lg:gap-0.5 lg:px-3 lg:pt-0 lg:items-stretch' : 'justify-around',
-        ]">
+        ]" style="overflow: visible;">
 
             <!-- Home -->
             <NavItem
@@ -142,7 +143,7 @@ defineEmits(['toggle'])
                 </template>
             </NavItem>
 
-            <!-- Catat (Transaksi) — CTA utama bergaya e-wallet, hanya icon + di mobile -->
+            <!-- Catat — desktop pakai NavItem biasa di sidebar -->
             <NavItem
                 v-if="isDesktopLayout"
                 :href="route('transactions.create')"
@@ -158,23 +159,29 @@ defineEmits(['toggle'])
                 </template>
             </NavItem>
 
-            <!-- Catat mobile — tombol CTA menonjol seperti Pay/Scan di e-wallet -->
-            <div v-if="!isDesktopLayout" class="flex flex-col items-center justify-center flex-1 relative">
+            <!-- Catat mobile — tombol bulat menonjol ke atas gaya e-wallet -->
+            <div v-if="!isDesktopLayout" class="flex-1 flex flex-col items-center justify-end pb-1" style="overflow: visible; position: relative;">
                 <Link
                     :href="route('transactions.create')"
-                    class="absolute -top-7 flex flex-col items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-purple-700 shadow-lg shadow-purple-500/50 active:scale-90 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 border-4 border-gray-900"
-                    :class="route().current('transactions.*') ? 'from-purple-400 to-purple-600' : ''"
-                    aria-label="Catat transaksi baru"
+                    :aria-label="'Catat transaksi baru'"
+                    :aria-current="route().current('transactions.*') ? 'page' : undefined"
+                    class="flex items-center justify-center rounded-full border-[3px] border-gray-900 active:scale-90 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300"
+                    :class="[
+                        'w-14 h-14',
+                        route().current('transactions.*')
+                            ? 'bg-gradient-to-br from-purple-400 to-purple-600 shadow-[0_0_20px_4px_rgba(168,85,247,0.5)]'
+                            : 'bg-gradient-to-br from-purple-500 to-purple-700 shadow-[0_4px_18px_0px_rgba(139,92,246,0.55)]',
+                    ]"
+                    style="margin-bottom: 4px; margin-top: -28px;"
                 >
-                    <svg class="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                    <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.8" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                     </svg>
                 </Link>
-                <!-- Label di bawah tombol -->
-                <span class="mt-7 text-[10px] font-bold tracking-wide uppercase leading-none"
-                    :class="route().current('transactions.*') ? 'text-purple-400' : 'text-gray-500'">
-                    Catat
-                </span>
+                <span
+                    class="text-[10px] font-bold tracking-wide uppercase leading-none mt-1"
+                    :class="route().current('transactions.*') ? 'text-purple-400' : 'text-gray-500'"
+                >Catat</span>
             </div>
 
             <!-- Grafik (Analytics) -->
