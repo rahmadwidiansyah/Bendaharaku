@@ -629,6 +629,7 @@ const handleBack = () => router.visit(route('dashboard'))
     </AuthenticatedLayout>
 </template>
 
+<style scoped>
 @keyframes slide-up {
     0% {
         transform: translateY(100%);
