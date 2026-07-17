@@ -54,9 +54,15 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/', [AiSettingsController::class, 'store'])->name('store');
         Route::post('/test', [AiSettingsController::class, 'testConnection'])->name('test');
         
-        // API untuk Dashboard Vue
+        // API untuk Dashboard Vue (settings.ai.api.*)
         Route::get('/api/dashboard', [AiAnalyticsController::class, 'dashboard'])->name('api.dashboard');
         Route::get('/api/feedback', [AiAnalyticsController::class, 'feedback'])->name('api.feedback');
+    });
+
+    // Alias route untuk AiAnalytics.vue full-page (/settings/ai/analytics)
+    Route::prefix('api/ai/analytics')->name('api.ai.analytics.')->group(function () {
+        Route::get('/dashboard', [AiAnalyticsController::class, 'dashboard'])->name('dashboard');
+        Route::get('/feedback', [AiAnalyticsController::class, 'feedback'])->name('feedback');
     });
 
     // Resources CRUD

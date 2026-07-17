@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 
 const props = defineProps({
@@ -47,6 +47,8 @@ const setQuickDate = (type) => {
 };
 
 const submit = () => {
+    if (form.start_date > form.end_date) return;
+
     form.get(props.action, {
         preserveState: true,
         onSuccess: () => {
@@ -54,6 +56,8 @@ const submit = () => {
         },
     });
 };
+
+const isInvalidRange = computed(() => form.start_date > form.end_date);
 </script>
 
 <template>
@@ -89,20 +93,27 @@ const submit = () => {
                     <form @submit.prevent="submit" class="space-y-5">
                         <div class="grid grid-cols-2 gap-3 text-left">
                             <div class="space-y-1">
-                                <label
+                                <label for="date-start"
                                     class="text-2xs font-bold text-purple-500 uppercase tracking-widest pl-1">Dari</label>
-                                <input type="date" v-model="form.start_date"
+                                <input id="date-start" type="date" v-model="form.start_date"
                                     class="w-full bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 text-white rounded-xl p-3 text-2xs"
                                     style="color-scheme: dark;">
                             </div>
                             <div class="space-y-1">
-                                <label
+                                <label for="date-end"
                                     class="text-2xs font-bold text-purple-500 uppercase tracking-widest pl-1">Sampai</label>
-                                <input type="date" v-model="form.end_date"
-                                    class="w-full bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 text-white rounded-xl p-3 text-2xs"
+                                <input id="date-end" type="date" v-model="form.end_date"
+                                    :min="form.start_date"
+                                    class="w-full bg-gradient-to-br from-gray-900 to-gray-800 border text-white rounded-xl p-3 text-2xs transition-colors"
+                                    :class="isInvalidRange ? 'border-red-500/60' : 'border-white/10'"
                                     style="color-scheme: dark;">
                             </div>
                         </div>
+
+                        <p v-if="isInvalidRange" role="alert"
+                            class="text-2xs text-red-400 font-bold -mt-2">
+                            ⚠ Tanggal akhir harus sama atau setelah tanggal mulai.
+                        </p>
 
                         <div class="grid grid-cols-3 gap-2 pt-2">
                             <button type="button" @click="setQuickDate('thisYear')"
@@ -116,8 +127,8 @@ const submit = () => {
                                 Lalu</button>
                         </div>
 
-                        <button type="submit" :disabled="form.processing"
-                            class="w-full bg-gradient-to-br from-purple-800 to-purple-500 text-white font-black text-2xs uppercase py-3.5 rounded-xl active:scale-95 transition-all mt-2 shadow-lg shadow-purple-500/20">
+                        <button type="submit" :disabled="form.processing || isInvalidRange"
+                            class="w-full bg-gradient-to-br from-purple-800 to-purple-500 text-white font-black text-2xs uppercase py-3.5 rounded-xl active:scale-95 transition-all mt-2 shadow-lg shadow-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100">
                             Terapkan Filter
                         </button>
                     </form>

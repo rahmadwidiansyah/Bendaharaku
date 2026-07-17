@@ -186,8 +186,11 @@ class ChatTransactionOrchestrator
             event(new TransactionPosted($user, $transactionLog, $parseLogId));
 
             return [
-                'success' => true,
-                'message' => 'Transaksi berhasil dicatat.',
+                'success'   => true,
+                'message'   => 'Transaksi berhasil dicatat.',
+                'provider'  => $aiResult->provider,
+                'model'     => $aiResult->model,
+                'confidence'=> $finalConfidence,
                 'transaction' => $transactionLog->load(['category', 'sourceWallet', 'destinationWallet', 'type'])
             ];
 

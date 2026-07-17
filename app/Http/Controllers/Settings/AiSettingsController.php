@@ -62,28 +62,23 @@ class AiSettingsController extends Controller
             ->limit(10)
             ->get()
             ->map(function ($log) {
-                $isDraft = $log->is_success && $log->final_confidence < 0.80;
+                // Gunakan kolom status langsung dari database
+                // status bisa: 'draft', 'executed', 'failed', 'rate_limit', 'timeout', dll.
+                $rawStatus = strtolower((string) ($log->status ?? ''));
 
-                // Deteksi jenis error dari error_message untuk tampilan dashboard yang informatif
-                $status = 'Executed';
-                if (!$log->is_success) {
-                    $errorMsg = strtolower((string) $log->error_message);
-                    if (str_contains($errorMsg, 'rate limit') || str_contains($errorMsg, 'quota') || str_contains($errorMsg, 'limit tercapai') || str_contains($errorMsg, '429')) {
-                        $status = 'Rate Limit';
-                    } elseif (str_contains($errorMsg, 'timeout') || str_contains($errorMsg, 'sibuk') || str_contains($errorMsg, 'connection')) {
-                        $status = 'Timeout';
-                    } elseif (str_contains($errorMsg, 'konfigurasi') || str_contains($errorMsg, 'tidak disetup') || str_contains($errorMsg, 'belum dikonfigurasi')) {
-                        $status = 'Not Configured';
-                    } else {
-                        $status = 'Failed';
-                    }
-                } elseif ($isDraft) {
-                    $status = 'Draft';
-                }
+                $status = match(true) {
+                    $rawStatus === 'draft'                                   => 'Draft',
+                    in_array($rawStatus, ['executed', 'success', ''])
+                        && $log->is_success                                  => 'Executed',
+                    str_contains($rawStatus, 'rate') || str_contains($rawStatus, 'quota') => 'Rate Limit',
+                    str_contains($rawStatus, 'timeout')                     => 'Timeout',
+                    !$log->is_success                                        => 'Failed',
+                    default                                                  => ucfirst($rawStatus) ?: 'Executed',
+                };
 
                 return [
                     'id'         => $log->id,
-                    'provider'   => strtoupper($log->provider ?? 'python'),
+                    'provider'   => strtoupper($log->provider ?? 'PYTHON-NLP'),
                     'input_text' => $log->input_text,
                     'confidence' => $log->final_confidence ? round($log->final_confidence * 100) : null,
                     'status'     => $status,
