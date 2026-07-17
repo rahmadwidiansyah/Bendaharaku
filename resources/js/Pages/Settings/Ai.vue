@@ -3,7 +3,8 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
 import { computed, ref, watch, onMounted, shallowRef } from 'vue';
-import Chart from 'chart.js/auto'; // Pastikan chart.js sudah terinstall
+import Chart from 'chart.js/auto';
+import { formatNumber } from '@/utils/format.js';
 
 const props = defineProps({
     providerStatuses: { type: Object, required: true },
@@ -135,8 +136,6 @@ const submitSettings = () => {
         },
     });
 };
-
-const formatNumber = (num) => new Intl.NumberFormat('id-ID').format(num || 0);
 
 onMounted(() => {
     fetchAnalytics();

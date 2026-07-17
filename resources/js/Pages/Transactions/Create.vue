@@ -1,10 +1,14 @@
 <script setup>
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, useForm, router } from '@inertiajs/vue3';
-import { ref, computed, onMounted, watch } from 'vue';
-import { useLayoutPreference } from '@/Composables/useLayoutPreference';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import TransactionTypeTab from '@/Components/TransactionTypeTab.vue'
+import AmountKeypad from '@/Components/AmountKeypad.vue'
+import { Head, useForm, router } from '@inertiajs/vue3'
+import { onMounted } from 'vue'
+import { useLayoutPreference } from '@/Composables/useLayoutPreference'
+import { useTransactionForm } from '@/Composables/useTransactionForm.js'
+import { formatNumber } from '@/utils/format.js'
 
-const { isDesktopLayout } = useLayoutPreference();
+const { isDesktopLayout } = useLayoutPreference()
 
 const props = defineProps({
     wallets: Array,
@@ -12,7 +16,7 @@ const props = defineProps({
     systemWallets: Array,
     debtSubjects: Array,
     receivableSubjects: Array,
-});
+})
 
 const form = useForm({
     category_id: null,
@@ -25,338 +29,62 @@ const form = useForm({
     due_date: null,
     due_date_type: null,
     due_date_interval: null,
-});
+})
 
-const mainTab = ref('Expense');
-const activeType = ref('Expense');
-const debtSubTab = ref('income');
-const showCategoryModal = ref(false);
-const showWalletModal = ref(false);
-const walletModalMode = ref('source');
-const rawAmount = ref('0');
+// ─── Semua shared logic dari composable ──────────────────────────
+const tx = useTransactionForm(form, props, { isDesktopLayout })
 
-const formattedAmount = computed(() => {
-    if (!rawAmount.value || rawAmount.value === '0') return '';
-    const clean = rawAmount.value.toString().replace(/\D/g, '');
-    if (!clean) return '';
-    return parseInt(clean, 10).toLocaleString('id-ID');
-});
-
-const handleDesktopInput = (e) => {
-    let clean = e.target.value.replace(/\D/g, '');
-    if (clean.length > 15) {
-        clean = clean.slice(0, 15);
-    }
-
-    e.target.value = clean ? parseInt(clean, 10).toLocaleString('id-ID') : '';
-
-    rawAmount.value = clean || '0';
-    form.amount = parseInt(clean, 10) || 0;
-};
-
-const handleKeypad = (key) => {
-    if (key === 'del') {
-        rawAmount.value = rawAmount.value.slice(0, -1) || '0';
-    } else if (key === 'C') {
-        rawAmount.value = '0';
-    } else if (key === '000') {
-        if (rawAmount.value !== '0') rawAmount.value += '000';
-    } else {
-        if (rawAmount.value === '0') rawAmount.value = key;
-        else rawAmount.value += key;
-    }
-
-    if (rawAmount.value.length > 15) rawAmount.value = rawAmount.value.slice(0, 15);
-
-    form.amount = parseInt(rawAmount.value, 10) || 0;
-};
-const displayAmount = ref('');
-const walletFrequency = ref({});
+const {
+    rawAmount, formattedAmount, handleKeypad, handleDesktopInput,
+    walletFrequency, loadWalletFrequency,
+    mainTab, activeType, debtSubTab, setMainTab, setType, setDebtSubTab,
+    showCategoryModal, showWalletModal, walletModalMode,
+    showKeypad, showBottomPanel, showDateModal, dateModalTarget,
+    monthNames, currentMonth, currentYear, daysInMonth, firstDayOfMonth,
+    prevCalendarMonth, nextCalendarMonth, selectSpecificDate, setDate,
+    selectedSourceWallet, selectedDestWallet, availableWallets,
+    openWalletModal, selectWallet,
+    selectedCategory, activeCategories, activeSubjects, isMoneyIn, selectCategory,
+} = tx
 
 onMounted(() => {
-    setType('Expense');
-    try {
-        const storedFreq = localStorage.getItem('wallet_frequency');
-        if (storedFreq) {
-            walletFrequency.value = JSON.parse(storedFreq);
-        }
-    } catch (e) {
-        console.error("Gagal meload cache wallet", e);
-    }
-});
+    setType('Expense')
+    loadWalletFrequency()
+})
 
-const formatAmountInput = (e) => {
-    let val = e.target.value.replace(/\D/g, '');
-    form.amount = val;
-    displayAmount.value = val ? new Intl.NumberFormat('id-ID').format(parseInt(val)) : '';
-};
-
-// DETEKSI LOGIC UANG MASUK ATAU KELUAR (UNTUK DOMPET PANEL BAWAH)
-const isMoneyIn = computed(() => {
-    if (activeType.value === 'Income') return true;
-    if (activeType.value === 'Debt' && debtSubTab.value === 'income') return true; // Dapat Hutangan
-    if (activeType.value === 'Receivable' && debtSubTab.value === 'income') return true; // Terima Bayar Piutang
-    return false;
-});
-
-const activeCategories = computed(() => {
-    let cats = props.categories.filter(cat => cat.type.name === activeType.value);
-
-    if (activeType.value === 'Debt') {
-        if (debtSubTab.value === 'expense') cats = cats.filter(c => c.category_name === 'Bayar Cicilan Hutang');
-        else if (debtSubTab.value === 'income') cats = cats.filter(c => c.category_name === 'Dapat Hutangan');
-    } else if (activeType.value === 'Receivable') {
-        if (debtSubTab.value === 'expense') cats = cats.filter(c => c.category_name === 'Ngasih Piutang');
-        else if (debtSubTab.value === 'income') cats = cats.filter(c => c.category_name === 'Terima Bayar Piutang');
-    }
-
-    return cats;
-});
-
-const selectedCategory = computed(() => {
-    return props.categories.find(c => c.id === form.category_id);
-});
-
-const activeSubjects = computed(() => {
-    if (activeType.value === 'Debt') {
-        return props.debtSubjects || [];
-    } else if (activeType.value === 'Receivable') {
-        return props.receivableSubjects || [];
-    }
-    return [];
-});
-
-const showKeypad = ref(!isDesktopLayout.value);
-const showBottomPanel = ref(true);
-const showDateModal = ref(false);
-const dateModalTarget = ref('transaction');
-
-const currentMonth = ref(new Date().getMonth());
-const currentYear = ref(new Date().getFullYear());
-const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-
-const daysInMonth = computed(() => new Date(currentYear.value, currentMonth.value + 1, 0).getDate());
-const firstDayOfMonth = computed(() => {
-    let day = new Date(currentYear.value, currentMonth.value, 1).getDay();
-    return day === 0 ? 6 : day - 1;
-});
-
-const prevMonth = () => {
-    if (currentMonth.value === 0) {
-        currentMonth.value = 11;
-        currentYear.value--;
-    } else {
-        currentMonth.value--;
-    }
-};
-
-const nextMonth = () => {
-    if (currentMonth.value === 11) {
-        currentMonth.value = 0;
-        currentYear.value++;
-    } else {
-        currentMonth.value++;
-    }
-};
-
-watch(showDateModal, (val) => {
-    if (val) {
-        const d = dateModalTarget.value === 'due_date' && form.due_date ? new Date(form.due_date) : new Date(form.date);
-        currentMonth.value = d.getMonth();
-        currentYear.value = d.getFullYear();
-    }
-});
-
-const selectSpecificDate = (day) => {
-    const d = new Date(currentYear.value, currentMonth.value, day);
-    const offset = d.getTimezoneOffset() * 60000;
-    const dateStr = (new Date(d - offset)).toISOString().slice(0, 10);
-
-    if (dateModalTarget.value === 'due_date') {
-        form.due_date = dateStr;
-    } else {
-        form.date = dateStr;
-    }
-    showDateModal.value = false;
-};
-
-const setDate = (offsetDays) => {
-    const d = new Date();
-    d.setDate(d.getDate() + offsetDays);
-    const offset = d.getTimezoneOffset() * 60000;
-    const dateStr = (new Date(d - offset)).toISOString().slice(0, 10);
-
-    if (dateModalTarget.value === 'due_date') {
-        form.due_date = dateStr;
-    } else {
-        form.date = dateStr;
-    }
-    showDateModal.value = false;
-};
-
-const selectedSourceWallet = computed(() => {
-    const all = [...props.wallets, ...props.systemWallets];
-    return all.find(w => w.id == form.source_wallet_id);
-});
-
-const selectedDestWallet = computed(() => {
-    const all = [...props.wallets, ...props.systemWallets];
-    return all.find(w => w.id == form.destination_wallet_id);
-});
-
-const setMainTab = (t) => {
-    mainTab.value = t;
-    if (['Debt', 'Receivable'].includes(t)) {
-        debtSubTab.value = 'income';
-    }
-    setType(t);
-};
-
-const setType = (type) => {
-    activeType.value = type;
-    form.category_id = null;
-    form.subject = (type === 'Debt' || type === 'Receivable') ? '' : '-';
-    form.clearErrors();
-
-    const lastSource = localStorage.getItem('last_source_wallet');
-    const lastDest = localStorage.getItem('last_dest_wallet');
-
-    if (type === 'Expense') {
-        form.source_wallet_id = lastSource || lastDest || null;
-        const merchant = props.systemWallets.find(w => w.name.toLowerCase().includes('merchant'));
-        form.destination_wallet_id = merchant?.id;
-    } else if (type === 'Income') {
-        const external = props.systemWallets.find(w => w.name.toLowerCase().includes('external'));
-        form.source_wallet_id = external?.id;
-        form.destination_wallet_id = lastDest || lastSource || null;
-    } else {
-        form.source_wallet_id = lastSource || lastDest || null;
-        form.destination_wallet_id = lastDest || lastSource || null;
-    }
-
-    let filteredCats = props.categories.filter(cat => cat.type.name === type);
-
-    if (['Debt', 'Receivable'].includes(type) && filteredCats.length > 0) {
-        let targetCatName = '';
-        if (type === 'Debt') {
-            targetCatName = debtSubTab.value === 'expense' ? 'Bayar Cicilan Hutang' : 'Dapat Hutangan';
-        } else {
-            targetCatName = debtSubTab.value === 'expense' ? 'Ngasih Piutang' : 'Terima Bayar Piutang';
-        }
-
-        const cat = filteredCats.find(c => c.category_name === targetCatName);
-        if (cat) {
-            form.category_id = cat.id;
-            form.clearErrors('category_id');
-        }
-
-        const syH = props.systemWallets.find(w => w.name.toLowerCase().includes('hutang'));
-        const syP = props.systemWallets.find(w => w.name.toLowerCase().includes('piutang'));
-
-        if (type === 'Debt') {
-            if (debtSubTab.value === 'expense') {
-                form.source_wallet_id = lastSource || null;
-                form.destination_wallet_id = syH?.id;
-            } else {
-                form.source_wallet_id = syH?.id;
-                form.destination_wallet_id = lastDest || null;
-            }
-        } else {
-            if (debtSubTab.value === 'expense') {
-                form.source_wallet_id = lastSource || null;
-                form.destination_wallet_id = syP?.id;
-            } else {
-                form.source_wallet_id = syP?.id;
-                form.destination_wallet_id = lastDest || null;
-            }
-        }
-    } else if (filteredCats.length === 1) {
-        selectCategory(filteredCats[0]);
-    }
-};
-
-const setDebtSubTab = (subTab) => {
-    debtSubTab.value = subTab;
-    setType(mainTab.value);
-};
-
-const selectCategory = (cat) => {
-    form.category_id = cat.id;
-    showCategoryModal.value = false;
-    form.clearErrors('category_id');
-};
-
-const availableWallets = computed(() => {
-    let list = props.wallets.filter(w => ['Asset', 'Liquid'].includes(w.group_type));
-
-    const otherValue = walletModalMode.value === 'source' ? form.destination_wallet_id : form.source_wallet_id;
-    if (otherValue) {
-        list = list.filter(w => w.id !== otherValue);
-    }
-
-    return list.sort((a, b) => (walletFrequency.value[b.id] || 0) - (walletFrequency.value[a.id] || 0));
-});
-
-const openWalletModal = (mode) => {
-    walletModalMode.value = mode;
-    showWalletModal.value = true;
-};
-
-const selectWallet = (w) => {
-    walletFrequency.value[w.id] = (walletFrequency.value[w.id] || 0) + 1;
-    localStorage.setItem('wallet_frequency', JSON.stringify(walletFrequency.value));
-
-    if (walletModalMode.value === 'source') {
-        form.source_wallet_id = w.id;
-        localStorage.setItem('last_source_wallet', w.id);
-        form.clearErrors('source_wallet_id');
-    } else {
-        form.destination_wallet_id = w.id;
-        localStorage.setItem('last_dest_wallet', w.id);
-        form.clearErrors('destination_wallet_id');
-    }
-    showWalletModal.value = false;
-};
-
+// ─── Submit logic (Create-specific) ──────────────────────────────
 const submit = (closeAfter = true) => {
     if (!form.amount || form.amount <= 0) {
-        form.setError('amount', 'Nominal harus lebih dari 0');
-        return;
+        form.setError('amount', 'Nominal harus lebih dari 0')
+        return
     }
-
     if (new Date(form.date) > new Date()) {
-        form.setError('date', 'Masa depan tidak diizinkan!');
-        return;
+        form.setError('date', 'Masa depan tidak diizinkan!')
+        return
     }
-
     if (['Debt', 'Receivable'].includes(activeType.value) && (!form.subject || form.subject === '-')) {
-        form.setError('subject', 'Wajib diisi Bos!');
-        return;
+        form.setError('subject', 'Wajib diisi Bos!')
+        return
     }
-
     form.post(route('transactions.store'), {
         preserveScroll: true,
         onSuccess: () => {
             if (closeAfter) {
-                handleBack();
+                handleBack()
             } else {
-                form.amount = 0;
-                rawAmount.value = '0';
-                form.notes = '';
-                form.category_id = null;
+                form.amount = 0
+                rawAmount.value = '0'
+                form.notes = ''
+                form.category_id = null
             }
         },
-    });
-};
+    })
+}
 
-const submitAndClose = () => submit(true);
-const submitAndStay = () => submit(false);
+const submitAndClose = () => submit(true)
+const submitAndStay  = () => submit(false)
 
-const dateInput = ref(null);
-
-const handleBack = () => {
-    router.visit(route('dashboard'));
-};
+const handleBack = () => router.visit(route('dashboard'))
 </script>
 
 <template>
@@ -382,59 +110,14 @@ const handleBack = () => {
                     </header>
 
                     <div class="px-4 pt-1 pb-2 shrink-0 flex gap-2 items-stretch">
-                        <div
-                            class="flex-1 flex bg-linear-to-br from-gray-900 to-gray-800 rounded-xl p-1.5 border border-white/10 overflow-x-auto no-scrollbar gap-1">
-                            <button v-for="t in ['Expense', 'Income', 'Transfer', 'Debt', 'Receivable']" :key="t"
-                                @click="setMainTab(t)" type="button"
-                                :class="['flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-2xs font-bold uppercase tracking-wider transition-all whitespace-nowrap overflow-hidden', mainTab === t ? 'bg-gray-800 text-purple-500 border border-white/10 flex-1 px-3' : 'text-gray-500 hover:text-white px-3']">
-
-                                <template v-if="t === 'Expense'">
-                                    <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                                    </svg>
-                                </template>
-                                <template v-else-if="t === 'Income'">
-                                    <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                                    </svg>
-                                </template>
-                                <template v-else-if="t === 'Transfer'">
-                                    <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                                    </svg>
-                                </template>
-                                <template v-else-if="t === 'Debt'">
-                                    <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </template>
-                                <template v-else-if="t === 'Receivable'">
-                                    <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </template>
-
-                                <span v-show="mainTab === t" class="transition-all duration-300">
-                                    {{ t === 'Expense' ? 'Keluar' : (t === 'Income' ? 'Masuk' : (t === 'Transfer' ?
-                                        'Transfer' : (t === 'Debt' ?
-                                            'Hutang' : 'Piutang'))) }}
-                                </span>
-                            </button>
-                        </div>
+                        <TransactionTypeTab
+                            :model-value="mainTab"
+                            @update:model-value="setMainTab"
+                        />
                         <button type="button" @click="handleBack"
-                            class="w-[46px] shrink-0 flex items-center justify-center text-red-400 active:scale-95 transition-transform bg-linear-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 hover:bg-red-500/10 hover:text-red-300"
-                            title="Tutup">
-                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            class="w-[46px] shrink-0 flex items-center justify-center text-red-400 active:scale-95 transition-transform bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 hover:bg-red-500/10 hover:text-red-300"
+                            aria-label="Tutup">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
@@ -755,36 +438,8 @@ const handleBack = () => {
                             </button>
                         </div>
 
-                        <div v-show="showKeypad" class="grid grid-cols-3 gap-y-2 gap-x-4">
-                            <button @click="handleKeypad('7')" type="button"
-                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">7</button>
-                            <button @click="handleKeypad('8')" type="button"
-                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">8</button>
-                            <button @click="handleKeypad('9')" type="button"
-                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">9</button>
-                            <button @click="handleKeypad('4')" type="button"
-                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">4</button>
-                            <button @click="handleKeypad('5')" type="button"
-                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">5</button>
-                            <button @click="handleKeypad('6')" type="button"
-                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">6</button>
-                            <button @click="handleKeypad('1')" type="button"
-                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">1</button>
-                            <button @click="handleKeypad('2')" type="button"
-                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">2</button>
-                            <button @click="handleKeypad('3')" type="button"
-                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">3</button>
-                            <button @click="handleKeypad('000')" type="button"
-                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-sm font-bold text-purple-400 flex items-center justify-center">000</button>
-                            <button @click="handleKeypad('0')" type="button"
-                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">0</button>
-                            <button @click="handleKeypad('del')" type="button"
-                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl flex items-center justify-center relative">
-                                <div class="w-8 h-8 flex items-center justify-center"> <svg class="w-4 h-4 text-red-500"
-                                        fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                    </svg> </div>
-                            </button>
+                        <div v-show="showKeypad">
+                            <AmountKeypad @key="handleKeypad" />
                         </div>
                     </div>
                 </form>
@@ -816,7 +471,7 @@ const handleBack = () => {
                         <div
                             class="w-full bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-4 shadow-inner">
                             <div class="flex justify-between items-center mb-4">
-                                <button type="button" @click="prevMonth"
+                                <button type="button" @click="prevCalendarMonth"
                                     class="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors active:scale-95">
                                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"
                                         stroke-width="2">
@@ -826,7 +481,7 @@ const handleBack = () => {
                                 <span class="text-sm font-bold text-white tracking-wide">{{ monthNames[currentMonth] }}
                                     {{
                                         currentYear }}</span>
-                                <button type="button" @click="nextMonth"
+                                <button type="button" @click="nextCalendarMonth"
                                     class="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors active:scale-95">
                                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"
                                         stroke-width="2">
