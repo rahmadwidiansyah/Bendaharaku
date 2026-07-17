@@ -1,167 +1,311 @@
 <script setup>
-import { Link, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
-import { formatNumber } from '@/utils/format.js';
+/**
+ * TransactionDetailModal.vue
+ *
+ * Modal detail transaksi — dipakai di Dashboard dan halaman lain.
+ *
+ * Features:
+ *   - Menampilkan semua detail transaksi (nominal, kategori, wallet, tanggal, catatan, due date)
+ *   - Tombol Edit & Hapus
+ *   - Tombol "Konfirmasi Transaksi" — hanya muncul jika is_cleared === false (Draft)
+ *   - Dialog konfirmasi sebelum hapus & sebelum konfirmasi draft
+ *   - Pakai BaseModal → Teleport ke body, tidak terjebak stacking context
+ */
+
+import { ref } from 'vue'
+import { Link, router } from '@inertiajs/vue3'
+import BaseModal from '@/Components/BaseModal.vue'
+import Badge from '@/Components/Badge.vue'
+import { formatNumber, formatDate } from '@/utils/format.js'
 
 const props = defineProps({
     show: Boolean,
     transaction: Object,
-});
+})
 
-const emit = defineEmits(['close']);
+const emit = defineEmits(['close'])
 
-const showDeleteConfirm = ref(false);
-
-const showConfirm = () => {
-    showDeleteConfirm.value = true;
-};
+// ─── Delete flow ──────────────────────────────────────────────────
+const showDeleteConfirm = ref(false)
+const isDeleting = ref(false)
 
 const deleteTransaction = () => {
-    showDeleteConfirm.value = false;
+    isDeleting.value = true
     router.delete(route('transactions.destroy', props.transaction.id), {
         preserveScroll: true,
         onSuccess: () => {
-            emit('close'); // Tutup modal otomatis kalau sukses dihapus
-        }
-    });
-};
+            showDeleteConfirm.value = false
+            emit('close')
+        },
+        onFinish: () => { isDeleting.value = false },
+    })
+}
+
+// ─── Draft confirm flow ───────────────────────────────────────────
+const showConfirmDraft = ref(false)
+const isConfirming = ref(false)
+
+const confirmDraft = () => {
+    isConfirming.value = true
+    router.patch(route('transactions.confirm', props.transaction.id), {}, {
+        preserveScroll: true,
+        onSuccess: () => {
+            showConfirmDraft.value = false
+            emit('close')
+        },
+        onFinish: () => { isConfirming.value = false },
+    })
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────
+const typeVariant = (name) => ({
+    Income:     'income',
+    Expense:    'expense',
+    Transfer:   'transfer',
+    Debt:       'debt',
+    Receivable: 'receivable',
+}[name] ?? 'neutral')
+
+const amountColor = (trx) => {
+    if (!trx?.type) return 'text-white'
+    const name = trx.type.name
+    if (name === 'Income') return 'text-green-400'
+    if (name === 'Transfer') return 'text-blue-400'
+    if (['Debt', 'Receivable'].includes(name) && trx.source_wallet?.group_type === 'System') return 'text-green-400'
+    return 'text-red-400'
+}
+
+const amountPrefix = (trx) => {
+    if (!trx?.type) return ''
+    const name = trx.type.name
+    if (name === 'Income') return '+'
+    if (name === 'Transfer') return ''
+    if (['Debt', 'Receivable'].includes(name) && trx.source_wallet?.group_type === 'System') return '+'
+    return '-'
+}
+
+const dueDateLabel = (type) => ({ fixed: 'Sekali', monthly: 'Bulanan', daily: 'Per Hari' }[type] ?? type)
+const dueDateDetail = (trx) => {
+    if (trx.due_date_type === 'fixed')   return formatDate(trx.due_date)
+    if (trx.due_date_type === 'monthly') return `Tgl ${trx.due_date_interval}`
+    if (trx.due_date_type === 'daily')   return `Setiap ${trx.due_date_interval} hari`
+    return ''
+}
 </script>
 
 <template>
-    <div v-if="show" class="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4 transition-opacity"
-        @click.self="emit('close')">
-        <div
-            class="w-full max-w-sm bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 p-6 animate-pop-in relative">
-
-            <button @click="emit('close')"
-                class="absolute top-4 right-4 w-8 h-8 bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 rounded-full flex items-center justify-center text-gray-400">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
-
-            <div class="flex flex-col items-center mb-6 mt-2">
-                <div
-                    class="w-16 h-16 rounded-xl bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 flex items-center justify-center text-3xl mb-3 overflow-hidden p-1">
-                    <img v-if="transaction.category?.icon?.includes('.')" :src="'/storage/' + transaction.category.icon"
-                        class="w-full h-full object-cover rounded-xl">
+    <!-- Main detail modal -->
+    <BaseModal
+        :show="show && !showDeleteConfirm && !showConfirmDraft"
+        :title="null"
+        :show-close-btn="true"
+        max-width="sm"
+        @close="emit('close')"
+    >
+        <div v-if="transaction" class="px-1">
+            <!-- Category icon + name -->
+            <div class="flex flex-col items-center mb-5 mt-1">
+                <div class="w-16 h-16 rounded-2xl bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 flex items-center justify-center text-3xl mb-3 overflow-hidden p-1 shadow-lg">
+                    <img
+                        v-if="transaction.category?.icon?.includes('.')"
+                        :src="transaction.category.icon.startsWith('http') ? transaction.category.icon : '/storage/' + transaction.category.icon"
+                        class="w-full h-full object-cover rounded-xl" />
                     <span v-else>{{ transaction.category?.icon || '📝' }}</span>
                 </div>
-                <p class="text-xl font-bold text-white text-center">{{ transaction.category?.category_name || 'Transfer'
-                }}</p>
-                <p class="text-2xs font-bold text-gray-500 uppercase tracking-widest mt-1 text-center">
-                    {{ transaction.date }} • {{ transaction.time }}
+                <p class="text-lg font-black text-white text-center leading-tight">
+                    {{ transaction.category?.category_name || 'Transfer' }}
                 </p>
+                <div class="flex items-center gap-2 mt-1.5">
+                    <Badge :variant="typeVariant(transaction.type?.name)" size="sm">
+                        {{ transaction.type?.name }}
+                    </Badge>
+                    <!-- Draft badge -->
+                    <span
+                        v-if="!transaction.is_cleared"
+                        class="inline-flex items-center gap-1 text-2xs font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                        <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+                        </svg>
+                        Draft
+                    </span>
+                </div>
             </div>
 
-            <div
-                class="bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 rounded-xl p-5 text-center mb-5">
+            <!-- Amount -->
+            <div class="bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 rounded-xl p-4 text-center mb-4">
                 <p class="text-2xs font-bold text-gray-500 uppercase tracking-widest mb-1">Nominal</p>
-                <h2
-                    :class="['text-3xl font-bold tracking-tight', transaction.type?.name === 'Income' ? 'text-green-500' : 'text-red-500']">
-                    {{ transaction.type?.name === 'Income' ? '+' : '-' }} Rp {{ formatNumber(transaction.amount) }}
+                <h2 :class="['text-3xl font-black tracking-tight', amountColor(transaction)]">
+                    {{ amountPrefix(transaction) }}
+                    <span class="text-xl text-gray-500 mr-0.5">Rp</span>{{ formatNumber(transaction.amount) }}
                 </h2>
             </div>
 
-            <div class="space-y-4 mb-6 px-1 text-2xs">
-                <div class="flex justify-between items-center border-b border-white/30 pb-3 text-white">
-                    <span class="text-gray-500 uppercase font-bold tracking-widest text-2xs">Dompet</span>
-                    <div class="text-right flex items-center gap-2">
-                        <span class="font-bold text-gray-300 text-2xs">{{ transaction.source_wallet?.name }}</span>
-                        <svg class="w-3 h-3 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                            stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+            <!-- Detail rows -->
+            <div class="space-y-3 mb-5 text-2xs">
+                <!-- Tanggal & waktu -->
+                <div class="flex justify-between items-center py-2 border-b border-white/5">
+                    <span class="text-gray-500 font-bold uppercase tracking-widest">Tanggal</span>
+                    <span class="font-bold text-gray-300">{{ transaction.date }} • {{ transaction.time }}</span>
+                </div>
+
+                <!-- Dompet -->
+                <div class="flex justify-between items-center py-2 border-b border-white/5">
+                    <span class="text-gray-500 font-bold uppercase tracking-widest">Dompet</span>
+                    <div class="flex items-center gap-1.5 font-bold text-gray-300">
+                        <span>{{ transaction.source_wallet?.name }}</span>
+                        <svg class="w-3 h-3 text-purple-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                            <path d="M13 7l5 5m0 0l-5 5m5-5H6" />
                         </svg>
-                        <span class="font-bold text-gray-300 text-2xs">{{ transaction.destination_wallet?.name }}</span>
+                        <span>{{ transaction.destination_wallet?.name }}</span>
                     </div>
                 </div>
-                <div v-if="transaction.subject && transaction.subject !== '-'"
-                    class="flex justify-between items-center border-b border-white/30 pb-3 text-white">
-                    <span class="text-gray-500 uppercase font-bold tracking-widest text-2xs">Pelaku</span>
-                    <span class="font-bold text-2xs">{{ transaction.subject }}</span>
+
+                <!-- Pelaku (subject) -->
+                <div v-if="transaction.subject && transaction.subject !== '-'" class="flex justify-between items-center py-2 border-b border-white/5">
+                    <span class="text-gray-500 font-bold uppercase tracking-widest">Pelaku</span>
+                    <span class="font-bold text-gray-300">{{ transaction.subject }}</span>
                 </div>
-                <div v-if="transaction.due_date_type"
-                    class="flex justify-between items-center border-b border-white/30 pb-3 text-white">
-                    <span class="text-gray-500 uppercase font-bold tracking-widest text-2xs">Jatuh Tempo</span>
-                    <div class="text-right flex flex-col items-end">
-                        <span class="font-bold text-2xs text-yellow-400">
-                            {{ transaction.due_date_type === 'fixed' ? 'Sekali' : (transaction.due_date_type ===
-                                'monthly' ? 'Bulanan' : 'Per Hari') }}
-                        </span>
-                        <span class="text-2xs text-gray-400">
-                            {{ transaction.due_date_type === 'fixed' ? transaction.due_date : (transaction.due_date_type
-                                === 'monthly' ? `Tgl ${transaction.due_date_interval}` : `Setiap
-                            ${transaction.due_date_interval} Hari`) }}
-                        </span>
+
+                <!-- Jatuh tempo -->
+                <div v-if="transaction.due_date_type" class="flex justify-between items-start py-2 border-b border-white/5">
+                    <span class="text-gray-500 font-bold uppercase tracking-widest">Jatuh Tempo</span>
+                    <div class="text-right">
+                        <p class="font-bold text-yellow-400">{{ dueDateLabel(transaction.due_date_type) }}</p>
+                        <p class="text-gray-500 mt-0.5">{{ dueDateDetail(transaction) }}</p>
                     </div>
                 </div>
-                <div class="flex justify-between items-start text-white">
-                    <span class="text-gray-500 uppercase font-bold tracking-widest text-2xs">Catatan</span>
-                    <span class="text-right italic text-gray-400 text-2xs">{{ transaction.notes || 'Tidak ada catatan.'
-                    }}</span>
+
+                <!-- Catatan -->
+                <div class="flex justify-between items-start py-2">
+                    <span class="text-gray-500 font-bold uppercase tracking-widest">Catatan</span>
+                    <span class="text-right italic text-gray-400 max-w-[60%]">
+                        {{ transaction.notes || 'Tidak ada catatan.' }}
+                    </span>
                 </div>
             </div>
 
-            <div class="flex gap-3 mt-4">
-                <Link :href="route('transactions.edit', transaction.id)"
-                    class="flex-1 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 py-3 rounded-xl flex items-center justify-center gap-2 text-gray-300 text-2xs font-bold uppercase hover:bg-gray-800 transition-colors">
-                    Edit
-                </Link>
-                <!-- Form dihapus, diganti menjadi Button dengan @click -->
-                <button type="button" @click="showConfirm"
-                    class="flex-1 w-full bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 py-3 rounded-xl text-red-500 text-2xs font-bold uppercase hover:bg-red-500/10 transition-colors">
-                    Hapus
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- DELETE CONFIRMATION TOAST/MODAL -->
-    <div v-if="showDeleteConfirm"
-        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm transition-opacity"
-        @click.self="showDeleteConfirm = false">
-        <div
-            class="w-full max-w-sm bg-gradient-to-br from-red-900 to-gray-900 rounded-2xl border border-red-500/30 p-6 animate-pop-in relative shadow-2xl">
-            <div class="text-center mb-6">
-                <div
-                    class="w-16 h-16 rounded-full bg-red-500/20 text-red-400 mx-auto flex items-center justify-center mb-4">
-                    <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            <!-- Action buttons -->
+            <div class="flex flex-col gap-2">
+                <!-- Konfirmasi Draft — hanya muncul saat is_cleared = false -->
+                <button
+                    v-if="!transaction.is_cleared"
+                    type="button"
+                    @click="showConfirmDraft = true"
+                    class="w-full py-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 text-2xs font-black uppercase tracking-widest hover:bg-amber-500 hover:text-gray-900 hover:border-amber-500 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
+                    Konfirmasi Transaksi
+                </button>
+
+                <!-- Edit & Hapus -->
+                <div class="flex gap-2">
+                    <Link
+                        :href="route('transactions.edit', transaction.id)"
+                        class="flex-1 py-3 rounded-xl bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 text-gray-300 text-2xs font-bold uppercase tracking-widest hover:border-purple-500/40 hover:text-white transition-all active:scale-[0.98] flex items-center justify-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" />
+                        </svg>
+                        Edit
+                    </Link>
+                    <button
+                        type="button"
+                        @click="showDeleteConfirm = true"
+                        class="flex-1 py-3 rounded-xl bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 text-red-500 text-2xs font-bold uppercase tracking-widest hover:bg-red-500/10 hover:border-red-500/30 transition-all active:scale-[0.98] flex items-center justify-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Hapus
+                    </button>
                 </div>
-                <h3 class="text-lg font-bold text-white tracking-tight mb-2">Hapus Transaksi?</h3>
-                <p class="text-sm text-red-200">Yakin mau menghapus transaksi ini? Data yang dihapus tidak bisa
-                    dikembalikan.</p>
-            </div>
-            <div class="flex gap-3">
-                <button type="button" @click="showDeleteConfirm = false"
-                    class="flex-1 bg-gray-800 text-white font-bold text-sm uppercase tracking-widest py-4 rounded-xl active:scale-95 transition-all">
-                    Batal
-                </button>
-                <button type="button" @click="deleteTransaction"
-                    class="flex-1 bg-gradient-to-br from-red-600 to-red-500 text-white font-bold text-sm uppercase tracking-widest py-4 rounded-xl shadow-lg shadow-red-500/20 active:scale-95 transition-all">
-                    Ya, Hapus
-                </button>
             </div>
         </div>
-    </div>
+    </BaseModal>
+
+    <!-- ─── Dialog: Konfirmasi Draft ──────────────────────────────── -->
+    <BaseModal
+        :show="showConfirmDraft"
+        :closeable="!isConfirming"
+        :show-close-btn="!isConfirming"
+        max-width="sm"
+        @close="showConfirmDraft = false"
+    >
+        <div class="text-center px-1">
+            <div class="w-14 h-14 rounded-full bg-amber-500/15 text-amber-400 mx-auto flex items-center justify-center mb-4 border border-amber-500/20">
+                <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <h3 class="text-base font-black text-white mb-2 tracking-tight">Konfirmasi Transaksi?</h3>
+            <p class="text-2xs text-gray-400 leading-relaxed mb-1">
+                Apakah data transaksi ini sudah benar?
+            </p>
+            <p class="text-2xs text-amber-400/80 mb-6">
+                Status akan berubah dari <strong>Draft</strong> menjadi <strong>Terkonfirmasi</strong> dan saldo dompet akan dimutasi.
+            </p>
+        </div>
+
+        <template #footer>
+            <button
+                type="button"
+                :disabled="isConfirming"
+                @click="showConfirmDraft = false"
+                class="flex-1 py-3 rounded-xl bg-gray-800 border border-white/10 text-gray-300 text-2xs font-bold uppercase tracking-widest hover:border-white/20 transition-all disabled:opacity-50">
+                Batal
+            </button>
+            <button
+                type="button"
+                :disabled="isConfirming"
+                @click="confirmDraft"
+                class="flex-1 py-3 rounded-xl bg-amber-500 text-gray-900 text-2xs font-black uppercase tracking-widest hover:bg-amber-400 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2">
+                <svg v-if="isConfirming" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                {{ isConfirming ? 'Memproses...' : 'Ya, Konfirmasi' }}
+            </button>
+        </template>
+    </BaseModal>
+
+    <!-- ─── Dialog: Hapus ─────────────────────────────────────────── -->
+    <BaseModal
+        :show="showDeleteConfirm"
+        :closeable="!isDeleting"
+        :show-close-btn="!isDeleting"
+        max-width="sm"
+        @close="showDeleteConfirm = false"
+    >
+        <div class="text-center px-1">
+            <div class="w-14 h-14 rounded-full bg-red-500/15 text-red-400 mx-auto flex items-center justify-center mb-4 border border-red-500/20">
+                <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            </div>
+            <h3 class="text-base font-black text-white mb-2 tracking-tight">Hapus Transaksi?</h3>
+            <p class="text-sm text-red-200/80 leading-relaxed mb-6">
+                Data yang dihapus tidak bisa dikembalikan.
+            </p>
+        </div>
+
+        <template #footer>
+            <button
+                type="button"
+                :disabled="isDeleting"
+                @click="showDeleteConfirm = false"
+                class="flex-1 py-3 rounded-xl bg-gray-800 border border-white/10 text-gray-300 text-2xs font-bold uppercase tracking-widest hover:border-white/20 transition-all disabled:opacity-50">
+                Batal
+            </button>
+            <button
+                type="button"
+                :disabled="isDeleting"
+                @click="deleteTransaction"
+                class="flex-1 py-3 rounded-xl bg-red-600 text-white text-2xs font-black uppercase tracking-widest hover:bg-red-500 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2">
+                <svg v-if="isDeleting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                {{ isDeleting ? 'Menghapus...' : 'Ya, Hapus' }}
+            </button>
+        </template>
+    </BaseModal>
 </template>
-
-<style scoped>
-@keyframes pop-in {
-    0% {
-        transform: scale(0.9);
-        opacity: 0;
-    }
-
-    100% {
-        transform: scale(1);
-        opacity: 1;
-    }
-}
-
-.animate-pop-in {
-    animation: pop-in 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-}
-</style>

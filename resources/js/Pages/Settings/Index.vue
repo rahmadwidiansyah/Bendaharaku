@@ -27,7 +27,7 @@ const updateTransactionLogic = () => {
         <!-- Ambient glow -->
         <div class="fixed top-[-10%] left-[50%] -translate-x-1/2 w-[400px] h-[400px] bg-purple-500 blur-[150px] opacity-[0.15] rounded-full pointer-events-none z-0"></div>
 
-        <div class="p-5 pb-32 w-full lg:max-w-4xl mx-auto lg:px-8 relative z-10 animate-slide-up min-h-screen">
+        <div class="p-5 w-full lg:max-w-4xl mx-auto lg:px-8 relative z-10 animate-slide-up min-h-screen">
 
             <!-- Page Header -->
             <header class="mb-10 pt-4">

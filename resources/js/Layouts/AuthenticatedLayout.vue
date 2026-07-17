@@ -4,10 +4,9 @@
  *
  * Layout utama untuk semua halaman yang memerlukan autentikasi.
  *
- * Phase 4 changes:
+ * Perubahan layout:
  *   - Mount MobileHeader — top bar mobile dengan judul + avatar
  *   - Tambah skip-to-content link untuk keyboard/screen reader navigation
- *   - Mount CreateTransactionFab di mobile
  *   - Ganti pb-safe class string dengan CSS var env(safe-area-inset-bottom)
  *   - Konsistensi padding bottom: mobile pakai pb-28 (BottomNav ~56px + safe area + margin)
  *
@@ -17,7 +16,6 @@
 
 import BottomNav from '@/Components/BottomNav.vue'
 import MobileHeader from '@/Components/MobileHeader.vue'
-import CreateTransactionFab from '@/Components/CreateTransactionFab.vue'
 import Toast from '@/Components/Toast.vue'
 import { useLayoutPreference } from '@/Composables/useLayoutPreference'
 import { computed, ref } from 'vue'
@@ -74,9 +72,6 @@ const computedFullWidth = computed(() =>
                 >
                     <slot />
                 </main>
-
-                <!-- FAB hanya di mobile — desktop punya sidebar button sendiri -->
-                <CreateTransactionFab />
 
                 <BottomNav
                     :is-sidebar-open="isSidebarOpen"

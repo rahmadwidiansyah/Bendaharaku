@@ -47,7 +47,7 @@ const getHeaderText = (typeName) => {
 
         <Head title="Vault Kategori" />
 
-        <div class="p-5 pb-32 w-full lg:max-w-4xl mx-auto lg:px-8 relative z-10 min-h-screen">
+        <div class="p-5 w-full lg:max-w-4xl mx-auto lg:px-8 relative z-10 min-h-screen">
 
             <header class="mb-10 pt-4 animate-fade-in-up">
                 <div class="flex justify-between items-end mb-8 px-1">
