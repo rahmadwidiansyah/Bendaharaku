@@ -118,9 +118,10 @@ const getHeaderText = (typeName) => {
                     <div class="flex-1 h-px bg-linear-to-r from-purple-500 to-transparent"></div>
                 </div>
 
-                <div :class="['grid grid-cols-3 gap-3', isDesktopLayout ? 'lg:grid-cols-6 lg:gap-5' : '']">
+                <div :class="['grid grid-cols-3 gap-3', isDesktopLayout ? 'lg:grid-cols-4 xl:grid-cols-6 lg:gap-5' : '']">
                     <Link v-for="category in categories" :key="category.id"
                         :href="route('categories.show', category.id)"
+                        :title="category.category_name"
                         class="relative group bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center active:scale-95 transition-all duration-300"
                         :class="[getTheme(typeName).glow, getTheme(typeName).border]">
 
@@ -132,7 +133,7 @@ const getHeaderText = (typeName) => {
                         </div>
 
                         <p
-                            class="text-[9px] font-bold text-gray-400 uppercase tracking-widest line-clamp-2 leading-tight group-hover:text-gray-200 transition-colors">
+                            class="text-xs font-bold text-gray-300 tracking-wide line-clamp-2 leading-tight group-hover:text-white transition-colors">
                             {{ category.category_name }}
                         </p>
                     </Link>

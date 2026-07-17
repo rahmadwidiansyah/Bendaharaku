@@ -101,6 +101,8 @@ class DashboardController extends Controller
                                       'amount' => (float) $trx->amount,
                                       'notes' => $trx->notes,
                                       'subject' => $trx->subject,
+                                      'is_cleared' => (bool) $trx->is_cleared,
+                                      'reference_number' => $trx->reference_number,
                                       'date' => Carbon::parse($trx->date)->translatedFormat('d M Y'),
                                       'raw_date' => $trx->date,
                                       'time' => Carbon::parse($trx->created_at)->format('H:i'),

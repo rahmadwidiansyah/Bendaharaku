@@ -1,7 +1,9 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import BottomNav from '@/Components/BottomNav.vue';
 import { Head, Link } from '@inertiajs/vue3';
+import { useBalanceVisibility } from '@/Composables/useBalanceVisibility';
+
+const { isBalanceVisible } = useBalanceVisibility();
 
 const props = defineProps({
     loanDetails: Array,
@@ -19,6 +21,8 @@ const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
 };
+
+const maskedAmount = '••••••';
 </script>
 
 <template>
@@ -33,22 +37,28 @@ const formatDate = (dateString) => {
                     <h1 class="text-2xl font-bold text-white tracking-tight">{{ title }}</h1>
                 </div>
                 <Link :href="route('dashboard')"
-                    class="w-10 h-10 rounded-full bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 flex items-center justify-center text-gray-400 active:scale-90 transition-all shadow-md hover:text-white hover:border-gray-500">
+                    class="w-10 h-10 rounded-full bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 flex items-center justify-center text-gray-400 active:scale-90 transition-all shadow-md hover:text-white hover:border-gray-500"
+                    aria-label="Kembali ke Dashboard">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </Link>
             </header>
 
-            <div
-                :class="['border rounded-xl p-6 text-center mb-8', isDebt ? 'bg-linear-to-br from-gray-900 to-gray-800 border border-white/10' : 'bg-linear-to-br from-gray-900 to-gray-800 border border-white/10']">
-                <p
-                    :class="['text-2xs font-bold uppercase tracking-widest mb-1', isDebt ? 'text-yellow-500' : 'text-pink-500']">
-                    Total Aktif</p>
-                <h2 class="text-3xl font-bold text-white tracking-tight">Rp {{ formatAmount(total) }}</h2>
+            <!-- Total Card -->
+            <div class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-6 text-center mb-8">
+                <p :class="['text-2xs font-bold uppercase tracking-widest mb-1', isDebt ? 'text-yellow-500' : 'text-pink-500']">
+                    Total Aktif
+                </p>
+                <h2 class="text-3xl font-bold text-white tracking-tight">
+                    <span v-if="isBalanceVisible">Rp {{ formatAmount(total) }}</span>
+                    <span v-else class="tracking-widest text-gray-400">{{ maskedAmount }}</span>
+                </h2>
             </div>
 
-            <h2 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Daftar {{ isDebt ? 'Pemberi Hutang' : 'Yang Ngutang' }}</h2>
+            <h2 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">
+                Daftar {{ isDebt ? 'Pemberi Hutang' : 'Yang Ngutang' }}
+            </h2>
 
             <div class="space-y-3">
                 <template v-if="loanDetails.length > 0">
@@ -57,54 +67,54 @@ const formatDate = (dateString) => {
                         <div class="flex justify-between items-start mb-2">
                             <div>
                                 <p class="text-lg font-bold text-white leading-none">{{ loan.subject }}</p>
-                                <p class="text-[9px] text-gray-500 font-medium mt-1">Sisa:
-                                    <span :class="['font-bold', isDebt ? 'text-red-500' : 'text-green-500']">
+                                <p class="text-xs text-gray-400 font-medium mt-1">
+                                    Sisa:
+                                    <span v-if="isBalanceVisible"
+                                        :class="['font-bold', isDebt ? 'text-red-400' : 'text-green-400']">
                                         Rp {{ formatAmount(loan.balance) }}
                                     </span>
+                                    <span v-else class="font-bold text-gray-500">{{ maskedAmount }}</span>
                                 </p>
                             </div>
 
-                            <div
-                                class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 px-3 py-1.5 rounded-xl text-center flex flex-col justify-center">
+                            <div class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 px-3 py-1.5 rounded-xl text-center flex flex-col justify-center">
                                 <p class="text-xs font-bold text-white leading-tight">{{ loan.age }}</p>
                                 <p class="text-2xs font-bold text-gray-500 uppercase tracking-widest">Hari</p>
                             </div>
                         </div>
 
                         <div class="flex items-center gap-1 mt-3 pt-3 border-t border-white/10">
-                            <svg class="w-3 h-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                                stroke-width="2">
+                            <svg class="w-3 h-3 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round"
                                     d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            <p class="text-2xs text-gray-400">Transaksi terakhir: <span class="font-bold">{{
-                                    formatDate(loan.latest_date) }}</span></p>
+                            <p class="text-2xs text-gray-400">
+                                Transaksi terakhir:
+                                <span class="font-bold">{{ formatDate(loan.latest_date) }}</span>
+                            </p>
                         </div>
                     </div>
                 </template>
-                <div v-else class="text-center py-10">
-                    <p class="text-xs font-bold text-gray-500 uppercase tracking-widest">Bersih dari beban!</p>
+
+                <div v-else class="text-center py-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl">
+                    <p class="text-2xl mb-2">🎉</p>
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Bersih dari beban!</p>
+                    <p class="text-2xs text-gray-600 mt-1">Tidak ada {{ isDebt ? 'hutang' : 'piutang' }} aktif saat ini.</p>
                 </div>
             </div>
         </div>
 
-        <BottomNav />
+        <!-- BottomNav TIDAK di-render di sini — sudah ditangani oleh AuthenticatedLayout -->
     </AuthenticatedLayout>
 </template>
 
 <style scoped>
+/* Animasi dipindahkan ke app.css, ini hanya fallback lokal jika belum ada di sana */
 @keyframes slide-up {
-    from {
-        transform: translateY(15px);
-        opacity: 0;
-    }
-
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
+    from { transform: translateY(15px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
 }
-
 .animate-slide-up {
     animation: slide-up 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }

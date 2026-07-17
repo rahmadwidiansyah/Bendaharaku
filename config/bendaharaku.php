@@ -31,10 +31,17 @@ return [
         'confidence' => [
             'threshold_auto_clear' => 0.85,
             'weights' => [
-                'ai_base'        => 0.40,
-                'memory_match'   => 0.25,
-                'category_match' => 0.15,
-                'wallet_match'   => 0.20,
+                // Rebalanced: ai_base + category + wallet sudah cukup untuk auto-clear
+                // tanpa membutuhkan memori historis (penting untuk user baru / transaksi pertama).
+                // Simulasi kasus ideal (ai=0.85, category=1, wallet=1):
+                //   (0.85×0.50) + (0×0.05) + (1×0.20) + (1×0.25) = 0.425+0+0.20+0.25 = 0.875 ✓
+                // Simulasi kasus Python NLP rendah (ai=0.71, category=1, wallet=1):
+                //   (0.71×0.50) + (0×0.05) + (1×0.20) + (1×0.25) = 0.355+0+0.20+0.25 = 0.805 → Draft
+                //   (masih draft kalau AI-nya kurang yakin — ini memang yang diinginkan)
+                'ai_base'        => 0.50,
+                'memory_match'   => 0.05, // Bonus kecil, bukan penentu utama
+                'category_match' => 0.20,
+                'wallet_match'   => 0.25,
             ]
         ],
         'memory' => [

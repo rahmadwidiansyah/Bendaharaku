@@ -60,6 +60,7 @@ const { isBalanceVisible, toggleVisibility } = useBalanceVisibility()
 
 const user = usePage().props.auth.user
 const showProfileMenu = ref(false)
+const avatarLoadFailed = ref(false)
 const profileMenuPosition = ref({ top: 76, right: 16 })
 const toggleProfileMenu = (event) => {
 	if (showProfileMenu.value) {
@@ -74,8 +75,12 @@ const toggleProfileMenu = (event) => {
 	}
 	showProfileMenu.value = true
 }
-const showModal = ref(false)
-const selectedTransaction = ref(null)
+
+const closeProfileMenuOnEscape = (e) => {
+	if (e.key === 'Escape') showProfileMenu.value = false
+}
+
+const showModal = ref(false)const selectedTransaction = ref(null)
 const search = ref(props.filters?.search || '')
 const type = ref(props.filters?.type || '')
 const showSortModal = ref(false)
@@ -418,11 +423,20 @@ const togglePin = (wallet) => {
 					<button type="button" @click="toggleProfileMenu"
 						:aria-expanded="showProfileMenu" aria-haspopup="menu" aria-label="Buka menu akun"
 						class="relative block w-12 h-12 rounded-full border-2 border-purple-500 p-0.5 bg-gray-900 active:scale-90 transition-transform focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 focus:ring-offset-gray-800">
-						<img :src="avatarSrc" :alt="user.name" class="w-full h-full rounded-full object-cover" />
+						<!-- Avatar reaktif: gunakan UI-avatars sebagai fallback tanpa DOM manipulation -->
+						<img v-if="!avatarLoadFailed" :src="avatarSrc" :alt="user.name"
+							class="w-full h-full rounded-full object-cover"
+							@error="avatarLoadFailed = true" />
+						<span v-else
+							class="w-full h-full rounded-full flex items-center justify-center bg-purple-900 text-white text-sm font-black">
+							{{ user.name.charAt(0).toUpperCase() }}
+						</span>
 					</button>
 
 					<Teleport to="body">
-						<div v-if="showProfileMenu" class="fixed inset-0 z-[9999]" @click.self="showProfileMenu = false">
+						<div v-if="showProfileMenu" class="fixed inset-0 z-[9999]"
+							@click.self="showProfileMenu = false"
+							@keydown.escape="closeProfileMenuOnEscape">
 							<div role="menu" :style="{ top: `${profileMenuPosition.top}px`, right: `${profileMenuPosition.right}px` }"
 								class="absolute w-[calc(100vw-2rem)] max-w-72 overflow-hidden rounded-xl border border-white/10 bg-linear-to-br from-gray-900 to-gray-800 p-1.5 shadow-2xl shadow-black/70 animate-pop-in sm:w-64">
 						<div class="px-3 py-2.5 border-b border-white/10 mb-1">
@@ -496,7 +510,7 @@ const togglePin = (wallet) => {
 								<div class="flex items-center gap-2">
 									<div class="w-1.5 h-1.5 rounded-xl bg-purple-500"></div>
 									<p class="text-2xs text-gray-400 font-bold uppercase tracking-[0.2em]">Total Kekayaan</p>
-									<button @click="toggleVisibility" class="text-gray-500 hover:text-white transition-colors p-1 -m-1 ml-1">
+									<button @click="toggleVisibility" class="text-gray-500 hover:text-white transition-colors p-1 -m-1 ml-1" :aria-label="isBalanceVisible ? 'Sembunyikan saldo' : 'Tampilkan saldo'">
 										<svg v-if="isBalanceVisible" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 											<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
 											<path
@@ -512,7 +526,6 @@ const togglePin = (wallet) => {
 										</svg>
 									</button>
 								</div>
-								<span class="text-2xs font-bold text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full border border-green-400/20">Live</span>
 							</div>
 							<div class="flex items-baseline gap-1.5 mb-4">
 								<span class="text-lg font-medium text-gray-500">Rp</span>
@@ -894,9 +907,20 @@ const togglePin = (wallet) => {
 												</div>
 
 												<div class="flex-1 min-w-0 pr-2">
-													<p class="text-xs font-bold text-white leading-tight mb-2">
-														{{ trx.category?.category_name || 'Transfer' }}
-													</p>
+													<div class="flex items-center gap-1.5 mb-1">
+														<p class="text-xs font-bold text-white leading-tight">
+															{{ trx.category?.category_name || 'Transfer' }}
+														</p>
+														<!-- Indikator DRAFT -->
+														<span
+															v-if="!trx.is_cleared"
+															class="shrink-0 inline-flex items-center gap-0.5 text-2xs font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/30">
+															<svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+																<path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+															</svg>
+															Draft
+														</span>
+													</div>
 													<div class="flex items-center gap-1.5 min-w-0">
 														<span class="text-gray-400 text-2xs tracking-wide font-bold whitespace-nowrap truncate">{{ trx.source_wallet?.name }}</span>
 														<svg class="w-2.5 h-2.5 text-purple-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="4">
