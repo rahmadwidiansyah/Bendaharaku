@@ -5,6 +5,7 @@ import CreateTransactionFab from '@/Components/CreateTransactionFab.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { ref, shallowRef, onMounted, watch, computed, nextTick } from 'vue';
 import { Chart, registerables } from 'chart.js';
+import { formatNumber } from '@/utils/format.js';
 
 Chart.register(...registerables);
 
@@ -41,10 +42,6 @@ const barChartContainerRef = ref(null);
 const barChartKey = ref(0);
 const cumulativeChartKey = ref(0);
 const doughnutChartKey = ref(0);
-
-const formatNumber = (num) => {
-    return new Intl.NumberFormat('id-ID').format(num);
-};
 
 const destroyChart = (id) => {
     if (charts.value[id]) {

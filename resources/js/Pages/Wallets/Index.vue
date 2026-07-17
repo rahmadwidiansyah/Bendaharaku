@@ -4,6 +4,7 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { useBalanceVisibility } from '@/Composables/useBalanceVisibility';
 import { useLayoutPreference } from '@/Composables/useLayoutPreference';
+import { formatNumber } from '@/utils/format.js';
 
 const { isDesktopLayout } = useLayoutPreference();
 
@@ -22,10 +23,6 @@ const props = defineProps({
     totalHutang: Number,
     totalPiutang: Number,
 });
-
-const formatNumber = (num) => {
-    return new Intl.NumberFormat('id-ID').format(num);
-};
 
 const liquidWallets = computed(() => props.wallets.filter(w => w.group_type === 'Liquid'));
 const assetWallets = computed(() => props.wallets.filter(w => w.group_type === 'Asset'));

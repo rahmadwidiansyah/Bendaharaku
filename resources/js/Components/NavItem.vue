@@ -52,19 +52,19 @@ const linkClasses = computed(() => {
 
     if (props.isDesktop) {
         // Desktop sidebar mode
-        const desktopBase = 'flex-row w-full px-3 py-3'
+        const desktopBase = 'flex-row w-full px-3 py-2.5'
         if (props.active) {
-            return `${base} ${desktopBase} text-purple-500 bg-purple-500/10 border border-purple-500/30`
+            return `${base} ${desktopBase} text-purple-400 bg-purple-500/10 border border-purple-500/20`
         }
-        return `${base} ${desktopBase} text-gray-500 hover:text-gray-300 hover:bg-gray-800 border border-transparent`
+        return `${base} ${desktopBase} text-gray-500 hover:text-gray-300 hover:bg-white/5 border border-transparent`
     }
 
-    // Mobile bottom nav mode
-    const mobileBase = 'flex-col'
+    // Mobile bottom nav mode — active pakai pill + warna, inactive abu
+    const mobileBase = 'flex-col px-3 py-1.5 min-w-[56px]'
     if (props.active) {
-        return `${base} ${mobileBase} text-purple-500 scale-105`
+        return `${base} ${mobileBase} text-purple-400`
     }
-    return `${base} ${mobileBase} text-gray-500 hover:text-gray-300`
+    return `${base} ${mobileBase} text-gray-600 hover:text-gray-400`
 })
 
 const iconClasses = computed(() => {
@@ -88,15 +88,18 @@ const labelClasses = computed(() => {
         :aria-current="active ? 'page' : undefined"
         :aria-label="label"
     >
-        <!-- Icon slot — wrapper div meneruskan ukuran ke SVG di dalamnya -->
-        <span :class="iconClasses" aria-hidden="true">
+        <!-- Icon slot — wrapper dengan active highlight bubble di mobile -->
+        <span
+            :class="[
+                iconClasses,
+                !isDesktop && active
+                    ? 'bg-purple-500/15 rounded-xl p-1 -mx-1 w-8 h-8'
+                    : '',
+            ]"
+            aria-hidden="true"
+        >
             <slot name="icon" />
         </span>
-        <!--
-            Catatan: SVG yang dipass ke slot #icon HARUS berukuran w-full h-full
-            atau mengikuti ukuran parent. Contoh di BottomNav sudah tidak menggunakan
-            v-html — SVG dirender langsung sebagai node Vue yang aman.
-        -->
 
         <!-- Label -->
         <span :class="labelClasses">{{ label }}</span>
