@@ -4,6 +4,7 @@ import DateModal from '@/Components/DateModal.vue';
 import TransactionDetailModal from '@/Components/TransactionDetailModal.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
+import { formatNumber, formatDate } from '@/utils/format.js';
 
 const props = defineProps({
     category: Object,
@@ -16,10 +17,6 @@ const props = defineProps({
 
 const showDetailModal = ref(false);
 const selectedTransaction = ref(null);
-
-const formatNumber = (num) => {
-    return new Intl.NumberFormat('id-ID').format(num);
-};
 
 const openDetail = (trx) => {
     // Controller returns full objects, but we need to match the structure expected by the modal
@@ -55,10 +52,6 @@ const getTypeColor = (typeName) => {
 };
 
 const formatDateRange = () => {
-    const formatDate = (date) => new Intl.DateTimeFormat('id-ID', {
-        day: 'numeric', month: 'short', year: 'numeric'
-    }).format(new Date(`${date}T00:00:00`));
-
     return `${formatDate(props.startDate)} – ${formatDate(props.endDate)}`;
 };
 </script>

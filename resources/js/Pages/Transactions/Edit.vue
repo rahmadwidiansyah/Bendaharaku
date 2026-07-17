@@ -1,10 +1,13 @@
 <script setup>
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, useForm, router } from '@inertiajs/vue3';
-import { ref, computed, onMounted, watch } from 'vue';
-import { useLayoutPreference } from '@/Composables/useLayoutPreference';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import TransactionTypeTab from '@/Components/TransactionTypeTab.vue'
+import AmountKeypad from '@/Components/AmountKeypad.vue'
+import { Head, Link, useForm, router } from '@inertiajs/vue3'
+import { ref, onMounted } from 'vue'
+import { useLayoutPreference } from '@/Composables/useLayoutPreference'
+import { useTransactionForm } from '@/Composables/useTransactionForm.js'
 
-const { isDesktopLayout } = useLayoutPreference();
+const { isDesktopLayout } = useLayoutPreference()
 
 const props = defineProps({
     transaction: Object,
@@ -13,406 +16,104 @@ const props = defineProps({
     systemWallets: Array,
     debtSubjects: Array,
     receivableSubjects: Array,
-});
+})
 
 const form = useForm({
     category_id: props.transaction.category_id,
     source_wallet_id: props.transaction.source_wallet_id,
     destination_wallet_id: props.transaction.destination_wallet_id,
-    amount: props.transaction.amount,
+    // Nilai decimal dari database dapat terserialisasi sebagai "10000.00".
+    // Simpan sebagai integer agar ".00" tidak terbaca sebagai dua nol tambahan.
+    amount: Math.trunc(Number(props.transaction.amount) || 0),
     date: props.transaction.date,
     subject: props.transaction.subject || '-',
     notes: props.transaction.notes || '',
     due_date: props.transaction.due_date,
     due_date_type: props.transaction.due_date_type,
     due_date_interval: props.transaction.due_date_interval,
-});
+})
 
-const showDeleteConfirm = ref(false);
+const showDeleteConfirm = ref(false)
 
-const mainTab = ref('Expense');
-const activeType = ref('Expense');
-const debtSubTab = ref('income');
-const showCategoryModal = ref(false);
-const showWalletModal = ref(false);
-const walletModalMode = ref('source');
-// Nilai decimal dari database dapat terserialisasi sebagai "10000.00".
-// Jadikan digit rupiah utuh agar ".00" tidak terbaca sebagai dua nol tambahan.
-const rawAmount = ref(String(Math.trunc(Number(props.transaction.amount) || 0)));
+// ─── Tentukan initialType dari transaksi yang sedang di-edit ─────
+const _initCat = props.categories.find(c => c.id === props.transaction.category_id)
+const _initType = _initCat?.type?.name ?? 'Expense'
+const _initDebtSubTab = (_initCat?.category_name === 'Bayar Cicilan Hutang' || _initCat?.category_name === 'Ngasih Piutang')
+    ? 'expense'
+    : 'income'
 
-const formattedAmount = computed(() => {
-    if (!rawAmount.value || rawAmount.value === '0') return '';
-    const clean = rawAmount.value.toString().replace(/\D/g, '');
-    if (!clean) return '';
-    return parseInt(clean, 10).toLocaleString('id-ID');
-});
+// ─── Semua shared logic dari composable ──────────────────────────
+const tx = useTransactionForm(form, props, {
+    isDesktopLayout,
+    initialMainTab: _initType,
+    initialType: _initType,
+    initialDebtSubTab: _initDebtSubTab,
+    initialAmount: String(Math.trunc(Number(props.transaction.amount) || 0)),
+})
 
-const handleDesktopInput = (e) => {
-    let clean = e.target.value.replace(/\D/g, '');
-    if (clean.length > 15) {
-        clean = clean.slice(0, 15);
-    }
-
-    // Selalu paksa kembalikan value menjadi format angka agar teks terhapus otomatis
-    e.target.value = clean ? parseInt(clean, 10).toLocaleString('id-ID') : '';
-
-    rawAmount.value = clean || '0';
-    form.amount = parseInt(clean, 10) || 0;
-};
-
-const handleKeypad = (key) => {
-    if (key === 'del') {
-        rawAmount.value = rawAmount.value.slice(0, -1) || '0';
-    } else if (key === 'C') {
-        rawAmount.value = '0';
-    } else if (key === '000') {
-        if (rawAmount.value !== '0') rawAmount.value += '000';
-    } else {
-        if (rawAmount.value === '0') rawAmount.value = key;
-        else rawAmount.value += key;
-    }
-
-    // limit max length
-    if (rawAmount.value.length > 15) rawAmount.value = rawAmount.value.slice(0, 15);
-
-    form.amount = parseInt(rawAmount.value, 10) || 0;
-};
-const displayAmount = ref('');
-const walletFrequency = ref({});
+const {
+    rawAmount, formattedAmount, handleKeypad, handleDesktopInput,
+    loadWalletFrequency,
+    mainTab, activeType, debtSubTab, setMainTab, setDebtSubTab,
+    showWalletModal,
+    showKeypad, showBottomPanel, showDateModal, dateModalTarget,
+    monthNames, currentMonth, currentYear, daysInMonth, firstDayOfMonth,
+    prevCalendarMonth, nextCalendarMonth, selectSpecificDate, setDate,
+    selectedSourceWallet, selectedDestWallet, availableWallets,
+    openWalletModal, selectWallet,
+    selectedCategory, activeCategories, activeSubjects, isMoneyIn, selectCategory,
+} = tx
 
 onMounted(() => {
-    const cat = props.categories.find(c => c.id === props.transaction.category_id);
-    if (cat) {
-        activeType.value = cat.type.name;
-        if (['Expense', 'Income', 'Transfer'].includes(cat.type.name)) {
-            mainTab.value = cat.type.name;
-        } else {
-            mainTab.value = cat.type.name;
-            if (cat.category_name === 'Bayar Cicilan Hutang' || cat.category_name === 'Ngasih Piutang') {
-                debtSubTab.value = 'expense';
-            } else {
-                debtSubTab.value = 'income';
-            }
-        }
-    }
+    loadWalletFrequency()
+})
 
-    try {
-        const storedFreq = localStorage.getItem('wallet_frequency');
-        if (storedFreq) {
-            walletFrequency.value = JSON.parse(storedFreq);
-        }
-    } catch (e) {
-        console.error("Gagal meload cache wallet", e);
-    }
-});
-
-const formatAmountInput = (e) => {
-    let val = e.target.value.replace(/\D/g, '');
-    form.amount = val;
-    displayAmount.value = val ? new Intl.NumberFormat('id-ID').format(parseInt(val)) : '';
-};
-
-const activeCategories = computed(() => {
-    let cats = props.categories.filter(cat => cat.type.name === activeType.value);
-
-    if (activeType.value === 'Debt') {
-        if (debtSubTab.value === 'expense') cats = cats.filter(c => c.category_name === 'Bayar Cicilan Hutang');
-        else if (debtSubTab.value === 'income') cats = cats.filter(c => c.category_name === 'Dapat Hutangan');
-    } else if (activeType.value === 'Receivable') {
-        if (debtSubTab.value === 'expense') cats = cats.filter(c => c.category_name === 'Ngasih Piutang');
-        else if (debtSubTab.value === 'income') cats = cats.filter(c => c.category_name === 'Terima Bayar Piutang');
-    }
-
-    return cats;
-});
-
-const selectedCategory = computed(() => {
-    return props.categories.find(c => c.id === form.category_id);
-});
-
-const activeSubjects = computed(() => {
-    if (activeType.value === 'Debt') {
-        return props.debtSubjects || [];
-    } else if (activeType.value === 'Receivable') {
-        return props.receivableSubjects || [];
-    }
-    return [];
-});
-
-const isMoneyIn = computed(() => {
-    if (activeType.value === 'Income') return true;
-    if (activeType.value === 'Debt' && debtSubTab.value === 'income') return true;
-    if (activeType.value === 'Receivable' && debtSubTab.value === 'income') return true;
-    return false;
-});
-
-const showKeypad = ref(!isDesktopLayout.value);
-const showBottomPanel = ref(true);
-const showDateModal = ref(false);
-const dateModalTarget = ref('transaction'); // 'transaction' or 'due_date'
-
-const currentMonth = ref(new Date().getMonth());
-const currentYear = ref(new Date().getFullYear());
-const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-
-const daysInMonth = computed(() => new Date(currentYear.value, currentMonth.value + 1, 0).getDate());
-const firstDayOfMonth = computed(() => {
-    let day = new Date(currentYear.value, currentMonth.value, 1).getDay();
-    return day === 0 ? 6 : day - 1; // Mon=0, Sun=6
-});
-
-const prevMonth = () => {
-    if (currentMonth.value === 0) {
-        currentMonth.value = 11;
-        currentYear.value--;
-    } else {
-        currentMonth.value--;
-    }
-};
-
-const nextMonth = () => {
-    if (currentMonth.value === 11) {
-        currentMonth.value = 0;
-        currentYear.value++;
-    } else {
-        currentMonth.value++;
-    }
-};
-
-watch(showDateModal, (val) => {
-    if (val) {
-        const d = dateModalTarget.value === 'due_date' && form.due_date ? new Date(form.due_date) : new Date(form.date);
-        currentMonth.value = d.getMonth();
-        currentYear.value = d.getFullYear();
-    }
-});
-
-const selectSpecificDate = (day) => {
-    const d = new Date(currentYear.value, currentMonth.value, day);
-    const offset = d.getTimezoneOffset() * 60000;
-    const dateStr = (new Date(d - offset)).toISOString().slice(0, 10);
-
-    if (dateModalTarget.value === 'due_date') {
-        form.due_date = dateStr;
-    } else {
-        form.date = dateStr;
-    }
-    showDateModal.value = false;
-};
-
-const setDate = (offsetDays) => {
-    const d = new Date();
-    d.setDate(d.getDate() + offsetDays);
-    const offset = d.getTimezoneOffset() * 60000;
-    const dateStr = (new Date(d - offset)).toISOString().slice(0, 10);
-
-    if (dateModalTarget.value === 'due_date') {
-        form.due_date = dateStr;
-    } else {
-        form.date = dateStr;
-    }
-    showDateModal.value = false;
-};
-
-const selectedSourceWallet = computed(() => {
-    const all = [...props.wallets, ...props.systemWallets];
-    return all.find(w => w.id == form.source_wallet_id);
-});
-
-const selectedDestWallet = computed(() => {
-    const all = [...props.wallets, ...props.systemWallets];
-    return all.find(w => w.id == form.destination_wallet_id);
-});
-
-const showSourceWallet = computed(() => {
-    if (activeType.value === 'Income') return false;
-    if (['Debt', 'Receivable'].includes(activeType.value)) {
-        const catName = selectedCategory.value?.category_name;
-        if (catName === 'Dapat Hutangan' || catName === 'Terima Bayar Piutang') return false;
-    }
-    return true;
-});
-
-const showDestWallet = computed(() => {
-    if (activeType.value === 'Expense') return false;
-    if (['Debt', 'Receivable'].includes(activeType.value)) {
-        const catName = selectedCategory.value?.category_name;
-        if (catName === 'Bayar Cicilan Hutang' || catName === 'Ngasih Piutang') return false;
-    }
-    return true;
-});
-
-const setMainTab = (t) => {
-    mainTab.value = t;
-    if (['Debt', 'Receivable'].includes(t)) {
-        debtSubTab.value = 'income';
-    }
-    setType(t);
-};
-
-const setType = (type) => {
-    activeType.value = type;
-    form.category_id = null;
-    form.subject = (type === 'Debt' || type === 'Receivable') ? '' : '-';
-    form.clearErrors();
-
-    const lastSource = localStorage.getItem('last_source_wallet');
-    const lastDest = localStorage.getItem('last_dest_wallet');
-
-    if (type === 'Expense') {
-        form.source_wallet_id = lastSource || lastDest || null;
-        const merchant = props.systemWallets.find(w => w.name.toLowerCase().includes('merchant'));
-        form.destination_wallet_id = merchant?.id;
-    } else if (type === 'Income') {
-        const external = props.systemWallets.find(w => w.name.toLowerCase().includes('external'));
-        form.source_wallet_id = external?.id;
-        form.destination_wallet_id = lastDest || lastSource || null;
-    } else {
-        form.source_wallet_id = lastSource || lastDest || null;
-        form.destination_wallet_id = lastDest || lastSource || null;
-    }
-
-    let filteredCats = props.categories.filter(cat => cat.type.name === type);
-
-    if (['Debt', 'Receivable'].includes(type) && filteredCats.length > 0) {
-        let targetCatName = '';
-        if (type === 'Debt') {
-            targetCatName = debtSubTab.value === 'expense' ? 'Bayar Cicilan Hutang' : 'Dapat Hutangan';
-        } else {
-            targetCatName = debtSubTab.value === 'expense' ? 'Ngasih Piutang' : 'Terima Bayar Piutang';
-        }
-
-        const cat = filteredCats.find(c => c.category_name === targetCatName);
-        if (cat) {
-            form.category_id = cat.id;
-            form.clearErrors('category_id');
-        }
-
-        const syH = props.systemWallets.find(w => w.name.toLowerCase().includes('hutang'));
-        const syP = props.systemWallets.find(w => w.name.toLowerCase().includes('piutang'));
-
-        if (type === 'Debt') {
-            if (debtSubTab.value === 'expense') {
-                form.source_wallet_id = lastSource || null;
-                form.destination_wallet_id = syH?.id;
-            } else {
-                form.source_wallet_id = syH?.id;
-                form.destination_wallet_id = lastDest || null;
-            }
-        } else {
-            if (debtSubTab.value === 'expense') {
-                form.source_wallet_id = lastSource || null;
-                form.destination_wallet_id = syP?.id;
-            } else {
-                form.source_wallet_id = syP?.id;
-                form.destination_wallet_id = lastDest || null;
-            }
-        }
-    } else if (filteredCats.length === 1) {
-        selectCategory(filteredCats[0]);
-    }
-};
-
-const setDebtSubTab = (subTab) => {
-    debtSubTab.value = subTab;
-    setType(mainTab.value);
-};
-
-const selectCategory = (cat) => {
-    form.category_id = cat.id;
-    showCategoryModal.value = false;
-    form.clearErrors('category_id');
-
-    // Removed aggressive nulling to preserve the user's personal wallet defaults
-
-    const syH = props.systemWallets.find(w => w.name.toLowerCase().includes('hutang'));
-    const syP = props.systemWallets.find(w => w.name.toLowerCase().includes('piutang'));
-};
-
-const availableWallets = computed(() => {
-    let list = props.wallets.filter(w => ['Asset', 'Liquid'].includes(w.group_type));
-
-    const otherValue = walletModalMode.value === 'source' ? form.destination_wallet_id : form.source_wallet_id;
-    if (otherValue) {
-        list = list.filter(w => w.id !== otherValue);
-    }
-
-    return list.sort((a, b) => (walletFrequency.value[b.id] || 0) - (walletFrequency.value[a.id] || 0));
-});
-
-const openWalletModal = (mode) => {
-    walletModalMode.value = mode;
-    showWalletModal.value = true;
-};
-
-const selectWallet = (w) => {
-    walletFrequency.value[w.id] = (walletFrequency.value[w.id] || 0) + 1;
-    localStorage.setItem('wallet_frequency', JSON.stringify(walletFrequency.value));
-
-    if (walletModalMode.value === 'source') {
-        form.source_wallet_id = w.id;
-        localStorage.setItem('last_source_wallet', w.id);
-        form.clearErrors('source_wallet_id');
-    } else {
-        form.destination_wallet_id = w.id;
-        localStorage.setItem('last_dest_wallet', w.id);
-        form.clearErrors('destination_wallet_id');
-    }
-    showWalletModal.value = false;
-};
-
+// ─── Submit / Delete logic (Edit-specific) ────────────────────────
 const submit = (closeAfter = true) => {
     if (new Date(form.date) > new Date()) {
-        form.setError('date', 'Masa depan tidak diizinkan!');
-        return;
+        form.setError('date', 'Masa depan tidak diizinkan!')
+        return
     }
-
     if (['Debt', 'Receivable'].includes(activeType.value) && (!form.subject || form.subject === '-')) {
-        form.setError('subject', 'Wajib diisi Bos!');
-        return;
+        form.setError('subject', 'Wajib diisi Bos!')
+        return
     }
-
     form.put(route('transactions.update', props.transaction.id), {
         preserveScroll: true,
         onSuccess: () => {
-            if (closeAfter) {
-                handleBack();
-            }
+            if (closeAfter) handleBack()
         },
-    });
-};
+    })
+}
 
-const destroy = () => {
-    showDeleteConfirm.value = true;
-};
+const destroy = () => { showDeleteConfirm.value = true }
 
 const confirmDelete = () => {
-    showDeleteConfirm.value = false;
-    router.delete(route('transactions.destroy', props.transaction.id));
-};
+    showDeleteConfirm.value = false
+    router.delete(route('transactions.destroy', props.transaction.id))
+}
 
-const submitAndClose = () => submit(true);
-const submitAndStay = () => submit(false);
+const submitAndClose = () => submit(true)
+const submitAndStay  = () => submit(false)
 
-const dateInput = ref(null);
+const dateInput = ref(null)
 const openDatePicker = () => {
     if (dateInput.value) {
         try {
             if (typeof dateInput.value.showPicker === 'function') {
-                dateInput.value.showPicker();
+                dateInput.value.showPicker()
             } else {
-                dateInput.value.focus();
-                dateInput.value.click();
+                dateInput.value.focus()
+                dateInput.value.click()
             }
         } catch (e) {
-            console.error('Failed to open date picker', e);
+            console.error('Failed to open date picker', e)
         }
     }
-};
+}
 
-const handleBack = () => {
-    router.visit(route('dashboard'));
-};
+const handleBack = () => router.visit(route('dashboard'))
+
 </script>
 
 <template>
@@ -441,69 +142,24 @@ const handleBack = () => {
                     <div class="px-4 pt-1 pb-2 shrink-0 flex gap-2 items-stretch">
                         <!-- DELETE BUTTON -->
                         <button type="button" @click="destroy"
-                            class="w-[40px] shrink-0 flex items-center justify-center text-red-500 active:scale-95 transition-transform bg-linear-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 hover:bg-red-500/10 hover:text-red-300"
-                            title="Hapus Transaksi">
+                            class="w-[40px] shrink-0 flex items-center justify-center text-red-500 active:scale-95 transition-transform bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 hover:bg-red-500/10 hover:text-red-300"
+                            aria-label="Hapus Transaksi">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round"
                                     d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
                         </button>
 
-                        <div
-                            class="flex-1 flex bg-linear-to-br from-gray-900 to-gray-800 rounded-xl p-1.5 border border-white/10 overflow-x-auto no-scrollbar gap-1">
-                            <button v-for="t in ['Expense', 'Income', 'Transfer', 'Debt', 'Receivable']" :key="t"
-                                @click="setMainTab(t)" type="button"
-                                :class="['flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-2xs font-bold uppercase tracking-wider transition-all whitespace-nowrap overflow-hidden', mainTab === t ? 'bg-gray-800 text-purple-500 border border-white/10 flex-1 px-3' : 'text-gray-500 hover:text-white px-3']">
-
-                                <template v-if="t === 'Expense'">
-                                    <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                                    </svg>
-                                </template>
-                                <template v-else-if="t === 'Income'">
-                                    <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                                    </svg>
-                                </template>
-                                <template v-else-if="t === 'Transfer'">
-                                    <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                                    </svg>
-                                </template>
-                                <template v-else-if="t === 'Debt'">
-                                    <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </template>
-                                <template v-else-if="t === 'Receivable'">
-                                    <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </template>
-
-                                <span v-show="mainTab === t" class="transition-all duration-300">
-                                    {{ t === 'Expense' ? 'Keluar' : (t === 'Income' ? 'Masuk' : (t === 'Transfer' ?
-                                        'Transfer' : (t === 'Debt' ?
-                                            'Hutang' : 'Piutang'))) }}
-                                </span>
-                            </button>
-                        </div>
+                        <TransactionTypeTab
+                            :model-value="mainTab"
+                            @update:model-value="setMainTab"
+                        />
 
                         <!-- CLOSE BUTTON -->
                         <button type="button" @click="handleBack"
-                            class="w-[40px] shrink-0 flex items-center justify-center text-red-400 active:scale-95 transition-transform bg-linear-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 hover:bg-red-500/10 hover:text-red-300"
-                            title="Tutup">
-                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            class="w-[40px] shrink-0 flex items-center justify-center text-red-400 active:scale-95 transition-transform bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 hover:bg-red-500/10 hover:text-red-300"
+                            aria-label="Tutup">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
@@ -513,11 +169,11 @@ const handleBack = () => {
                     <div v-if="mainTab === 'Debt'" class="px-4 py-1 flex flex-col gap-2 shrink-0">
                         <div class="flex gap-2 transition-all">
                             <button type="button" @click="setDebtSubTab('income')"
-                                :class="['flex-1 py-2 rounded-xl text-2xs font-bold transition-all whitespace-nowrap', debtSubTab === 'income' ? 'bg-linear-to-br from-gray-800 to-gray-900 text-purple-500 border border-white/10' : 'bg-transparent text-gray-400 border border-white/10 hover:text-gray-400']">
+                                :class="['flex-1 py-2 rounded-xl text-2xs font-bold transition-all whitespace-nowrap', debtSubTab === 'income' ? 'bg-gradient-to-br from-gray-800 to-gray-900 text-purple-500 border border-white/10' : 'bg-transparent text-gray-400 border border-white/10 hover:text-gray-400']">
                                 Dapat Hutang
                             </button>
                             <button type="button" @click="setDebtSubTab('expense')"
-                                :class="['flex-1 py-2 rounded-xl text-2xs font-bold transition-all whitespace-nowrap', debtSubTab === 'expense' ? 'bg-linear-to-br from-gray-800 to-gray-900 text-purple-500 border border-white/10' : 'bg-transparent text-gray-400 border border-white/10 hover:text-gray-400']">
+                                :class="['flex-1 py-2 rounded-xl text-2xs font-bold transition-all whitespace-nowrap', debtSubTab === 'expense' ? 'bg-gradient-to-br from-gray-800 to-gray-900 text-purple-500 border border-white/10' : 'bg-transparent text-gray-400 border border-white/10 hover:text-gray-400']">
                                 Bayar Hutang
                             </button>
                         </div>
@@ -526,11 +182,11 @@ const handleBack = () => {
                     <div v-if="mainTab === 'Receivable'" class="px-4 py-1 flex flex-col gap-2 shrink-0">
                         <div class="flex gap-2 transition-all">
                             <button type="button" @click="setDebtSubTab('expense')"
-                                :class="['flex-1 py-2 rounded-xl text-2xs font-bold transition-all whitespace-nowrap', debtSubTab === 'expense' ? 'bg-linear-to-br from-gray-800 to-gray-900 text-purple-500 border border-white/10' : 'bg-transparent text-gray-400 border border-white/10 hover:text-gray-400']">
+                                :class="['flex-1 py-2 rounded-xl text-2xs font-bold transition-all whitespace-nowrap', debtSubTab === 'expense' ? 'bg-gradient-to-br from-gray-800 to-gray-900 text-purple-500 border border-white/10' : 'bg-transparent text-gray-400 border border-white/10 hover:text-gray-400']">
                                 Beri Piutang
                             </button>
                             <button type="button" @click="setDebtSubTab('income')"
-                                :class="['flex-1 py-2 rounded-xl text-2xs font-bold transition-all whitespace-nowrap', debtSubTab === 'income' ? 'bg-linear-to-br from-gray-800 to-gray-900 text-purple-500 border border-white/10' : 'bg-transparent text-gray-400 border border-white/10 hover:text-gray-400']">
+                                :class="['flex-1 py-2 rounded-xl text-2xs font-bold transition-all whitespace-nowrap', debtSubTab === 'income' ? 'bg-gradient-to-br from-gray-800 to-gray-900 text-purple-500 border border-white/10' : 'bg-transparent text-gray-400 border border-white/10 hover:text-gray-400']">
                                 Terima Piutang
                             </button>
                         </div>
@@ -542,7 +198,7 @@ const handleBack = () => {
                         <div class="flex flex-col items-center gap-3">
                             <button type="button" @click="openWalletModal('source')"
                                 class="flex items-center justify-center w-20 h-20 active:scale-95 transition-transform"
-                                title="Pilih Dompet Sumber">
+                                aria-label="Pilih Dompet Sumber">
                                 <template v-if="selectedSourceWallet">
                                     <img v-if="selectedSourceWallet.icon.includes('.')"
                                         :src="'/storage/' + selectedSourceWallet.icon"
@@ -571,7 +227,7 @@ const handleBack = () => {
                         <div class="flex flex-col items-center gap-3">
                             <button type="button" @click="openWalletModal('dest')"
                                 class="flex items-center justify-center w-20 h-20 active:scale-95 transition-transform"
-                                title="Pilih Dompet Tujuan">
+                                aria-label="Pilih Dompet Tujuan">
                                 <template v-if="selectedDestWallet">
                                     <img v-if="selectedDestWallet.icon.includes('.')"
                                         :src="'/storage/' + selectedDestWallet.icon"
@@ -616,7 +272,7 @@ const handleBack = () => {
                                     Terkait</label>
                                 <input type="text" v-model="form.subject" placeholder="Masukkan nama..."
                                     @input="form.subject = $event.target.value.toUpperCase()"
-                                    class="w-full bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 focus:border-purple-500 rounded-xl px-4 py-3 text-center text-lg font-bold text-white focus:ring-0 placeholder-gray-700 transition-colors outline-none uppercase">
+                                    class="w-full bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 focus:border-purple-500 rounded-xl px-4 py-3 text-center text-lg font-bold text-white focus:ring-0 placeholder-gray-700 transition-colors outline-none uppercase">
 
                                 <div v-if="activeSubjects && activeSubjects.length > 0 && ((activeType === 'Debt' && debtSubTab === 'expense') || (activeType === 'Receivable' && debtSubTab === 'income'))"
                                     class="flex flex-wrap gap-2 justify-center mt-3">
@@ -704,7 +360,7 @@ const handleBack = () => {
                             <div v-if="activeCategories.length || ['Expense', 'Income'].includes(mainTab)" class="grid grid-cols-3 sm:grid-cols-4 gap-2">
                             <button v-for="cat in activeCategories" :key="cat.id" type="button" @click="selectCategory(cat)"
                                 :class="['relative flex flex-col items-center justify-center p-2 rounded-xl border transition-all active:scale-95 min-h-[88px]',
-                                    form.category_id === cat.id ? 'bg-purple-500/10 border-purple-500 shadow-lg shadow-purple-500/10' : 'bg-linear-to-br from-gray-900 to-gray-800 border-white/10 hover:border-purple-500/40']">
+                                    form.category_id === cat.id ? 'bg-purple-500/10 border-purple-500 shadow-lg shadow-purple-500/10' : 'bg-gradient-to-br from-gray-900 to-gray-800 border-white/10 hover:border-purple-500/40']">
                                 <img v-if="cat.icon.includes('.')" :src="'/storage/' + cat.icon"
                                     class="w-7 h-7 object-cover rounded-lg mb-1.5">
                                 <span v-else class="text-lg mb-1">{{ cat.icon }}</span>
@@ -727,25 +383,25 @@ const handleBack = () => {
 
                     <!-- SHOW PANEL BUTTON -->
                     <button v-if="!showBottomPanel" type="button" @click="showBottomPanel = true"
-                        class="flex absolute bottom-8 left-1/2 -translate-x-1/2 z-50 px-2 py-3 bg-linear-to-br from-gray-900 to-gray-800 text-gray-500 border border-white/10 font-bold rounded-xl active:scale-95 transition-transform items-center gap-2 hover:text-white shadow-xl"
-                        title="Tampilkan Panel">
+                        class="flex absolute bottom-8 left-1/2 -translate-x-1/2 z-50 px-2 py-3 bg-gradient-to-br from-gray-900 to-gray-800 text-gray-500 border border-white/10 font-bold rounded-xl active:scale-95 transition-transform items-center gap-2 hover:text-white shadow-xl"
+                        aria-label="Tampilkan Panel">
 
                         <span>Tampilkan Panel Input</span>
                     </button>
 
                     <!-- BOTTOM KEYPAD AREA -->
                     <div v-show="showBottomPanel"
-                        class="bg-linear-to-br from-gray-900 to-gray-800 border-t border-white/10 rounded-t-xl md:border md:rounded-xl md:mb-10 md:mx-4 p-3 z-20 shrink-0 relative transition-all">
+                        class="bg-gradient-to-br from-gray-900 to-gray-800 border-t border-white/10 rounded-t-xl md:border md:rounded-xl md:mb-10 md:mx-4 p-3 z-20 shrink-0 relative transition-all">
                         <div class="flex items-center justify-between px-1 mb-2">
                             <p class="text-2xs font-black text-purple-500 uppercase tracking-[0.18em] truncate pr-2">Detail · {{ (isMoneyIn ? selectedDestWallet : selectedSourceWallet)?.name || 'Pilih dompet' }}</p>
                             <span :class="form.amount > 0 ? 'text-green-400' : 'text-gray-600'" class="text-2xs font-bold">{{ form.amount > 0 ? '✓ Nominal terisi' : 'Nominal wajib' }}</span>
                         </div>
                         <div
-                            class="flex flex-wrap items-center gap-x-2 gap-y-1 mb-2 bg-linear-to-br from-gray-900 to-gray-800 rounded-xl p-1.5 pr-3 border border-white/10">
+                            class="flex flex-wrap items-center gap-x-2 gap-y-1 mb-2 bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-1.5 pr-3 border border-white/10">
                             <!-- WALLET ICON (CLICKABLE) -->
                             <button type="button" @click="openWalletModal(isMoneyIn ? 'dest' : 'source')"
                                 class="w-10 h-10 flex items-center justify-center shrink-0 active:scale-95 transition-transform overflow-hidden relative rounded-lg"
-                                title="Pilih Dompet">
+                                aria-label="Pilih Dompet">
                                 <template v-if="isMoneyIn ? selectedDestWallet : selectedSourceWallet">
                                     <img v-if="(isMoneyIn ? selectedDestWallet : selectedSourceWallet).icon.includes('.')"
                                         :src="'/storage/' + (isMoneyIn ? selectedDestWallet : selectedSourceWallet).icon"
@@ -786,7 +442,7 @@ const handleBack = () => {
 
                         <div class="flex gap-2 mb-2">
                             <button type="button" @click="dateModalTarget = 'transaction'; showDateModal = true"
-                                class="flex-1 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl flex items-center justify-center gap-2 text-2xs font-bold text-gray-500 relative overflow-hidden cursor-pointer h-12" aria-label="Pilih tanggal transaksi">
+                                class="flex-1 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl flex items-center justify-center gap-2 text-2xs font-bold text-gray-500 relative overflow-hidden cursor-pointer h-12" aria-label="Pilih tanggal transaksi">
                                 <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"
                                     stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -800,7 +456,7 @@ const handleBack = () => {
                                         }) }}</span>
                             </button>
                             <button type="button" @click="showKeypad = !showKeypad"
-                                class="flex w-12 h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-transform"
+                                class="flex w-12 h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-transform"
                                 :title="showKeypad ? 'Sembunyikan Keypad' : 'Tampilkan Keypad'">
                                 <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
                                     width="24px" fill="#ad46ff"
@@ -809,8 +465,8 @@ const handleBack = () => {
                                 </svg>
                             </button>
                             <button type="button" @click="showBottomPanel = false"
-                                class="flex w-12 h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-transform"
-                                title="Sembunyikan Panel">
+                                class="flex w-12 h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-transform"
+                                aria-label="Sembunyikan Panel">
                                 <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
                                     width="24px" fill="#ff6467">
                                     <path
@@ -818,8 +474,8 @@ const handleBack = () => {
                                 </svg>
                             </button>
                             <button type="button" @click="submit(true)"
-                                class="w-[84px] h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl flex items-center justify-center text-green-500 shrink-0 active:scale-95 transition-transform"
-                                title="Simpan Perubahan">
+                                class="w-[84px] h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl flex items-center justify-center text-green-500 shrink-0 active:scale-95 transition-transform"
+                                aria-label="Simpan Perubahan">
                                 <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"
                                     stroke-width="3">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
@@ -827,38 +483,8 @@ const handleBack = () => {
                             </button>
                         </div>
 
-                        <div v-show="showKeypad" class="grid grid-cols-3 gap-y-2 gap-x-4">
-                            <button @click="handleKeypad('7')" type="button"
-                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">7</button>
-                            <button @click="handleKeypad('8')" type="button"
-                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">8</button>
-                            <button @click="handleKeypad('9')" type="button"
-                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">9</button>
-                            <button @click="handleKeypad('4')" type="button"
-                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">4</button>
-                            <button @click="handleKeypad('5')" type="button"
-                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">5</button>
-                            <button @click="handleKeypad('6')" type="button"
-                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">6</button>
-                            <button @click="handleKeypad('1')" type="button"
-                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">1</button>
-                            <button @click="handleKeypad('2')" type="button"
-                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">2</button>
-                            <button @click="handleKeypad('3')" type="button"
-                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">3</button>
-                            <button @click="handleKeypad('000')" type="button"
-                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-sm font-bold text-purple-400 flex items-center justify-center">000</button>
-                            <button @click="handleKeypad('0')" type="button"
-                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl text-lg font-bold text-gray-500 flex items-center justify-center">0</button>
-                            <button @click="handleKeypad('del')" type="button"
-                                class="h-12 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl flex items-center justify-center relative">
-                                <div class="w-8 h-8 flex items-center justify-center">
-                                    <svg class="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24"
-                                        stroke="currentColor" stroke-width="3">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </div>
-                            </button>
+                        <div v-show="showKeypad">
+                            <AmountKeypad @key="handleKeypad" />
                         </div>
                     </div>
                 </form>
@@ -869,7 +495,7 @@ const handleBack = () => {
                 class="fixed inset-0 z-100 flex flex-col justify-end bg-black/70 backdrop-blur-sm"
                 @click.self="showDateModal = false">
                 <div
-                    class="w-full max-w-md mx-auto bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-t-2xl p-5 pb-safe animate-slide-up">
+                    class="w-full max-w-md mx-auto bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-t-2xl p-5 pb-safe animate-slide-up">
                     <div class="w-12 h-1.5 bg-white/20 rounded-xl mx-auto mb-4 cursor-pointer"
                         @click="showDateModal = false">
                     </div>
@@ -890,10 +516,10 @@ const handleBack = () => {
 
                         <!-- CUSTOM CALENDAR -->
                         <div
-                            class="w-full bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-4 shadow-inner">
+                            class="w-full bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-4 shadow-inner">
                             <!-- Header -->
                             <div class="flex justify-between items-center mb-4">
-                                <button type="button" @click="prevMonth"
+                                <button type="button" @click="prevCalendarMonth"
                                     class="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors active:scale-95">
                                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"
                                         stroke-width="2">
@@ -903,7 +529,7 @@ const handleBack = () => {
                                 <span class="text-sm font-bold text-white tracking-wide">{{ monthNames[currentMonth] }}
                                     {{
                                         currentYear }}</span>
-                                <button type="button" @click="nextMonth"
+                                <button type="button" @click="nextCalendarMonth"
                                     class="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors active:scale-95">
                                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"
                                         stroke-width="2">
@@ -926,7 +552,7 @@ const handleBack = () => {
                                 <button v-for="day in daysInMonth" :key="day" @click="selectSpecificDate(day)" :class="[
                                     'h-8 w-full flex items-center justify-center text-sm font-bold rounded-lg transition-all active:scale-90',
                                     (dateModalTarget === 'due_date' ? form.due_date : form.date) === [currentYear, String(currentMonth + 1).padStart(2, '0'), String(day).padStart(2, '0')].join('-')
-                                        ? 'bg-linear-to-br from-purple-600 to-purple-800 text-white shadow-md border border-purple-400/50'
+                                        ? 'bg-gradient-to-br from-purple-600 to-purple-800 text-white shadow-md border border-purple-400/50'
                                         : 'text-gray-300 hover:bg-gray-800 border border-transparent'
                                 ]">
                                     {{ day }}
@@ -942,7 +568,7 @@ const handleBack = () => {
                 class="fixed inset-0 z-100 flex flex-col justify-end bg-black/70 backdrop-blur-sm"
                 @click.self="showWalletModal = false">
                 <div
-                    class="w-full max-w-md mx-auto bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-5 pb-safe animate-slide-up">
+                    class="w-full max-w-md mx-auto bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-5 pb-safe animate-slide-up">
                     <div class="w-12 h-1.5 bg-white/20 rounded-xl mx-auto mb-4 cursor-pointer"
                         @click="showWalletModal = false">
                     </div>
@@ -953,7 +579,7 @@ const handleBack = () => {
                         <div v-for="w in availableWallets" :key="w.id" @click="selectWallet(w)"
                             class="bg-gray-900 border border-white/10 p-4 rounded-xl flex items-center gap-4 cursor-pointer active:scale-95 transition-all">
                             <div
-                                class="w-12 h-12 bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 rounded-xl flex items-center justify-center text-xl overflow-hidden">
+                                class="w-12 h-12 bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 rounded-xl flex items-center justify-center text-xl overflow-hidden">
                                 <img v-if="w.icon.includes('.')" :src="'/storage/' + w.icon"
                                     class="w-full h-full object-cover">
                                 <span v-else>{{ w.icon }}</span>
@@ -977,7 +603,7 @@ const handleBack = () => {
             class="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm transition-opacity"
             @click.self="showDeleteConfirm = false">
             <div
-                class="w-full max-w-sm bg-linear-to-br from-red-900 to-gray-900 rounded-2xl border border-red-500/30 p-6 animate-pop-in relative shadow-2xl">
+                class="w-full max-w-sm bg-gradient-to-br from-red-900 to-gray-900 rounded-2xl border border-red-500/30 p-6 animate-pop-in relative shadow-2xl">
                 <div class="text-center mb-6">
                     <div
                         class="w-16 h-16 rounded-full bg-red-500/20 text-red-400 mx-auto flex items-center justify-center mb-4">
@@ -996,7 +622,7 @@ const handleBack = () => {
                         Batal
                     </button>
                     <button type="button" @click="confirmDelete"
-                        class="flex-1 bg-linear-to-br from-red-600 to-red-500 text-white font-bold text-sm uppercase tracking-widest py-4 rounded-xl shadow-lg shadow-red-500/20 active:scale-95 transition-all">
+                        class="flex-1 bg-gradient-to-br from-red-600 to-red-500 text-white font-bold text-sm uppercase tracking-widest py-4 rounded-xl shadow-lg shadow-red-500/20 active:scale-95 transition-all">
                         Ya, Hapus
                     </button>
                 </div>

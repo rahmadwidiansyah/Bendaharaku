@@ -1,15 +1,21 @@
 <script setup>
 import DateModal from '@/Components/DateModal.vue'
-import CreateTransactionFab from '@/Components/CreateTransactionFab.vue'
 import TransactionDetailModal from '@/Components/TransactionDetailModal.vue'
-// import GoogleAd from '@/Components/GoogleAd.vue';
-import { Head, Link, usePage, router } from '@inertiajs/vue3'
-import { ref, computed, watch, onMounted } from 'vue'
+import Badge from '@/Components/Badge.vue'
+import DashboardHeader from '@/Pages/Dashboard/DashboardHeader.vue'
+import InsightBanner from '@/Pages/Dashboard/InsightBanner.vue'
+import PortfolioCard from '@/Pages/Dashboard/PortfolioCard.vue'
+import UpcomingDebts from '@/Pages/Dashboard/UpcomingDebts.vue'
+import { Head, Link, router } from '@inertiajs/vue3'
+import { ref, computed, watch } from 'vue'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { useBalanceVisibility } from '@/Composables/useBalanceVisibility'
 import { useLayoutPreference } from '@/Composables/useLayoutPreference'
+import { useCalendar } from '@/Composables/useCalendar'
+import { formatNumber, formatCompact } from '@/utils/format.js'
 
 const { isDesktopLayout } = useLayoutPreference()
+const { isBalanceVisible, toggleVisibility } = useBalanceVisibility()
 
 const props = defineProps({
 	totalPortfolio: Number,
@@ -25,380 +31,141 @@ const props = defineProps({
 	upcomingDebts: Array,
 })
 
-const dismissedDebts = ref([])
-
-onMounted(() => {
-	try {
-		const stored = sessionStorage.getItem('dismissed_debts')
-		if (stored) {
-			dismissedDebts.value = JSON.parse(stored)
-		}
-	} catch (e) {}
-})
-
-const dismissDebt = (id) => {
-	dismissedDebts.value.push(id)
-	sessionStorage.setItem('dismissed_debts', JSON.stringify(dismissedDebts.value))
-}
-
-const activeUpcomingDebts = computed(() => {
-	return (props.upcomingDebts || []).filter((d) => !dismissedDebts.value.includes(d.subject + d.type))
-})
-
-const handleImageError = (e, fallback) => {
-	e.target.style.display = 'none'
-	const parent = e.target.parentElement
-	if (parent) {
-		const span = document.createElement('span')
-		span.innerText = fallback
-		span.className = 'text-xl animate-pulse'
-		parent.appendChild(span)
-	}
-}
-
-const { isBalanceVisible, toggleVisibility } = useBalanceVisibility()
-
-const user = usePage().props.auth.user
-const showProfileMenu = ref(false)
-const avatarLoadFailed = ref(false)
-const profileMenuPosition = ref({ top: 76, right: 16 })
-const toggleProfileMenu = (event) => {
-	if (showProfileMenu.value) {
-		showProfileMenu.value = false
-		return
-	}
-
-	const rect = event.currentTarget.getBoundingClientRect()
-	profileMenuPosition.value = {
-		top: Math.min(rect.bottom + 12, window.innerHeight - 190),
-		right: Math.max(16, window.innerWidth - rect.right),
-	}
-	showProfileMenu.value = true
-}
-
-const closeProfileMenuOnEscape = (e) => {
-	if (e.key === 'Escape') showProfileMenu.value = false
-}
-
+// ─── Transaction modal ────────────────────────────────────────────
 const showModal = ref(false)
 const selectedTransaction = ref(null)
-const search = ref(props.filters?.search || '')
-const type = ref(props.filters?.type || '')
-const showSortModal = ref(false)
-const collapsedDates = ref({})
-const activeHistoryTab = ref('detail')
-const calendarFilter = ref('total')
-
-const getLocalYMD = (d) => {
-	return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-const selectedCalendarDate = ref(getLocalYMD(new Date()))
-const currentCalendarMonth = ref(new Date(props.startDate))
-
-const calendarDays = computed(() => {
-	const year = currentCalendarMonth.value.getFullYear()
-	const month = currentCalendarMonth.value.getMonth()
-
-	const firstDay = new Date(year, month, 1)
-	const lastDay = new Date(year, month + 1, 0)
-	const daysInMonth = lastDay.getDate()
-	const startingDayOfWeek = firstDay.getDay()
-
-	const days = []
-	for (let i = 0; i < startingDayOfWeek; i++) {
-		days.push({ empty: true })
-	}
-	for (let i = 1; i <= daysInMonth; i++) {
-		const dateObj = new Date(year, month, i)
-		const dateStr = getLocalYMD(dateObj)
-		let largestType = null
-		let largestAmount = 0
-		const dayData = groupedTransactions.value[dateStr]
-		if (dayData) {
-			if (calendarFilter.value === 'income') {
-				if (dayData.income > 0) {
-					largestType = 'income'
-					largestAmount = dayData.income
-				}
-			} else if (calendarFilter.value === 'expense') {
-				if (dayData.expense > 0) {
-					largestType = 'expense'
-					largestAmount = dayData.expense
-				}
-			} else {
-				if (dayData.income > dayData.expense) {
-					largestType = 'income'
-					largestAmount = dayData.income
-				} else if (dayData.expense > dayData.income) {
-					largestType = 'expense'
-					largestAmount = dayData.expense
-				} else if (dayData.income > 0 || dayData.expense > 0) {
-					largestType = dayData.expense > 0 ? 'expense' : 'income'
-					largestAmount = dayData.expense > 0 ? dayData.expense : dayData.income
-				}
-			}
-		}
-		days.push({
-			empty: false,
-			day: i,
-			dateStr: dateStr,
-			largestType,
-			largestAmount,
-		})
-	}
-	return days
-})
-
-const prevMonth = () => {
-	const d = new Date(currentCalendarMonth.value.getFullYear(), currentCalendarMonth.value.getMonth() - 1, 1)
-	const end = new Date(d.getFullYear(), d.getMonth() + 1, 0)
-	router.get(
-		route('dashboard'),
-		{
-			search: search.value,
-			type: type.value,
-			start_date: getLocalYMD(d),
-			end_date: getLocalYMD(end),
-		},
-		{ preserveState: true, replace: true },
-	)
-}
-
-const canGoNextMonth = computed(() => {
-	const today = new Date()
-	if (currentCalendarMonth.value.getFullYear() > today.getFullYear()) return false
-	if (currentCalendarMonth.value.getFullYear() === today.getFullYear() && currentCalendarMonth.value.getMonth() >= today.getMonth()) return false
-	return true
-})
-
-const nextMonth = () => {
-	if (!canGoNextMonth.value) return
-	const d = new Date(currentCalendarMonth.value.getFullYear(), currentCalendarMonth.value.getMonth() + 1, 1)
-	const end = new Date(d.getFullYear(), d.getMonth() + 1, 0)
-	router.get(
-		route('dashboard'),
-		{
-			search: search.value,
-			type: type.value,
-			start_date: getLocalYMD(d),
-			end_date: getLocalYMD(end),
-		},
-		{ preserveState: true, replace: true },
-	)
-}
-
-const selectDate = (dateStr) => {
-	selectedCalendarDate.value = dateStr
-}
-
-const calendarMonthName = computed(() => {
-	return currentCalendarMonth.value.toLocaleDateString('id-ID', {
-		month: 'long',
-		year: 'numeric',
-	})
-})
-
-watch(
-	() => props.startDate,
-	(newDate) => {
-		currentCalendarMonth.value = new Date(newDate)
-	},
-)
-
-const selectedDateTransactions = computed(() => {
-	if (groupedTransactions.value[selectedCalendarDate.value]) {
-		return {
-			[selectedCalendarDate.value]: groupedTransactions.value[selectedCalendarDate.value],
-		}
-	}
-	return {}
-})
-
-const visibleTransactions = computed(() => {
-	if (activeHistoryTab.value === 'calendar') {
-		return selectedDateTransactions.value
-	}
-	return groupedTransactions.value
-})
-
-const selectedDateFormatted = computed(() => {
-	if (!selectedCalendarDate.value) return ''
-	const d = new Date(selectedCalendarDate.value)
-	return d.toLocaleDateString('id-ID', {
-		weekday: 'long',
-		day: 'numeric',
-		month: 'long',
-		year: 'numeric',
-	})
-})
-
-const toggleDate = (dateKey) => {
-	collapsedDates.value[dateKey] = !collapsedDates.value[dateKey]
-}
-
-const formatNumber = (num) => {
-	return new Intl.NumberFormat('id-ID').format(num)
-}
-
-const formatCompactNumber = (num) => {
-	return new Intl.NumberFormat('id-ID', {
-		notation: 'compact',
-		maximumFractionDigits: 1,
-	}).format(num)
-}
-
-const greeting = computed(() => {
-	const hour = new Date().getHours()
-	if (hour < 12) return { text: 'Selamat Pagi', emoji: '☀️' }
-	if (hour < 15) return { text: 'Selamat Siang', emoji: '🌤️' }
-	if (hour < 18) return { text: 'Selamat Sore', emoji: '🌇' }
-	return { text: 'Selamat Malam', emoji: '🌙' }
-})
-
-const formattedPeriod = computed(() => {
-	const start = new Date(props.startDate)
-	const end = new Date(props.endDate)
-	if (start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear() && start.getDate() === 1 && end.getDate() >= 28) {
-		return start.toLocaleDateString('id-ID', {
-			month: 'long',
-			year: 'numeric',
-		})
-	}
-	return `${start.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} - ${end.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}`
-})
-
-const groupedTransactions = computed(() => {
-	const groups = {}
-	if (props.transactions?.data) {
-		props.transactions.data.forEach((trx) => {
-			if (!groups[trx.raw_date])
-				groups[trx.raw_date] = {
-					date: trx.date,
-					transactions: [],
-					income: 0,
-					expense: 0,
-				}
-			groups[trx.raw_date].transactions.push(trx)
-
-			let isIncome = trx.type.name === 'Income'
-			let isExpense = trx.type.name === 'Expense'
-
-			if (['Debt', 'Receivable'].includes(trx.type.name)) {
-				if (trx.source_wallet?.group_type === 'System') isIncome = true
-				else isExpense = true
-			}
-
-			if (isIncome) groups[trx.raw_date].income += trx.amount
-			if (isExpense) groups[trx.raw_date].expense += trx.amount
-		})
-	}
-	return groups
-})
-
-const getTypeColor = (typeName) => {
-	return (
-		{
-			Income: 'text-green-400 bg-green-400/10 border-green-400/20',
-			Expense: 'text-red-400 bg-red-400/10 border-red-400/20',
-			Transfer: 'text-blue-400 bg-blue-400/10 border-blue-400/20',
-			Debt: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20',
-			Receivable: 'text-purple-400 bg-purple-400/10 border-purple-400/20',
-		}[typeName] || 'text-gray-500'
-	)
-}
-
-const getTypeName = (typeName) => {
-	return (
-		{
-			Income: 'Pemasukan',
-			Expense: 'Pengeluaran',
-			Transfer: 'Transfer',
-			Debt: 'Hutang',
-			Receivable: 'Piutang',
-		}[typeName] || 'Lainnya'
-	)
-}
-
-const setType = (newType) => {
-	type.value = newType
-	showSortModal.value = false
-}
-
-let timeout = null
-watch([search, type], () => {
-	clearTimeout(timeout)
-	timeout = setTimeout(() => {
-		router.get(
-			route('dashboard'),
-			{
-				search: search.value,
-				type: type.value,
-				start_date: props.startDate,
-				end_date: props.endDate,
-			},
-			{
-				preserveState: true,
-				replace: true,
-			},
-		)
-	}, 300)
-})
-
-const insight = computed(() => {
-	let type = 'info'
-	let msg = 'Selamat datang di Bendaharaku! Yuk catat keuanganmu hari ini.'
-	let icon = '💡'
-
-	if (props.thisMonthExpense > 0 && props.thisMonthIncome > 0) {
-		const ratio = (props.thisMonthExpense / props.thisMonthIncome) * 100
-		if (ratio >= 80) {
-			type = 'danger'
-			msg = 'Awas! Pengeluaran bulan ini sudah mendekati total pemasukanmu.'
-			icon = '⚠️'
-		} else if (ratio <= 40) {
-			type = 'success'
-			msg = 'Bagus sekali! Pengeluaranmu bulan ini sangat terjaga.'
-			icon = '✨'
-		} else {
-			msg = 'Arus kas bulan ini berjalan normal. Terus catat pengeluaranmu!'
-			icon = '📊'
-		}
-	} else if (props.thisMonthExpense > 0 && props.thisMonthIncome === 0) {
-		type = 'warning'
-		msg = 'Belum ada pemasukan bulan ini, tapi pengeluaran terus jalan. Hati-hati!'
-		icon = '🚨'
-	}
-	return { type, msg, icon }
-})
-
-const showInsight = ref(!sessionStorage.getItem('insightDismissed'))
-
-const dismissInsight = () => {
-	sessionStorage.setItem('insightDismissed', 'true')
-	showInsight.value = false
-}
 
 const openModal = (trx) => {
 	selectedTransaction.value = trx
 	showModal.value = true
 }
 
-const avatarSrc = computed(() => {
-	const avatar = user.avatar
-	if (avatar && (avatar.startsWith('http://') || avatar.startsWith('https://'))) return avatar
-	return avatar ? `/storage/${avatar}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=1A1A1A&color=FCA5FF&bold=true`
+// ─── Search + filter ──────────────────────────────────────────────
+const search = ref(props.filters?.search || '')
+const type   = ref(props.filters?.type   || '')
+const showSortModal = ref(false)
+
+const setType = (newType) => {
+	type.value = newType
+	showSortModal.value = false
+}
+
+let searchTimeout = null
+watch([search, type], () => {
+	clearTimeout(searchTimeout)
+	searchTimeout = setTimeout(() => {
+		router.get(
+			route('dashboard'),
+			{ search: search.value, type: type.value, start_date: props.startDate, end_date: props.endDate },
+			{ preserveState: true, replace: true },
+		)
+	}, 300)
 })
 
+// ─── History tabs ─────────────────────────────────────────────────
+const collapsedDates   = ref({})
+const activeHistoryTab = ref('detail')
+
+const toggleDate = (dateKey) => {
+	collapsedDates.value[dateKey] = !collapsedDates.value[dateKey]
+}
+
+// ─── Transactions grouping ────────────────────────────────────────
+const groupedTransactions = computed(() => {
+	const groups = {}
+	if (!props.transactions?.data) return groups
+	props.transactions.data.forEach((trx) => {
+		if (!groups[trx.raw_date])
+			groups[trx.raw_date] = { date: trx.date, transactions: [], income: 0, expense: 0 }
+		groups[trx.raw_date].transactions.push(trx)
+
+		let isIncome  = trx.type.name === 'Income'
+		let isExpense = trx.type.name === 'Expense'
+		if (['Debt', 'Receivable'].includes(trx.type.name)) {
+			if (trx.source_wallet?.group_type === 'System') isIncome  = true
+			else                                             isExpense = true
+		}
+		if (isIncome)  groups[trx.raw_date].income  += trx.amount
+		if (isExpense) groups[trx.raw_date].expense += trx.amount
+	})
+	return groups
+})
+
+// ─── Calendar composable ──────────────────────────────────────────
+const {
+	getLocalYMD,
+	selectedCalendarDate,
+	currentCalendarMonth,
+	calendarFilter,
+	calendarMonthName,
+	canGoNextMonth,
+	selectedDateFormatted,
+	calendarDays,
+	prevMonth,
+	nextMonth,
+	selectDate,
+} = useCalendar({
+	initialDate: props.startDate,
+	groupedTransactions,
+	onNavigate: (startDate, endDate) => {
+		router.get(
+			route('dashboard'),
+			{ search: search.value, type: type.value, start_date: startDate, end_date: endDate },
+			{ preserveState: true, replace: true },
+		)
+	},
+})
+
+const selectedDateTransactions = computed(() => {
+	const grp = groupedTransactions.value[selectedCalendarDate.value]
+	return grp ? { [selectedCalendarDate.value]: grp } : {}
+})
+
+const visibleTransactions = computed(() =>
+	activeHistoryTab.value === 'calendar' ? selectedDateTransactions.value : groupedTransactions.value
+)
+
+// ─── Period label ─────────────────────────────────────────────────
+const formattedPeriod = computed(() => {
+	const start = new Date(props.startDate)
+	const end   = new Date(props.endDate)
+	if (start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()
+		&& start.getDate() === 1 && end.getDate() >= 28) {
+		return start.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
+	}
+	return `${start.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} - ${end.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}`
+})
+
+// ─── Type helpers → pakai Badge variant, hanya perlu nama ─────────
+const getTypeName = (typeName) => ({
+	Income:     'Pemasukan',
+	Expense:    'Pengeluaran',
+	Transfer:   'Transfer',
+	Debt:       'Hutang',
+	Receivable: 'Piutang',
+}[typeName] ?? 'Lainnya')
+
+// Badge variant map — dipakai di <Badge :variant="typeVariant(t)">
+const typeVariant = (typeName) => ({
+	Income:     'income',
+	Expense:    'expense',
+	Transfer:   'transfer',
+	Debt:       'debt',
+	Receivable: 'receivable',
+}[typeName] ?? 'neutral')
+
+// ─── Wallet pin toggle ────────────────────────────────────────────
 const togglePin = (wallet) => {
-	router.patch(
-		route('wallets.set-pin', wallet.id),
-		{ state: false },
-		{
-			preserveScroll: true,
-			preserveState: true,
-		},
-	)
+	router.patch(route('wallets.set-pin', wallet.id), { state: false }, { preserveScroll: true, preserveState: true })
+}
+
+// ─── Wallet image error fallback (masih dipakai di pinned wallets) ─
+const handleImageError = (e, fallback) => {
+	e.target.style.display = 'none'
+	const span = document.createElement('span')
+	span.innerText = fallback
+	span.className = 'text-xl animate-pulse'
+	e.target.parentElement?.appendChild(span)
 }
 </script>
 
@@ -407,156 +174,26 @@ const togglePin = (wallet) => {
 		<Head title="Dashboard" />
 
 		<div class="p-5 pb-32 w-full mx-auto">
-			<header class="flex justify-between items-center mb-6 pt-4 animate-fade-in-up">
-				<div>
-					<p class="text-2xs text-purple-500 font-black uppercase tracking-[0.3em] mb-0.5 opacity-80">Hello</p>
-					<h1 class="text-2xl font-black text-white tracking-tight leading-none">
-						{{ user.name }}
-					</h1>
-					<div class="flex items-center gap-2 mb-1">
-						<p class="text-sm text-gray-400 font-bold uppercase tracking-widest">
-							{{ greeting.text }}
-						</p>
-						<span class="text-sm">{{ greeting.emoji }}</span>
-					</div>
-				</div>
-				<div class="relative">
-					<button type="button" @click="toggleProfileMenu"
-						:aria-expanded="showProfileMenu" aria-haspopup="menu" aria-label="Buka menu akun"
-						class="relative block w-12 h-12 rounded-full border-2 border-purple-500 p-0.5 bg-gray-900 active:scale-90 transition-transform focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 focus:ring-offset-gray-800">
-						<!-- Avatar reaktif: gunakan UI-avatars sebagai fallback tanpa DOM manipulation -->
-						<img v-if="!avatarLoadFailed" :src="avatarSrc" :alt="user.name"
-							class="w-full h-full rounded-full object-cover"
-							@error="avatarLoadFailed = true" />
-						<span v-else
-							class="w-full h-full rounded-full flex items-center justify-center bg-purple-900 text-white text-sm font-black">
-							{{ user.name.charAt(0).toUpperCase() }}
-						</span>
-					</button>
-
-					<Teleport to="body">
-						<div v-if="showProfileMenu" class="fixed inset-0 z-[9999]"
-							@click.self="showProfileMenu = false"
-							@keydown.escape="closeProfileMenuOnEscape">
-							<div role="menu" :style="{ top: `${profileMenuPosition.top}px`, right: `${profileMenuPosition.right}px` }"
-								class="absolute w-[calc(100vw-2rem)] max-w-72 overflow-hidden rounded-xl border border-white/10 bg-linear-to-br from-gray-900 to-gray-800 p-1.5 shadow-2xl shadow-black/70 animate-pop-in sm:w-64">
-						<div class="px-3 py-2.5 border-b border-white/10 mb-1">
-							<p class="text-sm font-bold text-white truncate">{{ user.name }}</p>
-							<p class="text-2xs text-gray-500 truncate">{{ user.email }}</p>
-						</div>
-						<Link :href="route('profile.edit')" role="menuitem" @click="showProfileMenu = false"
-							class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-bold text-gray-300 transition-colors hover:bg-white/5 hover:text-white">
-							<svg class="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M5.121 17.804A9.967 9.967 0 0112 15c2.21 0 4.252.716 5.879 1.929M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-							</svg>
-							Profil Saya
-						</Link>
-						<Link :href="route('settings.index')" role="menuitem" @click="showProfileMenu = false"
-							class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-bold text-gray-300 transition-colors hover:bg-white/5 hover:text-white">
-							<svg class="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-								<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-							</svg>
-							Pengaturan
-						</Link>
-							</div>
-						</div>
-					</Teleport>
-				</div>
-			</header>
+			<DashboardHeader />
 
 			<!-- INSIGHT BOX -->
-			<div
-				v-if="showInsight"
-				class="mb-6 p-3 rounded-xl border items-center justify-between gap-3 animate-fade-in-up delay-100 text-2xs uppercase font-bold tracking-widest flex"
-				:class="{
-					'bg-red-950/40 border-red-900/50 text-red-400': insight.type === 'danger',
-					'bg-green-950/40 border-green-900/50 text-green-400': insight.type === 'success',
-					'bg-yellow-950/40 border-yellow-900/50 text-yellow-400': insight.type === 'warning',
-					'bg-gray-900/80 border-gray-900/50 text-gray-400': insight.type === 'info',
-				}">
-				<div class="flex items-center gap-3">
-					<span class="text-base">{{ insight.icon }}</span>
-					<p class="leading-relaxed">{{ insight.msg }}</p>
-				</div>
-				<button @click="dismissInsight" class="text-current opacity-70 hover:opacity-100 transition-opacity p-1 focus:outline-none">
-					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-					</svg>
-				</button>
-			</div>
+			<InsightBanner
+				:this-month-income="thisMonthIncome"
+				:this-month-expense="thisMonthExpense"
+			/>
 
 			<!-- dual grid desktop view. (left: asset cards, right: transactions list) -->
 			<div :class="isDesktopLayout ? 'lg:flex lg:gap-8 lg:items-start' : ''">
 				<!-- left asset cards -->
 				<div :class="isDesktopLayout ? 'lg:w-1/3 lg:sticky lg:top-5' : ''">
 					<!-- Total Kekayaan Card -->
-					<div class="relative bg-linear-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 overflow-hidden mb-5 group animate-fade-in-up delay-200">
-						<div class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-						<!-- Background Graph SVG (Total Asset Chart) -->
-						<div class="absolute inset-x-0 bottom-0 opacity-20 pointer-events-none h-24">
-							<svg viewBox="0 0 400 150" preserveAspectRatio="none" class="w-full h-full">
-								<path d="M0,100 C50,120 100,60 150,90 C200,120 250,40 300,70 C350,100 400,50 400,50 L400,150 L0,150 Z" fill="url(#chartGradient)"></path>
-								<path d="M0,100 C50,120 100,60 150,90 C200,120 250,40 300,70 C350,100 400,50 400,50" stroke="#FCA5FF" stroke-width="3" fill="none"></path>
-								<defs>
-									<linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-										<stop offset="0%" style="stop-color: #fca5ff; stop-opacity: 0.4" />
-										<stop offset="100%" style="stop-color: #fca5ff; stop-opacity: 0" />
-									</linearGradient>
-								</defs>
-							</svg>
-						</div>
-						<div class="relative z-10 p-7 pb-6">
-							<div class="flex justify-between items-center mb-4">
-								<div class="flex items-center gap-2">
-									<div class="w-1.5 h-1.5 rounded-xl bg-purple-500"></div>
-									<p class="text-2xs text-gray-400 font-bold uppercase tracking-[0.2em]">Total Kekayaan</p>
-									<button @click="toggleVisibility" class="text-gray-500 hover:text-white transition-colors p-1 -m-1 ml-1" :aria-label="isBalanceVisible ? 'Sembunyikan saldo' : 'Tampilkan saldo'">
-										<svg v-if="isBalanceVisible" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-											<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-										</svg>
-										<svg v-else class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
-										</svg>
-									</button>
-								</div>
-							</div>
-							<div class="flex items-baseline gap-1.5 mb-4">
-								<span class="text-lg font-medium text-gray-500">Rp</span>
-								<h2 class="text-3xl font-black text-white tracking-tight">
-									{{ isBalanceVisible ? formatNumber(totalPortfolio) : '••••••••' }}
-								</h2>
-							</div>
-							<div class="flex items-center gap-4 pt-3 border-t border-white/10 mt-1">
-								<div class="flex-1">
-									<div class="flex items-center gap-1.5 mb-1">
-										<div class="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
-										<p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Liquid</p>
-									</div>
-									<p class="text-sm font-bold text-white tracking-tight">
-										<span class="text-2xs text-gray-500 mr-0.5">Rp</span>{{ isBalanceVisible ? formatNumber(totalLiquid) : '••••' }}
-									</p>
-								</div>
-								<div class="w-px h-8 bg-linear-to-b from-transparent via-white/10 to-transparent"></div>
-								<div class="flex-1">
-									<div class="flex items-center gap-1.5 mb-1">
-										<div class="w-1.5 h-1.5 rounded-full bg-purple-400"></div>
-										<p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Investasi</p>
-									</div>
-									<p class="text-sm font-bold text-white tracking-tight">
-										<span class="text-2xs text-gray-500 mr-0.5">Rp</span>{{ isBalanceVisible ? formatNumber(totalInvest) : '••••' }}
-									</p>
-								</div>
-							</div>
-						</div>
-					</div>
+					<PortfolioCard
+						:total-portfolio="totalPortfolio"
+						:total-liquid="totalLiquid"
+						:total-invest="totalInvest"
+						:is-visible="isBalanceVisible"
+						@toggle-visibility="toggleVisibility"
+					/>
 					<!-- PINNED WALLETS -->
 					<div v-if="pinnedWallets && pinnedWallets.length > 0" class="mb-5 animate-fade-in-up delay-200">
 						<div class="flex justify-between items-center mb-3 px-1 gap-3">
@@ -638,59 +275,10 @@ const togglePin = (wallet) => {
 						</div>
 					</div>
 					<!-- UPCOMING DEBTS NOTIFICATION -->
-					<div v-if="activeUpcomingDebts && activeUpcomingDebts.length > 0" class="mb-8 animate-fade-in-up delay-300">
-						<div class="flex justify-between items-center mb-3 px-1 gap-3">
-							<h2 class="text-2xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-								<svg class="w-3 h-3 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-									<path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-								</svg>
-								Jatuh Tempo
-							</h2>
-							<div class="flex-1 h-px bg-linear-to-r from-red-500/20 to-transparent"></div>
-						</div>
-						<div class="flex flex-col gap-3">
-							<div
-								v-for="debt in activeUpcomingDebts"
-								:key="debt.subject + debt.type"
-								class="p-3.5 rounded-xl border relative overflow-hidden transition-transform group"
-								:class="debt.days_until <= 3 ? 'bg-linear-to-br from-red-900/30 to-gray-800 border-red-500/50' : 'bg-linear-to-br from-yellow-900/30 to-gray-800 border-yellow-500/30'">
-								<div class="flex justify-between items-start mb-1">
-									<h3 class="text-2xs font-bold text-white tracking-widest truncate mr-2">{{ debt.type }} - {{ debt.subject }}</h3>
-									<div class="flex items-center gap-2">
-										<span v-if="debt.days_until < 0" class="text-2xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-bold shrink-0">Terlewat</span>
-										<span v-else-if="debt.days_until === 0" class="text-2xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-bold shrink-0">Hari Ini!</span>
-										<span v-else-if="debt.days_until <= 3" class="text-2xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-bold shrink-0"
-											>{{ debt.days_until }} Hari Lagi</span
-										>
-										<span v-else class="text-2xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full font-bold shrink-0">{{ debt.days_until }} Hari Lagi</span>
-										<button
-											@click.stop.prevent="dismissDebt(debt.subject + debt.type)"
-											class="text-gray-500 hover:text-white shrink-0 p-1 bg-white/5 rounded-full z-10 transition-colors"
-											title="Sembunyikan Sementara">
-											<svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-												<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-											</svg>
-										</button>
-									</div>
-								</div>
-								<div class="flex justify-between items-center mt-2">
-									<p class="text-sm font-bold tracking-tight" :class="debt.days_until <= 3 ? 'text-red-400' : 'text-yellow-400'">
-										<span class="text-2xs mr-1 opacity-70">Rp</span>{{ isBalanceVisible ? formatNumber(debt.remaining) : '••••' }}
-									</p>
-									<p class="text-2xs text-gray-400 font-medium">
-										{{ debt.next_due_date }}
-									</p>
-								</div>
-							</div>
-						</div>
-					</div>
-					<!-- GOOGLE ADS -->
-					<!-- <div :class="['mb-6', isDesktopLayout ? 'hidden lg:block' : 'hidden']">
-                        <GoogleAd ad-slot="2448030513" />
-                    </div>
-                    <div :class="isDesktopLayout ? 'lg:hidden' : ''">
-                        <GoogleAd ad-slot="2448030513" />
-                    </div> -->
+					<UpcomingDebts
+						:upcoming-debts="upcomingDebts"
+						:is-visible="isBalanceVisible"
+					/>
 				</div>
 				<!-- END LEFT COLUMN -->
 
@@ -831,7 +419,7 @@ const togglePin = (wallet) => {
 										<span class="text-2xs font-bold leading-none mb-0.5" :class="selectedCalendarDate === day.dateStr ? 'text-purple-400' : 'text-gray-300'">{{ day.day }}</span>
 										<div v-if="day.largestType" class="flex flex-col items-center overflow-visible">
 											<span class="text-2xs font-bold leading-none tracking-tight whitespace-nowrap" :class="day.largestType === 'income' ? 'text-green-400' : 'text-red-400'">
-												{{ formatCompactNumber(day.largestAmount) }}
+												{{ formatCompact(day.largestAmount) }}
 											</span>
 										</div>
 									</button>
@@ -953,9 +541,9 @@ const togglePin = (wallet) => {
 														<span class="text-xs text-gray-600 font-medium italic">
 															{{ trx.time }}
 														</span>
-														<span class="text-2xs uppercase tracking-widest font-black px-1 py-0.5 rounded border" :class="getTypeColor(trx.type.name)">
+														<Badge :variant="typeVariant(trx.type.name)" size="sm">
 															{{ getTypeName(trx.type.name) }}
-														</span>
+														</Badge>
 													</div>
 												</div>
 											</div>
@@ -1011,47 +599,15 @@ const togglePin = (wallet) => {
 				</div>
 			</div>
 
-			<CreateTransactionFab />
 		</div>
 
 		<TransactionDetailModal :show="showModal" :transaction="selectedTransaction" @close="showModal = false" />
 	</AuthenticatedLayout>
 </template>
 
+<!-- Animasi sudah terdefinisi di app.css — hapus semua duplikasi scoped -->
 <style scoped>
-@keyframes pop-in {
-	0% {
-		transform: scale(0.9);
-		opacity: 0;
-	}
-
-	100% {
-		transform: scale(1);
-		opacity: 1;
-	}
-}
-
-.animate-pop-in {
-	animation: pop-in 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-}
-
-@keyframes fade-in-up {
-	0% {
-		opacity: 0;
-		transform: translateY(15px);
-	}
-
-	100% {
-		opacity: 1;
-		transform: translateY(0);
-	}
-}
-
-.animate-fade-in-up {
-	animation: fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-	opacity: 0;
-}
-
+/* delay utilities — Tailwind JIT tidak handle ini, tetap perlu lokal */
 .delay-100 {
 	animation-delay: 100ms;
 }

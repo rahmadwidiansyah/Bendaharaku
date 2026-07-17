@@ -4,6 +4,7 @@ import { Head, Link } from '@inertiajs/vue3';
 import { ref, onMounted, shallowRef } from 'vue';
 import axios from 'axios';
 import Chart from 'chart.js/auto';
+import { formatNumber, formatUSD } from '@/utils/format.js';
 
 const isLoading = ref(true);
 const overview = ref({});
@@ -16,9 +17,6 @@ const performanceChartRef = ref(null);
 
 // Store chart instances to destroy them before re-rendering
 const chartInstances = shallowRef({ provider: null, performance: null });
-
-const formatNumber = (num) => new Intl.NumberFormat('id-ID').format(num || 0);
-const formatCurrency = (num) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 4 }).format(num || 0);
 
 const fetchData = async () => {
     isLoading.value = true;
@@ -169,7 +167,7 @@ onMounted(() => {
                     </div>
                     <div class="bg-gray-900/50 border border-white/10 p-5 rounded-2xl flex flex-col justify-between">
                         <p class="text-2xs text-gray-400 font-bold uppercase tracking-widest mb-2">Est. Cost</p>
-                        <h3 class="text-2xl font-mono text-white">{{ formatCurrency(overview.estimated_cost) }}</h3>
+                        <h3 class="text-2xl font-mono text-white">{{ formatUSD(overview.estimated_cost) }}</h3>
                     </div>
                 </div>
 
