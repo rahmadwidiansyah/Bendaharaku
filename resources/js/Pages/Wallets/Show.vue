@@ -65,7 +65,7 @@ const getTypeName = (typeName) => {
 <template>
 	<AuthenticatedLayout :fullWidth="true">
 		<Head title="Detail Dompet" />
-		<div class="p-5 pb-32 w-full lg:max-w-4xl mx-auto lg:px-8 relative">
+		<div class="p-5 w-full lg:max-w-4xl mx-auto lg:px-8 relative">
 			<header class="flex justify-between items-center mb-6 pt-2">
 				<h1 class="text-2xl font-bold text-white tracking-tight">Detail Dompet</h1>
 				<Link

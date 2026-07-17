@@ -69,6 +69,7 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('wallets/{wallet}/set-pin', [WalletController::class, 'setPin'])->name('wallets.set-pin');
     Route::resource('wallets', WalletController::class);
     Route::resource('categories', CategoryController::class);
+    Route::patch('transactions/{transaction}/confirm', [TransactionController::class, 'confirm'])->name('transactions.confirm');
     Route::resource('transactions', TransactionController::class);
     Route::get('/loans/{type}', [LoanController::class, 'index'])->name('loans.index');
 });

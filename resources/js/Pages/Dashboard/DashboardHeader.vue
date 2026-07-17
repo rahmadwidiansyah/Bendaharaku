@@ -1,14 +1,19 @@
 <script setup>
 /**
- * DashboardHeader.vue
+ * DashboardHeader.vue (DEPRECATED)
  *
- * Header Dashboard: greeting, nama user, avatar, dan profile dropdown menu.
- * Diekstrak dari Dashboard.vue untuk mengurangi ukuran file (sebelumnya inline ~80 baris).
+ * ⚠️ KOMPONEN INI SUDAH TIDAK DIGUNAKAN LAGI
  *
- * Reuse:
- *   - Avatar.vue  — menggantikan manual DOM manipulation avatarLoadFailed + UI-avatars fallback
- *   - BaseModal tidak dipakai — profile menu pakai Teleport manual agar posisinya
- *     mengikuti koordinat klik (bukan centered modal)
+ * Gunakan MobileHeader.vue di AuthenticatedLayout.vue untuk menampilkan
+ * user greeting, nama, dan avatar dropdown menu.
+ *
+ * Alasan penghapusan:
+ *   - Menghindari duplikasi informasi user di halaman
+ *   - MobileHeader sudah menampilkan semua informasi ini dengan UI yang lebih baik
+ *   - Header sebagai single source of truth untuk identitas user
+ *
+ * Jika Anda perlu menampilkan user greeting khusus di halaman tertentu,
+ * gunakan MobileHeader sebagai basis dan extend sesuai kebutuhan.
  */
 
 import { ref, computed } from 'vue'
