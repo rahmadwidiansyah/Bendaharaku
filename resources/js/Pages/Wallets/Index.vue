@@ -187,7 +187,7 @@ const handleImageError = (e, fallback) => {
                     <Link :href="route('loans.index', { type: 'hutang' })"
                         class="active:scale-95 transition-transform group">
                         <div
-                            class="bg-linear-to-br from-gray-900 to-gray-800 p-4 rounded-xl border border-white/10 relative overflow-hidden h-[110px] hover:border-yellow-400">
+                            class="bg-linear-to-br from-gray-900 to-gray-800 p-4 rounded-xl border border-white/10 relative overflow-hidden min-h-[110px] hover:border-yellow-400">
                             <div class="relative z-10 flex flex-col justify-between h-full">
                                 <div class="flex items-center gap-2">
                                     <div class="w-1.5 h-1.5 rounded-full bg-yellow-500"></div>
@@ -204,7 +204,7 @@ const handleImageError = (e, fallback) => {
                     <Link :href="route('loans.index', { type: 'piutang' })"
                         class="active:scale-95 transition-transform group">
                         <div
-                            class="bg-linear-to-br from-gray-900 to-gray-800 p-4 rounded-xl border border-white/10 relative overflow-hidden h-[110px] hover:border-purple-400">
+                            class="bg-linear-to-br from-gray-900 to-gray-800 p-4 rounded-xl border border-white/10 relative overflow-hidden min-h-[110px] hover:border-purple-400">
                             <div class="relative z-10 flex flex-col justify-between h-full">
                                 <div class="flex items-center gap-2">
                                     <div class="w-1.5 h-1.5 rounded-full bg-purple-500"></div>

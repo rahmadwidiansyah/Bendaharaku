@@ -84,6 +84,17 @@ class TelegramWebhookController extends Controller
             $statusIkon = $trx->is_cleared ? "✅ *TRANSAKSI BERHASIL*" : "📝 *MASUK DRAFT (Butuh Cek Web)*";
             $formattedAmount = "Rp " . number_format($trx->amount, 0, ',', '.');
 
+            // Info provider AI
+            $providerRaw   = strtoupper($result['provider'] ?? 'AI');
+            $providerLabel = match($providerRaw) {
+                'PYTHON-NLP' => '🐍 Python NLP',
+                'GEMINI'     => '✨ Gemini',
+                'OPENAI'     => '🤖 OpenAI',
+                'DEEPSEEK'   => '🔍 DeepSeek',
+                default      => "🤖 {$providerRaw}",
+            };
+            $confidencePct = isset($result['confidence']) ? round($result['confidence'] * 100) . '%' : '-';
+
             $msg = "{$statusIkon}\n";
             $msg .= "_{$typeName}_\n\n";
             $msg .= "🏷 *Ref ID    :* `{$trx->reference_number}`\n";
@@ -92,7 +103,10 @@ class TelegramWebhookController extends Controller
             $msg .= "📤 *Sumber  :* {$walletSourceName}\n";
             $msg .= "📥 *Tujuan  :* {$walletDestName}\n";
             $msg .= "👤 *Pihak     :* {$trx->subject}\n\n";
-            $msg .= "💬 *Pesan Asli:*\n_{$text}_";
+            $msg .= "💬 *Pesan Asli:*\n_{$text}_\n\n";
+            $msg .= "─────────────────────\n";
+            $msg .= "🧠 *Diproses oleh:* {$providerLabel}\n";
+            $msg .= "📊 *Keyakinan AI:* {$confidencePct}";
 
             $this->sendMessage($chatId, $msg);
             
