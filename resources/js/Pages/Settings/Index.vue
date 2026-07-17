@@ -89,9 +89,15 @@ const updateTransactionLogic = () => {
                                     class="w-full py-3 px-4 bg-purple-500 text-white text-2xs font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-purple-500/20 flex items-center justify-center text-center">Dark
                                     Mode (Aktif)</button>
                                 <button
-                                    class="w-full py-3 px-4 bg-gray-800 text-gray-500 text-2xs font-bold uppercase tracking-widest rounded-xl border border-white/5 cursor-not-allowed flex items-center justify-center text-center">Light
-                                    Mode</button>
+                                    type="button"
+                                    disabled
+                                    title="Segera hadir"
+                                    class="w-full py-3 px-4 bg-gray-800 text-gray-500 text-2xs font-bold uppercase tracking-widest rounded-xl border border-white/5 cursor-not-allowed flex items-center justify-center text-center">
+                                    Light Mode
+                                    <span class="ml-2 text-2xs font-bold text-gray-600 normal-case tracking-normal">(Segera Hadir)</span>
+                                </button>
                             </div>
+                            <p class="text-2xs text-gray-600 mt-2 leading-relaxed">Hanya dark mode yang tersedia saat ini. Light mode sedang dalam pengembangan.</p>
                         </div>
                     </div>
                 </div>

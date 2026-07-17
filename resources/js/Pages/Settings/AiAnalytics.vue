@@ -205,7 +205,7 @@ onMounted(() => {
                                 <span class="text-sm font-medium text-white">{{ mem.keyword_pattern }}</span>
                                 <div class="flex gap-4 text-2xs font-mono text-gray-400">
                                     <span>Hits: <span class="text-white">{{ mem.hit_count }}</span></span>
-                                    <span>Weight: <span class="text-indigo-400">{{ parseFloat(mem.weight).toFixed(2) }}</span></span>
+                                    <span>Weight: <span class="text-indigo-400">{{ parseFloat(mem.effective_weight).toFixed(2) }}</span></span>
                                 </div>
                             </div>
                         </div>
