@@ -2,6 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { useBalanceVisibility } from '@/Composables/useBalanceVisibility';
+import { formatNumber, formatDate } from '@/utils/format.js';
 
 const { isBalanceVisible } = useBalanceVisibility();
 
@@ -11,16 +12,6 @@ const props = defineProps({
     isDebt: Boolean,
     total: Number,
 });
-
-const formatAmount = (amount) => {
-    return new Intl.NumberFormat('id-ID').format(amount);
-};
-
-const formatDate = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-};
 
 const maskedAmount = '••••••';
 </script>
@@ -51,7 +42,7 @@ const maskedAmount = '••••••';
                     Total Aktif
                 </p>
                 <h2 class="text-3xl font-bold text-white tracking-tight">
-                    <span v-if="isBalanceVisible">Rp {{ formatAmount(total) }}</span>
+                    <span v-if="isBalanceVisible">Rp {{ formatNumber(total) }}</span>
                     <span v-else class="tracking-widest text-gray-400">{{ maskedAmount }}</span>
                 </h2>
             </div>
@@ -71,7 +62,7 @@ const maskedAmount = '••••••';
                                     Sisa:
                                     <span v-if="isBalanceVisible"
                                         :class="['font-bold', isDebt ? 'text-red-400' : 'text-green-400']">
-                                        Rp {{ formatAmount(loan.balance) }}
+                                        Rp {{ formatNumber(loan.balance) }}
                                     </span>
                                     <span v-else class="font-bold text-gray-500">{{ maskedAmount }}</span>
                                 </p>

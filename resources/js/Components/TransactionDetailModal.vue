@@ -1,5 +1,7 @@
 <script setup>
 import { Link, router } from '@inertiajs/vue3';
+import { ref } from 'vue';
+import { formatNumber } from '@/utils/format.js';
 
 const props = defineProps({
     show: Boolean,
@@ -7,13 +9,8 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['close']);
-import { ref } from 'vue';
 
 const showDeleteConfirm = ref(false);
-
-const formatAmount = (amount) => {
-    return new Intl.NumberFormat('id-ID').format(amount);
-};
 
 const showConfirm = () => {
     showDeleteConfirm.value = true;
@@ -62,7 +59,7 @@ const deleteTransaction = () => {
                 <p class="text-2xs font-bold text-gray-500 uppercase tracking-widest mb-1">Nominal</p>
                 <h2
                     :class="['text-3xl font-bold tracking-tight', transaction.type?.name === 'Income' ? 'text-green-500' : 'text-red-500']">
-                    {{ transaction.type?.name === 'Income' ? '+' : '-' }} Rp {{ formatAmount(transaction.amount) }}
+                    {{ transaction.type?.name === 'Income' ? '+' : '-' }} Rp {{ formatNumber(transaction.amount) }}
                 </h2>
             </div>
 
