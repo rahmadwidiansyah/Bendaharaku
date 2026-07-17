@@ -21,6 +21,7 @@ use App\Exceptions\AiRateLimitException;
 use App\Exceptions\AiTimeoutException;
 use App\Exceptions\AiProviderException;
 use App\DTO\ConfidenceScoreContext;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 use InvalidArgumentException;
@@ -103,8 +104,17 @@ class ChatTransactionOrchestrator
 
                 $finalConfidence = $this->scoringEngine->calculateFinalScore($scoreContext);
 
-                // Timpa status isCleared dengan hasil hitung matematis dari Scoring Engine
-                $resolved->isCleared = ($finalConfidence >= $threshold);
+                // Rebuild DTO immutable dengan isCleared baru dari Scoring Engine
+                // (tidak bisa mutasi langsung karena ResolvedTransaction adalah readonly class)
+                $resolved = new \App\DTO\ResolvedTransaction(
+                    amount:               $resolved->amount,
+                    categoryId:           $resolved->categoryId,
+                    sourceWalletId:       $resolved->sourceWalletId,
+                    destinationWalletId:  $resolved->destinationWalletId,
+                    subject:              $resolved->subject,
+                    notes:                $resolved->notes,
+                    isCleared:            ($finalConfidence >= $threshold),
+                );
 
             } catch (CategoryNotFoundException | WalletNotFoundException $e) {
                 // FALLBACK: Paksa jadi DRAFT jika kategori/dompet ngawur, JANGAN di-return false!
@@ -241,6 +251,21 @@ class ChatTransactionOrchestrator
             return [
                 'success' => false,
                 'message' => "⚠️ *Gagal diproses:*\n" . $e->getMessage()
+            ];
+        } catch (ModelNotFoundException $e) {
+            Log::warning('Orchestrator: Model tidak ditemukan saat buat transaksi', [
+                'user_id' => $user->id,
+                'text'    => $text,
+                'message' => $e->getMessage(),
+            ]);
+            return [
+                'success' => false,
+                'message' => implode("\n", [
+                    "🔍 *Data Tidak Ditemukan*",
+                    "",
+                    "Dompet atau kategori yang dimaksud tidak ada di sistem.",
+                    "Pastikan nama dompet (contoh: *bca*, *dana*, *cash*) sudah kamu daftarkan di Web.",
+                ]),
             ];
         } catch (Throwable $e) {
             Log::error('Chat Orchestrator Error', [
