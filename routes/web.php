@@ -83,6 +83,8 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/message',  [WebChatController::class, 'sendMessage'])->name('message');
         Route::get('/history',   [WebChatController::class, 'history'])->name('history');
         Route::get('/commands',  [WebChatController::class, 'commands'])->name('commands');
+        Route::get('/wallets',   [WebChatController::class, 'wallets'])->name('wallets');
+        Route::patch('/transaction/{id}/wallet', [WebChatController::class, 'assignWallet'])->name('transaction.assign-wallet');
     });
 
     // ── Chat Bot Profile settings ─────────────────────────────────
