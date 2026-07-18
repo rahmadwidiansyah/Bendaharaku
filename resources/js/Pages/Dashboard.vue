@@ -1,7 +1,6 @@
 <script setup>
 import DateModal from '@/Components/DateModal.vue'
 import TransactionDetailModal from '@/Components/TransactionDetailModal.vue'
-import TransactionBottomSheet from '@/Components/TransactionBottomSheet.vue'
 import Badge from '@/Components/Badge.vue'
 import InsightBanner from '@/Pages/Dashboard/InsightBanner.vue'
 import PortfolioCard from '@/Pages/Dashboard/PortfolioCard.vue'
@@ -29,11 +28,6 @@ const props = defineProps({
 	endDate: String,
 	filters: Object,
 	upcomingDebts: Array,
-	categories: Array,
-	wallets: Array,
-	systemWallets: Array,
-	debtSubjects: Array,
-	receivableSubjects: Array,
 })
 
 // ─── Transaction modal ────────────────────────────────────────────
@@ -43,19 +37,6 @@ const selectedTransaction = ref(null)
 const openModal = (trx) => {
 	selectedTransaction.value = trx
 	showModal.value = true
-}
-
-// ─── Transaction Bottom Sheet (Modern Flow - Phase 4) ─────────────
-const showTransactionSheet = ref(false)
-
-const handleTransactionSubmit = () => {
-	showTransactionSheet.value = false
-	// Refresh transactions
-	router.get(
-		route('dashboard'),
-		{ search: search.value, type: type.value, start_date: props.startDate, end_date: props.endDate },
-		{ preserveState: true, replace: true },
-	)
 }
 
 // ─── Search + filter ──────────────────────────────────────────────
@@ -619,30 +600,6 @@ const handleImageError = (e, fallback) => {
 
 		<TransactionDetailModal :show="showModal" :transaction="selectedTransaction" @close="showModal = false" />
 
-		<!-- FAB Catat — hanya di mobile, buka TransactionBottomSheet -->
-		<button
-			v-if="!isDesktopLayout"
-			@click="showTransactionSheet = true"
-			class="fixed bottom-20 right-4 z-40 w-14 h-14 bg-linear-to-br from-purple-700 to-purple-500 rounded-full shadow-lg shadow-purple-500/40 flex items-center justify-center active:scale-95 transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400"
-			aria-label="Catat transaksi baru"
-			style="bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));"
-		>
-			<svg class="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-				<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-			</svg>
-		</button>
-
-		<!-- Transaction Bottom Sheet (Modern Flow) -->
-		<TransactionBottomSheet
-			:model-value="showTransactionSheet"
-			:categories="categories"
-			:wallets="wallets"
-			:system-wallets="systemWallets"
-			:debt-subjects="debtSubjects"
-			:receivable-subjects="receivableSubjects"
-			@update:model-value="showTransactionSheet = $event"
-			@submit="handleTransactionSubmit"
-		/>
 	</AuthenticatedLayout>
 </template>
 
