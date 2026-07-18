@@ -118,7 +118,7 @@ const handleBack = () => router.visit(route('dashboard'))
 </script>
 
 <template>
-    <AuthenticatedLayout :fullWidth="true">
+    <AuthenticatedLayout :fullWidth="true" :hideNav="true">
         <Head title="Catat Transaksi" />
 
         <!-- Fullscreen overlay: fixed inset-0, tinggi 100dvh, tidak ada padding-bottom besar -->

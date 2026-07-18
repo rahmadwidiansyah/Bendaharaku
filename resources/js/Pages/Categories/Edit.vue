@@ -37,7 +37,7 @@ const destroy = () => {
 </script>
 
 <template>
-    <AuthenticatedLayout :fullWidth="true">
+    <AuthenticatedLayout :fullWidth="true" :hideNav="true">
 
         <Head title="Edit Kategori" />
 
