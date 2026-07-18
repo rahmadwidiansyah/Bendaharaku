@@ -250,7 +250,7 @@ const updateTransactionLogic = () => {
                     </div>
                 </section>
 
-                <!-- ─── SECTION: INTEGRASI ─────────────────────────────────── -->
+                <!-- ─── SECTION: AI ────────────────────────────────────────── -->
                 <section>
                     <div class="flex items-center gap-3 mb-4">
                         <h2 class="text-2xs font-black text-gray-400 uppercase tracking-[0.2em]">{{ $t('settings.ai') }}</h2>
@@ -258,7 +258,7 @@ const updateTransactionLogic = () => {
                     </div>
 
                     <div class="space-y-3">
-                        <!-- AI -->
+                        <!-- AI Settings (Telegram / API Key) -->
                         <Link
                             :href="route('settings.ai.index')"
                             class="flex items-center gap-4 p-5 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-2xl hover:border-indigo-500/40 active:scale-[0.99] transition-all group">
@@ -272,6 +272,42 @@ const updateTransactionLogic = () => {
                                 <p class="text-2xs text-gray-500 mt-0.5">{{ $t('settings.aiSettings.desc') }}</p>
                             </div>
                             <svg class="w-4 h-4 text-gray-600 group-hover:text-indigo-400 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </Link>
+
+                        <!-- Web Chat -->
+                        <Link
+                            :href="route('chat.index')"
+                            class="flex items-center gap-4 p-5 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-2xl hover:border-purple-500/40 active:scale-[0.99] transition-all group">
+                            <div class="w-11 h-11 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center border border-purple-500/20 shrink-0">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                </svg>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-bold text-white leading-tight">Web Chat</p>
+                                <p class="text-2xs text-gray-500 mt-0.5">Chat langsung dengan AI di browser.</p>
+                            </div>
+                            <svg class="w-4 h-4 text-gray-600 group-hover:text-purple-400 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </Link>
+
+                        <!-- Bot Profile -->
+                        <Link
+                            :href="route('settings.chat.bot-profile')"
+                            class="flex items-center gap-4 p-5 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-2xl hover:border-violet-500/40 active:scale-[0.99] transition-all group">
+                            <div class="w-11 h-11 rounded-xl bg-violet-500/10 text-violet-400 flex items-center justify-center border border-violet-500/20 shrink-0">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-bold text-white leading-tight">Bot Profile</p>
+                                <p class="text-2xs text-gray-500 mt-0.5">Personalisasi nama dan foto bot AI kamu.</p>
+                            </div>
+                            <svg class="w-4 h-4 text-gray-600 group-hover:text-violet-400 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
                             </svg>
                         </Link>
