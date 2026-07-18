@@ -221,6 +221,36 @@ export function useChat(initialMessages = [], initialConversationId = null, init
         await sendMessage(userText)
     }
 
+    /**
+     * Update data transaksi di dalam message tertentu.
+     * Dipanggil setelah wallet assignment berhasil,
+     * untuk sinkronisasi state global messages.
+     *
+     * @param {string|number} messageId    - ID ChatMessage
+     * @param {number} transactionId       - ID TransactionLog
+     * @param {object} transactionPatch    - Data partial yang di-merge
+     */
+    function updateTransactionInMessage(messageId, transactionId, transactionPatch) {
+        const msgIdx = messages.value.findIndex(m => m.id === messageId)
+        if (msgIdx === -1) return
+
+        const msg = messages.value[msgIdx]
+        if (!Array.isArray(msg.content)) return
+
+        const updated = msg.content.map(comp => {
+            if (comp.type === 'transaction_card' && comp.transaction?.id === transactionId) {
+                return {
+                    ...comp,
+                    transaction: { ...comp.transaction, ...transactionPatch },
+                    needs_wallet: transactionPatch.is_cleared ? false : comp.needs_wallet,
+                }
+            }
+            return comp
+        })
+
+        messages.value[msgIdx] = { ...msg, content: updated }
+    }
+
     return {
         messages,
         conversationId,
@@ -240,5 +270,6 @@ export function useChat(initialMessages = [], initialConversationId = null, init
         scrollToBottom,
         jumpToLatest,
         onScrollUpdate,
+        updateTransactionInMessage,
     }
 }
