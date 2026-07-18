@@ -9,14 +9,8 @@
  * - Load riwayat dari initial props Inertia
  * - Load lebih banyak pesan (pagination ke belakang)
  * - Auto-scroll ke bawah
- * - State: isLoading, isTyping
- *
- * Arsitektur:
- *   Pages/Chat/Index.vue
- *     → useChat()           ← state + API calls
- *     → useChatCommands()   ← command list + sheet
- *     → ChatArea.vue        ← render messages
- *     → ChatComposer.vue    ← input + send
+ * - Unread count: berapa pesan baru masuk saat user sedang scroll ke atas
+ * - State: isLoading, isTyping, showJumpBtn, unreadCount
  */
 
 import { ref, nextTick } from 'vue'
@@ -26,23 +20,19 @@ export function useChat(initialMessages = [], initialConversationId = null, init
     // ── State ─────────────────────────────────────────────────────
     const messages        = ref([...initialMessages])
     const conversationId  = ref(initialConversationId)
-    const isLoading       = ref(false)  // waiting for bot response
-    const isTyping        = ref(false)  // typing indicator visible
-    const hasMore         = ref(initialHasMore)  // ada riwayat lebih lama di server
-    const isLoadingMore   = ref(false)  // sedang load riwayat lama
+    const isLoading       = ref(false)
+    const isTyping        = ref(false)
+    const hasMore         = ref(initialHasMore)
+    const isLoadingMore   = ref(false)
     const error           = ref(null)
-    const chatAreaRef     = ref(null)   // ref ke ChatArea DOM element
-    const isAtBottom      = ref(true)   // apakah user sedang di bawah
-    const showJumpBtn     = ref(false)  // tampilkan tombol jump-to-latest
+    const chatAreaRef     = ref(null)
+    const isAtBottom      = ref(true)
+    const showJumpBtn     = ref(false)
+    /** Jumlah pesan baru dari bot yang masuk saat user sedang scroll ke atas */
+    const unreadCount     = ref(0)
 
     // ── Scroll ────────────────────────────────────────────────────
 
-    /**
-     * Scroll ke pesan terbawah.
-     * Hanya scroll jika user memang di bawah, kecuali force=true.
-     * @param {boolean} smooth - Gunakan smooth scroll (default: false untuk initial load)
-     * @param {boolean} force  - Paksa scroll meski user tidak di bawah
-     */
     async function scrollToBottom(smooth = false, force = false) {
         await nextTick()
         const el = chatAreaRef.value
@@ -52,47 +42,37 @@ export function useChat(initialMessages = [], initialConversationId = null, init
         }
     }
 
-    /**
-     * Paksa scroll ke bawah selalu (untuk tombol jump-to-latest).
-     */
     async function jumpToLatest() {
         await nextTick()
         const el = chatAreaRef.value
         if (!el) return
         el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
-        isAtBottom.value = true
+        isAtBottom.value  = true
         showJumpBtn.value = false
+        unreadCount.value = 0
     }
 
-    /**
-     * Dipanggil dari ChatArea saat scroll event untuk update state posisi scroll.
-     * @param {number} scrollTop
-     * @param {number} scrollHeight
-     * @param {number} clientHeight
-     */
     function onScrollUpdate(scrollTop, scrollHeight, clientHeight) {
         const distFromBottom = scrollHeight - scrollTop - clientHeight
-        isAtBottom.value = distFromBottom < 80
+        isAtBottom.value  = distFromBottom < 80
         showJumpBtn.value = distFromBottom > 200
+        // Reset unread saat user sudah kembali ke bawah
+        if (isAtBottom.value) {
+            unreadCount.value = 0
+        }
     }
 
     // ── Send message ──────────────────────────────────────────────
 
-    /**
-     * Kirim pesan user ke backend dan tambahkan respons bot ke messages.
-     * @param {string} text - Teks pesan dari user
-     */
     async function sendMessage(text) {
         if (!text.trim() || isLoading.value) return
 
         error.value = null
 
-        // 1. Tambah pesan user ke UI secara optimistis
         const userMsg = buildLocalMessage('user', text)
         messages.value.push(userMsg)
-        await scrollToBottom(true, true) // force=true karena user baru kirim
+        await scrollToBottom(true, true)
 
-        // 2. Tampilkan typing indicator
         isLoading.value = true
         isTyping.value  = true
 
@@ -102,44 +82,40 @@ export function useChat(initialMessages = [], initialConversationId = null, init
                 conversation_id: conversationId.value,
             })
 
-            // Update conversation_id jika baru dibuat
             if (data.conversation_id) {
                 conversationId.value = data.conversation_id
             }
 
-            // Ganti pesan user optimistis dengan data dari server (dapat real ID)
             const idx = messages.value.findIndex((m) => m._localId === userMsg._localId)
             if (idx !== -1) {
                 messages.value[idx] = normalizeMessage(data.user_message)
             }
 
-            // Tambah respons bot
             messages.value.push(normalizeMessage(data.bot_message))
+
+            // Increment unread jika user tidak di bawah
+            if (!isAtBottom.value) {
+                unreadCount.value += 1
+            }
 
         } catch (err) {
             error.value = 'Gagal mengirim pesan. Periksa koneksi internet.'
-
-            // Tambah error bubble dari bot
             messages.value.push(buildErrorMessage(err))
 
         } finally {
             isLoading.value = false
             isTyping.value  = false
-            await scrollToBottom(true) // tanpa force — hanya scroll jika user di bawah
+            await scrollToBottom(true)
         }
     }
 
-    // ── Load history (pagination) ─────────────────────────────────
+    // ── Load history ──────────────────────────────────────────────
 
-    /**
-     * Load pesan lebih lama (scroll ke atas → trigger ini).
-     */
     async function loadMore() {
         if (isLoadingMore.value || !hasMore.value) return
 
         isLoadingMore.value = true
 
-        // Simpan scroll position agar tidak loncat setelah prepend
         const container = chatAreaRef.value
         const prevScrollHeight = container?.scrollHeight ?? 0
 
@@ -155,7 +131,6 @@ export function useChat(initialMessages = [], initialConversationId = null, init
             })
 
             if (data.messages.length > 0) {
-                // Prepend pesan lama ke depan array
                 messages.value = [
                     ...data.messages.map(normalizeMessage),
                     ...messages.value,
@@ -164,7 +139,6 @@ export function useChat(initialMessages = [], initialConversationId = null, init
 
             hasMore.value = data.has_more ?? false
 
-            // Restore scroll position agar user tidak kehilangan posisi baca
             await nextTick()
             if (container) {
                 container.scrollTop = container.scrollHeight - prevScrollHeight
@@ -179,9 +153,6 @@ export function useChat(initialMessages = [], initialConversationId = null, init
 
     // ── Helpers ───────────────────────────────────────────────────
 
-    /**
-     * Normalisasi format pesan dari server ke format lokal yang konsisten.
-     */
     function normalizeMessage(msg) {
         return {
             id:         msg.id,
@@ -193,9 +164,6 @@ export function useChat(initialMessages = [], initialConversationId = null, init
         }
     }
 
-    /**
-     * Buat pesan lokal (optimistic, sebelum server respond).
-     */
     function buildLocalMessage(role, text) {
         return {
             id:         null,
@@ -207,61 +175,39 @@ export function useChat(initialMessages = [], initialConversationId = null, init
         }
     }
 
-    /**
-     * Buat error bubble dari bot saat request gagal.
-     */
     function buildErrorMessage(err) {
         const message = err?.response?.data?.message
             ?? 'Gagal terhubung ke server. Coba lagi.'
-
         return {
             id:         null,
             _localId:   `error_${Date.now()}`,
             role:       'assistant',
-            content:    [{
-                type:     'error',
-                message,
-                severity: 'error',
-            }],
+            content:    [{ type: 'error', message, severity: 'error' }],
             metadata:   { error: true },
             created_at: new Date().toISOString(),
         }
     }
 
-    /**
-     * Kirim ulang pesan user terakhir.
-     * Hapus error bubble bot terakhir jika ada, lalu kirim ulang.
-     */
     async function retryLastMessage() {
-        // Cari teks pesan user terakhir
         const userMessages = messages.value.filter(m => m.role === 'user')
         if (userMessages.length === 0) return
-        const lastUserMsg = userMessages[userMessages.length - 1]
-        const text = lastUserMsg?.content?.[0]?.text ?? ''
+        const text = userMessages[userMessages.length - 1]?.content?.[0]?.text ?? ''
         if (!text.trim()) return
 
-        // Hapus error bubble bot paling akhir jika memang error
         const last = messages.value[messages.value.length - 1]
         if (last?.role === 'assistant' && last?.metadata?.error) {
             messages.value.pop()
         }
-
         await sendMessage(text)
     }
 
-    /**
-     * Generate ulang respons bot untuk pesan user sebelum bot message tertentu.
-     * @param {Object} botMessage - Pesan bot yang ingin di-regenerate
-     */
     async function regenerateMessage(botMessage) {
-        // Cari index bot message ini
         const idx = messages.value.findIndex(m =>
             (m.id && m.id === botMessage.id) ||
             (m._localId && m._localId === botMessage._localId)
         )
         if (idx === -1) return
 
-        // Cari pesan user sebelum bot message ini
         let userText = ''
         for (let i = idx - 1; i >= 0; i--) {
             if (messages.value[i].role === 'user') {
@@ -271,14 +217,11 @@ export function useChat(initialMessages = [], initialConversationId = null, init
         }
         if (!userText.trim()) return
 
-        // Hapus bot message yang di-regenerate (dan semua setelahnya jika ada)
         messages.value.splice(idx)
-
         await sendMessage(userText)
     }
 
     return {
-        // State
         messages,
         conversationId,
         isLoading,
@@ -289,8 +232,7 @@ export function useChat(initialMessages = [], initialConversationId = null, init
         chatAreaRef,
         isAtBottom,
         showJumpBtn,
-
-        // Actions
+        unreadCount,
         sendMessage,
         retryLastMessage,
         regenerateMessage,
