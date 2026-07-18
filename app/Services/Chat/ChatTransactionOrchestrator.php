@@ -225,6 +225,7 @@ class ChatTransactionOrchestrator
             'provider'    => $aiResult->provider,
             'model'       => $aiResult->model,
             'confidence'  => $finalConfidence,
+            'usage'       => $aiResult->usage,
             'transaction' => $transactionLog->load(['category', 'sourceWallet', 'destinationWallet', 'type']),
         ];
     }

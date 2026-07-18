@@ -5,30 +5,30 @@ defineProps({
 </script>
 
 <template>
-    <div class="rounded-2xl border border-white/10 bg-gray-950/50 overflow-hidden">
-        <!-- Header -->
-        <div class="px-4 py-3 bg-white/3 border-b border-white/5">
-            <p class="text-xs font-bold text-gray-300">{{ component.label }}</p>
+    <div class="rounded-xl border border-white/8 bg-gray-900/80 overflow-hidden">
+        <!-- Label -->
+        <div class="px-3.5 py-2.5 border-b border-white/5">
+            <p class="text-xs font-semibold text-gray-300 leading-tight">{{ component.label }}</p>
         </div>
 
         <!-- Stats row -->
         <div class="flex divide-x divide-white/5">
             <!-- Total -->
-            <div class="flex-1 flex flex-col items-center py-3">
-                <span class="text-xl font-black text-white tabular-nums">{{ component.total }}</span>
-                <span class="text-2xs text-gray-500 mt-0.5">Total</span>
+            <div class="flex-1 flex flex-col items-center py-2.5">
+                <span class="text-lg font-black text-white tabular-nums leading-tight">{{ component.total }}</span>
+                <span class="text-2xs text-gray-600 mt-0.5">Total</span>
             </div>
 
             <!-- Success -->
-            <div class="flex-1 flex flex-col items-center py-3">
-                <span class="text-xl font-black text-emerald-400 tabular-nums">{{ component.success }}</span>
-                <span class="text-2xs text-gray-500 mt-0.5">Berhasil</span>
+            <div class="flex-1 flex flex-col items-center py-2.5">
+                <span class="text-lg font-black text-emerald-400 tabular-nums leading-tight">{{ component.success }}</span>
+                <span class="text-2xs text-gray-600 mt-0.5">Berhasil</span>
             </div>
 
             <!-- Failed -->
-            <div v-if="component.failed > 0" class="flex-1 flex flex-col items-center py-3">
-                <span class="text-xl font-black text-red-400 tabular-nums">{{ component.failed }}</span>
-                <span class="text-2xs text-gray-500 mt-0.5">Gagal</span>
+            <div v-if="component.failed > 0" class="flex-1 flex flex-col items-center py-2.5">
+                <span class="text-lg font-black text-red-400 tabular-nums leading-tight">{{ component.failed }}</span>
+                <span class="text-2xs text-gray-600 mt-0.5">Gagal</span>
             </div>
         </div>
     </div>
