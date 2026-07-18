@@ -15,9 +15,32 @@
 
 import { Link } from '@inertiajs/vue3'
 import { useLayoutPreference } from '@/Composables/useLayoutPreference'
+import { usePageLoading } from '@/Composables/usePageLoading'
 import NavItem from '@/Components/NavItem.vue'
 
 const { isDesktopLayout } = useLayoutPreference()
+const { pendingUrl, isLoading } = usePageLoading()
+
+// Anticipated active: saat loading, cek apakah pendingUrl cocok dengan route item.
+// Ini membuat navbar langsung highlight item tujuan tanpa menunggu navigasi selesai.
+const isActive = (patterns) => {
+    // Saat tidak loading, pakai route().current() seperti biasa
+    if (!isLoading.value || !pendingUrl.value) {
+        return patterns.some(p => route().current(p))
+    }
+    // Saat loading, cek pendingUrl
+    const url = pendingUrl.value
+    return patterns.some(p => {
+        if (p === 'dashboard')       return /^\/$|\/dashboard/.test(url)
+        if (p === 'wallets.*')       return /\/wallets/.test(url)
+        if (p === 'transactions.*')  return /\/transactions/.test(url)
+        if (p === 'analytics.*')     return /\/analytics/.test(url)
+        if (p === 'categories.*')    return /\/categories/.test(url)
+        if (p === 'loans.*')         return /\/loans/.test(url)
+        if (p === 'settings.*')      return /\/settings/.test(url)
+        return false
+    })
+}
 
 defineProps({
     isSidebarOpen: {
@@ -117,7 +140,7 @@ defineEmits(['toggle'])
             <NavItem
                 :href="route('dashboard')"
                 label="Home"
-                :active="route().current('dashboard')"
+                :active="isActive(['dashboard'])"
                 :is-desktop="isDesktopLayout"
                 :sidebar-open="isSidebarOpen"
             >
@@ -132,7 +155,7 @@ defineEmits(['toggle'])
             <NavItem
                 :href="route('wallets.index')"
                 label="Aset"
-                :active="route().current('wallets.*')"
+                :active="isActive(['wallets.*'])"
                 :is-desktop="isDesktopLayout"
                 :sidebar-open="isSidebarOpen"
             >
@@ -148,7 +171,7 @@ defineEmits(['toggle'])
                 v-if="isDesktopLayout"
                 :href="route('transactions.create')"
                 label="Catat"
-                :active="route().current('transactions.*')"
+                :active="isActive(['transactions.*'])"
                 :is-desktop="true"
                 :sidebar-open="isSidebarOpen"
             >
@@ -164,11 +187,11 @@ defineEmits(['toggle'])
                 <Link
                     :href="route('transactions.create')"
                     :aria-label="'Catat transaksi baru'"
-                    :aria-current="route().current('transactions.*') ? 'page' : undefined"
+                    :aria-current="isActive(['transactions.*']) ? 'page' : undefined"
                     class="flex items-center justify-center rounded-full border-[3px] border-gray-900 active:scale-90 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300"
                     :class="[
                         'w-14 h-14',
-                        route().current('transactions.*')
+                        isActive(['transactions.*'])
                             ? 'bg-gradient-to-br from-purple-400 to-purple-600 shadow-[0_0_20px_4px_rgba(168,85,247,0.5)]'
                             : 'bg-gradient-to-br from-purple-500 to-purple-700 shadow-[0_4px_18px_0px_rgba(139,92,246,0.55)]',
                     ]"
@@ -180,7 +203,7 @@ defineEmits(['toggle'])
                 </Link>
                 <span
                     class="text-[10px] font-bold tracking-wide uppercase leading-none mt-1"
-                    :class="route().current('transactions.*') ? 'text-purple-400' : 'text-gray-500'"
+                    :class="isActive(['transactions.*']) ? 'text-purple-400' : 'text-gray-500'"
                 >Catat</span>
             </div>
 
@@ -188,7 +211,7 @@ defineEmits(['toggle'])
             <NavItem
                 :href="route('analytics.index')"
                 label="Grafik"
-                :active="route().current('analytics.*')"
+                :active="isActive(['analytics.*'])"
                 :is-desktop="isDesktopLayout"
                 :sidebar-open="isSidebarOpen"
             >
@@ -203,7 +226,7 @@ defineEmits(['toggle'])
             <NavItem
                 :href="route('categories.index')"
                 label="Label"
-                :active="route().current('categories.*')"
+                :active="isActive(['categories.*'])"
                 :is-desktop="isDesktopLayout"
                 :sidebar-open="isSidebarOpen"
             >
@@ -219,7 +242,7 @@ defineEmits(['toggle'])
                 v-if="isDesktopLayout"
                 :href="route('loans.index', { type: 'debt' })"
                 label="Tanggungan"
-                :active="route().current('loans.*')"
+                :active="isActive(['loans.*'])"
                 :is-desktop="true"
                 :sidebar-open="isSidebarOpen"
             >
@@ -235,7 +258,7 @@ defineEmits(['toggle'])
                 v-if="isDesktopLayout"
                 :href="route('settings.index')"
                 label="Pengaturan"
-                :active="route().current('settings.*')"
+                :active="isActive(['settings.*'])"
                 :is-desktop="true"
                 :sidebar-open="isSidebarOpen"
             >
