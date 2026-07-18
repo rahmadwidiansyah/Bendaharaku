@@ -96,7 +96,7 @@ const deleteUser = () => {
         <div class="p-5 w-full lg:max-w-4xl mx-auto lg:px-8 relative z-10 animate-slide-up">
 
             <header class="flex justify-between items-center mb-10 pt-4">
-                <h1 class="text-3xl font-bold text-white tracking-tight">Profil Saya</h1>
+                <h1 class="text-3xl font-bold text-white tracking-tight hidden lg:block">Profil Saya</h1>
                 <Link :href="route('dashboard')"
                     class="w-12 h-12 rounded-xl bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white active:scale-95 transition-all">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
