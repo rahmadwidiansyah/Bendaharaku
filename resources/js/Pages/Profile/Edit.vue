@@ -85,7 +85,7 @@ const deleteUser = () => {
 </script>
 
 <template>
-    <AuthenticatedLayout :fullWidth="true">
+    <AuthenticatedLayout :fullWidth="true" :hideNav="true">
 
         <Head title="Profil Saya" />
 
