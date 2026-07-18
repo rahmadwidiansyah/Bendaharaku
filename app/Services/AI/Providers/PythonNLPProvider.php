@@ -6,6 +6,7 @@ namespace App\Services\AI\Providers;
 
 use App\Services\AI\Contracts\AIProviderInterface;
 use App\DTO\AIParseResult;
+use App\DTO\AIParseResultMulti;
 use App\DTO\AiProviderRequest;
 use App\DTO\ParsedTransaction;
 use App\Enums\TransactionIntent;
@@ -115,5 +116,21 @@ class PythonNLPProvider implements AIProviderInterface
             ]);
             return AIParseResult::failure('Python NLP error: ' . $e->getMessage(), 'python-nlp', 'local');
         }
+    }
+
+    /**
+     * Python NLP service hanya mendukung single transaction (/analyze).
+     * Multi-transaction tidak didukung — kembalikan failure agar pipeline
+     * melanjutkan ke LLM berikutnya (Gemini/OpenAI/DeepSeek).
+     */
+    public function parseMultiTransaction(AiProviderRequest $request): AIParseResultMulti
+    {
+        Log::info('PythonNLPProvider: parseMultiTransaction tidak didukung, skip ke LLM berikutnya.');
+
+        return AIParseResultMulti::failure(
+            'Python NLP tidak mendukung multi-transaction parsing.',
+            'python-nlp',
+            'local'
+        );
     }
 }
