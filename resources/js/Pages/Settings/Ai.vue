@@ -150,7 +150,7 @@ onMounted(() => {
 
         <div class="p-5 w-full lg:max-w-4xl mx-auto lg:px-8 relative z-10 animate-slide-up min-h-screen">
             <header class="flex justify-between items-center mb-8 pt-4">
-                <div>
+                <div class="hidden lg:block">
                     <p class="text-2xs text-indigo-400 font-black mb-1.5 uppercase tracking-[0.2em] flex items-center gap-2">
                         <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span> BYOK AI
                     </p>

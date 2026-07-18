@@ -24,7 +24,7 @@ const maskedAmount = '••••••';
 
             <!-- Header -->
             <header class="flex justify-between items-center mb-8 pt-4">
-                <div>
+                <div class="hidden lg:block">
                     <p class="text-2xs font-black text-purple-500 uppercase tracking-[0.2em] mb-1 flex items-center gap-2">
                         <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
                         Tanggungan

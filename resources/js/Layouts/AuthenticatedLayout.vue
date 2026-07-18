@@ -51,10 +51,10 @@ const computedFullWidth = computed(() =>
             <!-- Panel konten utama -->
             <div :class="[
                 'w-full bg-gray-800 min-h-screen flex flex-col',
-                'border-x border-white/5 relative overflow-x-hidden',
-                'shadow-2xl shadow-black transition-all duration-300',
+                'border-x border-white/5 relative',
+                'shadow-2xl shadow-black',
                 computedFullWidth ? 'max-w-md lg:max-w-full' : 'max-w-md',
-                computedFullWidth && isSidebarOpen ? 'lg:pl-64' : (computedFullWidth ? 'lg:pl-20' : ''),
+                computedFullWidth && isSidebarOpen ? 'lg:pl-64 transition-[padding] duration-300' : (computedFullWidth ? 'lg:pl-20 transition-[padding] duration-300' : ''),
             ]">
                 <!-- Mobile top bar — hidden di desktop -->
                 <MobileHeader />
@@ -62,7 +62,7 @@ const computedFullWidth = computed(() =>
                 <main
                     id="main-content"
                     :class="[
-                        'flex-1 animate-page-enter',
+                        'flex-1 animate-page-enter overflow-x-hidden',
                         // Mobile: beri ruang untuk BottomNav (56px) + safe area + sedikit margin
                         // Desktop: cukup pb-8
                         computedFullWidth ? 'pb-28 lg:pb-8' : 'pb-28',

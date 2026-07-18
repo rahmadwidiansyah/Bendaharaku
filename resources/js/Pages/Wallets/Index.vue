@@ -50,8 +50,10 @@ const handleImageError = (e, fallback) => {
 
         <div class="p-5 w-full lg:max-w-4xl mx-auto lg:px-8">
             <header class="mb-8 pt-4 animate-fade-in-up">
-                <p class="text-2xs text-purple-500 font-black uppercase tracking-[0.3em] mb-1 opacity-80">Portfolio</p>
-                <h1 class="text-2xl font-black text-white tracking-tight leading-none mb-4">Aset & Dompet</h1>
+                <div class="hidden lg:block mb-4">
+                    <p class="text-2xs text-purple-500 font-black uppercase tracking-[0.3em] mb-1 opacity-80">Portfolio</p>
+                    <h1 class="text-2xl font-black text-white tracking-tight leading-none">Aset & Dompet</h1>
+                </div>
 
                 <div
                     class="bg-linear-to-br from-gray-900 to-gray-800 rounded-2xl border border-white/10 relative overflow-hidden group">
