@@ -77,6 +77,18 @@ class TransactionLog extends Model
         'due_date_interval',
     ];
 
+    protected $casts = [
+        // PostgreSQL DECIMAL(15,2) dikembalikan sebagai string oleh PDO.
+        // Cast ke float agar seluruh consumer (Formatter, Adapter, API) menerima tipe numerik.
+        'amount'         => 'float',
+        'balance_before' => 'float',
+        'balance_after'  => 'float',
+        'is_cleared'     => 'boolean',
+        // Cast date ke Carbon agar ->toDateString() dan method Carbon lainnya tersedia.
+        'date'           => 'date',
+        'due_date'       => 'date',
+    ];
+
     // Relasi
     public function user(): BelongsTo { return $this->belongsTo(User::class); }
     public function type(): BelongsTo { return $this->belongsTo(TransactionType::class, 'type_id'); }

@@ -18,6 +18,7 @@ use App\Chat\DTOs\ChatResponse;
 use App\Chat\DTOs\ChatContext;
 use App\Chat\Errors\ErrorDetail;
 use App\Enums\ChatIntent;
+use App\Support\MoneyFormatter;
 
 /**
  * Formatter Telegram — mengubah ChatResponse menjadi Telegram Markdown string.
@@ -98,7 +99,7 @@ class TelegramFormatter implements ChatFormatterInterface
     private function renderTransactionCard(TransactionCardComponent $c, string $locale): string
     {
         $trx    = $c->transaction;
-        $amount = 'Rp ' . number_format((float) $trx->amount, 0, ',', '.');
+        $amount = MoneyFormatter::rupiah($trx->amount);
 
         $typeName = match (strtolower($trx->type?->name ?? '')) {
             'income'               => trans('chat.transaction.type_income', [], $locale),
