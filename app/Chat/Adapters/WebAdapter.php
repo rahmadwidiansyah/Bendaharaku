@@ -96,9 +96,10 @@ class WebAdapter
             'content'         => $formatted['components'],
             'raw_text'        => null,
             'metadata'        => array_merge($response->metadata, [
-                'intent'     => $response->intent->value,
-                'success'    => $response->success,
-                'latency_ms' => $latency,
+                'intent'       => $response->intent->value,
+                'success'      => $response->success,
+                'latency_ms'   => $latency,
+                'raw_prompt'   => $rawMessage,
             ]),
         ]);
 
@@ -132,10 +133,15 @@ class WebAdapter
                 'role'       => 'assistant',
                 'content'    => $formatted['components'],
                 'metadata'   => [
-                    'intent'    => $response->intent->value,
-                    'success'   => $response->success,
-                    'trace_id'  => $context->traceId,
-                    'latency_ms' => $latency,
+                    'intent'       => $response->intent->value,
+                    'success'      => $response->success,
+                    'trace_id'     => $context->traceId,
+                    'latency_ms'   => $latency,
+                    'provider'     => $response->meta('provider'),
+                    'model'        => $response->meta('model'),
+                    'confidence'   => $response->meta('confidence'),
+                    'total_tokens' => $response->meta('total_tokens'),
+                    'raw_prompt'   => $rawMessage,
                 ],
                 'created_at' => $botMessage->created_at->toIso8601String(),
             ],

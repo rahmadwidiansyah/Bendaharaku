@@ -2,149 +2,145 @@
 /**
  * ChatMessage.vue
  *
- * Wrapper bubble untuk satu pesan (user atau bot).
+ * Bubble tunggal dalam riwayat percakapan.
+ * Bot message: avatar kiri + bubble abu + kartu.
+ * User message: bubble ungu kanan + avatar kanan.
  *
- * - User  → bubble di kanan (justify-end), avatar di paling kanan (setelah bubble di DOM)
- * - Bot   → bubble di kiri, avatar di paling kiri (sebelum bubble di DOM)
- *
- * Setiap pesan bisa memiliki banyak komponen (content array).
- * MessageRenderer.vue menangani render tiap komponen.
+ * Delegasi:
+ *   BotAvatar          — render avatar dengan fallback initials
+ *   ChatTimestamp      — render timestamp <time>
+ *   MessageRenderer    — dispatch ke komponen per tipe konten
+ *   ResponseMeta       — latency · token · model
+ *   MessageToolbar     — copy / regenerate / retry (hover)
+ *   useMessageContent  — parse struktur konten pesan
  */
 
-import { ref, computed } from 'vue'
-import MessageRenderer from './Messages/MessageRenderer.vue'
+import MessageRenderer  from './Messages/MessageRenderer.vue'
+import ResponseMeta     from './Messages/ResponseMeta.vue'
+import MessageToolbar   from './Messages/MessageToolbar.vue'
+import BotAvatar        from './BotAvatar.vue'
+import ChatTimestamp    from './ChatTimestamp.vue'
+import { useMessageContent } from '@/Composables/useMessageContent.js'
 
 const props = defineProps({
-    message: {
-        type: Object,
-        required: true,
-    },
-    botAvatar: { type: String, default: null },
-    botName:   { type: String, default: 'Ken-Chan' },
-    userAvatar: { type: String, default: null },
-    userName:   { type: String, default: 'Kamu' },
+    message:    { type: Object,  required: true },
+    botAvatar:  { type: String,  default: null },
+    botName:    { type: String,  default: 'Ken-Chan' },
+    userAvatar: { type: String,  default: null },
+    userName:   { type: String,  default: 'Kamu' },
+    showAvatar: { type: Boolean, default: true },
 })
 
-const isUser = computed(() => props.message.role === 'user')
-const isBot  = computed(() => props.message.role === 'assistant')
+const emit = defineEmits(['retry', 'regenerate'])
 
-// Reactive state untuk track avatar load error
-const userAvatarFailed = ref(false)
-const botAvatarFailed  = ref(false)
-
-// Inisial fallback untuk avatar
-const botInitials = computed(() =>
-    props.botName.trim().split(/\s+/).slice(0, 2).map((w) => w[0].toUpperCase()).join('')
-)
-const userInitials = computed(() =>
-    props.userName.trim().split(/\s+/).slice(0, 2).map((w) => w[0].toUpperCase()).join('')
-)
-
-// Format timestamp: "14:35"
-const timeLabel = computed(() => {
-    if (!props.message.created_at) return ''
-    try {
-        return new Date(props.message.created_at).toLocaleTimeString('id-ID', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false,
-        })
-    } catch {
-        return ''
-    }
-})
-
-// Konten utama dari pesan user adalah teks saja
-const userText = computed(() => {
-    const first = props.message.content?.[0]
-    return first?.type === 'text' ? first.text : ''
-})
+// ── Content parsing (delegasi ke composable) ──────────────────────
+const {
+    isUser,
+    isBot,
+    isErrorMessage,
+    userText,
+    filteredInline,
+    cardComponents,
+} = useMessageContent(() => props.message)
 </script>
 
 <template>
-    <!-- Bot message: avatar kiri, bubble kanan dari kiri -->
-    <div
-        v-if="isBot"
-        class="flex items-end gap-2.5 px-4 animate-fade-in"
-    >
-        <!-- Avatar Bot (paling kiri) -->
-        <div
-            class="w-7 h-7 rounded-full shrink-0 overflow-hidden bg-gray-800 border border-white/10 flex items-center justify-center self-end mb-1"
-            :aria-label="botName"
-        >
-            <img
-                v-if="botAvatar && !botAvatarFailed"
+    <!-- ── BOT MESSAGE ─────────────────────────────────────────── -->
+    <div v-if="isBot" class="flex items-end gap-1.5 px-3 py-0.5 animate-fade-in group">
+
+        <!-- Avatar bot: tampilkan atau kosong (spacer alignment) -->
+        <div class="w-6 h-6 shrink-0 self-end mb-0.5">
+            <BotAvatar
+                v-if="showAvatar"
                 :src="botAvatar"
-                :alt="botName"
-                class="w-full h-full object-cover"
-                @error="botAvatarFailed = true"
+                :name="botName"
+                size="sm"
+                variant="bot"
+                shape="circle"
             />
-            <span v-else class="text-xs font-black text-purple-400 select-none">{{ botInitials }}</span>
         </div>
 
-        <!-- Bubble Bot -->
-        <div class="flex flex-col gap-1 min-w-0 items-start" style="max-width: 75%">
-            <div class="flex flex-col gap-2 w-full">
-                <template v-for="(comp, i) in message.content" :key="i">
-                    <!-- Text, divider, suggestion langsung di dalam bubble -->
-                    <div
-                        v-if="comp.type === 'text' || comp.type === 'divider' || comp.type === 'suggestion'"
-                        class="bg-gray-800 border border-white/10 px-4 py-2.5 rounded-2xl rounded-bl-sm"
-                    >
+        <!-- Bubble + card stack -->
+        <div class="flex flex-col gap-1 min-w-0" style="max-width: 80%">
+
+            <!-- Bubble: semua inline components (text, divider, suggestion) -->
+            <div
+                v-if="filteredInline.length > 0"
+                class="bg-gray-800/90 border border-white/8 rounded-2xl rounded-tl-md overflow-hidden shadow-sm"
+            >
+                <div class="px-3.5 pt-2.5 pb-2 space-y-1">
+                    <template v-for="(comp, i) in filteredInline" :key="i">
                         <MessageRenderer :component="comp" />
-                    </div>
-                    <!-- Cards dan error di luar bubble -->
-                    <MessageRenderer v-else :component="comp" />
-                </template>
+                    </template>
+                </div>
+
+                <!-- Footer: meta + timestamp -->
+                <div class="flex items-center justify-between gap-2 px-3.5 pb-2 pt-0">
+                    <ResponseMeta
+                        :metadata="message.metadata"
+                        :content="message.content ?? []"
+                    />
+                    <ChatTimestamp
+                        :datetime="message.created_at"
+                        class="text-gray-600 select-none shrink-0"
+                    />
+                </div>
             </div>
 
-            <!-- Timestamp -->
-            <time
-                v-if="timeLabel"
-                :datetime="message.created_at"
-                class="text-2xs text-gray-600 px-1"
+            <!-- Card components (transaction_card, summary_card, error) -->
+            <template v-for="(comp, i) in cardComponents" :key="'card-' + i">
+                <MessageRenderer :component="comp" :metadata="message.metadata ?? {}" />
+            </template>
+
+            <!-- Timestamp standalone jika tidak ada inline bubble -->
+            <div v-if="filteredInline.length === 0 && message.created_at" class="flex justify-start">
+                <ChatTimestamp
+                    :datetime="message.created_at"
+                    class="text-gray-600 px-1 select-none"
+                />
+            </div>
+
+            <!-- Toolbar: muncul saat hover -->
+            <div
+                v-if="filteredInline.length > 0 || cardComponents.length > 0"
+                class="flex justify-start pl-0.5 -mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
             >
-                {{ timeLabel }}
-            </time>
+                <MessageToolbar
+                    :message="message"
+                    :is-error="isErrorMessage"
+                    @retry="emit('retry', message)"
+                    @regenerate="emit('regenerate', message)"
+                />
+            </div>
         </div>
     </div>
 
-    <!-- User message: bubble kanan, avatar paling kanan -->
-    <div
-        v-else-if="isUser"
-        class="flex items-end justify-end gap-2.5 px-4 animate-fade-in"
-    >
-        <!-- Bubble User (di kiri dari avatar, right-aligned karena justify-end) -->
-        <div class="flex flex-col gap-1 min-w-0 items-end" style="max-width: 75%">
-            <div
-                class="bg-gradient-to-br from-purple-800 to-purple-600 text-white text-sm leading-relaxed px-4 py-2.5 rounded-2xl rounded-br-sm shadow-sm break-words"
-            >
-                {{ userText }}
-            </div>
+    <!-- ── USER MESSAGE ────────────────────────────────────────── -->
+    <div v-else-if="isUser" class="flex items-end justify-end gap-1.5 px-3 py-0.5 animate-fade-in">
 
-            <!-- Timestamp -->
-            <time
-                v-if="timeLabel"
-                :datetime="message.created_at"
-                class="text-2xs text-gray-600 px-1"
-            >
-                {{ timeLabel }}
-            </time>
+        <!-- Bubble user -->
+        <div class="flex flex-col gap-1 min-w-0 items-end" style="max-width: 80%">
+            <div class="bg-gradient-to-br from-purple-600 to-purple-500 text-white text-sm leading-relaxed px-3.5 pt-2 pb-1.5 rounded-2xl rounded-tr-md shadow-sm shadow-purple-500/20 break-words">
+                <p class="whitespace-pre-wrap break-words">{{ userText }}</p>
+                <div class="flex justify-end mt-0.5">
+                    <ChatTimestamp
+                        :datetime="message.created_at"
+                        class="text-white/40 select-none"
+                    />
+                </div>
+            </div>
         </div>
 
-        <!-- Avatar User (paling kanan, setelah bubble di DOM) -->
-        <div
-            class="w-7 h-7 rounded-full shrink-0 overflow-hidden bg-gray-800 border border-white/10 flex items-center justify-center self-end mb-1"
-            :aria-label="userName"
-        >
-            <img
-                v-if="userAvatar && !userAvatarFailed"
+        <!-- Avatar user -->
+        <div class="w-6 h-6 shrink-0 self-end mb-0.5">
+            <BotAvatar
+                v-if="showAvatar"
                 :src="userAvatar"
-                :alt="userName"
-                class="w-full h-full object-cover"
-                @error="userAvatarFailed = true"
+                :name="userName"
+                size="sm"
+                variant="user"
+                shape="circle"
             />
-            <span v-else class="text-xs font-black text-gray-400 select-none">{{ userInitials }}</span>
         </div>
     </div>
 </template>
