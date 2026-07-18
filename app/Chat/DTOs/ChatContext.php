@@ -109,6 +109,8 @@ readonly class ChatContext
             return $platformLocale;
         }
 
-        return config('app.locale', 'id');
+        // Hardcode fallback ke 'id' — tidak bergantung config('app.locale')
+        // agar tidak terpengaruh APP_LOCALE di .env yang bisa berbeda-beda.
+        return 'id';
     }
 }
