@@ -41,7 +41,7 @@ const deleteWallet = () => {
 </script>
 
 <template>
-    <AuthenticatedLayout :fullWidth="true">
+    <AuthenticatedLayout :fullWidth="true" :hideNav="true">
 
         <Head title="Edit Dompet" />
         <div class="p-5 w-full lg:max-w-4xl mx-auto lg:px-8 relative animate-slide-up opacity-0"

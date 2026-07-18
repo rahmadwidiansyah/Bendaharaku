@@ -37,7 +37,7 @@ const goBack = () => {
 </script>
 
 <template>
-    <AuthenticatedLayout :fullWidth="true">
+    <AuthenticatedLayout :fullWidth="true" :hideNav="true">
 
         <Head title="Tambah Kategori" />
 
