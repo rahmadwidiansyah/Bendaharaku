@@ -30,12 +30,14 @@ const updateTransactionLogic = () => {
         <div class="p-5 w-full lg:max-w-4xl mx-auto lg:px-8 relative z-10 animate-slide-up min-h-screen">
 
             <!-- Page Header -->
-            <header class="mb-10 pt-4">
-                <p class="text-2xs text-purple-500 font-black mb-1.5 uppercase tracking-[0.2em] flex items-center gap-2">
-                    <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
-                    Preferences
-                </p>
-                <h1 class="text-3xl font-black text-white tracking-tight leading-none">Pengaturan</h1>
+            <header class="pt-4 mb-4 lg:mb-10">
+                <div class="hidden lg:block">
+                    <p class="text-2xs text-purple-500 font-black mb-1.5 uppercase tracking-[0.2em] flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                        Preferences
+                    </p>
+                    <h1 class="text-3xl font-black text-white tracking-tight leading-none">Pengaturan</h1>
+                </div>
             </header>
 
             <div class="space-y-10">

@@ -67,7 +67,7 @@ const getTypeName = (typeName) => {
 		<Head title="Detail Dompet" />
 		<div class="p-5 w-full lg:max-w-4xl mx-auto lg:px-8 relative">
 			<header class="flex justify-between items-center mb-6 pt-2">
-				<h1 class="text-2xl font-bold text-white tracking-tight">Detail Dompet</h1>
+				<h1 class="text-2xl font-bold text-white tracking-tight hidden lg:block">Detail Dompet</h1>
 				<Link
 					:href="route('dashboard')"
 					class="w-10 h-10 rounded-full bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white active:scale-95 transition-all shadow-md">

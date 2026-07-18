@@ -2,16 +2,8 @@
 /**
  * CreateTransactionFab.vue
  *
- * Floating Action Button untuk membuat transaksi baru di mobile.
- * Tersembunyi di desktop (sidebar punya tombol tersendiri).
- *
- * Perubahan dari versi sebelumnya:
- *   - Tambah aria-label pada semua tombol interaktif
- *   - Tambah aria-expanded pada toggle button
- *   - Tambah aria-haspopup pada toggle button
- *   - Tambah focus-visible ring untuk keyboard navigation
- *   - Hapus class .w-13/.h-13 hardcoded di <style> → pakai w-[3.25rem] Tailwind JIT
- *   - Tambah rel="noopener noreferrer" pada link eksternal Telegram
+ * Tombol aksi utama bergaya tombol Pay di e-wallet.
+ * Tampil di mobile, tersembunyi di desktop.
  */
 
 import { Link } from '@inertiajs/vue3'
@@ -21,102 +13,156 @@ import { useLayoutPreference } from '@/Composables/useLayoutPreference'
 const isOpen = ref(false)
 const { isDesktopLayout } = useLayoutPreference()
 
-const toggleMenu = () => {
-    isOpen.value = !isOpen.value
-}
+const toggle = () => { isOpen.value = !isOpen.value }
+const close  = () => { isOpen.value = false }
 </script>
 
 <template>
-    <div :class="[
-        'fixed bottom-24 left-1/2 -translate-x-1/2 w-full max-w-md pointer-events-none flex justify-end px-5 z-40',
-        isDesktopLayout ? 'lg:hidden' : '',
-    ]">
-        <div class="flex flex-col gap-4 items-end pointer-events-auto">
+    <!--
+        Posisi: tepat di atas BottomNav (bottom-[4.5rem]).
+        pointer-events-none di wrapper agar area kosong tidak menghalangi scroll,
+        pointer-events-auto dikembalikan di elemen interaktif.
+    -->
+    <div
+        :class="[
+            'fixed bottom-[4.5rem] left-1/2 -translate-x-1/2 w-full max-w-md px-4 z-40 pointer-events-none',
+            isDesktopLayout ? 'lg:hidden' : '',
+        ]"
+    >
+        <!-- Overlay backdrop -->
+        <Transition
+            enter-active-class="transition-opacity duration-200"
+            enter-from-class="opacity-0"
+            enter-to-class="opacity-100"
+            leave-active-class="transition-opacity duration-150"
+            leave-from-class="opacity-100"
+            leave-to-class="opacity-0"
+        >
+            <div
+                v-if="isOpen"
+                class="fixed inset-0 bg-black/60 backdrop-blur-sm pointer-events-auto"
+                style="z-index: -1"
+                @click="close"
+                aria-hidden="true"
+            />
+        </Transition>
 
-            <!-- Sub-buttons (muncul saat isOpen) -->
-            <div class="flex flex-col gap-4 items-end mb-1">
+        <!-- Sub-buttons: muncul ke atas saat isOpen -->
+        <div class="flex flex-col gap-3 mb-3">
 
-                <!-- Telegram Bot -->
-                <transition name="fab-sub">
-                    <a
-                        v-if="isOpen"
-                        href="https://t.me/catatwidi_bot"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label="Buka Telegram Bot untuk catat via AI"
-                        class="relative group w-11 h-11 bg-blue-500/90 backdrop-blur-sm rounded-xl flex justify-center items-center text-white active:scale-95 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900"
-                        style="transition-delay: 50ms;"
-                    >
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <!-- Telegram Bot -->
+            <Transition
+                enter-active-class="transition-all duration-200 ease-out"
+                enter-from-class="opacity-0 translate-y-3"
+                enter-to-class="opacity-100 translate-y-0"
+                leave-active-class="transition-all duration-150 ease-in"
+                leave-from-class="opacity-100 translate-y-0"
+                leave-to-class="opacity-0 translate-y-3"
+            >
+                <a
+                    v-if="isOpen"
+                    href="https://t.me/catatwidi_bot"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    @click="close"
+                    aria-label="Catat via Telegram AI Bot"
+                    class="pointer-events-auto w-full flex items-center gap-4 px-5 py-4 rounded-2xl active:scale-95 transition-transform"
+                    style="background-color: #2AABEE; box-shadow: 0 8px 24px rgba(42,171,238,0.35);"
+                >
+                    <span class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(255,255,255,0.2);">
+                        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.223-.548.223l.188-2.85 5.18-4.68c.223-.198-.054-.31-.346-.11l-6.4 4.02-2.76-.89c-.6-.188-.612-.6.126-.89l10.814-4.17c.5-.188.948.116.822.885z" />
                         </svg>
-                        <!-- Tooltip label -->
-                        <span
-                            class="absolute right-14 bg-gray-900 border border-white/10 text-white text-2xs font-black uppercase tracking-widest px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity pointer-events-none whitespace-nowrap"
-                            aria-hidden="true"
-                        >
-                            Telegram Bot
-                        </span>
-                    </a>
-                </transition>
+                    </span>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-black text-white leading-tight">Catat via AI Bot</p>
+                        <p class="text-xs text-white/70 font-medium mt-0.5">Ketik santai di Telegram</p>
+                    </div>
+                    <svg class="w-4 h-4 shrink-0" style="color: rgba(255,255,255,0.6)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                </a>
+            </Transition>
 
-                <!-- Input Manual -->
-                <transition name="fab-sub">
-                    <Link
-                        v-if="isOpen"
-                        :href="route('transactions.create')"
-                        aria-label="Catat transaksi manual"
-                        class="relative group w-11 h-11 bg-white rounded-xl flex justify-center items-center text-black active:scale-95 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900"
-                        style="transition-delay: 100ms;"
-                    >
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                        </svg>
-                        <!-- Tooltip label -->
-                        <span
-                            class="absolute right-14 bg-gray-900 border border-white/10 text-white text-2xs font-black uppercase tracking-widest px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity pointer-events-none whitespace-nowrap"
-                            aria-hidden="true"
-                        >
-                            Input Manual
-                        </span>
-                    </Link>
-                </transition>
-            </div>
-
-            <!-- Tombol toggle utama -->
-            <button
-                type="button"
-                @click="toggleMenu"
-                :aria-expanded="isOpen"
-                aria-haspopup="true"
-                :aria-label="isOpen ? 'Tutup menu aksi' : 'Buka menu aksi'"
-                class="w-[3.25rem] h-[3.25rem] bg-gradient-to-br from-purple-800 to-purple-500 rounded-2xl flex justify-center items-center text-white active:scale-90 transition-all border border-white/10 group relative overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900"
-                :class="isOpen ? 'rotate-45' : ''"
+            <!-- Input Manual -->
+            <Transition
+                enter-active-class="transition-all duration-200 ease-out"
+                enter-from-class="opacity-0 translate-y-3"
+                enter-to-class="opacity-100 translate-y-0"
+                leave-active-class="transition-all duration-150 ease-in"
+                leave-from-class="opacity-100 translate-y-0"
+                leave-to-class="opacity-0 translate-y-3"
             >
-                <span class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true" />
-                <svg
-                    class="w-7 h-7 transition-transform duration-300"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    stroke-width="3"
-                    aria-hidden="true"
+                <Link
+                    v-if="isOpen"
+                    :href="route('transactions.create')"
+                    @click="close"
+                    aria-label="Catat transaksi manual"
+                    class="pointer-events-auto w-full flex items-center gap-4 px-5 py-4 rounded-2xl active:scale-95 transition-transform"
+                    style="background: linear-gradient(135deg, #7c3aed, #4f46e5); box-shadow: 0 8px 24px rgba(124,58,237,0.35);"
                 >
+                    <span class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(255,255,255,0.2);">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" />
+                        </svg>
+                    </span>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-black text-white leading-tight">Catat Manual</p>
+                        <p class="text-xs text-white/70 font-medium mt-0.5">Input form lengkap</p>
+                    </div>
+                    <svg class="w-4 h-4 shrink-0" style="color: rgba(255,255,255,0.6)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                </Link>
+            </Transition>
+        </div>
+
+        <!-- Tombol utama — pay button style -->
+        <button
+            type="button"
+            @click="toggle"
+            :aria-expanded="isOpen"
+            aria-haspopup="true"
+            :aria-label="isOpen ? 'Tutup menu catat transaksi' : 'Catat transaksi'"
+            class="pointer-events-auto w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl relative overflow-hidden active:scale-95 transition-transform focus:outline-none"
+            :style="isOpen
+                ? 'background: #1f2937; border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 4px 16px rgba(0,0,0,0.4);'
+                : 'background: linear-gradient(135deg, #9333ea 0%, #7c3aed 50%, #4f46e5 100%); box-shadow: 0 8px 32px rgba(124,58,237,0.5); border: 1px solid rgba(167,139,250,0.2);'"
+        >
+            <!-- Shimmer sweep (hanya saat closed) -->
+            <span
+                v-if="!isOpen"
+                class="absolute inset-0 pointer-events-none"
+                style="background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent); animation: fab-shimmer 2.5s ease-in-out infinite;"
+                aria-hidden="true"
+            />
+
+            <!-- Icon wrapper -->
+            <span
+                class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-300"
+                :class="isOpen ? 'rotate-45' : ''"
+                :style="isOpen ? 'background: rgba(255,255,255,0.08)' : 'background: rgba(255,255,255,0.2)'"
+            >
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>
-            </button>
-        </div>
+            </span>
+
+            <!-- Label -->
+            <span
+                class="text-sm font-black uppercase tracking-widest"
+                :class="isOpen ? 'text-gray-400' : 'text-white'"
+            >
+                {{ isOpen ? 'Tutup' : 'Catat Transaksi' }}
+            </span>
+        </button>
     </div>
 </template>
 
 <style scoped>
-.fab-sub-enter-active,
-.fab-sub-leave-active {
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-.fab-sub-enter-from,
-.fab-sub-leave-to {
-    opacity: 0;
-    transform: translateY(20px) scale(0.8);
+@keyframes fab-shimmer {
+    0%   { transform: translateX(-100%); }
+    60%  { transform: translateX(200%); }
+    100% { transform: translateX(200%); }
 }
 </style>

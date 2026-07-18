@@ -48,7 +48,7 @@ const deleteWallet = () => {
             style="animation-delay: 50ms;">
 
             <header class="flex justify-between items-center mb-8 pt-4">
-                <div>
+                <div class="hidden lg:block">
                     <h1 class="text-2xl font-bold text-white tracking-tight">Edit Dompet</h1>
                 </div>
                 <Link :href="route('wallets.show', wallet.id)"

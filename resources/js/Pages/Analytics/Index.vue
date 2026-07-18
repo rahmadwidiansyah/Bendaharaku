@@ -267,8 +267,8 @@ onMounted(() => {
 
         <div class="p-5 pb-40 w-full lg:max-w-4xl mx-auto lg:px-8 relative z-10 overflow-x-hidden">
 
-            <header class="flex justify-between items-end mb-6 pt-4 animate-fade-in-up">
-                <div>
+            <header class="flex justify-between items-end mb-4 lg:mb-6 pt-3 lg:pt-4 animate-fade-in-up">
+                <div class="hidden lg:block">
                     <p
                         class="text-2xs text-purple-500 font-black mb-1.5 uppercase tracking-[0.2em] flex items-center gap-2">
                         <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
