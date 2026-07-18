@@ -142,6 +142,7 @@ class WebFormatter implements ChatFormatterInterface
                 'amount'           => $trx->amount,
                 'amount_formatted' => MoneyFormatter::rupiah($trx->amount),
                 'is_cleared'       => $trx->is_cleared,
+                'needs_wallet'     => !$trx->is_cleared && $trx->sourceWallet?->group_type === 'System',
                 'type_key'         => $typeKey,
                 'type_label'       => trans("chat.transaction.type_{$typeKey}", [], $locale),
                 'category'         => $trx->category?->category_name,
