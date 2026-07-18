@@ -63,6 +63,11 @@ const {
         <!-- Bubble + card stack -->
         <div class="flex flex-col gap-1 min-w-0" style="max-width: 80%">
 
+            <!-- Card components (transaction_card, summary_card, error) -->
+            <template v-for="(comp, i) in cardComponents" :key="'card-' + i">
+                <MessageRenderer :component="comp" :metadata="message.metadata ?? {}" />
+            </template>
+
             <!-- Bubble: semua inline components (text, divider, suggestion) -->
             <div
                 v-if="filteredInline.length > 0"
@@ -86,11 +91,6 @@ const {
                     />
                 </div>
             </div>
-
-            <!-- Card components (transaction_card, summary_card, error) -->
-            <template v-for="(comp, i) in cardComponents" :key="'card-' + i">
-                <MessageRenderer :component="comp" :metadata="message.metadata ?? {}" />
-            </template>
 
             <!-- Timestamp standalone jika tidak ada inline bubble -->
             <div v-if="filteredInline.length === 0 && message.created_at" class="flex justify-start">
