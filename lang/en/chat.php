@@ -147,6 +147,9 @@ return [
     'command' => [
         'balance_title'   => '💳 *Current Balance Report:*',
         'balance_empty'   => "🏦 *No Wallets Found*\nYou haven't created any Asset/Liquid wallets yet.",
+        'balance_line_raw'  => ':line',
+        'balance_total'     => '💰 **Total: :total**',
+        'not_yet_implemented' => '🚧 Command `:command` is not yet available in Web Chat. Check back later!',
         'web_link_msg'    => implode("\n", [
             "🌐 *Access Bendaharaku V4*",
             "",
@@ -164,6 +167,9 @@ return [
         'help_cmd_balance'  => '▫️ `/saldo` - Check your current balance.',
         'help_cmd_web'      => '▫️ `/web` - Open the web dashboard.',
         'help_cmd_help'     => '▫️ `/help` - Show this guide.',
+        'help_example_expense'  => '💸 Expense: "Bought lunch 15k bca"',
+        'help_example_income'   => '💰 Income: "Salary 5M mandiri"',
+        'help_example_transfer' => '🔄 Transfer: "Transfer bca to dana 100k"',
         'total_balance'     => 'Total Balance',
     ],
 

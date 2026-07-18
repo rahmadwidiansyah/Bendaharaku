@@ -11,7 +11,7 @@
  * Emit 'select' saat user menekan chip contoh.
  */
 
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 
 const props = defineProps({
     botName:   { type: String, default: 'Ken-Chan' },
@@ -19,6 +19,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['select'])
+
+const avatarFailed = ref(false)
 
 const initials = computed(() =>
     props.botName.trim().split(/\s+/).slice(0, 2).map((w) => w[0].toUpperCase()).join('')
@@ -39,7 +41,7 @@ const suggestions = [
 
         <!-- Bot avatar large -->
         <div class="w-20 h-20 rounded-full overflow-hidden bg-gray-800 border-2 border-purple-500/30 flex items-center justify-center mb-4 shadow-lg shadow-purple-500/10">
-            <img v-if="botAvatar" :src="botAvatar" :alt="botName" class="w-full h-full object-cover" />
+            <img v-if="botAvatar && !avatarFailed" :src="botAvatar" :alt="botName" class="w-full h-full object-cover" @error="avatarFailed = true" />
             <span v-else class="text-2xl font-black text-purple-400 select-none">{{ initials }}</span>
         </div>
 

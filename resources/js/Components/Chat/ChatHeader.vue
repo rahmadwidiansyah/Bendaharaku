@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { Link } from '@inertiajs/vue3'
 
 const props = defineProps({
@@ -8,6 +8,8 @@ const props = defineProps({
     isTyping:  { type: Boolean, default: false },
     status:    { type: String, default: 'online' }, // 'online' | 'offline' | 'typing'
 })
+
+const avatarFailed = ref(false)
 
 const initials = computed(() =>
     props.botName.trim().split(/\s+/).slice(0, 2).map((w) => w[0].toUpperCase()).join('')
@@ -36,7 +38,7 @@ const statusText = computed(() => {
         <!-- Bot avatar -->
         <div class="relative shrink-0">
             <div class="w-9 h-9 rounded-full overflow-hidden bg-gray-800 border border-white/10 flex items-center justify-center">
-                <img v-if="botAvatar" :src="botAvatar" :alt="botName" class="w-full h-full object-cover" />
+                <img v-if="botAvatar && !avatarFailed" :src="botAvatar" :alt="botName" class="w-full h-full object-cover" @error="avatarFailed = true" />
                 <span v-else class="text-xs font-black text-purple-400 select-none">{{ initials }}</span>
             </div>
             <!-- Online indicator -->

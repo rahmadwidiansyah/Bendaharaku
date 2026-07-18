@@ -87,7 +87,7 @@ class WebAdapter
         // 6. Format respons ke JSON array untuk frontend
         $formatted = $this->formatter->format($response, $context);
 
-        $latency = round((microtime(true) - $startTime) * 1000);
+        $latency = (int) round((microtime(true) - $startTime) * 1000);
 
         // 7. Simpan respons bot ke database
         $botMessage = ChatMessage::create([
@@ -135,7 +135,7 @@ class WebAdapter
                     'intent'    => $response->intent->value,
                     'success'   => $response->success,
                     'trace_id'  => $context->traceId,
-                    'latency'   => $latency,
+                    'latency_ms' => $latency,
                 ],
                 'created_at' => $botMessage->created_at->toIso8601String(),
             ],

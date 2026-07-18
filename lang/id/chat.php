@@ -153,6 +153,9 @@ return [
     'command' => [
         'balance_title'   => '💳 *Laporan Saldo Saat Ini:*',
         'balance_empty'   => "🏦 *Belum Ada Dompet*\nKamu belum membuat dompet Asset/Liquid apa pun di web.",
+        'balance_line_raw'  => ':line',
+        'balance_total'     => '💰 **Total: :total**',
+        'not_yet_implemented' => '🚧 Perintah `:command` belum tersedia di Web Chat. Coba lagi nanti!',
         'web_link_msg'    => implode("\n", [
             "🌐 *Akses Bendaharaku V4*",
             "",
@@ -170,6 +173,9 @@ return [
         'help_cmd_balance'  => '▫️ `/saldo` - Cek sisa uangmu saat ini.',
         'help_cmd_web'      => '▫️ `/web` - Buka dashboard web.',
         'help_cmd_help'     => '▫️ `/help` - Tampilkan panduan ini.',
+        'help_example_expense'  => '💸 Pengeluaran: "Beli nasi goreng 15k bca"',
+        'help_example_income'   => '💰 Pemasukan: "Gajian 5jt mandiri"',
+        'help_example_transfer' => '🔄 Transfer: "Transfer bca ke dana 100k"',
         'total_balance'     => 'Total Saldo',
     ],
 
