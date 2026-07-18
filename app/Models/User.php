@@ -99,6 +99,19 @@ class User extends Authenticatable
             : null;
     }
 
+    /**
+     * URL avatar user (storage) atau null jika belum diatur.
+     * Field `avatar` bisa berisi path relatif storage atau URL absolut (Google OAuth).
+     */
+    public function getAvatarUrlAttribute(): ?string
+    {
+        if (!$this->avatar) return null;
+        // Jika sudah URL absolut (http/https — dari Google OAuth), return as-is
+        if (str_starts_with($this->avatar, 'http')) return $this->avatar;
+        // Jika path relatif storage
+        return asset('storage/' . $this->avatar);
+    }
+
     protected function casts(): array
     {
         return [

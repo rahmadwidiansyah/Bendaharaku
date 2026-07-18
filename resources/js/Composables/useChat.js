@@ -22,13 +22,13 @@
 import { ref, nextTick } from 'vue'
 import axios from 'axios'
 
-export function useChat(initialMessages = [], initialConversationId = null) {
+export function useChat(initialMessages = [], initialConversationId = null, initialHasMore = false) {
     // ── State ─────────────────────────────────────────────────────
     const messages        = ref([...initialMessages])
     const conversationId  = ref(initialConversationId)
     const isLoading       = ref(false)  // waiting for bot response
     const isTyping        = ref(false)  // typing indicator visible
-    const hasMore         = ref(true)   // ada riwayat lebih lama di server
+    const hasMore         = ref(initialHasMore)  // ada riwayat lebih lama di server
     const isLoadingMore   = ref(false)  // sedang load riwayat lama
     const error           = ref(null)
     const chatAreaRef     = ref(null)   // ref ke ChatArea DOM element
