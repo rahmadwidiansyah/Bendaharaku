@@ -28,6 +28,7 @@ const form = useForm({
     date: props.transaction.date,
     subject: props.transaction.subject || '-',
     notes: props.transaction.notes || '',
+    transaction_type: null, // diisi saat submit Transfer
     due_date: props.transaction.due_date,
     due_date_type: props.transaction.due_date_type,
     due_date_interval: props.transaction.due_date_interval,
@@ -98,6 +99,40 @@ const resetToStep = (step) => {
     }
 }
 
+// ─── Transfer: animasi swap ───────────────────────────────────────
+const isSwapping = ref(false)
+const transferErrors = ref({})
+
+const validateTransfer = () => {
+    transferErrors.value = {}
+    if (!form.source_wallet_id)      transferErrors.value.source = 'Pilih dompet asal'
+    if (!form.destination_wallet_id) transferErrors.value.dest   = 'Pilih dompet tujuan'
+    if (form.source_wallet_id && form.destination_wallet_id &&
+        form.source_wallet_id === form.destination_wallet_id) {
+        transferErrors.value.same = 'Dompet asal dan tujuan tidak boleh sama'
+    }
+    if (!form.amount || form.amount <= 0) transferErrors.value.amount = 'Nominal harus lebih dari 0'
+    return Object.keys(transferErrors.value).length === 0
+}
+
+const swapWallets = () => {
+    if (isSwapping.value) return
+    isSwapping.value = true
+    const tmp = form.source_wallet_id
+    form.source_wallet_id      = form.destination_wallet_id
+    form.destination_wallet_id = tmp
+    setTimeout(() => { isSwapping.value = false }, 400)
+}
+
+const submitTransfer = () => {
+    if (!validateTransfer()) return
+    form.transaction_type = 'transfer'
+    form.put(route('transactions.update', props.transaction.id), {
+        preserveScroll: true,
+        onSuccess: () => handleBack(),
+    })
+}
+
 // ─── Submit / Delete ──────────────────────────────────────────────
 const submit = () => {
     if (!form.amount || form.amount <= 0) { form.setError('amount', t('transaction.validation.amountPositive')); return }
@@ -127,24 +162,44 @@ const handleBack = () => router.visit(route('dashboard'))
         <div class="fixed inset-0 z-60 flex flex-col bg-gray-900 text-white" :class="isDesktopLayout ? 'lg:relative lg:inset-auto lg:z-0' : ''" style="height: 100dvh;">
 
             <!-- HEADER -->
-            <div class="shrink-0 flex items-center gap-3 px-4 pt-2 pb-2 border-b border-white/5">
-                <div class="flex items-center gap-2 flex-1 min-w-0">
-                    <button type="button" @click="resetToStep(1)" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-2xs font-black uppercase tracking-widest transition-all active:scale-95" :class="formStep === 1 ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40' : 'bg-gray-800 text-gray-300 border border-white/10 hover:border-purple-500/30'">
+            <div class="shrink-0 border-b border-white/5">
+                <!-- Baris 1: judul + tombol delete + close -->
+                <div class="flex items-center justify-between px-4 pt-3 pb-2">
+                    <span class="text-xs font-black text-gray-500 uppercase tracking-widest">Edit Transaksi</span>
+                    <div class="flex items-center gap-2">
+                        <button type="button" @click="destroy" class="w-8 h-8 flex items-center justify-center rounded-full bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 active:scale-90 transition-all" :aria-label="$t('transaction.deleteTitle')">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        </button>
+                        <button type="button" @click="handleBack" class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-800 border border-white/10 text-gray-400 hover:text-red-400 hover:border-red-500/30 active:scale-90 transition-all" aria-label="Tutup">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <!-- Baris 2: breadcrumb progress steps -->
+                <div class="flex items-center gap-2 px-4 pb-2.5 overflow-x-auto no-scrollbar">
+                    <button type="button" @click="resetToStep(1)"
+                        class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-2xs font-black uppercase tracking-widest transition-all active:scale-95 shrink-0"
+                        :class="formStep === 1 ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40' : 'bg-gray-800 text-gray-300 border border-white/10 hover:border-purple-500/30'">
                         <span>{{ activeTypeItem?.icon }} {{ activeTypeItem?.label }}</span>
                     </button>
-                    <svg v-if="formStep >= 2" class="w-3 h-3 text-gray-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-                    <button v-if="formStep >= 2" type="button" @click="resetToStep(2)" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-2xs font-black uppercase tracking-widest transition-all active:scale-95" :class="formStep === 2 ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40' : 'bg-gray-800 text-gray-300 border border-white/10 hover:border-purple-500/30'">
+                    <svg class="w-3 h-3 text-gray-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                    <!-- Step 2 chip — Transfer -->
+                    <div v-if="mainTab === 'Transfer'"
+                        class="px-3 py-1.5 rounded-full text-2xs font-black uppercase tracking-widest shrink-0"
+                        :class="formStep === 2 ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40' : 'bg-gray-800/50 text-gray-600 border border-white/5'">
+                        2 · Transfer
+                    </div>
+                    <!-- Step 2 chip — non-Transfer -->
+                    <button v-else type="button" @click="resetToStep(2)"
+                        class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-2xs font-black uppercase tracking-widest transition-all active:scale-95 shrink-0"
+                        :class="formStep === 2 ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40' : 'bg-gray-800 text-gray-300 border border-white/10 hover:border-purple-500/30'">
                         <span>{{ formStep > 2 && selectedCategory ? (selectedCategory.icon?.includes('.') ? '' : selectedCategory.icon + ' ') + selectedCategory.category_name : '2 · Kategori' }}</span>
                     </button>
-                    <svg v-if="formStep >= 3" class="w-3 h-3 text-gray-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-                    <div v-if="formStep >= 3" class="px-3 py-1.5 rounded-full text-2xs font-black uppercase tracking-widest bg-purple-500/20 text-purple-300 border border-purple-500/40">3 · Nominal</div>
+                    <template v-if="mainTab !== 'Transfer'">
+                        <svg v-if="formStep >= 3" class="w-3 h-3 text-gray-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                        <div v-if="formStep >= 3" class="px-3 py-1.5 rounded-full text-2xs font-black uppercase tracking-widest bg-purple-500/20 text-purple-300 border border-purple-500/40 shrink-0">3 · Nominal</div>
+                    </template>
                 </div>
-                <button type="button" @click="destroy" class="shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 active:scale-90 transition-all" :aria-label="$t('transaction.deleteTitle')">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                </button>
-                <button type="button" @click="handleBack" class="shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-gray-800 border border-white/10 text-gray-400 hover:text-red-400 hover:border-red-500/30 active:scale-90 transition-all" aria-label="Tutup">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
             </div>
 
             <!-- STEP 1: GANTI TIPE -->
@@ -190,30 +245,127 @@ const handleBack = () => router.visit(route('dashboard'))
                         </div>
                     </div>
 
-                    <!-- Transfer: pilih dompet -->
-                    <div v-if="mainTab === 'Transfer'" class="flex-1 flex flex-col items-center justify-center px-6 gap-6">
-                        <div class="text-center">
-                            <p class="text-2xs font-black text-purple-500 uppercase tracking-[0.25em] mb-1">Langkah 2 dari 3</p>
-                            <h2 class="text-lg font-black text-white">Pilih Dompet</h2>
-                        </div>
-                        <div class="w-full max-w-sm flex items-center justify-center gap-6">
-                            <div class="flex flex-col items-center gap-3">
-                                <button type="button" @click="openWalletModal('source')" class="w-20 h-20 rounded-2xl bg-gray-800 border-2 flex items-center justify-center active:scale-95 transition-transform overflow-hidden" :class="selectedSourceWallet ? 'border-purple-500/60' : 'border-white/10 border-dashed'">
-                                    <template v-if="selectedSourceWallet"><img v-if="selectedSourceWallet.icon.includes('.')" :src="'/storage/' + selectedSourceWallet.icon" class="w-full h-full object-cover"><span v-else class="text-4xl">{{ selectedSourceWallet.icon }}</span></template>
-                                    <svg v-else class="w-8 h-8 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                                </button>
-                                <span class="text-2xs font-bold text-gray-400 uppercase tracking-widest text-center max-w-[80px] truncate">{{ selectedSourceWallet?.name || 'Dari' }}</span>
+                    <!-- Transfer: form lengkap 2-step (wallet picker + nominal + catatan + tanggal) -->
+                    <div v-if="mainTab === 'Transfer'" class="flex-1 flex flex-col min-h-0 overflow-hidden">
+
+                        <!-- Scrollable form area -->
+                        <div class="flex-1 overflow-y-auto no-scrollbar px-4 pt-3 pb-2 space-y-3">
+
+                            <!-- Error banner -->
+                            <div v-if="Object.keys(transferErrors).length || Object.keys(form.errors).length"
+                                class="p-3 bg-red-500/10 border border-red-500/30 rounded-xl">
+                                <p v-for="(err, key) in {...transferErrors, ...form.errors}" :key="key"
+                                    class="text-red-400 text-2xs font-bold">{{ err }}</p>
                             </div>
-                            <svg class="w-8 h-8 text-purple-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-                            <div class="flex flex-col items-center gap-3">
-                                <button type="button" @click="openWalletModal('dest')" class="w-20 h-20 rounded-2xl bg-gray-800 border-2 flex items-center justify-center active:scale-95 transition-transform overflow-hidden" :class="selectedDestWallet ? 'border-purple-500/60' : 'border-white/10 border-dashed'">
-                                    <template v-if="selectedDestWallet"><img v-if="selectedDestWallet.icon.includes('.')" :src="'/storage/' + selectedDestWallet.icon" class="w-full h-full object-cover"><span v-else class="text-4xl">{{ selectedDestWallet.icon }}</span></template>
-                                    <svg v-else class="w-8 h-8 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+
+                            <!-- Wallet Picker dengan swap -->
+                            <div class="bg-gray-800/60 border border-white/8 rounded-2xl p-4">
+                                <p class="text-2xs font-black text-gray-500 uppercase tracking-widest mb-3 text-center">Pindah Dana</p>
+
+                                <!-- Source wallet -->
+                                <button type="button" @click="openWalletModal('source')"
+                                    class="w-full flex items-center gap-3 bg-gray-900/80 border rounded-xl px-4 py-3 active:scale-[0.98] transition-transform text-left"
+                                    :class="transferErrors.source ? 'border-red-500/60' : selectedSourceWallet ? 'border-blue-500/40' : 'border-white/10 border-dashed'">
+                                    <div class="w-10 h-10 rounded-xl overflow-hidden bg-gray-800 border border-white/10 flex items-center justify-center shrink-0">
+                                        <template v-if="selectedSourceWallet">
+                                            <img v-if="selectedSourceWallet.icon?.includes('.')" :src="'/storage/' + selectedSourceWallet.icon" class="w-full h-full object-cover">
+                                            <span v-else class="text-xl">{{ selectedSourceWallet.icon }}</span>
+                                        </template>
+                                        <svg v-else class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-3-3v6"/></svg>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-2xs font-black text-blue-400 uppercase tracking-widest">Dari</p>
+                                        <p class="text-sm font-bold truncate" :class="selectedSourceWallet ? 'text-white' : 'text-gray-600'">
+                                            {{ selectedSourceWallet?.name || 'Pilih dompet asal...' }}
+                                        </p>
+                                        <p v-if="selectedSourceWallet" class="text-2xs text-gray-500 mt-0.5">
+                                            Rp {{ parseInt(selectedSourceWallet.balance).toLocaleString('id-ID') }}
+                                        </p>
+                                    </div>
+                                    <svg class="w-4 h-4 text-gray-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
                                 </button>
-                                <span class="text-2xs font-bold text-gray-400 uppercase tracking-widest text-center max-w-[80px] truncate">{{ selectedDestWallet?.name || 'Ke' }}</span>
+
+                                <!-- Swap button -->
+                                <div class="flex items-center justify-center my-2">
+                                    <button type="button" @click="swapWallets"
+                                        class="w-9 h-9 rounded-full bg-gray-700 border border-white/10 flex items-center justify-center active:scale-90 transition-all hover:bg-gray-600 hover:border-blue-500/40"
+                                        :class="isSwapping ? 'rotate-180' : ''"
+                                        style="transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1)"
+                                        aria-label="Tukar dompet asal dan tujuan">
+                                        <svg class="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/>
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                <!-- Destination wallet -->
+                                <button type="button" @click="openWalletModal('dest')"
+                                    class="w-full flex items-center gap-3 bg-gray-900/80 border rounded-xl px-4 py-3 active:scale-[0.98] transition-transform text-left"
+                                    :class="transferErrors.dest ? 'border-red-500/60' : selectedDestWallet ? 'border-purple-500/40' : 'border-white/10 border-dashed'">
+                                    <div class="w-10 h-10 rounded-xl overflow-hidden bg-gray-800 border border-white/10 flex items-center justify-center shrink-0">
+                                        <template v-if="selectedDestWallet">
+                                            <img v-if="selectedDestWallet.icon?.includes('.')" :src="'/storage/' + selectedDestWallet.icon" class="w-full h-full object-cover">
+                                            <span v-else class="text-xl">{{ selectedDestWallet.icon }}</span>
+                                        </template>
+                                        <svg v-else class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-3-3v6"/></svg>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-2xs font-black text-purple-400 uppercase tracking-widest">Ke</p>
+                                        <p class="text-sm font-bold truncate" :class="selectedDestWallet ? 'text-white' : 'text-gray-600'">
+                                            {{ selectedDestWallet?.name || 'Pilih dompet tujuan...' }}
+                                        </p>
+                                        <p v-if="selectedDestWallet" class="text-2xs text-gray-500 mt-0.5">
+                                            Rp {{ parseInt(selectedDestWallet.balance).toLocaleString('id-ID') }}
+                                        </p>
+                                    </div>
+                                    <svg class="w-4 h-4 text-gray-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                                </button>
+                            </div>
+
+                            <!-- Catatan -->
+                            <div class="flex items-center gap-3 bg-gray-800 border border-white/8 rounded-xl px-4 py-3">
+                                <svg class="w-4 h-4 text-gray-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                <input v-model="form.notes" type="text" placeholder="Catatan (opsional)"
+                                    class="flex-1 bg-transparent border-none focus:ring-0 text-sm text-white placeholder-gray-700 outline-none" />
+                            </div>
+
+                        </div>
+
+                        <!-- Nominal + action bar -->
+                        <div class="shrink-0 px-4 pb-2 pt-1 border-t border-white/5">
+                            <div class="text-center py-2">
+                                <p class="text-2xs font-black text-gray-600 uppercase tracking-widest mb-0.5">Nominal</p>
+                                <p class="text-3xl font-black tracking-tight"
+                                    :class="transferErrors.amount ? 'text-red-400' : 'text-white'">
+                                    <span class="text-lg text-gray-500 mr-1">Rp</span>{{ parseInt(rawAmount || 0).toLocaleString('id-ID') }}
+                                </p>
+                            </div>
+                            <div class="flex gap-2">
+                                <!-- Tanggal -->
+                                <button type="button" @click="dateModalTarget = 'transaction'; showDateModal = true"
+                                    class="flex-1 h-12 bg-gray-800 border border-white/8 rounded-xl flex items-center justify-center gap-2 text-2xs font-bold text-gray-400 active:scale-95 transition-transform">
+                                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                    {{ new Date(form.date).toDateString() === new Date().toDateString() ? 'Hari Ini' : new Date(form.date).toLocaleDateString('id-ID', {day:'numeric', month:'short'}) }}
+                                </button>
+                                <!-- Toggle keypad -->
+                                <button type="button" @click="showKeypad = !showKeypad"
+                                    class="w-12 h-12 bg-gray-800 border border-white/8 rounded-xl flex items-center justify-center shrink-0 active:scale-95 transition-all"
+                                    :class="showKeypad ? 'text-purple-400 border-purple-500/30' : 'text-gray-500'">
+                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                </button>
+                                <!-- Simpan -->
+                                <button type="button" @click="submitTransfer" :disabled="form.processing"
+                                    class="flex-1 h-12 bg-blue-600 hover:bg-blue-500 rounded-xl flex items-center justify-center gap-1.5 text-white font-black text-2xs uppercase tracking-widest active:scale-95 transition-all shadow-lg shadow-blue-600/30 disabled:opacity-50">
+                                    <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                    Simpan
+                                </button>
                             </div>
                         </div>
-                        <button type="button" @click="goToNominal" :disabled="!selectedSourceWallet || !selectedDestWallet" class="w-full max-w-sm py-4 rounded-2xl bg-purple-600 text-white text-sm font-black uppercase tracking-widest transition-all active:scale-95 disabled:opacity-40">Lanjut → Isi Nominal</button>
+
+                        <!-- Keypad -->
+                        <div v-show="showKeypad" class="shrink-0 px-4 pb-2 pt-1">
+                            <AmountKeypad @key="handleKeypad" />
+                        </div>
                     </div>
 
                     <!-- Debt/Receivable: nama pihak -->
@@ -281,7 +433,7 @@ const handleBack = () => router.visit(route('dashboard'))
 
             <!-- STEP 3: NOMINAL PANEL -->
             <Transition enter-active-class="transition-all duration-300 ease-out" enter-from-class="opacity-0 translate-y-8" enter-to-class="opacity-100 translate-y-0">
-                <form v-if="formStep >= 3" @submit.prevent="submit" class="flex-1 flex flex-col min-h-0 overflow-hidden border-t border-white/5">
+                <form v-if="formStep >= 3 && mainTab !== 'Transfer'" @submit.prevent="submit" class="flex-1 flex flex-col min-h-0 overflow-hidden border-t border-white/5">
 
                     <!-- Error banner -->
                     <div v-if="Object.keys(form.errors).length" class="shrink-0 mx-4 mt-3 p-3 bg-red-500/10 border border-red-500/30 rounded-xl">

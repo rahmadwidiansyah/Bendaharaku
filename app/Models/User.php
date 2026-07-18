@@ -21,6 +21,8 @@ class User extends Authenticatable
         'google_id',
         'avatar',
         'allow_negative_balance',
+        'locale',
+        'timezone',
     ];
 
     protected $hidden = [
