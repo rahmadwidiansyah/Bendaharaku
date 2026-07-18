@@ -9,6 +9,7 @@ use App\Chat\ChatCommandRegistry;
 use App\Models\Conversation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -172,5 +173,105 @@ class WebChatController extends Controller
         $commands = $this->commandRegistry->toApiResponse('web', $locale);
 
         return response()->json(['commands' => $commands]);
+    }
+
+    /**
+     * GET /chat/wallets
+     * Return daftar wallet user untuk quick selection di chat.
+     */
+    public function wallets(Request $request): JsonResponse
+    {
+        $wallets = $request->user()
+            ->wallets()
+            ->where('group_type', '!=', 'System')
+            ->orderByDesc('is_pinned')
+            ->orderBy('name')
+            ->get(['id', 'name', 'balance']);
+
+        return response()->json([
+            'wallets' => $wallets->map(fn($w) => [
+                'id'   => $w->id,
+                'name' => $w->name,
+            ])->values(),
+        ]);
+    }
+
+    /**
+     * PATCH /chat/transaction/{id}/wallet
+     * Assign wallet ke draft transaksi dan konfirmasi (is_cleared = true).
+     * Mutasi saldo wallet dilakukan di sini.
+     */
+    public function assignWallet(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'wallet_id' => ['required', 'integer'],
+        ]);
+
+        $user = $request->user();
+
+        // Pastikan transaksi milik user ini dan masih draft
+        $transaction = $user->transactionLogs()
+            ->with(['sourceWallet', 'destinationWallet', 'category', 'type'])
+            ->where('is_cleared', false)
+            ->findOrFail($id);
+
+        // Pastikan wallet milik user
+        $wallet = $user->wallets()
+            ->where('group_type', '!=', 'System')
+            ->findOrFail($validated['wallet_id']);
+
+        // Resolve tipe transaksi
+        // Untuk expense: source = wallet pilihan user, destination = merchant (system)
+        // Untuk income:  source = external (system), destination = wallet pilihan user
+        $typeKey = strtolower($transaction->type->name ?? 'expense');
+
+        DB::transaction(function () use ($transaction, $wallet, $user, $typeKey) {
+            if ($typeKey === 'expense') {
+                $transaction->source_wallet_id = $wallet->id;
+                // Mutasi saldo: kurangi dari wallet
+                $balanceBefore = $wallet->balance;
+                if (!$user->allow_negative_balance && $wallet->balance < $transaction->amount) {
+                    throw new \InvalidArgumentException('Saldo tidak mencukupi.');
+                }
+                $wallet->decrement('balance', $transaction->amount);
+                $transaction->balance_before = $balanceBefore;
+                $transaction->balance_after  = $wallet->fresh()->balance;
+            } elseif ($typeKey === 'income') {
+                $transaction->destination_wallet_id = $wallet->id;
+                $balanceBefore = $wallet->balance;
+                $wallet->increment('balance', $transaction->amount);
+                $transaction->balance_before = $balanceBefore;
+                $transaction->balance_after  = $wallet->fresh()->balance;
+            } else {
+                // debt/receivable/transfer — assign ke source
+                $transaction->source_wallet_id = $wallet->id;
+            }
+            $transaction->is_cleared = true;
+            $transaction->save();
+        });
+
+        $transaction->refresh()->load(['sourceWallet', 'destinationWallet', 'category', 'type']);
+
+        $typeKey = match (strtolower($transaction->type->name ?? '')) {
+            'income'   => 'income',
+            'expense'  => 'expense',
+            'transfer' => 'transfer',
+            default    => 'other',
+        };
+
+        return response()->json([
+            'success'     => true,
+            'transaction' => [
+                'id'               => $transaction->id,
+                'is_cleared'       => $transaction->is_cleared,
+                'type_key'         => $typeKey,
+                'amount_formatted' => \App\Support\MoneyFormatter::rupiah($transaction->amount),
+                'source_wallet'    => $transaction->sourceWallet?->name,
+                'dest_wallet'      => $transaction->destinationWallet?->name,
+                'category'         => $transaction->category?->category_name,
+                'date'             => $transaction->date?->toDateString(),
+                'notes'            => $transaction->notes,
+            ],
+        ]);
     }
 }

@@ -143,7 +143,7 @@ function submit() {
                     @input="resize"
                     @focus="isFocused = true"
                     @blur="isFocused = false"
-                    class="w-full resize-none bg-transparent px-4 py-[11px] text-sm text-white placeholder-gray-500 outline-none disabled:opacity-50 leading-[22px] block"
+                    class="w-full resize-none bg-transparent px-4 py-[11px] text-sm text-white placeholder-gray-500 outline-none focus:outline-none border-0 ring-0 focus:ring-0 disabled:opacity-50 leading-[22px] block"
                     style="min-height: 44px; overflow-y: hidden;"
                     :aria-label="placeholder"
                     aria-multiline="true"
