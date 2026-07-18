@@ -182,14 +182,26 @@ const handleBack = () => router.visit(route('dashboard'))
             style="height: 100dvh;"
         >
             <!-- ── HEADER BAR ─────────────────────────────────────── -->
-            <div class="shrink-0 flex items-center gap-3 px-4 pt-2 pb-2 border-b border-white/5">
-                <!-- Breadcrumb steps -->
-                <div class="flex items-center gap-2 flex-1 min-w-0">
+            <div class="shrink-0 border-b border-white/5">
+                <!-- Baris 1: judul + tombol close -->
+                <div class="flex items-center justify-between px-4 pt-3 pb-2">
+                    <span class="text-xs font-black text-gray-500 uppercase tracking-widest">Catat Transaksi</span>
+                    <button
+                        type="button"
+                        @click="handleBack"
+                        class="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-gray-800 border border-white/10 text-gray-400 hover:text-red-400 hover:border-red-500/30 active:scale-90 transition-all"
+                        aria-label="Tutup"
+                    >
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <!-- Baris 2: breadcrumb progress steps -->
+                <div class="flex items-center gap-2 px-4 pb-2.5 overflow-x-auto no-scrollbar">
                     <!-- Step 1 chip -->
                     <button
                         type="button"
                         @click="resetToStep(1)"
-                        class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-2xs font-black uppercase tracking-widest transition-all active:scale-95"
+                        class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-2xs font-black uppercase tracking-widest transition-all active:scale-95 shrink-0"
                         :class="formStep === 1
                             ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
                             : typeConfirmed
@@ -204,7 +216,7 @@ const handleBack = () => router.visit(route('dashboard'))
                     <!-- Step 2 chip — Transfer hanya punya 2 step total -->
                     <div
                         v-if="typeConfirmed && mainTab === 'Transfer'"
-                        class="px-3 py-1.5 rounded-full text-2xs font-black uppercase tracking-widest"
+                        class="px-3 py-1.5 rounded-full text-2xs font-black uppercase tracking-widest shrink-0"
                         :class="formStep === 2 ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40' : 'bg-gray-800/50 text-gray-600 border border-white/5'"
                     >2 · Transfer</div>
 
@@ -213,7 +225,7 @@ const handleBack = () => router.visit(route('dashboard'))
                         v-if="typeConfirmed && mainTab !== 'Transfer'"
                         type="button"
                         @click="resetToStep(2)"
-                        class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-2xs font-black uppercase tracking-widest transition-all active:scale-95"
+                        class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-2xs font-black uppercase tracking-widest transition-all active:scale-95 shrink-0"
                         :class="formStep === 2
                             ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
                             : formStep > 2
@@ -228,19 +240,9 @@ const handleBack = () => router.visit(route('dashboard'))
                     <!-- Step 3 chip — hanya untuk tipe non-Transfer -->
                     <div
                         v-if="formStep >= 3 && mainTab !== 'Transfer'"
-                        class="px-3 py-1.5 rounded-full text-2xs font-black uppercase tracking-widest bg-purple-500/20 text-purple-300 border border-purple-500/40"
+                        class="px-3 py-1.5 rounded-full text-2xs font-black uppercase tracking-widest bg-purple-500/20 text-purple-300 border border-purple-500/40 shrink-0"
                     >3 · Nominal</div>
                 </div>
-
-                <!-- Tutup -->
-                <button
-                    type="button"
-                    @click="handleBack"
-                    class="shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-gray-800 border border-white/10 text-gray-400 hover:text-red-400 hover:border-red-500/30 active:scale-90 transition-all"
-                    aria-label="Tutup"
-                >
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
             </div>
 
             <!-- ── STEP 1: PILIH JENIS — fullscreen centered ──────── -->
@@ -425,8 +427,8 @@ const handleBack = () => router.visit(route('dashboard'))
                                 </button>
                                 <!-- Simpan & tutup -->
                                 <button type="button" @click="submitTransfer(true)" :disabled="form.processing"
-                                    class="flex-1 h-12 bg-blue-600 hover:bg-blue-500 rounded-xl flex items-center justify-center gap-2 text-white font-black text-sm uppercase tracking-wider active:scale-95 transition-all shadow-lg shadow-blue-600/30 disabled:opacity-50">
-                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                    class="flex-1 h-12 bg-blue-600 hover:bg-blue-500 rounded-xl flex items-center justify-center gap-1.5 text-white font-black text-2xs uppercase tracking-widest active:scale-95 transition-all shadow-lg shadow-blue-600/30 disabled:opacity-50">
+                                    <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                                     Transfer
                                 </button>
                             </div>
