@@ -3,6 +3,9 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import BottomNav from '@/Components/BottomNav.vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const props = defineProps({
     user: Object,
@@ -76,7 +79,7 @@ const updatePassword = () => {
 };
 
 const deleteUser = () => {
-    if (confirm('YAKIN HAPUS PERMANEN? Semua data keuangan kamu akan hilang.')) {
+    if (confirm(t('profile.deleteAccountConfirm'))) {
         deleteForm.delete(route('profile.destroy'), {
             preserveScroll: true,
         });
@@ -87,7 +90,7 @@ const deleteUser = () => {
 <template>
     <AuthenticatedLayout :fullWidth="true" :hideNav="true">
 
-        <Head title="Profil Saya" />
+        <Head :title="$t('profile.title')" />
 
         <div
             class="fixed top-[-10%] left-[50%] -translate-x-1/2 w-[400px] h-[400px] bg-purple-500 blur-[150px] opacity-[0.15] rounded-full pointer-events-none z-0">
@@ -96,7 +99,7 @@ const deleteUser = () => {
         <div class="p-5 w-full lg:max-w-4xl mx-auto lg:px-8 relative z-10 animate-slide-up">
 
             <header class="flex justify-between items-center mb-10 pt-4">
-                <h1 class="text-3xl font-bold text-white tracking-tight hidden lg:block">Profil Saya</h1>
+                <h1 class="text-3xl font-bold text-white tracking-tight hidden lg:block">{{ $t('profile.title') }}</h1>
                 <Link :href="route('dashboard')"
                     class="w-12 h-12 rounded-xl bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white active:scale-95 transition-all">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -125,7 +128,7 @@ const deleteUser = () => {
                                     <path stroke-linecap="round" stroke-linejoin="round"
                                         d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                                 </svg>
-                                <span class="text-[9px] font-bold uppercase tracking-widest">Pilih Foto</span>
+                                <span class="text-[9px] font-bold uppercase tracking-widest">{{ $t('profile.choosePhoto') }}</span>
                             </label>
                         </div>
                     </div>
@@ -139,7 +142,7 @@ const deleteUser = () => {
                     class="flex items-center justify-center gap-3 bg-linear-to-br from-gray-900 to-gray-800 text-white border border-white/10 text-xs font-bold px-6 py-4 rounded-xl uppercase tracking-widest active:scale-95 transition-all hover:border-gray-500 mb-6">
                     <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" alt="Google"
                         class="w-4 h-4">
-                    Hubungkan Akun Google
+                    {{ $t('profile.google.connect') }}
                 </a>
                 <div v-else
                     class="text-center py-3.5 px-4 bg-green-500/10 border border-green-500/20 rounded-xl text-2xs text-green-400 font-bold uppercase tracking-widest flex items-center justify-center gap-2 mb-6">
@@ -148,13 +151,12 @@ const deleteUser = () => {
                             d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z">
                         </path>
                     </svg>
-                    Terkoneksi dengan Google
+                    {{ $t('profile.google.connected') }}
                 </div>
 
                 <div class="space-y-5">
                     <div>
-                        <label class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Nama
-                            Lengkap</label>
+                        <label class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">{{ $t('profile.name') }}</label>
                         <input type="text" v-model="profileForm.name" required
                             class="w-full bg-linear-to-br from-gray-800 to-gray-900 text-white border border-white/10 rounded-xl p-4 text-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 transition-all caret-purple-500">
                         <div v-if="profileForm.errors.name" class="mt-2 text-2xs text-red-500 font-bold">{{
@@ -163,7 +165,7 @@ const deleteUser = () => {
 
                     <div>
                         <label
-                            class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Email</label>
+                            class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">{{ $t('profile.email') }}</label>
                         <input type="email" v-model="profileForm.email" required
                             class="w-full bg-linear-to-br from-gray-900 to-gray-800 text-white border border-white/10 rounded-xl p-4 text-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 transition-all caret-purple-500">
                         <div v-if="profileForm.errors.email" class="mt-2 text-2xs text-red-500 font-bold">{{
@@ -188,24 +190,22 @@ const deleteUser = () => {
                             profileForm.errors.telegram_id }}</div>
                     </div>
 
-                    <div v-if="status === 'profile-updated'" class="text-green-400 text-2xs font-bold mt-2 ml-1">Profil
-                        berhasil diperbarui.</div>
+                    <div v-if="status === 'profile-updated'" class="text-green-400 text-2xs font-bold mt-2 ml-1">{{ $t('toast.updated') }}</div>
 
                     <button type="submit" :disabled="profileForm.processing"
                         class="w-full bg-linear-to-br from-purple-800 to-purple-600 text-white font-bold text-sm uppercase tracking-widest py-4 rounded-xl active:scale-95 transition-transform mt-6 hover:-translate-y-1">
-                        Simpan Perubahan
+                        {{ $t('profile.updateProfile') }}
                     </button>
                 </div>
             </form>
 
             <div class="mt-10 mb-10 pt-8 border-t border-white/10">
-                <h3 class="text-lg font-bold text-white mb-6 tracking-tight">Ubah Password</h3>
+            <h3 class="text-lg font-bold text-white mb-6 tracking-tight">{{ $t('profile.password') }}</h3>
 
                 <form @submit.prevent="updatePassword" class="space-y-5">
                     <div>
                         <label
-                            class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Password
-                            Saat Ini</label>
+                            class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">{{ $t('profile.currentPassword') }}</label>
                         <input type="password" v-model="passwordForm.current_password" required
                             class="w-full bg-linear-to-br from-gray-900 to-gray-800 text-white border border-white/10 rounded-xl p-4 text-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 transition-all caret-purple-500">
                         <div v-if="passwordForm.errors.current_password" class="mt-2 text-2xs text-red-500 font-bold">{{
@@ -213,8 +213,7 @@ const deleteUser = () => {
                     </div>
                     <div>
                         <label
-                            class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Password
-                            Baru</label>
+                            class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">{{ $t('profile.newPassword') }}</label>
                         <input type="password" v-model="passwordForm.password" required
                             class="w-full bg-linear-to-br from-gray-800 to-gray-900 text-white border border-white/10 rounded-xl p-4 text-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 transition-all caret-purple-500">
                         <div v-if="passwordForm.errors.password" class="mt-2 text-2xs text-red-500 font-bold">{{
@@ -222,11 +221,11 @@ const deleteUser = () => {
                     </div>
 
                     <div v-if="page.props.status === 'password-updated'"
-                        class="text-green-400 text-2xs font-bold mt-2 ml-1">Password berhasil diperbarui.</div>
+                        class="text-green-400 text-2xs font-bold mt-2 ml-1">{{ $t('profile.passwordUpdated') }}</div>
 
                     <button type="submit" :disabled="passwordForm.processing"
                         class="w-full bg-linear-to-br from-purple-900 to-purple-800 text-white border border-white/10 font-bold text-xs uppercase tracking-widest py-4 rounded-xl hover:border-purple-500 active:scale-95 transition-all mt-2">
-                        Update Password
+                        {{ $t('profile.updatePassword') }}
                     </button>
                 </form>
             </div>
@@ -234,7 +233,7 @@ const deleteUser = () => {
             <form @submit.prevent="useForm().post(route('logout'))" class="mb-10">
                 <button type="submit"
                     class="w-full bg-linear-to-br from-red-900 to-red-800 text-white border border-white/10 font-bold text-[11px] uppercase tracking-widest py-4 rounded-xl hover:border-purple-500 active:scale-95 transition-all mt-2">
-                    Keluar dari Aplikasi
+                    {{ $t('profile.logout') }}
                 </button>
             </form>
 
@@ -245,21 +244,20 @@ const deleteUser = () => {
                         <path stroke-linecap="round" stroke-linejoin="round"
                             d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
-                    <span class="group-open:hidden">Tampilkan Zona Berbahaya</span>
-                    <span class="hidden group-open:block">Sembunyikan Zona Berbahaya</span>
+                    <span class="group-open:hidden">{{ $t('profile.dangerZone.show') }}</span>
+                    <span class="hidden group-open:block">{{ $t('profile.dangerZone.hide') }}</span>
                 </summary>
 
                 <div class="mt-6 bg-red-950/20 border border-red-900/30 rounded-xl p-6 shadow-sm animate-slide-up">
-                    <h4 class="text-red-400 font-bold text-sm mb-2">Hapus Akun Permanen</h4>
-                    <p class="text-2xs text-gray-400 mb-5 leading-relaxed">Setelah dihapus, semua data keuangan,
-                        histori, dan pengaturan kamu akan musnah dan tidak dapat dipulihkan.</p>
+                    <h4 class="text-red-400 font-bold text-sm mb-2">{{ $t('profile.dangerZone.title') }}</h4>
+                    <p class="text-2xs text-gray-400 mb-5 leading-relaxed">{{ $t('profile.dangerZone.desc') }}</p>
 
                     <form @submit.prevent="deleteUser">
                         <div v-if="deleteForm.errors.password" class="mb-4 text-2xs text-red-500 font-bold">{{
                             deleteForm.errors.password }}</div>
                         <button type="submit" :disabled="deleteForm.processing"
                             class="w-full bg-red-900/40 border border-red-900/50 text-red-200 font-bold text-2xs uppercase tracking-widest py-3.5 rounded-xl active:scale-95 transition-all hover:bg-red-600 hover:text-white">
-                            Ya, Hapus Akun Saya
+                            {{ $t('profile.dangerZone.confirmBtn') }}
                         </button>
                     </form>
                 </div>

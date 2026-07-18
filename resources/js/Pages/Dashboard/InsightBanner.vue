@@ -15,6 +15,9 @@
  */
 
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
     thisMonthIncome: {
@@ -30,26 +33,27 @@ const props = defineProps({
 // Insight logic — sebelumnya di computed Dashboard.vue
 const insight = computed(() => {
     let type = 'info'
-    let msg  = 'Selamat datang di Bendaharaku! Yuk catat keuanganmu hari ini.'
+    let msg  = t('insight.neutral')
     let icon = '💡'
 
     if (props.thisMonthExpense > 0 && props.thisMonthIncome > 0) {
         const ratio = (props.thisMonthExpense / props.thisMonthIncome) * 100
         if (ratio >= 80) {
             type = 'danger'
-            msg  = 'Awas! Pengeluaran bulan ini sudah mendekati total pemasukanmu.'
+            msg  = t('insight.bad')
             icon = '⚠️'
         } else if (ratio <= 40) {
             type = 'success'
-            msg  = 'Bagus sekali! Pengeluaranmu bulan ini sangat terjaga.'
+            msg  = t('insight.good')
             icon = '✨'
         } else {
-            msg  = 'Arus kas bulan ini berjalan normal. Terus catat pengeluaranmu!'
+            type = 'info'
+            msg  = t('insight.warning')
             icon = '📊'
         }
     } else if (props.thisMonthExpense > 0 && props.thisMonthIncome === 0) {
         type = 'warning'
-        msg  = 'Belum ada pemasukan bulan ini, tapi pengeluaran terus jalan. Hati-hati!'
+        msg  = t('insight.bad')
         icon = '🚨'
     }
 
