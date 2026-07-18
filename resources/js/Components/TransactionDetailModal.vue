@@ -14,9 +14,12 @@
 
 import { ref } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
+import { useI18n } from 'vue-i18n'
 import BaseModal from '@/Components/BaseModal.vue'
 import Badge from '@/Components/Badge.vue'
 import { formatNumber, formatDate } from '@/utils/format.js'
+
+const { t } = useI18n()
 
 const props = defineProps({
     show: Boolean,
@@ -65,6 +68,14 @@ const typeVariant = (name) => ({
     Debt:       'debt',
     Receivable: 'receivable',
 }[name] ?? 'neutral')
+
+const getTypeName = (name) => ({
+    Income:     t('types.income'),
+    Expense:    t('types.expense'),
+    Transfer:   t('types.transfer'),
+    Debt:       t('types.debt'),
+    Receivable: t('types.receivable'),
+}[name] ?? name)
 
 const amountColor = (trx) => {
     if (!trx?.type) return 'text-white'
@@ -117,7 +128,7 @@ const dueDateDetail = (trx) => {
                 </p>
                 <div class="flex items-center gap-2 mt-1.5">
                     <Badge :variant="typeVariant(transaction.type?.name)" size="sm">
-                        {{ transaction.type?.name }}
+                        {{ getTypeName(transaction.type?.name) }}
                     </Badge>
                     <!-- Draft badge -->
                     <span
@@ -126,14 +137,14 @@ const dueDateDetail = (trx) => {
                         <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
                         </svg>
-                        Draft
+                        {{ $t('transaction.draft') }}
                     </span>
                 </div>
             </div>
 
             <!-- Amount -->
             <div class="bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 rounded-xl p-4 text-center mb-4">
-                <p class="text-2xs font-bold text-gray-500 uppercase tracking-widest mb-1">Nominal</p>
+                <p class="text-2xs font-bold text-gray-500 uppercase tracking-widest mb-1">{{ $t('transaction.amount') }}</p>
                 <h2 :class="['text-3xl font-black tracking-tight', amountColor(transaction)]">
                     {{ amountPrefix(transaction) }}
                     <span class="text-xl text-gray-500 mr-0.5">Rp</span>{{ formatNumber(transaction.amount) }}
@@ -144,13 +155,13 @@ const dueDateDetail = (trx) => {
             <div class="space-y-3 mb-5 text-2xs">
                 <!-- Tanggal & waktu -->
                 <div class="flex justify-between items-center py-2 border-b border-white/5">
-                    <span class="text-gray-500 font-bold uppercase tracking-widest">Tanggal</span>
+                    <span class="text-gray-500 font-bold uppercase tracking-widest">{{ $t('transaction.detail.date') }}</span>
                     <span class="font-bold text-gray-300">{{ transaction.date }} • {{ transaction.time }}</span>
                 </div>
 
                 <!-- Dompet -->
                 <div class="flex justify-between items-center py-2 border-b border-white/5">
-                    <span class="text-gray-500 font-bold uppercase tracking-widest">Dompet</span>
+                    <span class="text-gray-500 font-bold uppercase tracking-widest">{{ $t('transaction.detail.wallet') }}</span>
                     <div class="flex items-center gap-1.5 font-bold text-gray-300">
                         <span>{{ transaction.source_wallet?.name }}</span>
                         <svg class="w-3 h-3 text-purple-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
@@ -162,13 +173,13 @@ const dueDateDetail = (trx) => {
 
                 <!-- Pelaku (subject) -->
                 <div v-if="transaction.subject && transaction.subject !== '-'" class="flex justify-between items-center py-2 border-b border-white/5">
-                    <span class="text-gray-500 font-bold uppercase tracking-widest">Pelaku</span>
+                    <span class="text-gray-500 font-bold uppercase tracking-widest">{{ $t('transaction.detail.party') }}</span>
                     <span class="font-bold text-gray-300">{{ transaction.subject }}</span>
                 </div>
 
                 <!-- Jatuh tempo -->
                 <div v-if="transaction.due_date_type" class="flex justify-between items-start py-2 border-b border-white/5">
-                    <span class="text-gray-500 font-bold uppercase tracking-widest">Jatuh Tempo</span>
+                    <span class="text-gray-500 font-bold uppercase tracking-widest">{{ $t('transaction.detail.dueDate') }}</span>
                     <div class="text-right">
                         <p class="font-bold text-yellow-400">{{ dueDateLabel(transaction.due_date_type) }}</p>
                         <p class="text-gray-500 mt-0.5">{{ dueDateDetail(transaction) }}</p>
@@ -177,9 +188,9 @@ const dueDateDetail = (trx) => {
 
                 <!-- Catatan -->
                 <div class="flex justify-between items-start py-2">
-                    <span class="text-gray-500 font-bold uppercase tracking-widest">Catatan</span>
+                    <span class="text-gray-500 font-bold uppercase tracking-widest">{{ $t('transaction.detail.note') }}</span>
                     <span class="text-right italic text-gray-400 max-w-[60%]">
-                        {{ transaction.notes || 'Tidak ada catatan.' }}
+                        {{ transaction.notes || $t('transaction.detail.noNote') }}
                     </span>
                 </div>
             </div>
@@ -195,7 +206,7 @@ const dueDateDetail = (trx) => {
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    Konfirmasi Transaksi
+                    {{ $t('transaction.confirmDraft') }}
                 </button>
 
                 <!-- Edit & Hapus -->
@@ -206,7 +217,7 @@ const dueDateDetail = (trx) => {
                         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" />
                         </svg>
-                        Edit
+                        {{ $t('transaction.detail.editBtn') }}
                     </Link>
                     <button
                         type="button"
@@ -215,7 +226,7 @@ const dueDateDetail = (trx) => {
                         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
-                        Hapus
+                        {{ $t('transaction.detail.deleteBtn') }}
                     </button>
                 </div>
             </div>
@@ -236,12 +247,12 @@ const dueDateDetail = (trx) => {
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
             </div>
-            <h3 class="text-base font-black text-white mb-2 tracking-tight">Konfirmasi Transaksi?</h3>
+            <h3 class="text-base font-black text-white mb-2 tracking-tight">{{ $t('transaction.confirmDraftQ') }}</h3>
             <p class="text-2xs text-gray-400 leading-relaxed mb-1">
-                Apakah data transaksi ini sudah benar?
+                {{ $t('transaction.confirmDraftDetail') }}
             </p>
             <p class="text-2xs text-amber-400/80 mb-6">
-                Status akan berubah dari <strong>Draft</strong> menjadi <strong>Terkonfirmasi</strong> dan saldo dompet akan dimutasi.
+                {{ $t('transaction.confirmDraftWarn') }}
             </p>
         </div>
 
@@ -251,7 +262,7 @@ const dueDateDetail = (trx) => {
                 :disabled="isConfirming"
                 @click="showConfirmDraft = false"
                 class="flex-1 py-3 rounded-xl bg-gray-800 border border-white/10 text-gray-300 text-2xs font-bold uppercase tracking-widest hover:border-white/20 transition-all disabled:opacity-50">
-                Batal
+                {{ $t('btn.no') }}
             </button>
             <button
                 type="button"
@@ -262,7 +273,7 @@ const dueDateDetail = (trx) => {
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                 </svg>
-                {{ isConfirming ? 'Memproses...' : 'Ya, Konfirmasi' }}
+                {{ isConfirming ? $t('common.processing') : $t('transaction.yesConfirm') }}
             </button>
         </template>
     </BaseModal>
@@ -281,9 +292,9 @@ const dueDateDetail = (trx) => {
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
             </div>
-            <h3 class="text-base font-black text-white mb-2 tracking-tight">Hapus Transaksi?</h3>
+            <h3 class="text-base font-black text-white mb-2 tracking-tight">{{ $t('transaction.deleteTitle') }}</h3>
             <p class="text-sm text-red-200/80 leading-relaxed mb-6">
-                Data yang dihapus tidak bisa dikembalikan.
+                {{ $t('transaction.deleteWarn') }}
             </p>
         </div>
 
@@ -293,7 +304,7 @@ const dueDateDetail = (trx) => {
                 :disabled="isDeleting"
                 @click="showDeleteConfirm = false"
                 class="flex-1 py-3 rounded-xl bg-gray-800 border border-white/10 text-gray-300 text-2xs font-bold uppercase tracking-widest hover:border-white/20 transition-all disabled:opacity-50">
-                Batal
+                {{ $t('btn.no') }}
             </button>
             <button
                 type="button"
@@ -304,7 +315,7 @@ const dueDateDetail = (trx) => {
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                 </svg>
-                {{ isDeleting ? 'Menghapus...' : 'Ya, Hapus' }}
+                {{ isDeleting ? $t('common.deleting') : $t('btn.yes') }}
             </button>
         </template>
     </BaseModal>

@@ -7,11 +7,14 @@ import PortfolioCard from '@/Pages/Dashboard/PortfolioCard.vue'
 import UpcomingDebts from '@/Pages/Dashboard/UpcomingDebts.vue'
 import { Head, Link, router } from '@inertiajs/vue3'
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { useBalanceVisibility } from '@/Composables/useBalanceVisibility'
 import { useLayoutPreference } from '@/Composables/useLayoutPreference'
 import { useCalendar } from '@/Composables/useCalendar'
 import { formatNumber, formatCompact } from '@/utils/format.js'
+
+const { t } = useI18n()
 
 const { isDesktopLayout } = useLayoutPreference()
 const { isBalanceVisible, toggleVisibility } = useBalanceVisibility()
@@ -135,16 +138,16 @@ const formattedPeriod = computed(() => {
 	return `${start.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} - ${end.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}`
 })
 
-// ─── Type helpers → pakai Badge variant, hanya perlu nama ─────────
+// ─── Type helpers ─────────────────────────────────────────────────
 const getTypeName = (typeName) => ({
-	Income:     'Pemasukan',
-	Expense:    'Pengeluaran',
-	Transfer:   'Transfer',
-	Debt:       'Hutang',
-	Receivable: 'Piutang',
-}[typeName] ?? 'Lainnya')
+	Income:     t('types.income'),
+	Expense:    t('types.expense'),
+	Transfer:   t('types.transfer'),
+	Debt:       t('types.debt'),
+	Receivable: t('types.receivable'),
+}[typeName] ?? t('types.other'))
 
-// Badge variant map — dipakai di <Badge :variant="typeVariant(t)">
+// Badge variant map
 const typeVariant = (typeName) => ({
 	Income:     'income',
 	Expense:    'expense',
@@ -153,12 +156,23 @@ const typeVariant = (typeName) => ({
 	Receivable: 'receivable',
 }[typeName] ?? 'neutral')
 
+// ─── Calendar day names (reactive to locale) ──────────────────────
+const calendarDayNames = computed(() => [
+	t('dashboard.calendar.sun'),
+	t('dashboard.calendar.mon'),
+	t('dashboard.calendar.tue'),
+	t('dashboard.calendar.wed'),
+	t('dashboard.calendar.thu'),
+	t('dashboard.calendar.fri'),
+	t('dashboard.calendar.sat'),
+])
+
 // ─── Wallet pin toggle ────────────────────────────────────────────
 const togglePin = (wallet) => {
 	router.patch(route('wallets.set-pin', wallet.id), { state: false }, { preserveScroll: true, preserveState: true })
 }
 
-// ─── Wallet image error fallback (masih dipakai di pinned wallets) ─
+// ─── Wallet image error fallback ──────────────────────────────────
 const handleImageError = (e, fallback) => {
 	e.target.style.display = 'none'
 	const span = document.createElement('span')
@@ -201,7 +215,7 @@ const handleImageError = (e, fallback) => {
 										stroke-linejoin="round"
 										d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
 								</svg>
-								Dompet Utama
+								{{ $t('dashboard.mainWallets') }}
 							</h2>
 							<div class="flex-1 h-px bg-linear-to-r from-purple-500/20 to-transparent"></div>
 						</div>
@@ -230,7 +244,7 @@ const handleImageError = (e, fallback) => {
 									<button
 										@click.stop.prevent="togglePin(wallet)"
 										class="text-purple-500 hover:text-white transition-colors p-1 bg-white/5 rounded-full z-10 shrink-0 -mt-1 -mr-1"
-										title="Unpin dari Dashboard">
+										:title="$t('dashboard.unpinFromDashboard')">
 										<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
 											<path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5v6l1 2 1-2v-6h5v-2l-2-2z" />
 										</svg>
@@ -251,7 +265,7 @@ const handleImageError = (e, fallback) => {
 								</svg>
 							</div>
 							<div>
-								<p class="text-2xs text-gray-500 font-bold uppercase tracking-widest">Pemasukan</p>
+								<p class="text-2xs text-gray-500 font-bold uppercase tracking-widest">{{ $t('dashboard.income') }}</p>
 								<p class="text-sm font-bold text-white tracking-tight mt-0.5">
 									<span class="text-2xs text-gray-500 mr-1">Rp</span><span class="text-green-400">{{ isBalanceVisible ? formatNumber(thisMonthIncome) : '••••' }}</span>
 								</p>
@@ -264,7 +278,7 @@ const handleImageError = (e, fallback) => {
 								</svg>
 							</div>
 							<div>
-								<p class="text-2xs text-gray-500 font-bold uppercase tracking-widest">Pengeluaran</p>
+								<p class="text-2xs text-gray-500 font-bold uppercase tracking-widest">{{ $t('dashboard.expense') }}</p>
 								<p class="text-sm font-bold text-white tracking-tight mt-0.5">
 									<span class="text-2xs text-gray-500 mr-1">Rp</span><span class="text-red-400">{{ isBalanceVisible ? formatNumber(thisMonthExpense) : '••••' }}</span>
 								</p>
@@ -286,7 +300,7 @@ const handleImageError = (e, fallback) => {
 					<div class="flex justify-between items-center mb-4 px-1 gap-3 animate-fade-in-up delay-500">
 						<h2 class="text-2xs font-bold text-white uppercase tracking-widest flex items-center gap-2 shrink-0">
 							<span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
-							Histori Transaksi
+							{{ $t('dashboard.transactionHistory') }}
 						</h2>
 						<div class="flex-1 h-px bg-linear-to-r from-purple-500/50 to-transparent"></div>
 						<div class="flex bg-gray-900 rounded-lg border border-white/10 p-0.5 shrink-0">
@@ -294,13 +308,13 @@ const handleImageError = (e, fallback) => {
 								@click="activeHistoryTab = 'detail'"
 								:class="activeHistoryTab === 'detail' ? 'bg-purple-500 text-white' : 'text-gray-400 hover:text-white'"
 								class="px-2 py-1 rounded-lg text-2xs font-bold uppercase tracking-widest transition-colors">
-								Detail
+								{{ $t('dashboard.detailTab') }}
 							</button>
 							<button
 								@click="activeHistoryTab = 'calendar'"
 								:class="activeHistoryTab === 'calendar' ? 'bg-purple-500 text-white' : 'text-gray-400 hover:text-white'"
 								class="px-2 py-1 rounded-lg text-2xs font-bold uppercase tracking-widest transition-colors">
-								Kalender
+								{{ $t('dashboard.calendarTab') }}
 							</button>
 						</div>
 					</div>
@@ -310,7 +324,7 @@ const handleImageError = (e, fallback) => {
 							<input
 								type="text"
 								v-model="search"
-								placeholder="Cari catatan..."
+								:placeholder="$t('dashboard.searchPlaceholder')"
 								class="w-full bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 text-white rounded-xl p-3.5 pl-11 text-2xs focus:ring-1 focus:ring-purple-500 transition-colors" />
 							<svg class="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 								<path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -349,9 +363,10 @@ const handleImageError = (e, fallback) => {
 							<svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
 								<path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h9.75m4.5-4.5v12m0 0l-3.75-3.75M17.25 21L21 17.25" />
 							</svg>
-							{{ type ? getTypeName(type) : 'Semua Tipe' }}
+							{{ type ? getTypeName(type) : $t('types.all') }}
 						</button>
 					</div>
+
 					<!-- Kalender Tab Active -->
 					<div v-if="activeHistoryTab === 'calendar'" class="animate-fade-in-up delay-500 mb-8">
 						<div class="bg-linear-to-br from-gray-900 to-gray-800 p-3 sm:p-4 rounded-xl border border-white/10 mb-5 shadow-lg w-full">
@@ -374,35 +389,36 @@ const handleImageError = (e, fallback) => {
 									</svg>
 								</button>
 							</div>
-							<!-- Pemasukan, Total, Pengeluaran -->
+							<!-- Pemasukan, Total, Pengeluaran filter -->
 							<div class="flex justify-center mb-3">
 								<div class="flex bg-gray-900 rounded-xl border border-white/10 p-0.5">
 									<button
 										@click="calendarFilter = 'income'"
 										:class="calendarFilter === 'income' ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'text-gray-400 hover:text-white border border-transparent'"
 										class="px-2.5 py-1 rounded-lg text-2xs font-bold uppercase tracking-widest transition-all">
-										Pemasukan
+										{{ $t('dashboard.calendarFilter.income') }}
 									</button>
 									<button
 										@click="calendarFilter = 'total'"
 										:class="calendarFilter === 'total' ? 'bg-purple-500 text-white border border-purple-500' : 'text-gray-400 hover:text-white border border-transparent'"
 										class="px-2.5 py-1 rounded-lg text-2xs font-bold uppercase tracking-widest transition-all">
-										Total
+										{{ $t('dashboard.calendarFilter.total') }}
 									</button>
 									<button
 										@click="calendarFilter = 'expense'"
 										:class="calendarFilter === 'expense' ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'text-gray-400 hover:text-white border border-transparent'"
 										class="px-2.5 py-1 rounded-lg text-2xs font-bold uppercase tracking-widest transition-all">
-										Pengeluaran
+										{{ $t('dashboard.calendarFilter.expense') }}
 									</button>
 								</div>
 							</div>
+							<!-- Day name headers -->
 							<div class="grid grid-cols-7 gap-1 text-center mb-1.5">
-								<div v-for="day in ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab']" :key="day" class="text-[9px] sm:text-2xs font-bold text-gray-500 uppercase tracking-widest py-1">
+								<div v-for="day in calendarDayNames" :key="day" class="text-[9px] sm:text-2xs font-bold text-gray-500 uppercase tracking-widest py-1">
 									{{ day }}
 								</div>
 							</div>
-							<!-- Calender Grid Column -->
+							<!-- Calendar Grid -->
 							<div class="grid grid-cols-7 gap-1 sm:gap-1.5">
 								<div v-for="(day, index) in calendarDays" :key="index" class="h-12 sm:h-14">
 									<button
@@ -435,7 +451,7 @@ const handleImageError = (e, fallback) => {
 							<h3 class="text-2xs font-bold text-gray-300 uppercase tracking-widest">
 								{{ selectedDateFormatted }}
 							</h3>
-						</div> 
+						</div>
 
 						<!-- Group Transaction Cards per Date -->
 						<div
@@ -550,11 +566,12 @@ const handleImageError = (e, fallback) => {
 							</div>
 						</div>
 
+						<!-- Empty state -->
 						<div
 							v-if="Object.keys(visibleTransactions).length === 0"
 							class="text-center py-12 bg-linear-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 relative overflow-hidden group">
 							<p class="text-2xs font-bold text-gray-500 uppercase tracking-widest relative z-10">
-								{{ activeHistoryTab === 'calendar' ? 'Tidak ada transaksi' : 'Data Kosong' }}
+								{{ activeHistoryTab === 'calendar' ? $t('dashboard.noTransactions') : $t('common.dataEmpty') }}
 							</p>
 						</div>
 					</div>
@@ -571,26 +588,21 @@ const handleImageError = (e, fallback) => {
 						</svg>
 					</button>
 
-					<h3 class="text-sm font-bold text-white mb-6 text-center uppercase tracking-widest">Filter Tipe</h3>
+					<h3 class="text-sm font-bold text-white mb-6 text-center uppercase tracking-widest">{{ $t('dashboard.filterType') }}</h3>
 					<div class="grid grid-cols-2 gap-3">
 						<button
 							@click="setType('')"
 							class="col-span-2 py-3 rounded-xl border border-white/10 text-2xs font-bold uppercase tracking-widest transition-all"
 							:class="!type ? 'bg-purple-600 text-white' : 'bg-linear-to-br from-gray-900 to-gray-800 text-gray-300'">
-							Semua Tipe
+							{{ $t('types.all') }}
 						</button>
 						<button
-							v-for="(label, key) in {
-								Income: 'Pemasukan',
-								Expense: 'Pengeluaran',
-								Transfer: 'Transfer',
-								Debt: 'Hutang',
-								Receivable: 'Piutang',
-							}"
+							v-for="key in ['Income', 'Expense', 'Transfer', 'Debt', 'Receivable']"
+							:key="key"
 							@click="setType(key)"
 							class="py-3 rounded-xl border border-white/10 text-2xs font-bold uppercase tracking-widest transition-all"
 							:class="type === key ? 'bg-linear-to-br from-purple-800 to-purple-500 text-white' : 'bg-linear-to-br from-gray-900 to-gray-800 text-gray-300'">
-							{{ label }}
+							{{ getTypeName(key) }}
 						</button>
 					</div>
 				</div>

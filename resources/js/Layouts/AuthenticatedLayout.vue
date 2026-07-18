@@ -4,24 +4,35 @@
  *
  * Layout utama untuk semua halaman yang memerlukan autentikasi.
  *
- * Perubahan layout:
- *   - Mount MobileHeader — top bar mobile dengan judul + avatar
- *   - Tambah skip-to-content link untuk keyboard/screen reader navigation
- *   - Ganti pb-safe class string dengan CSS var env(safe-area-inset-bottom)
- *   - Konsistensi padding bottom: mobile pakai pb-28 (BottomNav ~56px + safe area + margin)
+ * ── Arsitektur Global Skeleton Loading ──────────────────────────────
+ *
+ * Skeleton TIDAK menggunakan z-index tinggi untuk "menindih" konten lama.
+ * Sebaliknya, kita kontrol KEDUANYA via opacity:
+ *
+ *   <content-wrapper>            ← container relatif
+ *     <slot />                   ← konten aktif, opacity 0→1
+ *     <skeleton-layer />         ← overlay, opacity 1→0
+ *   </content-wrapper>
+ *
+ *   Saat loading  : slot opacity=0, skeleton opacity=1
+ *   Saat selesai  : skeleton fade-out, slot fade-in
+ *
+ * Ini menjamin skeleton SELALU menutupi konten lama dari halaman manapun,
+ * tanpa peduli z-index, stacking context, atau animasi internal page.
  *
  * Props:
  *   fullWidth — Izinkan layout melebar ke desktop (sidebar mode)
+ *   hideNav   — Sembunyikan header dan bottom nav (halaman fullscreen seperti create/edit)
  */
 
 import BottomNav from '@/Components/BottomNav.vue'
 import MobileHeader from '@/Components/MobileHeader.vue'
 import Toast from '@/Components/Toast.vue'
-import DashboardSkeleton    from '@/Components/Skeleton/DashboardSkeleton.vue'
-import TransactionSkeleton  from '@/Components/Skeleton/TransactionSkeleton.vue'
-import AssetSkeleton        from '@/Components/Skeleton/AssetSkeleton.vue'
-import StatisticsSkeleton   from '@/Components/Skeleton/StatisticsSkeleton.vue'
-import SettingsSkeleton     from '@/Components/Skeleton/SettingsSkeleton.vue'
+import DashboardSkeleton   from '@/Components/Skeleton/DashboardSkeleton.vue'
+import TransactionSkeleton from '@/Components/Skeleton/TransactionSkeleton.vue'
+import AssetSkeleton       from '@/Components/Skeleton/AssetSkeleton.vue'
+import StatisticsSkeleton  from '@/Components/Skeleton/StatisticsSkeleton.vue'
+import SettingsSkeleton    from '@/Components/Skeleton/SettingsSkeleton.vue'
 import { useLayoutPreference } from '@/Composables/useLayoutPreference'
 import { usePageLoading }      from '@/Composables/usePageLoading'
 import { computed, ref }       from 'vue'
@@ -57,6 +68,14 @@ const computedFullWidth = computed(() =>
 const activeSkeletonComponent = computed(() =>
     currentSkeleton.value ? (SKELETON_COMPONENTS[currentSkeleton.value] ?? null) : null
 )
+
+// Tampilkan skeleton overlay hanya jika:
+// 1. Sedang loading
+// 2. Ada skeleton yang cocok untuk halaman tujuan
+// 3. Bukan halaman fullscreen (hideNav = false)
+const showSkeleton = computed(() =>
+    isLoading.value && activeSkeletonComponent.value !== null && !props.hideNav
+)
 </script>
 
 <template>
@@ -83,37 +102,68 @@ const activeSkeletonComponent = computed(() =>
                 <!-- Mobile top bar — hidden di desktop, hidden juga di halaman create/edit -->
                 <MobileHeader v-if="!hideNav" />
 
-                <main
-                    id="main-content"
+                <!--
+                    Content area — dibuat `relative` agar skeleton overlay bisa `absolute inset-0`.
+                    Ini adalah satu-satunya stacking context yang perlu kita kelola.
+                -->
+                <div
                     :class="[
-                        'flex-1 animate-page-enter overflow-x-hidden relative',
+                        'flex-1 relative overflow-hidden',
                         !hideNav
                             ? (computedFullWidth ? 'pb-28 lg:pb-8' : 'pb-28')
                             : 'pb-0',
                     ]"
                     :style="!hideNav ? 'padding-bottom: max(7rem, calc(3.5rem + env(safe-area-inset-bottom, 0px) + 1rem));' : ''"
-                    tabindex="-1"
                 >
-                    <!-- Skeleton overlay — muncul di atas konten saat navigasi -->
+                    <!--
+                        ── Konten Halaman (slot) ──────────────────────────────────────
+                        Saat loading  : opacity 0  (disembunyikan, tapi tidak di-unmount)
+                        Saat selesai  : opacity 1, fade-in
+
+                        Menggunakan `transition-opacity` bukan `animate-page-enter` karena:
+                        - animate-page-enter hanya dijalankan sekali saat mount
+                        - Kita butuh transisi yang reaktif terhadap state isLoading
+                    -->
+                    <main
+                        id="main-content"
+                        :class="[
+                            'overflow-x-hidden transition-opacity',
+                            showSkeleton
+                                ? 'opacity-0 duration-100'
+                                : 'opacity-100 duration-200',
+                        ]"
+                        tabindex="-1"
+                        :aria-hidden="showSkeleton"
+                    >
+                        <slot />
+                    </main>
+
+                    <!--
+                        ── Skeleton Overlay ───────────────────────────────────────────
+                        Posisi absolute inset-0, menutupi seluruh content area.
+                        z-index tidak dibutuhkan karena konten lama sudah opacity-0.
+
+                        Menggunakan <Transition> untuk:
+                        - Saat skeleton muncul: fade in cepat (150ms) agar terasa responsif
+                        - Saat skeleton selesai: fade out halus (200ms)
+                    -->
                     <Transition
                         enter-active-class="transition-opacity duration-150 ease-out"
                         enter-from-class="opacity-0"
                         enter-to-class="opacity-100"
-                        leave-active-class="transition-opacity duration-250 ease-in"
+                        leave-active-class="transition-opacity duration-200 ease-in"
                         leave-from-class="opacity-100"
                         leave-to-class="opacity-0"
                     >
                         <div
-                            v-if="isLoading && activeSkeletonComponent && !hideNav"
-                            class="absolute inset-0 z-10 bg-gray-800 overflow-hidden"
+                            v-if="showSkeleton"
+                            class="absolute inset-0 bg-gray-800 overflow-y-auto"
                             aria-hidden="true"
                         >
                             <component :is="activeSkeletonComponent" />
                         </div>
                     </Transition>
-
-                    <slot />
-                </main>
+                </div>
 
                 <BottomNav
                     v-if="!hideNav"
