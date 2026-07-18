@@ -50,10 +50,16 @@ class WebChatController extends Controller
             ->latest()
             ->first();
 
-        // Load pesan terbaru (30 pesan)
+        // Load pesan terbaru (30 pesan, ambil 31 untuk deteksi hasMore)
         $messages = [];
+        $hasMore  = false;
         if ($conversation) {
-            $messages = $this->adapter->getHistory($conversation, limit: 30);
+            $raw     = $this->adapter->getHistory($conversation, limit: 31);
+            $hasMore = count($raw) > 30;
+            if ($hasMore) {
+                array_shift($raw); // buang yang paling lama (ke-31), sisakan 30 terbaru
+            }
+            $messages = $raw;
         }
 
         return Inertia::render('Chat/Index', [
@@ -62,6 +68,7 @@ class WebChatController extends Controller
                 'title' => $conversation->title,
             ] : null,
             'initialMessages' => $messages,
+            'initialHasMore'  => $hasMore,
             'botProfile'      => [
                 'name'   => $user->bot_name ?? 'Ken-Chan',
                 'avatar' => $user->bot_avatar
