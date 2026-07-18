@@ -17,8 +17,22 @@
 import BottomNav from '@/Components/BottomNav.vue'
 import MobileHeader from '@/Components/MobileHeader.vue'
 import Toast from '@/Components/Toast.vue'
+import DashboardSkeleton    from '@/Components/Skeleton/DashboardSkeleton.vue'
+import TransactionSkeleton  from '@/Components/Skeleton/TransactionSkeleton.vue'
+import AssetSkeleton        from '@/Components/Skeleton/AssetSkeleton.vue'
+import StatisticsSkeleton   from '@/Components/Skeleton/StatisticsSkeleton.vue'
+import SettingsSkeleton     from '@/Components/Skeleton/SettingsSkeleton.vue'
 import { useLayoutPreference } from '@/Composables/useLayoutPreference'
-import { computed, ref } from 'vue'
+import { usePageLoading }      from '@/Composables/usePageLoading'
+import { computed, ref }       from 'vue'
+
+const SKELETON_COMPONENTS = {
+    DashboardSkeleton,
+    TransactionSkeleton,
+    AssetSkeleton,
+    StatisticsSkeleton,
+    SettingsSkeleton,
+}
 
 const props = defineProps({
     fullWidth: {
@@ -33,9 +47,15 @@ const props = defineProps({
 
 const isSidebarOpen = ref(true)
 const { isDesktopLayout } = useLayoutPreference()
+const { isLoading, currentSkeleton } = usePageLoading()
 
 const computedFullWidth = computed(() =>
     isDesktopLayout.value ? props.fullWidth : false
+)
+
+// Resolve skeleton component dinamis dari nama string
+const activeSkeletonComponent = computed(() =>
+    currentSkeleton.value ? (SKELETON_COMPONENTS[currentSkeleton.value] ?? null) : null
 )
 </script>
 
@@ -66,7 +86,7 @@ const computedFullWidth = computed(() =>
                 <main
                     id="main-content"
                     :class="[
-                        'flex-1 animate-page-enter overflow-x-hidden',
+                        'flex-1 animate-page-enter overflow-x-hidden relative',
                         !hideNav
                             ? (computedFullWidth ? 'pb-28 lg:pb-8' : 'pb-28')
                             : 'pb-0',
@@ -74,6 +94,24 @@ const computedFullWidth = computed(() =>
                     :style="!hideNav ? 'padding-bottom: max(7rem, calc(3.5rem + env(safe-area-inset-bottom, 0px) + 1rem));' : ''"
                     tabindex="-1"
                 >
+                    <!-- Skeleton overlay — muncul di atas konten saat navigasi -->
+                    <Transition
+                        enter-active-class="transition-opacity duration-150 ease-out"
+                        enter-from-class="opacity-0"
+                        enter-to-class="opacity-100"
+                        leave-active-class="transition-opacity duration-250 ease-in"
+                        leave-from-class="opacity-100"
+                        leave-to-class="opacity-0"
+                    >
+                        <div
+                            v-if="isLoading && activeSkeletonComponent && !hideNav"
+                            class="absolute inset-0 z-10 bg-gray-800 overflow-hidden"
+                            aria-hidden="true"
+                        >
+                            <component :is="activeSkeletonComponent" />
+                        </div>
+                    </Transition>
+
                     <slot />
                 </main>
 
