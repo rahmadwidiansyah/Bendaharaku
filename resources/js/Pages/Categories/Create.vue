@@ -44,7 +44,7 @@ const goBack = () => {
         <div class="p-5 w-full lg:max-w-4xl mx-auto lg:px-8 relative animate-fade-in-up">
 
             <header class="flex justify-between items-center mb-8 pt-4">
-                <div>
+                <div class="hidden lg:block">
                     <p class="text-2xs text-gray-300 font-semibold mb-1 uppercase tracking-wider">Vault</p>
                     <h1 class="text-2xl font-bold text-white tracking-tight">Tambah Kategori</h1>
                 </div>

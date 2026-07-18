@@ -50,7 +50,7 @@ const getHeaderText = (typeName) => {
         <div class="p-5 w-full lg:max-w-4xl mx-auto lg:px-8 relative z-10 min-h-screen">
 
             <header class="mb-10 pt-4 animate-fade-in-up">
-                <div class="flex justify-between items-end mb-8 px-1">
+                <div class="hidden lg:flex justify-between items-end mb-8 px-1">
                     <div>
                         <p class="text-2xs text-gray-300 font-bold uppercase tracking-[0.3em] mb-1 opacity-80">✨
                             Collection</p>
