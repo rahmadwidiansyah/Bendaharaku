@@ -14,9 +14,12 @@
  */
 
 import { Link } from '@inertiajs/vue3'
+import { useI18n } from 'vue-i18n'
 import { useLayoutPreference } from '@/Composables/useLayoutPreference'
 import { usePageLoading } from '@/Composables/usePageLoading'
 import NavItem from '@/Components/NavItem.vue'
+
+const { t } = useI18n()
 
 const { isDesktopLayout } = useLayoutPreference()
 const { pendingUrl, isLoading } = usePageLoading()
@@ -63,7 +66,7 @@ defineEmits(['toggle'])
             isDesktopLayout && isSidebarOpen ? 'lg:w-64' : (isDesktopLayout ? 'lg:w-20' : ''),
         ]"
         style="overflow: visible;"
-        aria-label="Navigasi utama"
+        :aria-label="$t('nav.mainNav')"
         role="navigation"
     >
 
@@ -84,7 +87,7 @@ defineEmits(['toggle'])
             <button
                 @click="$emit('toggle', !isSidebarOpen)"
                 :aria-expanded="isSidebarOpen"
-                :aria-label="isSidebarOpen ? 'Tutup sidebar' : 'Buka sidebar'"
+                :aria-label="isSidebarOpen ? $t('common.close') + ' sidebar' : $t('btn.back') + ' sidebar'"
                 :class="['ml-auto shrink-0 text-gray-500 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400', isSidebarOpen ? '' : 'mx-auto']"
             >
                 <svg v-if="isSidebarOpen" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -104,13 +107,13 @@ defineEmits(['toggle'])
             <Link
                 :href="route('transactions.create')"
                 class="flex items-center justify-center lg:justify-start gap-2 w-full px-3 py-3 rounded-xl text-white bg-gradient-to-br from-purple-800 to-purple-500 shadow-lg shadow-purple-500/20 active:scale-95 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300"
-                aria-label="Catat transaksi baru"
+                :aria-label="$t('nav.record')"
             >
                 <svg class="w-6 h-6 shrink-0 transition-transform group-hover:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>
                 <span :class="['text-2xs font-bold tracking-wider uppercase', !isSidebarOpen ? 'lg:hidden' : '']">
-                    Catat Baru
+                    {{ $t('nav.newRecord') }}
                 </span>
             </Link>
 
@@ -119,13 +122,13 @@ defineEmits(['toggle'])
                 target="_blank"
                 rel="noopener noreferrer"
                 class="flex items-center justify-center lg:justify-start gap-2 w-full px-3 py-3 rounded-xl text-white bg-blue-600/90 hover:bg-blue-500 shadow-lg shadow-blue-500/20 active:scale-95 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
-                aria-label="Buka Telegram Bot"
+                :aria-label="$t('nav.telegram')"
             >
                 <svg class="w-6 h-6 shrink-0" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.223-.548.223l.188-2.85 5.18-4.68c.223-.198-.054-.31-.346-.11l-6.4 4.02-2.76-.89c-.6-.188-.612-.6.126-.89l10.814-4.17c.5-.188.948.116.822.885z" />
                 </svg>
                 <span :class="['text-2xs font-bold tracking-wider uppercase', !isSidebarOpen ? 'lg:hidden' : '']">
-                    Telegram
+                    {{ $t('nav.telegram') }}
                 </span>
             </a>
         </div>
@@ -139,7 +142,7 @@ defineEmits(['toggle'])
             <!-- Home -->
             <NavItem
                 :href="route('dashboard')"
-                label="Home"
+                :label="$t('nav.home')"
                 :active="isActive(['dashboard'])"
                 :is-desktop="isDesktopLayout"
                 :sidebar-open="isSidebarOpen"
@@ -154,7 +157,7 @@ defineEmits(['toggle'])
             <!-- Aset (Wallets) -->
             <NavItem
                 :href="route('wallets.index')"
-                label="Aset"
+                :label="$t('nav.asset')"
                 :active="isActive(['wallets.*'])"
                 :is-desktop="isDesktopLayout"
                 :sidebar-open="isSidebarOpen"
@@ -170,7 +173,7 @@ defineEmits(['toggle'])
             <NavItem
                 v-if="isDesktopLayout"
                 :href="route('transactions.create')"
-                label="Catat"
+                :label="$t('nav.record')"
                 :active="isActive(['transactions.*'])"
                 :is-desktop="true"
                 :sidebar-open="isSidebarOpen"
@@ -186,7 +189,7 @@ defineEmits(['toggle'])
             <div v-if="!isDesktopLayout" class="flex-1 flex flex-col items-center justify-end pb-1" style="overflow: visible; position: relative;">
                 <Link
                     :href="route('transactions.create')"
-                    :aria-label="'Catat transaksi baru'"
+                    :aria-label="$t('nav.record')"
                     :aria-current="isActive(['transactions.*']) ? 'page' : undefined"
                     class="flex items-center justify-center rounded-full border-[3px] border-gray-900 active:scale-90 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300"
                     :class="[
@@ -204,13 +207,13 @@ defineEmits(['toggle'])
                 <span
                     class="text-[10px] font-bold tracking-wide uppercase leading-none mt-1"
                     :class="isActive(['transactions.*']) ? 'text-purple-400' : 'text-gray-500'"
-                >Catat</span>
+                >{{ $t('nav.record') }}</span>
             </div>
 
             <!-- Grafik (Analytics) -->
             <NavItem
                 :href="route('analytics.index')"
-                label="Grafik"
+                :label="$t('nav.analytics')"
                 :active="isActive(['analytics.*'])"
                 :is-desktop="isDesktopLayout"
                 :sidebar-open="isSidebarOpen"
@@ -225,7 +228,7 @@ defineEmits(['toggle'])
             <!-- Label (Categories) — mobile + desktop -->
             <NavItem
                 :href="route('categories.index')"
-                label="Label"
+                :label="$t('nav.label')"
                 :active="isActive(['categories.*'])"
                 :is-desktop="isDesktopLayout"
                 :sidebar-open="isSidebarOpen"
@@ -241,7 +244,7 @@ defineEmits(['toggle'])
             <NavItem
                 v-if="isDesktopLayout"
                 :href="route('loans.index', { type: 'debt' })"
-                label="Tanggungan"
+                :label="$t('nav.loan')"
                 :active="isActive(['loans.*'])"
                 :is-desktop="true"
                 :sidebar-open="isSidebarOpen"
@@ -257,7 +260,7 @@ defineEmits(['toggle'])
             <NavItem
                 v-if="isDesktopLayout"
                 :href="route('settings.index')"
-                label="Pengaturan"
+                :label="$t('nav.settings')"
                 :active="isActive(['settings.*'])"
                 :is-desktop="true"
                 :sidebar-open="isSidebarOpen"

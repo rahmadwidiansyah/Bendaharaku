@@ -1,10 +1,13 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { useI18n } from 'vue-i18n';
 import axios from 'axios';
 import { computed, ref, watch, onMounted, shallowRef } from 'vue';
 import Chart from 'chart.js/auto';
 import { formatNumber } from '@/utils/format.js';
+
+const { t } = useI18n();
 
 const props = defineProps({
     providerStatuses: { type: Object, required: true },
@@ -38,7 +41,7 @@ const fetchAnalytics = async () => {
                 data: {
                     labels: data.performance.map(d => d.date),
                     datasets: [{
-                        label: 'Final Confidence',
+                        label: t('ai.finalConfidence'),
                         data: data.performance.map(d => parseFloat(d.final_conf) * 100),
                         borderColor: '#6366f1',
                         backgroundColor: 'rgba(99, 102, 241, 0.1)',
@@ -144,7 +147,7 @@ onMounted(() => {
 
 <template>
     <AuthenticatedLayout :fullWidth="true">
-        <Head title="Pengaturan AI" />
+        <Head :title="$t('ai.title')" />
         
         <div class="fixed top-[-10%] left-[50%] -translate-x-1/2 w-[400px] h-[400px] bg-indigo-500 blur-[150px] opacity-[0.14] rounded-full pointer-events-none z-0"></div>
 
@@ -152,12 +155,12 @@ onMounted(() => {
             <header class="flex justify-between items-center mb-8 pt-4">
                 <div class="hidden lg:block">
                     <p class="text-2xs text-indigo-400 font-black mb-1.5 uppercase tracking-[0.2em] flex items-center gap-2">
-                        <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span> BYOK AI
+                        <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span> {{ $t('ai.subtitle') }}
                     </p>
-                    <h1 class="text-3xl font-black text-white tracking-tight leading-none">Pengaturan AI</h1>
+                    <h1 class="text-3xl font-black text-white tracking-tight leading-none">{{ $t('ai.title') }}</h1>
                 </div>
                 <Link :href="route('settings.index')" class="px-4 py-2 bg-gray-900 text-gray-300 border border-white/10 text-2xs font-bold uppercase tracking-widest rounded-xl hover:border-indigo-500/40 hover:text-white transition-all">
-                    Kembali
+                    {{ $t('common.back') }}
                 </Link>
             </header>
 
@@ -172,13 +175,13 @@ onMounted(() => {
             <div class="space-y-6">
                 <div class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 p-6 rounded-2xl">
                     <div class="border-b border-white/10 pb-5 mb-6">
-                        <h2 class="text-xl font-bold text-white">Integrasi Kecerdasan Buatan</h2>
-                        <p class="text-sm text-gray-400 mt-1">Gunakan kunci API personal untuk mengaktifkan asisten finansial cerdas.</p>
+                        <h2 class="text-xl font-bold text-white">{{ $t('ai.integration') }}</h2>
+                        <p class="text-sm text-gray-400 mt-1">{{ $t('ai.integrationDesc') }}</p>
                     </div>
 
                     <form @submit.prevent="submitSettings" class="space-y-6">
                         <div>
-                            <label class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-2">Penyedia AI</label>
+                            <label class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-2">{{ $t('ai.provider') }}</label>
                             <div class="flex flex-col sm:flex-row sm:items-center gap-3">
                                 <select v-model="selectedProvider" class="w-full sm:max-w-xs bg-gray-900 border border-white/10 text-white rounded-xl p-4 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-400 transition-all">
                                     <option v-for="provider in availableProviders" :key="provider" :value="provider">
@@ -191,18 +194,18 @@ onMounted(() => {
                                           'bg-rose-500/10 text-rose-300 border-rose-500/20': currentStatus === 'Invalid', 
                                           'bg-gray-700/40 text-gray-300 border-white/10': currentStatus === 'Not Configured'
                                       }">
-                                    {{ currentStatus }}
+                                    {{ currentStatus === 'Connected' ? $t('ai.enabled') : currentStatus === 'Invalid' ? $t('ai.disabled') : currentStatus }}
                                 </span>
                             </div>
                         </div>
 
                         <div>
-                            <label class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-2">Kunci API Personal</label>
-                            <input type="password" v-model="form.api_key" placeholder="Kosongkan jika tidak ingin mengganti token tersimpan" class="w-full bg-gray-900 border border-white/10 text-white rounded-xl p-4 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-400 transition-all" />
+                            <label class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-2">{{ $t('ai.apiKey') }}</label>
+                            <input type="password" v-model="form.api_key" :placeholder="$t('ai.apiKeyPlaceholder')" class="w-full bg-gray-900 border border-white/10 text-white rounded-xl p-4 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-400 transition-all" />
                         </div>
 
                         <div>
-                            <label class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-2">Varian Model</label>
+                            <label class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-2">{{ $t('ai.model') }}</label>
                             <select v-model="form.selected_model" class="w-full sm:max-w-xs bg-gray-900 border border-white/10 text-white rounded-xl p-4 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-400 transition-all">
                                 <option v-for="model in currentModels" :key="model" :value="model">{{ model }}</option>
                             </select>
@@ -211,8 +214,8 @@ onMounted(() => {
                         <label class="flex items-start gap-3 bg-gray-900/80 p-4 rounded-xl border border-white/10 cursor-pointer">
                             <input type="checkbox" v-model="form.is_active_provider" class="mt-1 h-4 w-4 rounded border-white/10 text-indigo-500 bg-gray-800 focus:ring-indigo-500" />
                             <span>
-                                <span class="block text-sm font-bold text-white">Aktifkan sebagai AI Cadangan</span>
-                                <span class="block text-xs text-gray-400 mt-0.5">AI lokal (Python) tetap berjalan pertama. Provider ini hanya digunakan jika Python tidak yakin atau sedang offline.</span>
+                                <span class="block text-sm font-bold text-white">{{ $t('ai.backupAi') }}</span>
+                                <span class="block text-xs text-gray-400 mt-0.5">{{ $t('ai.backupAiDesc') }}</span>
                             </span>
                         </label>
 
@@ -222,34 +225,34 @@ onMounted(() => {
 
                         <div class="flex flex-col sm:flex-row items-stretch sm:items-center sm:justify-end gap-3 pt-5 border-t border-white/10">
                             <button type="button" @click="runConnectionTest" :disabled="isTesting" class="px-4 py-3 border border-white/10 rounded-xl text-2xs font-bold uppercase tracking-widest text-gray-300 bg-gray-900 hover:border-indigo-500/40 disabled:opacity-50">
-                                {{ isTesting ? 'Menguji...' : 'Test Connection' }}
+                                {{ isTesting ? $t('ai.testing') : $t('ai.testConnection') }}
                             </button>
                             <button type="submit" :disabled="form.processing" class="px-5 py-3 rounded-xl text-2xs font-bold uppercase tracking-widest text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50">
-                                Simpan Pengaturan
+                                {{ form.processing ? $t('btn.saving') : $t('btn.save') }}
                             </button>
                         </div>
                     </form>
 
                     <div class="mt-12 space-y-6">
                         <div class="border-b border-white/10 pb-5">
-                            <h2 class="text-xl font-bold text-white">Analitik Performa AI</h2>
+                            <h2 class="text-xl font-bold text-white">{{ $t('ai.performanceTitle') }}</h2>
                         </div>
                         
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
                             <div class="bg-gray-900 border border-white/5 p-4 rounded-xl">
-                                <p class="text-2xs text-gray-400 uppercase">Requests</p>
+                                <p class="text-2xs text-gray-400 uppercase">{{ $t('ai.requests') }}</p>
                                 <h3 class="text-xl font-black text-white">{{ formatNumber(overview.total_requests) }}</h3>
                             </div>
                             <div class="bg-gray-900 border border-emerald-500/10 p-4 rounded-xl">
-                                <p class="text-2xs text-emerald-400 uppercase">Success</p>
+                                <p class="text-2xs text-emerald-400 uppercase">{{ $t('ai.success') }}</p>
                                 <h3 class="text-xl font-black text-emerald-400">{{ overview.success_rate }}%</h3>
                             </div>
                             <div class="bg-gray-900 border border-amber-500/10 p-4 rounded-xl">
-                                <p class="text-2xs text-amber-400 uppercase">Drafts</p>
+                                <p class="text-2xs text-amber-400 uppercase">{{ $t('ai.drafts') }}</p>
                                 <h3 class="text-xl font-black text-amber-400">{{ overview.draft_rate }}%</h3>
                             </div>
                             <div class="bg-gray-900 border border-indigo-500/10 p-4 rounded-xl">
-                                <p class="text-2xs text-indigo-400 uppercase">Tokens</p>
+                                <p class="text-2xs text-indigo-400 uppercase">{{ $t('ai.tokens') }}</p>
                                 <h3 class="text-xl font-mono text-indigo-300">{{ formatNumber(overview.total_tokens) }}</h3>
                             </div>
                         </div>
@@ -263,21 +266,21 @@ onMounted(() => {
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <!-- Panel Kiri: Token Usage per Provider -->
                     <div class="lg:col-span-1 bg-gray-900/50 border border-white/10 p-6 rounded-2xl h-fit">
-                        <h3 class="text-sm font-bold text-white mb-4">Pemakaian Token per Provider</h3>
+                        <h3 class="text-sm font-bold text-white mb-4">{{ $t('ai.tokenUsageTitle') }}</h3>
                         <div v-if="Object.keys(props.usageStats).length === 0" class="text-center py-8">
-                            <p class="text-gray-500 text-xs">Belum ada pemakaian LLM tercatat.</p>
-                            <p class="text-gray-600 text-2xs mt-1">Token hanya dihitung saat memakai Gemini/OpenAI/DeepSeek.</p>
+                            <p class="text-gray-500 text-xs">{{ $t('ai.emptyTokenUsage') }}</p>
+                            <p class="text-gray-600 text-2xs mt-1">{{ $t('ai.emptyTokenUsageDesc') }}</p>
                         </div>
                         <div v-else class="space-y-3">
                             <div v-for="(stat, provider) in props.usageStats" :key="provider" class="bg-gray-800/60 rounded-xl p-3">
                                 <div class="flex justify-between items-center mb-1">
                                     <span class="text-xs font-bold text-white uppercase">{{ provider }}</span>
-                                    <span class="text-xs text-indigo-300 font-mono">{{ formatNumber(stat.total_used) }} token</span>
+                                    <span class="text-xs text-indigo-300 font-mono">{{ formatNumber(stat.total_used) }} {{ $t('ai.tokenUnit') }}</span>
                                 </div>
                                 <div class="flex gap-2 text-2xs text-gray-400">
-                                    <span>Prompt: <span class="text-gray-300">{{ formatNumber(stat.total_prompt) }}</span></span>
+                                    <span>{{ $t('ai.tokenPrompt') }}: <span class="text-gray-300">{{ formatNumber(stat.total_prompt) }}</span></span>
                                     <span class="text-gray-600">·</span>
-                                    <span>Completion: <span class="text-gray-300">{{ formatNumber(stat.total_completion) }}</span></span>
+                                    <span>{{ $t('ai.tokenCompletion') }}: <span class="text-gray-300">{{ formatNumber(stat.total_completion) }}</span></span>
                                 </div>
                             </div>
                         </div>
@@ -285,9 +288,9 @@ onMounted(() => {
 
                     <!-- Panel Kanan: Activity Log -->
                     <div class="lg:col-span-2 bg-gray-900/50 border border-white/10 p-6 rounded-2xl">
-                        <h3 class="text-sm font-bold text-white mb-4">Riwayat Aktivitas AI</h3>
+                        <h3 class="text-sm font-bold text-white mb-4">{{ $t('ai.activityLogTitle') }}</h3>
                         <div v-if="props.recentLogs.length === 0" class="text-center py-10">
-                            <p class="text-gray-500 text-xs">Belum ada aktivitas AI yang tercatat.</p>
+                            <p class="text-gray-500 text-xs">{{ $t('ai.emptyActivityLog') }}</p>
                         </div>
                         <div v-else class="space-y-2">
                             <div
@@ -330,7 +333,7 @@ onMounted(() => {
                                             }"
                                         >{{ log.status }}</span>
                                         <span class="text-2xs text-gray-500 uppercase">{{ log.provider }}</span>
-                                        <span v-if="log.confidence" class="text-2xs text-gray-500">{{ log.confidence }}% yakin</span>
+                                        <span v-if="log.confidence" class="text-2xs text-gray-500">{{ log.confidence }}{{ $t('ai.confidenceLabel') }}</span>
                                         <span class="text-2xs text-gray-600 ml-auto">{{ log.date }}</span>
                                     </div>
                                 </div>

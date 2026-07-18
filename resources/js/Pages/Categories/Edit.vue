@@ -2,6 +2,9 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import EmojiPicker from '@/Components/EmojiPicker.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const props = defineProps({
     category: Object,
@@ -30,7 +33,7 @@ const submit = () => {
 };
 
 const destroy = () => {
-    if (confirm('Yakin ingin menghapus kategori ini?')) {
+    if (confirm(t('category.deleteMsg'))) {
         form.delete(route('categories.destroy', props.category.id));
     }
 };
@@ -39,14 +42,14 @@ const destroy = () => {
 <template>
     <AuthenticatedLayout :fullWidth="true" :hideNav="true">
 
-        <Head title="Edit Kategori" />
+        <Head :title="t('category.titleEdit')" />
 
         <div class="p-5 w-full lg:max-w-4xl mx-auto lg:px-8 relative animate-fade-in-up">
 
             <header class="flex justify-between items-center mb-8 pt-4">
                 <div class="hidden lg:block">
                     <p class="text-2xs text-gray-300 font-semibold mb-1 uppercase tracking-wider">Vault</p>
-                    <h1 class="text-2xl font-bold text-white tracking-tight">Edit Kategori</h1>
+                    <h1 class="text-2xl font-bold text-white tracking-tight">{{ t('category.titleEdit') }}</h1>
                 </div>
                 <Link :href="route('categories.index')"
                     class="w-10 h-10 rounded-full bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 flex items-center justify-center text-gray-400 active:scale-90 transition-all shadow-md hover:text-white">
@@ -59,14 +62,14 @@ const destroy = () => {
             <form @submit.prevent="submit" class="space-y-6">
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">Tipe Kategori</label>
+                    <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">{{ t('category.type') }}</label>
                     <div
                         class="grid grid-cols-2 gap-2 p-1.5 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl shadow-inner">
                         <label v-for="type in types" :key="type.id" class="cursor-pointer">
                             <input type="radio" v-model="form.type_id" :value="type.id" class="hidden peer">
                             <div
                                 class="text-xs font-semibold py-3 text-center rounded-xl transition-all border border-transparent text-gray-500 peer-checked:bg-white/5 peer-checked:text-purple-500 peer-checked:border-white/10">
-                                {{ type.name === 'Income' ? 'Pemasukan' : 'Pengeluaran' }}
+                                {{ type.name === 'Income' ? t('types.income') : t('types.expense') }}
                             </div>
                         </label>
                     </div>
@@ -76,35 +79,34 @@ const destroy = () => {
                     <EmojiPicker v-model="form.icon" @file-selected="handleFileSelected" />
 
                     <div class="flex-1 flex flex-col justify-end">
-                        <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">Nama Kategori</label>
+                        <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">{{ t('category.name') }}</label>
                         <div
                             class="h-[60px] bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl px-5 flex items-center group focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all shadow-inner">
                             <input type="text" v-model="form.category_name" required
-                                placeholder="Contoh: Makan Siang..."
+                                :placeholder="t('category.namePlaceholder')"
                                 class="w-full bg-transparent border-none text-white p-0 text-base font-medium placeholder-gray-600 focus:ring-0 focus:outline-none">
                         </div>
                     </div>
                 </div>
 
                 <div class="flex flex-col">
-                    <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">Keyword AI (Pisahkan Koma)</label>
+                    <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">{{ t('category.keyword') }}</label>
                     <div
                         class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-4 group focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all shadow-inner">
-                        <input type="text" v-model="form.keyword" placeholder="Contoh: mcd, kfc, warkop, bensin..."
+                        <input type="text" v-model="form.keyword" :placeholder="t('category.keywordHint')"
                             class="w-full bg-transparent border-none text-white p-0 text-sm placeholder-gray-600 focus:ring-0 focus:outline-none">
                     </div>
-                    <p class="text-2xs text-gray-500 mt-2 ml-1 italic">* Digunakan untuk deteksi otomatis oleh sistem
-                        AI.</p>
+                    <p class="text-2xs text-gray-500 mt-2 ml-1 italic">{{ t('category.keywordHint') }}</p>
                 </div>
 
                 <div class="flex gap-3 pt-4">
                     <button type="button" @click="destroy"
                         class="flex-1 bg-red-950/30 border border-red-900/50 text-red-500 font-bold text-sm tracking-wide py-4 rounded-xl active:scale-95 transition-all">
-                        Hapus
+                        {{ t('btn.delete') }}
                     </button>
                     <button type="submit" :disabled="form.processing"
                         class="flex-2 bg-linear-to-br from-purple-800 to-purple-700 text-white font-bold text-sm tracking-wide py-4 rounded-xl shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all">
-                        {{ form.processing ? 'Menyimpan...' : 'Update Kategori' }}
+                        {{ form.processing ? t('btn.saving') : t('btn.update') }}
                     </button>
                 </div>
             </form>

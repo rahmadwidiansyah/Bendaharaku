@@ -163,20 +163,24 @@ class TransactionController extends Controller
 
     /**
      * Standarisasi validasi form transaksi.
+     * Transfer tidak membutuhkan category_id karena tidak ada kategori Transfer per-user.
      */
     private function validateTransaction(Request $request): array
     {
+        $isTransfer = strtolower($request->input('transaction_type', '')) === 'transfer';
+
         return $request->validate([
-            'date' => 'required|date',
-            'category_id' => 'required|exists:categories,id',
-            'source_wallet_id' => 'required|exists:wallets,id',
-            'destination_wallet_id' => 'required|exists:wallets,id',
-            'amount' => 'required|numeric|gt:0', // Lebih baik dari min:0 (mencegah nominal 0)
-            'subject' => 'nullable|string|max:255',
-            'notes' => 'nullable|string',
-            'due_date' => 'nullable|date',
-            'due_date_type' => 'nullable|in:fixed,monthly,daily',
-            'due_date_interval' => 'nullable|integer',
+            'date'                   => 'required|date',
+            'category_id'            => $isTransfer ? 'nullable' : 'required|exists:categories,id',
+            'source_wallet_id'       => 'required|exists:wallets,id',
+            'destination_wallet_id'  => 'required|exists:wallets,id',
+            'amount'                 => 'required|numeric|gt:0',
+            'transaction_type'       => 'nullable|string',
+            'subject'                => 'nullable|string|max:255',
+            'notes'                  => 'nullable|string',
+            'due_date'               => 'nullable|date',
+            'due_date_type'          => 'nullable|in:fixed,monthly,daily',
+            'due_date_interval'      => 'nullable|integer',
         ]);
     }
 

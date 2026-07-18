@@ -2,7 +2,11 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { useLayoutPreference } from '@/Composables/useLayoutPreference';
+import { useI18n } from 'vue-i18n';
+import { useLocale } from '@/Composables/useLocale.js';
 
+const { t } = useI18n();
+const { currentPreference, setLocale } = useLocale();
 const { isDesktopLayout } = useLayoutPreference();
 
 const props = defineProps({
@@ -22,7 +26,7 @@ const updateTransactionLogic = () => {
 
 <template>
     <AuthenticatedLayout :fullWidth="true">
-        <Head title="Pengaturan Aplikasi" />
+        <Head :title="$t('settings.title')" />
 
         <!-- Ambient glow -->
         <div class="fixed top-[-10%] left-[50%] -translate-x-1/2 w-[400px] h-[400px] bg-purple-500 blur-[150px] opacity-[0.15] rounded-full pointer-events-none z-0"></div>
@@ -34,18 +38,18 @@ const updateTransactionLogic = () => {
                 <div class="hidden lg:block">
                     <p class="text-2xs text-purple-500 font-black mb-1.5 uppercase tracking-[0.2em] flex items-center gap-2">
                         <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
-                        Preferences
+                        {{ $t('settings.subtitle') }}
                     </p>
-                    <h1 class="text-3xl font-black text-white tracking-tight leading-none">Pengaturan</h1>
+                    <h1 class="text-3xl font-black text-white tracking-tight leading-none">{{ $t('settings.title') }}</h1>
                 </div>
             </header>
 
             <div class="space-y-10">
 
-                <!-- ─── SECTION 1: AKUN ──────────────────────────────────────── -->
+                <!-- ─── SECTION: AKUN ──────────────────────────────────────── -->
                 <section>
                     <div class="flex items-center gap-3 mb-4">
-                        <h2 class="text-2xs font-black text-gray-400 uppercase tracking-[0.2em]">Akun</h2>
+                        <h2 class="text-2xs font-black text-gray-400 uppercase tracking-[0.2em]">{{ $t('settings.account') }}</h2>
                         <div class="flex-1 h-px bg-white/5"></div>
                     </div>
 
@@ -58,8 +62,8 @@ const updateTransactionLogic = () => {
                             </svg>
                         </div>
                         <div class="flex-1 min-w-0">
-                            <p class="text-sm font-bold text-white leading-tight">Profil & Keamanan</p>
-                            <p class="text-2xs text-gray-500 mt-0.5">Nama, avatar, dan password akun</p>
+                            <p class="text-sm font-bold text-white leading-tight">{{ $t('settings.profile.title') }}</p>
+                            <p class="text-2xs text-gray-500 mt-0.5">{{ $t('settings.profile.desc') }}</p>
                         </div>
                         <svg class="w-4 h-4 text-gray-600 group-hover:text-purple-400 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
@@ -67,10 +71,10 @@ const updateTransactionLogic = () => {
                     </Link>
                 </section>
 
-                <!-- ─── SECTION 2: TRANSAKSI ─────────────────────────────────── -->
+                <!-- ─── SECTION: TRANSAKSI ─────────────────────────────────── -->
                 <section>
                     <div class="flex items-center gap-3 mb-4">
-                        <h2 class="text-2xs font-black text-gray-400 uppercase tracking-[0.2em]">Transaksi</h2>
+                        <h2 class="text-2xs font-black text-gray-400 uppercase tracking-[0.2em]">{{ $t('settings.transaction') }}</h2>
                         <div class="flex-1 h-px bg-white/5"></div>
                     </div>
 
@@ -84,9 +88,9 @@ const updateTransactionLogic = () => {
                                     </svg>
                                 </div>
                                 <div>
-                                    <p class="text-sm font-bold text-white leading-tight">Izinkan Saldo Minus</p>
+                                    <p class="text-sm font-bold text-white leading-tight">{{ $t('settings.negativeBalance.title') }}</p>
                                     <p class="text-2xs text-gray-500 mt-1 leading-relaxed max-w-xs">
-                                        Pengeluaran bisa dicatat meski saldo tidak mencukupi. Cocok untuk pencatatan harian yang direkap belakangan.
+                                        {{ $t('settings.negativeBalance.desc') }}
                                     </p>
                                 </div>
                             </div>
@@ -111,16 +115,16 @@ const updateTransactionLogic = () => {
                         <p class="mt-4 text-2xs font-bold pl-15"
                             :class="transactionLogicForm.allow_negative_balance ? 'text-amber-400' : 'text-gray-600'">
                             {{ transactionLogicForm.allow_negative_balance
-                                ? '✓ Aktif — saldo negatif diperbolehkan'
-                                : '✗ Nonaktif — transaksi ditolak bila saldo tidak mencukupi' }}
+                                ? $t('settings.negativeBalanceOn')
+                                : $t('settings.negativeBalanceOff') }}
                         </p>
                     </div>
                 </section>
 
-                <!-- ─── SECTION 3: TAMPILAN ──────────────────────────────────── -->
+                <!-- ─── SECTION: TAMPILAN ──────────────────────────────────── -->
                 <section>
                     <div class="flex items-center gap-3 mb-4">
-                        <h2 class="text-2xs font-black text-gray-400 uppercase tracking-[0.2em]">Tampilan</h2>
+                        <h2 class="text-2xs font-black text-gray-400 uppercase tracking-[0.2em]">{{ $t('settings.appearance') }}</h2>
                         <div class="flex-1 h-px bg-white/5"></div>
                     </div>
 
@@ -134,14 +138,14 @@ const updateTransactionLogic = () => {
                                     </svg>
                                 </div>
                                 <div class="flex-1">
-                                    <p class="text-sm font-bold text-white leading-tight">Tema Warna</p>
-                                    <p class="text-2xs text-gray-500 mt-0.5 mb-3">Saat ini hanya dark mode yang tersedia.</p>
+                                    <p class="text-sm font-bold text-white leading-tight">{{ $t('settings.theme.title') }}</p>
+                                    <p class="text-2xs text-gray-500 mt-0.5 mb-3">{{ $t('settings.theme.desc') }}</p>
                                     <div class="flex gap-2">
                                         <span class="px-3 py-1.5 rounded-lg bg-purple-500/20 text-purple-400 border border-purple-500/30 text-2xs font-bold uppercase tracking-widest">
-                                            Dark Mode ✓
+                                            {{ $t('settings.theme.dark') }} ✓
                                         </span>
-                                        <span class="px-3 py-1.5 rounded-lg bg-gray-800 text-gray-600 border border-white/5 text-2xs font-bold uppercase tracking-widest cursor-not-allowed" title="Segera hadir">
-                                            Light (Soon)
+                                        <span class="px-3 py-1.5 rounded-lg bg-gray-800 text-gray-600 border border-white/5 text-2xs font-bold uppercase tracking-widest cursor-not-allowed" :title="$t('settings.theme.lightSoon')">
+                                            {{ $t('settings.theme.light') }}
                                         </span>
                                     </div>
                                 </div>
@@ -157,8 +161,8 @@ const updateTransactionLogic = () => {
                                     </svg>
                                 </div>
                                 <div class="flex-1">
-                                    <p class="text-sm font-bold text-white leading-tight">Tata Letak Layar Lebar</p>
-                                    <p class="text-2xs text-gray-500 mt-0.5 mb-3">Mode tampilan untuk layar desktop.</p>
+                                    <p class="text-sm font-bold text-white leading-tight">{{ $t('settings.layout.title') }}</p>
+                                    <p class="text-2xs text-gray-500 mt-0.5 mb-3">{{ $t('settings.layout.desc') }}</p>
                                     <div class="flex gap-2">
                                         <button
                                             @click="isDesktopLayout = true"
@@ -168,7 +172,7 @@ const updateTransactionLogic = () => {
                                                     ? 'bg-orange-500/20 text-orange-400 border-orange-500/30'
                                                     : 'bg-gray-800 text-gray-500 border-white/5 hover:border-orange-500/30 hover:text-orange-400'
                                             ]">
-                                            Desktop {{ isDesktopLayout ? '✓' : '' }}
+                                            {{ $t('settings.layout.desktop') }} {{ isDesktopLayout ? '✓' : '' }}
                                         </button>
                                         <button
                                             @click="isDesktopLayout = false"
@@ -178,7 +182,7 @@ const updateTransactionLogic = () => {
                                                     ? 'bg-orange-500/20 text-orange-400 border-orange-500/30'
                                                     : 'bg-gray-800 text-gray-500 border-white/5 hover:border-orange-500/30 hover:text-orange-400'
                                             ]">
-                                            Mobile {{ !isDesktopLayout ? '✓' : '' }}
+                                            {{ $t('settings.layout.mobile') }} {{ !isDesktopLayout ? '✓' : '' }}
                                         </button>
                                     </div>
                                 </div>
@@ -187,10 +191,69 @@ const updateTransactionLogic = () => {
                     </div>
                 </section>
 
-                <!-- ─── SECTION 4: INTEGRASI ─────────────────────────────────── -->
+                <!-- ─── SECTION: BAHASA ─────────────────────────────────────────── -->
                 <section>
                     <div class="flex items-center gap-3 mb-4">
-                        <h2 class="text-2xs font-black text-gray-400 uppercase tracking-[0.2em]">Integrasi</h2>
+                        <h2 class="text-2xs font-black text-gray-400 uppercase tracking-[0.2em]">{{ $t('settings.language') }}</h2>
+                        <div class="flex-1 h-px bg-white/5"></div>
+                    </div>
+
+                    <div class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-2xl p-5 space-y-3">
+                        <p class="text-sm font-bold text-white mb-4">{{ $t('settings.lang.title') }}</p>
+
+                        <!-- Auto (Device) -->
+                        <label class="flex items-center gap-4 cursor-pointer group">
+                            <div class="relative">
+                                <input type="radio" name="language" value="auto" :checked="currentPreference === 'auto'" @change="setLocale('auto')" class="sr-only" />
+                                <div :class="['w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors', currentPreference === 'auto' ? 'border-purple-500 bg-purple-500/20' : 'border-gray-600 group-hover:border-gray-400']">
+                                    <div v-if="currentPreference === 'auto'" class="w-2.5 h-2.5 rounded-full bg-purple-400"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-white">{{ $t('settings.lang.auto') }}</p>
+                                <p class="text-2xs text-gray-500">{{ $t('settings.lang.autoDesc') }}</p>
+                            </div>
+                            <span v-if="currentPreference === 'auto'" class="ml-auto text-2xs font-bold text-purple-400 uppercase tracking-widest">{{ $t('settings.lang.current') }}</span>
+                        </label>
+
+                        <div class="border-t border-white/5"></div>
+
+                        <!-- Bahasa Indonesia -->
+                        <label class="flex items-center gap-4 cursor-pointer group">
+                            <div class="relative">
+                                <input type="radio" name="language" value="id" :checked="currentPreference === 'id'" @change="setLocale('id')" class="sr-only" />
+                                <div :class="['w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors', currentPreference === 'id' ? 'border-purple-500 bg-purple-500/20' : 'border-gray-600 group-hover:border-gray-400']">
+                                    <div v-if="currentPreference === 'id'" class="w-2.5 h-2.5 rounded-full bg-purple-400"></div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-lg">🇮🇩</span>
+                                <p class="text-sm font-bold text-white">{{ $t('settings.lang.id') }}</p>
+                            </div>
+                            <span v-if="currentPreference === 'id'" class="ml-auto text-2xs font-bold text-purple-400 uppercase tracking-widest">{{ $t('settings.lang.current') }}</span>
+                        </label>
+
+                        <!-- English -->
+                        <label class="flex items-center gap-4 cursor-pointer group">
+                            <div class="relative">
+                                <input type="radio" name="language" value="en" :checked="currentPreference === 'en'" @change="setLocale('en')" class="sr-only" />
+                                <div :class="['w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors', currentPreference === 'en' ? 'border-purple-500 bg-purple-500/20' : 'border-gray-600 group-hover:border-gray-400']">
+                                    <div v-if="currentPreference === 'en'" class="w-2.5 h-2.5 rounded-full bg-purple-400"></div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-lg">🇺🇸</span>
+                                <p class="text-sm font-bold text-white">{{ $t('settings.lang.en') }}</p>
+                            </div>
+                            <span v-if="currentPreference === 'en'" class="ml-auto text-2xs font-bold text-purple-400 uppercase tracking-widest">{{ $t('settings.lang.current') }}</span>
+                        </label>
+                    </div>
+                </section>
+
+                <!-- ─── SECTION: INTEGRASI ─────────────────────────────────── -->
+                <section>
+                    <div class="flex items-center gap-3 mb-4">
+                        <h2 class="text-2xs font-black text-gray-400 uppercase tracking-[0.2em]">{{ $t('settings.ai') }}</h2>
                         <div class="flex-1 h-px bg-white/5"></div>
                     </div>
 
@@ -205,8 +268,8 @@ const updateTransactionLogic = () => {
                                 </svg>
                             </div>
                             <div class="flex-1 min-w-0">
-                                <p class="text-sm font-bold text-white leading-tight">Kecerdasan Buatan (AI)</p>
-                                <p class="text-2xs text-gray-500 mt-0.5">API key, model, dan analitik performa</p>
+                                <p class="text-sm font-bold text-white leading-tight">{{ $t('settings.aiSettings.title') }}</p>
+                                <p class="text-2xs text-gray-500 mt-0.5">{{ $t('settings.aiSettings.desc') }}</p>
                             </div>
                             <svg class="w-4 h-4 text-gray-600 group-hover:text-indigo-400 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
@@ -221,20 +284,20 @@ const updateTransactionLogic = () => {
                                 </svg>
                             </div>
                             <div class="flex-1 min-w-0">
-                                <p class="text-sm font-bold text-white leading-tight">Telegram Bot</p>
-                                <p class="text-2xs text-gray-500 mt-0.5">Catat transaksi via chat natural language</p>
+                                <p class="text-sm font-bold text-white leading-tight">{{ $t('settings.telegram.title') }}</p>
+                                <p class="text-2xs text-gray-500 mt-0.5">{{ $t('settings.telegram.desc') }}</p>
                             </div>
                             <span class="shrink-0 px-2.5 py-1 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/25 text-2xs font-bold uppercase tracking-widest">
-                                Aktif
+                                {{ $t('settings.telegram.status') }}
                             </span>
                         </div>
                     </div>
                 </section>
 
-                <!-- ─── SECTION 5: DATA ───────────────────────────────────────── -->
+                <!-- ─── SECTION: DATA ───────────────────────────────────────── -->
                 <section>
                     <div class="flex items-center gap-3 mb-4">
-                        <h2 class="text-2xs font-black text-gray-400 uppercase tracking-[0.2em]">Data</h2>
+                        <h2 class="text-2xs font-black text-gray-400 uppercase tracking-[0.2em]">{{ $t('settings.data.section') }}</h2>
                         <div class="flex-1 h-px bg-white/5"></div>
                     </div>
 
@@ -246,15 +309,15 @@ const updateTransactionLogic = () => {
                                 </svg>
                             </div>
                             <div class="flex-1">
-                                <p class="text-sm font-bold text-white leading-tight">Ekspor & Pencadangan</p>
-                                <p class="text-2xs text-gray-500 mt-0.5 mb-4">Unduh seluruh rekam jejak finansial ke format CSV.</p>
+                                <p class="text-sm font-bold text-white leading-tight">{{ $t('settings.data.title') }}</p>
+                                <p class="text-2xs text-gray-500 mt-0.5 mb-4">{{ $t('settings.data.desc') }}</p>
                                 <button
                                     type="button"
                                     class="flex items-center gap-2 px-4 py-2.5 bg-yellow-500/15 text-yellow-400 border border-yellow-500/25 text-2xs font-bold uppercase tracking-widest rounded-xl hover:bg-yellow-500 hover:text-gray-900 hover:border-yellow-500 transition-all">
                                     <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                                     </svg>
-                                    Ekspor CSV
+                                    {{ $t('settings.data.exportBtn') }}
                                 </button>
                             </div>
                         </div>
