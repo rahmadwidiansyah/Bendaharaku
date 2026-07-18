@@ -131,7 +131,7 @@
         to   { opacity: 1; }
     }
 
-    /* Page entry — dipakai AuthenticatedLayout, menggantikan fadeInPage lokal */
+    /* Page entry — dipakai konten di dalam halaman yang baru mount */
     @keyframes page-enter {
         from { transform: translateY(15px); opacity: 0; }
         to   { transform: translateY(0);    opacity: 1; }
@@ -148,6 +148,13 @@
     .animate-fade-in-up  { animation: fade-in-up  0.5s  cubic-bezier(0.16, 1, 0.3, 1)       forwards; opacity: 0; }
     .animate-pop-in      { animation: pop-in      0.25s cubic-bezier(0.34, 1.56, 0.64, 1)   forwards; }
     .animate-fade-in     { animation: fade-in     0.3s  ease                                 forwards; }
+    /*
+     * animate-page-enter:
+     * Hanya digunakan untuk konten internal di dalam halaman (bukan di layout wrapper).
+     * Layout mengontrol opacity via class transition-opacity, bukan animasi ini.
+     * Dengan `forwards`, animasi tidak looping dan tidak akan conflict dengan
+     * opacity transition yang dikendalikan oleh skeleton loading system.
+     */
     .animate-page-enter  { animation: page-enter  0.35s cubic-bezier(0.16, 1, 0.3, 1)       forwards; will-change: opacity, transform; }
     .animate-shimmer     {
         background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.04) 50%, transparent 100%);

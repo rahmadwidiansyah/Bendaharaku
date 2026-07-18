@@ -5,6 +5,9 @@ import { Head, Link } from '@inertiajs/vue3';
 import { ref, shallowRef, onMounted, watch, computed, nextTick } from 'vue';
 import { Chart, registerables } from 'chart.js';
 import { formatNumber } from '@/utils/format.js';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 Chart.register(...registerables);
 
@@ -168,10 +171,10 @@ const renderBarChart = async (view) => {
         data: {
             labels: labels,
             datasets: [
-                { label: 'In', data: incomes, backgroundColor: '#34D399', borderRadius: 4 },
-                { label: 'Out', data: expenses, backgroundColor: '#FCA5FF', borderRadius: 4 },
-                { label: 'Hutang', data: debts, backgroundColor: '#FBBF24', borderRadius: 4 },
-                { label: 'Piutang', data: receivables, backgroundColor: '#C084FC', borderRadius: 4 }
+                { label: t('analytics.chartLabels.income'), data: incomes, backgroundColor: '#34D399', borderRadius: 4 },
+                { label: t('analytics.chartLabels.expense'), data: expenses, backgroundColor: '#FCA5FF', borderRadius: 4 },
+                { label: t('analytics.chartLabels.debt'), data: debts, backgroundColor: '#FBBF24', borderRadius: 4 },
+                { label: t('analytics.chartLabels.receivable'), data: receivables, backgroundColor: '#C084FC', borderRadius: 4 }
             ]
         },
         options: {
@@ -195,13 +198,13 @@ const renderBarChart = async (view) => {
 
 const activeCategoryData = computed(() => {
     if (categoryView.value === 'expense') {
-        return { labels: props.expensesByCategory.map(x => x.name), values: props.expensesByCategory.map(x => x.total), ids: props.expensesByCategory.map(x => x.id), icons: props.expensesByCategory.map(x => x.icon), total: props.totalExpense, labelName: 'Total Pengeluaran' };
+        return { labels: props.expensesByCategory.map(x => x.name), values: props.expensesByCategory.map(x => x.total), ids: props.expensesByCategory.map(x => x.id), icons: props.expensesByCategory.map(x => x.icon), total: props.totalExpense, labelName: t('analytics.totalExpense') };
     } else if (categoryView.value === 'income') {
-        return { labels: props.incomesByCategory.map(x => x.name), values: props.incomesByCategory.map(x => x.total), ids: props.incomesByCategory.map(x => x.id), icons: props.incomesByCategory.map(x => x.icon), total: props.totalIncome, labelName: 'Total Pemasukan' };
+        return { labels: props.incomesByCategory.map(x => x.name), values: props.incomesByCategory.map(x => x.total), ids: props.incomesByCategory.map(x => x.id), icons: props.incomesByCategory.map(x => x.icon), total: props.totalIncome, labelName: t('analytics.totalIncome') };
     } else if (categoryView.value === 'debt') {
-        return { labels: props.debtsByCategory.map(x => x.name), values: props.debtsByCategory.map(x => x.total), ids: props.debtsByCategory.map(x => x.id), icons: props.debtsByCategory.map(x => x.icon), total: props.totalDebt, labelName: 'Total Hutang' };
+        return { labels: props.debtsByCategory.map(x => x.name), values: props.debtsByCategory.map(x => x.total), ids: props.debtsByCategory.map(x => x.id), icons: props.debtsByCategory.map(x => x.icon), total: props.totalDebt, labelName: t('analytics.totalDebt') };
     } else {
-        return { labels: props.receivablesByCategory.map(x => x.name), values: props.receivablesByCategory.map(x => x.total), ids: props.receivablesByCategory.map(x => x.id), icons: props.receivablesByCategory.map(x => x.icon), total: props.totalReceivable, labelName: 'Total Piutang' };
+        return { labels: props.receivablesByCategory.map(x => x.name), values: props.receivablesByCategory.map(x => x.total), ids: props.receivablesByCategory.map(x => x.id), icons: props.receivablesByCategory.map(x => x.icon), total: props.totalReceivable, labelName: t('analytics.totalReceivable') };
     }
 });
 
@@ -271,14 +274,14 @@ onMounted(() => {
                     <p
                         class="text-2xs text-purple-500 font-black mb-1.5 uppercase tracking-[0.2em] flex items-center gap-2">
                         <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
-                        Laporan
+                        {{ $t('analytics.subtitle') }}
                     </p>
-                    <h1 class="text-3xl font-black text-white tracking-tight leading-none">Analitik</h1>
+                    <h1 class="text-3xl font-black text-white tracking-tight leading-none">{{ $t('analytics.title') }}</h1>
                 </div>
 
                 <!-- Mobile: info rentang tanggal + DateModal -->
                 <div class="flex lg:hidden flex-col gap-0.5">
-                    <p class="text-2xs text-gray-500 font-bold uppercase tracking-widest">Menampilkan data</p>
+                    <p class="text-2xs text-gray-500 font-bold uppercase tracking-widest">{{ $t('analytics.showingData') }}</p>
                     <p class="text-xs font-black text-white leading-tight">
                         {{ new Date(startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) }}
                         <span class="text-gray-500 mx-1">–</span>
@@ -294,7 +297,7 @@ onMounted(() => {
                     class="bg-linear-to-br from-green-900 to-green-800/50 p-4 rounded-xl border border-white/10 relative overflow-hidden group">
                     <div class="flex items-center gap-2 mb-2">
                         <div class="w-1.5 h-1.5 rounded-full bg-green-400"></div>
-                        <p class="text-2xs font-bold text-gray-400 uppercase tracking-widest">Pemasukan</p>
+                        <p class="text-2xs font-bold text-gray-400 uppercase tracking-widest">{{ $t('types.income') }}</p>
                     </div>
                     <p
                         class="text-md font-black text-green-400 tracking-tighter wrap-break-words relative z-10 leading-tight">
@@ -305,7 +308,7 @@ onMounted(() => {
                     class="bg-linear-to-br from-red-900 to-red-800/50 p-4 rounded-xl border border-white/10 relative overflow-hidden group">
                     <div class="flex items-center gap-2 mb-2">
                         <div class="w-1.5 h-1.5 rounded-full bg-red-400"></div>
-                        <p class="text-2xs font-bold text-gray-400 uppercase tracking-widest">Pengeluaran</p>
+                        <p class="text-2xs font-bold text-gray-400 uppercase tracking-widest">{{ $t('types.expense') }}</p>
                     </div>
                     <p class="text-md font-black text-red-400 tracking-tighter wrap-break-words relative z-10 leading-tight">
                         <span class="text-red-400 text-2xs mr-0.5 opacity-70">-Rp</span>{{ formatNumber(totalExpense) }}
@@ -318,8 +321,8 @@ onMounted(() => {
                 class="bg-linear-to-br from-gray-900 to-gray-800 border border-gray-500/10 p-6 rounded-xl mb-8 animate-fade-in-up delay-200 relative overflow-hidden group">
                 <div class="flex justify-between items-start mb-6 relative z-10">
                     <div>
-                        <p class="text-xs font-bold text-white uppercase tracking-[0.2em] mb-1">Saldo Kumulatif</p>
-                        <p class="text-2xs text-gray-500 font-medium">Pergerakan total kekayaan</p>
+                        <p class="text-xs font-bold text-white uppercase tracking-[0.2em] mb-1">{{ $t('analytics.cumulativeBalance') }}</p>
+                        <p class="text-2xs text-gray-500 font-medium">{{ $t('analytics.cumulativeDesc') }}</p>
                     </div>
                     <p
                         class="text-lg font-black text-white tracking-tight bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 px-3 py-1.5 rounded-xl">
@@ -335,17 +338,17 @@ onMounted(() => {
             <div
                 class="bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 p-6 rounded-xl mb-8 animate-fade-in-up delay-300 relative overflow-hidden group">
                 <div class="flex justify-between items-center mb-6 relative z-10">
-                    <h2 class="text-sm font-bold text-white uppercase tracking-widest">Arus Kas</h2>
+                    <h2 class="text-sm font-bold text-white uppercase tracking-widest">{{ $t('analytics.cashflow') }}</h2>
                     <div class="flex bg-gray-900 border border-white/10 rounded-lg p-1 relative overflow-hidden">
                         <div class="absolute top-1 bottom-1 left-1 w-[calc(33.33%-0.25rem)] bg-linear-to-br from-purple-500 to-purple-800 rounded-md transition-all duration-300 ease-out z-0"
                             :style="{ transform: barView === 'harian' ? 'translateX(0)' : (barView === 'mingguan' ? 'translateX(100%)' : 'translateX(200%)') }">
                         </div>
                         <button @click="renderBarChart('harian')"
-                            :class="['relative z-10 text-2xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-md transition-all duration-300', barView === 'harian' ? 'text-white' : 'text-gray-500 hover:text-white']">Hari</button>
+                            :class="['relative z-10 text-2xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-md transition-all duration-300', barView === 'harian' ? 'text-white' : 'text-gray-500 hover:text-white']">{{ $t('analytics.view.daily') }}</button>
                         <button @click="renderBarChart('mingguan')"
-                            :class="['relative z-10 text-2xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-md transition-all duration-300', barView === 'mingguan' ? 'text-white' : 'text-gray-500 hover:text-white']">Pekan</button>
+                            :class="['relative z-10 text-2xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-md transition-all duration-300', barView === 'mingguan' ? 'text-white' : 'text-gray-500 hover:text-white']">{{ $t('analytics.view.weekly') }}</button>
                         <button @click="renderBarChart('bulanan')"
-                            :class="['relative z-10 text-2xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-md transition-all duration-300', barView === 'bulanan' ? 'text-white' : 'text-gray-500 hover:text-white']">Bulan</button>
+                            :class="['relative z-10 text-2xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-md transition-all duration-300', barView === 'bulanan' ? 'text-white' : 'text-gray-500 hover:text-white']">{{ $t('analytics.view.monthly') }}</button>
                     </div>
                 </div>
 
@@ -358,7 +361,7 @@ onMounted(() => {
 
             <!-- CATEGORY SECTION -->
             <div class="flex items-center gap-2 mb-4 px-1 animate-fade-in-up delay-400">
-                <h2 class="text-2xs font-bold text-white uppercase tracking-widest">Rincian Kategori</h2>
+                <h2 class="text-2xs font-bold text-white uppercase tracking-widest">{{ $t('analytics.categoryBreakdown') }}</h2>
                 <div class="flex-1 h-px bg-linear-to-r from-purple-500 to-transparent"></div>
             </div>
             <div
@@ -367,13 +370,13 @@ onMounted(() => {
                     :style="{ transform: categoryView === 'expense' ? 'translateX(0)' : categoryView === 'income' ? 'translateX(100%)' : categoryView === 'debt' ? 'translateX(200%)' : 'translateX(300%)' }">
                 </div>
                 <button @click="switchCategory('expense')"
-                    :class="['relative z-10 flex-1 text-2xs font-bold uppercase tracking-widest py-3 transition-colors duration-300', categoryView === 'expense' ? 'text-white' : 'text-gray-500 hover:text-white']">Keluar</button>
+                    :class="['relative z-10 flex-1 text-2xs font-bold uppercase tracking-widest py-3 transition-colors duration-300', categoryView === 'expense' ? 'text-white' : 'text-gray-500 hover:text-white']">{{ $t('analytics.categoryTab.expense') }}</button>
                 <button @click="switchCategory('income')"
-                    :class="['relative z-10 flex-1 text-2xs font-bold uppercase tracking-widest py-3 transition-colors duration-300', categoryView === 'income' ? 'text-white' : 'text-gray-500 hover:text-white']">Masuk</button>
+                    :class="['relative z-10 flex-1 text-2xs font-bold uppercase tracking-widest py-3 transition-colors duration-300', categoryView === 'income' ? 'text-white' : 'text-gray-500 hover:text-white']">{{ $t('analytics.categoryTab.income') }}</button>
                 <button @click="switchCategory('debt')"
-                    :class="['relative z-10 flex-1 text-2xs font-bold uppercase tracking-widest py-3 transition-colors duration-300', categoryView === 'debt' ? 'text-white' : 'text-gray-500 hover:text-white']">Hutang</button>
+                    :class="['relative z-10 flex-1 text-2xs font-bold uppercase tracking-widest py-3 transition-colors duration-300', categoryView === 'debt' ? 'text-white' : 'text-gray-500 hover:text-white']">{{ $t('analytics.categoryTab.debt') }}</button>
                 <button @click="switchCategory('receivable')"
-                    :class="['relative z-10 flex-1 text-2xs font-bold uppercase tracking-widest py-3 transition-colors duration-300', categoryView === 'receivable' ? 'text-white' : 'text-gray-500 hover:text-white']">Piutang</button>
+                    :class="['relative z-10 flex-1 text-2xs font-bold uppercase tracking-widest py-3 transition-colors duration-300', categoryView === 'receivable' ? 'text-white' : 'text-gray-500 hover:text-white']">{{ $t('analytics.categoryTab.receivable') }}</button>
             </div>
 
             <!-- DOUGHNUT CHART -->
@@ -382,7 +385,7 @@ onMounted(() => {
                 <div v-if="!activeCategoryData.labels.length" class="flex flex-col items-center justify-center py-10">
                     <span
                         class="w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center text-xl mb-3 border border-white/10">📭</span>
-                    <p class="text-2xs font-bold text-white uppercase tracking-widest">Tidak Ada Data</p>
+                    <p class="text-2xs font-bold text-white uppercase tracking-widest">{{ $t('analytics.noData') }}</p>
                 </div>
                 <template v-else>
                     <div class="relative w-full h-56 mb-6">

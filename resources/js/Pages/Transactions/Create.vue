@@ -2,11 +2,12 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import AmountKeypad from '@/Components/AmountKeypad.vue'
 import { Head, useForm, router, Link } from '@inertiajs/vue3'
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useLayoutPreference } from '@/Composables/useLayoutPreference'
 import { useTransactionForm } from '@/Composables/useTransactionForm.js'
-import { formatNumber } from '@/utils/format.js'
 
+const { t } = useI18n()
 const { isDesktopLayout } = useLayoutPreference()
 
 const props = defineProps({
@@ -25,6 +26,7 @@ const form = useForm({
     date: new Date().toISOString().split('T')[0],
     subject: '-',
     notes: '',
+    transaction_type: null,
     due_date: null,
     due_date_type: null,
     due_date_interval: null,
@@ -54,19 +56,26 @@ onMounted(() => {
 const formStep = ref(1)
 const typeConfirmed = ref(false)
 
-const TYPE_ITEMS = [
-    { tab: 'Expense',    label: 'Pengeluaran', desc: 'Bayar sesuatu',    icon: '📤', color: 'from-red-500/20 to-red-900/10',    border: 'border-red-500/40',    text: 'text-red-400'    },
-    { tab: 'Income',     label: 'Pemasukan',   desc: 'Dapat uang',       icon: '📥', color: 'from-green-500/20 to-green-900/10', border: 'border-green-500/40',  text: 'text-green-400'  },
-    { tab: 'Transfer',   label: 'Transfer',    desc: 'Pindah antar dompet', icon: '🔄', color: 'from-blue-500/20 to-blue-900/10',   border: 'border-blue-500/40',   text: 'text-blue-400'   },
-    { tab: 'Debt',       label: 'Hutang',      desc: 'Pinjam / bayar',   icon: '📊', color: 'from-orange-500/20 to-orange-900/10', border: 'border-orange-500/40', text: 'text-orange-400' },
-    { tab: 'Receivable', label: 'Piutang',     desc: 'Kasih / terima',   icon: '💰', color: 'from-yellow-500/20 to-yellow-900/10', border: 'border-yellow-500/40', text: 'text-yellow-400' },
-]
+// Transfer: animasi swap
+const isSwapping = ref(false)
+
+const TYPE_ITEMS = computed(() => [
+    { tab: 'Expense',    label: t('types.expense'),    desc: t('types.expenseDesc'),    icon: '📤', color: 'from-red-500/20 to-red-900/10',     border: 'border-red-500/40',    text: 'text-red-400'    },
+    { tab: 'Income',     label: t('types.income'),     desc: t('types.incomeDesc'),     icon: '📥', color: 'from-green-500/20 to-green-900/10',  border: 'border-green-500/40',  text: 'text-green-400'  },
+    { tab: 'Transfer',   label: t('types.transfer'),   desc: t('types.transferDesc'),   icon: '🔄', color: 'from-blue-500/20 to-blue-900/10',    border: 'border-blue-500/40',   text: 'text-blue-400'   },
+    { tab: 'Debt',       label: t('types.debt'),       desc: t('types.debtDesc'),       icon: '📊', color: 'from-orange-500/20 to-orange-900/10', border: 'border-orange-500/40', text: 'text-orange-400' },
+    { tab: 'Receivable', label: t('types.receivable'), desc: t('types.receivableDesc'), icon: '💰', color: 'from-yellow-500/20 to-yellow-900/10', border: 'border-yellow-500/40', text: 'text-yellow-400' },
+])
 
 const confirmType = (tab) => {
     setMainTab(tab)
     typeConfirmed.value = true
+    form.transaction_type = tab.toLowerCase()
+    // Transfer langsung ke step 2 (form lengkap), tipe lain tetap ke step 2 (kategori)
     formStep.value = 2
-    form.category_id = null
+    if (tab !== 'Transfer') {
+        form.category_id = null
+    }
 }
 
 const confirmCategory = () => {
@@ -80,6 +89,7 @@ const resetToStep = (step) => {
     if (step <= 1) {
         typeConfirmed.value = false
         form.category_id = null
+        form.transaction_type = null
         showBottomPanel.value = false
     }
     if (step <= 2) {
@@ -88,14 +98,58 @@ const resetToStep = (step) => {
     }
 }
 
-const activeTypeItem = () => TYPE_ITEMS.find(t => t.tab === mainTab.value)
+const activeTypeItem = computed(() => TYPE_ITEMS.value.find(i => i.tab === mainTab.value))
+
+// ─── Transfer: validasi frontend ──────────────────────────────────
+const transferErrors = ref({})
+
+const validateTransfer = () => {
+    transferErrors.value = {}
+    if (!form.source_wallet_id)      transferErrors.value.source = 'Pilih dompet asal'
+    if (!form.destination_wallet_id) transferErrors.value.dest   = 'Pilih dompet tujuan'
+    if (form.source_wallet_id && form.destination_wallet_id &&
+        form.source_wallet_id === form.destination_wallet_id) {
+        transferErrors.value.same = 'Dompet asal dan tujuan tidak boleh sama'
+    }
+    if (!form.amount || form.amount <= 0) transferErrors.value.amount = 'Nominal harus lebih dari 0'
+    return Object.keys(transferErrors.value).length === 0
+}
+
+// ─── Transfer: swap source ↔ destination ─────────────────────────
+const swapWallets = () => {
+    if (isSwapping.value) return
+    isSwapping.value = true
+    const tmp = form.source_wallet_id
+    form.source_wallet_id      = form.destination_wallet_id
+    form.destination_wallet_id = tmp
+    setTimeout(() => { isSwapping.value = false }, 400)
+}
 
 // ─── Submit ───────────────────────────────────────────────────────
+const submitTransfer = (closeAfter = true) => {
+    if (!validateTransfer()) return
+    form.post(route('transactions.store'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            if (closeAfter) {
+                handleBack()
+            } else {
+                form.amount = 0
+                rawAmount.value = '0'
+                form.notes = ''
+                form.source_wallet_id = null
+                form.destination_wallet_id = null
+                transferErrors.value = {}
+            }
+        },
+    })
+}
+
 const submit = (closeAfter = true) => {
-    if (!form.amount || form.amount <= 0) { form.setError('amount', 'Nominal harus lebih dari 0'); return }
-    if (new Date(form.date) > new Date()) { form.setError('date', 'Masa depan tidak diizinkan!'); return }
+    if (!form.amount || form.amount <= 0) { form.setError('amount', t('transaction.validation.amountPositive')); return }
+    if (new Date(form.date) > new Date()) { form.setError('date', t('transaction.validation.dateFuture')); return }
     if (['Debt', 'Receivable'].includes(activeType.value) && (!form.subject || form.subject === '-')) {
-        form.setError('subject', 'Wajib diisi Bos!'); return
+        form.setError('subject', t('transaction.validation.subjectRequired')); return
     }
     form.post(route('transactions.store'), {
         preserveScroll: true,
@@ -128,7 +182,7 @@ const handleBack = () => router.visit(route('dashboard'))
             style="height: 100dvh;"
         >
             <!-- ── HEADER BAR ─────────────────────────────────────── -->
-            <div class="shrink-0 flex items-center gap-3 px-4 pt-4 pb-3 border-b border-white/5">
+            <div class="shrink-0 flex items-center gap-3 px-4 pt-2 pb-2 border-b border-white/5">
                 <!-- Breadcrumb steps -->
                 <div class="flex items-center gap-2 flex-1 min-w-0">
                     <!-- Step 1 chip -->
@@ -142,14 +196,21 @@ const handleBack = () => router.visit(route('dashboard'))
                                 ? 'bg-gray-800 text-gray-300 border border-white/10 hover:border-purple-500/30'
                                 : 'bg-gray-800/50 text-gray-600 border border-white/5 cursor-default'"
                     >
-                        <span>{{ typeConfirmed ? (activeTypeItem()?.icon + ' ' + activeTypeItem()?.label) : '1 · Jenis' }}</span>
+                        <span>{{ typeConfirmed ? (activeTypeItem?.icon + ' ' + activeTypeItem?.label) : '1 · Jenis' }}</span>
                     </button>
 
                     <svg v-if="typeConfirmed" class="w-3 h-3 text-gray-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
 
-                    <!-- Step 2 chip -->
+                    <!-- Step 2 chip — Transfer hanya punya 2 step total -->
+                    <div
+                        v-if="typeConfirmed && mainTab === 'Transfer'"
+                        class="px-3 py-1.5 rounded-full text-2xs font-black uppercase tracking-widest"
+                        :class="formStep === 2 ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40' : 'bg-gray-800/50 text-gray-600 border border-white/5'"
+                    >2 · Transfer</div>
+
+                    <!-- Step 2 chip — tipe lain (Expense, Income, Debt, Receivable) -->
                     <button
-                        v-if="typeConfirmed"
+                        v-if="typeConfirmed && mainTab !== 'Transfer'"
                         type="button"
                         @click="resetToStep(2)"
                         class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-2xs font-black uppercase tracking-widest transition-all active:scale-95"
@@ -162,11 +223,11 @@ const handleBack = () => router.visit(route('dashboard'))
                         <span>{{ formStep > 2 && selectedCategory ? (selectedCategory.icon?.includes('.') ? '' : selectedCategory.icon + ' ') + selectedCategory.category_name : '2 · Kategori' }}</span>
                     </button>
 
-                    <svg v-if="formStep >= 3" class="w-3 h-3 text-gray-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                    <svg v-if="formStep >= 3 && mainTab !== 'Transfer'" class="w-3 h-3 text-gray-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
 
-                    <!-- Step 3 chip -->
+                    <!-- Step 3 chip — hanya untuk tipe non-Transfer -->
                     <div
-                        v-if="formStep >= 3"
+                        v-if="formStep >= 3 && mainTab !== 'Transfer'"
                         class="px-3 py-1.5 rounded-full text-2xs font-black uppercase tracking-widest bg-purple-500/20 text-purple-300 border border-purple-500/40"
                     >3 · Nominal</div>
                 </div>
@@ -245,46 +306,136 @@ const handleBack = () => router.visit(route('dashboard'))
                         </div>
                     </div>
 
-                    <!-- Transfer: pilih dompet -->
-                    <div v-if="mainTab === 'Transfer'" class="flex-1 flex flex-col items-center justify-center px-6 gap-6">
-                        <div class="text-center">
-                            <p class="text-2xs font-black text-purple-500 uppercase tracking-[0.25em] mb-1">Langkah 2 dari 3</p>
-                            <h2 class="text-lg font-black text-white">Pilih Dompet</h2>
-                        </div>
-                        <div class="w-full max-w-sm flex items-center justify-center gap-6">
-                            <!-- Sumber -->
-                            <div class="flex flex-col items-center gap-3">
+                    <!-- ── TRANSFER: Form lengkap 2-step (wallet picker + nominal + catatan + tanggal) ── -->
+                    <div v-if="mainTab === 'Transfer'" class="flex-1 flex flex-col min-h-0 overflow-hidden">
+
+                        <!-- Scrollable form area -->
+                        <div class="flex-1 overflow-y-auto no-scrollbar px-4 pt-3 pb-2 space-y-3">
+
+                            <!-- Error banner -->
+                            <div v-if="Object.keys(transferErrors).length || Object.keys(form.errors).length"
+                                class="p-3 bg-red-500/10 border border-red-500/30 rounded-xl">
+                                <p v-for="(err, key) in {...transferErrors, ...form.errors}" :key="key"
+                                    class="text-red-400 text-2xs font-bold">{{ err }}</p>
+                            </div>
+
+                            <!-- ── Wallet Picker dengan tombol Swap ── -->
+                            <div class="bg-gray-800/60 border border-white/8 rounded-2xl p-4">
+                                <p class="text-2xs font-black text-gray-500 uppercase tracking-widest mb-3 text-center">Pindah Dana</p>
+
+                                <!-- Source wallet -->
                                 <button type="button" @click="openWalletModal('source')"
-                                    class="w-20 h-20 rounded-2xl bg-gray-800 border-2 flex items-center justify-center active:scale-95 transition-transform overflow-hidden"
-                                    :class="selectedSourceWallet ? 'border-purple-500/60' : 'border-white/10 border-dashed'">
-                                    <template v-if="selectedSourceWallet">
-                                        <img v-if="selectedSourceWallet.icon.includes('.')" :src="'/storage/' + selectedSourceWallet.icon" class="w-full h-full object-cover">
-                                        <span v-else class="text-4xl">{{ selectedSourceWallet.icon }}</span>
-                                    </template>
-                                    <svg v-else class="w-8 h-8 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                                    class="w-full flex items-center gap-3 bg-gray-900/80 border rounded-xl px-4 py-3 active:scale-[0.98] transition-transform text-left"
+                                    :class="transferErrors.source ? 'border-red-500/60' : selectedSourceWallet ? 'border-blue-500/40' : 'border-white/10 border-dashed'">
+                                    <div class="w-10 h-10 rounded-xl overflow-hidden bg-gray-800 border border-white/10 flex items-center justify-center shrink-0">
+                                        <template v-if="selectedSourceWallet">
+                                            <img v-if="selectedSourceWallet.icon?.includes('.')" :src="'/storage/' + selectedSourceWallet.icon" class="w-full h-full object-cover">
+                                            <span v-else class="text-xl">{{ selectedSourceWallet.icon }}</span>
+                                        </template>
+                                        <svg v-else class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-3-3v6"/></svg>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-2xs font-black text-blue-400 uppercase tracking-widest">Dari</p>
+                                        <p class="text-sm font-bold truncate" :class="selectedSourceWallet ? 'text-white' : 'text-gray-600'">
+                                            {{ selectedSourceWallet?.name || 'Pilih dompet asal...' }}
+                                        </p>
+                                        <p v-if="selectedSourceWallet" class="text-2xs text-gray-500 mt-0.5">
+                                            Rp {{ parseInt(selectedSourceWallet.balance).toLocaleString('id-ID') }}
+                                        </p>
+                                    </div>
+                                    <svg class="w-4 h-4 text-gray-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
                                 </button>
-                                <span class="text-2xs font-bold text-gray-400 uppercase tracking-widest text-center max-w-[80px] truncate">{{ selectedSourceWallet?.name || 'Dari' }}</span>
-                            </div>
-                            <!-- Arrow -->
-                            <svg class="w-8 h-8 text-purple-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-                            <!-- Tujuan -->
-                            <div class="flex flex-col items-center gap-3">
+
+                                <!-- Swap button -->
+                                <div class="flex items-center justify-center my-2">
+                                    <button type="button" @click="swapWallets"
+                                        class="w-9 h-9 rounded-full bg-gray-700 border border-white/10 flex items-center justify-center active:scale-90 transition-all hover:bg-gray-600 hover:border-blue-500/40"
+                                        :class="isSwapping ? 'rotate-180' : ''"
+                                        style="transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1)"
+                                        aria-label="Tukar dompet asal dan tujuan">
+                                        <svg class="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/>
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                <!-- Destination wallet -->
                                 <button type="button" @click="openWalletModal('dest')"
-                                    class="w-20 h-20 rounded-2xl bg-gray-800 border-2 flex items-center justify-center active:scale-95 transition-transform overflow-hidden"
-                                    :class="selectedDestWallet ? 'border-purple-500/60' : 'border-white/10 border-dashed'">
-                                    <template v-if="selectedDestWallet">
-                                        <img v-if="selectedDestWallet.icon.includes('.')" :src="'/storage/' + selectedDestWallet.icon" class="w-full h-full object-cover">
-                                        <span v-else class="text-4xl">{{ selectedDestWallet.icon }}</span>
-                                    </template>
-                                    <svg v-else class="w-8 h-8 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                                    class="w-full flex items-center gap-3 bg-gray-900/80 border rounded-xl px-4 py-3 active:scale-[0.98] transition-transform text-left"
+                                    :class="transferErrors.dest ? 'border-red-500/60' : selectedDestWallet ? 'border-purple-500/40' : 'border-white/10 border-dashed'">
+                                    <div class="w-10 h-10 rounded-xl overflow-hidden bg-gray-800 border border-white/10 flex items-center justify-center shrink-0">
+                                        <template v-if="selectedDestWallet">
+                                            <img v-if="selectedDestWallet.icon?.includes('.')" :src="'/storage/' + selectedDestWallet.icon" class="w-full h-full object-cover">
+                                            <span v-else class="text-xl">{{ selectedDestWallet.icon }}</span>
+                                        </template>
+                                        <svg v-else class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-3-3v6"/></svg>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-2xs font-black text-purple-400 uppercase tracking-widest">Ke</p>
+                                        <p class="text-sm font-bold truncate" :class="selectedDestWallet ? 'text-white' : 'text-gray-600'">
+                                            {{ selectedDestWallet?.name || 'Pilih dompet tujuan...' }}
+                                        </p>
+                                        <p v-if="selectedDestWallet" class="text-2xs text-gray-500 mt-0.5">
+                                            Rp {{ parseInt(selectedDestWallet.balance).toLocaleString('id-ID') }}
+                                        </p>
+                                    </div>
+                                    <svg class="w-4 h-4 text-gray-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
                                 </button>
-                                <span class="text-2xs font-bold text-gray-400 uppercase tracking-widest text-center max-w-[80px] truncate">{{ selectedDestWallet?.name || 'Ke' }}</span>
+                            </div>
+
+                            <!-- Catatan -->
+                            <div class="flex items-center gap-3 bg-gray-800 border border-white/8 rounded-xl px-4 py-3">
+                                <svg class="w-4 h-4 text-gray-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                <input v-model="form.notes" type="text" placeholder="Catatan (opsional)"
+                                    class="flex-1 bg-transparent border-none focus:ring-0 text-sm text-white placeholder-gray-700 outline-none" />
+                            </div>
+
+                        </div>
+
+                        <!-- Nominal display + action bar (shrink-0) -->
+                        <div class="shrink-0 px-4 pb-2 pt-1 border-t border-white/5">
+                            <!-- Nominal besar -->
+                            <div class="text-center py-2">
+                                <p class="text-2xs font-black text-gray-600 uppercase tracking-widest mb-0.5">Nominal</p>
+                                <p class="text-3xl font-black tracking-tight"
+                                    :class="transferErrors.amount ? 'text-red-400' : 'text-white'">
+                                    <span class="text-lg text-gray-500 mr-1">Rp</span>{{ parseInt(rawAmount || 0).toLocaleString('id-ID') }}
+                                </p>
+                            </div>
+
+                            <!-- Action row: tanggal + keypad toggle + simpan+lagi + simpan -->
+                            <div class="flex gap-2">
+                                <!-- Tanggal -->
+                                <button type="button" @click="dateModalTarget = 'transaction'; showDateModal = true"
+                                    class="flex-1 h-12 bg-gray-800 border border-white/8 rounded-xl flex items-center justify-center gap-2 text-2xs font-bold text-gray-400 active:scale-95 transition-transform">
+                                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                    {{ new Date(form.date).toDateString() === new Date().toDateString() ? 'Hari Ini' : new Date(form.date).toLocaleDateString('id-ID', {day:'numeric', month:'short'}) }}
+                                </button>
+                                <!-- Toggle keypad -->
+                                <button type="button" @click="showKeypad = !showKeypad"
+                                    class="w-12 h-12 bg-gray-800 border border-white/8 rounded-xl flex items-center justify-center shrink-0 active:scale-95 transition-all"
+                                    :class="showKeypad ? 'text-purple-400 border-purple-500/30' : 'text-gray-500'">
+                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                </button>
+                                <!-- Simpan & tambah lagi -->
+                                <button type="button" @click="submitTransfer(false)"
+                                    class="w-12 h-12 bg-gray-800 border border-white/8 rounded-xl flex items-center justify-center shrink-0 active:scale-95 transition-transform"
+                                    title="Simpan & tambah lagi">
+                                    <div class="w-6 h-6 rounded-full border-2 border-blue-400 flex items-center justify-center text-blue-400 text-base font-black">+</div>
+                                </button>
+                                <!-- Simpan & tutup -->
+                                <button type="button" @click="submitTransfer(true)" :disabled="form.processing"
+                                    class="flex-1 h-12 bg-blue-600 hover:bg-blue-500 rounded-xl flex items-center justify-center gap-2 text-white font-black text-sm uppercase tracking-wider active:scale-95 transition-all shadow-lg shadow-blue-600/30 disabled:opacity-50">
+                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                    Transfer
+                                </button>
                             </div>
                         </div>
-                        <button type="button" @click="confirmCategory"
-                            :disabled="!selectedSourceWallet || !selectedDestWallet"
-                            class="w-full max-w-sm py-4 rounded-2xl bg-purple-600 text-white text-sm font-black uppercase tracking-widest transition-all active:scale-95 disabled:opacity-40"
-                        >Lanjut → Isi Nominal</button>
+
+                        <!-- Keypad -->
+                        <div v-show="showKeypad" class="shrink-0 px-4 pb-2 pt-1">
+                            <AmountKeypad @key="handleKeypad" />
+                        </div>
                     </div>
 
                     <!-- Debt / Receivable: input nama -->
@@ -384,7 +535,7 @@ const handleBack = () => router.visit(route('dashboard'))
                 enter-from-class="opacity-0 translate-y-8"
                 enter-to-class="opacity-100 translate-y-0"
             >
-                <form v-if="formStep >= 3" @submit.prevent="submitAndClose"
+                <form v-if="formStep >= 3 && mainTab !== 'Transfer'" @submit.prevent="submitAndClose"
                     class="flex-1 flex flex-col min-h-0 overflow-hidden border-t border-white/5"
                 >
                     <!-- Error banner -->
@@ -426,10 +577,10 @@ const handleBack = () => router.visit(route('dashboard'))
                     <!-- Nominal display + action bar — shrink-0 agar tidak kepush keypad -->
                     <div class="shrink-0 px-4 pb-2 pt-1">
                         <!-- Nominal besar -->
-                        <div class="text-center py-3">
-                            <p class="text-2xs font-black text-gray-600 uppercase tracking-widest mb-1">Nominal</p>
-                            <p class="text-4xl font-black text-white tracking-tight">
-                                <span class="text-xl text-gray-500 mr-1">Rp</span>{{ parseInt(rawAmount || 0).toLocaleString('id-ID') }}
+                        <div class="text-center py-2">
+                            <p class="text-2xs font-black text-gray-600 uppercase tracking-widest mb-0.5">Nominal</p>
+                            <p class="text-3xl font-black text-white tracking-tight">
+                                <span class="text-lg text-gray-500 mr-1">Rp</span>{{ parseInt(rawAmount || 0).toLocaleString('id-ID') }}
                             </p>
                         </div>
 
@@ -454,8 +605,8 @@ const handleBack = () => router.visit(route('dashboard'))
                                 <div class="w-6 h-6 rounded-full border-2 border-green-400 flex items-center justify-center text-green-400 text-base font-black">+</div>
                             </button>
                             <!-- Simpan & tutup -->
-                            <button type="button" @click="submitAndClose"
-                                class="flex-1 h-12 bg-green-600 hover:bg-green-500 rounded-xl flex items-center justify-center gap-2 text-white font-black text-sm uppercase tracking-wider active:scale-95 transition-all shadow-lg shadow-green-600/30">
+                            <button type="submit" :disabled="form.processing"
+                                class="flex-1 h-12 bg-green-600 hover:bg-green-500 rounded-xl flex items-center justify-center gap-2 text-white font-black text-sm uppercase tracking-wider active:scale-95 transition-all shadow-lg shadow-green-600/30 disabled:opacity-50">
                                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                                 Simpan
                             </button>
@@ -463,7 +614,7 @@ const handleBack = () => router.visit(route('dashboard'))
                     </div>
 
                     <!-- Keypad — shrink-0 di bawah, tidak overlap karena container sudah fixed -->
-                    <div v-show="showKeypad" class="shrink-0 px-4 pb-3 pt-1">
+                    <div v-show="showKeypad" class="shrink-0 px-4 pb-2 pt-1">
                         <AmountKeypad @key="handleKeypad" />
                     </div>
                 </form>
@@ -537,4 +688,7 @@ const handleBack = () => router.visit(route('dashboard'))
 <style scoped>
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+@keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.animate-slide-up { animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+@keyframes swap-bounce { 0% { transform: scale(1) rotate(0deg); } 40% { transform: scale(0.85) rotate(120deg); } 100% { transform: scale(1) rotate(180deg); } }
 </style>

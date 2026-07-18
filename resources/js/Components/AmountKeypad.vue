@@ -33,10 +33,12 @@ const keys = [
             class="h-12 bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 transition-colors rounded-xl flex items-center justify-center active:scale-95 focus:outline-none focus-visible:ring-1 focus-visible:ring-purple-400"
             @click="$emit('key', k)"
         >
-            <!-- Delete icon -->
+            <!-- Delete icon — backspace keyboard style -->
             <template v-if="k === 'del'">
-                <svg class="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                <svg class="w-5 h-5 text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M22 3H7L2 12l5 9h15a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z" />
+                    <line x1="17" y1="9" x2="11" y2="15" stroke-linecap="round"/>
+                    <line x1="11" y1="9" x2="17" y2="15" stroke-linecap="round"/>
                 </svg>
             </template>
 

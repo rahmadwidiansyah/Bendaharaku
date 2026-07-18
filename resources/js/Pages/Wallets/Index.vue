@@ -2,12 +2,13 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useBalanceVisibility } from '@/Composables/useBalanceVisibility';
 import { useLayoutPreference } from '@/Composables/useLayoutPreference';
 import { formatNumber } from '@/utils/format.js';
 
+const { t } = useI18n();
 const { isDesktopLayout } = useLayoutPreference();
-
 const { isBalanceVisible, toggleVisibility } = useBalanceVisibility();
 
 const togglePin = (wallet) => {
@@ -46,13 +47,13 @@ const handleImageError = (e, fallback) => {
 <template>
     <AuthenticatedLayout :fullWidth="true">
 
-        <Head title="Aset Saya" />
+        <Head :title="t('wallet.title')" />
 
         <div class="p-5 w-full lg:max-w-4xl mx-auto lg:px-8">
             <header class="mb-8 pt-4 animate-fade-in-up">
                 <div class="hidden lg:block mb-4">
                     <p class="text-2xs text-purple-500 font-black uppercase tracking-[0.3em] mb-1 opacity-80">Portfolio</p>
-                    <h1 class="text-2xl font-black text-white tracking-tight leading-none">Aset & Dompet</h1>
+                    <h1 class="text-2xl font-black text-white tracking-tight leading-none">{{ $t('wallet.title') }}</h1>
                 </div>
 
                 <div
@@ -62,7 +63,7 @@ const handleImageError = (e, fallback) => {
                     </div>
                     <div class="relative z-10 p-6">
                         <div class="flex justify-between items-center mb-1">
-                            <p class="text-2xs text-gray-400 font-bold uppercase tracking-widest">Total Kekayaan</p>
+                            <p class="text-2xs text-gray-400 font-bold uppercase tracking-widest">{{ $t('wallet.totalWealth') }}</p>
                             <button @click="toggleVisibility"
                                 class="text-gray-500 hover:text-white transition-colors p-1 -m-1">
                                 <svg v-if="isBalanceVisible" class="w-6 h-6" fill="none" viewBox="0 0 24 24"
@@ -91,7 +92,7 @@ const handleImageError = (e, fallback) => {
             <section class="mb-8 animate-fade-in-up delay-100">
                 <div class="flex justify-between items-center mb-4 px-1 gap-3">
                     <h2 class="text-2xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
-                        <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span> Liquid
+                        <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span> {{ $t('wallet.groupTypes.liquid') }}
                     </h2>
                     <div class="flex-1 h-px bg-linear-to-r from-blue-500/30 to-transparent"></div>
                 </div>
@@ -111,7 +112,7 @@ const handleImageError = (e, fallback) => {
                             <div class="min-w-0 flex-1">
                                 <h3 class="text-sm font-bold text-white mb-2 leading-tight whitespace-nowrap truncate">{{ wallet.name }}</h3>
                                 <p class="text-2xs text-gray-500 tracking-wider font-bold whitespace-nowrap truncate mt-0.5">{{
-                                    wallet.keyword || 'Dompet' }}</p>
+                                    wallet.keyword || $t('wallet.name') }}</p>
                             </div>
                         </div>
                         <div class="text-right flex items-center justify-end gap-3 shrink-0 ml-4">
@@ -126,6 +127,12 @@ const handleImageError = (e, fallback) => {
                             </button>
                         </div>
                     </Link>
+
+                    <!-- Empty state liquid -->
+                    <div v-if="liquidWallets.length === 0"
+                        class="col-span-full text-center py-8 bg-linear-to-br from-gray-900 to-gray-800 border border-dashed border-white/10 rounded-xl">
+                        <p class="text-2xs font-bold text-gray-500 uppercase tracking-widest">{{ $t('wallet.emptyLiquid') }}</p>
+                    </div>
                 </div>
             </section>
 
@@ -133,7 +140,7 @@ const handleImageError = (e, fallback) => {
             <section class="mb-8 animate-fade-in-up delay-200">
                 <div class="flex justify-between items-center mb-4 px-1 gap-3">
                     <h2 class="text-2xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
-                        <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span> Investasi & Aset
+                        <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span> {{ $t('wallet.groupTypes.asset') }}
                     </h2>
                     <div class="flex-1 h-px bg-linear-to-r from-purple-500/30 to-transparent"></div>
                 </div>
@@ -153,7 +160,7 @@ const handleImageError = (e, fallback) => {
                             <div class="min-w-0 flex-1">
                                 <h3 class="text-sm font-bold text-white mb-2 leading-tight whitespace-nowrap truncate">{{ wallet.name }}</h3>
                                 <p class="text-2xs text-gray-500 tracking-wider font-bold whitespace-nowrap truncate mt-0.5">{{
-                                    wallet.keyword || 'Aset' }}</p>
+                                    wallet.keyword || $t('wallet.name') }}</p>
                             </div>
                         </div>
                         <div class="text-right flex items-center justify-end gap-3 shrink-0 ml-4">
@@ -168,16 +175,20 @@ const handleImageError = (e, fallback) => {
                             </button>
                         </div>
                     </Link>
+
+                    <!-- Empty state asset -->
+                    <div v-if="assetWallets.length === 0"
+                        class="col-span-full text-center py-8 bg-linear-to-br from-gray-900 to-gray-800 border border-dashed border-white/10 rounded-xl">
+                        <p class="text-2xs font-bold text-gray-500 uppercase tracking-widest">{{ $t('wallet.emptyAsset') }}</p>
+                    </div>
                 </div>
             </section>
-
-
 
             <!-- KEWAJIBAN -->
             <section class="mb-10 animate-fade-in-up delay-400">
                 <div class="flex justify-between items-center mb-5 px-1 gap-3">
                     <h2 class="text-2xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
-                        <span class="w-1.5 h-1.5 rounded-full bg-yellow-400"></span> Kewajiban
+                        <span class="w-1.5 h-1.5 rounded-full bg-yellow-400"></span> {{ $t('common.total') }}
                     </h2>
                     <div class="flex-1 h-px bg-linear-to-r from-yellow-500/30 to-transparent"></div>
                 </div>
@@ -190,8 +201,7 @@ const handleImageError = (e, fallback) => {
                             <div class="relative z-10 flex flex-col justify-between h-full">
                                 <div class="flex items-center gap-2">
                                     <div class="w-1.5 h-1.5 rounded-full bg-yellow-500"></div>
-                                    <h3 class="text-2xs font-bold uppercase tracking-widest text-gray-500">Hutang
-                                    </h3>
+                                    <h3 class="text-2xs font-bold uppercase tracking-widest text-gray-500">{{ $t('wallet.totalDebt') }}</h3>
                                 </div>
                                 <p class="text-base font-bold text-white tracking-tight truncate">
                                     <span class="text-2xs text-gray-600 mr-1">Rp</span>{{ isBalanceVisible ?
@@ -207,8 +217,7 @@ const handleImageError = (e, fallback) => {
                             <div class="relative z-10 flex flex-col justify-between h-full">
                                 <div class="flex items-center gap-2">
                                     <div class="w-1.5 h-1.5 rounded-full bg-purple-500"></div>
-                                    <h3 class="text-2xs font-bold uppercase tracking-widest text-gray-500">Piutang
-                                    </h3>
+                                    <h3 class="text-2xs font-bold uppercase tracking-widest text-gray-500">{{ $t('wallet.totalReceivable') }}</h3>
                                 </div>
                                 <p class="text-base font-bold text-white tracking-tight truncate">
                                     <span class="text-2xs text-gray-600 mr-1">Rp</span>{{ isBalanceVisible ?
@@ -225,7 +234,7 @@ const handleImageError = (e, fallback) => {
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>
-                Tambah Dompet / Aset
+                {{ $t('wallet.addNew') }}
             </Link>
         </div>
     </AuthenticatedLayout>
