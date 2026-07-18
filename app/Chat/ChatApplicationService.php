@@ -15,6 +15,8 @@ use App\Chat\Components\ErrorComponent;
 use App\Chat\Components\SuggestionComponent;
 use App\Chat\Errors\ErrorDetail;
 use App\Enums\ChatErrorSeverity;
+use App\Enums\ChatIntent;
+use App\Models\Wallet;
 use App\Services\Chat\ChatTransactionOrchestrator;
 use App\DTO\MultiTransactionResult;
 use App\DTO\MultiTransactionItem;
@@ -74,10 +76,22 @@ class ChatApplicationService
             'length'   => strlen($text),
         ]);
 
+        // ── Command handling (Web platform) ───────────────────────
+        // TelegramAdapter menangani command sebelum memanggil service ini.
+        // Web platform tidak punya layer tersebut, jadi kita handle di sini.
+        // Command seperti /help, /saldo, dll tidak perlu melewati AI orchestrator.
+        // Guard: HANYA jalankan untuk Web — Telegram sudah handle sendiri.
+        if ($context->platform === \App\Enums\ChatPlatform::Web) {
+            $commandResponse = $this->handleWebCommand($text, $user, $context, $startTime);
+            if ($commandResponse !== null) {
+                return $commandResponse;
+            }
+        }
+
         try {
             $result = $this->orchestrator->process($user, $text, $source);
 
-            $latency  = round((microtime(true) - $startTime) * 1000);
+            $latency  = (int) round((microtime(true) - $startTime) * 1000);
             $metadata = $this->buildMetadata($result, $context, $latency);
 
             // ── Multi-transaction ──────────────────────────────────
@@ -270,11 +284,11 @@ class ChatApplicationService
         ChatContext $context,
         float       $startTime,
     ): ChatResponse {
-        $latency = round((microtime(true) - $startTime) * 1000);
+        $latency = (int) round((microtime(true) - $startTime) * 1000);
         return ChatResponse::failure($errors, [], [
-            'trace_id' => $context->traceId,
-            'platform' => $context->platform->value,
-            'latency'  => $latency,
+            'trace_id'   => $context->traceId,
+            'platform'   => $context->platform->value,
+            'latency_ms' => $latency,
         ]);
     }
 
@@ -286,7 +300,7 @@ class ChatApplicationService
             'provider'   => $result['provider'] ?? ($result['multi_result']?->provider ?? null),
             'model'      => $result['model'] ?? ($result['multi_result']?->model ?? null),
             'confidence' => $result['confidence'] ?? ($result['multi_result']?->confidence ?? null),
-            'latency_ms' => $latency,
+            'latency_ms' => (int) $latency,
         ]);
     }
 
@@ -358,5 +372,142 @@ class ChatApplicationService
             }
         }
         return ['message' => $reason];
+    }
+
+    // ── Web Command Handler ────────────────────────────────────────
+
+    /**
+     * Handle command chat (diawali '/') yang tidak perlu melewati AI.
+     *
+     * Dipanggil sebelum orchestrator. Jika bukan command, return null agar
+     * alur normal tetap berjalan.
+     *
+     * Platform Web tidak punya layer handleCommand sendiri (berbeda dengan
+     * TelegramAdapter), sehingga command perlu ditangkap di sini.
+     */
+    private function handleWebCommand(
+        string      $text,
+        \App\Models\User $user,
+        ChatContext $context,
+        float       $startTime,
+    ): ?ChatResponse {
+        $lower = strtolower(trim($text));
+
+        // Bukan command → lanjut ke orchestrator
+        if (!str_starts_with($lower, '/') && !in_array($lower, ['hai', 'halo', 'hello', 'hi', 'ping', 'p', 'tes', 'test', 'help', 'tolong'])) {
+            return null;
+        }
+
+        $locale   = $context->locale;
+        $latency  = (int) round((microtime(true) - $startTime) * 1000);
+        $metadata = [
+            'trace_id'   => $context->traceId,
+            'platform'   => $context->platform->value,
+            'latency_ms' => $latency,
+        ];
+
+        // /saldo — laporan saldo dompet
+        if ($lower === '/saldo') {
+            return $this->buildSaldoResponse($user, $locale, $metadata);
+        }
+
+        // /help, /start, greeting, ping
+        if (in_array($lower, ['/help', '/start', 'hai', 'halo', 'hello', 'hi', 'ping', 'p', 'tes', 'test', 'help', 'tolong'])) {
+            return $this->buildHelpResponse($user, $locale, $metadata);
+        }
+
+        // Command lain yang terdaftar di registry tapi belum diimplementasi
+        // Tampilkan pesan "fitur dalam pengembangan" daripada system error
+        if (str_starts_with($lower, '/')) {
+            return ChatResponse::command(
+                components: [
+                    new TextComponent(
+                        translationKey: 'chat.command.not_yet_implemented',
+                        params: ['command' => $lower],
+                    ),
+                ],
+                metadata: $metadata,
+            );
+        }
+
+        return null;
+    }
+
+    private function buildSaldoResponse(\App\Models\User $user, string $locale, array $metadata): ChatResponse
+    {
+        $wallets = Wallet::where('user_id', $user->id)
+            ->whereIn('group_type', ['Asset', 'Liquid'])
+            ->orderByDesc('balance')
+            ->get();
+
+        if ($wallets->isEmpty()) {
+            return ChatResponse::command(
+                components: [
+                    new TextComponent(translationKey: 'chat.command.balance_empty'),
+                ],
+                metadata: $metadata,
+            );
+        }
+
+        // Buat komponen teks untuk setiap dompet + total
+        $totalBalance = 0.0;
+        $lines        = [];
+
+        foreach ($wallets as $w) {
+            $totalBalance += (float) $w->balance;
+            $lines[] = \App\Support\MoneyFormatter::rupiah((float) $w->balance) . ' — ' . $w->name;
+        }
+
+        $components = [];
+
+        // Header
+        $components[] = new TextComponent(
+            translationKey: 'chat.command.balance_title',
+            bold: true,
+        );
+
+        // Setiap dompet sebagai baris teks terpisah
+        foreach ($lines as $line) {
+            $components[] = new TextComponent(
+                translationKey: 'chat.command.balance_line_raw',
+                params: ['line' => $line],
+            );
+        }
+
+        // Divider + Total
+        $components[] = new DividerComponent();
+        $components[] = new TextComponent(
+            translationKey: 'chat.command.balance_total',
+            params: ['total' => \App\Support\MoneyFormatter::rupiah($totalBalance)],
+            bold: true,
+        );
+
+        return ChatResponse::command(components: $components, metadata: $metadata);
+    }
+
+    private function buildHelpResponse(\App\Models\User $user, string $locale, array $metadata): ChatResponse
+    {
+        return ChatResponse::command(
+            components: [
+                new TextComponent(
+                    translationKey: 'chat.command.help_greeting',
+                    params: ['name' => $user->name],
+                    bold: true,
+                ),
+                new TextComponent(translationKey: 'chat.command.help_intro'),
+                new DividerComponent(),
+                new TextComponent(translationKey: 'chat.command.help_guide'),
+                new \App\Chat\Components\SuggestionComponent(
+                    messageKey: 'chat.command.help_example_expense',
+                ),
+                new \App\Chat\Components\SuggestionComponent(
+                    messageKey: 'chat.command.help_example_income',
+                ),
+                new \App\Chat\Components\SuggestionComponent(
+                    messageKey: 'chat.command.help_example_transfer',
+                ),
+            ],
+            metadata: $metadata,
+        );
     }
 }
