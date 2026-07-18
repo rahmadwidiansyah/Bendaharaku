@@ -25,6 +25,10 @@ defineProps({
         type: Object,
         required: true,
     },
+    metadata: {
+        type: Object,
+        default: () => ({}),
+    },
 })
 
 const componentMap = {
@@ -48,6 +52,7 @@ const componentMap = {
         :is="componentMap[component.type]"
         v-if="componentMap[component.type]"
         :component="component"
+        v-bind="component.type === 'transaction_card' ? { metadata } : {}"
     />
     <!-- Fallback: tipe tidak dikenal, tampilkan teks mentah (debug only) -->
     <div v-else class="text-2xs text-gray-600 font-mono px-2 py-1">
