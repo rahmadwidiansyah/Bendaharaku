@@ -120,6 +120,7 @@ export default {
     header: {
         toggleBalance:  'Toggle balance visibility',
         openSettings:   'Open settings',
+        actions:        'Header actions',
     },
 
     // ────────────────────────────────────────────────────────────────
