@@ -6,7 +6,9 @@ namespace App\Services\AI\Providers;
 
 use App\Services\AI\Contracts\AIProviderInterface;
 use App\Services\AI\Prompt\TransactionPromptBuilder;
+use App\Services\AI\Prompt\MultiTransactionPromptBuilder;
 use App\DTO\AIParseResult;
+use App\DTO\AIParseResultMulti;
 use App\DTO\AiProviderRequest;
 use App\DTO\ParsedTransaction;
 use App\Enums\TransactionIntent;
@@ -21,83 +23,48 @@ use Illuminate\Support\Facades\Log;
 class DeepSeekProvider implements AIProviderInterface
 {
     public function __construct(
-        private readonly TransactionPromptBuilder $promptBuilder
+        private readonly TransactionPromptBuilder $promptBuilder,
+        private readonly MultiTransactionPromptBuilder $multiPromptBuilder,
     ) {}
 
     public function parseTransaction(AiProviderRequest $request): AIParseResult
     {
         try {
-            $url = "https://api.deepseek.com/chat/completions";
+            $url    = "https://api.deepseek.com/chat/completions";
             $prompt = $this->promptBuilder->build(
-                $request->text, 
-                $request->wallets, 
+                $request->text,
+                $request->wallets,
                 $request->categories,
                 $request->activeMemories
             );
 
             $response = Http::timeout(15)->withToken($request->apiKey)
                 ->post($url, [
-                    'model' => $request->model,
-                    'messages' => [
-                        ['role' => 'user', 'content' => $prompt]
-                    ],
-                    'response_format' => ['type' => 'json_object']
+                    'model'           => $request->model,
+                    'messages'        => [['role' => 'user', 'content' => $prompt]],
+                    'response_format' => ['type' => 'json_object'],
                 ]);
 
-            if (!$response->successful()) {
-                $statusCode = $response->status();
-
-                if ($statusCode === 429) {
-                    throw new AiRateLimitException('DeepSeek');
-                }
-                if (in_array($statusCode, [408, 503, 504])) {
-                    throw new AiTimeoutException('DeepSeek');
-                }
-                if ($statusCode === 401 || $statusCode === 403) {
-                    throw new AiProviderException('DeepSeek', "API Key tidak valid atau tidak punya akses (HTTP {$statusCode}).");
-                }
-
-                throw new AiProviderException('DeepSeek', "HTTP {$statusCode}: " . substr($response->body(), 0, 200));
-            }
+            $this->assertSuccessful($response, 'DeepSeek');
 
             $jsonString = $response->json('choices.0.message.content');
-            // Bersihkan format markdown jika AI membalas dengan ```json ... ```
-            $jsonString = preg_replace('/```json\s*|\s*```/', '', (string) $jsonString);
-            $aiRaw = json_decode($jsonString, true);
+            $aiRaw      = $this->decodeJson((string) $jsonString, 'DeepSeek');
 
-            if (!$aiRaw || !isset($aiRaw['amount'])) {
+            if (!isset($aiRaw['amount'])) {
                 throw new AiProviderException('DeepSeek', 'Response tidak mengandung format transaksi yang valid.');
             }
 
-            // Ekstrak Confidence
-            $confidence = isset($aiRaw['confidence']) ? (float) $aiRaw['confidence'] : 0.85;
-
-            // Ekstrak Token Usage DeepSeek
             $usage = [
-                'prompt' => $response->json('usage.prompt_tokens') ?? 0,
+                'prompt'     => $response->json('usage.prompt_tokens') ?? 0,
                 'completion' => $response->json('usage.completion_tokens') ?? 0,
-                'total' => $response->json('usage.total_tokens') ?? 0,
+                'total'      => $response->json('usage.total_tokens') ?? 0,
             ];
-
-            $intentString = $aiRaw['transactionType'] ?? null;
-            $transactionIntent = $intentString ? TransactionIntent::tryFrom(strtolower(trim($intentString))) : null;
-
-            $parsedTransaction = new ParsedTransaction(
-                amount: (float) $aiRaw['amount'],
-                transactionType: $transactionIntent,
-                category: $aiRaw['category'] ?? null,
-                sourceWallet: $aiRaw['sourceWallet'] ?? null,
-                destinationWallet: $aiRaw['destinationWallet'] ?? null,
-                subject: $aiRaw['subject'] ?? null,
-                notes: $aiRaw['notes'] ?? $request->text,
-                isCleared: (bool) ($aiRaw['isCleared'] ?? true)
-            );
 
             return new AIParseResult(
                 success:     true,
-                confidence:  $confidence,
+                confidence:  (float) ($aiRaw['confidence'] ?? 0.85),
                 error:       null,
-                transaction: $parsedTransaction,
+                transaction: $this->buildParsedTransaction($aiRaw, $request->text),
                 usage:       $usage,
                 provider:    'deepseek',
                 model:       $request->model,
@@ -112,5 +79,112 @@ class DeepSeekProvider implements AIProviderInterface
             Log::error('DeepSeek Provider Error', ['message' => $e->getMessage(), 'text' => $request->text]);
             throw new AiProviderException('DeepSeek', $e->getMessage());
         }
+    }
+
+    public function parseMultiTransaction(AiProviderRequest $request): AIParseResultMulti
+    {
+        try {
+            $url    = "https://api.deepseek.com/chat/completions";
+            $prompt = $this->multiPromptBuilder->build(
+                $request->text,
+                $request->wallets,
+                $request->categories,
+                $request->activeMemories
+            );
+
+            $response = Http::timeout(20)->withToken($request->apiKey)
+                ->post($url, [
+                    'model'           => $request->model,
+                    'messages'        => [['role' => 'user', 'content' => $prompt]],
+                    'response_format' => ['type' => 'json_object'],
+                ]);
+
+            $this->assertSuccessful($response, 'DeepSeek');
+
+            $jsonString = $response->json('choices.0.message.content');
+            $aiRaw      = $this->decodeJson((string) $jsonString, 'DeepSeek');
+
+            if (!isset($aiRaw['transactions']) || !is_array($aiRaw['transactions'])) {
+                throw new AiProviderException('DeepSeek', 'Response multi-transaksi tidak mengandung array "transactions".');
+            }
+
+            $usage = [
+                'prompt'     => $response->json('usage.prompt_tokens') ?? 0,
+                'completion' => $response->json('usage.completion_tokens') ?? 0,
+                'total'      => $response->json('usage.total_tokens') ?? 0,
+            ];
+
+            return new AIParseResultMulti(
+                success:      true,
+                transactions: $this->buildParsedTransactions($aiRaw['transactions'], $request->text),
+                confidence:   $this->averageConfidence($aiRaw['transactions']),
+                error:        null,
+                usage:        $usage,
+                provider:     'deepseek',
+                model:        $request->model,
+            );
+
+        } catch (AiRateLimitException | AiTimeoutException | AiProviderException $e) {
+            throw $e;
+        } catch (ConnectionException $e) {
+            Log::warning('DeepSeek Multi Connection Timeout', ['message' => $e->getMessage()]);
+            throw new AiTimeoutException('DeepSeek');
+        } catch (Throwable $e) {
+            Log::error('DeepSeek Multi Provider Error', ['message' => $e->getMessage(), 'text' => $request->text]);
+            throw new AiProviderException('DeepSeek', $e->getMessage());
+        }
+    }
+
+    // ── Shared Helpers ────────────────────────────────────────────────
+
+    private function assertSuccessful(\Illuminate\Http\Client\Response $response, string $provider): void
+    {
+        if ($response->successful()) return;
+        $statusCode = $response->status();
+        if ($statusCode === 429)                      throw new AiRateLimitException($provider);
+        if (in_array($statusCode, [408, 503, 504]))  throw new AiTimeoutException($provider);
+        if (in_array($statusCode, [401, 403]))       throw new AiProviderException($provider, "API Key tidak valid (HTTP {$statusCode}).");
+        throw new AiProviderException($provider, "HTTP {$statusCode}: " . substr($response->body(), 0, 200));
+    }
+
+    private function decodeJson(string $jsonString, string $provider): array
+    {
+        $clean = preg_replace('/```json\s*|\s*```/', '', $jsonString);
+        $data  = json_decode($clean, true);
+        if (!is_array($data)) {
+            throw new AiProviderException($provider, 'Gagal decode JSON dari response LLM.');
+        }
+        return $data;
+    }
+
+    private function buildParsedTransaction(array $raw, string $fallbackNotes): ParsedTransaction
+    {
+        $intentString = $raw['transactionType'] ?? null;
+        return new ParsedTransaction(
+            amount:            (float) ($raw['amount'] ?? 0),
+            transactionType:   $intentString ? TransactionIntent::tryFrom(strtolower(trim($intentString))) : null,
+            category:          $raw['category'] ?? null,
+            sourceWallet:      $raw['sourceWallet'] ?? null,
+            destinationWallet: $raw['destinationWallet'] ?? null,
+            subject:           $raw['subject'] ?? null,
+            notes:             $raw['notes'] ?? $fallbackNotes,
+            isCleared:         (bool) ($raw['isCleared'] ?? true),
+        );
+    }
+
+    /** @return ParsedTransaction[] */
+    private function buildParsedTransactions(array $items, string $fallbackNotes): array
+    {
+        return array_values(array_map(
+            fn(array $item) => $this->buildParsedTransaction($item, $fallbackNotes),
+            $items
+        ));
+    }
+
+    private function averageConfidence(array $items): float
+    {
+        if (empty($items)) return 0.0;
+        $total = array_sum(array_map(fn($i) => (float) ($i['confidence'] ?? 0.85), $items));
+        return round($total / count($items), 4);
     }
 }
