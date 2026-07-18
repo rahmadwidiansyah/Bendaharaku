@@ -32,21 +32,48 @@ export function useChat(initialMessages = [], initialConversationId = null) {
     const isLoadingMore   = ref(false)  // sedang load riwayat lama
     const error           = ref(null)
     const chatAreaRef     = ref(null)   // ref ke ChatArea DOM element
+    const isAtBottom      = ref(true)   // apakah user sedang di bawah
+    const showJumpBtn     = ref(false)  // tampilkan tombol jump-to-latest
 
     // ── Scroll ────────────────────────────────────────────────────
 
     /**
      * Scroll ke pesan terbawah.
+     * Hanya scroll jika user memang di bawah, kecuali force=true.
      * @param {boolean} smooth - Gunakan smooth scroll (default: false untuk initial load)
+     * @param {boolean} force  - Paksa scroll meski user tidak di bawah
      */
-    async function scrollToBottom(smooth = false) {
+    async function scrollToBottom(smooth = false, force = false) {
         await nextTick()
-        if (chatAreaRef.value) {
-            chatAreaRef.value.scrollTo({
-                top: chatAreaRef.value.scrollHeight,
-                behavior: smooth ? 'smooth' : 'instant',
-            })
+        const el = chatAreaRef.value
+        if (!el) return
+        if (force || isAtBottom.value) {
+            el.scrollTo({ top: el.scrollHeight, behavior: smooth ? 'smooth' : 'instant' })
         }
+    }
+
+    /**
+     * Paksa scroll ke bawah selalu (untuk tombol jump-to-latest).
+     */
+    async function jumpToLatest() {
+        await nextTick()
+        const el = chatAreaRef.value
+        if (!el) return
+        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+        isAtBottom.value = true
+        showJumpBtn.value = false
+    }
+
+    /**
+     * Dipanggil dari ChatArea saat scroll event untuk update state posisi scroll.
+     * @param {number} scrollTop
+     * @param {number} scrollHeight
+     * @param {number} clientHeight
+     */
+    function onScrollUpdate(scrollTop, scrollHeight, clientHeight) {
+        const distFromBottom = scrollHeight - scrollTop - clientHeight
+        isAtBottom.value = distFromBottom < 80
+        showJumpBtn.value = distFromBottom > 200
     }
 
     // ── Send message ──────────────────────────────────────────────
@@ -63,7 +90,7 @@ export function useChat(initialMessages = [], initialConversationId = null) {
         // 1. Tambah pesan user ke UI secara optimistis
         const userMsg = buildLocalMessage('user', text)
         messages.value.push(userMsg)
-        await scrollToBottom(true)
+        await scrollToBottom(true, true) // force=true karena user baru kirim
 
         // 2. Tampilkan typing indicator
         isLoading.value = true
@@ -98,7 +125,7 @@ export function useChat(initialMessages = [], initialConversationId = null) {
         } finally {
             isLoading.value = false
             isTyping.value  = false
-            await scrollToBottom(true)
+            await scrollToBottom(true) // tanpa force — hanya scroll jika user di bawah
         }
     }
 
@@ -201,6 +228,55 @@ export function useChat(initialMessages = [], initialConversationId = null) {
         }
     }
 
+    /**
+     * Kirim ulang pesan user terakhir.
+     * Hapus error bubble bot terakhir jika ada, lalu kirim ulang.
+     */
+    async function retryLastMessage() {
+        // Cari teks pesan user terakhir
+        const userMessages = messages.value.filter(m => m.role === 'user')
+        if (userMessages.length === 0) return
+        const lastUserMsg = userMessages[userMessages.length - 1]
+        const text = lastUserMsg?.content?.[0]?.text ?? ''
+        if (!text.trim()) return
+
+        // Hapus error bubble bot paling akhir jika memang error
+        const last = messages.value[messages.value.length - 1]
+        if (last?.role === 'assistant' && last?.metadata?.error) {
+            messages.value.pop()
+        }
+
+        await sendMessage(text)
+    }
+
+    /**
+     * Generate ulang respons bot untuk pesan user sebelum bot message tertentu.
+     * @param {Object} botMessage - Pesan bot yang ingin di-regenerate
+     */
+    async function regenerateMessage(botMessage) {
+        // Cari index bot message ini
+        const idx = messages.value.findIndex(m =>
+            (m.id && m.id === botMessage.id) ||
+            (m._localId && m._localId === botMessage._localId)
+        )
+        if (idx === -1) return
+
+        // Cari pesan user sebelum bot message ini
+        let userText = ''
+        for (let i = idx - 1; i >= 0; i--) {
+            if (messages.value[i].role === 'user') {
+                userText = messages.value[i].content?.[0]?.text ?? ''
+                break
+            }
+        }
+        if (!userText.trim()) return
+
+        // Hapus bot message yang di-regenerate (dan semua setelahnya jika ada)
+        messages.value.splice(idx)
+
+        await sendMessage(userText)
+    }
+
     return {
         // State
         messages,
@@ -211,10 +287,16 @@ export function useChat(initialMessages = [], initialConversationId = null) {
         isLoadingMore,
         error,
         chatAreaRef,
+        isAtBottom,
+        showJumpBtn,
 
         // Actions
         sendMessage,
+        retryLastMessage,
+        regenerateMessage,
         loadMore,
         scrollToBottom,
+        jumpToLatest,
+        onScrollUpdate,
     }
 }

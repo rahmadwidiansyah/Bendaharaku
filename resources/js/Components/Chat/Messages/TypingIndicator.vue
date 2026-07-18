@@ -1,29 +1,29 @@
 <script setup>
-import { computed } from 'vue'
+/**
+ * TypingIndicator.vue
+ *
+ * Tiga titik animasi saat bot sedang memproses.
+ * Pakai BotAvatar untuk konsistensi visual.
+ */
 
-const props = defineProps({
+import BotAvatar from '@/Components/Chat/BotAvatar.vue'
+
+defineProps({
     botAvatar: { type: String, default: null },
     botName:   { type: String, default: 'Ken-Chan' },
 })
-
-const initials = computed(() =>
-    props.botName.trim().split(/\s+/).slice(0, 2).map((w) => w[0].toUpperCase()).join('')
-)
 </script>
 
 <template>
-    <div class="flex items-end gap-2.5 px-4 py-1">
+    <div class="flex items-end gap-1.5 px-3 py-0.5">
         <!-- Avatar bot -->
-        <div class="w-7 h-7 rounded-full shrink-0 overflow-hidden bg-gray-800 border border-white/10 flex items-center justify-center">
-            <img v-if="botAvatar" :src="botAvatar" :alt="botName" class="w-full h-full object-cover" />
-            <span v-else class="text-xs font-black text-purple-400">{{ initials }}</span>
-        </div>
+        <BotAvatar :src="botAvatar" :name="botName" size="sm" variant="bot" shape="circle" class="self-end mb-0.5" />
 
         <!-- Bubble dengan dot animation -->
-        <div class="bg-gray-800 border border-white/10 rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style="animation-delay: 0ms;"></span>
-            <span class="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style="animation-delay: 150ms;"></span>
-            <span class="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style="animation-delay: 300ms;"></span>
+        <div class="bg-gray-800/90 border border-white/8 rounded-2xl rounded-tl-md px-3.5 py-2.5 flex items-center gap-1 shadow-sm">
+            <span class="w-1.5 h-1.5 rounded-full bg-gray-500 animate-bounce" style="animation-delay: 0ms;"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-gray-500 animate-bounce" style="animation-delay: 120ms;"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-gray-500 animate-bounce" style="animation-delay: 240ms;"></span>
         </div>
     </div>
 </template>

@@ -51,6 +51,11 @@ const {
     sendMessage,
     loadMore,
     scrollToBottom,
+    showJumpBtn,
+    jumpToLatest,
+    onScrollUpdate,
+    retryLastMessage,
+    regenerateMessage,
 } = useChat(props.initialMessages, props.conversation?.id ?? null)
 
 const {
@@ -100,6 +105,13 @@ function handleSuggestionSelect(text) {
         composerRef.value?.$el?.querySelector('textarea')?.focus()
     })
 }
+
+async function handleRegenerate(botMessage) {
+    if (chatAreaComp.value?.el && !chatAreaRef.value) {
+        chatAreaRef.value = chatAreaComp.value.el
+    }
+    await regenerateMessage(botMessage)
+}
 </script>
 
 <template>
@@ -131,7 +143,11 @@ function handleSuggestionSelect(text) {
                 :bot-name="botProfile.name"
                 :user-avatar="authUser.avatar ?? null"
                 :user-name="authUser.name ?? 'Kamu'"
+                :show-jump-btn="showJumpBtn"
                 @loadMore="loadMore"
+                @scrollUpdate="onScrollUpdate"
+                @jumpLatest="jumpToLatest"
+                @regenerate="handleRegenerate"
                 class="flex-1"
             >
                 <!-- Empty state saat belum ada pesan -->

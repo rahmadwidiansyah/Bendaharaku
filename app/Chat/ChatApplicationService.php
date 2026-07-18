@@ -294,13 +294,17 @@ class ChatApplicationService
 
     private function buildMetadata(array $result, ChatContext $context, int $latency): array
     {
+        $usage        = $result['usage'] ?? ($result['multi_result']?->usage ?? []);
+        $totalTokens  = $usage['total'] ?? null;
+
         return array_filter([
-            'trace_id'   => $context->traceId,
-            'platform'   => $context->platform->value,
-            'provider'   => $result['provider'] ?? ($result['multi_result']?->provider ?? null),
-            'model'      => $result['model'] ?? ($result['multi_result']?->model ?? null),
-            'confidence' => $result['confidence'] ?? ($result['multi_result']?->confidence ?? null),
-            'latency_ms' => (int) $latency,
+            'trace_id'     => $context->traceId,
+            'platform'     => $context->platform->value,
+            'provider'     => $result['provider'] ?? ($result['multi_result']?->provider ?? null),
+            'model'        => $result['model'] ?? ($result['multi_result']?->model ?? null),
+            'confidence'   => $result['confidence'] ?? ($result['multi_result']?->confidence ?? null),
+            'latency_ms'   => (int) $latency,
+            'total_tokens' => $totalTokens,
         ]);
     }
 
