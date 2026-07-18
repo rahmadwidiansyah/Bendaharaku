@@ -1,6 +1,12 @@
 import { ref, watch } from 'vue';
 
-const isDesktopLayout = ref(localStorage.getItem('layout_preference') !== 'mobile');
+const saved = localStorage.getItem('layout_preference');
+
+const isDesktopLayout = ref(
+    saved === null
+        ? window.innerWidth >= 1024
+        : saved === 'desktop'
+);
 
 watch(isDesktopLayout, (newValue) => {
     localStorage.setItem('layout_preference', newValue ? 'desktop' : 'mobile');
