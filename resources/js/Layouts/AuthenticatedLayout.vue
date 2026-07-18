@@ -25,6 +25,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    hideNav: {
+        type: Boolean,
+        default: false,
+    },
 })
 
 const isSidebarOpen = ref(true)
@@ -56,24 +60,25 @@ const computedFullWidth = computed(() =>
                 computedFullWidth ? 'max-w-md lg:max-w-full' : 'max-w-md',
                 computedFullWidth && isSidebarOpen ? 'lg:pl-64 transition-[padding] duration-300' : (computedFullWidth ? 'lg:pl-20 transition-[padding] duration-300' : ''),
             ]">
-                <!-- Mobile top bar — hidden di desktop -->
-                <MobileHeader />
+                <!-- Mobile top bar — hidden di desktop, hidden juga di halaman create/edit -->
+                <MobileHeader v-if="!hideNav" />
 
                 <main
                     id="main-content"
                     :class="[
                         'flex-1 animate-page-enter overflow-x-hidden',
-                        // Mobile: beri ruang untuk BottomNav (56px) + safe area + sedikit margin
-                        // Desktop: cukup pb-8
-                        computedFullWidth ? 'pb-28 lg:pb-8' : 'pb-28',
+                        !hideNav
+                            ? (computedFullWidth ? 'pb-28 lg:pb-8' : 'pb-28')
+                            : 'pb-0',
                     ]"
-                    style="padding-bottom: max(7rem, calc(3.5rem + env(safe-area-inset-bottom, 0px) + 1rem));"
+                    :style="!hideNav ? 'padding-bottom: max(7rem, calc(3.5rem + env(safe-area-inset-bottom, 0px) + 1rem));' : ''"
                     tabindex="-1"
                 >
                     <slot />
                 </main>
 
                 <BottomNav
+                    v-if="!hideNav"
                     :is-sidebar-open="isSidebarOpen"
                     @toggle="isSidebarOpen = $event"
                 />
