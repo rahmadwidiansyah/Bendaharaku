@@ -1,7 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import DateModal from '@/Components/DateModal.vue';
-import CreateTransactionFab from '@/Components/CreateTransactionFab.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { ref, shallowRef, onMounted, watch, computed, nextTick } from 'vue';
 import { Chart, registerables } from 'chart.js';
@@ -277,6 +276,16 @@ onMounted(() => {
                     <h1 class="text-3xl font-black text-white tracking-tight leading-none">Analitik</h1>
                 </div>
 
+                <!-- Mobile: info rentang tanggal + DateModal -->
+                <div class="flex lg:hidden flex-col gap-0.5">
+                    <p class="text-2xs text-gray-500 font-bold uppercase tracking-widest">Menampilkan data</p>
+                    <p class="text-xs font-black text-white leading-tight">
+                        {{ new Date(startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) }}
+                        <span class="text-gray-500 mx-1">–</span>
+                        {{ new Date(endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) }}
+                    </p>
+                </div>
+
                 <DateModal :action="route('analytics.index')" :start-date="startDate" :end-date="endDate" />
             </header>
 
@@ -425,7 +434,6 @@ onMounted(() => {
             </div>
         </div>
 
-        <CreateTransactionFab />
     </AuthenticatedLayout>
 </template>
 
