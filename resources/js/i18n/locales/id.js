@@ -120,6 +120,7 @@ export default {
     header: {
         toggleBalance:  'Toggle visibilitas saldo',
         openSettings:   'Buka pengaturan',
+        actions:        'Tombol aksi header',
     },
 
     // ────────────────────────────────────────────────────────────────

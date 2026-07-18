@@ -25,9 +25,9 @@
  *   hideNav   — Sembunyikan header dan bottom nav (halaman fullscreen seperti create/edit)
  */
 
-import BottomNav from '@/Components/BottomNav.vue'
-import MobileHeader from '@/Components/MobileHeader.vue'
-import Toast from '@/Components/Toast.vue'
+import BottomNav    from '@/Components/BottomNav.vue'
+import GlobalHeader from '@/Components/Header/GlobalHeader.vue'
+import Toast        from '@/Components/Toast.vue'
 import DashboardSkeleton   from '@/Components/Skeleton/DashboardSkeleton.vue'
 import TransactionSkeleton from '@/Components/Skeleton/TransactionSkeleton.vue'
 import AssetSkeleton       from '@/Components/Skeleton/AssetSkeleton.vue'
@@ -99,8 +99,8 @@ const showSkeleton = computed(() =>
                 computedFullWidth ? 'max-w-md lg:max-w-full' : 'max-w-md',
                 computedFullWidth && isSidebarOpen ? 'lg:pl-64 transition-[padding] duration-300' : (computedFullWidth ? 'lg:pl-20 transition-[padding] duration-300' : ''),
             ]">
-                <!-- Mobile top bar — hidden di desktop, hidden juga di halaman create/edit -->
-                <MobileHeader v-if="!hideNav" />
+                <!-- Global Top App Bar — sticky header dengan greeting, AI Chat & profil -->
+                <GlobalHeader v-if="!hideNav" />
 
                 <!--
                     Content area — dibuat `relative` agar skeleton overlay bisa `absolute inset-0`.
