@@ -18,7 +18,10 @@
  */
 
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { formatNumber } from '@/utils/format.js'
+
+const { t } = useI18n()
 
 const props = defineProps({
     totalPortfolio: {
@@ -78,7 +81,7 @@ const displayShort  = (n) => props.isVisible ? formatNumber(n) : '••••'
             <div class="flex justify-between items-center mb-4">
                 <div class="flex items-center gap-2">
                     <div class="w-1.5 h-1.5 rounded-full bg-purple-500" aria-hidden="true" />
-                    <p class="text-2xs text-gray-400 font-bold uppercase tracking-[0.2em]">Total Kekayaan</p>
+                    <p class="text-2xs text-gray-400 font-bold uppercase tracking-[0.2em]">{{ $t('portfolio.title') }}</p>
                 </div>
 
                 <!-- Toggle visibility button -->
@@ -86,7 +89,7 @@ const displayShort  = (n) => props.isVisible ? formatNumber(n) : '••••'
                     type="button"
                     @click="$emit('toggle-visibility')"
                     class="text-gray-500 hover:text-white transition-colors p-1 -m-1 focus:outline-none focus-visible:ring-1 focus-visible:ring-purple-400 rounded"
-                    :aria-label="isVisible ? 'Sembunyikan saldo' : 'Tampilkan saldo'"
+                    :aria-label="$t('header.toggleBalance')"
                 >
                     <!-- Eye icon — visible -->
                     <svg v-if="isVisible" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -114,7 +117,7 @@ const displayShort  = (n) => props.isVisible ? formatNumber(n) : '••••'
                 <div class="flex-1">
                     <div class="flex items-center gap-1.5 mb-1">
                         <div class="w-1.5 h-1.5 rounded-full bg-blue-400" aria-hidden="true" />
-                        <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Liquid</p>
+                        <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{{ $t('portfolio.liquid') }}</p>
                     </div>
                     <p class="text-sm font-bold text-white tracking-tight" aria-live="polite">
                         <span class="text-2xs text-gray-500 mr-0.5">Rp</span>{{ displayShort(totalLiquid) }}
@@ -128,7 +131,7 @@ const displayShort  = (n) => props.isVisible ? formatNumber(n) : '••••'
                 <div class="flex-1">
                     <div class="flex items-center gap-1.5 mb-1">
                         <div class="w-1.5 h-1.5 rounded-full bg-purple-400" aria-hidden="true" />
-                        <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Investasi</p>
+                        <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{{ $t('portfolio.investment') }}</p>
                     </div>
                     <p class="text-sm font-bold text-white tracking-tight" aria-live="polite">
                         <span class="text-2xs text-gray-500 mr-0.5">Rp</span>{{ displayShort(totalInvest) }}

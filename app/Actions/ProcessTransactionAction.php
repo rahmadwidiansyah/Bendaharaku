@@ -32,7 +32,16 @@ class ProcessTransactionAction
 
         return DB::transaction(function () use ($data, $userId, $sourcePrefix) {
             $user = User::findOrFail($userId);
-            $category = Category::where('user_id', $userId)->where('id', $data['category_id'])->firstOrFail();
+
+            // Transfer tidak memiliki kategori user — resolve Transfer system category
+            $isTransfer = strtolower($data['transaction_type'] ?? '') === 'transfer'
+                       || empty($data['category_id']);
+
+            if ($isTransfer) {
+                $category = $this->resolveTransferCategory($userId);
+            } else {
+                $category = Category::where('user_id', $userId)->where('id', $data['category_id'])->firstOrFail();
+            }
             
             $source = Wallet::where('user_id', $userId)->where('id', $data['source_wallet_id'])->lockForUpdate()->firstOrFail();
             $destination = Wallet::where('user_id', $userId)->where('id', $data['destination_wallet_id'])->lockForUpdate()->firstOrFail();
@@ -53,7 +62,7 @@ class ProcessTransactionAction
             $finalSubject = $subjectInput === '' ? '-' : $subjectInput;
 
             return TransactionLog::create([
-                'reference_number'      => $sourcePrefix . '-' . Str::ulid(), // Dinamis menggunakan prefix dari orchestrator
+                'reference_number'      => $sourcePrefix . '-' . Str::ulid(),
                 'user_id'               => $userId,
                 'date'                  => $data['date'],
                 'type_id'               => $category->type_id,
@@ -65,7 +74,7 @@ class ProcessTransactionAction
                 'balance_after'         => $balanceAfter,
                 'subject'               => $finalSubject,
                 'notes'                 => $data['notes'] ?? null,
-                'is_cleared'            => $isCleared, // Menggunakan nilai dinamis
+                'is_cleared'            => $isCleared,
                 'due_date'              => $data['due_date'] ?? null,
                 'due_date_type'         => $data['due_date_type'] ?? null,
                 'due_date_interval'     => $data['due_date_interval'] ?? null,
@@ -91,7 +100,16 @@ class ProcessTransactionAction
 
         return DB::transaction(function () use ($transaction, $data, $userId) {
             $user = User::findOrFail($userId);
-            $newCategory = Category::where('user_id', $userId)->where('id', $data['category_id'])->firstOrFail();
+
+            // Transfer tidak memiliki kategori user — resolve Transfer system category
+            $isTransfer = strtolower($data['transaction_type'] ?? '') === 'transfer'
+                       || empty($data['category_id']);
+
+            if ($isTransfer) {
+                $newCategory = $this->resolveTransferCategory($userId);
+            } else {
+                $newCategory = Category::where('user_id', $userId)->where('id', $data['category_id'])->firstOrFail();
+            }
 
             // 1. Rollback efek saldo dari transaksi lama dengan baris terkunci (lockForUpdate)
             if ($transaction->is_cleared) {
@@ -121,12 +139,12 @@ class ProcessTransactionAction
             // 6. Update rekaman data Transaction Log (Reference Number lama dipertahankan)
             $transaction->update([
                 'date'                  => $data['date'],
-                'category_id'           => $data['category_id'],
+                'category_id'           => $newCategory->id,
                 'type_id'               => $newCategory->type_id,
                 'source_wallet_id'      => $newSource->id,
                 'destination_wallet_id' => $newDest->id,
                 'amount'                => $data['amount'],
-                'balance_before'        => $currentBalance + $data['amount'], // Kompatibilitas rumus bawaan controller web
+                'balance_before'        => $currentBalance + $data['amount'],
                 'balance_after'         => $currentBalance,
                 'subject'               => $finalSubject,
                 'notes'                 => $data['notes'] ?? null,
@@ -189,6 +207,43 @@ class ProcessTransactionAction
             }
             return $transaction->delete();
         });
+    }
+
+    /**
+     * Resolve Transfer category milik user.
+     * Setiap user sudah memiliki kategori Transfer (mis. "Transfer Saldo") yang bertipe Transfer.
+     * Tidak perlu membuat kategori baru — cukup ambil kategori Transfer pertama milik user.
+     * Jika belum ada (edge case), buat otomatis.
+     */
+    private function resolveTransferCategory(int $userId): Category
+    {
+        $transferType = \App\Models\TransactionType::where('name', 'Transfer')->first();
+
+        if (!$transferType) {
+            $transferType = \App\Models\TransactionType::create([
+                'name'    => 'Transfer',
+                'keyword' => 'trf',
+            ]);
+        }
+
+        // Cari kategori Transfer yang sudah ada milik user
+        $category = Category::where('user_id', $userId)
+            ->where('type_id', $transferType->id)
+            ->first();
+
+        // Fallback: buat jika belum ada (user baru / belum di-seed)
+        if (!$category) {
+            $category = Category::create([
+                'user_id'       => $userId,
+                'type_id'       => $transferType->id,
+                'category_name' => 'Transfer Saldo',
+                'icon'          => '🔄',
+                'keyword'       => 'trf, transfer',
+                'is_active'     => true,
+            ]);
+        }
+
+        return $category;
     }
 
     /**

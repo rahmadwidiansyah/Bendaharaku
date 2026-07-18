@@ -3,6 +3,9 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import EmojiPicker from '@/Components/EmojiPicker.vue';
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const props = defineProps({
     wallet: Object,
@@ -34,7 +37,7 @@ const displayAmount = computed({
 
 const deleteForm = useForm({});
 const deleteWallet = () => {
-    if (confirm('Yakin ingin menghapus dompet ini?')) {
+    if (confirm(t('wallet.deleteMsg'))) {
         deleteForm.delete(route('wallets.destroy', props.wallet.id));
     }
 };
@@ -43,13 +46,13 @@ const deleteWallet = () => {
 <template>
     <AuthenticatedLayout :fullWidth="true" :hideNav="true">
 
-        <Head title="Edit Dompet" />
+        <Head :title="t('wallet.titleEdit')" />
         <div class="p-5 w-full lg:max-w-4xl mx-auto lg:px-8 relative animate-slide-up opacity-0"
             style="animation-delay: 50ms;">
 
             <header class="flex justify-between items-center mb-8 pt-4">
                 <div class="hidden lg:block">
-                    <h1 class="text-2xl font-bold text-white tracking-tight">Edit Dompet</h1>
+                    <h1 class="text-2xl font-bold text-white tracking-tight">{{ t('wallet.titleEdit') }}</h1>
                 </div>
                 <Link :href="route('wallets.show', wallet.id)"
                     class="w-10 h-10 rounded-full bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 flex items-center justify-center text-gray-400 active:scale-90 transition-all shadow-md hover:text-white hover:border-gray-500">
@@ -62,7 +65,7 @@ const deleteWallet = () => {
             <form @submit.prevent="submit" class="space-y-6">
 
                 <div class="flex flex-col animate-slide-up opacity-0 relative z-10" style="animation-delay: 150ms;">
-                    <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">Saldo Saat Ini</label>
+                    <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">{{ t('wallet.balance') }}</label>
                     <div
                         class="h-[60px] bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl px-5 flex items-center group focus-within:border-purple-500/40 focus-within:ring-1 focus-within:ring-purple-500/20 transition-all shadow-inner">
                         <span class="text-base font-bold text-purple-500 mr-3 opacity-80">Rp</span>
@@ -70,7 +73,7 @@ const deleteWallet = () => {
                             class="w-full bg-transparent border-none text-white p-0 text-xl font-bold placeholder-gray-600 focus:ring-0 focus:outline-none caret-purple-500">
                     </div>
                     <div v-if="form.errors.balance" class="text-red-500 text-2xs mt-1">{{ form.errors.balance }}</div>
-                    <p class="text-2xs text-gray-500 mt-2 ml-1 italic">* Ubah manual jika ada selisih saldo.</p>
+                    <p class="text-2xs text-gray-500 mt-2 ml-1 italic">{{ t('wallet.balancePlaceholder') }}</p>
                 </div>
 
                 <div class="flex gap-3 items-end animate-slide-up opacity-0 relative z-50"
@@ -81,10 +84,10 @@ const deleteWallet = () => {
                     </div>
 
                     <div class="flex-1 flex flex-col justify-end">
-                        <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">Nama Dompet</label>
+                        <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">{{ t('wallet.name') }}</label>
                         <div
                             class="h-[60px] bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 rounded-xl px-5 flex items-center group focus-within:border-purple-500/40 focus-within:ring-1 focus-within:ring-purple-500/20 transition-all shadow-inner">
-                            <input type="text" v-model="form.name" required placeholder="Contoh: BCA Utama"
+                            <input type="text" v-model="form.name" required :placeholder="t('wallet.namePlaceholder')"
                                 class="w-full bg-transparent border-none text-white p-0 text-base font-medium focus:ring-0 focus:outline-none">
                         </div>
                         <div v-if="form.errors.name" class="text-red-500 text-2xs mt-1">{{ form.errors.name }}</div>
@@ -92,10 +95,10 @@ const deleteWallet = () => {
                 </div>
 
                 <div class="flex flex-col animate-slide-up opacity-0 relative z-40" style="animation-delay: 250ms;">
-                    <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">Keyword AI (Pisahkan Koma)</label>
+                    <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">{{ t('wallet.keyword') }}</label>
                     <div
                         class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-4 group focus-within:border-purple-500/40 focus-within:ring-1 focus-within:ring-purple-500/20 transition-all">
-                        <input type="text" v-model="form.keyword" placeholder="Contoh: bca, transfer, mbanking..."
+                        <input type="text" v-model="form.keyword" :placeholder="t('wallet.keywordHint')"
                             class="w-full bg-transparent border-none text-white p-0 text-sm placeholder-gray-600 focus:ring-0 focus:outline-none">
                     </div>
                     <div v-if="form.errors.keyword" class="text-red-500 text-2xs mt-1">{{ form.errors.keyword }}</div>
@@ -118,7 +121,7 @@ const deleteWallet = () => {
                 <div class="pt-4 space-y-3 animate-slide-up opacity-0 relative z-30" style="animation-delay: 300ms;">
                     <button type="submit" :disabled="form.processing"
                         class="w-full bg-linear-to-br from-purple-800 to-purple-600 text-white font-bold text-sm tracking-wide py-4 rounded-xl hover:-translate-y-0.5 active:scale-95 transition-all duration-200">
-                        Update Dompet
+                        {{ form.processing ? t('btn.saving') : t('btn.update') }}
                     </button>
                 </div>
             </form>
@@ -127,7 +130,7 @@ const deleteWallet = () => {
                 style="animation-delay: 350ms;">
                 <button type="submit" :disabled="deleteForm.processing"
                     class="w-full bg-linear-to-br from-red-800 to-red-900 text-white font-bold text-sm py-4 rounded-xl hover:translate-y-0.5 active:scale-95 transition-all">
-                    Hapus Dompet
+                    {{ deleteForm.processing ? t('btn.deleting') : t('btn.delete') }}
                 </button>
             </form>
         </div>
