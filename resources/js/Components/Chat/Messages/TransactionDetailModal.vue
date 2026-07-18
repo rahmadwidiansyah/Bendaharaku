@@ -90,7 +90,7 @@ const intentLabel = computed(() => {
         'error':              'Error',
         'draft':              'Draft',
     }
-    return map[intent] ?? intent || null
+    return map[intent] ?? (intent || null)
 })
 
 const parseStatus = computed(() =>

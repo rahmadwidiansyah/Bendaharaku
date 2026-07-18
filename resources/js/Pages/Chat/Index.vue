@@ -93,10 +93,9 @@ async function handleSend(text) {
     await sendMessage(text)
 }
 
-function handleCommandSelect(commandText) {
-    // Insert command ke composer textarea
-    composerRef.value?.insertText(commandText)
+async function handleCommandSelect(commandText) {
     closeSheet()
+    await handleSend(commandText)
 }
 
 function handleSuggestionSelect(text) {
