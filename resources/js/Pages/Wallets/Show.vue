@@ -5,6 +5,9 @@ import BottomNav from '@/Components/BottomNav.vue'
 import TransactionDetailModal from '@/Components/TransactionDetailModal.vue'
 import { ref } from 'vue'
 import { formatNumber, formatDate } from '@/utils/format.js'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
 	wallet: Object,
@@ -49,25 +52,19 @@ const getTypeColor = (typeName) => {
 	)
 }
 
-const getTypeName = (typeName) => {
-	return (
-		{
-			Income: 'Pemasukan',
-			Expense: 'Pengeluaran',
-			Transfer: 'Transfer',
-			Debt: 'Hutang',
-			Receivable: 'Piutang',
-		}[typeName] || 'Lainnya'
-	)
-}
+const getTypeName = (name) => ({
+	Income: t('types.income'), Expense: t('types.expense'),
+	Transfer: t('types.transfer'), Debt: t('types.debt'),
+	Receivable: t('types.receivable'),
+}[name] ?? t('types.other'))
 </script>
 
 <template>
 	<AuthenticatedLayout :fullWidth="true">
-		<Head title="Detail Dompet" />
+		<Head :title="$t('wallet.titleEdit')" />
 		<div class="p-5 w-full lg:max-w-4xl mx-auto lg:px-8 relative">
 			<header class="flex justify-between items-center mb-6 pt-2">
-				<h1 class="text-2xl font-bold text-white tracking-tight hidden lg:block">Detail Dompet</h1>
+				<h1 class="text-2xl font-bold text-white tracking-tight hidden lg:block">{{ $t('wallet.titleEdit') }}</h1>
 				<Link
 					:href="route('dashboard')"
 					class="w-10 h-10 rounded-full bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white active:scale-95 transition-all shadow-md">
@@ -92,11 +89,11 @@ const getTypeName = (typeName) => {
 				<Link
 					:href="route('wallets.edit', wallet.id)"
 					class="inline-block bg-linear-to-br from-gray-900 to gray-800 border border-white/10 text-purple-500 text-2xs font-bold px-6 py-2.5 rounded-xl uppercase tracking-widest active:scale-95 transition-all">
-					Edit Dompet
+					{{ $t('wallet.titleEdit') }}
 				</Link>
 			</div>
 
-			<h2 class="text-2xs font-bold text-gray-400 uppercase tracking-widest mb-4 ml-1 text-center">Mutasi Terakhir</h2>
+			<h2 class="text-2xs font-bold text-gray-400 uppercase tracking-widest mb-4 ml-1 text-center">{{ $t('wallet.recentMutation') }}</h2>
 
 			<div class="space-y-4">
 				<template v-if="transactions.data && transactions.data.length > 0">
@@ -149,7 +146,7 @@ const getTypeName = (typeName) => {
 					</button>
 				</template>
 				<div v-else class="text-center py-12 bg-linear-to-br from-gray-800 to-gray-900 rounded-xl border-2 border-dashed border-white/10">
-					<p class="text-xs font-bold text-gray-500 uppercase tracking-widest">Belum ada mutasi</p>
+					<p class="text-xs font-bold text-gray-500 uppercase tracking-widest">{{ $t('wallet.emptyMutation') }}</p>
 				</div>
 			</div>
 

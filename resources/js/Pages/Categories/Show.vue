@@ -4,7 +4,10 @@ import DateModal from '@/Components/DateModal.vue';
 import TransactionDetailModal from '@/Components/TransactionDetailModal.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { formatNumber, formatDate } from '@/utils/format.js';
+
+const { t } = useI18n();
 
 const props = defineProps({
     category: Object,
@@ -40,6 +43,14 @@ const handleBack = () => {
         router.visit(route('categories.index'));
     }
 };
+
+const getTypeName = (name) => ({
+    Income: t('types.income'),
+    Expense: t('types.expense'),
+    Transfer: t('types.transfer'),
+    Debt: t('types.debt'),
+    Receivable: t('types.receivable'),
+}[name] ?? name);
 
 const getTypeColor = (typeName) => {
     return {
@@ -96,8 +107,7 @@ const formatDateRange = () => {
                         class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-linear-to-br from-gray-900 to-gray-800 border border-white/10">
                         <span class="w-1.5 h-1.5 rounded-full"
                             :class="category.type.name === 'Income' ? 'bg-green-400' : 'bg-purple-500'"></span>
-                        <p class="text-2xs font-bold text-gray-400 uppercase tracking-[0.2em]">{{ category.type.name ===
-                            'Income' ? 'Pemasukan' : 'Pengeluaran' }}</p>
+                        <p class="text-2xs font-bold text-gray-400 uppercase tracking-[0.2em]">{{ getTypeName(category.type.name) }}</p>
                     </div>
                 </div>
             </div>
@@ -107,7 +117,7 @@ const formatDateRange = () => {
                 <div class="absolute top-0 left-0 w-full h-1 bg-purple-500/20"></div>
                 <div class="flex items-center justify-between gap-3 mb-5">
                     <div class="text-left min-w-0">
-                        <p class="text-2xs font-bold text-white uppercase tracking-[0.2em] mb-1 opacity-60">Total Periode</p>
+                        <p class="text-2xs font-bold text-white uppercase tracking-[0.2em] mb-1 opacity-60">{{ $t('common.total') + ' ' + $t('common.period') }}</p>
                         <p class="text-2xs font-bold text-purple-400 truncate">{{ formatDateRange() }}</p>
                     </div>
                     <DateModal :action="route('categories.show', category.id)" :start-date="startDate" :end-date="endDate" />
@@ -120,10 +130,10 @@ const formatDateRange = () => {
 
             <div class="space-y-4 relative z-10">
                 <div class="flex items-center justify-between px-1 mb-2">
-                    <h3 class="text-2xs font-bold text-gray-400 uppercase tracking-widest">Riwayat Transaksi</h3>
+                    <h3 class="text-2xs font-bold text-gray-400 uppercase tracking-widest">{{ $t('category.show.transactions') }}</h3>
                     <span
                         class="text-2xs font-bold text-gray-400 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 px-2 py-0.5 rounded-xl">{{
-                        transactions.length }} Record</span>
+                        transactions.length }} {{ $t('category.transaction') }}</span>
                 </div>
 
                 <button v-for="trx in transactions" :key="trx.id" type="button" @click="openDetail(trx)"
@@ -143,7 +153,7 @@ const formatDateRange = () => {
                         </div>
 
                         <div class="mb-2">
-                            <p class="text-sm font-bold text-white truncate">{{ trx.notes ?? 'Tanpa catatan' }}</p>
+                            <p class="text-sm font-bold text-white truncate">{{ trx.notes ?? $t('transaction.detail.noNote') }}</p>
                             <p v-if="trx.subject && trx.subject !== '-'"
                                 class="text-2xs text-yellow-500 font-bold mt-0.5 flex items-center gap-1">
                                 <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"
@@ -178,14 +188,14 @@ const formatDateRange = () => {
                         <span
                             class="inline-block text-2xs font-bold text-white uppercase px-1.5 py-0.5 rounded border"
                             :class="getTypeColor(trx.type.name)">
-                            {{ trx.type.name }}
+                            {{ getTypeName(trx.type.name) }}
                         </span>
                     </div>
                 </button>
 
                 <div v-if="transactions.length === 0"
                     class="text-center py-16 bg-linear-to-br from-gray-900 to-gray-800 rounded-xl border-2 border-dashed border-white/10">
-                    <p class="text-2xs font-bold text-gray-500 uppercase tracking-widest">Belum ada transaksi</p>
+                    <p class="text-2xs font-bold text-gray-500 uppercase tracking-widest">{{ $t('category.show.noTransactions') }}</p>
                 </div>
             </div>
         </div>

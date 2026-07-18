@@ -2,8 +2,10 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useLayoutPreference } from '@/Composables/useLayoutPreference';
 
+const { t } = useI18n();
 const { isDesktopLayout } = useLayoutPreference();
 
 const props = defineProps({
@@ -32,20 +34,14 @@ const getTheme = (typeName) => {
 };
 
 const getHeaderText = (typeName) => {
-    return {
-        'Income': 'Pemasukan',
-        'Expense': 'Pengeluaran',
-        'Transfer': 'Transfer',
-        'Debt': 'Kategori Hutang',
-        'Receivable': 'Kategori Piutang',
-    }[typeName] || 'Lainnya';
+    return t('category.typeHeaders.' + typeName) || t('types.other');
 };
 </script>
 
 <template>
     <AuthenticatedLayout :fullWidth="true">
 
-        <Head title="Vault Kategori" />
+        <Head :title="$t('category.title')" />
 
         <div class="p-5 w-full lg:max-w-4xl mx-auto lg:px-8 relative z-10 min-h-screen">
 
@@ -53,14 +49,14 @@ const getHeaderText = (typeName) => {
                 <div class="hidden lg:flex justify-between items-end mb-8 px-1">
                     <div>
                         <p class="text-2xs text-gray-300 font-bold uppercase tracking-[0.3em] mb-1 opacity-80">✨
-                            Collection</p>
+                            {{ $t('category.collection') }}</p>
                         <h1 class="text-3xl font-bold text-white tracking-tighter leading-none">Vault <span
-                                class="text-gray-500">Kategori</span></h1>
+                                class="text-gray-500">{{ $t('nav.label') }}</span></h1>
                     </div>
 
                     <div class="flex flex-col items-end">
                         <span
-                            class="text-2xs text-gray-500 font-bold uppercase tracking-[0.2em] leading-none">Total</span>
+                            class="text-2xs text-gray-500 font-bold uppercase tracking-[0.2em] leading-none">{{ $t('category.totalLabel') }}</span>
                         <div class="flex items-center gap-1.5 my-1">
                             <div class="w-1.5 h-1.5 rounded-full bg-purple-500 shadow-[0_0_8px_purple] mr-0.5"></div>
                             <span class="text-lg font-bold text-white leading-none">{{ totalCategories }}</span>
@@ -89,9 +85,9 @@ const getHeaderText = (typeName) => {
                             </div>
                             <div class="flex flex-col min-w-0">
                                 <span
-                                    class="text-sm font-bold text-white uppercase tracking-wide truncate">Tambah Kategori</span>
+                                    class="text-sm font-bold text-white uppercase tracking-wide truncate">{{ $t('category.addNew') }}</span>
                                 <span
-                                    class="text-2xs sm:text-2xs text-purple-300/70 font-bold uppercase tracking-widest mt-0.5 leading-tight">Buat kategori baru</span>
+                                    class="text-2xs sm:text-2xs text-purple-300/70 font-bold uppercase tracking-widest mt-0.5 leading-tight">{{ $t('category.titleCreate') }}</span>
                             </div>
                         </div>
 
@@ -142,10 +138,8 @@ const getHeaderText = (typeName) => {
 
             <div v-if="Object.keys(groupedCategories).length === 0"
                 class="text-center py-10 bg-linear-to-br from-gray-900 to-gray-800 backdrop-blur-sm rounded-xl border border-white/10 mt-8 animate-fade-in-up flex flex-col items-center relative overflow-hidden group">
-                <p class="text-2xs font-bold text-white uppercase tracking-widest relative z-10">Kategori Masih Kosong
-                </p>
-                <p class="text-2xs font-medium text-gray-500 mt-2 max-w-[200px] leading-relaxed relative z-10">Buat
-                    kategori pertamamu sekarang untuk mulai mencatat keuangan.</p>
+                <p class="text-2xs font-bold text-white uppercase tracking-widest relative z-10">{{ $t('empty.category') }}</p>
+                <p class="text-2xs font-medium text-gray-500 mt-2 max-w-[200px] leading-relaxed relative z-10">{{ $t('empty.categoryMsg') }}</p>
             </div>
         </div>
     </AuthenticatedLayout>

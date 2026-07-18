@@ -16,7 +16,10 @@
  */
 
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { formatNumber } from '@/utils/format.js'
+
+const { t } = useI18n()
 
 const props = defineProps({
     upcomingDebts: {
@@ -83,9 +86,16 @@ const amountClasses = {
 }
 
 const badgeLabel = (daysUntil) => {
-    if (daysUntil < 0)   return 'Terlewat'
-    if (daysUntil === 0) return 'Hari Ini!'
-    return `${daysUntil} Hari Lagi`
+    if (daysUntil < 0)   return t('upcomingDebts.overdue')
+    if (daysUntil === 0) return t('upcomingDebts.dueIn') + ' 0 ' + t('upcomingDebts.days')
+    return `${daysUntil} ${t('upcomingDebts.days')}`
+}
+
+// Terjemahkan tipe debt/receivable
+const typeLabel = (type) => {
+    if (type === 'Debt')       return t('upcomingDebts.debt')
+    if (type === 'Receivable') return t('upcomingDebts.receivable')
+    return type
 }
 </script>
 
@@ -100,13 +110,16 @@ const badgeLabel = (daysUntil) => {
                 <svg class="w-3 h-3 text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                Jatuh Tempo
+                {{ $t('upcomingDebts.title') }}
             </h2>
             <div class="flex-1 h-px bg-gradient-to-r from-red-500/20 to-transparent" aria-hidden="true" />
         </div>
 
+        <!-- Subtitle -->
+        <p class="text-2xs text-gray-500 px-1 mb-3">{{ $t('upcomingDebts.subtitle') }}</p>
+
         <!-- Debt items -->
-        <div class="flex flex-col gap-3" role="list" aria-label="Daftar jatuh tempo">
+        <div class="flex flex-col gap-3" role="list" :aria-label="$t('upcomingDebts.title')">
             <div
                 v-for="debt in activeDebts"
                 :key="debt.subject + debt.type"
@@ -116,12 +129,12 @@ const badgeLabel = (daysUntil) => {
                 <!-- Row atas: nama + badge + dismiss -->
                 <div class="flex justify-between items-start mb-1">
                     <h3 class="text-2xs font-bold text-white tracking-widest truncate mr-2">
-                        {{ debt.type }} — {{ debt.subject }}
+                        {{ typeLabel(debt.type) }} — {{ debt.subject }}
                     </h3>
                     <div class="flex items-center gap-2 shrink-0">
                         <span
                             :class="['text-2xs px-2 py-0.5 rounded-full font-bold', badgeClasses[urgencyKey(debt.days_until)]]"
-                            aria-label="`Jatuh tempo: ${badgeLabel(debt.days_until)}`"
+                            :aria-label="`${$t('upcomingDebts.dueIn')}: ${badgeLabel(debt.days_until)}`"
                         >
                             {{ badgeLabel(debt.days_until) }}
                         </span>
@@ -150,5 +163,10 @@ const badgeLabel = (daysUntil) => {
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Empty state -->
+    <div v-else-if="upcomingDebts.length === 0" class="hidden">
+        <!-- Komponen ini hanya render jika ada data; empty state dihandle di parent jika perlu -->
     </div>
 </template>

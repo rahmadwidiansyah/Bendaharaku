@@ -3,6 +3,9 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import EmojiPicker from '@/Components/EmojiPicker.vue';
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const form = useForm({
     name: '',
@@ -36,13 +39,13 @@ const displayAmount = computed({
 <template>
     <AuthenticatedLayout :fullWidth="true" :hideNav="true">
 
-        <Head title="Tambah Dompet" />
+        <Head :title="t('wallet.titleCreate')" />
         <div class="p-5 w-full lg:max-w-4xl mx-auto lg:px-8 relative animate-slide-up opacity-0"
             style="animation-delay: 50ms;">
 
             <header class="flex justify-between items-center mb-8 pt-4">
                 <div class="hidden lg:block">
-                    <h1 class="text-2xl font-bold text-white tracking-tight">Tambah Dompet</h1>
+                    <h1 class="text-2xl font-bold text-white tracking-tight">{{ t('wallet.titleCreate') }}</h1>
                 </div>
                 <Link :href="route('dashboard')"
                     class="w-10 h-10 rounded-full bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 flex items-center justify-center text-gray-400 active:scale-90 transition-all hover:text-white hover:border-white/50">
@@ -56,22 +59,22 @@ const displayAmount = computed({
                 style="animation-delay: 100ms;">
                 <button type="button" @click="setGroup('Liquid')"
                     :class="form.group_type === 'Liquid' ? 'w-full text-2xs font-semibold py-3 rounded-xl bg-linear-to-br from-gray-800 to-gray-700 text-white shadow-sm transition-all border border-white/10' : 'w-full text-2xs font-semibold py-3 rounded-xl text-gray-400 hover:text-white transition-all'">
-                    Liquid
+                    {{ t('wallet.groupTypes.liquid') }}
                 </button>
                 <button type="button" @click="setGroup('Asset')"
                     :class="form.group_type === 'Asset' ? 'w-full text-2xs font-semibold py-3 rounded-xl bg-linear-to-br from-gray-800 to-gray-700 text-white shadow-sm transition-all border border-white/10' : 'w-full text-2xs font-semibold py-3 rounded-xl text-gray-400 hover:text-white transition-all'">
-                    Investment
+                    {{ t('wallet.groupTypes.asset') }}
                 </button>
             </div>
 
             <form @submit.prevent="submit" class="space-y-6">
 
                 <div class="flex flex-col animate-slide-up opacity-0 relative z-10" style="animation-delay: 150ms;">
-                    <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">Saldo Awal</label>
+                    <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">{{ t('wallet.balance') }}</label>
                     <div
                         class="h-[60px] bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl px-5 flex items-center group focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all">
                         <span class="text-base font-bold text-purple-500 mr-3 opacity-80">Rp</span>
-                        <input type="text" inputmode="numeric" required placeholder="0" v-model="displayAmount"
+                        <input type="text" inputmode="numeric" required :placeholder="t('wallet.balancePlaceholder')" v-model="displayAmount"
                             class="w-full bg-transparent border-none text-white p-0 text-xl font-bold placeholder-gray-700 focus:ring-0 focus:outline-none caret-purple-500">
                     </div>
                     <div v-if="form.errors.balance" class="text-red-500 text-2xs mt-1">{{ form.errors.balance }}</div>
@@ -84,10 +87,10 @@ const displayAmount = computed({
                     </div>
 
                     <div class="flex-1 flex flex-col justify-end">
-                        <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">Nama Dompet</label>
+                        <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">{{ t('wallet.name') }}</label>
                         <div
                             class="h-[60px] bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 rounded-xl px-5 flex items-center group focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all caret-purple-500">
-                            <input type="text" v-model="form.name" required placeholder="Contoh: BCA Utama"
+                            <input type="text" v-model="form.name" required :placeholder="t('wallet.namePlaceholder')"
                                 class="w-full bg-transparent border-none text-white p-0 text-base font-medium placeholder-gray-600 focus:ring-0 focus:outline-none">
                         </div>
                         <div v-if="form.errors.name" class="text-red-500 text-2xs mt-1">{{ form.errors.name }}</div>
@@ -95,14 +98,13 @@ const displayAmount = computed({
                 </div>
 
                 <div class="flex flex-col animate-slide-up opacity-0 relative z-40" style="animation-delay: 250ms;">
-                    <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">Keyword AI (Pisahkan Koma)</label>
+                    <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">{{ t('wallet.keyword') }}</label>
                     <div
                         class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-4 group focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all caret-purple-500">
-                        <input type="text" v-model="form.keyword" placeholder="Contoh: BCA, Transfer, Mbanking..."
+                        <input type="text" v-model="form.keyword" :placeholder="t('wallet.keywordHint')"
                             class="w-full bg-transparent border-none text-white p-0 text-sm placeholder-gray-600 focus:ring-0 focus:outline-none">
                     </div>
-                    <p class="text-2xs text-gray-500 mt-2 ml-1 italic">* Digunakan untuk deteksi otomatis oleh sistem
-                        AI.</p>
+                    <p class="text-2xs text-gray-500 mt-2 ml-1 italic">{{ t('wallet.keywordHint') }}</p>
                 </div>
 
                 <div class="flex items-center justify-between bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 rounded-xl p-4 animate-slide-up opacity-0 relative z-35"
@@ -122,7 +124,7 @@ const displayAmount = computed({
                 <div class="pt-4 animate-slide-up opacity-0 relative z-30" style="animation-delay: 300ms;">
                     <button type="submit" :disabled="form.processing"
                         class="w-full bg-linear-to-br from-purple-800 to-purple-600 text-white font-bold text-sm tracking-wide py-4 rounded-xl hover:-translate-y-0.5 active:scale-95 transition-all duration-200">
-                        Simpan Dompet
+                        {{ form.processing ? t('btn.saving') : t('btn.save') }}
                     </button>
                 </div>
             </form>
