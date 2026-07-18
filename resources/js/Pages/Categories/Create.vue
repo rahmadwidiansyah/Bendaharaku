@@ -60,12 +60,19 @@ const goBack = () => {
 
                 <div>
                     <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">Tipe Kategori</label>
-                    <div
-                        class="p-1.5 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl shadow-inner">
-                        <div
-                            class="text-xs font-semibold py-3 text-center rounded-xl bg-white/5 text-purple-500 border border-white/10">
-                            {{ defaultType === 'Income' ? 'Pemasukan' : 'Pengeluaran' }}
-                        </div>
+                    <div class="p-1.5 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl shadow-inner flex gap-1.5">
+                        <button
+                            v-for="t in types"
+                            :key="t.id"
+                            type="button"
+                            @click="form.type_id = t.id"
+                            class="flex-1 py-3 rounded-lg text-xs font-bold uppercase tracking-widest transition-all"
+                            :class="form.type_id === t.id
+                                ? (t.name === 'Income' ? 'bg-green-500/20 text-green-400 border border-green-500/40' : 'bg-red-500/20 text-red-400 border border-red-500/40')
+                                : 'text-gray-500 border border-transparent hover:text-gray-300'"
+                        >
+                            {{ t.name === 'Income' ? '📥 Pemasukan' : '📤 Pengeluaran' }}
+                        </button>
                     </div>
                 </div>
 
