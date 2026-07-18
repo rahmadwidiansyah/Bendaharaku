@@ -54,6 +54,9 @@ class Wallet extends Model
     ];
 
     protected $casts = [
+        // PostgreSQL DECIMAL(15,2) dikembalikan sebagai string oleh PDO.
+        // Cast ke float agar seluruh consumer menerima tipe numerik yang benar.
+        'balance'   => 'float',
         'is_pinned' => 'boolean',
     ];
 

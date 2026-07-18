@@ -23,6 +23,8 @@ class User extends Authenticatable
         'allow_negative_balance',
         'locale',
         'timezone',
+        'bot_name',
+        'bot_avatar',
     ];
 
     protected $hidden = [
@@ -61,6 +63,40 @@ class User extends Authenticatable
     public function activeAiPreference(): HasOne
     {
         return $this->hasOne(UserAiPreference::class)->where('is_active_provider', true);
+    }
+
+    public function conversations(): HasMany
+    {
+        return $this->hasMany(Conversation::class);
+    }
+
+    /**
+     * Conversation aktif user saat ini.
+     */
+    public function activeConversation(): HasOne
+    {
+        return $this->hasOne(Conversation::class)
+            ->where('is_active', true)
+            ->whereNull('archived_at')
+            ->latest();
+    }
+
+    /**
+     * Nama bot yang dipersonalisasi, fallback ke 'Ken-Chan'.
+     */
+    public function getBotDisplayNameAttribute(): string
+    {
+        return $this->bot_name ?? 'Ken-Chan';
+    }
+
+    /**
+     * URL avatar bot (storage) atau null jika belum diatur.
+     */
+    public function getBotAvatarUrlAttribute(): ?string
+    {
+        return $this->bot_avatar
+            ? asset('storage/' . $this->bot_avatar)
+            : null;
     }
 
     protected function casts(): array

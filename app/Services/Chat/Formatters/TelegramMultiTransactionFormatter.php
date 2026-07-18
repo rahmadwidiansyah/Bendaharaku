@@ -6,6 +6,7 @@ namespace App\Services\Chat\Formatters;
 
 use App\DTO\MultiTransactionResult;
 use App\DTO\MultiTransactionItem;
+use App\Support\MoneyFormatter;
 
 /**
  * Formatter khusus Telegram untuk hasil multi-transaction.
@@ -89,7 +90,7 @@ class TelegramMultiTransactionFormatter
 
         if ($item->isSuccess()) {
             $trx    = $item->transaction;
-            $amount = 'Rp' . number_format((float) $trx->amount, 0, ',', '.');
+            $amount = MoneyFormatter::rupiahCompact($trx->amount); // sudah float karena cast di model TransactionLog
             $cat    = $trx->category?->category_name ?? '?';
             $wallet = $trx->sourceWallet?->name ?? $trx->destinationWallet?->name ?? '?';
             $emoji  = $this->typeEmoji($trx->type?->name ?? '');
