@@ -12,6 +12,7 @@ use App\Chat\Formatters\TelegramFormatter;
 use App\Enums\ChatPlatform;
 use App\Models\User;
 use App\Models\Wallet;
+use App\Support\MoneyFormatter;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -167,15 +168,15 @@ class TelegramAdapter
 
         foreach ($wallets as $w) {
             $name  = strtoupper($w->name);
-            $bal   = $w->balance;
+            $bal   = $w->balance; // sudah float karena cast di model Wallet
             $totalBalance += $bal;
-            $balStr = number_format($bal, 0, ',', '.');
+            $balStr = MoneyFormatter::amount($bal);
             if (strlen($name) > $maxNameLen) $maxNameLen = strlen($name);
             if (strlen($balStr) > $maxBalLen) $maxBalLen = strlen($balStr);
             $walletData[] = ['name' => $name, 'balStr' => $balStr];
         }
 
-        $totalStr = number_format($totalBalance, 0, ',', '.');
+        $totalStr = MoneyFormatter::amount($totalBalance);
         if (strlen($totalStr) > $maxBalLen) $maxBalLen = strlen($totalStr);
 
         $textMsg = "```text\n";

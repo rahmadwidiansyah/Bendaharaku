@@ -10,6 +10,8 @@ use App\Http\Controllers\LoanController;
 use App\Http\Controllers\Settings\AiSettingsController;
 use App\Http\Controllers\AiAnalyticsController;
 use App\Http\Controllers\GoogleController;
+use App\Http\Controllers\WebChatController;
+use App\Http\Controllers\ChatBotProfileController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schedule;
 use App\Console\Commands\PruneAiMemoriesCommand;
@@ -63,6 +65,21 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('api/ai/analytics')->name('api.ai.analytics.')->group(function () {
         Route::get('/dashboard', [AiAnalyticsController::class, 'dashboard'])->name('dashboard');
         Route::get('/feedback', [AiAnalyticsController::class, 'feedback'])->name('feedback');
+    });
+
+    // ── Chat ──────────────────────────────────────────────────────
+    Route::prefix('chat')->name('chat.')->group(function () {
+        Route::get('/',          [WebChatController::class, 'index'])->name('index');
+        Route::post('/message',  [WebChatController::class, 'sendMessage'])->name('message');
+        Route::get('/history',   [WebChatController::class, 'history'])->name('history');
+        Route::get('/commands',  [WebChatController::class, 'commands'])->name('commands');
+    });
+
+    // ── Chat Bot Profile settings ─────────────────────────────────
+    Route::prefix('settings/chat')->name('settings.chat.')->group(function () {
+        Route::get('/bot-profile',    [ChatBotProfileController::class, 'show'])->name('bot-profile');
+        Route::patch('/bot-profile',  [ChatBotProfileController::class, 'update'])->name('bot-profile.update');
+        Route::delete('/bot-avatar',  [ChatBotProfileController::class, 'destroyAvatar'])->name('bot-avatar.destroy');
     });
 
     // Resources CRUD
