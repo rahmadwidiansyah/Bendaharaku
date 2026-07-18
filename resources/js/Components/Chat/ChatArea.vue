@@ -3,10 +3,8 @@
  * ChatArea.vue
  *
  * Scrollable container untuk daftar pesan.
- * Menangani:
- * - Infinite scroll ke atas (load history lebih lama)
- * - Expose ref ke parent via defineExpose
- * - Transition masuk untuk setiap bubble
+ * Tidak mengandung jump-to-latest button — itu ada di Chat/Index.vue
+ * sebagai floating overlay di luar scroll container.
  */
 
 import { ref } from 'vue'
@@ -14,28 +12,22 @@ import ChatMessage     from './ChatMessage.vue'
 import TypingIndicator from './Messages/TypingIndicator.vue'
 
 const props = defineProps({
-    messages:     { type: Array,   required: true },
-    isTyping:     { type: Boolean, default: false },
-    isLoadingMore:{ type: Boolean, default: false },
-    hasMore:      { type: Boolean, default: false },
-    botAvatar:    { type: String,  default: null },
-    botName:      { type: String,  default: 'Ken-Chan' },
-    userAvatar:   { type: String,  default: null },
-    userName:     { type: String,  default: 'Kamu' },
-    showJumpBtn:  { type: Boolean, default: false },
+    messages:      { type: Array,   required: true },
+    isTyping:      { type: Boolean, default: false },
+    isLoadingMore: { type: Boolean, default: false },
+    hasMore:       { type: Boolean, default: false },
+    botAvatar:     { type: String,  default: null },
+    botName:       { type: String,  default: 'Ken-Chan' },
+    userAvatar:    { type: String,  default: null },
+    userName:      { type: String,  default: 'Kamu' },
 })
 
-const emit = defineEmits(['loadMore', 'scrollUpdate', 'jumpLatest', 'retry', 'regenerate'])
+const emit = defineEmits(['loadMore', 'scrollUpdate', 'retry', 'regenerate'])
 
-/**
- * Avatar grouping: tampilkan avatar hanya pada pesan pertama
- * dalam satu grup pesan dari pihak yang sama.
- */
+/** Avatar grouping: tampilkan avatar hanya di awal grup role yang sama */
 function shouldShowAvatar(messages, index) {
     if (index === 0) return true
-    const prev = messages[index - 1]
-    const curr = messages[index]
-    return prev.role !== curr.role
+    return messages[index - 1].role !== messages[index].role
 }
 
 const containerRef = ref(null)
@@ -55,14 +47,13 @@ function onScroll() {
     })
 }
 
-// Expose containerRef ke parent (useChat scrollToBottom membutuhkannya)
 defineExpose({ el: containerRef })
 </script>
 
 <template>
     <div
         ref="containerRef"
-        class="flex-1 overflow-y-auto overscroll-contain relative"
+        class="flex-1 overflow-y-auto overscroll-contain"
         style="scroll-behavior: auto;"
         @scroll="onScroll"
         role="log"
@@ -80,7 +71,6 @@ defineExpose({ el: containerRef })
             </div>
         </div>
 
-        <!-- Spacer atas -->
         <div class="h-2" aria-hidden="true"></div>
 
         <!-- Slot untuk empty state -->
@@ -124,29 +114,7 @@ defineExpose({ el: containerRef })
             />
         </Transition>
 
-        <!-- Spacer bawah agar tidak ketutup composer -->
+        <!-- Spacer bawah -->
         <div class="h-2" aria-hidden="true"></div>
-
-        <!-- Jump to latest button -->
-        <Transition
-            enter-active-class="transition-all duration-200"
-            enter-from-class="opacity-0 translate-y-2"
-            enter-to-class="opacity-100 translate-y-0"
-            leave-active-class="transition-all duration-150"
-            leave-from-class="opacity-100"
-            leave-to-class="opacity-0 translate-y-2"
-        >
-            <button
-                v-if="showJumpBtn"
-                @click="$emit('jumpLatest')"
-                class="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-800 border border-white/12 text-2xs text-gray-300 shadow-lg hover:bg-gray-700 hover:text-white transition-all active:scale-95"
-                aria-label="Scroll ke pesan terbaru"
-            >
-                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
-                Pesan terbaru
-            </button>
-        </Transition>
     </div>
 </template>
