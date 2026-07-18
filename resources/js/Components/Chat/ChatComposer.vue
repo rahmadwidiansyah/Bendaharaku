@@ -86,7 +86,7 @@ function submit() {
                 type="button"
                 @click="$emit('openCommands')"
                 :disabled="isLoading"
-                class="shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center bg-gray-800 border border-white/10 text-gray-400 hover:text-purple-400 hover:border-purple-500/40 transition-all disabled:opacity-40"
+                class="shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center bg-gray-800 border border-white/10 text-gray-400 hover:text-purple-400 hover:border-purple-500/40 transition-all disabled:opacity-40 mb-px"
                 aria-label="Lihat perintah"
                 title="Perintah (/)"
             >
@@ -105,8 +105,8 @@ function submit() {
                     rows="1"
                     @keydown="onKeydown"
                     @input="resize"
-                    class="w-full resize-none bg-gray-800 border border-white/10 rounded-2xl px-4 py-2.5 text-sm text-white placeholder-gray-500 outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/30 transition-all disabled:opacity-50 leading-6"
-                    style="height: 40px; max-height: 120px; overflow-y: auto;"
+                    class="w-full resize-none bg-gray-800 border border-white/10 rounded-2xl px-4 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/30 transition-all disabled:opacity-50 leading-6"
+                    style="min-height: 40px; max-height: 120px; overflow-y: auto;"
                     :aria-label="placeholder"
                     aria-multiline="true"
                 ></textarea>
@@ -118,7 +118,7 @@ function submit() {
                 @click="submit"
                 :disabled="!canSend"
                 :class="[
-                    'shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center transition-all',
+                    'shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center transition-all mb-px',
                     canSend
                         ? 'bg-gradient-to-br from-purple-800 to-purple-500 text-white shadow-lg shadow-purple-500/25 hover:from-purple-700 hover:to-purple-400 active:scale-95'
                         : 'bg-gray-800 border border-white/10 text-gray-600 cursor-not-allowed'

@@ -50,6 +50,16 @@ Route::middleware(['auth'])->group(function () {
         return back()->with('success', 'Logika transaksi diperbarui.');
     })->name('settings.transaction-logic.update');
 
+    // Simpan preferensi locale user ke DB agar chat (Telegram & Web) bisa baca
+    Route::patch('/settings/locale', function (\Illuminate\Http\Request $request) {
+        $validated = $request->validate(['locale' => ['required', 'string', 'in:id,en,auto']]);
+        // 'auto' = null di DB (ikuti platform/default)
+        $request->user()->update([
+            'locale' => $validated['locale'] === 'auto' ? null : $validated['locale'],
+        ]);
+        return response()->json(['success' => true]);
+    })->name('settings.locale.update');
+
     // AI Settings & Analytics (Gabungan)
     Route::prefix('settings/ai')->name('settings.ai.')->group(function () {
         Route::get('/', [AiSettingsController::class, 'index'])->name('index');

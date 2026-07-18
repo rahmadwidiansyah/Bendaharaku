@@ -470,6 +470,19 @@ class ChatTransactionOrchestrator
             ),
         ]);
 
+        // 5. Catat ke ai_parse_logs agar riwayat muncul di AI Analytics
+        //    (Token sudah tercatat di AiUsageLog, ini untuk riwayat request/parse)
+        $this->parseLogService->createMultiLog(
+            user:         $user,
+            inputText:    $text,
+            provider:     $multiResult->provider,
+            model:        $multiResult->model,
+            confidence:   $multiResult->confidence,
+            successCount: $multiTxResult->successCount(),
+            totalCount:   $multiTxResult->totalCount(),
+            usage:        $multiResult->usage,
+        );
+
         // success=true jika minimal satu transaksi berhasil
         return [
             'success'      => $multiTxResult->hasAnySuccess(),

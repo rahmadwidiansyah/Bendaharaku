@@ -5,7 +5,8 @@
  *
  * Fitur:
  *   - Deteksi bahasa device/browser secara otomatis
- *   - Simpan preferensi ke localStorage
+ *   - Simpan preferensi ke localStorage (reaktif di frontend)
+ *   - Simpan ke DB via PATCH /settings/locale (agar chat Telegram & Web pakai locale user)
  *   - Switch bahasa secara reaktif tanpa reload
  *   - Pilihan: Auto (ikuti device), id, en
  *
@@ -14,6 +15,7 @@
 
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import axios from 'axios'
 import { SUPPORTED_LOCALES } from '@/i18n/index.js'
 
 const STORAGE_KEY = 'locale'
@@ -47,7 +49,7 @@ export function useLocale() {
             localStorage.removeItem(STORAGE_KEY)
             preference.value = 'auto'
             // Resolve dari device
-            const deviceLang  = navigator.language || navigator.userLanguage || 'id'
+            const deviceLang   = navigator.language || navigator.userLanguage || 'id'
             const devicePrefix = deviceLang.split('-')[0].toLowerCase()
             locale.value = SUPPORTED_LOCALES.includes(devicePrefix) ? devicePrefix : 'id'
         } else if (SUPPORTED_LOCALES.includes(newLocale)) {
@@ -55,6 +57,12 @@ export function useLocale() {
             preference.value = newLocale
             locale.value     = newLocale
         }
+
+        // Simpan ke DB agar chat (Telegram & Web) membaca locale yang benar.
+        // Silent fail — tidak blokir UI jika request gagal.
+        axios.patch('/settings/locale', { locale: newLocale }).catch((err) => {
+            console.warn('[useLocale] Gagal simpan locale ke server:', err?.message)
+        })
     }
 
     /**
