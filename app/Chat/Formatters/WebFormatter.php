@@ -139,7 +139,7 @@ class WebFormatter implements ChatFormatterInterface
             'transaction'  => [
                 'id'               => $trx->id,
                 'reference_number' => $trx->reference_number,
-                'amount'           => $trx->amount, // sudah float karena cast di model TransactionLog
+                'amount'           => $trx->amount,
                 'amount_formatted' => MoneyFormatter::rupiah($trx->amount),
                 'is_cleared'       => $trx->is_cleared,
                 'type_key'         => $typeKey,
@@ -150,6 +150,7 @@ class WebFormatter implements ChatFormatterInterface
                 'subject'          => $trx->subject,
                 'notes'            => $trx->notes,
                 'date'             => $trx->date?->toDateString(),
+                'created_at'       => $trx->created_at?->toIso8601String(),
             ],
         ];
     }

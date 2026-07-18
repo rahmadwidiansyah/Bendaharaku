@@ -159,21 +159,22 @@ class WebAdapter
     public function getHistory(Conversation $conversation, int $limit = 30, ?int $before = null): array
     {
         $query = $conversation->messages()
-            ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->limit($limit);
 
         if ($before) {
             $query->where('id', '<', $before);
         }
 
-        $messages = $query->get()->reverse()->values();
+        // Ambil N terbaru (desc), lalu sortBy id ascending → chronological
+        $messages = $query->get()->sortBy('id')->values();
 
         return $messages->map(function (ChatMessage $msg) {
             return [
                 'id'         => $msg->id,
                 'role'       => $msg->role,
-                'content'    => $msg->content,
-                'metadata'   => $msg->metadata,
+                'content'    => $msg->content ?? [],
+                'metadata'   => $msg->metadata ?? [],
                 'created_at' => $msg->created_at->toIso8601String(),
             ];
         })->all();

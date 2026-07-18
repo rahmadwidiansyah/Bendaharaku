@@ -29,10 +29,11 @@ import { useChatCommands } from '@/Composables/useChatCommands.js'
 
 // ── Props dari Inertia (server-side) ──────────────────────────────
 const props = defineProps({
-    initialMessages: { type: Array,  default: () => [] },
-    conversation:    { type: Object, default: null },
-    botProfile:      { type: Object, default: () => ({ name: 'Ken-Chan', avatar: null }) },
-    commands:        { type: Array,  default: () => [] },
+    initialMessages: { type: Array,   default: () => [] },
+    initialHasMore:  { type: Boolean, default: false },
+    conversation:    { type: Object,  default: null },
+    botProfile:      { type: Object,  default: () => ({ name: 'Ken-Chan', avatar: null }) },
+    commands:        { type: Array,   default: () => [] },
 })
 
 // ── Auth user ─────────────────────────────────────────────────────
@@ -56,7 +57,7 @@ const {
     onScrollUpdate,
     retryLastMessage,
     regenerateMessage,
-} = useChat(props.initialMessages, props.conversation?.id ?? null)
+} = useChat(props.initialMessages, props.conversation?.id ?? null, props.initialHasMore)
 
 const {
     commandsByCategory,
@@ -140,7 +141,7 @@ async function handleRegenerate(botMessage) {
                 :has-more="hasMore"
                 :bot-avatar="botProfile.avatar"
                 :bot-name="botProfile.name"
-                :user-avatar="authUser.avatar ?? null"
+                :user-avatar="authUser.avatar_url ?? null"
                 :user-name="authUser.name ?? 'Kamu'"
                 :show-jump-btn="showJumpBtn"
                 @loadMore="loadMore"
