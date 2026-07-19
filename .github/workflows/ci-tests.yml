@@ -68,8 +68,11 @@ jobs:
           sed -i 's/^APP_ENV=.*/APP_ENV=testing/' .env
           sed -i 's/^DB_CONNECTION=.*/DB_CONNECTION=pgsql/' .env
           
-          # Ensure DB configuration is set
-          grep -q "^DB_HOST=" .env || echo "DB_HOST=postgres" >> .env
+          # Use localhost for GitHub Actions (service port is mapped to host)
+          grep -q "^DB_HOST=" .env || echo "DB_HOST=localhost" >> .env
+          sed -i 's/^DB_HOST=.*/DB_HOST=localhost/' .env
+          
+          # Ensure other DB configuration is set
           grep -q "^DB_PORT=" .env || echo "DB_PORT=5432" >> .env
           grep -q "^DB_DATABASE=" .env || echo "DB_DATABASE=testing" >> .env
           grep -q "^DB_USERNAME=" .env || echo "DB_USERNAME=postgres" >> .env
@@ -90,8 +93,8 @@ jobs:
           max_retries=30
           retry=0
           
-          # Wait for server to respond
-          until pg_isready -h postgres -p 5432 -U postgres >/dev/null 2>&1 || [ $retry -ge $max_retries ]; do
+          # Wait for server to respond (use localhost since port is mapped to host)
+          until pg_isready -h localhost -p 5432 -U postgres >/dev/null 2>&1 || [ $retry -ge $max_retries ]; do
             retry=$((retry + 1))
             echo "PostgreSQL not ready ($retry/$max_retries), waiting..."
             sleep 2
@@ -99,8 +102,8 @@ jobs:
           
           if [ $retry -ge $max_retries ]; then
             echo "ERROR: PostgreSQL failed to become ready after $((max_retries * 2)) seconds"
-            echo "=== Network debug ===" && (getent hosts postgres || echo "hostname resolution failed")
             echo "=== Port check ===" && (ss -ltn | grep 5432 || echo "port not listening")
+            echo "=== Try connecting ===" && (psql -h localhost -U postgres -d postgres -c "SELECT 1" 2>&1 || echo "connection failed")
             exit 1
           fi
           
@@ -109,7 +112,7 @@ jobs:
       - name: Run database migrations
         env:
           DB_CONNECTION: pgsql
-          DB_HOST: postgres
+          DB_HOST: localhost
           DB_PORT: 5432
           DB_DATABASE: testing
           DB_USERNAME: postgres
@@ -125,7 +128,7 @@ jobs:
       - name: Run Feature tests (single-process mode)
         env:
           DB_CONNECTION: pgsql
-          DB_HOST: postgres
+          DB_HOST: localhost
           DB_PORT: 5432
           DB_DATABASE: testing
           DB_USERNAME: postgres
@@ -138,7 +141,7 @@ jobs:
       - name: Run Unit tests
         env:
           DB_CONNECTION: pgsql
-          DB_HOST: postgres
+          DB_HOST: localhost
           DB_PORT: 5432
           DB_DATABASE: testing
           DB_USERNAME: postgres
