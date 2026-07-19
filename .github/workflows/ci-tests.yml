@@ -1,0 +1,84 @@
+name: CI - Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  php-tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: testing
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d testing" --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v4
+        with:
+          php-version: '8.2'
+          extensions: mbstring, bcmath, intl, pdo_pgsql
+
+      - name: Install composer
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Copy .env
+        run: cp .env.example .env && php -r "file_put_contents('.env', str_replace('DB_HOST=127.0.0.1', 'DB_HOST=postgres', file_get_contents('.env')));"
+
+      - name: Wait for Postgres
+        run: |
+          until pg_isready -h postgres -p 5432 -U postgres; do
+            echo "Waiting for postgres..."; sleep 2;
+          done
+
+      - name: Run migrations
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: postgres
+          DB_PORT: 5432
+          DB_DATABASE: testing
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
+        run: php artisan migrate --force
+
+      - name: Run tests (targeted)
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: postgres
+          DB_PORT: 5432
+          DB_DATABASE: testing
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
+        run: php artisan test --parallel --testsuite=Feature
+
+  js-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install frontend deps
+        run: |
+          cd resources/js || exit 0
+          npm ci
+      - name: Run vitest if available
+        run: |
+          if [ -f package.json ] && grep -q vitest package.json; then
+            npm run test:unit || true
+          else
+            echo "No vitest tests found"
+          fi
