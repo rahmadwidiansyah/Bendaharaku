@@ -9,6 +9,7 @@ use App\Chat\DTOs\ChatResponse;
 use App\Chat\DTOs\ChatContext;
 use App\Chat\Components\TextComponent;
 use App\Chat\Components\DividerComponent;
+use App\Chat\Components\ReportSectionComponent;
 use App\Chat\Components\TransactionCardComponent;
 use App\Chat\Components\SummaryCardComponent;
 use App\Chat\Components\ErrorComponent;
@@ -1137,8 +1138,19 @@ class ChatApplicationService
         $category = $transaction->category?->category_name ?? '-';
         $wallet = $transaction->sourceWallet?->name ?? $transaction->destinationWallet?->name ?? '-';
         $amount = \App\Support\MoneyFormatter::rupiah((float) $transaction->amount);
+        $date = $transaction->date?->format('d/m') ?? '-';
 
-        return "{$transaction->date?->format('d/m')} — {$type} — {$category} — {$amount} — {$wallet}";
+        return "{$date} — {$type} — {$category} — {$amount} — {$wallet}";
+    }
+
+    private function assertSuccessful(\Illuminate\Http\Client\Response $response, string $provider): void
+    {
+        if ($response->successful()) return;
+        $statusCode = $response->status();
+        if ($statusCode === 429)                        throw new AiRateLimitException($provider);
+        if (in_array($statusCode, [408, 503, 504]))    throw new AiTimeoutException($provider);
+        if (in_array($statusCode, [401, 403]))         throw new AiProviderException($provider, "API Key tidak valid (HTTP {$statusCode}).");
+        throw new AiProviderException($provider, "HTTP {$statusCode}: " . substr($response->body(), 0, 200));
     }
 
     private function buildHelpResponse(\App\Models\User $user, string $locale, array $metadata): ChatResponse
@@ -1167,14 +1179,15 @@ class ChatApplicationService
         );
     }
 
-    private function buildComparisonMetrics(array $currentMetrics, ?MonthlyReport $previousReport = null): ?array
+    private function buildComparisonMetrics(array|\Illuminate\Support\Collection $currentMetrics, ?MonthlyReport $previousReport = null): ?array
     {
         if (!$previousReport || !$previousReport->metrics) {
             return null;
         }
 
         $prev = $previousReport->metrics;
-        $curr = $currentMetrics;
+        // Normalize current metrics: accept array or Collection
+        $curr = is_array($currentMetrics) ? $currentMetrics : \Illuminate\Support\Collection::make($currentMetrics)->toArray();
 
         return [
             'income_diff' => ($curr['income'] ?? 0) - ($prev['income'] ?? 0),
