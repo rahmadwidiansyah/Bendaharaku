@@ -38,14 +38,12 @@ jobs:
         run: |
           cp .env.example .env
           # Ensure DB_* variables present and point to the postgres service
-          cat >> .env <<'ENV'
-DB_CONNECTION=pgsql
-DB_HOST=postgres
-DB_PORT=5432
-DB_DATABASE=testing
-DB_USERNAME=postgres
-DB_PASSWORD=postgres
-ENV
+          echo 'DB_CONNECTION=pgsql' >> .env
+          echo 'DB_HOST=postgres' >> .env
+          echo 'DB_PORT=5432' >> .env
+          echo 'DB_DATABASE=testing' >> .env
+          echo 'DB_USERNAME=postgres' >> .env
+          echo 'DB_PASSWORD=postgres' >> .env
 
       - name: Install postgres client for pg_isready and psql
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
