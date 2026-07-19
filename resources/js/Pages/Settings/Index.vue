@@ -4,10 +4,24 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 import { useLayoutPreference } from '@/Composables/useLayoutPreference';
 import { useI18n } from 'vue-i18n';
 import { useLocale } from '@/Composables/useLocale.js';
+import axios from 'axios';
+import { ref, onMounted } from 'vue';
 
 const { t } = useI18n();
 const { currentPreference, setLocale } = useLocale();
 const { isDesktopLayout } = useLayoutPreference();
+
+const recentChanges = ref([]);
+
+onMounted(() => {
+    axios.get(route('settings.recent_changes'))
+        .then(res => {
+            recentChanges.value = res.data || [];
+        })
+        .catch(() => {
+            recentChanges.value = [];
+        });
+});
 
 const props = defineProps({
     allowNegativeBalance: Boolean,
@@ -45,6 +59,26 @@ const updateTransactionLogic = () => {
             </header>
 
             <div class="space-y-10">
+
+                <!-- Recently Modified -->
+                <section>
+                    <div class="flex items-center gap-3 mb-4">
+                        <h2 class="text-2xs font-black text-gray-400 uppercase tracking-[0.2em]">Recently Modified</h2>
+                        <div class="flex-1 h-px bg-white/5"></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div v-if="recentChanges.length" v-for="(c, i) in recentChanges" :key="c.id" class="p-4 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-2xl">
+                            <p class="text-sm font-bold text-white truncate">{{ c.setting_key || c.setting_page || 'Setting' }}</p>
+                            <p class="text-2xs text-gray-500 mt-1 truncate">{{ c.setting_page }}</p>
+                            <p class="text-2xs text-gray-400 mt-2">{{ new Date(c.changed_at).toLocaleString() }}</p>
+                        </div>
+
+                        <div v-if="!recentChanges.length" class="p-4 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-2xl text-center text-gray-500">
+                            No recent changes
+                        </div>
+                    </div>
+                </section>
 
                 <!-- ─── SECTION: AKUN ──────────────────────────────────────── -->
                 <section>
