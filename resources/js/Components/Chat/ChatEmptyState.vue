@@ -21,7 +21,9 @@ const suggestions = [
     { label: 'Transfer BCA ke Dana 100rb', hint: 'Transfer antar dompet' },
     { label: '/saldo',                     hint: 'Lihat saldo semua dompet' },
     { label: '/ringkasan',                 hint: 'Ringkasan keuangan' },
-    { label: '/help',                      hint: 'Panduan penggunaan' },
+{ label: '/laporan',                   hint: 'Laporan bulanan (dengan AI)' },
+{ label: '/statistik',                 hint: 'Statistik ringkas bulan ini' },
+{ label: '/help',                      hint: 'Panduan penggunaan' },
 ]
 </script>
 
@@ -51,16 +53,21 @@ const suggestions = [
         <div class="w-full max-w-sm">
             <p class="text-2xs font-bold text-gray-700 uppercase tracking-widest mb-2.5">Mulai dari sini</p>
             <div class="flex flex-wrap gap-1.5 justify-center">
-                <button
-                    v-for="s in suggestions"
-                    :key="s.label"
-                    type="button"
-                    @click="$emit('select', s.label)"
-                    :title="s.hint"
-                    class="px-3 py-1.5 rounded-lg bg-gray-800/80 border border-white/8 text-xs text-gray-400 font-medium hover:border-purple-500/30 hover:text-gray-200 hover:bg-gray-800 transition-all active:scale-95"
-                >
-                    {{ s.label }}
-                </button>
+                <div class="grid grid-cols-2 gap-2">
+                    <button
+                        v-for="s in suggestions"
+                        :key="s.label"
+                        type="button"
+                        @click="$emit('select', s.label)"
+                        :title="s.hint"
+                        class="w-full text-left px-3 py-2 rounded-xl bg-gray-900/85 border border-white/6 text-sm text-gray-200 font-semibold hover:border-white/12 hover:shadow-lg transition-all active:scale-98"
+                    >
+                        <div class="flex items-center justify-between">
+                            <div class="truncate">{{ s.label }}</div>
+                            <div class="text-2xs text-gray-400 ml-3">{{ s.hint }}</div>
+                        </div>
+                    </button>
+                </div>
             </div>
         </div>
 
