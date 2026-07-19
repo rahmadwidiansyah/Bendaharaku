@@ -292,7 +292,7 @@ class ChatApplicationService
         ]);
     }
 
-    private function buildMetadata(array $result, ChatContext $context, int $latency): array
+    private function buildMetadata(array $result, ChatContext $context, int|float $latency): array
     {
         $usage        = $result['usage'] ?? ($result['multi_result']?->usage ?? []);
         $totalTokens  = $usage['total'] ?? null;
