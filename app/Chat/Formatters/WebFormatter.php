@@ -191,6 +191,7 @@ class WebFormatter implements ChatFormatterInterface
         return [
             'type'    => 'warning',
             'message' => trans($c->messageKey, $c->params, $locale),
+            'severity' => 'warning',
         ];
     }
 

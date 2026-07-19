@@ -178,6 +178,12 @@ class ChatApplicationService
             showDetails: true,
         );
 
+        if (!$isCleared && $trx->sourceWallet?->group_type === 'System') {
+            $components[] = new WarningComponent(
+                messageKey: 'chat.wallet.missing_choose',
+            );
+        }
+
         // Divider + footer AI
         $components[] = new DividerComponent();
         $components[] = new TextComponent(
