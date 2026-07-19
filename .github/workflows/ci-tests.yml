@@ -28,10 +28,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup PHP 8.3 (production stable)
+      - name: Setup PHP 8.4 (production stable)
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          php-version: '8.4'
           extensions: mbstring, bcmath, intl, pdo_pgsql
           coverage: none
 
