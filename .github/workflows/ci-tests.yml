@@ -52,12 +52,28 @@ jobs:
       - name: Install PostgreSQL client
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
-      - name: Debug - System information
+      - name: Debug - System & Docker information
         run: |
           echo "=== PHP Version ===" && php --version
           echo "=== Composer Version ===" && composer --version
           echo "=== PostgreSQL Client ===" && psql --version
           echo "=== pg_isready ===" && pg_isready --version
+          echo ""
+          echo "=== Docker Containers ===" && docker ps -a
+          echo ""
+          echo "=== Network Status ===" && ip addr show || echo "ip not available"
+          echo ""
+          echo "=== /etc/hosts ===" && cat /etc/hosts
+          echo ""
+          echo "=== Hostname Lookup (getent) ===" && (getent hosts postgres || echo "❌ postgres hostname not found")
+          echo ""
+          echo "=== DNS Lookup (nslookup) ===" && (nslookup postgres || echo "❌ nslookup failed")
+          echo ""
+          echo "=== Test connectivity to postgres ===" && (ping -c 3 postgres 2>&1 || echo "❌ ping failed")
+          echo ""
+          echo "=== Test localhost:5432 ===" && (nc -zv localhost 5432 2>&1 || echo "❌ netcat check failed")
+          echo ""
+          echo "=== Test postgres:5432 ===" && (nc -zv postgres 5432 2>&1 || echo "❌ netcat check failed")
 
       - name: Setup .env for testing
         run: |
@@ -68,9 +84,10 @@ jobs:
           sed -i 's/^APP_ENV=.*/APP_ENV=testing/' .env
           sed -i 's/^DB_CONNECTION=.*/DB_CONNECTION=pgsql/' .env
           
-          # Use localhost for GitHub Actions (service port is mapped to host)
-          grep -q "^DB_HOST=" .env || echo "DB_HOST=localhost" >> .env
-          sed -i 's/^DB_HOST=.*/DB_HOST=localhost/' .env
+          # Use service name 'postgres' for GitHub Actions service container
+          # GitHub Actions provides service containers with their service name as hostname
+          grep -q "^DB_HOST=" .env || echo "DB_HOST=postgres" >> .env
+          sed -i 's/^DB_HOST=.*/DB_HOST=postgres/' .env
           
           # Ensure other DB configuration is set
           grep -q "^DB_PORT=" .env || echo "DB_PORT=5432" >> .env
@@ -87,32 +104,76 @@ jobs:
       - name: Clear configuration cache (fresh start)
         run: php artisan config:clear
 
-      - name: Wait for PostgreSQL to be ready
+      - name: Comprehensive PostgreSQL Readiness Check
         run: |
-          echo "Waiting for PostgreSQL server..."
+          echo "=== Testing PostgreSQL Connectivity ==="
           max_retries=30
           retry=0
           
-          # Wait for server to respond (use localhost since port is mapped to host)
+          # First, test if service container exists
+          echo "Step 1: Check if postgres service container is running..."
+          if docker ps -a | grep -i postgres; then
+            echo "✓ PostgreSQL container found"
+          else
+            echo "✗ PostgreSQL container NOT found"
+            docker ps -a
+          fi
+          
+          echo ""
+          echo "Step 2: Try connecting via localhost:5432..."
           until pg_isready -h localhost -p 5432 -U postgres >/dev/null 2>&1 || [ $retry -ge $max_retries ]; do
             retry=$((retry + 1))
-            echo "PostgreSQL not ready ($retry/$max_retries), waiting..."
+            echo "Attempt $retry/$max_retries: localhost not ready, waiting..."
             sleep 2
           done
           
-          if [ $retry -ge $max_retries ]; then
-            echo "ERROR: PostgreSQL failed to become ready after $((max_retries * 2)) seconds"
-            echo "=== Port check ===" && (ss -ltn | grep 5432 || echo "port not listening")
-            echo "=== Try connecting ===" && (psql -h localhost -U postgres -d postgres -c "SELECT 1" 2>&1 || echo "connection failed")
-            exit 1
+          if [ $retry -lt $max_retries ]; then
+            echo "✓ PostgreSQL is ready on localhost:5432"
+          else
+            echo "✗ PostgreSQL NOT ready on localhost:5432 after 60 seconds"
           fi
           
-          echo "✓ PostgreSQL server is ready"
+          echo ""
+          echo "Step 3: Try connecting via postgres:5432 (service name)..."
+          retry=0
+          until pg_isready -h postgres -p 5432 -U postgres >/dev/null 2>&1 || [ $retry -ge 10 ]; do
+            retry=$((retry + 1))
+            echo "Attempt $retry/10: postgres hostname, waiting..."
+            sleep 1
+          done
+          
+          if [ $retry -lt 10 ]; then
+            echo "✓ PostgreSQL is ready on postgres:5432"
+            HOST_FOR_CONNECT="postgres"
+          else
+            echo "✗ PostgreSQL NOT accessible via postgres:5432"
+            if pg_isready -h localhost -p 5432 -U postgres >/dev/null 2>&1; then
+              echo "✓ But accessible via localhost:5432 - will use that instead"
+              HOST_FOR_CONNECT="localhost"
+            else
+              echo "✗ NOT accessible via either hostname"
+              exit 1
+            fi
+          fi
+          
+          echo ""
+          echo "=== Final Status ==="
+          echo "Host to use for connections: $HOST_FOR_CONNECT"
+          
+          # Test actual connection
+          echo ""
+          echo "Step 4: Test actual database connection..."
+          if psql -h $HOST_FOR_CONNECT -U postgres -d postgres -c "SELECT version();" 2>/dev/null; then
+            echo "✓ Successfully connected to PostgreSQL"
+          else
+            echo "✗ Connection failed"
+            exit 1
+          fi
 
       - name: Run database migrations
         env:
           DB_CONNECTION: pgsql
-          DB_HOST: localhost
+          DB_HOST: postgres
           DB_PORT: 5432
           DB_DATABASE: testing
           DB_USERNAME: postgres
@@ -128,7 +189,7 @@ jobs:
       - name: Run Feature tests (single-process mode)
         env:
           DB_CONNECTION: pgsql
-          DB_HOST: localhost
+          DB_HOST: postgres
           DB_PORT: 5432
           DB_DATABASE: testing
           DB_USERNAME: postgres
@@ -141,7 +202,7 @@ jobs:
       - name: Run Unit tests
         env:
           DB_CONNECTION: pgsql
-          DB_HOST: localhost
+          DB_HOST: postgres
           DB_PORT: 5432
           DB_DATABASE: testing
           DB_USERNAME: postgres
