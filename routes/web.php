@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Schedule;
 use App\Console\Commands\PruneAiMemoriesCommand;
 use App\Console\Commands\AggregateAiMetricsCommand;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\DB;
 
 // Google Auth
 Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])->name('google.login');
@@ -122,6 +123,18 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/dashboard', [AiAnalyticsController::class, 'dashboard'])->name('dashboard');
         Route::get('/feedback', [AiAnalyticsController::class, 'feedback'])->name('feedback');
     });
+
+    // Recent settings changes (for Settings Home widget)
+    Route::get('/settings/recent-changes', function (\Illuminate\Http\Request $request) {
+        $userId = $request->user()->id;
+        $rows = DB::table('user_settings_changes')
+            ->where('user_id', $userId)
+            ->orderByDesc('changed_at')
+            ->limit(10)
+            ->get();
+
+        return response()->json($rows);
+    })->name('settings.recent_changes');
 
     // ── Chat ──────────────────────────────────────────────────────
     Route::prefix('chat')->name('chat.')->group(function () {
