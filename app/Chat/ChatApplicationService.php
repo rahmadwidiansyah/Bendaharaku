@@ -985,7 +985,9 @@ class ChatApplicationService
         $model = $preference?->selected_model ?: AiProvider::Gemini->defaultModel();
 
         // Limit transactions to avoid excessively long prompts (keep top 50)
-        $transactionsForPayload = \Illuminate\Support\Collection::make($transactions)->take(50);
+        // Ensure transactions is a Collection to avoid "call to member function filter() on array" errors
+        $transactionsCollection = \Illuminate\Support\Collection::make($transactions);
+        $transactionsForPayload = $transactionsCollection->take(50);
 
         $payload = [
             'periode' => $period->format('Y-m'),
@@ -1006,7 +1008,8 @@ class ChatApplicationService
                 'nominal' => (float) $trx->amount,
                 'catatan' => $trx->notes,
             ])->values()->all(),
-            'truncated' => ($transactionsForPayload->count() < (\Illuminate\Support\Collection::make($transactions))->count()) ? true : false,
+            'truncated' => ($transactionsForPayload->count() < $transactionsCollection->count()) ? true : false,
+            'transactions_count' => $transactionsCollection->count(),
         ];
 
         $prompt = implode("\n", [
@@ -1028,13 +1031,90 @@ class ChatApplicationService
 
         try {
             $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent";
-            // Increase timeout & add retries for reliability; use smaller payload above
-            $response = Http::timeout(60)
-                ->retry(3, 1000)
-                ->withHeaders(['Content-Type' => 'application/json'])
-                ->post($url . '?key=' . $credential->api_key, [
-                    'contents' => [['parts' => [['text' => $prompt]]]],
-                ]);
+
+            // Observability: prompt size, transactions count, estimated tokens
+            $promptLength = strlen($prompt);
+            $estimatedTokens = (int) max(1, round($promptLength / 4)); // rough heuristic
+            Log::info('Gemini prompt prepared', [
+                'user_id' => $user->id,
+                'model' => $model,
+                'transactions_sent' => $transactionsForPayload->count(),
+                'transactions_total' => $transactionsCollection->count(),
+                'truncated' => $payload['truncated'],
+                'prompt_length_chars' => $promptLength,
+                'estimated_tokens' => $estimatedTokens,
+            ]);
+
+            // Manual retry loop so we can log attempt counts and timings
+            $maxAttempts = 3;
+            $attempt = 0;
+            $response = null;
+            $lastException = null;
+
+            while ($attempt < $maxAttempts) {
+                $attempt++;
+                $start = microtime(true);
+                try {
+                    $response = Http::timeout(60)
+                        ->withHeaders(['Content-Type' => 'application/json'])
+                        ->post($url . '?key=' . $credential->api_key, [
+                            'contents' => [['parts' => [['text' => $prompt]]]],
+                        ]);
+
+                    $elapsedMs = (int) round((microtime(true) - $start) * 1000);
+                    Log::info('Gemini request attempt', [
+                        'user_id' => $user->id,
+                        'model' => $model,
+                        'attempt' => $attempt,
+                        'elapsed_ms' => $elapsedMs,
+                        'status' => $response->status(),
+                    ]);
+
+                    // If successful, break
+                    if ($response->successful()) break;
+
+                    // Non-successful responses will be logged by assertSuccessful below
+
+                } catch (Throwable $e) {
+                    $elapsedMs = (int) round((microtime(true) - $start) * 1000);
+                    Log::warning('Gemini request exception', [
+                        'user_id' => $user->id,
+                        'model' => $model,
+                        'attempt' => $attempt,
+                        'elapsed_ms' => $elapsedMs,
+                        'exception' => $e->getMessage(),
+                    ]);
+                    $lastException = $e;
+                }
+
+                // Backoff between attempts
+                if ($attempt < $maxAttempts) {
+                    sleep(1);
+                }
+            }
+
+            if ($response === null) {
+                Log::warning('Gemini all attempts failed', ['user_id' => $user->id, 'model' => $model]);
+                return null;
+            }
+
+            $this->assertSuccessful($response, 'Gemini');
+
+            $text = trim((string) $response->json('candidates.0.content.parts.0.text'));
+            Log::info('Gemini response received', [
+                'user_id' => $user->id,
+                'model' => $model,
+                'text_snippet' => substr($text, 0, 300),
+            ]);
+
+            return $text !== '' ? ['summary' => $text, 'model' => $model] : null;
+        } catch (Throwable $e) {
+            Log::warning('Gemini monthly report exception', [
+                'user_id' => $user->id,
+                'message' => $e->getMessage(),
+            ]);
+            return null;
+        }
 
             if (!$response->successful()) {
                 Log::warning('Gemini monthly report failed', [
