@@ -991,7 +991,7 @@ class ChatApplicationService
                 'periode' => $previousReport->period_month?->format('Y-m'),
                 'ringkasan' => $previousReport->final_summary,
                 'metrics' => $previousReport->metrics,
-                'comparison' => $this->buildComparisonMetrics($this->buildMonthlyMetrics([]), $previousReport),
+                'comparison' => $this->buildComparisonMetrics($this->buildMonthlyMetrics(\Illuminate\Support\Collection::make([])), $previousReport),
             ] : null,
             'transaksi' => $transactions->map(fn($trx) => [
                 'tanggal' => $trx->date?->toDateString(),
