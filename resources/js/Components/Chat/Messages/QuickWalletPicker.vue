@@ -15,6 +15,9 @@
  */
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
     transactionId: { type: Number, required: true },
@@ -33,7 +36,7 @@ onMounted(async () => {
         const { data } = await axios.get(route('chat.wallets'))
         wallets.value = data.wallets ?? []
     } catch (e) {
-        fetchError.value = 'Gagal memuat dompet.'
+        fetchError.value = t('chatTransaction.walletLoadFailed')
     } finally {
         isFetching.value = false
     }
@@ -53,7 +56,7 @@ function select(wallet) {
             <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
             </svg>
-            Pilih Dompet
+            {{ $t('transaction.chooseWallet') }}
         </p>
 
         <!-- Loading skeleton -->
