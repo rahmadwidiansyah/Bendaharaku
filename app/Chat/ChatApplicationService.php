@@ -310,7 +310,7 @@ class ChatApplicationService
         $usage        = $result['usage'] ?? ($result['multi_result']?->usage ?? []);
         $totalTokens  = $usage['total'] ?? null;
 
-        return array_filter([
+        return [
             'trace_id'     => $context->traceId,
             'platform'     => $context->platform->value,
             'provider'     => $result['provider'] ?? ($result['multi_result']?->provider ?? null),
@@ -318,7 +318,7 @@ class ChatApplicationService
             'confidence'   => $result['confidence'] ?? ($result['multi_result']?->confidence ?? null),
             'latency_ms'   => (int) $latency,
             'total_tokens' => $totalTokens,
-        ]);
+        ];
     }
 
     /**
