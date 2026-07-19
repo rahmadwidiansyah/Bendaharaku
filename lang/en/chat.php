@@ -78,6 +78,7 @@ return [
         'insufficient'    => "Insufficient balance in wallet ':name'.",
         'source_empty'    => 'Source wallet not detected.',
         'destination_empty' => 'Destination wallet not detected.',
+        'missing_choose'  => 'The wallet is missing. Pick one of your frequently used wallets below.',
     ],
 
     // ──────────────────────────────────────────────────────────────
