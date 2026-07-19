@@ -513,7 +513,7 @@ class ChatApplicationService
             );
         }
 
-        // Buat komponen teks untuk setiap dompet + total
+        // Buat baris untuk setiap dompet
         $totalBalance = 0.0;
         $lines        = [];
 
@@ -522,29 +522,21 @@ class ChatApplicationService
             $lines[] = \App\Support\MoneyFormatter::rupiah((float) $w->balance) . ' — ' . $w->name;
         }
 
-        $components = [];
-
-        // Header
-        $components[] = new TextComponent(
-            translationKey: 'chat.command.balance_title',
-            bold: true,
-        );
-
-        // Setiap dompet sebagai baris teks terpisah
-        foreach ($lines as $line) {
-            $components[] = new TextComponent(
-                translationKey: 'chat.command.balance_line_raw',
-                params: ['line' => $line],
-            );
-        }
-
-        // Divider + Total
-        $components[] = new DividerComponent();
-        $components[] = new TextComponent(
-            translationKey: 'chat.command.balance_total',
-            params: ['total' => \App\Support\MoneyFormatter::rupiah($totalBalance)],
-            bold: true,
-        );
+        // Gunakan ReportSectionComponent agar frontend dapat merender list dengan styling konsisten
+        $components = [
+            new \App\Chat\Components\ReportSectionComponent(
+                title: '',
+                emoji: '💳',
+                items: $lines,
+                translationKey: 'chat.command.balance_title',
+            ),
+            new DividerComponent(),
+            new TextComponent(
+                translationKey: 'chat.command.balance_total',
+                params: ['total' => \App\Support\MoneyFormatter::rupiah($totalBalance)],
+                bold: true,
+            ),
+        ];
 
         return ChatResponse::command(components: $components, metadata: $metadata);
     }
@@ -563,16 +555,19 @@ class ChatApplicationService
             ], $metadata);
         }
 
-        $components = [
-            new TextComponent(translationKey: 'chat.command.wallet_title', bold: true),
-        ];
-
+        $lines = [];
         foreach ($wallets as $wallet) {
-            $components[] = new TextComponent(
-                translationKey: 'chat.command.balance_line_raw',
-                params: ['line' => "{$wallet->group_type} — {$wallet->name}: " . \App\Support\MoneyFormatter::rupiah((float) $wallet->balance)],
-            );
+            $lines[] = "{$wallet->group_type} — {$wallet->name}: " . \App\Support\MoneyFormatter::rupiah((float) $wallet->balance);
         }
+
+        $components = [
+            new \App\Chat\Components\ReportSectionComponent(
+                title: '',
+                emoji: '👛',
+                items: $lines,
+                translationKey: 'chat.command.wallet_title',
+            ),
+        ];
 
         return ChatResponse::command($components, $metadata);
     }
@@ -591,23 +586,25 @@ class ChatApplicationService
         }
 
         $total = (float) $assets->sum('balance');
-        $components = [
-            new TextComponent(translationKey: 'chat.command.asset_title', bold: true),
-        ];
-
+        $lines = [];
         foreach ($assets as $asset) {
-            $components[] = new TextComponent(
-                translationKey: 'chat.command.balance_line_raw',
-                params: ['line' => "{$asset->name}: " . \App\Support\MoneyFormatter::rupiah((float) $asset->balance)],
-            );
+            $lines[] = "{$asset->name}: " . \App\Support\MoneyFormatter::rupiah((float) $asset->balance);
         }
 
-        $components[] = new DividerComponent();
-        $components[] = new TextComponent(
-            translationKey: 'chat.command.balance_total',
-            params: ['total' => \App\Support\MoneyFormatter::rupiah($total)],
-            bold: true,
-        );
+        $components = [
+            new \App\Chat\Components\ReportSectionComponent(
+                title: '',
+                emoji: '📈',
+                items: $lines,
+                translationKey: 'chat.command.asset_title',
+            ),
+            new DividerComponent(),
+            new TextComponent(
+                translationKey: 'chat.command.balance_total',
+                params: ['total' => \App\Support\MoneyFormatter::rupiah($total)],
+                bold: true,
+            ),
+        ];
 
         return ChatResponse::command($components, $metadata);
     }
@@ -626,16 +623,19 @@ class ChatApplicationService
             ], $metadata);
         }
 
-        $components = [
-            new TextComponent(translationKey: 'chat.command.category_title', bold: true),
-        ];
-
+        $lines = [];
         foreach ($categories->groupBy(fn($category) => $category->type?->name ?? 'Other') as $typeName => $items) {
-            $components[] = new TextComponent(
-                translationKey: 'chat.command.balance_line_raw',
-                params: ['line' => "{$typeName}: " . $items->pluck('category_name')->join(', ')],
-            );
+            $lines[] = "{$typeName}: " . $items->pluck('category_name')->join(', ');
         }
+
+        $components = [
+            new \App\Chat\Components\ReportSectionComponent(
+                title: '',
+                emoji: '🏷️',
+                items: $lines,
+                translationKey: 'chat.command.category_title',
+            ),
+        ];
 
         return ChatResponse::command($components, $metadata);
     }
@@ -655,16 +655,19 @@ class ChatApplicationService
             ], $metadata);
         }
 
-        $components = [
-            new TextComponent(translationKey: 'chat.command.transaction_today_title', bold: true),
-        ];
-
+        $lines = [];
         foreach ($transactions as $transaction) {
-            $components[] = new TextComponent(
-                translationKey: 'chat.command.balance_line_raw',
-                params: ['line' => $this->formatTransactionLine($transaction)],
-            );
+            $lines[] = $this->formatTransactionLine($transaction);
         }
+
+        $components = [
+            new \App\Chat\Components\ReportSectionComponent(
+                title: '',
+                emoji: '📋',
+                items: $lines,
+                translationKey: 'chat.command.transaction_today_title',
+            ),
+        ];
 
         return ChatResponse::command($components, $metadata);
     }
@@ -693,8 +696,21 @@ class ChatApplicationService
         }
 
         $total = (float) $transactions->sum('amount');
+
+        $lines = [];
+        foreach ($transactions->take(10) as $transaction) {
+            $lines[] = $this->formatTransactionLine($transaction);
+        }
+
+        $emoji = $type === 'income' ? '🟢' : '🔴';
+
         $components = [
-            new TextComponent(translationKey: $titleKey, bold: true),
+            new \App\Chat\Components\ReportSectionComponent(
+                title: '',
+                emoji: $emoji,
+                items: $lines,
+                translationKey: $titleKey,
+            ),
             new TextComponent(
                 translationKey: 'chat.command.month_type_total',
                 params: [
@@ -703,15 +719,7 @@ class ChatApplicationService
                 ],
                 bold: true,
             ),
-            new DividerComponent(),
         ];
-
-        foreach ($transactions->take(10) as $transaction) {
-            $components[] = new TextComponent(
-                translationKey: 'chat.command.balance_line_raw',
-                params: ['line' => $this->formatTransactionLine($transaction)],
-            );
-        }
 
         return ChatResponse::command($components, $metadata);
     }
@@ -722,8 +730,13 @@ class ChatApplicationService
         $monthStart = $period->copy()->startOfMonth();
         $monthEnd   = $period->copy()->endOfMonth();
         $periodKey = $monthStart->toDateString();
+        
+        // Auto-generate previous month report jika belum ada
+        $previousMonthStart = $monthStart->copy()->subMonthNoOverflow()->startOfMonth();
+        $this->ensureMonthlyReportExists($user, $previousMonthStart);
+        
         $previousReport = MonthlyReport::where('user_id', $user->id)
-            ->whereDate('period_month', $monthStart->copy()->subMonthNoOverflow()->toDateString())
+            ->whereDate('period_month', $previousMonthStart->toDateString())
             ->first();
 
         $transactions = $user->transactionLogs()
@@ -768,18 +781,69 @@ class ChatApplicationService
             ],
         );
 
+        // Build styled sections
         $components = [
-            new TextComponent(
+            new ReportSectionComponent(
+                title: $monthStart->translatedFormat('F Y'),
+                emoji: '📊',
                 translationKey: 'chat.command.report_title_period',
-                params: ['period' => $monthStart->translatedFormat('F Y')],
-                bold: true,
             ),
-            new TextComponent(
-                translationKey: 'chat.command.balance_line_raw',
-                params: ['line' => $finalReport],
-            ),
-            new TextComponent(translationKey: 'chat.command.report_saved'),
         ];
+
+        // Main summary section
+        if ($finalReport) {
+            $components[] = new TextComponent(
+                translationKey: 'chat.command.report_summary',
+                params: ['summary' => $finalReport],
+            );
+        }
+
+        // Comparison section jika ada data bulan sebelumnya
+        if ($comparisonMetrics && !empty($comparisonMetrics)) {
+            $components[] = new DividerComponent();
+            $comparisonItems = [];
+
+            if (isset($comparisonMetrics['income_diff'])) {
+                $trend = $comparisonMetrics['income_trend'] ?? 'stable';
+                $emoji = match ($trend) {
+                    'up' => '📈',
+                    'down' => '📉',
+                    default => '➡️',
+                };
+                $comparisonItems[] = sprintf(
+                    "%s Pendapatan: %s (vs bulan lalu)",
+                    $emoji,
+                    $this->formatCurrency($comparisonMetrics['income_diff'])
+                );
+            }
+
+            if (isset($comparisonMetrics['expense_diff'])) {
+                $trend = $comparisonMetrics['expense_trend'] ?? 'stable';
+                $emoji = match ($trend) {
+                    'up' => '📈',
+                    'down' => '📉',
+                    default => '➡️',
+                };
+                $comparisonItems[] = sprintf(
+                    "%s Pengeluaran: %s (vs bulan lalu)",
+                    $emoji,
+                    $this->formatCurrency($comparisonMetrics['expense_diff'])
+                );
+            }
+
+            if (!empty($comparisonItems)) {
+                $components[] = new ReportSectionComponent(
+                    title: 'Perbandingan dengan Bulan Lalu',
+                    emoji: '📊',
+                    items: $comparisonItems,
+                    translationKey: 'chat.command.report_comparison',
+                );
+            }
+        }
+
+        // Save notification
+        $components[] = new DividerComponent();
+        $components[] = new TextComponent(translationKey: 'chat.command.report_saved');
 
         if ($geminiReport === null) {
             $components[] = new WarningComponent(
@@ -788,6 +852,12 @@ class ChatApplicationService
         }
 
         return ChatResponse::command($components, $metadata);
+    }
+
+    private function formatCurrency(float $amount): string
+    {
+        $formatted = number_format(abs($amount), 0, ',', '.');
+        return ($amount < 0 ? '-' : '+') . 'Rp ' . $formatted;
     }
 
     private function resolveReportPeriod(string $rawText): Carbon
@@ -1034,5 +1104,55 @@ class ChatApplicationService
                 default => 'stable',
             },
         ];
+    }
+
+    private function ensureMonthlyReportExists(\App\Models\User $user, \Carbon\Carbon $monthStart): void
+    {
+        $monthEnd = $monthStart->copy()->endOfMonth();
+        $periodKey = $monthStart->toDateString();
+        
+        // Check if report sudah ada
+        $existing = MonthlyReport::where('user_id', $user->id)
+            ->whereDate('period_month', $periodKey)
+            ->first();
+        
+        if ($existing) {
+            return;
+        }
+        
+        // Cari transactions untuk bulan sebelumnya
+        $transactions = $user->transactionLogs()
+            ->with(['type', 'category', 'sourceWallet', 'destinationWallet'])
+            ->whereBetween('date', [$monthStart->toDateString(), $monthEnd->toDateString()])
+            ->orderBy('date')
+            ->orderBy('id')
+            ->get();
+        
+        // Skip jika tidak ada transaksi
+        if ($transactions->isEmpty()) {
+            return;
+        }
+        
+        // Build metrics untuk previous month
+        $metrics = $this->buildMonthlyMetrics($transactions);
+        $localReport = $this->buildLocalMonthlyReport($transactions, $monthStart, null);
+        
+        // Generate Gemini summary untuk previous month
+        $geminiResult = $this->generateGeminiMonthlyReport($user, $transactions, $localReport, $monthStart, null);
+        $geminiReport = $geminiResult['summary'] ?? null;
+        $finalReport = $geminiReport ?? $localReport;
+        
+        // Save report ke database
+        MonthlyReport::updateOrCreate(
+            [
+                'user_id' => $user->id,
+                'period_month' => $periodKey,
+            ],
+            [
+                'summary' => $finalReport,
+                'metrics' => $metrics,
+                'status' => 'completed',
+            ]
+        );
     }
 }
