@@ -153,6 +153,12 @@ const dueDateDetail = (trx) => {
 
             <!-- Detail rows -->
             <div class="space-y-3 mb-5 text-2xs">
+                <!-- ID transaksi -->
+                <div class="flex justify-between items-center py-2 border-b border-white/5">
+                    <span class="text-gray-500 font-bold uppercase tracking-widest">{{ $t('transaction.detail.transactionId') }}</span>
+                    <span class="font-bold text-gray-300">#{{ transaction.id }}</span>
+                </div>
+
                 <!-- Tanggal & waktu -->
                 <div class="flex justify-between items-center py-2 border-b border-white/5">
                     <span class="text-gray-500 font-bold uppercase tracking-widest">{{ $t('transaction.detail.date') }}</span>
