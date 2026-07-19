@@ -204,12 +204,51 @@ class WebChatController extends Controller
      */
     public function wallets(Request $request): JsonResponse
     {
+        $user = $request->user();
+
         $wallets = $request->user()
             ->wallets()
             ->where('group_type', '!=', 'System')
             ->orderByDesc('is_pinned')
             ->orderBy('name')
-            ->get(['id', 'name', 'balance']);
+            ->get(['id', 'name', 'balance', 'is_pinned']);
+
+        $walletIds = $wallets->pluck('id')->all();
+        $usageCounts = array_fill_keys($walletIds, 0);
+
+        if (!empty($walletIds)) {
+            $user->transactionLogs()
+                ->where(function ($query) use ($walletIds) {
+                    $query->whereIn('source_wallet_id', $walletIds)
+                        ->orWhereIn('destination_wallet_id', $walletIds);
+                })
+                ->get(['source_wallet_id', 'destination_wallet_id'])
+                ->each(function ($transaction) use (&$usageCounts) {
+                    if (isset($usageCounts[$transaction->source_wallet_id])) {
+                        $usageCounts[$transaction->source_wallet_id]++;
+                    }
+                    if (isset($usageCounts[$transaction->destination_wallet_id])) {
+                        $usageCounts[$transaction->destination_wallet_id]++;
+                    }
+                });
+        }
+
+        $wallets = $wallets
+            ->sort(function ($a, $b) use ($usageCounts) {
+                $byUsage = ($usageCounts[$b->id] ?? 0) <=> ($usageCounts[$a->id] ?? 0);
+                if ($byUsage !== 0) {
+                    return $byUsage;
+                }
+
+                $byPinned = ((bool) $b->is_pinned) <=> ((bool) $a->is_pinned);
+                if ($byPinned !== 0) {
+                    return $byPinned;
+                }
+
+                return strcasecmp($a->name, $b->name);
+            })
+            ->take(4)
+            ->values();
 
         return response()->json([
             'wallets' => $wallets->map(fn($w) => [
@@ -274,6 +313,7 @@ class WebChatController extends Controller
         });
 
         $transaction->refresh()->load(['sourceWallet', 'destinationWallet', 'category', 'type']);
+        $this->markTransactionUpdatedInChatHistory($user->id, $transaction);
 
         $typeKey = match (strtolower($transaction->type->name ?? '')) {
             'income'   => 'income',
@@ -454,6 +494,39 @@ class WebChatController extends Controller
                         $component['needs_wallet'] = false;
                         $component['transaction']['is_cancelled'] = true;
                         $component['transaction']['is_cleared'] = false;
+                        $changed = true;
+                    }
+
+                    if ($changed) {
+                        $message->forceFill(['content' => $content])->save();
+                    }
+                }
+            });
+    }
+
+    private function markTransactionUpdatedInChatHistory(int $userId, TransactionLog $transaction): void
+    {
+        ChatMessage::whereHas('conversation', fn($q) => $q->where('user_id', $userId))
+            ->where('role', 'assistant')
+            ->chunkById(100, function ($messages) use ($transaction) {
+                foreach ($messages as $message) {
+                    $content = $message->content ?? [];
+                    $changed = false;
+
+                    foreach ($content as &$component) {
+                        if (($component['type'] ?? null) !== 'transaction_card') {
+                            continue;
+                        }
+
+                        if ((int) ($component['transaction']['id'] ?? 0) !== $transaction->id) {
+                            continue;
+                        }
+
+                        $component['needs_wallet'] = false;
+                        $component['transaction'] = array_merge(
+                            $component['transaction'] ?? [],
+                            $this->formatTransactionForChat($transaction),
+                        );
                         $changed = true;
                     }
 
