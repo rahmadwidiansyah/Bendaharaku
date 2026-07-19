@@ -2,13 +2,16 @@
 /**
  * ProfileMenu.vue
  *
- * Dropdown menu yang muncul saat avatar ditekan.
+ * Bottom-sheet style menu yang muncul saat avatar ditekan.
  * Di-teleport ke body untuk menghindari clipping stacking context.
+ *
+ * Pada mobile: muncul sebagai card dari atas-kanan (dropdown).
+ * Posisi dihitung dari rect button avatar yang dikirim via prop.
  *
  * Props:
  *   show     — Boolean toggle untuk menampilkan menu
  *   user     — Object user (name, email)
- *   position — { top, right } posisi absolut menu
+ *   position — { top, right } posisi absolut menu (dari rect avatar)
  *
  * Emits:
  *   close    — Sinyal menutup menu
@@ -53,36 +56,46 @@ const logout = () => {
     <Teleport to="body">
         <Transition
             enter-active-class="transition-all duration-200 ease-out"
-            enter-from-class="opacity-0 scale-95 -translate-y-1"
+            enter-from-class="opacity-0 scale-95 -translate-y-2"
             enter-to-class="opacity-100 scale-100 translate-y-0"
             leave-active-class="transition-all duration-150 ease-in"
             leave-from-class="opacity-100 scale-100 translate-y-0"
-            leave-to-class="opacity-0 scale-95 -translate-y-1"
+            leave-to-class="opacity-0 scale-95 -translate-y-2"
         >
             <div
                 v-if="show"
                 class="fixed inset-0 z-[9999]"
                 @click.self="close"
+                role="presentation"
             >
+                <!--
+                    Menu card — `transform-origin: top right` agar animasi scale
+                    muncul dari sudut avatar (pojok kanan atas).
+                -->
                 <nav
                     role="menu"
                     :aria-label="`Menu akun ${user?.name ?? ''}`"
                     :style="{
-                        top:   `${position.top}px`,
-                        right: `${position.right}px`,
+                        top:             `${position.top}px`,
+                        right:           `${position.right}px`,
+                        transformOrigin: 'top right',
                     }"
-                    class="absolute w-[calc(100vw-2rem)] max-w-[280px] overflow-hidden rounded-2xl border border-white/10 bg-surface-raised shadow-modal"
+                    class="absolute w-[calc(100vw-2rem)] max-w-[280px] overflow-hidden rounded-2xl border border-white/10 bg-gray-900 shadow-2xl shadow-black/60"
                 >
                     <!-- User info header -->
-                    <div class="px-4 py-3 border-b border-white/8 bg-white/3">
-                        <p class="text-sm font-bold text-white truncate">{{ user?.name ?? '—' }}</p>
-                        <p class="text-2xs text-gray-500 truncate mt-0.5">{{ user?.email ?? '—' }}</p>
+                    <div class="px-4 py-3.5 border-b border-white/8 bg-white/3">
+                        <p class="text-sm font-bold text-white truncate leading-tight">
+                            {{ user?.name ?? '—' }}
+                        </p>
+                        <p class="text-2xs text-gray-500 truncate mt-0.5">
+                            {{ user?.email ?? '—' }}
+                        </p>
                     </div>
 
                     <!-- Menu items -->
                     <div class="p-1.5 space-y-0.5" role="none">
 
-                        <!-- Profil Saya -->
+                        <!-- Edit Profil -->
                         <Link
                             :href="route('profile.edit')"
                             role="menuitem"
@@ -113,9 +126,9 @@ const logout = () => {
                             <span>Pengaturan</span>
                         </Link>
 
-                        <!-- AI Chat Settings -->
+                        <!-- Pengaturan AI -->
                         <Link
-                            :href="route('settings.ai')"
+                            :href="route('settings.ai.index')"
                             role="menuitem"
                             class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-gray-300 transition-colors hover:bg-white/6 hover:text-white focus:outline-none focus-visible:ring-1 focus-visible:ring-purple-400 w-full"
                             @click="close"
@@ -129,7 +142,7 @@ const logout = () => {
                         </Link>
 
                         <!-- Divider -->
-                        <div class="h-px bg-white/8 my-1" role="separator" />
+                        <div class="h-px bg-white/8 my-1" role="separator" aria-hidden="true" />
 
                         <!-- Keluar -->
                         <button

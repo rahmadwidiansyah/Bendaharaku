@@ -10,9 +10,12 @@
 
 import { ref, computed }  from 'vue'
 import { Head, useForm }  from '@inertiajs/vue3'
+import { useI18n }        from 'vue-i18n'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import ImageCropModal      from '@/Components/ImageCropModal.vue'
 import Button              from '@/Components/Button.vue'
+
+const { t } = useI18n()
 
 const props = defineProps({
     botName:   { type: String, default: 'Ken-Chan' },
@@ -68,7 +71,7 @@ const justSaved = computed(() => form.wasSuccessful)
 
 <template>
     <AuthenticatedLayout :fullWidth="true">
-        <Head title="Bot Profile" />
+        <Head :title="$t('chatBot.head')" />
 
         <div class="p-5 w-full lg:max-w-2xl mx-auto lg:px-8 animate-slide-up min-h-screen">
 
@@ -76,17 +79,17 @@ const justSaved = computed(() => form.wasSuccessful)
             <header class="pt-4 mb-8">
                 <p class="text-2xs text-purple-500 font-black mb-1.5 uppercase tracking-[0.2em] flex items-center gap-2">
                     <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
-                    Pengaturan AI
+                    {{ $t('settings.ai') }}
                 </p>
-                <h1 class="text-2xl font-black text-white tracking-tight">Bot Profile</h1>
-                <p class="text-sm text-gray-500 mt-1">Personalisasi nama dan foto bot AI kamu.</p>
+                <h1 class="text-2xl font-black text-white tracking-tight">{{ $t('chatBot.title') }}</h1>
+                <p class="text-sm text-gray-500 mt-1">{{ $t('chatBot.subtitle') }}</p>
             </header>
 
             <form @submit.prevent="submit" class="space-y-8">
 
                 <!-- ── Avatar section ──────────────────────────────────── -->
                 <section class="bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-2xl p-6">
-                    <h2 class="text-sm font-bold text-white mb-5">Foto Bot</h2>
+                    <h2 class="text-sm font-bold text-white mb-5">{{ $t('chatBot.photoSection') }}</h2>
 
                     <div class="flex items-center gap-6">
                         <!-- Preview avatar -->
@@ -108,7 +111,7 @@ const justSaved = computed(() => form.wasSuccessful)
                                 type="button"
                                 @click="removeAvatar"
                                 class="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-400 transition-colors shadow-lg"
-                                aria-label="Hapus foto"
+                                :aria-label="$t('chatBot.removePhoto')"
                             >
                                 <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -126,7 +129,7 @@ const justSaved = computed(() => form.wasSuccessful)
                                 <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
                                 </svg>
-                                {{ avatarPreview ? 'Ganti Foto' : 'Upload Foto' }}
+                                {{ avatarPreview ? $t('profile.changeAvatar') : $t('chatBot.uploadPhoto') }}
                             </button>
                             <p class="text-2xs text-gray-600 mt-2">JPG, PNG, WebP — Maks. 2MB</p>
                         </div>
@@ -135,19 +138,19 @@ const justSaved = computed(() => form.wasSuccessful)
 
                 <!-- ── Bot Name section ────────────────────────────────── -->
                 <section class="bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 rounded-2xl p-6">
-                    <h2 class="text-sm font-bold text-white mb-1">Nama Bot</h2>
-                    <p class="text-2xs text-gray-500 mb-5">Nama yang tampil di header Chat.</p>
+                    <h2 class="text-sm font-bold text-white mb-1">{{ $t('chatBot.nameSection') }}</h2>
+                    <p class="text-2xs text-gray-500 mb-5">{{ $t('chatBot.nameHint') }}</p>
 
                     <div class="space-y-2">
                         <input
                             v-model="form.bot_name"
                             type="text"
                             maxlength="50"
-                            placeholder="Ken-Chan"
+                            :placeholder="$t('chatBot.namePlaceholder')"
                             class="w-full bg-gray-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/30 transition-all"
                         />
                         <p class="text-2xs text-gray-600">
-                            Kosongkan untuk menggunakan nama default: Ken-Chan
+                            {{ $t('chatBot.namePlaceholder') }}
                         </p>
                         <p v-if="form.errors.bot_name" class="text-2xs text-red-400">
                             {{ form.errors.bot_name }}
@@ -155,7 +158,8 @@ const justSaved = computed(() => form.wasSuccessful)
                     </div>
 
                     <!-- Name suggestions -->
-                    <div class="flex flex-wrap gap-2 mt-4">
+                    <p class="text-2xs font-bold text-gray-500 uppercase tracking-widest mt-5 mb-2">{{ $t('chatBot.presetNames') }}</p>
+                    <div class="flex flex-wrap gap-2">
                         <button
                             v-for="name in ['Ken-Chan', 'KeuanganKu', 'Assistant', 'Bendahara', 'FinBot']"
                             :key="name"
@@ -197,7 +201,7 @@ const justSaved = computed(() => form.wasSuccessful)
                         :disabled="form.processing"
                         fullWidth
                     >
-                        Simpan Perubahan
+                        {{ $t('chatBot.saveBtn') }}
                     </Button>
                 </div>
 
@@ -217,7 +221,7 @@ const justSaved = computed(() => form.wasSuccessful)
                         <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                         </svg>
-                        Perubahan disimpan
+                        {{ $t('toast.saved') }}
                     </div>
                 </Transition>
 
@@ -227,7 +231,7 @@ const justSaved = computed(() => form.wasSuccessful)
         <!-- Image Crop Modal -->
         <ImageCropModal
             v-model="showCropper"
-            title="Atur Foto Bot"
+            :title="$t('chatBot.uploadPhoto')"
             :aspectRatio="1"
             :circle="true"
             @cropped="onCropped"

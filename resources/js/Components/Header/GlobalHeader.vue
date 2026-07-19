@@ -2,71 +2,95 @@
 /**
  * GlobalHeader.vue
  *
- * Global Top App Bar — muncul di seluruh halaman yang menggunakan
- * AuthenticatedLayout.  Menggantikan MobileHeader.vue sepenuhnya.
+ * Global Top App Bar — muncul di seluruh halaman AuthenticatedLayout.
  *
  * ── Layout ──────────────────────────────────────────────────────────
  *
- *   ┌────────────────────────────────────────┐
- *   │ 👋 Good Morning, Rahmad        🔔 💬 👤│
- *   │ Bendaharaku                        │
- *   └────────────────────────────────────────┘
+ *   Dashboard:
+ *   ┌─────────────────────────────────────────┐
+ *   │ Selamat Pagi ☀️              🔔  💬  👤 │
+ *   │ Rahmad Widiansyah                        │
+ *   └─────────────────────────────────────────┘
+ *
+ *   Halaman lain:
+ *   ┌─────────────────────────────────────────┐
+ *   │ Wallet                       🔔  💬  👤 │
+ *   │ Bendaharaku                              │
+ *   └─────────────────────────────────────────┘
  *
  * ── Scroll behavior ─────────────────────────────────────────────────
+ *   expanded  → h-16 (default)
+ *   collapsed → h-14 (setelah scroll 40px, hanya di Dashboard)
  *
- *   expanded  → greeting + nama user (scroll position 0)
- *   collapsed → nama halaman + "Bendaharaku" (saat user scroll ke bawah)
- *
- *   Threshold scroll: 40px
- *   Animasi: smooth 300ms via CSS transition
- *
- * ── Safe Area ───────────────────────────────────────────────────────
- *
- *   Padding atas menggunakan env(safe-area-inset-top) untuk support
- *   iPhone notch, Dynamic Island, dan Android cutout.
- *
- * Props:
- *   title — Override judul halaman (opsional, default: route-based)
+ * ── Props (semua opsional, default otomatis) ────────────────────────
+ *   title            — Override judul halaman
+ *   showGreeting     — Paksa tampilkan/sembunyikan greeting (default: auto dari route)
+ *   showNotification — Tampilkan tombol notifikasi (default: true)
+ *   showChat         — Tampilkan shortcut AI Chat (default: true)
+ *   showProfile      — Tampilkan avatar (default: true)
+ *   showBackButton   — Tampilkan tombol back (default: false)
+ *   backHref         — URL tombol back (default: browser history)
  */
 
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { usePage }       from '@inertiajs/vue3'
-import { useI18n }       from 'vue-i18n'
-import HeaderGreeting    from '@/Components/Header/HeaderGreeting.vue'
-import HeaderActions     from '@/Components/Header/HeaderActions.vue'
-import ProfileMenu       from '@/Components/Header/ProfileMenu.vue'
+import { usePage, router }  from '@inertiajs/vue3'
+import { useI18n }          from 'vue-i18n'
+import HeaderGreeting       from '@/Components/Header/HeaderGreeting.vue'
+import HeaderActions        from '@/Components/Header/HeaderActions.vue'
+import ProfileMenu          from '@/Components/Header/ProfileMenu.vue'
 
 const props = defineProps({
-    title: {
-        type: String,
-        default: null,
-    },
+    title:            { type: String,  default: null },
+    showGreeting:     { type: Boolean, default: null },   // null = auto
+    showNotification: { type: Boolean, default: true  },
+    showChat:         { type: Boolean, default: true  },
+    showProfile:      { type: Boolean, default: true  },
+    showBackButton:   { type: Boolean, default: false },
+    backHref:         { type: String,  default: null  },
 })
 
 // ─── Auth user ────────────────────────────────────────────────────
-const page    = usePage()
-const user    = computed(() => page.props.auth?.user ?? null)
-const { t }   = useI18n()
+const page = usePage()
+const user = computed(() => page.props.auth?.user ?? null)
+const { t } = useI18n()
 
-// ─── Scroll collapse ──────────────────────────────────────────────
+// ─── Deteksi halaman Dashboard ────────────────────────────────────
+const isDashboard = computed(() => {
+    try {
+        return route().current('dashboard')
+    } catch {
+        return false
+    }
+})
+
+// showGreeting: jika prop diset manual, ikuti prop; jika null, auto dari route
+const shouldShowGreeting = computed(() =>
+    props.showGreeting !== null ? props.showGreeting : isDashboard.value
+)
+
+// ─── Scroll collapse (hanya aktif di Dashboard) ───────────────────
 const SCROLL_THRESHOLD = 40
 const isCollapsed       = ref(false)
-let scrollTarget        = null
+let   scrollTarget      = null
 
 const onScroll = (e) => {
+    if (!shouldShowGreeting.value) {
+        isCollapsed.value = false
+        return
+    }
     const scrollY = e?.target?.scrollTop ?? window.scrollY
     isCollapsed.value = scrollY > SCROLL_THRESHOLD
 }
 
-// Mount: listen ke scroll di #main-content (overflow container utama)
 onMounted(() => {
-    // Coba listen ke elemen main (lebih akurat untuk mobile scroll)
     scrollTarget = document.getElementById('main-content')
     if (scrollTarget) {
         scrollTarget.addEventListener('scroll', onScroll, { passive: true })
     } else {
         window.addEventListener('scroll', onScroll, { passive: true })
     }
+    // Reset collapsed saat mount (navigasi halaman baru)
+    isCollapsed.value = false
 })
 
 onUnmounted(() => {
@@ -79,24 +103,25 @@ onUnmounted(() => {
 
 // ─── Route → label halaman ────────────────────────────────────────
 const routeTitleMap = computed(() => ({
-    'dashboard':           t('dashboard.title'),
-    'wallets.index':       t('wallet.title'),
-    'wallets.show':        t('wallet.titleEdit'),
-    'wallets.create':      t('wallet.titleCreate'),
-    'wallets.edit':        t('wallet.titleEdit'),
-    'transactions.index':  t('transaction.title'),
-    'transactions.create': t('transaction.title'),
-    'transactions.edit':   t('transaction.titleEdit'),
-    'analytics.index':     t('analytics.title'),
-    'categories.index':    t('category.title'),
-    'categories.create':   t('category.titleCreate'),
-    'categories.edit':     t('category.titleEdit'),
-    'categories.show':     t('category.titleEdit'),
-    'loans.index':         t('loan.title'),
-    'settings.index':      t('settings.title'),
-    'settings.ai':         t('ai.title'),
-    'chat.index':          'AI Chat',
-    'profile.edit':        t('profile.title'),
+    'dashboard':                  t('dashboard.title'),
+    'wallets.index':              t('wallet.title'),
+    'wallets.show':               t('wallet.titleEdit'),
+    'wallets.create':             t('wallet.titleCreate'),
+    'wallets.edit':               t('wallet.titleEdit'),
+    'transactions.index':         t('transaction.title'),
+    'transactions.create':        t('transaction.title'),
+    'transactions.edit':          t('transaction.titleEdit'),
+    'analytics.index':            t('analytics.title'),
+    'categories.index':           t('category.title'),
+    'categories.create':          t('category.titleCreate'),
+    'categories.edit':            t('category.titleEdit'),
+    'categories.show':            t('category.titleEdit'),
+    'loans.index':                t('loan.title'),
+    'settings.index':             t('settings.title'),
+    'settings.ai.index':          t('ai.title'),
+    'settings.chat.bot-profile':  t('chatBot.title'),
+    'chat.index':                 'AI Chat',
+    'profile.edit':               t('profile.title'),
 }))
 
 const routeLabel = computed(() => {
@@ -104,8 +129,9 @@ const routeLabel = computed(() => {
     try {
         const current = route().current()
         if (current && routeTitleMap.value[current]) return routeTitleMap.value[current]
-        const match = Object.keys(routeTitleMap.value).find((key) =>
-            current?.startsWith(key.replace('.*', ''))
+        // Prefix match: wallets.* → wallet.title, dst.
+        const match = Object.keys(routeTitleMap.value).find(key =>
+            current?.startsWith(key.split('.')[0])
         )
         return match ? routeTitleMap.value[match] : 'Bendaharaku'
     } catch {
@@ -113,80 +139,105 @@ const routeLabel = computed(() => {
     }
 })
 
+// ─── Tinggi header ────────────────────────────────────────────────
+// Dashboard expanded → h-16; collapsed atau halaman lain → h-14
+const headerHeight = computed(() =>
+    shouldShowGreeting.value && !isCollapsed.value ? 'h-16' : 'h-14'
+)
+
 // ─── Profile menu ─────────────────────────────────────────────────
-const showProfileMenu       = ref(false)
-const profileMenuPosition   = ref({ top: 72, right: 16 })
+const showProfileMenu     = ref(false)
+const profileMenuPosition = ref({ top: 76, right: 16 })
 
 const toggleProfileMenu = (rect) => {
     if (showProfileMenu.value) {
         showProfileMenu.value = false
         return
     }
+    // rect dari button 44px, menu muncul tepat di bawah visual avatar (sekitar 36px dari top button)
+    const safeTop   = rect.bottom + 4
+    const safeRight = Math.max(12, window.innerWidth - rect.right)
     profileMenuPosition.value = {
-        top:   Math.min(rect.bottom + 8, window.innerHeight - 280),
-        right: Math.max(12, window.innerWidth - rect.right),
+        top:   Math.min(safeTop, window.innerHeight - 320),
+        right: safeRight,
     }
     showProfileMenu.value = true
 }
 
-const closeProfileMenu = () => {
-    showProfileMenu.value = false
+const closeProfileMenu = () => { showProfileMenu.value = false }
+
+// ─── Back button ──────────────────────────────────────────────────
+const handleBack = () => {
+    if (props.backHref) {
+        router.visit(props.backHref)
+    } else {
+        window.history.back()
+    }
 }
 
-// ─── Notifikasi (placeholder, future ready) ───────────────────────
+// ─── Notifikasi (future-ready) ────────────────────────────────────
 const notifCount    = ref(0)
 const hasUnreadChat = ref(false)
-
-const handleOpenNotif = () => {
-    // TODO: Buka notification center saat fitur tersedia
-}
+const handleOpenNotif = () => { /* TODO: notification center */ }
 </script>
 
 <template>
     <!--
-        sticky top-0 z-30: tetap di atas, z-index sama dengan MobileHeader sebelumnya
-        pt-safe: padding atas = max(16px, safe-area-inset-top) untuk notch/Dynamic Island
+        lg:hidden — Header ini hanya untuk mobile/tablet.
+        Desktop menggunakan sidebar (BottomNav lgVariant).
+        safe-area-inset-top: support iPhone notch, Dynamic Island, Android cutout.
     -->
     <header
-        class="lg:hidden sticky top-0 z-30 w-full"
+        class="lg:hidden sticky top-0 z-30 w-full transition-all duration-300 ease-out"
         :class="[
-            'transition-all duration-300 ease-out',
             isCollapsed
-                ? 'bg-gray-900/98 backdrop-blur-2xl shadow-lg shadow-black/40 border-b border-white/6'
-                : 'bg-gradient-to-b from-gray-900/95 to-gray-900/85 backdrop-blur-xl border-b border-white/5',
+                ? 'bg-gray-900/98 backdrop-blur-2xl shadow-md shadow-black/50 border-b border-white/6'
+                : 'bg-gray-900/90 backdrop-blur-xl border-b border-white/5',
         ]"
         :aria-label="$t('nav.mainNav')"
-        style="padding-top: max(0px, env(safe-area-inset-top, 0px));"
+        style="padding-top: env(safe-area-inset-top, 0px);"
     >
-        <!--
-            Inner row — tinggi adaptif:
-              expanded  : h-16 (64px)
-              collapsed : h-14 (56px)
-        -->
         <div
             class="flex items-center gap-2 px-4 transition-all duration-300"
-            :class="isCollapsed ? 'h-14' : 'h-16'"
+            :class="headerHeight"
         >
-            <!-- Kiri: Greeting atau judul halaman -->
+            <!-- ── Back Button (opsional) ── -->
+            <button
+                v-if="showBackButton"
+                type="button"
+                class="shrink-0 w-9 h-9 flex items-center justify-center rounded-2xl text-gray-400 hover:text-white hover:bg-white/8 active:scale-90 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 mr-0.5"
+                :aria-label="$t('btn.back')"
+                @click="handleBack"
+            >
+                <svg class="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+            </button>
+
+            <!-- ── Kiri: Judul / Greeting ── -->
             <HeaderGreeting
                 :user-name="user?.name ?? ''"
                 :route-label="routeLabel"
+                :is-dashboard="shouldShowGreeting"
                 :is-collapsed="isCollapsed"
             />
 
-            <!-- Kanan: Action buttons -->
+            <!-- ── Kanan: Action icons ── -->
             <HeaderActions
                 :user="user"
                 :notif-count="notifCount"
                 :has-unread-chat="hasUnreadChat"
                 :is-profile-open="showProfileMenu"
+                :show-notification="showNotification"
+                :show-chat="showChat"
+                :show-profile="showProfile"
                 @open-notif="handleOpenNotif"
                 @toggle-profile="toggleProfileMenu"
             />
         </div>
     </header>
 
-    <!-- Profile menu — di-Teleport di dalam ProfileMenu sendiri -->
+    <!-- Profile menu — Teleport ada di dalam ProfileMenu sendiri -->
     <ProfileMenu
         :show="showProfileMenu"
         :user="user"

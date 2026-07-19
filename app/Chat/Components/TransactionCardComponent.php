@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Chat\Components;
 
 use App\Models\TransactionLog;
+use App\Support\MoneyFormatter;
 
 /**
  * Kartu detail satu transaksi.
@@ -16,6 +17,9 @@ use App\Models\TransactionLog;
  * - Discord   : embed dengan fields
  *
  * $index — urutan dalam batch (null = single transaction)
+ *
+ * needs_wallet = true  → wallet belum dipilih (draft), tampilkan QuickWalletPicker
+ * needs_wallet = false → wallet sudah ada
  */
 readonly class TransactionCardComponent implements ChatComponentInterface
 {
@@ -33,22 +37,55 @@ readonly class TransactionCardComponent implements ChatComponentInterface
     public function toArray(): array
     {
         $trx = $this->transaction;
+
+        // Resolve type key
+        $typeName = strtolower($trx->type?->name ?? '');
+        $typeKey  = match ($typeName) {
+            'income'      => 'income',
+            'expense'     => 'expense',
+            'transfer'    => 'transfer',
+            'debt'        => 'debt',
+            'receivable'  => 'debt',
+            default       => 'other',
+        };
+
+        // Human-readable type label (Indonesian)
+        $typeLabel = match ($typeName) {
+            'income'     => 'Pemasukan',
+            'expense'    => 'Pengeluaran',
+            'transfer'   => 'Transfer',
+            'debt'       => 'Hutang/Piutang',
+            'receivable' => 'Hutang/Piutang',
+            default      => 'Transaksi',
+        };
+
+        // Transaksi needs_wallet = true jika:
+        // - belum di-clear (is_cleared = false), DAN
+        // - tidak ada source wallet (dan bukan income ke dest wallet)
+        $sourceWallet = $trx->sourceWallet?->name;
+        $destWallet   = $trx->destinationWallet?->name;
+        $needsWallet  = !$trx->is_cleared && $sourceWallet === null && $destWallet === null;
+
         return [
             'type'         => $this->type(),
             'index'        => $this->index,
             'show_details' => $this->showDetails,
+            'needs_wallet' => $needsWallet,
             'transaction'  => [
                 'id'               => $trx->id,
                 'reference_number' => $trx->reference_number,
                 'amount'           => $trx->amount,
+                'amount_formatted' => MoneyFormatter::rupiah((float) ($trx->amount ?? 0)),
                 'is_cleared'       => $trx->is_cleared,
+                'type_key'         => $typeKey,
+                'type_label'       => $typeLabel,
                 'category'         => $trx->category?->category_name,
                 'type'             => $trx->type?->name,
-                'source_wallet'    => $trx->sourceWallet?->name,
-                'dest_wallet'      => $trx->destinationWallet?->name,
+                'source_wallet'    => $sourceWallet,
+                'dest_wallet'      => $destWallet,
                 'subject'          => $trx->subject,
                 'notes'            => $trx->notes,
-                'date'             => $trx->date,
+                'date'             => $trx->date?->toDateString(),
             ],
         ];
     }
