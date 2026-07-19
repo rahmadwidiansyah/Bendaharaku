@@ -84,10 +84,9 @@ jobs:
           sed -i 's/^APP_ENV=.*/APP_ENV=testing/' .env
           sed -i 's/^DB_CONNECTION=.*/DB_CONNECTION=pgsql/' .env
           
-          # Use service name 'postgres' for GitHub Actions service container
-          # GitHub Actions provides service containers with their service name as hostname
-          grep -q "^DB_HOST=" .env || echo "DB_HOST=postgres" >> .env
-          sed -i 's/^DB_HOST=.*/DB_HOST=postgres/' .env
+          # Use localhost for runner (service ports are forwarded to runner)
+          grep -q "^DB_HOST=" .env || echo "DB_HOST=127.0.0.1" >> .env
+          sed -i 's/^DB_HOST=.*/DB_HOST=127.0.0.1/' .env
           
           # Ensure other DB configuration is set
           grep -q "^DB_PORT=" .env || echo "DB_PORT=5432" >> .env
@@ -163,7 +162,7 @@ jobs:
           # Test actual connection
           echo ""
           echo "Step 4: Test actual database connection..."
-          if psql -h $HOST_FOR_CONNECT -U postgres -d postgres -c "SELECT version();" 2>/dev/null; then
+          if PGPASSWORD=postgres psql -h $HOST_FOR_CONNECT -U postgres -d testing -c "SELECT version();" 2>/dev/null; then
             echo "✓ Successfully connected to PostgreSQL"
           else
             echo "✗ Connection failed"
@@ -173,7 +172,7 @@ jobs:
       - name: Run database migrations
         env:
           DB_CONNECTION: pgsql
-          DB_HOST: postgres
+          DB_HOST: 127.0.0.1
           DB_PORT: 5432
           DB_DATABASE: testing
           DB_USERNAME: postgres
@@ -189,7 +188,7 @@ jobs:
       - name: Run Feature tests (single-process mode)
         env:
           DB_CONNECTION: pgsql
-          DB_HOST: postgres
+          DB_HOST: 127.0.0.1
           DB_PORT: 5432
           DB_DATABASE: testing
           DB_USERNAME: postgres
@@ -202,7 +201,7 @@ jobs:
       - name: Run Unit tests
         env:
           DB_CONNECTION: pgsql
-          DB_HOST: postgres
+          DB_HOST: 127.0.0.1
           DB_PORT: 5432
           DB_DATABASE: testing
           DB_USERNAME: postgres
