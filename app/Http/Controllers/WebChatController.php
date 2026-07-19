@@ -51,15 +51,18 @@ class WebChatController extends Controller
             ->latest()
             ->first();
 
-        // Load pesan terbaru (30 pesan, ambil 31 untuk deteksi hasMore)
+        // Load pesan 7 hari terakhir (ambil +1 untuk deteksi hasMore)
         $messages = [];
         $hasMore  = false;
         if ($conversation) {
-            $raw     = $this->adapter->getHistory($conversation, limit: 31);
-            $hasMore = count($raw) > 30;
-            if ($hasMore) {
-                array_shift($raw); // buang yang paling lama (ke-31), sisakan 30 terbaru
-            }
+            $sevenDaysAgo = now()->subDays(7)->startOfDay();
+            $raw = $this->adapter->getHistorySince($conversation, $sevenDaysAgo);
+
+            // hasMore = true jika ada pesan lebih lama dari 7 hari yang lalu
+            $hasMore = $conversation->messages()
+                ->where('created_at', '<', $sevenDaysAgo)
+                ->exists();
+
             $messages = $raw;
         }
 
@@ -101,22 +104,38 @@ class WebChatController extends Controller
             return response()->json($result);
 
         } catch (Throwable $e) {
-            Log::error('WebChatController: sendMessage error', [
-                'user_id' => $request->user()->id,
-                'error'   => $e->getMessage(),
+            // Fallback terakhir — hanya terjadi jika DB down atau exception
+            // sebelum conversation bisa di-resolve (sangat jarang).
+            // Tetap kirim conversation_id agar frontend tidak reset ke null.
+            Log::error('WebChatController: sendMessage fatal error', [
+                'user_id'         => $request->user()->id,
+                'conversation_id' => $validated['conversation_id'] ?? null,
+                'error'           => $e->getMessage(),
             ]);
 
+            // Coba ambil conversation_id yang valid dari DB sebagai fallback
+            $fallbackConvId = $validated['conversation_id'] ?? null;
+            if (!$fallbackConvId) {
+                $fallbackConv = \App\Models\Conversation::where('user_id', $request->user()->id)
+                    ->where('is_active', true)
+                    ->whereNull('deleted_at')
+                    ->latest()
+                    ->value('id');
+                $fallbackConvId = $fallbackConv;
+            }
+
             return response()->json([
-                'success' => false,
-                'bot_message' => [
-                    'id'       => null,
-                    'role'     => 'assistant',
-                    'content'  => [[
-                        'type'    => 'error',
-                        'message' => __('chat.error.system'),
+                'success'         => false,
+                'conversation_id' => $fallbackConvId,
+                'bot_message'     => [
+                    'id'         => null,
+                    'role'       => 'assistant',
+                    'content'    => [[
+                        'type'     => 'error',
+                        'message'  => __('chat.error.system'),
                         'severity' => 'error',
                     ]],
-                    'metadata'   => [],
+                    'metadata'   => ['error' => true],
                     'created_at' => now()->toIso8601String(),
                 ],
             ], 500);
