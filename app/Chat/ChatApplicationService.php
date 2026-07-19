@@ -904,6 +904,9 @@ class ChatApplicationService
 
     private function buildMonthlyMetrics($transactions): array
     {
+        // Normalize input: accept Collection or array — treat consistently
+        $transactions = \Illuminate\Support\Collection::make($transactions);
+
         $income = (float) $transactions
             ->filter(fn($trx) => strtolower($trx->type?->name ?? '') === 'income')
             ->sum('amount');
@@ -928,6 +931,9 @@ class ChatApplicationService
 
     private function buildLocalMonthlyReport($transactions, Carbon $period, ?MonthlyReport $previousReport = null): string
     {
+        // Normalize input to Collection for consistent operations
+        $transactions = \Illuminate\Support\Collection::make($transactions);
+
         $income = (float) $transactions
             ->filter(fn($trx) => strtolower($trx->type?->name ?? '') === 'income')
             ->sum('amount');
