@@ -33,10 +33,17 @@ class AnalyticsController extends Controller
         $totalDebt = (float) $transactions->where('type.name', 'Debt')->sum('amount');
         $totalReceivable = (float) $transactions->where('type.name', 'Receivable')->sum('amount');
 
-        // Saldo Kumulatif
-        $initialIncome = $user->transactionLogs()->whereHas('type', fn($q) => $q->where('name', 'Income'))->where('date', '<', $startDate)->sum('amount');
-        $initialExpense = $user->transactionLogs()->whereHas('type', fn($q) => $q->where('name', 'Expense'))->where('date', '<', $startDate)->sum('amount');
-        $runningBalance = $initialIncome - $initialExpense;
+        // Saldo Kumulatif - hitung semua transaksi sebelum startDate
+        $initialTransactions = $user->transactionLogs()
+            ->with('type')
+            ->where('date', '<', $startDate)
+            ->get();
+        
+        $runningBalance = 0;
+        $runningBalance += (float) $initialTransactions->where('type.name', 'Income')->sum('amount');
+        $runningBalance += (float) $initialTransactions->where('type.name', 'Receivable')->sum('amount');
+        $runningBalance -= (float) $initialTransactions->where('type.name', 'Expense')->sum('amount');
+        $runningBalance -= (float) $initialTransactions->where('type.name', 'Debt')->sum('amount');
 
         $dailyLabels = [];
         $dailyIncome = [];
@@ -62,11 +69,14 @@ class AnalyticsController extends Controller
             $dayTx = $txByDate->get($dateStr, collect());
             $dInc = (float) $dayTx->where('type.name', 'Income')->sum('amount');
             $dExp = (float) $dayTx->where('type.name', 'Expense')->sum('amount');
+            $dDebt = (float) $dayTx->where('type.name', 'Debt')->sum('amount');
+            $dReceivable = (float) $dayTx->where('type.name', 'Receivable')->sum('amount');
 
             $dailyIncome[] = $dInc;
             $dailyExpense[] = $dExp;
 
-            $runningBalance += ($dInc - $dExp);
+            // Kumulatif: +income +receivable -expense -debt
+            $runningBalance += ($dInc + $dReceivable - $dExp - $dDebt);
             $cumulativeData[] = (float) $runningBalance;
 
             $currentIndex++;
