@@ -15,7 +15,7 @@ use App\Exceptions\AiProviderException;
 use App\Services\AI\Providers\PythonNLPProvider;
 use Illuminate\Support\Facades\Log;
 
-readonly class AIManager
+class AIManager
 {
     public function __construct(
         private AiPreferenceManager $preferenceManager,
