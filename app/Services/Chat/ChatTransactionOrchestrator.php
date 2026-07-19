@@ -18,6 +18,7 @@ use App\Services\AI\AiCredentialManager;
 use App\Services\AI\Prompt\MultiTransactionPromptBuilder;
 use App\DTO\AiProviderRequest;
 use App\DTO\ConfidenceScoreContext;
+use App\DTO\ParsedTransaction;
 use App\DTO\ResolvedTransaction;
 use App\DTO\MultiTransactionResult;
 use App\DTO\MultiTransactionItem;
@@ -139,6 +140,7 @@ class ChatTransactionOrchestrator
         }
 
         $parsed = $aiResult->transaction;
+        $isWebSource = strtoupper($source) === 'WEB';
 
         if (!$parsed->amount) {
             return ['success' => false, 'message' => "🤔 *Nominalnya berapa Bos?*\nAku bingung nih, kamu belum nyebutin jumlah uangnya."];
@@ -159,6 +161,7 @@ class ChatTransactionOrchestrator
         $threshold       = (float) config('bendaharaku.ai.confidence.threshold_auto_clear', 0.85);
         $finalConfidence = 0.0;
         $resolved        = null;
+        $walletExplicitlyMentioned = $this->hasExplicitWalletMention($text, $wallets);
 
         try {
             $resolved = $this->resolver->resolve($user, $parsed);
@@ -169,25 +172,32 @@ class ChatTransactionOrchestrator
             );
             $finalConfidence = $this->scoringEngine->calculateFinalScore($scoreContext);
 
-            $resolved = new ResolvedTransaction(
-                amount:              $resolved->amount,
-                categoryId:          $resolved->categoryId,
-                sourceWalletId:      $resolved->sourceWalletId,
-                destinationWalletId: $resolved->destinationWalletId,
-                subject:             $resolved->subject,
-                notes:               $resolved->notes,
-                isCleared:           ($finalConfidence >= $threshold),
-            );
+            $resolved = ($isWebSource && !$walletExplicitlyMentioned && $parsed->transactionType !== TransactionIntent::Transfer)
+                ? $this->resolveWebDraftWithoutWallet($user, $parsed, $finalSubject)
+                : new ResolvedTransaction(
+                    amount:              $resolved->amount,
+                    categoryId:          $resolved->categoryId,
+                    sourceWalletId:      $resolved->sourceWalletId,
+                    destinationWalletId: $resolved->destinationWalletId,
+                    subject:             $resolved->subject,
+                    notes:               $resolved->notes,
+                    isCleared:           ($finalConfidence >= $threshold && (!$isWebSource || $walletExplicitlyMentioned)),
+                );
 
         } catch (CategoryNotFoundException | WalletNotFoundException $e) {
-            $resolved = new ResolvedTransaction(
-                amount: $parsed->amount, categoryId: null,
-                sourceWalletId: null, destinationWalletId: null,
-                subject: $finalSubject,
-                notes: $text . "\n[ERROR AI: " . $e->getMessage() . "]",
-                isCleared: false
-            );
-            $finalConfidence = 0.0;
+            if ($isWebSource && !$walletExplicitlyMentioned && $parsed->category && $parsed->transactionType !== TransactionIntent::Transfer) {
+                $resolved = $this->resolveWebDraftWithoutWallet($user, $parsed, $finalSubject);
+                $finalConfidence = 0.0;
+            } else {
+                $resolved = new ResolvedTransaction(
+                    amount: $parsed->amount, categoryId: null,
+                    sourceWalletId: null, destinationWalletId: null,
+                    subject: $finalSubject,
+                    notes: $text . "\n[ERROR AI: " . $e->getMessage() . "]",
+                    isCleared: false
+                );
+                $finalConfidence = 0.0;
+            }
         }
 
         if ($resolved === null) {
@@ -228,6 +238,100 @@ class ChatTransactionOrchestrator
             'usage'       => $aiResult->usage,
             'transaction' => $transactionLog->load(['category', 'sourceWallet', 'destinationWallet', 'type']),
         ];
+    }
+
+    private function hasExplicitWalletMention(string $text, array $wallets): bool
+    {
+        $normalizedText = mb_strtolower($text);
+
+        foreach ($wallets as $wallet) {
+            if (($wallet['group_type'] ?? null) === 'System') {
+                continue;
+            }
+
+            $tokens = array_filter([
+                $wallet['name'] ?? null,
+                ...preg_split('/[,|;]+/', (string) ($wallet['keyword'] ?? ''), -1, PREG_SPLIT_NO_EMPTY),
+            ]);
+
+            foreach ($tokens as $token) {
+                $token = trim(mb_strtolower((string) $token));
+                if ($token !== '' && str_contains($normalizedText, $token)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private function resolveWebDraftWithoutWallet(User $user, ParsedTransaction $parsed, string $subject): ResolvedTransaction
+    {
+        $wallets    = $user->wallets()->get();
+        $categories = $user->categories()->get();
+        $category   = $this->findCategoryForDraft($parsed->category, $categories);
+
+        $externalWalletId   = $this->findSystemWalletId((string) config('bendaharaku.system_wallets.external'), $wallets);
+        $merchantWalletId   = $this->findSystemWalletId((string) config('bendaharaku.system_wallets.merchant'), $wallets);
+        $debtWalletId       = $this->findSystemWalletId((string) config('bendaharaku.system_wallets.debt'), $wallets);
+        $receivableWalletId = $this->findSystemWalletId((string) config('bendaharaku.system_wallets.receivable'), $wallets);
+
+        [$sourceWalletId, $destinationWalletId] = match ($parsed->transactionType) {
+            TransactionIntent::Income => [$externalWalletId, $merchantWalletId],
+            TransactionIntent::Debt => [$externalWalletId, $debtWalletId],
+            TransactionIntent::Receivable => [$externalWalletId, $receivableWalletId],
+            default => [$externalWalletId, $merchantWalletId],
+        };
+
+        return new ResolvedTransaction(
+            amount: $parsed->amount,
+            categoryId: $category->id,
+            sourceWalletId: $sourceWalletId,
+            destinationWalletId: $destinationWalletId,
+            subject: $parsed->subject ?? $subject,
+            notes: ($parsed->notes ?: '') . ' [DRAFT AI: wallet belum dipilih]',
+            isCleared: false,
+        );
+    }
+
+    private function findCategoryForDraft(?string $text, \Illuminate\Database\Eloquent\Collection $categories): \App\Models\Category
+    {
+        if (blank($text)) {
+            throw new CategoryNotFoundException('Input kategori kosong.');
+        }
+
+        $search = mb_strtolower(trim($text));
+
+        $match = $categories->first(fn($c) => mb_strtolower($c->category_name) === $search);
+        if ($match) {
+            return $match;
+        }
+
+        $match = $categories->first(function ($category) use ($search) {
+            if (blank($category->keyword)) {
+                return false;
+            }
+
+            $tokens = preg_split('/[,|;]+/', mb_strtolower($category->keyword), -1, PREG_SPLIT_NO_EMPTY);
+            return in_array($search, array_map('trim', $tokens), true);
+        });
+
+        if ($match) {
+            return $match;
+        }
+
+        throw new CategoryNotFoundException("Kategori '{$text}' tidak terdaftar.");
+    }
+
+    private function findSystemWalletId(string $walletName, \Illuminate\Database\Eloquent\Collection $wallets): int
+    {
+        $match = $wallets->first(fn($wallet) => $wallet->group_type === 'System' && $wallet->name === $walletName);
+
+        if (!$match) {
+            throw new WalletNotFoundException("Dompet Sistem '{$walletName}' tidak ditemukan.");
+        }
+
+        return $match->id;
     }
 
     // ════════════════════════════════════════════════════════════════

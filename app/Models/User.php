@@ -70,6 +70,11 @@ class User extends Authenticatable
         return $this->hasMany(Conversation::class);
     }
 
+    public function monthlyReports(): HasMany
+    {
+        return $this->hasMany(MonthlyReport::class);
+    }
+
     /**
      * Conversation aktif user saat ini.
      */

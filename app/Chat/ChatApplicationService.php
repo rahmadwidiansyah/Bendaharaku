@@ -12,10 +12,14 @@ use App\Chat\Components\DividerComponent;
 use App\Chat\Components\TransactionCardComponent;
 use App\Chat\Components\SummaryCardComponent;
 use App\Chat\Components\ErrorComponent;
+use App\Chat\Components\WarningComponent;
 use App\Chat\Components\SuggestionComponent;
 use App\Chat\Errors\ErrorDetail;
+use App\Enums\AiProvider;
 use App\Enums\ChatErrorSeverity;
 use App\Enums\ChatIntent;
+use App\Models\MonthlyReport;
+use App\Models\UserAiCredential;
 use App\Models\Wallet;
 use App\Services\Chat\ChatTransactionOrchestrator;
 use App\DTO\MultiTransactionResult;
@@ -27,7 +31,9 @@ use App\Exceptions\AiProviderException;
 use App\Exceptions\CategoryNotFoundException;
 use App\Exceptions\WalletNotFoundException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Carbon;
 use Throwable;
 use InvalidArgumentException;
 
@@ -177,6 +183,12 @@ class ChatApplicationService
             transaction: $trx,
             showDetails: true,
         );
+
+        if (!$isCleared && $trx->sourceWallet?->group_type === 'System') {
+            $components[] = new WarningComponent(
+                messageKey: 'chat.wallet.missing_choose',
+            );
+        }
 
         // Divider + footer AI
         $components[] = new DividerComponent();
@@ -396,9 +408,10 @@ class ChatApplicationService
         float       $startTime,
     ): ?ChatResponse {
         $lower = strtolower(trim($text));
+        $command = $this->normalizeWebCommand($lower);
 
         // Bukan command → lanjut ke orchestrator
-        if (!str_starts_with($lower, '/') && !in_array($lower, ['hai', 'halo', 'hello', 'hi', 'ping', 'p', 'tes', 'test', 'help', 'tolong'])) {
+        if ($command === null && !in_array($lower, ['hai', 'halo', 'hello', 'hi', 'ping', 'p', 'tes', 'test', 'help', 'tolong'])) {
             return null;
         }
 
@@ -411,23 +424,51 @@ class ChatApplicationService
         ];
 
         // /saldo — laporan saldo dompet
-        if ($lower === '/saldo') {
+        if ($command === '/saldo') {
             return $this->buildSaldoResponse($user, $locale, $metadata);
         }
 
+        if (in_array($command, ['/wallet', '/walet'], true)) {
+            return $this->buildWalletResponse($user, $metadata);
+        }
+
+        if ($command === '/kategori') {
+            return $this->buildCategoryResponse($user, $metadata);
+        }
+
+        if ($command === '/aset') {
+            return $this->buildAssetResponse($user, $metadata);
+        }
+
+        if ($command === '/transaksi') {
+            return $this->buildTodayTransactionResponse($user, $metadata);
+        }
+
+        if ($command === '/pemasukan') {
+            return $this->buildTypeSummaryResponse($user, 'income', $metadata);
+        }
+
+        if ($command === '/pengeluaran') {
+            return $this->buildTypeSummaryResponse($user, 'expense', $metadata);
+        }
+
+        if (in_array($command, ['/laporan', '/ringkasan'], true)) {
+            return $this->buildMonthlyReportResponse($user, $metadata, $text);
+        }
+
         // /help, /start, greeting, ping
-        if (in_array($lower, ['/help', '/start', 'hai', 'halo', 'hello', 'hi', 'ping', 'p', 'tes', 'test', 'help', 'tolong'])) {
+        if (in_array($command ?? $lower, ['/help', '/start', 'hai', 'halo', 'hello', 'hi', 'ping', 'p', 'tes', 'test', 'help', 'tolong'])) {
             return $this->buildHelpResponse($user, $locale, $metadata);
         }
 
         // Command lain yang terdaftar di registry tapi belum diimplementasi
         // Tampilkan pesan "fitur dalam pengembangan" daripada system error
-        if (str_starts_with($lower, '/')) {
+        if ($command !== null) {
             return ChatResponse::command(
                 components: [
                     new TextComponent(
                         translationKey: 'chat.command.not_yet_implemented',
-                        params: ['command' => $lower],
+                        params: ['command' => $command],
                     ),
                 ],
                 metadata: $metadata,
@@ -435,6 +476,25 @@ class ChatApplicationService
         }
 
         return null;
+    }
+
+    private function normalizeWebCommand(string $lower): ?string
+    {
+        $command = strtok($lower, " \t\n\r\0\x0B") ?: $lower;
+
+        return match ($command) {
+            '/saldo', 'saldo' => '/saldo',
+            '/wallet', 'wallet', '/walet', 'walet', 'dompet', '/dompet' => '/wallet',
+            '/kategori', 'kategori' => '/kategori',
+            '/aset', 'aset' => '/aset',
+            '/transaksi', 'transaksi' => '/transaksi',
+            '/pemasukan', 'pemasukan' => '/pemasukan',
+            '/pengeluaran', 'pengeluaran' => '/pengeluaran',
+            '/laporan', 'laporan' => '/laporan',
+            '/ringkasan', 'ringkasan' => '/ringkasan',
+            '/help', 'help', '/start' => $command,
+            default => str_starts_with($command, '/') ? $command : null,
+        };
     }
 
     private function buildSaldoResponse(\App\Models\User $user, string $locale, array $metadata): ChatResponse
@@ -489,6 +549,439 @@ class ChatApplicationService
         return ChatResponse::command(components: $components, metadata: $metadata);
     }
 
+    private function buildWalletResponse(\App\Models\User $user, array $metadata): ChatResponse
+    {
+        $wallets = Wallet::where('user_id', $user->id)
+            ->where('group_type', '!=', 'System')
+            ->orderBy('group_type')
+            ->orderByDesc('balance')
+            ->get();
+
+        if ($wallets->isEmpty()) {
+            return ChatResponse::command([
+                new TextComponent(translationKey: 'chat.command.balance_empty'),
+            ], $metadata);
+        }
+
+        $components = [
+            new TextComponent(translationKey: 'chat.command.wallet_title', bold: true),
+        ];
+
+        foreach ($wallets as $wallet) {
+            $components[] = new TextComponent(
+                translationKey: 'chat.command.balance_line_raw',
+                params: ['line' => "{$wallet->group_type} — {$wallet->name}: " . \App\Support\MoneyFormatter::rupiah((float) $wallet->balance)],
+            );
+        }
+
+        return ChatResponse::command($components, $metadata);
+    }
+
+    private function buildAssetResponse(\App\Models\User $user, array $metadata): ChatResponse
+    {
+        $assets = Wallet::where('user_id', $user->id)
+            ->where('group_type', 'Asset')
+            ->orderByDesc('balance')
+            ->get();
+
+        if ($assets->isEmpty()) {
+            return ChatResponse::command([
+                new TextComponent(translationKey: 'chat.command.asset_empty'),
+            ], $metadata);
+        }
+
+        $total = (float) $assets->sum('balance');
+        $components = [
+            new TextComponent(translationKey: 'chat.command.asset_title', bold: true),
+        ];
+
+        foreach ($assets as $asset) {
+            $components[] = new TextComponent(
+                translationKey: 'chat.command.balance_line_raw',
+                params: ['line' => "{$asset->name}: " . \App\Support\MoneyFormatter::rupiah((float) $asset->balance)],
+            );
+        }
+
+        $components[] = new DividerComponent();
+        $components[] = new TextComponent(
+            translationKey: 'chat.command.balance_total',
+            params: ['total' => \App\Support\MoneyFormatter::rupiah($total)],
+            bold: true,
+        );
+
+        return ChatResponse::command($components, $metadata);
+    }
+
+    private function buildCategoryResponse(\App\Models\User $user, array $metadata): ChatResponse
+    {
+        $categories = $user->categories()
+            ->with('type')
+            ->orderBy('type_id')
+            ->orderBy('category_name')
+            ->get();
+
+        if ($categories->isEmpty()) {
+            return ChatResponse::command([
+                new TextComponent(translationKey: 'chat.command.category_empty'),
+            ], $metadata);
+        }
+
+        $components = [
+            new TextComponent(translationKey: 'chat.command.category_title', bold: true),
+        ];
+
+        foreach ($categories->groupBy(fn($category) => $category->type?->name ?? 'Other') as $typeName => $items) {
+            $components[] = new TextComponent(
+                translationKey: 'chat.command.balance_line_raw',
+                params: ['line' => "{$typeName}: " . $items->pluck('category_name')->join(', ')],
+            );
+        }
+
+        return ChatResponse::command($components, $metadata);
+    }
+
+    private function buildTodayTransactionResponse(\App\Models\User $user, array $metadata): ChatResponse
+    {
+        $transactions = $user->transactionLogs()
+            ->with(['type', 'category', 'sourceWallet', 'destinationWallet'])
+            ->whereDate('date', now()->toDateString())
+            ->latest('id')
+            ->limit(10)
+            ->get();
+
+        if ($transactions->isEmpty()) {
+            return ChatResponse::command([
+                new TextComponent(translationKey: 'chat.command.transaction_today_empty'),
+            ], $metadata);
+        }
+
+        $components = [
+            new TextComponent(translationKey: 'chat.command.transaction_today_title', bold: true),
+        ];
+
+        foreach ($transactions as $transaction) {
+            $components[] = new TextComponent(
+                translationKey: 'chat.command.balance_line_raw',
+                params: ['line' => $this->formatTransactionLine($transaction)],
+            );
+        }
+
+        return ChatResponse::command($components, $metadata);
+    }
+
+    private function buildTypeSummaryResponse(\App\Models\User $user, string $type, array $metadata): ChatResponse
+    {
+        $monthStart = now()->startOfMonth();
+        $monthEnd   = now()->endOfMonth();
+        $typeName    = $type === 'income' ? 'Income' : 'Expense';
+
+        $transactions = $user->transactionLogs()
+            ->with(['category', 'sourceWallet', 'destinationWallet'])
+            ->whereBetween('date', [$monthStart->toDateString(), $monthEnd->toDateString()])
+            ->whereHas('type', fn($query) => $query->where('name', $typeName))
+            ->latest('date')
+            ->latest('id')
+            ->get();
+
+        $titleKey = $type === 'income' ? 'chat.command.income_title' : 'chat.command.expense_title';
+
+        if ($transactions->isEmpty()) {
+            return ChatResponse::command([
+                new TextComponent(translationKey: $titleKey, bold: true),
+                new TextComponent(translationKey: 'chat.command.month_type_empty'),
+            ], $metadata);
+        }
+
+        $total = (float) $transactions->sum('amount');
+        $components = [
+            new TextComponent(translationKey: $titleKey, bold: true),
+            new TextComponent(
+                translationKey: 'chat.command.month_type_total',
+                params: [
+                    'count' => $transactions->count(),
+                    'total' => \App\Support\MoneyFormatter::rupiah($total),
+                ],
+                bold: true,
+            ),
+            new DividerComponent(),
+        ];
+
+        foreach ($transactions->take(10) as $transaction) {
+            $components[] = new TextComponent(
+                translationKey: 'chat.command.balance_line_raw',
+                params: ['line' => $this->formatTransactionLine($transaction)],
+            );
+        }
+
+        return ChatResponse::command($components, $metadata);
+    }
+
+    private function buildMonthlyReportResponse(\App\Models\User $user, array $metadata, string $rawText): ChatResponse
+    {
+        $period = $this->resolveReportPeriod($rawText);
+        $monthStart = $period->copy()->startOfMonth();
+        $monthEnd   = $period->copy()->endOfMonth();
+        $periodKey = $monthStart->toDateString();
+        $previousReport = MonthlyReport::where('user_id', $user->id)
+            ->whereDate('period_month', $monthStart->copy()->subMonthNoOverflow()->toDateString())
+            ->first();
+
+        $transactions = $user->transactionLogs()
+            ->with(['type', 'category', 'sourceWallet', 'destinationWallet'])
+            ->whereBetween('date', [$monthStart->toDateString(), $monthEnd->toDateString()])
+            ->orderBy('date')
+            ->orderBy('id')
+            ->get();
+
+        if ($transactions->isEmpty()) {
+            return ChatResponse::command([
+                new TextComponent(
+                    translationKey: 'chat.command.report_empty_period',
+                    params: ['period' => $monthStart->translatedFormat('F Y')],
+                ),
+            ], $metadata);
+        }
+
+        $metrics = $this->buildMonthlyMetrics($transactions);
+        $comparisonMetrics = $this->buildComparisonMetrics($metrics, $previousReport);
+        $localReport = $this->buildLocalMonthlyReport($transactions, $monthStart, $previousReport);
+        $geminiResult = $this->generateGeminiMonthlyReport($user, $transactions, $localReport, $monthStart, $previousReport);
+        $geminiReport = $geminiResult['summary'] ?? null;
+        $finalReport = $geminiReport ?? $localReport;
+
+        MonthlyReport::updateOrCreate(
+            [
+                'user_id' => $user->id,
+                'period_month' => $periodKey,
+            ],
+            [
+                'title' => 'Laporan ' . $monthStart->translatedFormat('F Y'),
+                'local_summary' => $localReport,
+                'ai_summary' => $geminiReport,
+                'final_summary' => $finalReport,
+                'metrics' => $metrics,
+                'previous_month_summary' => $previousReport?->final_summary,
+                'comparison_metrics' => $comparisonMetrics,
+                'provider' => $geminiReport ? 'gemini' : 'local',
+                'model' => $geminiResult['model'] ?? null,
+                'status' => 'completed',
+            ],
+        );
+
+        $components = [
+            new TextComponent(
+                translationKey: 'chat.command.report_title_period',
+                params: ['period' => $monthStart->translatedFormat('F Y')],
+                bold: true,
+            ),
+            new TextComponent(
+                translationKey: 'chat.command.balance_line_raw',
+                params: ['line' => $finalReport],
+            ),
+            new TextComponent(translationKey: 'chat.command.report_saved'),
+        ];
+
+        if ($geminiReport === null) {
+            $components[] = new WarningComponent(
+                messageKey: 'chat.command.report_gemini_unavailable',
+            );
+        }
+
+        return ChatResponse::command($components, $metadata);
+    }
+
+    private function resolveReportPeriod(string $rawText): Carbon
+    {
+        $text = mb_strtolower(trim($rawText));
+        $now = now();
+
+        if (str_contains($text, 'kemarin') || str_contains($text, 'lalu') || str_contains($text, 'sebelumnya')) {
+            return $now->copy()->subMonthNoOverflow()->startOfMonth();
+        }
+
+        $months = [
+            'januari' => 1, 'jan' => 1,
+            'februari' => 2, 'feb' => 2,
+            'maret' => 3, 'mar' => 3,
+            'april' => 4, 'apr' => 4,
+            'mei' => 5,
+            'juni' => 6, 'jun' => 6,
+            'juli' => 7, 'jul' => 7,
+            'agustus' => 8, 'agu' => 8, 'ags' => 8,
+            'september' => 9, 'sep' => 9,
+            'oktober' => 10, 'okt' => 10,
+            'november' => 11, 'nov' => 11,
+            'desember' => 12, 'des' => 12,
+        ];
+
+        foreach ($months as $name => $month) {
+            if (!preg_match('/\b' . preg_quote($name, '/') . '\b/u', $text)) {
+                continue;
+            }
+
+            $year = $now->year;
+            if (preg_match('/\b(20\d{2})\b/', $text, $match)) {
+                $year = (int) $match[1];
+            } elseif ($month > $now->month) {
+                $year--;
+            }
+
+            return Carbon::create($year, $month, 1, 0, 0, 0, $now->timezone)->startOfMonth();
+        }
+
+        return $now->copy()->startOfMonth();
+    }
+
+    private function buildMonthlyMetrics($transactions): array
+    {
+        $income = (float) $transactions
+            ->filter(fn($trx) => strtolower($trx->type?->name ?? '') === 'income')
+            ->sum('amount');
+        $expense = (float) $transactions
+            ->filter(fn($trx) => strtolower($trx->type?->name ?? '') === 'expense')
+            ->sum('amount');
+
+        return [
+            'transaction_count' => $transactions->count(),
+            'income' => $income,
+            'expense' => $expense,
+            'net' => $income - $expense,
+            'top_expense_categories' => $transactions
+                ->filter(fn($trx) => strtolower($trx->type?->name ?? '') === 'expense')
+                ->groupBy(fn($trx) => $trx->category?->category_name ?? '-')
+                ->map(fn($items) => (float) $items->sum('amount'))
+                ->sortDesc()
+                ->take(5)
+                ->toArray(),
+        ];
+    }
+
+    private function buildLocalMonthlyReport($transactions, Carbon $period, ?MonthlyReport $previousReport = null): string
+    {
+        $income = (float) $transactions
+            ->filter(fn($trx) => strtolower($trx->type?->name ?? '') === 'income')
+            ->sum('amount');
+        $expense = (float) $transactions
+            ->filter(fn($trx) => strtolower($trx->type?->name ?? '') === 'expense')
+            ->sum('amount');
+        $net = $income - $expense;
+
+        $topCategories = $transactions
+            ->filter(fn($trx) => strtolower($trx->type?->name ?? '') === 'expense')
+            ->groupBy(fn($trx) => $trx->category?->category_name ?? '-')
+            ->map(fn($items) => (float) $items->sum('amount'))
+            ->sortDesc()
+            ->take(5)
+            ->map(fn($amount, $category) => "{$category}: " . \App\Support\MoneyFormatter::rupiah($amount))
+            ->values()
+            ->join("\n");
+
+        return implode("\n", array_filter([
+            'Periode: ' . $period->translatedFormat('F Y'),
+            'Pemasukan: ' . \App\Support\MoneyFormatter::rupiah($income),
+            'Pengeluaran: ' . \App\Support\MoneyFormatter::rupiah($expense),
+            'Selisih: ' . \App\Support\MoneyFormatter::rupiah($net),
+            $previousReport ? "Pembanding bulan sebelumnya:\n" . $previousReport->final_summary : null,
+            $topCategories ? "Top kategori pengeluaran:\n{$topCategories}" : null,
+        ]));
+    }
+
+    private function generateGeminiMonthlyReport(
+        \App\Models\User $user,
+        $transactions,
+        string $localReport,
+        Carbon $period,
+        ?MonthlyReport $previousReport = null,
+    ): ?array
+    {
+        $credential = UserAiCredential::where('user_id', $user->id)
+            ->where('provider', AiProvider::Gemini->value)
+            ->where('is_valid', true)
+            ->first();
+
+        if (!$credential || blank($credential->api_key)) {
+            return null;
+        }
+
+        $preference = $user->aiPreferences()
+            ->where('provider', AiProvider::Gemini->value)
+            ->first();
+        $model = $preference?->selected_model ?: AiProvider::Gemini->defaultModel();
+
+        $payload = [
+            'periode' => $period->format('Y-m'),
+            'ringkasan_angka' => $localReport,
+            'pembanding_bulan_sebelumnya' => $previousReport ? [
+                'periode' => $previousReport->period_month?->format('Y-m'),
+                'ringkasan' => $previousReport->final_summary,
+                'metrics' => $previousReport->metrics,
+                'comparison' => $this->buildComparisonMetrics($this->buildMonthlyMetrics([]), $previousReport),
+            ] : null,
+            'transaksi' => $transactions->map(fn($trx) => [
+                'tanggal' => $trx->date?->toDateString(),
+                'tipe' => $trx->type?->name,
+                'kategori' => $trx->category?->category_name,
+                'dompet_asal' => $trx->sourceWallet?->name,
+                'dompet_tujuan' => $trx->destinationWallet?->name,
+                'nominal' => (float) $trx->amount,
+                'catatan' => $trx->notes,
+            ])->values()->all(),
+        ];
+
+        $prompt = implode("\n", [
+            'Kamu adalah analis keuangan pribadi untuk aplikasi Bendaharaku.',
+            'Buat laporan bulanan singkat dalam Bahasa Indonesia, ramah, padat, dan actionable.',
+            'Format wajib:',
+            '1. Ringkasan Bulan Ini',
+            '2. Pemasukan vs Pengeluaran',
+            '3. Kategori Pengeluaran Terbesar',
+            '4. Perbandingan dengan Bulan Sebelumnya',
+            '5. Insight Singkat',
+            '6. Saran Praktis Bulan Ini',
+            'Jika pembanding_bulan_sebelumnya null, tulis bahwa pembanding belum tersedia dan sarankan membuat laporan bulan sebelumnya.',
+            'Jangan mengarang data di luar JSON. Jika data terbatas, bilang data masih sedikit.',
+            'Data JSON:',
+            json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+        ]);
+
+        try {
+            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent";
+            $response = Http::timeout(20)
+                ->withHeaders(['Content-Type' => 'application/json'])
+                ->post($url . '?key=' . $credential->api_key, [
+                    'contents' => [['parts' => [['text' => $prompt]]]],
+                ]);
+
+            if (!$response->successful()) {
+                Log::warning('Gemini monthly report failed', [
+                    'user_id' => $user->id,
+                    'status' => $response->status(),
+                    'body' => substr($response->body(), 0, 500),
+                ]);
+                return null;
+            }
+
+            $text = trim((string) $response->json('candidates.0.content.parts.0.text'));
+            return $text !== '' ? ['summary' => $text, 'model' => $model] : null;
+        } catch (Throwable $e) {
+            Log::warning('Gemini monthly report exception', [
+                'user_id' => $user->id,
+                'message' => $e->getMessage(),
+            ]);
+            return null;
+        }
+    }
+
+    private function formatTransactionLine(\App\Models\TransactionLog $transaction): string
+    {
+        $type = $transaction->type?->name ?? 'Transaksi';
+        $category = $transaction->category?->category_name ?? '-';
+        $wallet = $transaction->sourceWallet?->name ?? $transaction->destinationWallet?->name ?? '-';
+        $amount = \App\Support\MoneyFormatter::rupiah((float) $transaction->amount);
+
+        return "{$transaction->date?->format('d/m')} — {$type} — {$category} — {$amount} — {$wallet}";
+    }
+
     private function buildHelpResponse(\App\Models\User $user, string $locale, array $metadata): ChatResponse
     {
         return ChatResponse::command(
@@ -513,5 +1006,33 @@ class ChatApplicationService
             ],
             metadata: $metadata,
         );
+    }
+
+    private function buildComparisonMetrics(array $currentMetrics, ?MonthlyReport $previousReport = null): ?array
+    {
+        if (!$previousReport || !$previousReport->metrics) {
+            return null;
+        }
+
+        $prev = $previousReport->metrics;
+        $curr = $currentMetrics;
+
+        return [
+            'income_diff' => ($curr['income'] ?? 0) - ($prev['income'] ?? 0),
+            'income_diff_percent' => ($prev['income'] ?? 0) > 0 
+                ? round((($curr['income'] ?? 0) - ($prev['income'] ?? 0)) / ($prev['income'] ?? 0) * 100, 2)
+                : 0,
+            'expense_diff' => ($curr['expense'] ?? 0) - ($prev['expense'] ?? 0),
+            'expense_diff_percent' => ($prev['expense'] ?? 0) > 0 
+                ? round((($curr['expense'] ?? 0) - ($prev['expense'] ?? 0)) / ($prev['expense'] ?? 0) * 100, 2)
+                : 0,
+            'net_diff' => ($curr['net'] ?? 0) - ($prev['net'] ?? 0),
+            'transaction_count_diff' => ($curr['transaction_count'] ?? 0) - ($prev['transaction_count'] ?? 0),
+            'trend' => match (true) {
+                ($curr['net'] ?? 0) > ($prev['net'] ?? 0) => 'up',
+                ($curr['net'] ?? 0) < ($prev['net'] ?? 0) => 'down',
+                default => 'stable',
+            },
+        ];
     }
 }
