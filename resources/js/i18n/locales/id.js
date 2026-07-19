@@ -663,6 +663,23 @@ export default {
     },
 
     // ────────────────────────────────────────────────────────────────
+    // CHAT BOT PROFILE
+    // ────────────────────────────────────────────────────────────────
+    chatBot: {
+        title:          'Profil Bot',
+        subtitle:       'Personalisasi asisten AI kamu',
+        photoSection:   'Foto Bot',
+        nameSection:    'Nama Bot',
+        namePlaceholder:'Masukkan nama bot...',
+        nameHint:       'Nama yang akan digunakan bot saat menyapa kamu.',
+        saveBtn:        'Simpan Perubahan',
+        uploadPhoto:    'Unggah Foto',
+        removePhoto:    'Hapus Foto',
+        presetNames:    'Nama Populer',
+        head:           'Bot Profile',
+    },
+
+    // ────────────────────────────────────────────────────────────────
     // BUTTONS
     // ────────────────────────────────────────────────────────────────
     btn: {
