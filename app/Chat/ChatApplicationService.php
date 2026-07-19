@@ -984,6 +984,9 @@ class ChatApplicationService
             ->first();
         $model = $preference?->selected_model ?: AiProvider::Gemini->defaultModel();
 
+        // Limit transactions to avoid excessively long prompts (keep top 50)
+        $transactionsForPayload = \Illuminate\Support\Collection::make($transactions)->take(50);
+
         $payload = [
             'periode' => $period->format('Y-m'),
             'ringkasan_angka' => $localReport,
@@ -993,7 +996,8 @@ class ChatApplicationService
                 'metrics' => $previousReport->metrics,
                 'comparison' => $this->buildComparisonMetrics($this->buildMonthlyMetrics(\Illuminate\Support\Collection::make([])), $previousReport),
             ] : null,
-            'transaksi' => $transactions->map(fn($trx) => [
+            // Use a truncated transactions list to keep prompt size bounded
+            'transaksi' => $transactionsForPayload->map(fn($trx) => [
                 'tanggal' => $trx->date?->toDateString(),
                 'tipe' => $trx->type?->name,
                 'kategori' => $trx->category?->category_name,
@@ -1002,6 +1006,7 @@ class ChatApplicationService
                 'nominal' => (float) $trx->amount,
                 'catatan' => $trx->notes,
             ])->values()->all(),
+            'truncated' => ($transactionsForPayload->count() < (\Illuminate\Support\Collection::make($transactions))->count()) ? true : false,
         ];
 
         $prompt = implode("\n", [
@@ -1016,13 +1021,16 @@ class ChatApplicationService
             '6. Saran Praktis Bulan Ini',
             'Jika pembanding_bulan_sebelumnya null, tulis bahwa pembanding belum tersedia dan sarankan membuat laporan bulan sebelumnya.',
             'Jangan mengarang data di luar JSON. Jika data terbatas, bilang data masih sedikit.',
-            'Data JSON:',
+            'Jika daftar transaksi dipotong (truncated=true), beri tahu bahwa hasil mengabaikan transaksi sisanya.',
+            'Data JSON (ringkas):',
             json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
         ]);
 
         try {
             $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent";
-            $response = Http::timeout(20)
+            // Increase timeout & add retries for reliability; use smaller payload above
+            $response = Http::timeout(60)
+                ->retry(3, 1000)
                 ->withHeaders(['Content-Type' => 'application/json'])
                 ->post($url . '?key=' . $credential->api_key, [
                     'contents' => [['parts' => [['text' => $prompt]]]],
