@@ -6,7 +6,11 @@ namespace App\Http\Controllers;
 
 use App\Chat\Adapters\WebAdapter;
 use App\Chat\ChatCommandRegistry;
+use App\Actions\ProcessTransactionAction;
 use App\Models\Conversation;
+use App\Models\ChatMessage;
+use App\Models\TransactionLog;
+use App\Support\MoneyFormatter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -282,7 +286,9 @@ class WebChatController extends Controller
             'success'     => true,
             'transaction' => [
                 'id'               => $transaction->id,
+                'reference_number' => $transaction->reference_number,
                 'is_cleared'       => $transaction->is_cleared,
+                'is_cancelled'     => false,
                 'type_key'         => $typeKey,
                 'amount_formatted' => \App\Support\MoneyFormatter::rupiah($transaction->amount),
                 'source_wallet'    => $transaction->sourceWallet?->name,
@@ -290,7 +296,171 @@ class WebChatController extends Controller
                 'category'         => $transaction->category?->category_name,
                 'date'             => $transaction->date?->toDateString(),
                 'notes'            => $transaction->notes,
+                'created_at'       => $transaction->created_at?->toIso8601String(),
             ],
         ]);
+    }
+
+    /**
+     * GET /chat/transaction/{id}/status
+     * Cek apakah transaksi dari chat masih ada di DB.
+     */
+    public function transactionStatus(Request $request, int $id): JsonResponse
+    {
+        $transaction = $request->user()
+            ->transactionLogs()
+            ->with(['sourceWallet', 'destinationWallet', 'category', 'type'])
+            ->find($id);
+
+        if (!$transaction) {
+            return response()->json([
+                'exists'      => false,
+                'transaction' => [
+                    'id'           => $id,
+                    'is_cancelled' => true,
+                    'is_cleared'   => false,
+                ],
+            ]);
+        }
+
+        return response()->json([
+            'exists'      => true,
+            'transaction' => $this->formatTransactionForChat($transaction),
+        ]);
+    }
+
+    /**
+     * PATCH /chat/transaction/{id}/confirm
+     * Konfirmasi draft yang wallet-nya sudah lengkap.
+     */
+    public function confirmTransaction(Request $request, int $id, ProcessTransactionAction $action): JsonResponse
+    {
+        $transaction = $request->user()
+            ->transactionLogs()
+            ->with(['sourceWallet', 'destinationWallet', 'category', 'type'])
+            ->find($id);
+
+        if (!$transaction) {
+            return response()->json([
+                'success'     => false,
+                'message'     => 'Transaksi sudah batal.',
+                'transaction' => [
+                    'id'           => $id,
+                    'is_cancelled' => true,
+                    'is_cleared'   => false,
+                ],
+            ], 404);
+        }
+
+        if (!$transaction->is_cleared) {
+            try {
+                $action->confirm($transaction);
+                $transaction->refresh()->load(['sourceWallet', 'destinationWallet', 'category', 'type']);
+            } catch (Throwable $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                ], 422);
+            }
+        }
+
+        return response()->json([
+            'success'     => true,
+            'transaction' => $this->formatTransactionForChat($transaction),
+        ]);
+    }
+
+    /**
+     * DELETE /chat/transaction/{id}/cancel
+     * Batal/hapus transaksi dari chat, lalu simpan label batal di riwayat chat.
+     */
+    public function cancelTransaction(Request $request, int $id, ProcessTransactionAction $action): JsonResponse
+    {
+        $transaction = $request->user()
+            ->transactionLogs()
+            ->with(['sourceWallet', 'destinationWallet', 'category', 'type'])
+            ->find($id);
+
+        if ($transaction) {
+            try {
+                $action->delete($transaction);
+            } catch (Throwable $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                ], 422);
+            }
+        }
+
+        $this->markTransactionCancelledInChatHistory($request->user()->id, $id);
+
+        return response()->json([
+            'success'     => true,
+            'transaction' => [
+                'id'           => $id,
+                'is_cancelled' => true,
+                'is_cleared'   => false,
+            ],
+        ]);
+    }
+
+    private function formatTransactionForChat(TransactionLog $transaction): array
+    {
+        $typeKey = match (strtolower($transaction->type?->name ?? '')) {
+            'income'             => 'income',
+            'expense'            => 'expense',
+            'transfer'           => 'transfer',
+            'debt', 'receivable' => 'debt',
+            default              => 'other',
+        };
+
+        return [
+            'id'               => $transaction->id,
+            'reference_number' => $transaction->reference_number,
+            'amount'           => $transaction->amount,
+            'amount_formatted' => MoneyFormatter::rupiah($transaction->amount),
+            'is_cleared'       => (bool) $transaction->is_cleared,
+            'is_cancelled'     => false,
+            'needs_wallet'     => !$transaction->is_cleared && $transaction->sourceWallet?->group_type === 'System',
+            'type_key'         => $typeKey,
+            'category'         => $transaction->category?->category_name,
+            'source_wallet'    => $transaction->sourceWallet?->name,
+            'dest_wallet'      => $transaction->destinationWallet?->name,
+            'subject'          => $transaction->subject,
+            'notes'            => $transaction->notes,
+            'date'             => $transaction->date?->toDateString(),
+            'created_at'       => $transaction->created_at?->toIso8601String(),
+        ];
+    }
+
+    private function markTransactionCancelledInChatHistory(int $userId, int $transactionId): void
+    {
+        ChatMessage::whereHas('conversation', fn($q) => $q->where('user_id', $userId))
+            ->where('role', 'assistant')
+            ->chunkById(100, function ($messages) use ($transactionId) {
+                foreach ($messages as $message) {
+                    $content = $message->content ?? [];
+                    $changed = false;
+
+                    foreach ($content as &$component) {
+                        if (($component['type'] ?? null) !== 'transaction_card') {
+                            continue;
+                        }
+
+                        if ((int) ($component['transaction']['id'] ?? 0) !== $transactionId) {
+                            continue;
+                        }
+
+                        $component['needs_wallet'] = false;
+                        $component['transaction']['is_cancelled'] = true;
+                        $component['transaction']['is_cleared'] = false;
+                        $changed = true;
+                    }
+
+                    if ($changed) {
+                        $message->forceFill(['content' => $content])->save();
+                    }
+                }
+            });
     }
 }

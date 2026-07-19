@@ -133,7 +133,7 @@ export default {
         unpinFromDashboard: 'Unpin from Dashboard',
         transactionHistory: 'Transaction History',
         filterType:         'Filter by Type',
-        searchPlaceholder:  'Search notes...',
+        searchPlaceholder:  'Search notes or ID...',
         noTransactions:     'No transactions found',
         calendarTab:        'Calendar',
         detailTab:          'Detail',
@@ -186,6 +186,7 @@ export default {
         notePlaceholder:'Add a note... (optional)',
         draft:          'Draft',
         confirmed:      'Confirmed',
+        cancelled:      'Cancelled',
         confirmDraft:   'Confirm Transaction',
         confirmDraftQ:  'Confirm this draft transaction?',
         confirmDraftMsg:'This transaction will be officially recorded.',
@@ -219,6 +220,7 @@ export default {
             wallet:      'Wallet',
             party:       'Party',
             category:    'Category',
+            transactionId: 'Transaction ID',
             date:        'Date',
             note:        'Note',
             noNote:      'No notes.',
@@ -234,6 +236,8 @@ export default {
         processing:         'Processing...',
         yesConfirm:         'Yes, Confirm',
 
+        cancelTitle:         'Transaction Cancelled',
+
         // Debt / Receivable sub-tabs
         debt: {
             receive: 'Receive Debt',
@@ -242,6 +246,37 @@ export default {
         receivable: {
             give:    'Give Receivable',
             collect: 'Collect Receivable',
+        },
+    },
+
+    chatTransaction: {
+        aiParsed:      'AI Parsed',
+        copy:          'Copy',
+        copied:        'Copied',
+        copyMessage:   'Copy message',
+        regenerate:    'Regenerate',
+        regenerateAnswer: 'Regenerate answer',
+        retry:         'Retry',
+        retrySend:     'Retry sending',
+        walletLoadFailed: 'Failed to load wallets.',
+        confirmDelete: 'Delete this transaction?',
+        recordedFrom:  'Recorded from',
+        processedBy:   'Processed by',
+        processingDuration: 'Processing duration',
+        aiConfidence:  'AI confidence',
+        transactionTime: 'Transaction time',
+        rawPrompt:     'Original prompt',
+        seconds:       'seconds',
+        confidence: {
+            high:   'High',
+            medium: 'Medium',
+            low:    'Low',
+        },
+        intent: {
+            label:   'Intent',
+            single:  'Single Transaction',
+            multi:   'Multi Transaction',
+            command: 'Command',
         },
     },
 
