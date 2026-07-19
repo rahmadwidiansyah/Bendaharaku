@@ -641,6 +641,23 @@ export default {
     },
 
     // ────────────────────────────────────────────────────────────────
+    // CHAT BOT PROFILE
+    // ────────────────────────────────────────────────────────────────
+    chatBot: {
+        title:          'Bot Profile',
+        subtitle:       'Personalize your AI assistant',
+        photoSection:   'Bot Photo',
+        nameSection:    'Bot Name',
+        namePlaceholder:'Enter bot name...',
+        nameHint:       'The name your bot will use when greeting you.',
+        saveBtn:        'Save Changes',
+        uploadPhoto:    'Upload Photo',
+        removePhoto:    'Remove Photo',
+        presetNames:    'Popular Names',
+        head:           'Bot Profile',
+    },
+
+    // ────────────────────────────────────────────────────────────────
     // BUTTONS
     // ────────────────────────────────────────────────────────────────
     btn: {
