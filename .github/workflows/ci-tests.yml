@@ -19,65 +19,94 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U postgres -d testing" --health-interval 10s --health-timeout 5s --health-retries 5
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup PHP
+      - name: Setup PHP 8.3 (production stable)
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
+          php-version: '8.3'
           extensions: mbstring, bcmath, intl, pdo_pgsql
+          coverage: none
 
-      - name: Install composer
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
-      - name: Copy .env
-        run: |
-          cp .env.example .env
-          # Ensure DB_* variables present and point to the postgres service
-          echo 'DB_CONNECTION=pgsql' >> .env
-          echo 'DB_HOST=postgres' >> .env
-          echo 'DB_PORT=5432' >> .env
-          echo 'DB_DATABASE=testing' >> .env
-          echo 'DB_USERNAME=postgres' >> .env
-          echo 'DB_PASSWORD=postgres' >> .env
-
-      - name: Install postgres client for pg_isready and psql
+      - name: Install PostgreSQL client
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
-      - name: Debug: DNS and binaries
+      - name: Debug - System information
         run: |
-          echo "--- getent hosts postgres ---"; getent hosts postgres || true
-          echo "--- which pg_isready ---"; which pg_isready || true
-          echo "--- pg_isready --version (if available) ---"; pg_isready --version || true
-          echo "--- psql --version ---"; psql --version || true
-          echo "--- DB env vars in .env ---"; grep -E '^DB_' .env || true
+          echo "=== PHP Version ===" && php --version
+          echo "=== Composer Version ===" && composer --version
+          echo "=== PostgreSQL Client ===" && psql --version
+          echo "=== pg_isready ===" && pg_isready --version
 
-      - name: Wait for Postgres (with timeout)
+      - name: Setup .env for testing
         run: |
-          set -eu
+          # Copy template
+          cp .env.example .env
+          
+          # Force testing environment
+          sed -i 's/^APP_ENV=.*/APP_ENV=testing/' .env
+          sed -i 's/^DB_CONNECTION=.*/DB_CONNECTION=pgsql/' .env
+          
+          # Ensure DB configuration is set
+          grep -q "^DB_HOST=" .env || echo "DB_HOST=postgres" >> .env
+          grep -q "^DB_PORT=" .env || echo "DB_PORT=5432" >> .env
+          grep -q "^DB_DATABASE=" .env || echo "DB_DATABASE=testing" >> .env
+          grep -q "^DB_USERNAME=" .env || echo "DB_USERNAME=postgres" >> .env
+          grep -q "^DB_PASSWORD=" .env || echo "DB_PASSWORD=postgres" >> .env
+          
+          # Verify configuration
+          echo "=== Generated .env DB Configuration ===" && grep "^DB_" .env
+
+      - name: Generate APP_KEY
+        run: php artisan key:generate --force
+
+      - name: Clear configuration cache (fresh start)
+        run: php artisan config:clear
+
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          echo "Waiting for PostgreSQL server..."
           max_retries=30
-          count=0
-          until pg_isready -h postgres -p 5432 -U postgres -d testing >/dev/null 2>&1; do
-            count=$((count+1))
-            echo "Waiting for postgres... ($count/$max_retries)"
-            if [ "$count" -ge "$max_retries" ]; then
-              echo "Postgres did not become available in time"
-              # debug again
-              echo "--- docker service hosts ---"
-              getent hosts postgres || true
-              echo "--- netstat (if available) ---"
-              ss -ltn || true
-              exit 1
-            fi
+          retry=0
+          
+          # Wait for server to respond
+          until pg_isready -h postgres -p 5432 -U postgres >/dev/null 2>&1 || [ $retry -ge $max_retries ]; do
+            retry=$((retry + 1))
+            echo "PostgreSQL not ready ($retry/$max_retries), waiting..."
             sleep 2
           done
-          echo "Postgres is ready"
+          
+          if [ $retry -ge $max_retries ]; then
+            echo "ERROR: PostgreSQL failed to become ready after $((max_retries * 2)) seconds"
+            echo "=== Network debug ===" && (getent hosts postgres || echo "hostname resolution failed")
+            echo "=== Port check ===" && (ss -ltn | grep 5432 || echo "port not listening")
+            exit 1
+          fi
+          
+          echo "✓ PostgreSQL server is ready"
 
-      - name: Run migrations
+      - name: Run database migrations
         env:
           DB_CONNECTION: pgsql
           DB_HOST: postgres
@@ -86,9 +115,14 @@ jobs:
           DB_USERNAME: postgres
           DB_PASSWORD: postgres
         run: |
-          php artisan migrate --force
+          echo "Running migrations..."
+          php artisan migrate --force --verbose
+          echo "✓ Migrations completed successfully"
 
-      - name: Run tests (targeted)
+      - name: List available test suites
+        run: php artisan test --list
+
+      - name: Run Feature tests (single-process mode)
         env:
           DB_CONNECTION: pgsql
           DB_HOST: postgres
@@ -96,24 +130,45 @@ jobs:
           DB_DATABASE: testing
           DB_USERNAME: postgres
           DB_PASSWORD: postgres
-        run: php artisan test --parallel --testsuite=Feature
+        run: |
+          echo "Running Feature tests..."
+          php artisan test --testsuite=Feature --stop-on-failure
+          echo "✓ Feature tests passed"
+
+      - name: Run Unit tests
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: postgres
+          DB_PORT: 5432
+          DB_DATABASE: testing
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
+        run: |
+          echo "Running Unit tests..."
+          php artisan test --testsuite=Unit --stop-on-failure
+          echo "✓ Unit tests passed"
 
   js-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 18
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-      - name: Install frontend deps
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Vitest (if configured)
         run: |
-          cd resources/js || exit 0
-          npm ci
-      - name: Run vitest if available
-        run: |
-          if [ -f package.json ] && grep -q vitest package.json; then
-            npm run test:unit || true
+          if grep -q '"vitest"' package.json; then
+            echo "Running Vitest..."
+            npm run test:unit
+            echo "✓ Vitest tests passed"
           else
-            echo "No vitest tests found"
+            echo "ℹ Vitest not configured, skipping"
           fi
