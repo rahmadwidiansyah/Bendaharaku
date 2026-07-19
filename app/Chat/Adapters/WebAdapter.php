@@ -126,6 +126,7 @@ class WebAdapter
                 'id'         => $userMessage->id,
                 'role'       => 'user',
                 'content'    => [['type' => 'text', 'text' => $rawMessage]],
+                'metadata'   => [],
                 'created_at' => $userMessage->created_at->toIso8601String(),
             ],
             'bot_message'     => [
