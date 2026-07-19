@@ -183,8 +183,8 @@ jobs:
           echo "✓ Migrations completed successfully"
 
       - name: List available test suites
-        run: php artisan test --list
-
+        run: php artisan test --list-suites
+        
       - name: Run Feature tests (single-process mode)
         env:
           DB_CONNECTION: pgsql
