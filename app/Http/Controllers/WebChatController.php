@@ -503,37 +503,4 @@ class WebChatController extends Controller
                 }
             });
     }
-
-    private function markTransactionUpdatedInChatHistory(int $userId, TransactionLog $transaction): void
-    {
-        ChatMessage::whereHas('conversation', fn($q) => $q->where('user_id', $userId))
-            ->where('role', 'assistant')
-            ->chunkById(100, function ($messages) use ($transaction) {
-                foreach ($messages as $message) {
-                    $content = $message->content ?? [];
-                    $changed = false;
-
-                    foreach ($content as &$component) {
-                        if (($component['type'] ?? null) !== 'transaction_card') {
-                            continue;
-                        }
-
-                        if ((int) ($component['transaction']['id'] ?? 0) !== $transaction->id) {
-                            continue;
-                        }
-
-                        $component['needs_wallet'] = false;
-                        $component['transaction'] = array_merge(
-                            $component['transaction'] ?? [],
-                            $this->formatTransactionForChat($transaction),
-                        );
-                        $changed = true;
-                    }
-
-                    if ($changed) {
-                        $message->forceFill(['content' => $content])->save();
-                    }
-                }
-            });
-    }
 }
