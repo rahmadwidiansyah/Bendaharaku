@@ -195,7 +195,10 @@ return [
         'help_example_income'   => '💰 Pemasukan: "Gajian 5jt mandiri"',
         'help_example_transfer' => '🔄 Transfer: "Transfer bca ke dana 100k"',
         'total_balance'     => 'Total Saldo',
+        'report_summary'   => 'Ringkasan: :summary',
     ],
+
+    'command_icon_saldo' => '💳',
 
     // ──────────────────────────────────────────────────────────────
     // SUGGESTIONS

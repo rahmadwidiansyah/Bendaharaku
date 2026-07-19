@@ -189,7 +189,10 @@ return [
         'help_example_income'   => '💰 Income: "Salary 5M mandiri"',
         'help_example_transfer' => '🔄 Transfer: "Transfer bca to dana 100k"',
         'total_balance'     => 'Total Balance',
+        'report_summary'    => 'Summary: :summary',
     ],
+
+    'command_icon_saldo' => '💳',
 
     // ──────────────────────────────────────────────────────────────
     // SUGGESTIONS
