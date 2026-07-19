@@ -1,9 +1,12 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import axios from 'axios'
+import { useI18n } from 'vue-i18n'
 import TransactionDetailModal from './TransactionDetailModal.vue'
 import DraftActions from './DraftActions.vue'
 import QuickWalletPicker from './QuickWalletPicker.vue'
+
+const { t } = useI18n()
 
 const props = defineProps({
     component: { type: Object, required: true },
@@ -27,16 +30,51 @@ watch(trx, (newVal) => {
 }, { deep: true })
 
 const typeConfig = computed(() => ({
-    income:   { label: 'Pemasukan',      icon: '↑', color: 'text-emerald-400', bg: 'bg-emerald-500/8',  border: 'border-emerald-500/15', badge: 'bg-emerald-500/12 text-emerald-300 border-emerald-500/20' },
-    expense:  { label: 'Pengeluaran',    icon: '↓', color: 'text-red-400',     bg: 'bg-red-500/8',      border: 'border-red-500/15',     badge: 'bg-red-500/12 text-red-300 border-red-500/20' },
-    transfer: { label: 'Transfer',       icon: '⇄', color: 'text-blue-400',    bg: 'bg-blue-500/8',     border: 'border-blue-500/15',    badge: 'bg-blue-500/12 text-blue-300 border-blue-500/20' },
-    debt:     { label: 'Hutang/Piutang', icon: '🤝', color: 'text-amber-400',  bg: 'bg-amber-500/8',    border: 'border-amber-500/15',   badge: 'bg-amber-500/12 text-amber-300 border-amber-500/20' },
-    other:    { label: 'Transaksi',      icon: '•', color: 'text-gray-400',    bg: 'bg-gray-500/8',     border: 'border-gray-500/15',    badge: 'bg-gray-500/12 text-gray-400 border-gray-500/20' },
-}[localTrx.value.type_key ?? 'other'] ?? { label: 'Transaksi', icon: '•', color: 'text-gray-400', bg: 'bg-gray-500/8', border: 'border-gray-500/15', badge: 'bg-gray-500/12 text-gray-400 border-gray-500/20' }))
+    income:   { label: t('types.income'),      icon: '↑', color: 'text-emerald-400', bg: 'bg-emerald-500/8',  border: 'border-emerald-500/15', badge: 'bg-emerald-500/12 text-emerald-300 border-emerald-500/20' },
+    expense:  { label: t('types.expense'),     icon: '↓', color: 'text-red-400',     bg: 'bg-red-500/8',      border: 'border-red-500/15',     badge: 'bg-red-500/12 text-red-300 border-red-500/20' },
+    transfer: { label: t('types.transfer'),    icon: '⇄', color: 'text-blue-400',    bg: 'bg-blue-500/8',     border: 'border-blue-500/15',    badge: 'bg-blue-500/12 text-blue-300 border-blue-500/20' },
+    debt:     { label: t('types.debt'),        icon: '🤝', color: 'text-amber-400',  bg: 'bg-amber-500/8',    border: 'border-amber-500/15',   badge: 'bg-amber-500/12 text-amber-300 border-amber-500/20' },
+    other:    { label: t('transaction.title'), icon: '•', color: 'text-gray-400',    bg: 'bg-gray-500/8',     border: 'border-gray-500/15',    badge: 'bg-gray-500/12 text-gray-400 border-gray-500/20' },
+}[localTrx.value.type_key ?? 'other'] ?? { label: t('transaction.title'), icon: '•', color: 'text-gray-400', bg: 'bg-gray-500/8', border: 'border-gray-500/15', badge: 'bg-gray-500/12 text-gray-400 border-gray-500/20' }))
 
-const statusLabel = computed(() =>
-    localTrx.value.is_cleared ? 'Berhasil' : 'Draft'
+const needsWallet = computed(() =>
+    !localTrx.value.is_cancelled
+    && !localTrx.value.is_cleared
+    && (localTrx.value.needs_wallet ?? props.component.needs_wallet)
 )
+
+const canShowDraftActions = computed(() =>
+    !localTrx.value.is_cancelled
+    && !localTrx.value.is_cleared
+    && !needsWallet.value
+)
+
+function applyTransactionPatch(transactionPatch) {
+    Object.assign(localTrx.value, transactionPatch)
+}
+
+function markCancelled() {
+    applyTransactionPatch({
+        is_cancelled: true,
+        is_cleared: false,
+        needs_wallet: false,
+    })
+}
+
+async function checkStatus() {
+    if (!localTrx.value.id || localTrx.value.is_cancelled) return
+
+    try {
+        const { data } = await axios.get(route('chat.transaction.status', { id: localTrx.value.id }))
+        if (data.exists === false) {
+            markCancelled()
+            return
+        }
+        if (data.transaction) applyTransactionPatch(data.transaction)
+    } catch (e) {
+        if (e.response?.status === 404) markCancelled()
+    }
+}
 
 async function assignWallet({ walletId }) {
     isAssigning.value = true
@@ -46,22 +84,48 @@ async function assignWallet({ walletId }) {
             { wallet_id: walletId }
         )
         if (data.success) {
-            Object.assign(localTrx.value, data.transaction)
+            applyTransactionPatch(data.transaction)
             isConfirmed.value = true
         }
     } catch (e) {
+        if (e.response?.status === 404) markCancelled()
         console.error('assignWallet error', e)
     } finally {
         isAssigning.value = false
     }
 }
+
+async function confirmDraft() {
+    try {
+        const { data } = await axios.patch(route('chat.transaction.confirm', { id: localTrx.value.id }))
+        if (data.success && data.transaction) {
+            applyTransactionPatch(data.transaction)
+            isConfirmed.value = true
+        }
+    } catch (e) {
+        if (e.response?.status === 404) markCancelled()
+        console.error('confirmDraft error', e)
+    }
+}
+
+async function cancelDraft() {
+    try {
+        const { data } = await axios.delete(route('chat.transaction.cancel', { id: localTrx.value.id }))
+        if (data.success) markCancelled()
+    } catch (e) {
+        if (e.response?.status === 404) markCancelled()
+        console.error('cancelDraft error', e)
+    }
+}
+
+onMounted(checkStatus)
 </script>
 
 <template>
     <div
         class="rounded-xl border overflow-hidden bg-gray-900/80 cursor-pointer transition-all active:scale-98 hover:border-white/15 hover:bg-gray-900"
         :class="typeConfig.border"
-        @click="showDetail = true"
+        @click="!localTrx.is_cancelled && (showDetail = true)"
         role="button"
         :aria-label="`${typeConfig.label} ${localTrx.amount_formatted}`"
     >
@@ -76,10 +140,12 @@ async function assignWallet({ walletId }) {
             </div>
             <span :class="[
                 'text-2xs font-bold px-1.5 py-0.5 rounded-full border',
-                localTrx.is_cleared
+                localTrx.is_cancelled
+                    ? 'text-gray-400 bg-gray-500/10 border-gray-500/20'
+                    : localTrx.is_cleared
                     ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
                     : 'text-amber-400 bg-amber-500/10 border-amber-500/20'
-            ]">{{ localTrx.is_cleared ? '● Berhasil' : '◐ Draft' }}</span>
+            ]">{{ localTrx.is_cancelled ? `× ${t('transaction.cancelled')}` : (localTrx.is_cleared ? `● ${t('common.success')}` : `◐ ${t('transaction.draft')}`) }}</span>
         </div>
 
         <!-- Amount -->
@@ -128,14 +194,14 @@ async function assignWallet({ walletId }) {
                 <span v-if="localTrx.source_wallet && localTrx.category" class="text-2xs text-gray-700">·</span>
                 <span v-if="localTrx.source_wallet" class="text-2xs text-gray-500">{{ localTrx.source_wallet }}</span>
                 <!-- Tap to detail hint -->
-                <span class="ml-auto text-2xs text-gray-700">Detail →</span>
+                <span class="ml-auto text-2xs text-gray-700">{{ $t('transaction.detail.title') }} →</span>
             </div>
         </template>
     </div>
 
     <!-- Quick wallet picker — tampil jika needs_wallet dan belum confirmed -->
     <QuickWalletPicker
-        v-if="component.needs_wallet && !localTrx.is_cleared"
+        v-if="needsWallet"
         :transaction-id="localTrx.id"
         :loading="isAssigning"
         @select="assignWallet"
@@ -143,16 +209,17 @@ async function assignWallet({ walletId }) {
 
     <!-- Draft actions — tampil hanya jika sudah ada wallet (needs_wallet=false) dan masih draft -->
     <DraftActions
-        v-if="!component.needs_wallet && !localTrx.is_cleared"
+        v-if="canShowDraftActions"
         :transaction-id="localTrx.id"
         :edit-url="route('transactions.edit', { transaction: localTrx.id })"
-        @confirm="assignWallet({ walletId: null })"
-        @cancel="() => {}"
+        @confirm="confirmDraft"
+        @cancel="cancelDraft"
     />
 
     <TransactionDetailModal
         v-model="showDetail"
         :transaction="localTrx"
         :metadata="metadata"
+        @deleted="markCancelled"
     />
 </template>

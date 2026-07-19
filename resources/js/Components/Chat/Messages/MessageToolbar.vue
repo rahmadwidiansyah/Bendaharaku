@@ -9,6 +9,9 @@
  */
 
 import { useClipboard } from '@/Composables/useClipboard.js'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
     message:       { type: Object,  required: true },
@@ -48,8 +51,8 @@ async function handleCopy() {
                     ? 'text-emerald-400'
                     : 'text-gray-600 hover:text-gray-300 hover:bg-white/8',
             ]"
-            :title="copied ? 'Tersalin!' : 'Salin teks'"
-            aria-label="Salin pesan"
+            :title="copied ? t('chatTransaction.copied') : t('chatTransaction.copyMessage')"
+            :aria-label="t('chatTransaction.copyMessage')"
         >
             <svg v-if="copied" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
@@ -64,8 +67,8 @@ async function handleCopy() {
             v-if="canRegenerate && !isError"
             @click.stop="$emit('regenerate', message)"
             class="w-6 h-6 flex items-center justify-center rounded-lg text-gray-600 hover:text-purple-400 hover:bg-purple-500/10 transition-all"
-            title="Generate ulang jawaban"
-            aria-label="Generate ulang"
+            :title="t('chatTransaction.regenerateAnswer')"
+            :aria-label="t('chatTransaction.regenerate')"
         >
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
@@ -77,13 +80,13 @@ async function handleCopy() {
             v-if="isError"
             @click.stop="$emit('retry', message)"
             class="flex items-center gap-1 px-1.5 h-6 rounded-lg text-red-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
-            title="Coba lagi"
-            aria-label="Coba kirim ulang"
+            :title="t('chatTransaction.retry')"
+            :aria-label="t('chatTransaction.retrySend')"
         >
             <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
             </svg>
-            <span class="text-2xs font-medium">Coba lagi</span>
+            <span class="text-2xs font-medium">{{ t('chatTransaction.retry') }}</span>
         </button>
     </div>
 </template>
