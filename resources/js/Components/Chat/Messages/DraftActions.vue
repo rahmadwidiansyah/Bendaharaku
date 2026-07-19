@@ -14,6 +14,9 @@
  */
 import { ref } from 'vue'
 import { Link } from '@inertiajs/vue3'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
     transactionId: { type: Number, required: true },
@@ -49,7 +52,7 @@ async function handleCancel() {
             <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
-            Edit
+            {{ t('common.edit') }}
         </Link>
 
         <!-- Konfirmasi -->
@@ -63,7 +66,7 @@ async function handleCancel() {
             <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
             </svg>
-            {{ isConfirming ? 'Menyimpan...' : 'Konfirmasi' }}
+            {{ isConfirming ? t('common.saving') : t('common.confirm') }}
         </button>
 
         <!-- Batal -->
@@ -77,7 +80,7 @@ async function handleCancel() {
             <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
-            Batal
+            {{ t('common.cancel') }}
         </button>
     </div>
 </template>

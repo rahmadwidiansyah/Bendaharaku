@@ -1,4 +1,8 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+
 defineProps({
     component: { type: Object, required: true },
 })
@@ -16,19 +20,19 @@ defineProps({
             <!-- Total -->
             <div class="flex-1 flex flex-col items-center py-2.5">
                 <span class="text-lg font-black text-white tabular-nums leading-tight">{{ component.total }}</span>
-                <span class="text-2xs text-gray-600 mt-0.5">Total</span>
+                <span class="text-2xs text-gray-600 mt-0.5">{{ t('common.total') }}</span>
             </div>
 
             <!-- Success -->
             <div class="flex-1 flex flex-col items-center py-2.5">
                 <span class="text-lg font-black text-emerald-400 tabular-nums leading-tight">{{ component.success }}</span>
-                <span class="text-2xs text-gray-600 mt-0.5">Berhasil</span>
+                <span class="text-2xs text-gray-600 mt-0.5">{{ t('common.success') }}</span>
             </div>
 
             <!-- Failed -->
             <div v-if="component.failed > 0" class="flex-1 flex flex-col items-center py-2.5">
                 <span class="text-lg font-black text-red-400 tabular-nums leading-tight">{{ component.failed }}</span>
-                <span class="text-2xs text-gray-600 mt-0.5">Gagal</span>
+                <span class="text-2xs text-gray-600 mt-0.5">{{ t('common.error') }}</span>
             </div>
         </div>
     </div>

@@ -13,6 +13,7 @@ use App\Enums\ChatPlatform;
 use App\Models\User;
 use App\Models\Conversation;
 use App\Models\ChatMessage;
+use App\Models\TransactionLog;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -222,7 +223,7 @@ class WebAdapter
             ->orderBy('id')
             ->get();
 
-        return $messages->map(fn (ChatMessage $msg) => [
+        return $this->syncTransactionCardsWithDb($messages, $conversation->user_id)->map(fn (ChatMessage $msg) => [
             'id'         => $msg->id,
             'role'       => $msg->role,
             'content'    => $msg->content ?? [],
@@ -252,7 +253,7 @@ class WebAdapter
         // Ambil N terbaru (desc), lalu sortBy id ascending → chronological
         $messages = $query->get()->sortBy('id')->values();
 
-        return $messages->map(function (ChatMessage $msg) {
+        return $this->syncTransactionCardsWithDb($messages, $conversation->user_id)->map(function (ChatMessage $msg) {
             return [
                 'id'         => $msg->id,
                 'role'       => $msg->role,
@@ -264,6 +265,57 @@ class WebAdapter
     }
 
     // ── Private ───────────────────────────────────────────────────
+
+    private function syncTransactionCardsWithDb($messages, int $userId)
+    {
+        $transactionIds = $messages
+            ->flatMap(function (ChatMessage $message) {
+                return collect($message->content ?? [])
+                    ->filter(fn ($component) => ($component['type'] ?? null) === 'transaction_card')
+                    ->map(fn ($component) => (int) ($component['transaction']['id'] ?? 0))
+                    ->filter();
+            })
+            ->unique()
+            ->values();
+
+        if ($transactionIds->isEmpty()) {
+            return $messages;
+        }
+
+        $existingIds = TransactionLog::query()
+            ->where('user_id', $userId)
+            ->whereIn('id', $transactionIds)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $existingMap = array_flip($existingIds);
+
+        return $messages->map(function (ChatMessage $message) use ($existingMap) {
+            $content = $message->content ?? [];
+            $changed = false;
+
+            foreach ($content as &$component) {
+                if (($component['type'] ?? null) !== 'transaction_card') {
+                    continue;
+                }
+
+                $transactionId = (int) ($component['transaction']['id'] ?? 0);
+                if ($transactionId && !isset($existingMap[$transactionId])) {
+                    $component['needs_wallet'] = false;
+                    $component['transaction']['is_cancelled'] = true;
+                    $component['transaction']['is_cleared'] = false;
+                    $changed = true;
+                }
+            }
+
+            if ($changed) {
+                $message->forceFill(['content' => $content])->save();
+            }
+
+            return $message;
+        });
+    }
 
     /**
      * Resolve conversation: gunakan yang ada atau buat baru.
