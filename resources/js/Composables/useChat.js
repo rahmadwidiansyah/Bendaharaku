@@ -82,16 +82,24 @@ export function useChat(initialMessages = [], initialConversationId = null, init
                 conversation_id: conversationId.value,
             })
 
+            // Selalu update conversationId dari response — baik sukses maupun error.
+            // Ini kritis agar frontend tidak kehilangan conversation_id saat AI error,
+            // sehingga history tetap ter-load saat user kembali ke halaman chat.
             if (data.conversation_id) {
                 conversationId.value = data.conversation_id
             }
 
-            const idx = messages.value.findIndex((m) => m._localId === userMsg._localId)
-            if (idx !== -1) {
-                messages.value[idx] = normalizeMessage(data.user_message)
+            // Replace optimistic user message dengan data dari server (dapat id asli)
+            if (data.user_message) {
+                const idx = messages.value.findIndex((m) => m._localId === userMsg._localId)
+                if (idx !== -1) {
+                    messages.value[idx] = normalizeMessage(data.user_message)
+                }
             }
 
-            messages.value.push(normalizeMessage(data.bot_message))
+            if (data.bot_message) {
+                messages.value.push(normalizeMessage(data.bot_message))
+            }
 
             // Increment unread jika user tidak di bawah
             if (!isAtBottom.value) {
@@ -99,9 +107,25 @@ export function useChat(initialMessages = [], initialConversationId = null, init
             }
 
         } catch (err) {
-            error.value = 'Gagal mengirim pesan. Periksa koneksi internet.'
-            messages.value.push(buildErrorMessage(err))
+            // HTTP error (network down, 500 tanpa body, dsb)
+            // Coba ambil conversation_id dari response error jika ada
+            const errData = err?.response?.data
+            if (errData?.conversation_id) {
+                conversationId.value = errData.conversation_id
+            }
 
+            // Jika server return bot_message dalam error response, gunakan itu
+            if (errData?.bot_message) {
+                const idx = messages.value.findIndex((m) => m._localId === userMsg._localId)
+                if (idx !== -1) {
+                    messages.value[idx] = normalizeMessage(errData.user_message ?? userMsg)
+                }
+                messages.value.push(normalizeMessage(errData.bot_message))
+            } else {
+                // Fallback: tampilkan error bubble lokal
+                error.value = 'Gagal mengirim pesan. Periksa koneksi internet.'
+                messages.value.push(buildErrorMessage(err))
+            }
         } finally {
             isLoading.value = false
             isTyping.value  = false
