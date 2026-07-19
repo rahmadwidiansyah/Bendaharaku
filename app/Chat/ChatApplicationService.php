@@ -1116,24 +1116,6 @@ class ChatApplicationService
             return null;
         }
 
-            if (!$response->successful()) {
-                Log::warning('Gemini monthly report failed', [
-                    'user_id' => $user->id,
-                    'status' => $response->status(),
-                    'body' => substr($response->body(), 0, 500),
-                ]);
-                return null;
-            }
-
-            $text = trim((string) $response->json('candidates.0.content.parts.0.text'));
-            return $text !== '' ? ['summary' => $text, 'model' => $model] : null;
-        } catch (Throwable $e) {
-            Log::warning('Gemini monthly report exception', [
-                'user_id' => $user->id,
-                'message' => $e->getMessage(),
-            ]);
-            return null;
-        }
     }
 
     private function formatTransactionLine(\App\Models\TransactionLog $transaction): string
