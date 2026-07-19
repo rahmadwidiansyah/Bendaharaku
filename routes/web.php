@@ -60,13 +60,59 @@ Route::middleware(['auth'])->group(function () {
         return response()->json(['success' => true]);
     })->name('settings.locale.update');
 
-    // AI Settings & Analytics (Gabungan)
+    // ── SETTINGS PAGES - NEW HIERARCHY ────────────────────────────────
+    // Account
+    Route::prefix('settings/account')->name('settings.account.')->group(function () {
+        Route::get('/profile', fn() => Inertia::render('Settings/Account/Profile'))->name('profile');
+        Route::get('/security', fn() => Inertia::render('Settings/Account/Security'))->name('security');
+        Route::get('/sessions', fn() => Inertia::render('Settings/Account/Sessions'))->name('sessions');
+        Route::get('/preferences', fn() => Inertia::render('Settings/Account/Preferences'))->name('preferences');
+    });
+
+    // Application
+    Route::prefix('settings/application')->name('settings.application.')->group(function () {
+        Route::get('/appearance', fn() => Inertia::render('Settings/Application/Appearance'))->name('appearance');
+        Route::get('/language', fn() => Inertia::render('Settings/Application/Language'))->name('language');
+        Route::get('/notifications', fn() => Inertia::render('Settings/Application/Notifications'))->name('notifications');
+    });
+
+    // Finance
+    Route::prefix('settings/finance')->name('settings.finance.')->group(function () {
+        Route::get('/defaults', fn() => Inertia::render('Settings/Finance/Defaults'))->name('defaults');
+        Route::get('/categories', fn() => Inertia::render('Settings/Finance/Categories'))->name('categories');
+        Route::get('/wallets', fn() => Inertia::render('Settings/Finance/Wallets'))->name('wallets');
+        Route::get('/budget', fn() => Inertia::render('Settings/Finance/Budget'))->name('budget');
+    });
+
+    // Privacy & Data
+    Route::prefix('settings/privacy')->name('settings.privacy.')->group(function () {
+        Route::get('/settings', fn() => Inertia::render('Settings/Privacy/Settings'))->name('settings');
+        Route::get('/data', fn() => Inertia::render('Settings/Privacy/Data'))->name('data');
+        Route::get('/danger', fn() => Inertia::render('Settings/Privacy/Danger'))->name('danger');
+    });
+
+    // System
+    Route::prefix('settings/system')->name('settings.system.')->group(function () {
+        Route::get('/about', fn() => Inertia::render('Settings/System/About'))->name('about');
+        Route::get('/diagnostics', fn() => Inertia::render('Settings/System/Diagnostics'))->name('diagnostics');
+    });
+
+    // AI Settings - Restructured Hierarchy
     Route::prefix('settings/ai')->name('settings.ai.')->group(function () {
+        // New hierarchical pages (Phase 3)
+        Route::get('/models', fn() => Inertia::render('Settings/AI/Models'))->name('models');
+        Route::get('/bot', fn() => Inertia::render('Settings/AI/Bot'))->name('bot');
+        Route::get('/memory', fn() => Inertia::render('Settings/AI/Memory'))->name('memory');
+        Route::get('/integrations', fn() => Inertia::render('Settings/AI/Integration'))->name('integrations');
+        Route::get('/advanced', fn() => Inertia::render('Settings/AI/Advanced'))->name('advanced');
+        
+        // Legacy endpoints (for backward compatibility)
         Route::get('/', [AiSettingsController::class, 'index'])->name('index');
         Route::patch('/', [AiSettingsController::class, 'store'])->name('store');
         Route::post('/test', [AiSettingsController::class, 'testConnection'])->name('test');
+        Route::get('/integration', fn() => Inertia::render('Settings/AI/Integration'))->name('integration');
         
-        // API untuk Dashboard Vue (settings.ai.api.*)
+        // API untuk Dashboard (not in settings, but for reference)
         Route::get('/api/dashboard', [AiAnalyticsController::class, 'dashboard'])->name('api.dashboard');
         Route::get('/api/feedback', [AiAnalyticsController::class, 'feedback'])->name('api.feedback');
     });
@@ -96,6 +142,10 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/bot-profile',  [ChatBotProfileController::class, 'update'])->name('bot-profile.update');
         Route::delete('/bot-avatar',  [ChatBotProfileController::class, 'destroyAvatar'])->name('bot-avatar.destroy');
     });
+
+    // ── Redirects for backward compatibility ───────────────────────
+    Route::redirect('/settings/chat/bot-profile', '/settings/ai/bot', 301);
+    Route::redirect('/settings/ai', '/settings/ai/models', 301);
 
     // Resources CRUD
     Route::patch('wallets/{wallet}/set-pin', [WalletController::class, 'setPin'])->name('wallets.set-pin');
