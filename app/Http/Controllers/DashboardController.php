@@ -82,13 +82,20 @@ class DashboardController extends Controller
         }
 
         if ($request->has('search') && $request->search != '') {
-            $search = strtolower($request->search);
+            $search = strtolower(trim($request->search));
             $query->where(function($q) use ($search) {
-                $q->whereRaw('LOWER(notes) LIKE ?', ["%{$search}%"])
-                  ->orWhereRaw('LOWER(subject) LIKE ?', ["%{$search}%"])
-                  ->orWhereHas('category', function($qCat) use ($search) {
-                      $qCat->whereRaw('LOWER(category_name) LIKE ?', ["%{$search}%"]);
-                  });
+                // Search by numeric ID jika input adalah angka murni
+                if (ctype_digit($search)) {
+                    $q->where('id', (int) $search)
+                      ->orWhereRaw('LOWER(reference_number) LIKE ?', ["%{$search}%"]);
+                } else {
+                    $q->whereRaw('LOWER(notes) LIKE ?', ["%{$search}%"])
+                      ->orWhereRaw('LOWER(subject) LIKE ?', ["%{$search}%"])
+                      ->orWhereRaw('LOWER(reference_number) LIKE ?', ["%{$search}%"])
+                      ->orWhereHas('category', function($qCat) use ($search) {
+                          $qCat->whereRaw('LOWER(category_name) LIKE ?', ["%{$search}%"]);
+                      });
+                }
             });
         }
 

@@ -133,7 +133,7 @@ export default {
         unpinFromDashboard: 'Unpin dari Dashboard',
         transactionHistory: 'Histori Transaksi',
         filterType:         'Filter Tipe',
-        searchPlaceholder:  'Cari catatan...',
+        searchPlaceholder:  'Cari catatan atau ID...',
         noTransactions:     'Tidak ada transaksi',
         calendarTab:        'Kalender',
         detailTab:          'Detail',
@@ -188,6 +188,7 @@ export default {
         notePlaceholder:'Tambah catatan... (opsional)',
         draft:          'Draft',
         confirmed:      'Terkonfirmasi',
+        cancelled:      'Batal',
         confirmDraft:   'Konfirmasi Transaksi',
         confirmDraftQ:  'Konfirmasi transaksi draft ini?',
         confirmDraftMsg:'Transaksi akan dicatat secara resmi.',
@@ -223,6 +224,7 @@ export default {
             wallet:      'Dompet',
             party:       'Pelaku',
             category:    'Kategori',
+            transactionId: 'ID Transaksi',
             date:        'Tanggal',
             note:        'Catatan',
             noNote:      'Tidak ada catatan.',
@@ -238,6 +240,8 @@ export default {
         processing:         'Memproses...',
         yesConfirm:         'Ya, Konfirmasi',
 
+        cancelTitle:         'Transaksi Dibatalkan',
+
         // Sub-tabs Hutang / Piutang
         debt: {
             receive: 'Dapat Hutang',
@@ -246,6 +250,37 @@ export default {
         receivable: {
             give:    'Beri Piutang',
             collect: 'Terima Piutang',
+        },
+    },
+
+    chatTransaction: {
+        aiParsed:      'AI Parsed',
+        copy:          'Salin',
+        copied:        'Tersalin',
+        copyMessage:   'Salin pesan',
+        regenerate:    'Generate ulang',
+        regenerateAnswer: 'Generate ulang jawaban',
+        retry:         'Coba lagi',
+        retrySend:     'Coba kirim ulang',
+        walletLoadFailed: 'Gagal memuat dompet.',
+        confirmDelete: 'Hapus transaksi ini?',
+        recordedFrom:  'Dicatat dari',
+        processedBy:   'Diproses oleh',
+        processingDuration: 'Durasi proses',
+        aiConfidence:  'Confidence AI',
+        transactionTime: 'Waktu transaksi',
+        rawPrompt:     'Prompt Asli',
+        seconds:       'detik',
+        confidence: {
+            high:   'Tinggi',
+            medium: 'Sedang',
+            low:    'Rendah',
+        },
+        intent: {
+            label:   'Intent',
+            single:  'Transaksi Tunggal',
+            multi:   'Multi Transaksi',
+            command: 'Perintah',
         },
     },
 
