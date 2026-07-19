@@ -28,6 +28,7 @@ use App\DTO\MultiTransactionItem;
 use App\Exceptions\AiConfigurationException;
 use App\Exceptions\AiRateLimitException;
 use App\Exceptions\AiTimeoutException;
+use App\Exceptions\AiTokenLimitException;
 use App\Exceptions\AiProviderException;
 use App\Exceptions\CategoryNotFoundException;
 use App\Exceptions\WalletNotFoundException;
@@ -122,6 +123,11 @@ class ChatApplicationService
 
         } catch (AiTimeoutException $e) {
             return $this->failureResponse([ErrorDetail::aiTimeout($e->getMessage())], $context, $startTime);
+
+        } catch (AiTokenLimitException $e) {
+            return $this->failureResponse([
+                ErrorDetail::aiTokenLimit($e->getProvider(), $e->getEstimatedTokens())
+            ], $context, $startTime);
 
         } catch (AiProviderException $e) {
             return $this->failureResponse([ErrorDetail::aiProviderError($e->getMessage(), $e->getMessage())], $context, $startTime);
@@ -1147,10 +1153,33 @@ class ChatApplicationService
     {
         if ($response->successful()) return;
         $statusCode = $response->status();
-        if ($statusCode === 429)                        throw new AiRateLimitException($provider);
-        if (in_array($statusCode, [408, 503, 504]))    throw new AiTimeoutException($provider);
-        if (in_array($statusCode, [401, 403]))         throw new AiProviderException($provider, "API Key tidak valid (HTTP {$statusCode}).");
-        throw new AiProviderException($provider, "HTTP {$statusCode}: " . substr($response->body(), 0, 200));
+        $body = $response->body();
+        $bodyLower = mb_strtolower($body);
+
+        if ($statusCode === 429) {
+            throw new AiRateLimitException($provider);
+        }
+
+        if (in_array($statusCode, [408, 503, 504])) {
+            throw new AiTimeoutException($provider);
+        }
+
+        if (in_array($statusCode, [401, 403])) {
+            throw new AiProviderException($provider, "API Key tidak valid (HTTP {$statusCode}).");
+        }
+
+        // Token limit errors: HTTP 400 + keyword "token" atau "context" atau "input too long"
+        if ($statusCode === 400) {
+            if (str_contains($bodyLower, 'token') || 
+                str_contains($bodyLower, 'context') || 
+                str_contains($bodyLower, 'input too long') ||
+                str_contains($bodyLower, 'exceeded') ||
+                str_contains($bodyLower, 'maximum')) {
+                throw new AiTokenLimitException($provider, 0, $body);
+            }
+        }
+
+        throw new AiProviderException($provider, "HTTP {$statusCode}: " . substr($body, 0, 200));
     }
 
     private function buildHelpResponse(\App\Models\User $user, string $locale, array $metadata): ChatResponse

@@ -116,6 +116,17 @@ readonly class ErrorDetail
         );
     }
 
+    public static function aiTokenLimit(string $provider, int $estimatedTokens): self
+    {
+        return new self(
+            code:        'AI_TOKEN_LIMIT',
+            messageKey:  'chat.ai.token_limit',
+            params:      ['provider' => $provider, 'tokens' => $estimatedTokens],
+            severity:    ChatErrorSeverity::Warning,
+            recoverable: true,
+        );
+    }
+
     public static function aiProviderError(string $provider, string $message): self
     {
         return new self(
