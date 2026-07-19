@@ -3,8 +3,11 @@
  * ChatArea.vue
  *
  * Scrollable container untuk daftar pesan.
- * Tidak mengandung jump-to-latest button — itu ada di Chat/Index.vue
- * sebagai floating overlay di luar scroll container.
+ * Tidak mengandung jump-to-latest button — itu ada di Chat/Index.vue.
+ *
+ * "Tampilkan Riwayat Sebelumnya" — tombol eksplisit di paling atas,
+ * muncul hanya jika hasMore = true. User harus klik untuk load lebih lama,
+ * tidak auto-trigger saat scroll agar tidak mengganggu UX.
  */
 
 import { ref } from 'vue'
@@ -39,9 +42,6 @@ function onScroll() {
     requestAnimationFrame(() => {
         const el = containerRef.value
         if (!el) return
-        if (el.scrollTop < 100 && props.hasMore && !props.isLoadingMore) {
-            emit('loadMore')
-        }
         emit('scrollUpdate', el.scrollTop, el.scrollHeight, el.clientHeight)
         ticking = false
     })
@@ -60,18 +60,51 @@ defineExpose({ el: containerRef })
         aria-label="Riwayat percakapan"
         aria-live="polite"
     >
-        <!-- Load more indicator -->
+        <div class="h-2" aria-hidden="true"></div>
+
+        <!--
+            Tombol "Tampilkan Riwayat Sebelumnya"
+            Muncul di paling atas saat ada pesan lebih lama (hasMore = true).
+            Eksplisit — user yang memilih kapan mau load, tidak auto-trigger.
+        -->
+        <Transition
+            enter-active-class="transition-all duration-200 ease-out"
+            enter-from-class="opacity-0 -translate-y-2"
+            enter-to-class="opacity-100 translate-y-0"
+            leave-active-class="transition-all duration-150 ease-in"
+            leave-from-class="opacity-100"
+            leave-to-class="opacity-0"
+        >
+            <div v-if="hasMore && !isLoadingMore" class="flex justify-center py-3 px-4">
+                <button
+                    type="button"
+                    class="flex items-center gap-2 px-4 py-2 rounded-full
+                           bg-gray-800/80 border border-white/10 text-xs font-semibold
+                           text-gray-400 hover:text-white hover:bg-gray-700/80
+                           hover:border-white/20 active:scale-95
+                           transition-all duration-150 shadow-sm"
+                    @click="emit('loadMore')"
+                >
+                    <!-- Clock icon -->
+                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    Tampilkan Riwayat Sebelumnya
+                </button>
+            </div>
+        </Transition>
+
+        <!-- Loading indicator saat sedang fetch -->
         <div v-if="isLoadingMore" class="flex justify-center py-3">
             <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-800/60 border border-white/8 text-2xs text-gray-500">
                 <svg class="animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                 </svg>
-                Memuat...
+                Memuat riwayat...
             </div>
         </div>
-
-        <div class="h-2" aria-hidden="true"></div>
 
         <!-- Slot untuk empty state -->
         <slot />

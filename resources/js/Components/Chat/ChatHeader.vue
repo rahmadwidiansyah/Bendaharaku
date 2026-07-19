@@ -37,9 +37,9 @@ const statusText = computed(() =>
 
         <!-- Back button (mobile only) -->
         <Link
-            :href="route('settings.index')"
+            :href="route('dashboard')"
             class="lg:hidden w-8 h-8 shrink-0 flex items-center justify-center rounded-xl text-gray-500 hover:text-white hover:bg-white/6 transition-colors"
-            aria-label="Kembali"
+            aria-label="Kembali ke Dashboard"
         >
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
