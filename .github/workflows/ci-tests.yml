@@ -35,13 +35,49 @@ jobs:
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Copy .env
-        run: cp .env.example .env && php -r "file_put_contents('.env', str_replace('DB_HOST=127.0.0.1', 'DB_HOST=postgres', file_get_contents('.env')));"
-
-      - name: Wait for Postgres
         run: |
-          until pg_isready -h postgres -p 5432 -U postgres; do
-            echo "Waiting for postgres..."; sleep 2;
+          cp .env.example .env
+          # Ensure DB_* variables present and point to the postgres service
+          cat >> .env <<'ENV'
+DB_CONNECTION=pgsql
+DB_HOST=postgres
+DB_PORT=5432
+DB_DATABASE=testing
+DB_USERNAME=postgres
+DB_PASSWORD=postgres
+ENV
+
+      - name: Install postgres client for pg_isready and psql
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Debug: DNS and binaries
+        run: |
+          echo "--- getent hosts postgres ---"; getent hosts postgres || true
+          echo "--- which pg_isready ---"; which pg_isready || true
+          echo "--- pg_isready --version (if available) ---"; pg_isready --version || true
+          echo "--- psql --version ---"; psql --version || true
+          echo "--- DB env vars in .env ---"; grep -E '^DB_' .env || true
+
+      - name: Wait for Postgres (with timeout)
+        run: |
+          set -eu
+          max_retries=30
+          count=0
+          until pg_isready -h postgres -p 5432 -U postgres -d testing >/dev/null 2>&1; do
+            count=$((count+1))
+            echo "Waiting for postgres... ($count/$max_retries)"
+            if [ "$count" -ge "$max_retries" ]; then
+              echo "Postgres did not become available in time"
+              # debug again
+              echo "--- docker service hosts ---"
+              getent hosts postgres || true
+              echo "--- netstat (if available) ---"
+              ss -ltn || true
+              exit 1
+            fi
+            sleep 2
           done
+          echo "Postgres is ready"
 
       - name: Run migrations
         env:
@@ -51,7 +87,8 @@ jobs:
           DB_DATABASE: testing
           DB_USERNAME: postgres
           DB_PASSWORD: postgres
-        run: php artisan migrate --force
+        run: |
+          php artisan migrate --force
 
       - name: Run tests (targeted)
         env:
