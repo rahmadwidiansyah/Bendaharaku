@@ -30,6 +30,10 @@ defineProps({
         type: Object,
         default: () => ({}),
     },
+    content: {
+        type: Array,
+        default: () => ([]),
+    },
 })
 
 const componentMap = {
@@ -54,6 +58,7 @@ const componentMap = {
         :is="componentMap[component.type]"
         v-if="componentMap[component.type]"
         :component="component"
+        :content="content"
         v-bind="component.type === 'transaction_card' ? { metadata } : {}"
     />
     <!-- Fallback: tipe tidak dikenal, tampilkan teks mentah (debug only) -->
