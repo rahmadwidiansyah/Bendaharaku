@@ -19,6 +19,7 @@ import MessageTransactionCard from './MessageTransactionCard.vue'
 import MessageSummaryCard    from './MessageSummaryCard.vue'
 import MessageErrorCard      from './MessageErrorCard.vue'
 import MessageSuggestion     from './MessageSuggestion.vue'
+import MessageReportSection  from './MessageReportSection.vue'
 
 defineProps({
     component: {
@@ -39,6 +40,7 @@ const componentMap = {
     error:            MessageErrorCard,
     warning:          MessageErrorCard,    // Reuse ErrorCard, severity prop menentukan style
     suggestion:       MessageSuggestion,
+    report_section:   MessageReportSection,
     // Future:
     // quick_reply:   MessageQuickReply,
     // image:         MessageImage,
