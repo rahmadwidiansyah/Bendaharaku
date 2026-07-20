@@ -30,7 +30,6 @@ class GeminiProvider implements AIProviderInterface
     public function parseTransaction(AiProviderRequest $request): AIParseResult
     {
         try {
-            $url    = "https://generativelanguage.googleapis.com/v1beta/models/{$request->model}:generateContent";
             $prompt = $this->promptBuilder->build(
                 $request->text,
                 $request->wallets,
@@ -38,12 +37,7 @@ class GeminiProvider implements AIProviderInterface
                 $request->activeMemories
             );
 
-            $response = Http::timeout(15)
-                ->retry(2, 1000)
-                ->withHeaders(['Content-Type' => 'application/json'])
-                ->post($url . '?key=' . $request->apiKey, [
-                    'contents' => [['parts' => [['text' => $prompt]]]],
-                ]);
+            $response = $this->sendRequest($request->model, $request->apiKey, $prompt);
 
             $this->assertSuccessful($response, 'Gemini');
 
@@ -84,7 +78,6 @@ class GeminiProvider implements AIProviderInterface
     public function parseMultiTransaction(AiProviderRequest $request): AIParseResultMulti
     {
         try {
-            $url    = "https://generativelanguage.googleapis.com/v1beta/models/{$request->model}:generateContent";
             $prompt = $this->multiPromptBuilder->build(
                 $request->text,
                 $request->wallets,
@@ -92,12 +85,7 @@ class GeminiProvider implements AIProviderInterface
                 $request->activeMemories
             );
 
-            $response = Http::timeout(20)
-                ->retry(2, 1000)
-                ->withHeaders(['Content-Type' => 'application/json'])
-                ->post($url . '?key=' . $request->apiKey, [
-                    'contents' => [['parts' => [['text' => $prompt]]]],
-                ]);
+            $response = $this->sendRequest($request->model, $request->apiKey, $prompt);
 
             $this->assertSuccessful($response, 'Gemini');
 
@@ -140,23 +128,82 @@ class GeminiProvider implements AIProviderInterface
 
     // ── Shared Helpers ────────────────────────────────────────────────
 
+    /**
+     * Sentralisasi eksekusi HTTP Request untuk Gemini.
+     */
+    private function sendRequest(string $model, string $apiKey, string $prompt): \Illuminate\Http\Client\Response
+    {
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent";
+
+        $connectTimeout = (int) config('services.gemini.connect_timeout', 10);
+        $timeout        = (int) config('services.gemini.timeout', 30);
+
+        $start  = microtime(true);
+        $status = null;
+
+        try {
+            $response = Http::connectTimeout($connectTimeout)
+                ->timeout($timeout)
+                ->acceptJson()
+                ->asJson()
+                ->retry(
+                    2,
+                    function (int $attempt) {
+                        $delayMs = 2000 * (2 ** ($attempt - 1));
+                        
+                        Log::warning('Gemini Connection Retrying', [
+                            'attempt'  => $attempt,
+                            'delay_ms' => $delayMs,
+                        ]);
+                        
+                        return $delayMs;
+                    },
+                    function (Throwable $exception) {
+                        return $exception instanceof ConnectionException;
+                    }
+                )
+                ->post($url . '?key=' . $apiKey, [
+                    'contents' => [['parts' => [['text' => $prompt]]]],
+                ]);
+
+            $status = $response->status();
+
+            return $response;
+        } finally {
+            Log::info('Gemini Request Finished', [
+                'provider'   => 'gemini',
+                'model'      => $model,
+                'status'     => $status,
+                'success'    => $status !== null && $status >= 200 && $status < 300,
+                'timeout'    => $timeout,
+                'elapsed_ms' => round((microtime(true) - $start) * 1000),
+            ]);
+        }
+    }
+
     private function assertSuccessful(\Illuminate\Http\Client\Response $response, string $provider): void
     {
         if ($response->successful()) return;
+        
         $statusCode = $response->status();
-        if ($statusCode === 429)                        throw new AiRateLimitException($provider);
+        
+        if ($statusCode === 429)                       throw new AiRateLimitException($provider);
         if (in_array($statusCode, [408, 503, 504]))    throw new AiTimeoutException($provider);
         if (in_array($statusCode, [401, 403]))         throw new AiProviderException($provider, "API Key tidak valid (HTTP {$statusCode}).");
+        
         throw new AiProviderException($provider, "HTTP {$statusCode}: " . substr($response->body(), 0, 200));
     }
 
     private function decodeJson(string $jsonString, string $provider): array
     {
-        $clean = preg_replace('/```json\s*|\s*```/', '', $jsonString);
+        // Menggunakan regex multiline yang lebih bersih dan aman
+        $clean = trim(preg_replace('/^```json\s*|\s*```$/im', '', $jsonString));
         $data  = json_decode($clean, true);
+        
         if (!is_array($data)) {
             throw new AiProviderException($provider, 'Gagal decode JSON dari response LLM.');
         }
+        
         return $data;
     }
 
@@ -190,4 +237,4 @@ class GeminiProvider implements AIProviderInterface
         $total = array_sum(array_map(fn($i) => (float) ($i['confidence'] ?? 0.85), $items));
         return round($total / count($items), 4);
     }
-}
+};
