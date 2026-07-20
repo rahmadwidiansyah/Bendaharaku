@@ -152,7 +152,7 @@ return [
             "Pastikan nama dompet (contoh: *bca*, *dana*, *cash*) sudah kamu daftarkan di Web.",
         ]),
         'runtime'         => "⚠️ *Gagal diproses:*\n:message",
-        'system'          => '❌ Waduh, ada error sistem internal Bos. Coba lagi nanti ya.',
+        'system'          => 'Waduh, ada error sistem internal Bos. Coba lagi nanti ya.',
         'reason_prefix'   => 'Alasan: ',
     ],
 
@@ -201,7 +201,7 @@ return [
             "_Catatan: Jika terbuka di dalam Telegram, klik titik tiga di pojok kanan atas lalu pilih 'Buka di Chrome/Browser'._",
         ]),
         'help_greeting'   => '👋 *Halo Bos :name!*',
-        'help_intro'      => "Saya adalah asisten *Bendaharaku V4*. Saya akan mencatat semua keuanganmu secara otomatis.",
+        'help_intro'      => "Saya adalah asisten *Bendaharaku*. Saya akan mencatat semua keuanganmu secara otomatis.",
         'help_guide'      => '📖 *PANDUAN CATAT TRANSAKSI:*',
         'help_example_intro' => 'Cukup ketik kalimat santai, contoh:',
         'help_commands_title' => '📊 *PERINTAH BOT:*',
