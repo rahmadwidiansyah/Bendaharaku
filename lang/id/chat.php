@@ -113,6 +113,14 @@ return [
             "• Tunggu reset kuota (biasanya tengah malam)",
             "• Atau topup/upgrade plan API kamu di dashboard :provider",
         ]),
+        'token_limit'     => implode("\n", [
+            "⚠️ *Token Limit Terlampaui*",
+            "",
+            "Pesan kamu terlalu panjang untuk AI :provider (estimasi: :tokens token).",
+            "Beberapa kemungkinan:",
+            "• Coba pesan yang lebih singkat",
+            "• Atau gunakan AI provider lain di Dashboard Web",
+        ]),
         'timeout'         => "⏳ *Server :provider Sedang Sibuk*\n\nCoba kirim ulang pesanmu dalam 1-2 menit ya Bos.",
         'provider_error'  => "❌ *Terjadi Error pada AI*\n\n`:error`\n\nCoba lagi nanti.",
         'parse_failed'    => '❌ AI Gagal memproses: :reason',
@@ -172,6 +180,15 @@ return [
         'report_empty'      => '📊 Belum ada transaksi bulan ini untuk diringkas.',
         'report_empty_period' => '📊 Belum ada transaksi untuk :period.',
         'report_saved'      => '💾 Snapshot laporan ini sudah disimpan.',
+        'report_period'     => 'Periode: :period',
+        'report_income'     => 'Pemasukan: :amount',
+        'report_expense'    => 'Pengeluaran: :amount',
+        'report_net'        => 'Selisih: :amount',
+        'report_previous'   => "Pembanding bulan sebelumnya:\n:summary",
+        'report_top_categories' => "Top kategori pengeluaran:\n:categories",
+        'report_comparison_title' => 'Perbandingan dengan Bulan Lalu',
+        'report_comparison_income' => ':emoji Pendapatan: :amount (vs bulan lalu)',
+        'report_comparison_expense' => ':emoji Pengeluaran: :amount (vs bulan lalu)',
         'report_gemini_unavailable' => 'Gemini belum siap dipakai, jadi aku tampilkan ringkasan lokal dulu.',
         'not_yet_implemented' => '🚧 Perintah `:command` belum tersedia di Web Chat. Coba lagi nanti!',
         'web_link_msg'    => implode("\n", [
@@ -195,7 +212,10 @@ return [
         'help_example_income'   => '💰 Pemasukan: "Gajian 5jt mandiri"',
         'help_example_transfer' => '🔄 Transfer: "Transfer bca ke dana 100k"',
         'total_balance'     => 'Total Saldo',
+        'report_summary'   => 'Ringkasan: :summary',
     ],
+
+    'command_icon_saldo' => '💳',
 
     // ──────────────────────────────────────────────────────────────
     // SUGGESTIONS

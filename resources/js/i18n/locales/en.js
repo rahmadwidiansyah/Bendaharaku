@@ -78,6 +78,10 @@ export default {
         skipToContent:  'Skip to content',
         processing:     'Processing...',
         period:         'Period',
+        // Generic error messages
+        errors: {
+            generic: 'Something went wrong. Please try again later.'
+        },
     },
 
     // ────────────────────────────────────────────────────────────────
@@ -112,6 +116,8 @@ export default {
         telegram:   'Telegram',
         newRecord:  'New Record',
         mainNav:    'Main navigation',
+        profile:    'Profile',
+        help:       'Help',
     },
 
     // ────────────────────────────────────────────────────────────────
@@ -422,59 +428,482 @@ export default {
     settings: {
         title:          'Settings',
         subtitle:       'Preferences',
-
-        account:        'Account',
-        transaction:    'Transactions',
-        appearance:     'Appearance',
-        language:       'Language',
-        ai:             'AI & Automation',
-        danger:         'Danger Zone',
-
-        profile: {
-            title: 'Profile & Security',
-            desc:  'Name, avatar, and account password',
+        save_button:     'Save',
+        notifications: {
+            title:          'Notifications',
+            description:    'Email & push notification preferences',
+            notifications: {
+                title:          'Notification Settings',
+                description:    'Configure email and push notifications',
+            },
+            save_success:   'Settings saved successfully.',
+            save_failed:    'Failed to save settings.',
+            unsaved_changes: 'You have unsaved changes.',
+        },
+        security: {
+            title:          'Security',
+            description:    'Password & security settings',
+            password: {
+                title:          'Change Password',
+                description:    'Strengthen your account security',
+            },
+        },
+        developer: {
+            title:          'Developer',
+            description:    'Developer tools & experimental options',
         },
 
+        // ═══ ACCOUNT ═══
+        account: {
+            title:          'Account',
+            
+            profile: {
+                title:          'Profile',
+                description:    'Personal information',
+                email:          'Email',
+                name:           'Name',
+                help_text:      'To change your email or password, visit the full profile page at',
+            },
+            
+            security: {
+                title:          'Security',
+                description:    'Password & authentication',
+                password: {
+                    title:          'Change Password',
+                    description:    'Strengthen your account security',
+                    change_button:  'Change Password',
+                },
+                '2fa': {
+                    title:          'Two-Factor Authentication',
+                    description:    'Extra protection for your account',
+                    coming_soon:    'This feature is under development',
+                    enable:         'Enable 2FA',
+                },
+                login_activity: {
+                    title:          'Login History',
+                    description:    'Monitor login activity to your account',
+                    tracking_soon:  'Activity tracking will be available soon',
+                },
+            },
+            
+            sessions: {
+                title:          'Active Sessions',
+                description:    'Manage your device sessions',
+                current:        'Current Session',
+                current_browser:'This Browser/Device',
+                last_active:    'Last active just now',
+                active:         'Active',
+                other_sessions: 'Other Sessions',
+                no_other_sessions: 'No other active sessions',
+            },
+            
+            preferences: {
+                title:          'Preferences',
+                description:    'Timezone & date format',
+                timezone: {
+                    title:          'Timezone',
+                    description:    'Choose your timezone',
+                },
+                date_format: {
+                    title:          'Date Format',
+                    description:    'Choose date display format',
+                    ddmmyyyy:       'DD/MM/YYYY',
+                    mmddyyyy:       'MM/DD/YYYY',
+                    yyyymmdd:       'YYYY-MM-DD',
+                },
+            },
+        },
+
+        // ═══ APPLICATION ═══
+        application: {
+            title:          'Application',
+            
+            appearance: {
+                title:          'Appearance',
+                description:    'Theme, colors, density',
+                theme: {
+                    title:          'Theme',
+                    description:    'Choose color theme',
+                    light:          'Light',
+                    dark:           'Dark',
+                    system:         'Follow System',
+                },
+                accent_color: {
+                    title:          'Accent Color',
+                    description:    'Choose primary accent color',
+                },
+            },
+            
+            language: {
+                title:          'Language & Region',
+                description:    'Language, date format, currency',
+                language: {
+                    title:          'Language',
+                    description:    'Choose display language',
+                    id:             'Bahasa Indonesia',
+                    en:             'English',
+                    auto:           'Follow Device Language',
+                    autoDesc:       'Matches your browser/device language',
+                    current:        'Active',
+                },
+                currency: {
+                    title:          'Currency',
+                    description:    'Choose default currency',
+                    idr:            'IDR (Rp)',
+                    usd:            'USD ($)',
+                    eur:            'EUR (€)',
+                },
+            },
+            
+            notifications: {
+                title:          'Notifications',
+                description:    'Email, push, quiet hours',
+                email: {
+                    title:          'Email Notifications',
+                    description:    'Receive notifications via email',
+                    label:          'Enable email notifications',
+                },
+                push: {
+                    title:          'Push Notifications',
+                    description:    'Receive browser push notifications',
+                    label:          'Enable push notifications',
+                },
+            },
+        },
+
+        // ═══ FINANCE ═══
+        finance: {
+            title:          'Finance',
+            
+            defaults: {
+                title:          'Defaults',
+                description:    'Default wallet & currency',
+                wallet: {
+                    title:          'Default Wallet',
+                    description:    'Wallet used when creating new transactions',
+                },
+                currency: {
+                    title:          'Default Currency',
+                    description:    'Default currency for transactions',
+                },
+                transaction_logic: {
+                    title:          'Transaction Logic',
+                    description:    'Allow negative balance on transactions',
+                    label:          'Allow negative balance',
+                    on:             '✓ Active — negative balance allowed',
+                    off:            '✗ Inactive — transaction rejected if balance insufficient',
+                },
+            },
+            
+            categories: {
+                title:          'Categories',
+                description:    'Manage transaction categories',
+                manage:         'Manage your transaction categories',
+                go_to:          'Open Categories Page',
+            },
+            
+            wallets: {
+                title:          'Wallets',
+                description:    'Manage your wallets',
+                manage:         'Manage your wallets and balances',
+                go_to:          'Open Wallets Page',
+            },
+            
+            budget: {
+                title:          'Budget',
+                description:    'Budget limits & alerts',
+                coming_soon:    'Budget feature is under development',
+            },
+        },
+
+        // ═══ AI ═══
+        ai: {
+            title:          'AI & Automation',
+            
+            models: {
+                title:          'Providers & Models',
+                description:    'AI provider settings & model selection',
+                provider: {
+                    label:          'AI Provider',
+                    description:    'Select and configure the AI provider you want to use',
+                },
+                model: {
+                    label:          'Default Model',
+                    description:    'Select the default model for this provider',
+                    hint:           'This model will be used for all requests unless overridden',
+                },
+                token_limit: {
+                    label:          'Token Limit',
+                    description:    'Set maximum token limit',
+                    hint:           'Limits the response length to manage costs',
+                },
+                api_key: {
+                    label:          'API Key',
+                    description:    'Your API key for this provider',
+                    warning:        'Your API key is stored locally and never sent to our servers',
+                },
+                select_model:   'Select a model...',
+                status: 'Status',
+                test_button: 'Test Connection',
+                testing: 'Testing...',
+                test_success: 'Connection succeeded.',
+                test_failed: 'Connection failed.',
+                help_text: 'Models and providers can be configured per device. API keys are stored securely on your browser.',
+            },
+            
+            bot: {
+                title:          'Bot Profile',
+                description:    'Bot name, avatar, personality',
+                avatar: {
+                    label:          'Bot Avatar',
+                    description:    'Your bot\'s profile photo',
+                    upload_button:  'Upload Avatar',
+                    hint:           'Use a square image; .png or .jpg recommended',
+                },
+                name: {
+                    label:          'Bot Name',
+                    description:    'Name shown in conversations',
+                    placeholder:    'Bot name',
+                    hint:           'E.g.: Bendahara Bot',
+                },
+                personality: {
+                    label:          'Bot Personality',
+                    description:    'Short description of bot style and behavior',
+                    placeholder:    'e.g. Friendly, concise, and helpful.',
+                    hint:           'Describe the desired communication style for the bot.',
+                },
+                help_text: 'Personalize how your AI assistant talks and looks in the chat interface.',
+            },
+            
+            memory: {
+                title:          'Memory',
+                description:    'Conversation and knowledge memory settings',
+                retention: {
+                    label: 'Retention Policy',
+                    description: 'How long to keep conversation history',
+                    unlimited: 'Keep indefinitely',
+                    last_7_days: 'Keep last 7 days',
+                    last_30_days: 'Keep last 30 days',
+                    last_90_days: 'Keep last 90 days',
+                    custom: 'Custom...',
+                    hint: 'Older conversations will be automatically deleted',
+                    custom_days: 'Number of days to keep',
+                },
+                size_limit: {
+                    label: 'Memory Size Limit',
+                    description: 'Maximum local storage size for memory',
+                    hint: 'Limits how much storage is used for history',
+                },
+                conversation_history: {
+                    label: 'Conversation History',
+                    description: 'Remember previous messages in chat',
+                    enable: 'Enable conversation history',
+                },
+                learning: {
+                    label: 'Knowledge Base Learning',
+                    description: 'Allow AI to learn from corrections',
+                    enable: 'Enable continuous learning',
+                    warning: 'This will store user-corrected data to improve future predictions',
+                },
+                privacy: {
+                    label: 'Privacy Mode',
+                    description: 'Do not store sensitive numbers in memory',
+                    enable: 'Enable privacy mode',
+                    hint: 'Transaction amounts will be redacted in history logs',
+                },
+                help_text: 'Memory settings control how much context the AI retains across sessions.',
+            },
+            
+            integrations: {
+                title:          'Integrations',
+                description:    'Messaging, automation & external services',
+                telegram: {
+                    title:          'Telegram Integration',
+                    description:    'Connect a Telegram bot to receive and send messages',
+                    info:           'Connect your Telegram bot to interact with Bendaharaku via chat.',
+                    configure:      'Configure Telegram Bot',
+                },
+                webhooks: {
+                    title:          'Webhooks',
+                    description:    'Send events to external services via webhook URLs',
+                    hint:           'Add webhook endpoints to receive real-time events from the app.',
+                },
+            },
+
+            // Alias without 's' — used by Integration.vue
+            integration: {
+                title:          'Integrations',
+                description:    'Messaging, automation & external services',
+                telegram: {
+                    title:          'Telegram Integration',
+                    description:    'Connect a Telegram bot to receive and send messages',
+                    info:           'Connect your Telegram bot to interact with Bendaharaku via chat.',
+                    configure:      'Configure Telegram Bot',
+                },
+                webhooks: {
+                    title:          'Webhooks',
+                    description:    'Send events to external services via webhook URLs',
+                    hint:           'Add webhook endpoints to receive real-time events from the app.',
+                },
+            },
+
+            
+            advanced: {
+                title:          'Developer Tools',
+                description:    'Developer & experimental options',
+                developer_mode: {
+                    label:          'Developer Mode',
+                    description:    'Enable developer mode for debugging',
+                    enable:         'Enable Developer Mode',
+                    warning:        'Developer mode may expose sensitive debug information',
+                },
+                prompt_debugging: {
+                    label:          'Prompt Debugging',
+                    description:    'Show the exact prompt sent to the LLM',
+                    enable:         'Enable prompt debugging',
+                },
+                raw_responses: {
+                    label:          'Raw Responses',
+                    description:    'Show raw JSON/text from the AI',
+                    enable:         'Show raw responses',
+                },
+                system_prompt: {
+                    label:          'Custom System Prompt',
+                    description:    'Override default behavior completely',
+                    placeholder:    'You are a helpful financial assistant...',
+                    hint:           'Leave empty to use the built-in system prompt',
+                },
+                experimental: {
+                    label:          'Experimental Features',
+                    description:    'Enable early-access AI features',
+                    enable:         'Enable experimental features',
+                    warning:        'These features may be unstable or change without notice',
+                },
+                templates: {
+                    label:          'Prompt Templates',
+                    description:    'Create and reuse prompt templates for AI interactions',
+                    use:            'Use',
+                    title_placeholder: 'Template title',
+                    content_placeholder: 'Template body...',
+                },
+                help_text: 'Developer tools are for advanced users to debug or customize the AI.',
+            },
+        },
+
+        // ═══ PRIVACY & DATA ═══
+        privacy: {
+            title:          'Privacy & Data',
+            
+            settings: {
+                title:          'Privacy',
+                description:    'Data collection & analytics',
+                data_collection: {
+                    title:          'Data Collection',
+                    description:    'Allow us to collect analytics data',
+                    label:          'Enable data collection',
+                },
+                analytics: {
+                    title:          'Analytics',
+                    description:    'Help us improve with usage analytics',
+                    label:          'Enable analytics',
+                },
+            },
+            
+            data: {
+                title:          'Data Management',
+                description:    'Export, import, backup',
+                export: {
+                    title:          'Export Data',
+                    description:    'Download a copy of your account data as JSON',
+                    button:         'Export Data',
+                    success:        'Export complete. File is downloading.',
+                },
+                import: {
+                    title:          'Import Data',
+                    description:    'Import a backup file to restore your data',
+                    button:         'Import (Soon)',
+                },
+                backup: {
+                    title:          'Backup',
+                    description:    'Manage backups and restore',
+                    button:         'Backup (Soon)',
+                },
+            },
+            
+            danger: {
+                title:          'Danger Zone',
+                description:    'Irreversible actions',
+                clear_cache: {
+                    title:          'Clear Cache',
+                    description:    'Clear local cache data',
+                    button:         'Clear Cache',
+                    success:        'Cache cleared successfully',
+                },
+                delete_account: {
+                    title:          'Delete Account Permanently',
+                    description:    'Delete account and all related data',
+                    warning:        'This action cannot be undone. All financial data will be lost.',
+                    button:         'Delete My Account',
+                    confirm_title:  'Confirm Account Deletion',
+                    confirm_description: 'This action CANNOT be undone. All financial data, history, and settings will be permanently deleted.',
+                    confirm_button: 'Yes, Delete Permanently',
+                },
+            },
+
+        },
+
+        // ═══ SYSTEM ═══
+        system: {
+            title:          'System',
+            
+            about: {
+                title:          'About',
+                description:    'Version, license, credits',
+                app_name:       'About Bendaharaku',
+                app_description:'Smart personal finance management application',
+                version:        'Version',
+                license: {
+                    title:          'License',
+                    description:    'License information',
+                    type:           'Licensed under MIT License',
+                },
+                credits: {
+                    title:          'Credits',
+                    description:    'Technologies used',
+                    laravel:        'Laravel - Backend Framework',
+                    vue:            'Vue 3 - Frontend Framework',
+                    inertia:        'Inertia.js - Server-driven UI',
+                    tailwind:       'Tailwind CSS - Styling',
+                },
+            },
+            
+            diagnostics: {
+                title:          'Diagnostics',
+                description:    'System status, logs',
+                system_status: {
+                    title:          'System Status',
+                    description:    'Check backend service status',
+                    api:            'API Server',
+                    database:       'Database',
+                    healthy:        'Healthy',
+                    connected:      'Connected',
+                },
+                logs: {
+                    title:          'System Logs',
+                    description:    'Activity history',
+                    no_logs:        'No system logs currently',
+                },
+            },
+        },
+
+        // ═══ LEGACY KEYS (compatibility) ═══
+        transaction:    'Transactions',
         negativeBalance: {
             title: 'Allow Negative Balance',
             desc:  'Expenses can be recorded even if the balance is insufficient. Useful for daily logging that is reconciled later.',
         },
-
-        theme: {
-            dark:           'Dark',
-            light:          'Light (Coming Soon)',
-            lightSoon:      'Coming soon',
-            title:          'Color Theme',
-            desc:           'Only dark mode is currently available.',
-        },
-
-        // Layout
-        layout: {
-            title:          'Wide Screen Layout',
-            desc:           'Display mode for desktop screens.',
-            desktop:        'Desktop',
-            mobile:         'Mobile',
-        },
-
-        // Telegram
-        telegram: {
-            title:          'Telegram Bot',
-            desc:           'Record transactions via natural language chat',
-            status:         'Active',
-        },
-
-        // Data
-        data: {
-            section:        'Data',
-            title:          'Export & Backup',
-            desc:           'Download your complete financial history in CSV format.',
-            exportBtn:      'Export CSV',
-        },
-
-        // Status negativeBalance
         negativeBalanceOn:  '✓ Active — negative balance allowed',
         negativeBalanceOff: '✗ Inactive — transaction rejected if balance is insufficient',
-
         lang: {
             title:          '🌐 Language',
             auto:           'Follow Device Language',
@@ -483,7 +912,6 @@ export default {
             en:             'English',
             current:        'Active',
         },
-
         aiSettings: {
             title: 'AI Settings',
             desc:  'Manage models, credentials, and AI preferences',

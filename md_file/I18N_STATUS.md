@@ -362,3 +362,123 @@ common.period       // id: 'Periode' / en: 'Period'
 - [ ] Tidak ada string `'Pemasukan'`, `'Pengeluaran'`, `'Hutang'`, `'Piutang'`, `'Transfer'` hardcoded di template (boleh di logic/identifier)
 - [ ] localStorage `locale` tersimpan saat pilih bahasa manual
 - [ ] Reload halaman → bahasa tetap sesuai preferensi yang tersimpan
+
+---
+
+## SETTINGS REDESIGN - i18n IMPLEMENTATION (2026-07-19)
+
+### ✅ NEW: Settings Translation Files Created
+
+**Files created:**
+- `lang/id/settings.php` - 150+ keys for Indonesian
+- `lang/en/settings.php` - 150+ keys for English
+
+**Structure:**
+```
+settings.{section}.{page}.{key}
+settings.account.profile.title
+settings.account.security.password.change_button
+settings.application.appearance.theme.light
+```
+
+### ✅ ALL SETTINGS PAGES USE i18n (Single File Pattern)
+
+**17 new Vue pages - ALL with i18n:**
+
+| Page | Status | i18n? |
+|------|--------|-------|
+| Settings/Account/Profile.vue | ✅ | t() |
+| Settings/Account/Security.vue | ✅ | t() |
+| Settings/Account/Sessions.vue | ✅ | t() |
+| Settings/Account/Preferences.vue | ✅ | t() |
+| Settings/Application/Appearance.vue | ✅ | t() |
+| Settings/Application/Language.vue | ✅ | t() |
+| Settings/Application/Notifications.vue | ✅ | t() |
+| Settings/Finance/Defaults.vue | ✅ | t() |
+| Settings/Finance/Categories.vue | ✅ | t() |
+| Settings/Finance/Wallets.vue | ✅ | t() |
+| Settings/Finance/Budget.vue | ✅ | t() |
+| Settings/Privacy/Settings.vue | ✅ | t() |
+| Settings/Privacy/Data.vue | ✅ | t() |
+| Settings/Privacy/Danger.vue | ✅ | t() |
+| Settings/System/About.vue | ✅ | t() |
+| Settings/System/Diagnostics.vue | ✅ | t() |
+| Settings/AI/Integration.vue | ✅ | t() |
+
+### Implementation Pattern
+
+**Every page follows this pattern:**
+
+```vue
+<script setup lang="ts">
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n();
+
+const breadcrumbs = [
+  { label: t('settings.title'), href: route('settings.index') },
+  { label: t('settings.section.title') },
+  { label: t('settings.section.page.title') },
+];
+</script>
+
+<template>
+  <SettingsLayout
+    :title="t('settings.section.page.title')"
+    :description="t('settings.section.page.description')"
+    :breadcrumbs="breadcrumbs"
+  >
+    <SettingsCard
+      :title="t('settings.section.page.card.title')"
+      :description="t('settings.section.page.card.description')"
+    >
+      <!-- Content using t() for all text -->
+    </SettingsCard>
+  </SettingsLayout>
+</template>
+```
+
+### Translation Key Categories
+
+**Sections:**
+1. `settings.account.*` - Account management
+2. `settings.application.*` - App preferences
+3. `settings.finance.*` - Finance settings
+4. `settings.ai.*` - AI settings
+5. `settings.privacy.*` - Privacy & data
+6. `settings.system.*` - System info
+
+**Subsections per page:**
+- `.title` - Page title
+- `.description` - Page description
+- `.{setting}.title` - Card title
+- `.{setting}.description` - Card description
+- `.{setting}.label` - Input/button label
+- `.{setting}.button` - Button text
+- `.{setting}.{option}` - Option text
+
+### Verified: Single File Pattern (NOT 2 files)
+
+✅ Each Settings page is ONE file
+✅ Uses t() for all user-visible text
+✅ Language switch updates page instantly
+✅ No reload needed for language change
+✅ Follows vue-i18n best practices
+
+### How to Switch Language from Settings
+
+Users can change language in:
+```
+/settings/application/language
+```
+
+Select ID or EN → all pages update automatically (no reload)
+
+### Integration with Existing i18n
+
+- Uses same `useI18n()` setup as other pages
+- Follows same `t()` calling pattern
+- Compatible with localStorage persistence
+- Works with `useLocale()` composable
+
+---
+

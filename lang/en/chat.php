@@ -107,6 +107,14 @@ return [
             "• Wait for the quota reset (usually midnight)",
             "• Or upgrade your plan at the :provider dashboard",
         ]),
+        'token_limit'     => implode("\n", [
+            "⚠️ *Token Limit Exceeded*",
+            "",
+            "Your message is too long for :provider AI (estimated: :tokens tokens).",
+            "Possible solutions:",
+            "• Try a shorter message",
+            "• Or use a different AI provider from the Web Dashboard",
+        ]),
         'timeout'         => "⏳ *:provider Server is Busy*\n\nPlease retry your message in 1-2 minutes.",
         'provider_error'  => "❌ *AI Provider Error*\n\n`:error`\n\nPlease try again later.",
         'parse_failed'    => '❌ AI failed to process: :reason',
@@ -166,6 +174,15 @@ return [
         'report_empty'      => '📊 No transactions this month to summarize yet.',
         'report_empty_period' => '📊 No transactions for :period yet.',
         'report_saved'      => '💾 This report snapshot has been saved.',
+        'report_period'     => 'Period: :period',
+        'report_income'     => 'Income: :amount',
+        'report_expense'    => 'Expense: :amount',
+        'report_net'        => 'Net: :amount',
+        'report_previous'   => "Previous month summary:\n:summary",
+        'report_top_categories' => "Top expense categories:\n:categories",
+        'report_comparison_title' => 'Comparison with Last Month',
+        'report_comparison_income' => ':emoji Income: :amount (vs last month)',
+        'report_comparison_expense' => ':emoji Expense: :amount (vs last month)',
         'report_gemini_unavailable' => 'Gemini is not ready, so I showed a local summary for now.',
         'not_yet_implemented' => '🚧 Command `:command` is not yet available in Web Chat. Check back later!',
         'web_link_msg'    => implode("\n", [
@@ -189,7 +206,10 @@ return [
         'help_example_income'   => '💰 Income: "Salary 5M mandiri"',
         'help_example_transfer' => '🔄 Transfer: "Transfer bca to dana 100k"',
         'total_balance'     => 'Total Balance',
+        'report_summary'    => 'Summary: :summary',
     ],
+
+    'command_icon_saldo' => '💳',
 
     // ──────────────────────────────────────────────────────────────
     // SUGGESTIONS

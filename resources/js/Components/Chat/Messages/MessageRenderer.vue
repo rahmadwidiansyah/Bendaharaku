@@ -19,6 +19,7 @@ import MessageTransactionCard from './MessageTransactionCard.vue'
 import MessageSummaryCard    from './MessageSummaryCard.vue'
 import MessageErrorCard      from './MessageErrorCard.vue'
 import MessageSuggestion     from './MessageSuggestion.vue'
+import MessageReportSection  from './MessageReportSection.vue'
 
 defineProps({
     component: {
@@ -28,6 +29,10 @@ defineProps({
     metadata: {
         type: Object,
         default: () => ({}),
+    },
+    content: {
+        type: Array,
+        default: () => ([]),
     },
 })
 
@@ -39,6 +44,7 @@ const componentMap = {
     error:            MessageErrorCard,
     warning:          MessageErrorCard,    // Reuse ErrorCard, severity prop menentukan style
     suggestion:       MessageSuggestion,
+    report_section:   MessageReportSection,
     // Future:
     // quick_reply:   MessageQuickReply,
     // image:         MessageImage,
@@ -52,6 +58,7 @@ const componentMap = {
         :is="componentMap[component.type]"
         v-if="componentMap[component.type]"
         :component="component"
+        :content="content"
         v-bind="component.type === 'transaction_card' ? { metadata } : {}"
     />
     <!-- Fallback: tipe tidak dikenal, tampilkan teks mentah (debug only) -->

@@ -26,6 +26,7 @@
  */
 
 import { computed, ref } from 'vue'
+import { router } from '@inertiajs/vue3'
 import Avatar from '@/Components/Avatar.vue'
 
 const props = defineProps({
@@ -56,8 +57,8 @@ const handleClick = (event) => {
         rippleTimer = setTimeout(() => { isRippling.value = false }, 400)
     })
 
-    const rect = event.currentTarget.getBoundingClientRect()
-    emit('toggle', rect)
+    // Redirect ke settings
+    router.visit(route('settings.index'))
 }
 </script>
 

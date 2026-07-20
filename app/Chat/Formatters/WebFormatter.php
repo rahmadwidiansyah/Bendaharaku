@@ -14,6 +14,7 @@ use App\Chat\Components\ErrorComponent;
 use App\Chat\Components\WarningComponent;
 use App\Chat\Components\SuggestionComponent;
 use App\Chat\Components\QuickReplyComponent;
+use App\Chat\Components\ReportSectionComponent;
 use App\Chat\DTOs\ChatResponse;
 use App\Chat\DTOs\ChatContext;
 use App\Chat\Errors\ErrorDetail;
@@ -100,6 +101,7 @@ class WebFormatter implements ChatFormatterInterface
             'warning'          => $this->renderWarning($component, $locale),
             'suggestion'       => $this->renderSuggestion($component, $locale),
             'quick_reply'      => $this->renderQuickReply($component, $locale),
+            'report_section'   => $this->renderReportSection($component, $locale),
             default            => null,
         };
     }
@@ -208,6 +210,18 @@ class WebFormatter implements ChatFormatterInterface
         return [
             'type'    => 'quick_reply',
             'options' => $c->options,
+        ];
+    }
+
+    private function renderReportSection(ReportSectionComponent $c, string $locale): array
+    {
+        $title = $c->title ?: ($c->translationKey ? trans($c->translationKey, [], $locale) : '');
+        return [
+            'type' => 'report_section',
+            'title' => $title,
+            'emoji' => $c->emoji,
+            'items' => array_values($c->items),
+            'translationKey' => $c->translationKey,
         ];
     }
 

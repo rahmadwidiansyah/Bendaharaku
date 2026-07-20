@@ -49,7 +49,7 @@ const routeTitleMap = computed(() => ({
     'loans.index':         t('loan.title'),
     'settings.index':      t('settings.title'),
     'settings.ai':         t('ai.title'),
-    'profile.edit':        t('profile.title'),
+    'settings.account.profile':        t('profile.title'),
 }))
 
 const routeTitle = computed(() => {

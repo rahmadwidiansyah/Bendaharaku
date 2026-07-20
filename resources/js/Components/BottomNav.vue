@@ -3,7 +3,7 @@
  * BottomNav.vue
  *
  * Navigasi utama aplikasi:
- *   - Mobile: bottom navigation bar (5 item: Home, Transaksi, Aset, Grafik, Label)
+ *   - Mobile: floating bottom navigation bar (5 item: Home, Transaksi, Aset, Grafik, Label)
  *   - Desktop: collapsible sidebar dengan logo/brand area
  *
  * Phase 4 changes:
@@ -59,10 +59,9 @@ defineEmits(['toggle'])
     <nav
         :class="[
             'fixed z-50 transition-all duration-300',
-            'bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md',
-            'bg-gray-900/90 backdrop-blur-xl border-t border-white/10 rounded-t-2xl',
-            '[padding-bottom:env(safe-area-inset-bottom,0px)]',
-            isDesktopLayout ? 'lg:bottom-auto lg:top-0 lg:left-0 lg:translate-x-0 lg:h-screen lg:border-t-0 lg:border-r lg:rounded-none lg:bg-gray-900 lg:flex lg:flex-col lg:justify-start' : '',
+            isDesktopLayout
+                ? 'lg:bottom-auto lg:top-0 lg:left-0 lg:translate-x-0 lg:h-screen lg:border-t-0 lg:border-r lg:rounded-none lg:bg-gray-900 lg:flex lg:flex-col lg:justify-start'
+                : 'bottom-[calc(1.25rem+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm bg-gray-900/95 backdrop-blur-2xl border border-white/10 rounded-[28px] shadow-[0_20px_50px_rgba(0,0,0,0.85)]',
             isDesktopLayout && isSidebarOpen ? 'lg:w-64' : (isDesktopLayout ? 'lg:w-20' : ''),
         ]"
         style="overflow: visible;"
@@ -135,8 +134,8 @@ defineEmits(['toggle'])
 
         <!-- ── Nav Items ── -->
         <div :class="[
-            'flex items-end pt-2 pb-1 px-1',
-            isDesktopLayout ? 'lg:flex-col lg:justify-start lg:gap-0.5 lg:px-3 lg:pt-0 lg:items-stretch' : 'justify-around',
+            'flex pt-2 pb-2 px-2',
+            isDesktopLayout ? 'lg:flex-col lg:justify-start lg:gap-0.5 lg:px-3 lg:pt-0 lg:items-stretch' : 'items-center justify-around gap-1',
         ]" style="overflow: visible;">
 
             <!-- Home -->
@@ -185,28 +184,27 @@ defineEmits(['toggle'])
                 </template>
             </NavItem>
 
-            <!-- Catat mobile — tombol bulat menonjol ke atas gaya e-wallet -->
-            <div v-if="!isDesktopLayout" class="flex-1 flex flex-col items-center justify-end pb-1" style="overflow: visible; position: relative;">
+            <!-- Catat mobile — Floating Action Button (FAB) menonjol dan bercahaya -->
+            <div v-if="!isDesktopLayout" class="flex-1 flex flex-col items-center justify-center relative select-none" style="overflow: visible; z-index: 10;">
                 <Link
                     :href="route('transactions.create')"
                     :aria-label="$t('nav.record')"
                     :aria-current="isActive(['transactions.*']) ? 'page' : undefined"
-                    class="flex items-center justify-center rounded-full border-[3px] border-gray-900 active:scale-90 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300"
+                    class="flex items-center justify-center rounded-full border-[4px] border-gray-900 active:scale-95 hover:scale-105 active:translate-y-0.5 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 cursor-pointer"
                     :class="[
-                        'w-14 h-14',
+                        'w-16 h-16 -mt-9 mb-1.5',
                         isActive(['transactions.*'])
-                            ? 'bg-gradient-to-br from-purple-400 to-purple-600 shadow-[0_0_20px_4px_rgba(168,85,247,0.5)]'
-                            : 'bg-gradient-to-br from-purple-500 to-purple-700 shadow-[0_4px_18px_0px_rgba(139,92,246,0.55)]',
+                            ? 'bg-gradient-to-tr from-purple-500 via-fuchsia-500 to-pink-500 shadow-[0_0_30px_6px_rgba(168,85,247,0.65)]'
+                            : 'bg-gradient-to-tr from-purple-600 via-fuchsia-600 to-pink-600 shadow-[0_8px_25px_0px_rgba(168,85,247,0.55)]',
                     ]"
-                    style="margin-bottom: 4px; margin-top: -28px;"
                 >
-                    <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.8" aria-hidden="true">
+                    <svg class="w-8 h-8 text-white transition-transform duration-300 group-hover:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                     </svg>
                 </Link>
                 <span
-                    class="text-[10px] font-bold tracking-wide uppercase leading-none mt-1"
-                    :class="isActive(['transactions.*']) ? 'text-purple-400' : 'text-gray-500'"
+                    class="text-[9px] font-black tracking-wider uppercase leading-none transition-all duration-300"
+                    :class="isActive(['transactions.*']) ? 'text-purple-400 scale-105' : 'text-gray-400'"
                 >{{ $t('nav.record') }}</span>
             </div>
 

@@ -1,0 +1,237 @@
+name: CI - Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  php-tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: testing
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 8.4 (production stable)
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, bcmath, intl, pdo_pgsql
+          coverage: none
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Debug - System & Docker information
+        run: |
+          echo "=== PHP Version ===" && php --version
+          echo "=== Composer Version ===" && composer --version
+          echo "=== PostgreSQL Client ===" && psql --version
+          echo "=== pg_isready ===" && pg_isready --version
+          echo ""
+          echo "=== Docker Containers ===" && docker ps -a
+          echo ""
+          echo "=== Network Status ===" && ip addr show || echo "ip not available"
+          echo ""
+          echo "=== /etc/hosts ===" && cat /etc/hosts
+          echo ""
+          echo "=== Hostname Lookup (getent) ===" && (getent hosts postgres || echo "❌ postgres hostname not found")
+          echo ""
+          echo "=== DNS Lookup (nslookup) ===" && (nslookup postgres || echo "❌ nslookup failed")
+          echo ""
+          echo "=== Test connectivity to postgres ===" && (ping -c 3 postgres 2>&1 || echo "❌ ping failed")
+          echo ""
+          echo "=== Test localhost:5432 ===" && (nc -zv localhost 5432 2>&1 || echo "❌ netcat check failed")
+          echo ""
+          echo "=== Test postgres:5432 ===" && (nc -zv postgres 5432 2>&1 || echo "❌ netcat check failed")
+
+      - name: Setup .env for testing
+        run: |
+          # Copy template
+          cp .env.example .env
+          
+          # Force testing environment
+          sed -i 's/^APP_ENV=.*/APP_ENV=testing/' .env
+          sed -i 's/^DB_CONNECTION=.*/DB_CONNECTION=pgsql/' .env
+          
+          # Use localhost for runner (service ports are forwarded to runner)
+          grep -q "^DB_HOST=" .env || echo "DB_HOST=127.0.0.1" >> .env
+          sed -i 's/^DB_HOST=.*/DB_HOST=127.0.0.1/' .env
+          
+          # Ensure other DB configuration is set
+          grep -q "^DB_PORT=" .env || echo "DB_PORT=5432" >> .env
+          grep -q "^DB_DATABASE=" .env || echo "DB_DATABASE=testing" >> .env
+          grep -q "^DB_USERNAME=" .env || echo "DB_USERNAME=postgres" >> .env
+          grep -q "^DB_PASSWORD=" .env || echo "DB_PASSWORD=postgres" >> .env
+          
+          # Verify configuration
+          echo "=== Generated .env DB Configuration ===" && grep "^DB_" .env
+
+      - name: Generate APP_KEY
+        run: php artisan key:generate --force
+
+      - name: Clear configuration cache (fresh start)
+        run: php artisan config:clear
+
+      - name: Comprehensive PostgreSQL Readiness Check
+        run: |
+          echo "=== Testing PostgreSQL Connectivity ==="
+          max_retries=30
+          retry=0
+          
+          # First, test if service container exists
+          echo "Step 1: Check if postgres service container is running..."
+          if docker ps -a | grep -i postgres; then
+            echo "✓ PostgreSQL container found"
+          else
+            echo "✗ PostgreSQL container NOT found"
+            docker ps -a
+          fi
+          
+          echo ""
+          echo "Step 2: Try connecting via localhost:5432..."
+          until pg_isready -h localhost -p 5432 -U postgres >/dev/null 2>&1 || [ $retry -ge $max_retries ]; do
+            retry=$((retry + 1))
+            echo "Attempt $retry/$max_retries: localhost not ready, waiting..."
+            sleep 2
+          done
+          
+          if [ $retry -lt $max_retries ]; then
+            echo "✓ PostgreSQL is ready on localhost:5432"
+          else
+            echo "✗ PostgreSQL NOT ready on localhost:5432 after 60 seconds"
+          fi
+          
+          echo ""
+          echo "Step 3: Try connecting via postgres:5432 (service name)..."
+          retry=0
+          until pg_isready -h postgres -p 5432 -U postgres >/dev/null 2>&1 || [ $retry -ge 10 ]; do
+            retry=$((retry + 1))
+            echo "Attempt $retry/10: postgres hostname, waiting..."
+            sleep 1
+          done
+          
+          if [ $retry -lt 10 ]; then
+            echo "✓ PostgreSQL is ready on postgres:5432"
+            HOST_FOR_CONNECT="postgres"
+          else
+            echo "✗ PostgreSQL NOT accessible via postgres:5432"
+            if pg_isready -h localhost -p 5432 -U postgres >/dev/null 2>&1; then
+              echo "✓ But accessible via localhost:5432 - will use that instead"
+              HOST_FOR_CONNECT="localhost"
+            else
+              echo "✗ NOT accessible via either hostname"
+              exit 1
+            fi
+          fi
+          
+          echo ""
+          echo "=== Final Status ==="
+          echo "Host to use for connections: $HOST_FOR_CONNECT"
+          
+          # Test actual connection
+          echo ""
+          echo "Step 4: Test actual database connection..."
+          if PGPASSWORD=postgres psql -h $HOST_FOR_CONNECT -U postgres -d testing -c "SELECT version();" 2>/dev/null; then
+            echo "✓ Successfully connected to PostgreSQL"
+          else
+            echo "✗ Connection failed"
+            exit 1
+          fi
+
+      - name: Run database migrations
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: testing
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
+        run: |
+          echo "Running migrations..."
+          php artisan migrate --force --verbose
+          echo "✓ Migrations completed successfully"
+
+      - name: List available test suites
+        run: php artisan test --list-suites
+        
+      - name: Run Feature tests (single-process mode)
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: testing
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
+        run: |
+          echo "Running Feature tests..."
+          php artisan test --testsuite=Feature --stop-on-failure
+          echo "✓ Feature tests passed"
+
+      - name: Run Unit tests
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: testing
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
+        run: |
+          echo "Running Unit tests..."
+          php artisan test --testsuite=Unit --stop-on-failure
+          echo "✓ Unit tests passed"
+
+  js-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Vitest (if configured)
+        run: |
+          if grep -q '"vitest"' package.json; then
+            echo "Running Vitest..."
+            npm run test:unit
+            echo "✓ Vitest tests passed"
+          else
+            echo "ℹ Vitest not configured, skipping"
+          fi

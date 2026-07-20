@@ -19,6 +19,9 @@
 
 import { onMounted, onUnmounted } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
     show: {
@@ -74,7 +77,7 @@ const logout = () => {
                 -->
                 <nav
                     role="menu"
-                    :aria-label="`Menu akun ${user?.name ?? ''}`"
+                    :aria-label="`${t('nav.profile')} ${user?.name ?? ''}`"
                     :style="{
                         top:             `${position.top}px`,
                         right:           `${position.right}px`,
@@ -95,9 +98,9 @@ const logout = () => {
                     <!-- Menu items -->
                     <div class="p-1.5 space-y-0.5" role="none">
 
-                        <!-- Edit Profil -->
+                        <!-- Profile -->
                         <Link
-                            :href="route('profile.edit')"
+                            :href="route('settings.account.profile')"
                             role="menuitem"
                             class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-gray-300 transition-colors hover:bg-white/6 hover:text-white focus:outline-none focus-visible:ring-1 focus-visible:ring-purple-400 w-full"
                             @click="close"
@@ -107,10 +110,10 @@ const logout = () => {
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M5.121 17.804A9.967 9.967 0 0112 15c2.21 0 4.252.716 5.879 1.929M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                 </svg>
                             </span>
-                            <span>Edit Profil</span>
+                            <span>{{ t('settings.account.profile.title') }}</span>
                         </Link>
 
-                        <!-- Pengaturan -->
+                        <!-- Settings -->
                         <Link
                             :href="route('settings.index')"
                             role="menuitem"
@@ -123,28 +126,28 @@ const logout = () => {
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                 </svg>
                             </span>
-                            <span>Pengaturan</span>
+                            <span>{{ t('nav.settings') }}</span>
                         </Link>
 
-                        <!-- Pengaturan AI -->
+                        <!-- Help -->
                         <Link
-                            :href="route('settings.ai.index')"
+                            href="/help"
                             role="menuitem"
                             class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-gray-300 transition-colors hover:bg-white/6 hover:text-white focus:outline-none focus-visible:ring-1 focus-visible:ring-purple-400 w-full"
                             @click="close"
                         >
                             <span class="w-8 h-8 rounded-xl bg-emerald-600/20 flex items-center justify-center shrink-0" aria-hidden="true">
                                 <svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                             </span>
-                            <span>Pengaturan AI</span>
+                            <span>{{ t('nav.help', 'Help') }}</span>
                         </Link>
 
                         <!-- Divider -->
                         <div class="h-px bg-white/8 my-1" role="separator" aria-hidden="true" />
 
-                        <!-- Keluar -->
+                        <!-- Logout -->
                         <button
                             type="button"
                             role="menuitem"
@@ -156,7 +159,7 @@ const logout = () => {
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                                 </svg>
                             </span>
-                            <span>Keluar</span>
+                            <span>{{ t('profile.logout') }}</span>
                         </button>
                     </div>
                 </nav>

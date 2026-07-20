@@ -24,3 +24,5 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 .env.save
+/md_files/
+/md file/
