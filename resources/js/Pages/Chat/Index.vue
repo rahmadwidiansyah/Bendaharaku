@@ -11,7 +11,7 @@
  * dan tidak menutupi bubble/card.
  */
 
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, watch } from 'vue'
 import { Head, usePage } from '@inertiajs/vue3'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import ChatHeader     from '@/Components/Chat/ChatHeader.vue'
@@ -75,6 +75,16 @@ onMounted(async () => {
         chatAreaRef.value = chatAreaComp.value.el
     }
     await scrollToBottom(false)
+})
+
+// Pantau jika bot mulai mengetik, otomatis scroll ke bawah agar indikator 3 titik terlihat
+watch(isTyping, async (isNowTyping) => {
+    if (isNowTyping) {
+        await nextTick()
+        if (typeof scrollToBottom === 'function') {
+            await scrollToBottom()
+        }
+    }
 })
 
 // ── Handlers ──────────────────────────────────────────────────────

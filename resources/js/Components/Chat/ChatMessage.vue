@@ -48,70 +48,36 @@ const {
     <!-- ── BOT MESSAGE ─────────────────────────────────────────── -->
     <div v-if="isBot" class="flex items-end gap-1.5 px-3 py-0.5 animate-fade-in group">
 
-        <!-- Avatar bot: tampilkan atau kosong (spacer alignment) -->
+        <!-- Avatar bot -->
         <div class="w-6 h-6 shrink-0 self-end mb-0.5">
-            <BotAvatar
-                v-if="showAvatar"
-                :src="botAvatar"
-                :name="botName"
-                size="sm"
-                variant="bot"
-                shape="circle"
-            />
+            <BotAvatar v-if="showAvatar" :src="botAvatar" :name="botName" size="sm" variant="bot" shape="circle" />
         </div>
 
-        <!-- Bubble + card stack -->
-        <div class="flex flex-col gap-1 min-w-0" style="max-width: 80%">
+        <!-- CONTAINER UTAMA BARU: Menggabungkan Card + Text + Footer -->
+        <div :class="['flex flex-col min-w-0 border rounded-2xl rounded-tl-md shadow-sm overflow-hidden', isErrorMessage ? 'bg-red-950/40 border-red-900/50' : 'bg-gray-800/90 border-white/8']" style="max-width: 80%">
 
-            <!-- Card components (transaction_card, summary_card, error) -->
+            <!-- 1. Card components -->
             <template v-for="(comp, i) in cardComponents" :key="'card-' + i">
                 <MessageRenderer :component="comp" :metadata="message.metadata ?? {}" />
             </template>
 
-            <!-- Bubble: semua inline components (text, divider, suggestion) -->
-            <div
-                v-if="filteredInline.length > 0"
-                class="bg-gray-800/90 border border-white/8 rounded-2xl rounded-tl-md overflow-hidden shadow-sm"
-            >
-                <div class="px-3.5 pt-2.5 pb-2 space-y-1">
-                    <template v-for="(comp, i) in filteredInline" :key="i">
-                        <MessageRenderer :component="comp" />
-                    </template>
-                </div>
-
-                <!-- Footer: meta + timestamp -->
-                <div class="flex items-center justify-between gap-2 px-3.5 pb-2 pt-0">
-                    <ResponseMeta
-                        :metadata="message.metadata"
-                        :content="message.content ?? []"
-                    />
-                    <ChatTimestamp
-                        :datetime="message.created_at"
-                        class="text-gray-600 select-none shrink-0"
-                    />
-                </div>
+            <!-- 2. Inline Text (Bubble) -->
+            <div v-if="filteredInline.length > 0" class="px-3.5 pt-2.5 pb-1 space-y-1">
+                <template v-for="(comp, i) in filteredInline" :key="i">
+                    <MessageRenderer :component="comp" />
+                </template>
             </div>
 
-            <!-- Timestamp standalone jika tidak ada inline bubble -->
-            <div v-if="filteredInline.length === 0 && message.created_at" class="flex justify-start">
-                <ChatTimestamp
-                    :datetime="message.created_at"
-                    class="text-gray-600 px-1 select-none"
-                />
+            <!-- 3. Footer (Jam dan Response Time) -->
+            <div class="flex items-center justify-between gap-2 px-3.5 py-1.5">
+                <ResponseMeta :metadata="message.metadata" :content="message.content ?? []" />
+                <ChatTimestamp :datetime="message.created_at" class="text-gray-500 select-none shrink-0" />
             </div>
+        </div>
 
-            <!-- Toolbar: muncul saat hover -->
-            <div
-                v-if="filteredInline.length > 0 || cardComponents.length > 0"
-                class="flex justify-start pl-0.5 -mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
-            >
-                <MessageToolbar
-                    :message="message"
-                    :is-error="isErrorMessage"
-                    @retry="emit('retry', message)"
-                    @regenerate="emit('regenerate', message)"
-                />
-            </div>
+        <!-- Toolbar: muncul saat hover -->
+        <div v-if="filteredInline.length > 0 || cardComponents.length > 0" class="flex items-center opacity-0 group-hover:opacity-100 transition-opacity duration-150 ml-1">
+            <MessageToolbar :message="message" :is-error="isErrorMessage" @retry="emit('retry', message)" @regenerate="emit('regenerate', message)" />
         </div>
     </div>
 
