@@ -1,0 +1,36 @@
+<script setup lang="ts">
+import { Head, Link } from '@inertiajs/vue3';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import SettingsLayout from '../Layouts/SettingsLayout.vue';
+import SettingsCard from '@/Components/Settings/SettingsCard.vue';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
+
+const breadcrumbs = [
+  { label: t('settings.title'), href: route('settings.index') },
+  { label: t('settings.finance.title') },
+  { label: t('settings.finance.wallets.title') },
+];
+</script>
+
+<template>
+  <AuthenticatedLayout :fullWidth="true">
+    <Head :title="t('settings.finance.wallets.title')" />
+    
+    <SettingsLayout
+      :title="t('settings.finance.wallets.title')"
+      :description="t('settings.finance.wallets.description')"
+      :breadcrumbs="breadcrumbs"
+    >
+      <SettingsCard :title="t('settings.finance.wallets.title')" :description="t('settings.finance.wallets.description')">
+        <div class="text-center py-8">
+          <p class="text-sm text-gray-400">{{ t('settings.finance.wallets.manage') }}</p>
+          <Link :href="route('wallets.index')" class="mt-4 inline-block px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors">
+            {{ t('settings.finance.wallets.go_to') }}
+          </Link>
+        </div>
+      </SettingsCard>
+    </SettingsLayout>
+  </AuthenticatedLayout>
+</template>

@@ -118,7 +118,7 @@ const closeOnEscape = (e) => {
 
                 <!-- Menu items -->
                 <Link
-                    :href="route('profile.edit')"
+                    :href="route('settings.account.profile')"
                     role="menuitem"
                     class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-bold text-gray-300 transition-colors hover:bg-white/5 hover:text-white focus:outline-none focus-visible:ring-1 focus-visible:ring-purple-400"
                     @click="showProfileMenu = false"

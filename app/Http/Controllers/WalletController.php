@@ -79,7 +79,16 @@ class WalletController extends Controller
             $validated['icon'] = $path;
         }
 
-        Auth::user()->wallets()->create($validated);
+        $wallet = Auth::user()->wallets()->create($validated);
+
+        // Log wallet creation
+        \App\Support\SettingsChangeLogger::logChange(
+            Auth::user(),
+            'wallet_created',
+            'settings.finance.wallets',
+            null,
+            ['id' => $wallet->id, 'name' => $wallet->name]
+        );
 
         return redirect()->route('dashboard')->with('success', 'Dompet berhasil ditambahkan!');
     }
@@ -143,7 +152,23 @@ class WalletController extends Controller
             $validated['icon'] = $path;
         }
 
+        $original = $wallet->getOriginal();
         $wallet->update($validated);
+
+        // Log per-field changes
+        foreach ($validated as $key => $value) {
+            $oldVal = $original[$key] ?? null;
+            if ((string) $oldVal !== (string) $value) {
+                \App\Support\SettingsChangeLogger::logChange(
+                    Auth::user(),
+                    'wallet:' . $key,
+                    'settings.finance.wallets',
+                    $oldVal,
+                    $value
+                );
+            }
+        }
+
         return redirect()->route('wallets.show', $wallet)->with('success', 'Dompet diupdate!');
     }
 
@@ -163,7 +188,18 @@ class WalletController extends Controller
                 Storage::disk('public')->delete($wallet->icon);
             }
 
+            $old = $wallet->toArray();
             $wallet->delete();
+
+            // Log deletion
+            \App\Support\SettingsChangeLogger::logChange(
+                Auth::user(),
+                'wallet_deleted',
+                'settings.finance.wallets',
+                $old,
+                null
+            );
+
             return redirect()->route('dashboard')->with('success', 'Dompet berhasil dihapus!');
             
         } catch (\Exception $e) {
@@ -182,7 +218,17 @@ class WalletController extends Controller
             'state' => 'required|boolean'
         ]);
 
+        $oldVal = $wallet->is_pinned;
         $wallet->update(['is_pinned' => $validated['state']]);
+
+        // Log pin/unpin action
+        \App\Support\SettingsChangeLogger::logChange(
+            Auth::user(),
+            'wallet:is_pinned',
+            'settings.finance.wallets',
+            $oldVal,
+            $validated['state']
+        );
 
         $message = $validated['state'] ? 'Dompet berhasil ditambahkan ke Dashboard!' : 'Dompet berhasil dilepas dari Dashboard!';
         return back()->with('success', $message);

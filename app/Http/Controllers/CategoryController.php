@@ -57,7 +57,17 @@ class CategoryController extends Controller
             $validated['icon'] = $path;
         }
 
-        Auth::user()->categories()->create($validated);
+        $category = Auth::user()->categories()->create($validated);
+
+        // Log category creation
+        \App\Support\SettingsChangeLogger::logChange(
+            Auth::user(),
+            'category_created',
+            'settings.finance.categories',
+            null,
+            ['id' => $category->id, 'name' => $category->category_name]
+        );
+
         return redirect()->route('transactions.create')->with('success', 'Kategori ditambahkan!');
     }
 
@@ -97,7 +107,23 @@ class CategoryController extends Controller
             $validated['icon'] = $path;
         }
 
+        $original = $category->getOriginal();
         $category->update($validated);
+
+        // Log per-field changes
+        foreach ($validated as $key => $value) {
+            $oldVal = $original[$key] ?? null;
+            if ((string) $oldVal !== (string) $value) {
+                \App\Support\SettingsChangeLogger::logChange(
+                    Auth::user(),
+                    'category:' . $key,
+                    'settings.finance.categories',
+                    $oldVal,
+                    $value
+                );
+            }
+        }
+
         return redirect()->route('categories.index')->with('success', 'Kategori diupdate!');
     }
 
@@ -109,7 +135,18 @@ class CategoryController extends Controller
             return redirect()->route('categories.index')->with('error', 'Kategori sistem tidak bisa dihapus.');
         }
         
+        $old = $category->toArray();
         $category->delete();
+
+        // Log deletion
+        \App\Support\SettingsChangeLogger::logChange(
+            Auth::user(),
+            'category_deleted',
+            'settings.finance.categories',
+            $old,
+            null
+        );
+
         return redirect()->route('categories.index')->with('success', 'Kategori dihapus!');
     }
 

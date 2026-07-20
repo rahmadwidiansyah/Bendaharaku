@@ -87,7 +87,7 @@ class AiSettingsController extends Controller
                 ];
             });
 
-        return Inertia::render('Settings/Ai', [
+        return Inertia::render('Settings/AI/Models', [
             'providerStatuses' => $providerStatuses,
             'availableProviders' => array_map(
                 static fn (AiProvider $provider): string => $provider->value,
@@ -105,17 +105,53 @@ class AiSettingsController extends Controller
         $provider = AiProvider::from($request->validated('provider'));
         $selectedModel = $request->validated('selected_model');
 
+        // snapshot old values
+        $oldPreference = $user->aiPreferences()->where('provider', $provider->value)->first();
+        $oldModel = $oldPreference?->selected_model ?? null;
+        $oldActive = $oldPreference?->is_active_provider ?? false;
+        $oldCredential = $user->aiCredentials()->where('provider', $provider->value)->first();
+        $hadCredential = $oldCredential instanceof \App\Models\UserAiCredential;
+
         if ($request->filled('api_key')) {
             $this->credentialManager->setCredential($user, $provider, $request->validated('api_key'));
+
+            // log that api key/credential was updated (do not store the key itself)
+            \App\Support\SettingsChangeLogger::logChange(
+                $user,
+                'ai_credentials',
+                'settings.ai.providers',
+                $hadCredential ? 'exists' : null,
+                'updated'
+            );
         }
 
         // Jadikan aktif jika: user centang checkbox ATAU belum ada provider aktif sama sekali
         $hasNoActiveProvider = !$user->aiPreferences()->where('is_active_provider', true)->exists();
         if ($request->boolean('is_active_provider') || $hasNoActiveProvider) {
             $this->preferenceManager->switchActiveProvider($user, $provider);
+
+            // log active provider switch
+            \App\Support\SettingsChangeLogger::logChange(
+                $user,
+                'is_active_provider',
+                'settings.ai.providers',
+                $oldActive ? 'true' : 'false',
+                'true'
+            );
         }
 
         $this->preferenceManager->setModelPreference($user, $provider, $selectedModel);
+
+        // log model change if differs
+        if ($oldModel !== $selectedModel) {
+            \App\Support\SettingsChangeLogger::logChange(
+                $user,
+                'selected_model',
+                'settings.ai.providers',
+                $oldModel,
+                $selectedModel
+            );
+        }
 
         return redirect()
             ->back()

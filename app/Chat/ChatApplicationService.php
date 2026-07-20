@@ -817,11 +817,10 @@ class ChatApplicationService
                     'down' => '📉',
                     default => '➡️',
                 };
-                $comparisonItems[] = sprintf(
-                    "%s Pendapatan: %s (vs bulan lalu)",
-                    $emoji,
-                    $this->formatCurrency($comparisonMetrics['income_diff'])
-                );
+                $comparisonItems[] = __('chat.command.report_comparison_income', [
+                    'emoji' => $emoji,
+                    'amount' => $this->formatCurrency($comparisonMetrics['income_diff'])
+                ]);
             }
 
             if (isset($comparisonMetrics['expense_diff'])) {
@@ -831,16 +830,15 @@ class ChatApplicationService
                     'down' => '📉',
                     default => '➡️',
                 };
-                $comparisonItems[] = sprintf(
-                    "%s Pengeluaran: %s (vs bulan lalu)",
-                    $emoji,
-                    $this->formatCurrency($comparisonMetrics['expense_diff'])
-                );
+                $comparisonItems[] = __('chat.command.report_comparison_expense', [
+                    'emoji' => $emoji,
+                    'amount' => $this->formatCurrency($comparisonMetrics['expense_diff'])
+                ]);
             }
 
             if (!empty($comparisonItems)) {
                 $components[] = new ReportSectionComponent(
-                    title: 'Perbandingan dengan Bulan Lalu',
+                    title: __('chat.command.report_comparison_title'),
                     emoji: '📊',
                     items: $comparisonItems,
                     translationKey: 'chat.command.report_comparison',
@@ -960,12 +958,12 @@ class ChatApplicationService
             ->join("\n");
 
         $reportText = implode("\n", array_filter([
-            'Periode: ' . ($period ? $period->translatedFormat('F Y') : now()->translatedFormat('F Y')),
-            'Pemasukan: ' . \App\Support\MoneyFormatter::rupiah($income),
-            'Pengeluaran: ' . \App\Support\MoneyFormatter::rupiah($expense),
-            'Selisih: ' . \App\Support\MoneyFormatter::rupiah($net),
-            $previousReport ? "Pembanding bulan sebelumnya:\n" . $previousReport->final_summary : null,
-            $topCategories ? "Top kategori pengeluaran:\n{$topCategories}" : null,
+            __('chat.command.report_period', ['period' => $period ? $period->translatedFormat('F Y') : now()->translatedFormat('F Y')]),
+            __('chat.command.report_income', ['amount' => \App\Support\MoneyFormatter::rupiah($income)]),
+            __('chat.command.report_expense', ['amount' => \App\Support\MoneyFormatter::rupiah($expense)]),
+            __('chat.command.report_net', ['amount' => \App\Support\MoneyFormatter::rupiah($net)]),
+            $previousReport ? __('chat.command.report_previous', ['summary' => $previousReport->final_summary]) : null,
+            $topCategories ? __('chat.command.report_top_categories', ['categories' => $topCategories]) : null,
         ]));
 
         // If called without a period (unit tests), return structured array for easier assertions
