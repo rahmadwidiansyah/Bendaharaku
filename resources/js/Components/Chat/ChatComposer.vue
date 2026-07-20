@@ -20,7 +20,7 @@
  *   insertText(value) — insert teks ke textarea (dari CommandSheet / suggestion)
  */
 
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 
 const props = defineProps({
     isLoading:   { type: Boolean, default: false },
@@ -78,6 +78,32 @@ function submit() {
     nextTick(resize)
     emit('send', msg)
 }
+
+// --- Global Type-to-Focus ---
+function handleGlobalKeydown(e) {
+  // Abaikan jika menekan tombol kombinasi (Ctrl, Alt, Meta/Cmd) agar shortcut browser tetap jalan
+  if (e.ctrlKey || e.altKey || e.metaKey) return
+
+  // Abaikan jika tombol yang ditekan bukan karakter tunggal (misal: Shift, Enter, Arrow, Escape)
+  if (e.key.length !== 1) return
+
+  // Abaikan jika user sedang fokus di input atau textarea (termasuk textarea ini sendiri)
+  const activeTag = document.activeElement?.tagName?.toLowerCase()
+  if (activeTag === 'input' || activeTag === 'textarea') return
+
+  // Fokuskan ke textarea composer
+  if (textareaRef.value) {
+    textareaRef.value.focus()
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleGlobalKeydown)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleGlobalKeydown)
+})
 </script>
 
 <template>

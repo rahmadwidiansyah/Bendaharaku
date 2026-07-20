@@ -122,15 +122,9 @@ onMounted(checkStatus)
 </script>
 
 <template>
-    <div
-        class="rounded-xl border overflow-hidden bg-gray-900/80 cursor-pointer transition-all active:scale-98 hover:border-white/15 hover:bg-gray-900"
-        :class="typeConfig.border"
-        @click="!localTrx.is_cancelled && (showDetail = true)"
-        role="button"
-        :aria-label="`${typeConfig.label} ${localTrx.amount_formatted}`"
-    >
+    <div class="overflow-hidden cursor-pointer transition-all active:scale-98 hover:bg-white/5" @click="!localTrx.is_cancelled && (showDetail = true)" role="button" :aria-label="`${typeConfig.label} ${localTrx.amount_formatted}`">
         <!-- Header: badge + status di kanan -->
-        <div class="flex items-center justify-between px-3.5 pt-3 pb-2" :class="typeConfig.bg">
+        <div class="flex items-center justify-between px-3.5 pt-3 pb-2">
             <div class="flex items-center gap-2">
                 <span v-if="component.index !== null && component.index !== undefined"
                     class="text-2xs font-black text-gray-600 tabular-nums">#{{ component.index }}</span>

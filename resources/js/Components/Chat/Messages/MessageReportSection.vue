@@ -39,9 +39,8 @@ const titleText = computed(() => props.component.title || (props.component.trans
 </script>
 
 <template>
-    <div :class="['rounded-lg overflow-hidden shadow-sm', variant === 'income' ? 'bg-emerald-900/70' : variant === 'expense' ? 'bg-rose-900/70' : 'bg-gray-900']" :style="{ borderRadius: '18px' }">
+    <div :class="['overflow-hidden', variant === 'income' ? 'bg-emerald-900/30' : variant === 'expense' ? 'bg-rose-900/30' : 'bg-transparent']">
         <div class="p-4 flex items-start gap-3" :class="variant === 'wallet' ? 'border border-white/6' : 'border-b border-white/6'">
-            <div class="text-2xl">{{ component.emoji || '📋' }}</div>
             <div class="flex-1">
                 <div class="text-sm font-semibold text-white leading-tight">{{ titleText }}</div>
                 <div class="text-2xs text-gray-400 mt-1">{{ new Date().toLocaleDateString() }}</div>

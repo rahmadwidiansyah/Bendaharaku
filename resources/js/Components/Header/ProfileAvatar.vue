@@ -58,7 +58,7 @@ const handleClick = (event) => {
     })
 
     // Redirect ke settings
-    router.visit('http://localhost:4000/settings')
+    router.visit(route('settings.index'))
 }
 </script>
 
