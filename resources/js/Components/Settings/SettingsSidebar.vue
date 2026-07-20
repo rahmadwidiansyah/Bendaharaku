@@ -72,18 +72,18 @@ const translateItem = (cat: any, item: any): string => {
   -->
   <aside
     :class="[
-      'z-40 bg-gray-900 border-r border-white/10 overflow-y-auto shrink-0',
-      // Desktop: sticky column
+      'z-40 border-r border-white/[0.07] overflow-y-auto shrink-0',
+      // Desktop: sticky column, tinggi penuh content area (bukan min-h-screen)
       isDesktop
-        ? 'relative w-64 min-h-screen'
+        ? 'relative w-64 self-stretch'
         // Mobile: fixed drawer
-        : 'fixed inset-y-0 left-0 w-72 transition-transform duration-300',
+        : 'fixed inset-y-0 left-0 w-72 bg-gray-800 transition-transform duration-300',
       !isOpen && !isDesktop ? '-translate-x-full' : 'translate-x-0',
     ]"
   >
 
     <!-- Brand / back link -->
-    <div class="sticky top-0 z-10 px-4 py-4 border-b border-white/10 bg-gray-900/95 backdrop-blur-sm">
+    <div class="sticky top-0 z-10 px-4 py-4 border-b border-white/[0.07] bg-gray-800/95 backdrop-blur-sm">
       <Link href="/settings" class="flex items-center gap-3 group" @click="$emit('close')">
         <div class="w-8 h-8 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center justify-center shrink-0">
           <svg class="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

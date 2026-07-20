@@ -147,6 +147,7 @@ async function handleRegenerate(botMessage) {
                 @loadMore="loadMore"
                 @scrollUpdate="onScrollUpdate"
                 @regenerate="handleRegenerate"
+                @suggest="handleSuggestionSelect"
                 class="flex-1"
             >
                 <template v-if="messages.length === 0 && !isLoading">

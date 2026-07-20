@@ -15,8 +15,13 @@ const breadcrumbs = [
   { label: t('settings.account.preferences.title') },
 ];
 
-const timezone = ref('UTC');
-const dateFormat = ref('DD/MM/YYYY');
+const props = defineProps<{
+  userTimezone: string;
+  userDateFormat: string;
+}>();
+
+const timezone = ref(props.userTimezone);
+const dateFormat = ref(props.userDateFormat);
 const saving = ref(false);
 const successMessage = ref('');
 const errorMessage = ref('');
@@ -27,7 +32,7 @@ const handleSave = async () => {
   successMessage.value = '';
 
   try {
-    const response = await axios.patch(route('settings.account.preferences.update'), {
+    await axios.patch(route('settings.account.preferences.update'), {
       timezone: timezone.value,
       date_format: dateFormat.value,
     });

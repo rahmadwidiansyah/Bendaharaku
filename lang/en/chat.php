@@ -205,6 +205,7 @@ return [
         'help_example_expense'  => '💸 Expense: "Bought lunch 15k bca"',
         'help_example_income'   => '💰 Income: "Salary 5M mandiri"',
         'help_example_transfer' => '🔄 Transfer: "Transfer bca to dana 100k"',
+        'help_example_debt'     => '🤝 Debt/Receivable: "Borrowed 100k bca #Budi"',
         'total_balance'     => 'Total Balance',
         'report_summary'    => 'Summary: :summary',
     ],

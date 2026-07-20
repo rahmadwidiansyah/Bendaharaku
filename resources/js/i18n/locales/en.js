@@ -640,7 +640,7 @@ export default {
                 api_key: {
                     label:          'API Key',
                     description:    'Your API key for this provider',
-                    warning:        'Your API key is stored locally and never sent to our servers',
+                    warning:        'API key is encrypted and stored securely on the server',
                 },
                 select_model:   'Select a model...',
                 status: 'Status',
@@ -648,7 +648,7 @@ export default {
                 testing: 'Testing...',
                 test_success: 'Connection succeeded.',
                 test_failed: 'Connection failed.',
-                help_text: 'Models and providers can be configured per device. API keys are stored securely on your browser.',
+                help_text: 'Configure the AI provider and model to use. Press Save to apply your changes.',
             },
             
             bot: {

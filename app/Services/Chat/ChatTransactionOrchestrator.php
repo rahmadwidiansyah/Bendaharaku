@@ -62,7 +62,13 @@ class ChatTransactionOrchestrator
     public function process(User $user, string $text, string $source = 'TEL'): array
     {
         try {
-            $wallets    = $user->wallets()->get(['id', 'name', 'group_type', 'keyword'])->toArray();
+            // Kirim hanya wallet non-System ke AI agar AI tidak salah pilih/menyebutkan
+            // wallet sistem (External, Merchant, Hutang, Piutang) sebagai target transaksi.
+            // Wallet sistem dikelola internal oleh resolver — AI tidak perlu tahu.
+            $wallets    = $user->wallets()
+                ->where('group_type', '!=', 'System')
+                ->get(['id', 'name', 'group_type', 'keyword'])
+                ->toArray();
             $categories = $user->categories()->get(['id', 'category_name', 'type_id', 'keyword'])->toArray();
             $activeMemories = $this->memoryService->getTopRelevantMemories($user->id, $text);
 
@@ -276,11 +282,48 @@ class ChatTransactionOrchestrator
         $debtWalletId       = $this->findSystemWalletId((string) config('bendaharaku.system_wallets.debt'), $wallets);
         $receivableWalletId = $this->findSystemWalletId((string) config('bendaharaku.system_wallets.receivable'), $wallets);
 
-        [$sourceWalletId, $destinationWalletId] = match ($parsed->transactionType) {
-            TransactionIntent::Income => [$externalWalletId, $merchantWalletId],
-            TransactionIntent::Debt => [$externalWalletId, $debtWalletId],
-            TransactionIntent::Receivable => [$externalWalletId, $receivableWalletId],
-            default => [$externalWalletId, $merchantWalletId],
+        // Logika alokasi wallet untuk draft (wallet user belum diketahui):
+        //
+        // EXPENSE: uang keluar dari wallet user ke merchant
+        //   source = placeholder (akan diganti user), dest = Merchant System
+        //
+        // INCOME: uang masuk dari luar ke wallet user
+        //   source = External System, dest = placeholder (akan diganti user)
+        //
+        // DEBT (Hutang) — ada 2 sisi:
+        //   "Dapat Hutangan" / terima hutang: source = System Hutang, dest = placeholder wallet user
+        //   "Bayar Hutang": source = placeholder wallet user, dest = System Hutang
+        //   → Karena draft, kita gunakan placeholder di sisi wallet user.
+        //   Tapi karena kita hanya tahu intentnya Debt, kita default ke:
+        //   source = System Hutang, dest = placeholder (user pilih wallet tujuan = penerima dana)
+        //   — ini merepresentasikan "hutang masuk/terima hutang" yang paling umum.
+        //
+        // RECEIVABLE (Piutang) — ada 2 sisi:
+        //   "Ngasih Piutang": source = placeholder wallet user, dest = System Piutang
+        //   "Terima Bayar Piutang": source = System Piutang, dest = placeholder wallet user
+        //   → AI sudah memilih kategori yang tepat. Kita lihat nama kategori untuk menentukan arah.
+        //   Fallback: gunakan External System sebagai placeholder sisi wallet user.
+
+        // Cek apakah ini "bayar/kembalikan" piutang (piutang masuk ke user) berdasarkan kategori
+        $categoryName = mb_strtolower($category->category_name ?? '');
+        $isReceivableReturn = $parsed->transactionType === TransactionIntent::Receivable
+            && (str_contains($categoryName, 'terima') || str_contains($categoryName, 'bayar') || str_contains($categoryName, 'kembali'));
+        $isDebtReturn = $parsed->transactionType === TransactionIntent::Debt
+            && (str_contains($categoryName, 'bayar') || str_contains($categoryName, 'cicilan') || str_contains($categoryName, 'lunasi'));
+
+        [$sourceWalletId, $destinationWalletId] = match (true) {
+            // Receivable: piutang dikembalikan → dari System Piutang ke wallet user
+            $isReceivableReturn                                      => [$receivableWalletId, $externalWalletId],
+            // Receivable: memberi piutang → dari wallet user ke System Piutang
+            $parsed->transactionType === TransactionIntent::Receivable => [$externalWalletId, $receivableWalletId],
+            // Debt: bayar hutang → dari wallet user ke System Hutang
+            $isDebtReturn                                            => [$externalWalletId, $debtWalletId],
+            // Debt: terima hutang → dari System Hutang ke wallet user
+            $parsed->transactionType === TransactionIntent::Debt    => [$debtWalletId, $externalWalletId],
+            // Income: dari luar ke wallet user
+            $parsed->transactionType === TransactionIntent::Income   => [$externalWalletId, $externalWalletId],
+            // Expense (default): dari wallet user ke merchant
+            default                                                  => [$externalWalletId, $merchantWalletId],
         };
 
         return new ResolvedTransaction(

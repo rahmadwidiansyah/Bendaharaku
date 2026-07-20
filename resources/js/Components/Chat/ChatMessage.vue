@@ -31,7 +31,7 @@ const props = defineProps({
     showAvatar: { type: Boolean, default: true },
 })
 
-const emit = defineEmits(['retry', 'regenerate'])
+const emit = defineEmits(['retry', 'regenerate', 'suggest'])
 
 // ── Content parsing (delegasi ke composable) ──────────────────────
 const {
@@ -58,13 +58,13 @@ const {
 
             <!-- 1. Card components -->
             <template v-for="(comp, i) in cardComponents" :key="'card-' + i">
-                <MessageRenderer :component="comp" :metadata="message.metadata ?? {}" />
+                <MessageRenderer :component="comp" :metadata="message.metadata ?? {}" @suggest="emit('suggest', $event)" />
             </template>
 
             <!-- 2. Inline Text (Bubble) -->
             <div v-if="filteredInline.length > 0" class="px-3.5 pt-2.5 pb-1 space-y-1">
                 <template v-for="(comp, i) in filteredInline" :key="i">
-                    <MessageRenderer :component="comp" />
+                    <MessageRenderer :component="comp" @suggest="emit('suggest', $event)" />
                 </template>
             </div>
 

@@ -13,13 +13,13 @@
  * Tidak ada kondisi template di luar komponen ini untuk render tipe pesan.
  */
 
-import MessageText           from './MessageText.vue'
-import MessageDivider        from './MessageDivider.vue'
+import MessageText            from './MessageText.vue'
+import MessageDivider         from './MessageDivider.vue'
 import MessageTransactionCard from './MessageTransactionCard.vue'
-import MessageSummaryCard    from './MessageSummaryCard.vue'
-import MessageErrorCard      from './MessageErrorCard.vue'
-import MessageSuggestion     from './MessageSuggestion.vue'
-import MessageReportSection  from './MessageReportSection.vue'
+import MessageSummaryCard     from './MessageSummaryCard.vue'
+import MessageErrorCard       from './MessageErrorCard.vue'
+import MessageSuggestion      from './MessageSuggestion.vue'
+import MessageReportSection   from './MessageReportSection.vue'
 
 defineProps({
     component: {
@@ -35,6 +35,8 @@ defineProps({
         default: () => ([]),
     },
 })
+
+const emit = defineEmits(['suggest'])
 
 const componentMap = {
     text:             MessageText,
@@ -60,6 +62,7 @@ const componentMap = {
         :component="component"
         :content="content"
         v-bind="component.type === 'transaction_card' ? { metadata } : {}"
+        @suggest="emit('suggest', $event)"
     />
     <!-- Fallback: tipe tidak dikenal, tampilkan teks mentah (debug only) -->
     <div v-else class="text-2xs text-gray-600 font-mono px-2 py-1">

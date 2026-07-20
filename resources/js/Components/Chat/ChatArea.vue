@@ -25,7 +25,7 @@ const props = defineProps({
     userName:      { type: String,  default: 'Kamu' },
 })
 
-const emit = defineEmits(['loadMore', 'scrollUpdate', 'retry', 'regenerate'])
+const emit = defineEmits(['loadMore', 'scrollUpdate', 'retry', 'regenerate', 'suggest'])
 
 /** Avatar grouping: tampilkan avatar hanya di awal grup role yang sama */
 function shouldShowAvatar(messages, index) {
@@ -128,6 +128,7 @@ defineExpose({ el: containerRef })
                 :show-avatar="shouldShowAvatar(messages, idx)"
                 @retry="emit('retry', $event)"
                 @regenerate="emit('regenerate', $event)"
+                @suggest="emit('suggest', $event)"
             />
         </TransitionGroup>
 
