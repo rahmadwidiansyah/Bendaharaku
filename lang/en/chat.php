@@ -138,7 +138,7 @@ return [
             "Make sure the wallet name (e.g. *bca*, *dana*, *cash*) is registered on the Web.",
         ]),
         'runtime'         => "⚠️ *Failed to process:*\n:message",
-        'system'          => '❌ A system error occurred. Please try again later.',
+        'system'          => 'A system error occurred. Please try again later.',
         'reason_prefix'   => 'Reason: ',
     ],
 
@@ -178,7 +178,7 @@ return [
             "_Note: If it opens inside Telegram, tap the three dots in the top right and choose 'Open in Chrome/Browser'._",
         ]),
         'help_greeting'   => '👋 *Hello :name!*',
-        'help_intro'      => "I'm your *Bendaharaku V4* assistant. I'll automatically record all your finances.",
+        'help_intro'      => "I'm your *Bendaharaku* assistant. I'll automatically record all your finances.",
         'help_guide'      => '📖 *HOW TO RECORD TRANSACTIONS:*',
         'help_example_intro' => 'Just type casually, for example:',
         'help_commands_title' => '📊 *BOT COMMANDS:*',

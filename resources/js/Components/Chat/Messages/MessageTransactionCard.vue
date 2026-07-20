@@ -130,7 +130,7 @@ onMounted(checkStatus)
         :aria-label="`${typeConfig.label} ${localTrx.amount_formatted}`"
     >
         <!-- Header: badge + status di kanan -->
-        <div class="flex items-center justify-between px-3.5 pt-3 pb-2" :class="typeConfig.bg">
+        <div class="flex items-center justify-between px-3.5 pt-3 pb-2 bg-white/5 border-b border-white/5">
             <div class="flex items-center gap-2">
                 <span v-if="component.index !== null && component.index !== undefined"
                     class="text-2xs font-black text-gray-600 tabular-nums">#{{ component.index }}</span>
