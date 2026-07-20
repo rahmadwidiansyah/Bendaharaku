@@ -7,6 +7,12 @@ import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 
+const props = withDefaults(defineProps<{
+  appVersion?: string;
+}>(), {
+  appVersion: '1.0.0',
+});
+
 const breadcrumbs = [
   { label: t('settings.title'), href: route('settings.index') },
   { label: t('settings.system.title') },
@@ -27,7 +33,7 @@ const breadcrumbs = [
         <div class="space-y-4">
           <div class="flex justify-between">
             <span class="text-sm text-gray-400">{{ t('settings.system.about.version') }}</span>
-            <span class="text-sm text-white font-medium">2.0.0</span>
+            <span class="text-sm text-white font-medium">{{ appVersion }}</span>
           </div>
           <div class="border-t border-gray-700 pt-4">
             <p class="text-2xs text-gray-500">{{ t('settings.system.about.app_description') }}</p>

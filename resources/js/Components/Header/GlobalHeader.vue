@@ -191,8 +191,8 @@ const handleOpenNotif = () => { /* TODO: notification center */ }
         class="lg:hidden sticky top-0 z-30 w-full transition-all duration-300 ease-out"
         :class="[
             isCollapsed
-                ? 'bg-gray-900/98 backdrop-blur-2xl shadow-md shadow-black/50 border-b border-white/6'
-                : 'bg-gray-900/90 backdrop-blur-xl border-b border-white/5',
+                ? 'bg-gray-800/98 backdrop-blur-2xl shadow-md shadow-black/50 border-b border-white/[0.06]'
+                : 'bg-gray-800/90 backdrop-blur-xl border-b border-white/[0.05]',
         ]"
         :aria-label="$t('nav.mainNav')"
         style="padding-top: env(safe-area-inset-top, 0px);"

@@ -44,13 +44,6 @@ const settingsMenuTree: SettingsCategory[] = [
         route: 'settings.account.security',
       },
       {
-        id: 'sessions',
-        label: 'Active Sessions',
-        icon: 'Globe',
-        description: 'Manage active sessions',
-        route: 'settings.account.sessions',
-      },
-      {
         id: 'preferences',
         label: 'Preferences',
         icon: 'Settings',

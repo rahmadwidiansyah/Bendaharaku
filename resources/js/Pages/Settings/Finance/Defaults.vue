@@ -23,7 +23,6 @@ const props = defineProps<{
 const availableWallets = computed(() => props.wallets || []);
 
 const defaultWallet = ref('');
-const defaultCurrency = ref('IDR');
 const allowNegativeBalance = ref((page.props.auth as any)?.user?.allow_negative_balance || false);
 const saving = ref(false);
 const successMessage = ref('');
@@ -37,7 +36,6 @@ const breadcrumbs = [
 
 onMounted(() => {
   defaultWallet.value = localStorage.getItem('default_wallet') || (availableWallets.value[0]?.id?.toString() || '');
-  defaultCurrency.value = localStorage.getItem('default_currency') || 'IDR';
 });
 
 const handleSave = async () => {
@@ -48,12 +46,10 @@ const handleSave = async () => {
   try {
     const response = await axios.patch(route('settings.finance.defaults.update'), {
       default_wallet: defaultWallet.value,
-      default_currency: defaultCurrency.value,
       allow_negative_balance: allowNegativeBalance.value,
     });
 
     localStorage.setItem('default_wallet', defaultWallet.value);
-    localStorage.setItem('default_currency', defaultCurrency.value);
 
     // Update frontend auth user object so other pages get updated value
     if (page.props.auth && (page.props.auth as any).user) {
@@ -97,17 +93,6 @@ const handleSave = async () => {
             <option v-for="w in availableWallets" :key="w.id" :value="w.id.toString()">
               {{ w.name }} ({{ w.group_type }})
             </option>
-          </select>
-        </div>
-      </SettingsCard>
-
-      <!-- Default Currency Selection -->
-      <SettingsCard :title="t('settings.finance.defaults.currency.title')" :description="t('settings.finance.defaults.currency.description')">
-        <div class="space-y-2">
-          <select v-model="defaultCurrency" class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-purple-500">
-            <option value="IDR">{{ t('settings.application.language.currency.idr') }}</option>
-            <option value="USD">{{ t('settings.application.language.currency.usd') }}</option>
-            <option value="EUR">{{ t('settings.application.language.currency.eur') }}</option>
           </select>
         </div>
       </SettingsCard>

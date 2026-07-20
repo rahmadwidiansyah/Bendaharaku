@@ -95,28 +95,70 @@ Route::middleware(['auth'])->group(function () {
         // Full profile update (name, email, whatsapp, telegram, avatar) via ProfileController
         Route::match(['post', 'patch'], '/profile', [ProfileController::class, 'update'])->name('profile.update');
 
-        Route::get('/security', fn() => Inertia::render('Settings/Account/Security'))->name('security');
-        
-        Route::get('/sessions', fn() => Inertia::render('Settings/Account/Sessions'))->name('sessions');
-        
-        Route::get('/preferences', fn() => Inertia::render('Settings/Account/Preferences'))->name('preferences');
+        Route::get('/security', function (\Illuminate\Http\Request $request) {
+            $user = $request->user();
+            $currentSessionId = $request->session()->getId();
+
+            // Fetch all sessions for this user from the sessions table (database driver)
+            $dbSessions = DB::table('sessions')
+                ->where('user_id', $user->id)
+                ->orderByDesc('last_activity')
+                ->get();
+
+            $sessions = $dbSessions->map(function ($s) use ($currentSessionId) {
+                return [
+                    'id'            => $s->id,
+                    'ip'            => $s->ip_address,
+                    'user_agent'    => $s->user_agent,
+                    'last_activity' => \Carbon\Carbon::createFromTimestamp($s->last_activity)->toDateTimeString(),
+                    'is_current'    => $s->id === $currentSessionId,
+                ];
+            })->values()->all();
+
+            // If no DB sessions found (e.g. driver mismatch), fall back to current-request info
+            if (empty($sessions)) {
+                $sessions = [[
+                    'id'            => $currentSessionId,
+                    'ip'            => $request->ip(),
+                    'user_agent'    => $request->userAgent(),
+                    'last_activity' => now()->toDateTimeString(),
+                    'is_current'    => true,
+                ]];
+            }
+
+            $currentSession = collect($sessions)->firstWhere('is_current', true) ?? $sessions[0];
+            $otherSessions  = collect($sessions)->where('is_current', false)->values()->all();
+
+            return Inertia::render('Settings/Account/Security', [
+                'currentSession' => $currentSession,
+                'otherSessions'  => $otherSessions,
+            ]);
+        })->name('security');
+
+        Route::get('/preferences', function (\Illuminate\Http\Request $request) {
+            $user = $request->user();
+            return Inertia::render('Settings/Account/Preferences', [
+                'userTimezone'   => $user->timezone ?? 'Asia/Jakarta',
+                'userDateFormat' => $user->date_format ?? 'DD/MM/YYYY',
+            ]);
+        })->name('preferences');
         Route::patch('/preferences', function (\Illuminate\Http\Request $request) {
             $validated = $request->validate([
-                'timezone' => ['required', 'string', 'timezone'],
+                'timezone'    => ['required', 'string', 'timezone'],
                 'date_format' => ['required', 'string', 'in:DD/MM/YYYY,MM/DD/YYYY,YYYY-MM-DD'],
             ]);
 
             $user = $request->user();
-            $user->update(['timezone' => $validated['timezone']]);
-            
-            // Store date_format in user preferences if model supports it
-            // For now, return success
-            
+            $user->update([
+                'timezone'    => $validated['timezone'],
+                'date_format' => $validated['date_format'],
+            ]);
+
             \App\Support\SettingsChangeLogger::logChange(
                 $user,
                 'preferences',
                 'settings.account.preferences',
-                [],
+                ['timezone' => $user->getOriginal('timezone'), 'date_format' => $user->getOriginal('date_format')],
                 $validated
             );
 
@@ -126,33 +168,41 @@ Route::middleware(['auth'])->group(function () {
 
     // Application
     Route::prefix('settings/application')->name('settings.application.')->group(function () {
-        Route::get('/appearance', fn() => Inertia::render('Settings/Application/Appearance'))->name('appearance');
+        Route::get('/appearance', function (\Illuminate\Http\Request $request) {
+            $user = $request->user();
+            return Inertia::render('Settings/Application/Appearance', [
+                'userAccentColor' => $user->accent_color ?? 'purple',
+            ]);
+        })->name('appearance');
         Route::patch('/appearance', function (\Illuminate\Http\Request $request) {
             $validated = $request->validate([
-                'theme' => ['required', 'string', 'in:light,dark,system'],
-                'accent_color' => ['required', 'string'],
+                'theme'        => ['required', 'string', 'in:light,dark,system'],
+                'accent_color' => ['required', 'string', 'in:purple,blue,green,orange,red,pink'],
             ]);
 
             $user = $request->user();
-            // Store in user preferences or settings table
-            // For now, just acknowledge
-            
+            $user->update(['accent_color' => $validated['accent_color']]);
+
             \App\Support\SettingsChangeLogger::logChange(
                 $user,
                 'appearance',
                 'settings.application.appearance',
-                [],
+                ['accent_color' => $user->getOriginal('accent_color')],
                 $validated
             );
 
             return response()->json(['success' => true, 'message' => 'Tampilan berhasil diperbarui.']);
         })->name('appearance.update');
 
-        Route::get('/language', fn() => Inertia::render('Settings/Application/Language'))->name('language');
+        Route::get('/language', function (\Illuminate\Http\Request $request) {
+            $user = $request->user();
+            return Inertia::render('Settings/Application/Language', [
+                'userLanguage' => $user->locale ?? 'id',
+            ]);
+        })->name('language');
         Route::patch('/language', function (\Illuminate\Http\Request $request) {
             $validated = $request->validate([
                 'language' => ['required', 'string', 'in:id,en'],
-                'currency' => ['required', 'string'],
             ]);
 
             $user = $request->user();
@@ -162,11 +212,11 @@ Route::middleware(['auth'])->group(function () {
                 $user,
                 'language',
                 'settings.application.language',
-                [],
+                ['language' => $user->getOriginal('locale')],
                 $validated
             );
 
-            return response()->json(['success' => true, 'message' => 'Bahasa dan mata uang berhasil diperbarui.']);
+            return response()->json(['success' => true, 'message' => 'Bahasa berhasil diperbarui.']);
         })->name('language.update');
 
         Route::get('/notifications', fn() => Inertia::render('Settings/Application/Notifications'))->name('notifications');
@@ -312,7 +362,16 @@ Route::middleware(['auth'])->group(function () {
 
     // System
     Route::prefix('settings/system')->name('settings.system.')->group(function () {
-        Route::get('/about', fn() => Inertia::render('Settings/System/About'))->name('about');
+        Route::get('/about', function () {
+            $composerJson = json_decode(file_get_contents(base_path('composer.json')), true);
+            $appVersion = $composerJson['version']
+                ?? config('app.version')
+                ?? '1.0.0';
+
+            return Inertia::render('Settings/System/About', [
+                'appVersion' => $appVersion,
+            ]);
+        })->name('about');
     });
 
     // AI Settings - Restructured Hierarchy

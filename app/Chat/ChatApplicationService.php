@@ -1184,6 +1184,7 @@ class ChatApplicationService
     {
         return ChatResponse::command(
             components: [
+                // Sapaan & intro
                 new TextComponent(
                     translationKey: 'chat.command.help_greeting',
                     params: ['name' => $user->name],
@@ -1191,16 +1192,39 @@ class ChatApplicationService
                 ),
                 new TextComponent(translationKey: 'chat.command.help_intro'),
                 new DividerComponent(),
-                new TextComponent(translationKey: 'chat.command.help_guide'),
+
+                // Panduan catat transaksi
+                new TextComponent(translationKey: 'chat.command.help_guide', bold: true),
+                new TextComponent(translationKey: 'chat.command.help_example_intro'),
+                new DividerComponent(),
+
+                // Contoh-contoh transaksi sebagai chip yang bisa diklik
                 new \App\Chat\Components\SuggestionComponent(
                     messageKey: 'chat.command.help_example_expense',
+                    params: [],
+                    actionUrl: null,
                 ),
                 new \App\Chat\Components\SuggestionComponent(
                     messageKey: 'chat.command.help_example_income',
+                    params: [],
+                    actionUrl: null,
                 ),
                 new \App\Chat\Components\SuggestionComponent(
                     messageKey: 'chat.command.help_example_transfer',
+                    params: [],
+                    actionUrl: null,
                 ),
+                new \App\Chat\Components\SuggestionComponent(
+                    messageKey: 'chat.command.help_example_debt',
+                    params: [],
+                    actionUrl: null,
+                ),
+                new DividerComponent(),
+
+                // Daftar perintah bot
+                new TextComponent(translationKey: 'chat.command.help_commands_title', bold: true),
+                new TextComponent(translationKey: 'chat.command.help_cmd_balance'),
+                new TextComponent(translationKey: 'chat.command.help_cmd_help'),
             ],
             metadata: $metadata,
         );

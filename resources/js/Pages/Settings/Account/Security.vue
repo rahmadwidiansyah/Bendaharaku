@@ -15,6 +15,24 @@ const breadcrumbs = [
   { label: t('settings.account.security.title') },
 ];
 
+interface SessionInfo {
+  ip: string;
+  user_agent: string;
+  last_activity: string;
+  is_current?: boolean;
+}
+
+const props = withDefaults(
+  defineProps<{
+    currentSession?: SessionInfo | null;
+    otherSessions?: SessionInfo[];
+  }>(),
+  {
+    currentSession: null,
+    otherSessions: () => [],
+  }
+);
+
 const form = useForm({
   current_password: '',
   password: '',
@@ -23,6 +41,22 @@ const form = useForm({
 
 const successMessage = ref('');
 const errorMessage = ref('');
+
+function parseBrowser(ua: string): string {
+  if (!ua) return 'Unknown';
+  if (ua.includes('Edg')) return 'Edge';
+  if (ua.includes('Chrome')) return 'Chrome';
+  if (ua.includes('Firefox')) return 'Firefox';
+  if (ua.includes('Safari')) return 'Safari';
+  return 'Browser';
+}
+
+function formatActivity(ts: string): string {
+  if (!ts) return '';
+  const date = new Date(ts);
+  if (isNaN(date.getTime())) return ts;
+  return date.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+}
 
 const handleUpdatePassword = () => {
   errorMessage.value = '';
@@ -41,7 +75,6 @@ const handleUpdatePassword = () => {
       setTimeout(() => { successMessage.value = ''; }, 4000);
     },
     onError: () => {
-      // Inertia automatically populates form.errors from all error bags
       errorMessage.value = form.errors.current_password
         || form.errors.password
         || form.errors.password_confirmation
@@ -131,8 +164,50 @@ const handleUpdatePassword = () => {
 
       <!-- Active Sessions and History Section -->
       <SettingsCard :title="t('settings.account.security.login_activity.title')" :description="t('settings.account.security.login_activity.description')">
-        <div class="space-y-4">
-          <p class="text-sm text-gray-400">{{ t('settings.account.security.login_activity.tracking_soon') }}</p>
+        <div class="space-y-3">
+
+          <!-- No session data -->
+          <template v-if="!currentSession">
+            <p class="text-sm text-gray-400">⏳ Riwayat login sedang dikembangkan.</p>
+          </template>
+
+          <template v-else>
+            <!-- Current Session -->
+            <div class="flex items-start gap-3 p-3 bg-green-500/5 border border-green-500/20 rounded-xl">
+              <span class="text-xl mt-0.5 shrink-0">🖥️</span>
+              <div class="flex-1 min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <p class="text-sm font-semibold text-white">{{ parseBrowser(currentSession.user_agent) }}</p>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-bold bg-green-500/20 text-green-400 border border-green-500/30">
+                    Sesi ini
+                  </span>
+                </div>
+                <p class="text-xs text-gray-400 mt-0.5">{{ currentSession.ip }}</p>
+                <p v-if="currentSession.last_activity" class="text-xs text-gray-500 mt-0.5">
+                  {{ formatActivity(currentSession.last_activity) }}
+                </p>
+              </div>
+            </div>
+
+            <!-- Other Sessions -->
+            <template v-if="otherSessions && otherSessions.length > 0">
+              <div
+                v-for="(session, index) in otherSessions"
+                :key="index"
+                class="flex items-start gap-3 p-3 bg-gray-800/50 border border-white/[0.07] rounded-xl"
+              >
+                <span class="text-xl mt-0.5 shrink-0">🖥️</span>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-semibold text-white">{{ parseBrowser(session.user_agent) }}</p>
+                  <p class="text-xs text-gray-400 mt-0.5">{{ session.ip }}</p>
+                  <p v-if="session.last_activity" class="text-xs text-gray-500 mt-0.5">
+                    {{ formatActivity(session.last_activity) }}
+                  </p>
+                </div>
+              </div>
+            </template>
+          </template>
+
         </div>
       </SettingsCard>
     </SettingsLayout>

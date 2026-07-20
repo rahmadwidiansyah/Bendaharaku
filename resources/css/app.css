@@ -88,6 +88,12 @@
    BASE STYLES
 ═══════════════════════════════════════════════════════════════════ */
 @layer base {
+    /* Prevent overscroll bounce showing wrong background color on iOS/Android */
+    html {
+        background-color: #1f2937; /* gray-800 — matches AuthenticatedLayout panel */
+        overscroll-behavior: none;
+    }
+
     /* Autofill WebKit — paksa warna gelap agar konsisten */
     input:-webkit-autofill,
     input:-webkit-autofill:hover,

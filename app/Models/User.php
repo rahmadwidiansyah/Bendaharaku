@@ -25,6 +25,8 @@ class User extends Authenticatable
         'timezone',
         'bot_name',
         'bot_avatar',
+        'date_format',
+        'accent_color',
     ];
 
     protected $hidden = [

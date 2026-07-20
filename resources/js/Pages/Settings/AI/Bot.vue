@@ -28,6 +28,8 @@ const form = useForm({
 const previewFile = ref<string | null>(null);
 const saveStatus = ref('');
 
+const suggestedNames = ['Ken-Chan', 'Kira', 'Nova', 'Aria', 'Zara', 'Luna', 'Rex', 'Byte', 'Sage', 'Echo'];
+
 const breadcrumbs = [
   { label: t('settings.title'), href: route('settings.index') },
   { label: t('settings.ai.title') },
@@ -163,6 +165,23 @@ const deleteBotAvatar = () => {
             :placeholder="t('settings.ai.bot.name.placeholder')"
             class="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
           />
+
+          <!-- Name Suggestion Chips -->
+          <div class="space-y-2">
+            <p class="text-xs text-gray-500 font-medium">Nama Saran:</p>
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="name in suggestedNames"
+                :key="name"
+                type="button"
+                @click="form.bot_name = name"
+                class="px-3 py-1 rounded-full bg-gray-800 border border-white/8 text-xs text-gray-300 hover:text-white hover:border-purple-500/50 hover:bg-purple-500/10 transition-all cursor-pointer"
+              >
+                {{ name }}
+              </button>
+            </div>
+          </div>
+
           <p class="text-xs text-gray-400">
             {{ t('settings.ai.bot.name.hint') }}
           </p>

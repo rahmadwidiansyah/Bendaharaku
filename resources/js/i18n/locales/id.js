@@ -654,7 +654,7 @@ export default {
                 api_key: {
                     label:          'API Key',
                     description:    'API key Anda untuk provider ini',
-                    warning:        'API key disimpan secara lokal dan tidak pernah dikirim ke server kami',
+                    warning:        'API key dienkripsi dan disimpan secara aman di server',
                 },
                 select_model:   'Pilih model...',
                 status: 'Status',
@@ -662,7 +662,7 @@ export default {
                 testing: 'Mengujicoba...',
                 test_success: 'Koneksi berhasil.',
                 test_failed: 'Koneksi gagal.',
-                help_text: 'Model dan provider dapat dikonfigurasi per perangkat. API key disimpan secara aman di browser Anda.',
+                help_text: 'Konfigurasi provider dan model AI yang akan digunakan. Tekan Simpan untuk menyimpan perubahan.',
             },
             
             bot: {

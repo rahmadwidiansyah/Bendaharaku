@@ -44,6 +44,23 @@ class TransactionResolver
         $category = $this->searchCategory($parsed->category, $categories);
 
         // 5. Alokasi ID Dompet (Exhaustive Match berdasarkan Enum & Config SSOT)
+        //
+        // Untuk Debt dan Receivable, ada dua arah berbeda yang ditentukan oleh kategori:
+        //   Debt "Dapat Hutangan"   : System Hutang  → wallet user (uang masuk, hutang bertambah)
+        //   Debt "Bayar Hutang"     : wallet user    → System Hutang (uang keluar, hutang berkurang)
+        //   Receivable "Ngasih Piutang"     : wallet user    → System Piutang (uang keluar, piutang bertambah)
+        //   Receivable "Terima Bayar Piutang": System Piutang → wallet user (uang masuk, piutang berkurang)
+        //
+        // AI sudah memilih kategori yang tepat — kita cukup periksa nama kategori untuk arah.
+        $categoryName = mb_strtolower($category->category_name ?? '');
+
+        $isReceivableReturn = $parsed->transactionType === TransactionIntent::Receivable
+            && (str_contains($categoryName, 'terima') || str_contains($categoryName, 'bayar') || str_contains($categoryName, 'kembali'));
+        $isDebtReceive = $parsed->transactionType === TransactionIntent::Debt
+            && (str_contains($categoryName, 'dapat') || str_contains($categoryName, 'terima') || str_contains($categoryName, 'pinjam'));
+        $isDebtPay = $parsed->transactionType === TransactionIntent::Debt
+            && !$isDebtReceive;
+
         [$sourceWalletId, $destinationWalletId] = match ($parsed->transactionType) {
             TransactionIntent::Expense => [
                 $this->searchWalletToken($parsed->sourceWallet, $wallets, 'Asal'),
@@ -57,14 +74,28 @@ class TransactionResolver
                 $this->searchWalletToken($parsed->sourceWallet, $wallets, 'Asal'),
                 $this->searchWalletToken($parsed->destinationWallet, $wallets, 'Tujuan')
             ],
-            TransactionIntent::Debt => [
-                $this->searchWalletToken($parsed->sourceWallet, $wallets, 'Asal'),
-                $this->resolveSystemWallet((string) config('bendaharaku.system_wallets.debt'), $wallets)
-            ],
-            TransactionIntent::Receivable => [
-                $this->searchWalletToken($parsed->sourceWallet, $wallets, 'Asal'),
-                $this->resolveSystemWallet((string) config('bendaharaku.system_wallets.receivable'), $wallets)
-            ],
+            TransactionIntent::Debt => $isDebtReceive
+                // Terima hutang: System Hutang → wallet user
+                ? [
+                    $this->resolveSystemWallet((string) config('bendaharaku.system_wallets.debt'), $wallets),
+                    $this->searchWalletToken($parsed->destinationWallet ?? $parsed->sourceWallet, $wallets, 'Tujuan'),
+                ]
+                // Bayar hutang: wallet user → System Hutang
+                : [
+                    $this->searchWalletToken($parsed->sourceWallet, $wallets, 'Asal'),
+                    $this->resolveSystemWallet((string) config('bendaharaku.system_wallets.debt'), $wallets),
+                ],
+            TransactionIntent::Receivable => $isReceivableReturn
+                // Terima bayar piutang: System Piutang → wallet user
+                ? [
+                    $this->resolveSystemWallet((string) config('bendaharaku.system_wallets.receivable'), $wallets),
+                    $this->searchWalletToken($parsed->destinationWallet ?? $parsed->sourceWallet, $wallets, 'Tujuan'),
+                ]
+                // Ngasih piutang: wallet user → System Piutang
+                : [
+                    $this->searchWalletToken($parsed->sourceWallet, $wallets, 'Asal'),
+                    $this->resolveSystemWallet((string) config('bendaharaku.system_wallets.receivable'), $wallets),
+                ],
         };
 
         return new ResolvedTransaction(

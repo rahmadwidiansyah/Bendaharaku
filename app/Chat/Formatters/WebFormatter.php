@@ -199,9 +199,21 @@ class WebFormatter implements ChatFormatterInterface
 
     private function renderSuggestion(SuggestionComponent $c, string $locale): array
     {
+        $message = trans($c->messageKey, $c->params, $locale);
+
+        // Ekstrak teks bersih dalam tanda kutip untuk dimasukkan ke composer.
+        // Contoh: '💸 Pengeluaran: "Beli nasi goreng 15k bca"' → 'Beli nasi goreng 15k bca'
+        // Jika tidak ada kutipan, gunakan teks penuh.
+        $insertText = $message;
+        if (preg_match('/["""](.+?)["""]/', $message, $matches)) {
+            $insertText = $matches[1];
+        }
+
         return [
-            'type'    => 'suggestion',
-            'message' => trans($c->messageKey, $c->params, $locale),
+            'type'        => 'suggestion',
+            'message'     => $message,
+            'insert_text' => $insertText,
+            'action_url'  => $c->actionUrl,
         ];
     }
 

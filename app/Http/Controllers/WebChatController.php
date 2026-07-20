@@ -283,14 +283,37 @@ class WebChatController extends Controller
             ->findOrFail($validated['wallet_id']);
 
         // Resolve tipe transaksi
-        // Untuk expense: source = wallet pilihan user, destination = merchant (system)
-        // Untuk income:  source = external (system), destination = wallet pilihan user
-        $typeKey = strtolower($transaction->type->name ?? 'expense');
+        // Tentukan sisi wallet user berdasarkan kondisi source/dest yang sudah tersimpan di draft.
+        // Draft dibuat oleh resolveWebDraftWithoutWallet() dengan placeholder:
+        //   - Expense: source = External/placeholder, dest = Merchant → user ganti source
+        //   - Income: source = External, dest = External/placeholder → user ganti dest
+        //   - Debt terima: source = System Hutang, dest = External/placeholder → user ganti dest
+        //   - Debt bayar: source = External/placeholder, dest = System Hutang → user ganti source
+        //   - Receivable ngasih: source = External/placeholder, dest = System Piutang → user ganti source
+        //   - Receivable terima: source = System Piutang, dest = External/placeholder → user ganti dest
+        //
+        // Logika: jika source sudah merupakan System wallet yang "bermakna" (Hutang/Piutang),
+        // maka sisi user ada di dest. Sebaliknya user ada di source.
 
-        DB::transaction(function () use ($transaction, $wallet, $user, $typeKey) {
-            if ($typeKey === 'expense') {
+        $sourceWallet = $transaction->sourceWallet;
+        $destWallet   = $transaction->destinationWallet;
+        $sourceIsRealSystem = $sourceWallet && $sourceWallet->group_type === 'System'
+            && !str_contains(strtolower($sourceWallet->name ?? ''), 'external')
+            && !str_contains(strtolower($sourceWallet->name ?? ''), 'merchant');
+
+        DB::transaction(function () use ($transaction, $wallet, $user, $sourceIsRealSystem) {
+            if ($sourceIsRealSystem) {
+                // Source sudah ditetapkan (System Hutang / System Piutang), user mengisi dest
+                // Artinya: uang MASUK ke wallet user (tambah saldo)
+                $transaction->destination_wallet_id = $wallet->id;
+                $balanceBefore = $wallet->balance;
+                $wallet->increment('balance', $transaction->amount);
+                $transaction->balance_before = $balanceBefore;
+                $transaction->balance_after  = $wallet->fresh()->balance;
+            } else {
+                // Dest sudah ditetapkan (Merchant / System Piutang / System Hutang), user mengisi source
+                // Artinya: uang KELUAR dari wallet user (kurangi saldo)
                 $transaction->source_wallet_id = $wallet->id;
-                // Mutasi saldo: kurangi dari wallet
                 $balanceBefore = $wallet->balance;
                 if (!$user->allow_negative_balance && $wallet->balance < $transaction->amount) {
                     throw new \InvalidArgumentException('Saldo tidak mencukupi.');
@@ -298,15 +321,6 @@ class WebChatController extends Controller
                 $wallet->decrement('balance', $transaction->amount);
                 $transaction->balance_before = $balanceBefore;
                 $transaction->balance_after  = $wallet->fresh()->balance;
-            } elseif ($typeKey === 'income') {
-                $transaction->destination_wallet_id = $wallet->id;
-                $balanceBefore = $wallet->balance;
-                $wallet->increment('balance', $transaction->amount);
-                $transaction->balance_before = $balanceBefore;
-                $transaction->balance_after  = $wallet->fresh()->balance;
-            } else {
-                // debt/receivable/transfer — assign ke source
-                $transaction->source_wallet_id = $wallet->id;
             }
             $transaction->is_cleared = true;
             $transaction->save();

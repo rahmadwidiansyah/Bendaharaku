@@ -211,6 +211,7 @@ return [
         'help_example_expense'  => '💸 Pengeluaran: "Beli nasi goreng 15k bca"',
         'help_example_income'   => '💰 Pemasukan: "Gajian 5jt mandiri"',
         'help_example_transfer' => '🔄 Transfer: "Transfer bca ke dana 100k"',
+        'help_example_debt'     => '🤝 Hutang/Piutang: "Pinjam duit 100k bca #Budi"',
         'total_balance'     => 'Total Saldo',
         'report_summary'   => 'Ringkasan: :summary',
     ],
