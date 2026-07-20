@@ -119,9 +119,9 @@ const routeTitleMap = computed(() => ({
     'loans.index':                t('loan.title'),
     'settings.index':             t('settings.title'),
     'settings.ai.index':          t('ai.title'),
-    'settings.chat.bot-profile':  t('chatBot.title'),
+    'settings.ai.bot':            t('chatBot.title'),
     'chat.index':                 'AI Chat',
-    'profile.edit':               t('profile.title'),
+    'settings.account.profile':   t('profile.title'),
 }))
 
 const routeLabel = computed(() => {

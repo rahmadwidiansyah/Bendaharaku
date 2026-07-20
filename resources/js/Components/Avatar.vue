@@ -61,10 +61,27 @@ const initials = computed(() => {
         .join('')
 })
 
+// Compute a deterministic pastel background color from the name
+const fallbackColor = computed(() => {
+    const str = props.name || ''
+    let hash = 0
+    for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash)
+    }
+    const h = Math.abs(hash) % 360
+    return `hsl(${h} 60% 30%)`
+})
+
+const initialsClass = computed(() => ({
+    sm: 'text-xs',
+    md: 'text-sm',
+    lg: 'text-base',
+}[props.size]))
+
 const sizeClasses = computed(() => ({
-    sm: 'w-8 h-8 text-xs',
-    md: 'w-10 h-10 text-sm',
-    lg: 'w-12 h-12 text-base',
+    sm: 'w-8 h-8',
+    md: 'w-10 h-10',
+    lg: 'w-12 h-12',
 }[props.size]))
 
 const ringClasses = computed(() =>
@@ -74,28 +91,30 @@ const ringClasses = computed(() =>
 )
 
 const wrapperClasses = computed(() =>
-    `relative rounded-full shrink-0 bg-gray-900 overflow-hidden ${sizeClasses.value} ${ringClasses.value}`
+    `relative rounded-full shrink-0 overflow-hidden ${sizeClasses.value} ${ringClasses.value}`
 )
 </script>
 
 <template>
     <div :class="wrapperClasses" :aria-label="name" role="img">
         <!-- Gambar avatar -->
-        <img
+            <img
             v-if="src && !imgFailed"
             :src="src"
             :alt="name"
             class="w-full h-full object-cover rounded-full"
+            loading="lazy"
             @error="onImgError"
         />
 
         <!-- Fallback inisial — tampil jika tidak ada src atau gambar gagal load -->
         <span
             v-else
-            class="absolute inset-0 flex items-center justify-center rounded-full bg-purple-900/80 text-white font-black select-none"
+            :style="{ backgroundColor: fallbackColor }"
+            class="absolute inset-0 flex items-center justify-center rounded-full text-white font-extrabold select-none"
             aria-hidden="true"
         >
-            {{ initials }}
+            <span :class="initialsClass">{{ initials }}</span>
         </span>
     </div>
 </template>

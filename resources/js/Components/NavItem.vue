@@ -3,7 +3,7 @@
  * NavItem.vue
  *
  * Komponen navigasi reusable yang mendukung dua mode tampilan:
- *   - mobile: icon + label vertikal (BottomNav)
+ *   - mobile: icon + label vertikal (BottomNav) dengan animasi Material 3
  *   - desktop: icon + label horizontal (Sidebar)
  *
  * Props:
@@ -48,7 +48,7 @@ const props = defineProps({
 })
 
 const linkClasses = computed(() => {
-    const base = 'flex items-center gap-1 transition-all duration-200 group focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900 rounded-xl'
+    const base = 'flex items-center gap-1 transition-all duration-300 group focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900 rounded-xl'
 
     if (props.isDesktop) {
         const desktopBase = 'flex-row w-full px-3 py-2.5'
@@ -58,37 +58,26 @@ const linkClasses = computed(() => {
         return `${base} ${desktopBase} text-gray-500 hover:text-gray-300 hover:bg-white/5 border border-transparent`
     }
 
-    // Mobile: responsive layout
-    // xs-sm: center only icon, expanded on sm+
-    const mobileBase = 'flex-col items-center justify-center flex-1 py-1.5 sm:px-1 sm:py-1.5 px-0.5'
-    if (props.active) {
-        return `${base} ${mobileBase} text-purple-400`
-    }
-    return `${base} ${mobileBase} text-gray-500 hover:text-gray-400`
+    // Mobile: centered and full-height link
+    return `${base} flex-col items-center justify-center flex-1 h-14 relative`
 })
 
 const iconWrapperClasses = computed(() => {
     if (props.isDesktop) return 'w-5 h-5 shrink-0'
-    // Mobile: icon dengan bubble kecil saat aktif, konsisten ukurannya
+    // Mobile active state: scale up and color
     if (props.active) {
-        return 'w-6 h-6 p-1 rounded-lg bg-purple-500/15 shrink-0'
+        return 'w-6 h-6 p-0.5 rounded-lg bg-purple-500/10 shrink-0 transform scale-110 text-purple-400 transition-all duration-300'
     }
-    return 'w-6 h-6 shrink-0'
-})
-
-const iconClasses = computed(() => {
-    if (props.isDesktop) return 'w-5 h-5 shrink-0 transition-transform group-hover:scale-110'
-    return 'w-full h-full transition-transform group-hover:scale-110'
+    return 'w-6 h-6 shrink-0 transform scale-100 text-gray-500 transition-all duration-300'
 })
 
 const labelClasses = computed(() => {
     if (props.isDesktop) {
-        // Sidebar collapsed → sembunyikan
         if (!props.sidebarOpen) return 'hidden'
         return 'text-2xs font-bold tracking-wider uppercase'
     }
-    // Mobile: label selalu tampil agar nav item jelas (penting untuk UX HP standar 360-414px)
-    return 'text-[10px] font-bold tracking-wide uppercase mt-0.5 leading-none whitespace-nowrap'
+    // Mobile: small label positioned absolutely at the bottom
+    return 'text-[9px] font-bold tracking-wider uppercase leading-none transition-all duration-300'
 })
 </script>
 
@@ -100,12 +89,29 @@ const labelClasses = computed(() => {
         :aria-label="label"
         :title="label"
     >
-        <!-- Icon wrapper — ukuran konsisten, bubble aktif di mobile -->
-        <span :class="iconWrapperClasses" aria-hidden="true">
+        <!-- Icon wrapper with lift-up animation on mobile active -->
+        <span
+            :class="[
+                iconWrapperClasses,
+                !isDesktop && active ? '-translate-y-1.5' : 'translate-y-0'
+            ]"
+            class="transition-all duration-300"
+            aria-hidden="true"
+        >
             <slot name="icon" />
         </span>
 
-        <!-- Label — selalu tampil di mobile maupun desktop -->
-        <span :class="labelClasses">{{ label }}</span>
+        <!-- Label with fade/slide animation on mobile -->
+        <span
+            v-if="!isDesktop"
+            :class="[
+                labelClasses,
+                active ? 'opacity-100 translate-y-0 text-purple-400' : 'opacity-0 translate-y-1.5 text-gray-500 pointer-events-none'
+            ]"
+            class="absolute bottom-1 transition-all duration-300"
+        >
+            {{ label }}
+        </span>
+        <span v-else :class="labelClasses">{{ label }}</span>
     </Link>
 </template>

@@ -68,7 +68,7 @@ const statusText = computed(() =>
         <!-- Actions -->
         <div class="flex items-center gap-0.5 shrink-0">
             <Link
-                :href="route('settings.chat.bot-profile')"
+                :href="route('settings.ai.bot')"
                 class="w-8 h-8 flex items-center justify-center rounded-xl text-gray-600 hover:text-white hover:bg-white/6 transition-colors"
                 aria-label="Pengaturan Bot"
             >

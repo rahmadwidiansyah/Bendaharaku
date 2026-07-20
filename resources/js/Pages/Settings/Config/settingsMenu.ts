@@ -142,11 +142,11 @@ const settingsMenuTree: SettingsCategory[] = [
     icon: 'Zap',
     description: 'AI settings & integrations',
     submenu: [
-        {
+      {
         id: 'models',
         label: 'Providers & Models',
         icon: 'Cpu',
-        description: 'AI provider, provider settings & model selection',
+        description: 'AI provider, model settings & configuration',
         route: 'settings.ai.models',
       },
       {
@@ -161,38 +161,15 @@ const settingsMenuTree: SettingsCategory[] = [
         label: 'Memory',
         icon: 'Database',
         description: 'Conversation and knowledge memory settings',
-        submenu: [
-          {
-            id: 'memory-conversation',
-            label: 'Conversation Memory',
-            icon: 'MessageCircle',
-            description: 'Short-term conversation retention & cleanup',
-            route: 'settings.ai.memory',
-          },
-          {
-            id: 'memory-knowledge',
-            label: 'Knowledge Base',
-            icon: 'BookOpen',
-            description: 'Long-term knowledge & training settings',
-            route: 'settings.ai.memory',
-          },
-        ],
+        route: 'settings.ai.memory',
       },
       {
-        id: 'integrations',
+        id: 'integration',
         label: 'Integrations',
         icon: 'Share2',
         description: 'Messaging, Automation & External Services',
         route: 'settings.ai.integrations',
       },
-      {
-        id: 'advanced',
-        label: 'Developer Tools',
-        icon: 'Code',
-        description: 'Developer & experimental options',
-        route: 'settings.ai.advanced',
-      },
-
     ],
   },
 
@@ -236,7 +213,7 @@ const settingsMenuTree: SettingsCategory[] = [
     id: 'system',
     label: 'System',
     icon: 'Settings',
-    description: 'About & diagnostics',
+    description: 'About & system',
     submenu: [
       {
         id: 'about',
@@ -244,13 +221,6 @@ const settingsMenuTree: SettingsCategory[] = [
         icon: 'Info',
         description: 'Version, license, credits',
         route: 'settings.system.about',
-      },
-      {
-        id: 'diagnostics',
-        label: 'Diagnostics',
-        icon: 'Activity',
-        description: 'System status, logs',
-        route: 'settings.system.diagnostics',
       },
     ],
   },

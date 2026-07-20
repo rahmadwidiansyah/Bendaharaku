@@ -78,6 +78,10 @@ export default {
         skipToContent:  'Langsung ke konten',
         processing:     'Memproses...',
         period:         'Periode',
+        // Generic error messages
+        errors: {
+            generic: 'Terjadi kesalahan. Silakan coba lagi nanti.'
+        },
     },
 
     // ────────────────────────────────────────────────────────────────
@@ -102,16 +106,18 @@ export default {
     // NAVIGATION
     // ────────────────────────────────────────────────────────────────
     nav: {
-        home:       'Home',
+        home:       'Beranda',
         asset:      'Aset',
         record:     'Catat',
-        analytics:  'Grafik',
+        analytics:  'Analitik',
         label:      'Label',
-        loan:       'Tanggungan',
+        loan:       'Piutang/Hutang',
         settings:   'Pengaturan',
         telegram:   'Telegram',
         newRecord:  'Catat Baru',
         mainNav:    'Navigasi utama',
+        profile:    'Profil',
+        help:       'Bantuan',
     },
 
     // ────────────────────────────────────────────────────────────────
@@ -435,65 +441,483 @@ export default {
     // ────────────────────────────────────────────────────────────────
     settings: {
         title:          'Pengaturan',
-        subtitle:       'Preferences',
-
-        // Sections
-        account:        'Akun',
-        transaction:    'Transaksi',
-        appearance:     'Tampilan',
-        language:       'Bahasa',
-        ai:             'AI & Otomasi',
-        danger:         'Zona Berbahaya',
-
-        // Profile
-        profile: {
-            title: 'Profil & Keamanan',
-            desc:  'Nama, avatar, dan password akun',
+        subtitle:       'Preferensi',
+        save_button:     'Simpan',
+        notifications: {
+            title:          'Notifikasi',
+            description:    'Preferensi notifikasi email & push',
+            notifications: {
+                title:          'Pengaturan Notifikasi',
+                description:    'Atur notifikasi email dan push',
+            },
+            save_success:   'Pengaturan berhasil disimpan.',
+            save_failed:    'Gagal menyimpan pengaturan.',
+            unsaved_changes: 'Anda memiliki perubahan yang belum disimpan.',
+        },
+        security: {
+            title:          'Keamanan',
+            description:    'Pengaturan kata sandi & keamanan',
+            password: {
+                title:          'Ubah Password',
+                description:    'Tingkatkan keamanan akun kamu',
+            },
+        },
+        developer: {
+            title:          'Developer',
+            description:    'Alat developer & opsi eksperimental',
         },
 
-        // Transaction logic
+        // ═══ ACCOUNT ═══
+        account: {
+            title:          'Akun',
+            
+            profile: {
+                title:          'Profil',
+                description:    'Informasi pribadi',
+                email:          'Email',
+                name:           'Nama',
+                help_text:      'Untuk mengubah email atau password, kunjungi halaman profil lengkap di',
+            },
+            
+            security: {
+                title:          'Keamanan',
+                description:    'Password & autentikasi',
+                password: {
+                    title:          'Ubah Password',
+                    description:    'Tingkatkan keamanan akun kamu',
+                    change_button:  'Ubah Password',
+                },
+                '2fa': {
+                    title:          'Autentikasi Dua Faktor',
+                    description:    'Perlindungan ekstra untuk akun kamu',
+                    coming_soon:    'Fitur ini sedang dikembangkan',
+                    enable:         'Aktifkan 2FA',
+                },
+                login_activity: {
+                    title:          'Riwayat Login',
+                    description:    'Pantau aktivitas masuk ke akun kamu',
+                    tracking_soon:  'Fitur pelacakan akan segera tersedia',
+                },
+            },
+            
+            sessions: {
+                title:          'Sesi Aktif',
+                description:    'Kelola sesi perangkat kamu',
+                current:        'Sesi Saat Ini',
+                current_browser:'Browser/Perangkat Ini',
+                last_active:    'Terakhir aktif baru saja',
+                active:         'Aktif',
+                other_sessions: 'Sesi Lainnya',
+                no_other_sessions: 'Tidak ada sesi lain yang aktif',
+            },
+            
+            preferences: {
+                title:          'Preferensi',
+                description:    'Zona waktu & format tanggal',
+                timezone: {
+                    title:          'Zona Waktu',
+                    description:    'Pilih zona waktu kamu',
+                },
+                date_format: {
+                    title:          'Format Tanggal',
+                    description:    'Pilih format tampilan tanggal',
+                    ddmmyyyy:       'DD/MM/YYYY',
+                    mmddyyyy:       'MM/DD/YYYY',
+                    yyyymmdd:       'YYYY-MM-DD',
+                },
+            },
+        },
+
+        // ═══ APPLICATION ═══
+        application: {
+            title:          'Aplikasi',
+            
+            appearance: {
+                title:          'Tampilan',
+                description:    'Tema, warna, kepadatan',
+                theme: {
+                    title:          'Tema',
+                    description:    'Pilih tema warna',
+                    light:          'Terang',
+                    dark:           'Gelap',
+                    system:         'Mengikuti Sistem',
+                },
+                accent_color: {
+                    title:          'Warna Aksen',
+                    description:    'Pilih warna aksen utama',
+                },
+            },
+            
+            language: {
+                title:          'Bahasa & Wilayah',
+                description:    'Bahasa, format tanggal, mata uang',
+                language: {
+                    title:          'Bahasa',
+                    description:    'Pilih bahasa tampilan',
+                    id:             'Bahasa Indonesia',
+                    en:             'English',
+                    auto:           'Ikuti Bahasa Perangkat',
+                    autoDesc:       'Menyesuaikan dengan bahasa browser/perangkat kamu',
+                    current:        'Aktif',
+                },
+                currency: {
+                    title:          'Mata Uang',
+                    description:    'Pilih mata uang default',
+                    idr:            'IDR (Rp)',
+                    usd:            'USD ($)',
+                    eur:            'EUR (€)',
+                },
+            },
+            
+            notifications: {
+                title:          'Notifikasi',
+                description:    'Email, push, jam hening',
+                email: {
+                    title:          'Notifikasi Email',
+                    description:    'Terima notifikasi via email',
+                    label:          'Aktifkan notifikasi email',
+                },
+                push: {
+                    title:          'Notifikasi Push',
+                    description:    'Terima notifikasi push browser',
+                    label:          'Aktifkan notifikasi push',
+                },
+            },
+        },
+
+        // ═══ FINANCE ═══
+        finance: {
+            title:          'Keuangan',
+            
+            defaults: {
+                title:          'Default',
+                description:    'Dompet & mata uang default',
+                wallet: {
+                    title:          'Dompet Default',
+                    description:    'Dompet yang digunakan saat membuat transaksi baru',
+                },
+                currency: {
+                    title:          'Mata Uang Default',
+                    description:    'Mata uang default untuk transaksi',
+                },
+                transaction_logic: {
+                    title:          'Logika Transaksi',
+                    description:    'Izinkan saldo negatif saat transaksi',
+                    label:          'Izinkan saldo minus',
+                    on:             '✓ Aktif — saldo minus diizinkan',
+                    off:            '✗ Tidak Aktif — transaksi ditolak jika saldo tidak cukup',
+                },
+            },
+            
+            categories: {
+                title:          'Kategori',
+                description:    'Kelola kategori transaksi',
+                manage:         'Kelola kategori transaksi kamu',
+                go_to:          'Buka Halaman Kategori',
+            },
+            
+            wallets: {
+                title:          'Dompet',
+                description:    'Kelola dompet kamu',
+                manage:         'Kelola dompet dan saldo kamu',
+                go_to:          'Buka Halaman Dompet',
+            },
+            
+            budget: {
+                title:          'Anggaran',
+                description:    'Batas anggaran & peringatan',
+                coming_soon:    'Fitur anggaran sedang dikembangkan',
+            },
+        },
+
+        // ═══ AI ═══
+        ai: {
+            title:          'AI & Otomasi',
+            
+            models: {
+                title:          'Provider & Model',
+                description:    'Pengaturan provider AI & model',
+                provider: {
+                    label:          'Provider AI',
+                    description:    'Pilih dan konfigurasi provider AI yang ingin digunakan',
+                },
+                model: {
+                    label:          'Model Default',
+                    description:    'Pilih model default untuk provider ini',
+                    hint:           'Model ini akan digunakan untuk semua permintaan kecuali diganti',
+                },
+                token_limit: {
+                    label:          'Batas Token',
+                    description:    'Atur batas maksimal token',
+                    hint:           'Membatasi panjang respon untuk menghemat biaya',
+                },
+                api_key: {
+                    label:          'API Key',
+                    description:    'API key Anda untuk provider ini',
+                    warning:        'API key disimpan secara lokal dan tidak pernah dikirim ke server kami',
+                },
+                select_model:   'Pilih model...',
+                status: 'Status',
+                test_button: 'Uji Koneksi',
+                testing: 'Mengujicoba...',
+                test_success: 'Koneksi berhasil.',
+                test_failed: 'Koneksi gagal.',
+                help_text: 'Model dan provider dapat dikonfigurasi per perangkat. API key disimpan secara aman di browser Anda.',
+            },
+            
+            bot: {
+                title:          'Profil Bot',
+                description:    'Nama, avatar, kepribadian bot',
+                avatar: {
+                    label:          'Avatar Bot',
+                    description:    'Foto profil bot kamu',
+                    upload_button:  'Unggah Avatar',
+                    hint:           'Gunakan gambar persegi; format .png atau .jpg',
+                },
+                name: {
+                    label:          'Nama Bot',
+                    description:    'Nama yang akan tampil pada percakapan',
+                    placeholder:    'Nama bot',
+                    hint:           'Contoh: Bendahara Bot',
+                },
+                personality: {
+                    label:          'Kepribadian Bot',
+                    description:    'Deskripsi singkat tentang gaya dan perilaku bot',
+                    placeholder:    'Contoh: Ramah, informatif, dan ringkas.',
+                    hint:           'Jelaskan gaya komunikasi yang diinginkan untuk bot.',
+                },
+                help_text: 'Personalisasi bagaimana asisten AI Anda berbicara dan tampil di antarmuka chat.',
+            },
+            
+            memory: {
+                title:          'Memori',
+                description:    'Pengaturan memori percakapan & pengetahuan',
+                retention: {
+                    label: 'Kebijakan Penyimpanan',
+                    description: 'Berapa lama riwayat percakapan disimpan',
+                    unlimited: 'Simpan selamanya',
+                    last_7_days: 'Simpan 7 hari terakhir',
+                    last_30_days: 'Simpan 30 hari terakhir',
+                    last_90_days: 'Simpan 90 hari terakhir',
+                    custom: 'Kustom...',
+                    hint: 'Percakapan yang lebih lama akan dihapus otomatis',
+                    custom_days: 'Jumlah hari untuk disimpan',
+                },
+                size_limit: {
+                    label: 'Batas Ukuran Memori',
+                    description: 'Ukuran penyimpanan lokal maksimal untuk memori',
+                    hint: 'Membatasi berapa banyak penyimpanan yang digunakan untuk riwayat',
+                },
+                conversation_history: {
+                    label: 'Riwayat Percakapan',
+                    description: 'Ingat pesan sebelumnya dalam chat',
+                    enable: 'Aktifkan riwayat percakapan',
+                },
+                learning: {
+                    label: 'Pembelajaran Knowledge Base',
+                    description: 'Izinkan AI belajar dari koreksi',
+                    enable: 'Aktifkan pembelajaran berkelanjutan',
+                    warning: 'Ini akan menyimpan data yang dikoreksi pengguna untuk meningkatkan prediksi ke depan',
+                },
+                privacy: {
+                    label: 'Mode Privasi',
+                    description: 'Jangan simpan angka sensitif dalam memori',
+                    enable: 'Aktifkan mode privasi',
+                    hint: 'Nominal transaksi akan disensor dalam log riwayat',
+                },
+                help_text: 'Pengaturan memori mengontrol seberapa banyak konteks yang dipertahankan AI antar sesi.',
+            },
+            
+            integrations: {
+                title:          'Integrasi',
+                description:    'Messaging, otomasi & layanan eksternal',
+                telegram: {
+                    title:          'Integrasi Telegram',
+                    description:    'Hubungkan bot Telegram untuk menerima dan mengirim pesan',
+                    info:           'Hubungkan bot Telegram Anda untuk berinteraksi dengan Bendaharaku melalui chat.',
+                    configure:      'Konfigurasi Bot Telegram',
+                },
+                webhooks: {
+                    title:          'Webhooks',
+                    description:    'Kirim event ke layanan eksternal melalui webhook',
+                    hint:           'Tambahkan endpoint webhook untuk menerima event secara realtime dari aplikasi.',
+                },
+            },
+
+            // Alias tanpa 's' — dipakai oleh Integration.vue
+            integration: {
+                title:          'Integrasi',
+                description:    'Messaging, otomasi & layanan eksternal',
+                telegram: {
+                    title:          'Integrasi Telegram',
+                    description:    'Hubungkan bot Telegram untuk menerima dan mengirim pesan',
+                    info:           'Hubungkan bot Telegram Anda untuk berinteraksi dengan Bendaharaku melalui chat.',
+                    configure:      'Konfigurasi Bot Telegram',
+                },
+                webhooks: {
+                    title:          'Webhooks',
+                    description:    'Kirim event ke layanan eksternal melalui webhook',
+                    hint:           'Tambahkan endpoint webhook untuk menerima event secara realtime dari aplikasi.',
+                },
+            },
+
+
+            advanced: {
+                title:          'Developer Tools',
+                description:    'Opsi developer & eksperimental',
+                developer_mode: {
+                    label:          'Mode Developer',
+                    description:    'Aktifkan mode developer untuk debugging',
+                    enable:         'Aktifkan Mode Developer',
+                    warning:        'Mode developer mungkin mengekspos informasi debug yang sensitif',
+                },
+                prompt_debugging: {
+                    label:          'Debugging Prompt',
+                    description:    'Tampilkan prompt persis yang dikirim ke LLM',
+                    enable:         'Aktifkan debugging prompt',
+                },
+                raw_responses: {
+                    label:          'Respon Mentah',
+                    description:    'Tampilkan JSON/teks mentah dari AI',
+                    enable:         'Tampilkan respon mentah',
+                },
+                system_prompt: {
+                    label:          'System Prompt Kustom',
+                    description:    'Timpa perilaku default sepenuhnya',
+                    placeholder:    'Anda adalah asisten keuangan yang membantu...',
+                    hint:           'Biarkan kosong untuk menggunakan system prompt bawaan',
+                },
+                experimental: {
+                    label:          'Fitur Eksperimental',
+                    description:    'Aktifkan fitur AI akses awal',
+                    enable:         'Aktifkan fitur eksperimental',
+                    warning:        'Fitur-fitur ini mungkin tidak stabil atau dapat berubah sewaktu-waktu',
+                },
+                templates: {
+                    label:          'Template Prompt',
+                    description:    'Buat dan gunakan kembali template prompt untuk interaksi AI',
+                    use:            'Gunakan',
+                    title_placeholder: 'Judul template',
+                    content_placeholder: 'Isi template...',
+                },
+                help_text: 'Developer tools adalah untuk pengguna tingkat lanjut untuk men-debug atau menyesuaikan AI.',
+            },
+        },
+
+        // ═══ PRIVACY & DATA ═══
+        privacy: {
+            title:          'Privasi & Data',
+            
+            settings: {
+                title:          'Privasi',
+                description:    'Pengumpulan & analitik data',
+                data_collection: {
+                    title:          'Pengumpulan Data',
+                    description:    'Izinkan kami mengumpulkan data analitik',
+                    label:          'Aktifkan pengumpulan data',
+                },
+                analytics: {
+                    title:          'Analitik',
+                    description:    'Bantu kami meningkatkan dengan analitik penggunaan',
+                    label:          'Aktifkan analitik',
+                },
+            },
+            
+            data: {
+                title:          'Manajemen Data',
+                description:    'Ekspor, impor, cadangan',
+                export: {
+                    title:          'Ekspor Data',
+                    description:    'Unduh salinan data akun Anda sebagai file JSON',
+                    button:         'Ekspor Data',
+                    success:        'Ekspor selesai. File sedang diunduh.',
+                },
+                import: {
+                    title:          'Impor Data',
+                    description:    'Impor file cadangan untuk memulihkan data',
+                    button:         'Impor (Segera)',
+                },
+                backup: {
+                    title:          'Cadangan',
+                    description:    'Kelola cadangan dan restore',
+                    button:         'Cadangkan (Segera)',
+                },
+            },
+            
+            danger: {
+                title:          'Zona Berbahaya',
+                description:    'Tindakan yang tidak dapat dibatalkan',
+                clear_cache: {
+                    title:          'Hapus Cache',
+                    description:    'Hapus data cache lokal',
+                    button:         'Hapus Cache',
+                    success:        'Cache berhasil dihapus',
+                },
+                delete_account: {
+                    title:          'Hapus Akun Permanen',
+                    description:    'Hapus akun dan semua data terkait',
+                    warning:        'Tindakan ini tidak dapat dibatalkan. Semua data keuangan akan hilang.',
+                    button:         'Hapus Akun Saya',
+                    confirm_title:  'Konfirmasi Penghapusan Akun',
+                    confirm_description: 'Tindakan ini TIDAK DAPAT DIBATALKAN. Semua data keuangan, riwayat, dan pengaturan Anda akan dihapus secara permanen.',
+                    confirm_button: 'Ya, Hapus Selamanya',
+                },
+            },
+
+        },
+
+        // ═══ SYSTEM ═══
+        system: {
+            title:          'Sistem',
+            
+            about: {
+                title:          'Tentang',
+                description:    'Versi, lisensi, kredit',
+                app_name:       'Tentang Bendaharaku',
+                app_description:'Aplikasi manajemen keuangan pribadi yang cerdas',
+                version:        'Versi',
+                license: {
+                    title:          'Lisensi',
+                    description:    'Informasi lisensi',
+                    type:           'Dilisensikan di bawah MIT License',
+                },
+                credits: {
+                    title:          'Kredit',
+                    description:    'Teknologi yang digunakan',
+                    laravel:        'Laravel - Backend Framework',
+                    vue:            'Vue 3 - Frontend Framework',
+                    inertia:        'Inertia.js - Server-driven UI',
+                    tailwind:       'Tailwind CSS - Styling',
+                },
+            },
+            
+            diagnostics: {
+                title:          'Diagnostik',
+                description:    'Status sistem, log',
+                system_status: {
+                    title:          'Status Sistem',
+                    description:    'Periksa status layanan backend',
+                    api:            'API Server',
+                    database:       'Database',
+                    healthy:        'Sehat',
+                    connected:      'Terhubung',
+                },
+                logs: {
+                    title:          'Log Sistem',
+                    description:    'Riwayat aktivitas sistem',
+                    no_logs:        'Tidak ada log sistem saat ini',
+                },
+            },
+        },
+
+        // ═══ LEGACY KEYS (compatibility) ═══
+        transaction:    'Transaksi',
         negativeBalance: {
             title: 'Izinkan Saldo Minus',
             desc:  'Pengeluaran bisa dicatat meski saldo tidak mencukupi. Cocok untuk pencatatan harian yang direkap belakangan.',
         },
-
-        // Appearance
-        theme: {
-            dark:           'Gelap',
-            light:          'Terang (Segera)',
-            lightSoon:      'Segera hadir',
-            title:          'Tema Warna',
-            desc:           'Saat ini hanya dark mode yang tersedia.',
-        },
-
-        // Layout
-        layout: {
-            title:          'Tata Letak Layar Lebar',
-            desc:           'Mode tampilan untuk layar desktop.',
-            desktop:        'Desktop',
-            mobile:         'Mobile',
-        },
-
-        // Telegram
-        telegram: {
-            title:          'Telegram Bot',
-            desc:           'Catat transaksi via chat natural language',
-            status:         'Aktif',
-        },
-
-        // Data
-        data: {
-            section:        'Data',
-            title:          'Ekspor & Pencadangan',
-            desc:           'Unduh seluruh rekam jejak finansial ke format CSV.',
-            exportBtn:      'Ekspor CSV',
-        },
-
-        // Status negativeBalance
         negativeBalanceOn:  '✓ Aktif — saldo negatif diperbolehkan',
         negativeBalanceOff: '✗ Nonaktif — transaksi ditolak bila saldo tidak mencukupi',
-
-        // Language
         lang: {
             title:          '🌐 Bahasa / Language',
             auto:           'Ikuti Bahasa Perangkat',
@@ -502,8 +926,6 @@ export default {
             en:             'English',
             current:        'Aktif',
         },
-
-        // AI
         aiSettings: {
             title: 'Pengaturan AI',
             desc:  'Kelola model, kredensial, dan preferensi AI',
