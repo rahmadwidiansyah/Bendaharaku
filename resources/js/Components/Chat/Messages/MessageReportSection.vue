@@ -39,7 +39,7 @@ const titleText = computed(() => props.component.title || (props.component.trans
 </script>
 
 <template>
-    <div :class="['overflow-hidden', variant === 'income' ? 'bg-emerald-900/30' : variant === 'expense' ? 'bg-rose-900/30' : 'bg-transparent']">
+    <div :class="['m-2 rounded-xl border border-white/5 overflow-hidden', variant === 'income' ? 'bg-emerald-500/10' : variant === 'expense' ? 'bg-rose-500/10' : 'bg-white/5']">
         <div class="p-4 flex items-start gap-3" :class="variant === 'wallet' ? 'border border-white/6' : 'border-b border-white/6'">
             <div class="flex-1">
                 <div class="text-sm font-semibold text-white leading-tight">{{ titleText }}</div>
