@@ -104,14 +104,14 @@ DB_USERNAME=sail
 DB_PASSWORD=password
 
 # Google OAuth (Untuk Fitur Login)
-GOOGLE_CLIENT_ID="your_google_client_id"
-GOOGLE_CLIENT_SECRET="your_google_client_secret"
+GOOGLE_CLIENT_ID="google_client_id"
+GOOGLE_CLIENT_SECRET="google_client_secret"
 GOOGLE_REDIRECT_URI="http://localhost:8000/auth/google/callback"
 
 # Integrasi Telegram & AI Python
-TELEGRAM_BOT_TOKEN="your_telegram_bot_token"
-PYTHON_AI_URL="http://ip_atau_domain_python_ai_kalian:8001"
-PYTHON_AI_KEY="your_ai_secret_key"
+TELEGRAM_BOT_TOKEN="telegram_bot_token"
+PYTHON_AI_URL="http://ip_atau_domain_python_ai:8001"
+PYTHON_AI_KEY="ai_secret_key"
 ```
 
 > **Catatan untuk Testing Telegram:** Saat *development* di `localhost`, URL web Anda tidak bisa diakses langsung oleh Telegram. Gunakan Ngrok atau Cloudflare Tunnel, lalu setel webhook Telegram ke URL tersebut.
