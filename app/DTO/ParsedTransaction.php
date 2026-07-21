@@ -9,6 +9,10 @@ use App\Enums\TransactionIntent;
 /**
  * DTO Immutabel hasil ekstraksi AI.
  * Menggunakan strong-typing Enum untuk mendefinisikan intent transaksi.
+ *
+ * Field useAllBalance: jika true, backend akan mengganti amount dengan saldo aktual
+ * wallet sumber saat transaksi dieksekusi. AI mengembalikan amount=0 dan useAllBalance=true
+ * untuk perintah seperti "pindahkan semua saldo BCA ke Cash".
  */
 readonly class ParsedTransaction
 {
@@ -20,6 +24,7 @@ readonly class ParsedTransaction
         public ?string $destinationWallet = null,
         public ?string $subject = null,
         public ?string $notes = null,
-        public bool $isCleared = true
+        public bool $isCleared = true,
+        public bool $useAllBalance = false // Jika true, backend isi amount dari saldo aktual wallet asal
     ) {}
 }

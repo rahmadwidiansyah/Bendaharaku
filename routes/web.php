@@ -429,6 +429,8 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/transaction/{id}/confirm', [WebChatController::class, 'confirmTransaction'])->name('transaction.confirm');
         Route::patch('/transaction/{id}/wallet', [WebChatController::class, 'assignWallet'])->name('transaction.assign-wallet');
         Route::delete('/transaction/{id}/cancel', [WebChatController::class, 'cancelTransaction'])->name('transaction.cancel');
+        // Draft-specific route: status check berdasarkan draft ID
+        Route::get('/draft/{id}/status', [WebChatController::class, 'draftStatus'])->name('draft.status');
     });
 
     // ── Chat Bot Profile settings ─────────────────────────────────

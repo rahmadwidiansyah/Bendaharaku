@@ -3,7 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import AmountKeypad from '@/Components/AmountKeypad.vue'
 import BaseModal from '@/Components/BaseModal.vue'
 import { Head, Link, useForm, router } from '@inertiajs/vue3'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useLayoutPreference } from '@/Composables/useLayoutPreference'
 import { useTransactionForm } from '@/Composables/useTransactionForm.js'
@@ -20,6 +20,14 @@ const props = defineProps({
     receivableSubjects: Array,
 })
 
+const showDeleteConfirm = ref(false)
+
+// ─── Tentukan initialType dari transaksi yang sedang di-edit ─────
+const _initCat = props.categories.find(c => c.id === props.transaction.category_id)
+const _initType = _initCat?.type?.name ?? 'Expense'
+const _initDebtSubTab = (_initCat?.system_key === 'DEBT_PAYMENT' || _initCat?.system_key === 'RECEIVABLE')
+    ? 'expense' : 'income'
+
 const form = useForm({
     category_id: props.transaction.category_id,
     source_wallet_id: props.transaction.source_wallet_id,
@@ -28,19 +36,12 @@ const form = useForm({
     date: props.transaction.date,
     subject: props.transaction.subject || '-',
     notes: props.transaction.notes || '',
-    transaction_type: null, // diisi saat submit Transfer
+    transaction_type: _initType.toLowerCase(),
+    debt_sub_type: ['Debt', 'Receivable'].includes(_initType) ? _initDebtSubTab : null,
     due_date: props.transaction.due_date,
     due_date_type: props.transaction.due_date_type,
     due_date_interval: props.transaction.due_date_interval,
 })
-
-const showDeleteConfirm = ref(false)
-
-// ─── Tentukan initialType dari transaksi yang sedang di-edit ─────
-const _initCat = props.categories.find(c => c.id === props.transaction.category_id)
-const _initType = _initCat?.type?.name ?? 'Expense'
-const _initDebtSubTab = (_initCat?.category_name === 'Bayar Cicilan Hutang' || _initCat?.category_name === 'Ngasih Piutang')
-    ? 'expense' : 'income'
 
 // ─── Shared logic dari composable ────────────────────────────────
 const tx = useTransactionForm(form, props, {
@@ -81,9 +82,24 @@ const activeTypeItem = computed(() => TYPE_ITEMS.value.find(i => i.tab === mainT
 
 const selectType = (tab) => {
     setMainTab(tab)
-    form.category_id = null
+    form.transaction_type = tab.toLowerCase()
+    if (['Debt', 'Receivable'].includes(tab)) {
+        form.debt_sub_type = debtSubTab.value
+    } else {
+        form.debt_sub_type = null
+    }
+    if (!['Transfer', 'Debt', 'Receivable'].includes(tab)) {
+        form.category_id = null
+    }
     formStep.value = 2
 }
+
+// Sync debt_sub_type saat user ganti sub-tab (Dapat Hutang ↔ Bayar Hutang)
+watch(debtSubTab, (val) => {
+    if (['Debt', 'Receivable'].includes(mainTab.value)) {
+        form.debt_sub_type = val
+    }
+})
 
 const goToNominal = () => {
     if (!form.category_id && !['Transfer', 'Debt', 'Receivable'].includes(mainTab.value)) return
@@ -95,7 +111,9 @@ const resetToStep = (step) => {
     formStep.value = step
     if (step <= 2) {
         // Reset category hanya jika kembali ke step 2, biarkan wallet tetap
-        if (step === 2) form.category_id = null
+        if (step === 2 && !['Transfer', 'Debt', 'Receivable'].includes(mainTab.value)) {
+            form.category_id = null
+        }
     }
 }
 

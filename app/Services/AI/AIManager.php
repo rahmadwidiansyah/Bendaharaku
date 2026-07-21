@@ -22,11 +22,18 @@ class AIManager
         private AiCredentialManager $credentialManager,
         private AiProviderFactory $providerFactory,
         private TransactionValidationService $validator,
-        private PythonNLPProvider $pythonNlp
+        private PythonNLPProvider $pythonNlp,
+        private LocalRuleEngine $ruleEngine
     ) {}
 
     public function parseTransaction(User $user, string $text, array $wallets = [], array $categories = [], array $activeMemories = []): AIParseResult
     {
+        // 0. LOCAL RULE ENGINE (ZERO-LATENCY REGEX & KEYWORDS)
+        $ruleEngineResult = $this->ruleEngine->parse($user, $text);
+        if ($ruleEngineResult !== null && $ruleEngineResult->success) {
+            return $ruleEngineResult;
+        }
+
         // 1. CIRCUIT BREAKER 1: PYTHON NLP LOKAL (TANPA BIAYA)
         // Injeksi memori (RAG) ke dalam array categories agar Python bisa mencocokkan kata gaul dari sejarah memori!
         $pythonCategories = $categories;

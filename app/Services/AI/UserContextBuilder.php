@@ -39,7 +39,7 @@ class UserContextBuilder
             ->where('group_type', '!=', 'System')
             ->orderByDesc('is_pinned')
             ->orderBy('name')
-            ->get(['id', 'name', 'keyword', 'is_pinned'])
+            ->get(['id', 'name', 'keyword', 'is_pinned', 'balance'])
             ->toArray();
 
         $categories = $user->categories()
@@ -64,10 +64,11 @@ class UserContextBuilder
             ->toArray();
 
         return [
-            // Daftar wallet user (non-System) dengan keyword-nya
+            // Daftar wallet user (non-System) dengan keyword dan saldo-nya
             'wallets' => array_map(fn ($w) => [
                 'id'       => $w['id'],
                 'name'     => $w['name'],
+                'balance'  => (float) ($w['balance'] ?? 0),
                 'keywords' => $this->parseKeywords($w['keyword'] ?? ''),
             ], $wallets),
 

@@ -268,30 +268,51 @@ class WebAdapter
 
     private function syncTransactionCardsWithDb($messages, int $userId)
     {
-        $transactionIds = $messages
-            ->flatMap(function (ChatMessage $message) {
-                return collect($message->content ?? [])
-                    ->filter(fn ($component) => ($component['type'] ?? null) === 'transaction_card')
-                    ->map(fn ($component) => (int) ($component['transaction']['id'] ?? 0))
-                    ->filter();
-            })
-            ->unique()
-            ->values();
+        // 1. Kumpulkan semua transaction ID (non-draft) dan draft ID dari messages
+        $transactionIds = [];
+        $draftIds = [];
 
-        if ($transactionIds->isEmpty()) {
-            return $messages;
+        foreach ($messages as $message) {
+            foreach ($message->content ?? [] as $component) {
+                if (($component['type'] ?? null) !== 'transaction_card') {
+                    continue;
+                }
+                $isDraft = (bool) ($component['is_draft'] ?? ($component['transaction']['is_draft'] ?? false));
+                $id = (int) ($component['transaction']['id'] ?? 0);
+                if ($id > 0) {
+                    if ($isDraft) {
+                        $draftIds[] = $id;
+                    } else {
+                        $transactionIds[] = $id;
+                    }
+                }
+            }
         }
 
-        $existingIds = TransactionLog::query()
-            ->where('user_id', $userId)
-            ->whereIn('id', $transactionIds)
-            ->pluck('id')
-            ->map(fn ($id) => (int) $id)
-            ->all();
+        $transactionIds = array_values(array_unique($transactionIds));
+        $draftIds = array_values(array_unique($draftIds));
 
-        $existingMap = array_flip($existingIds);
+        // 2. Query data dari DB
+        $existingTransactions = collect();
+        if (!empty($transactionIds)) {
+            $existingTransactions = \App\Models\TransactionLog::query()
+                ->where('user_id', $userId)
+                ->whereIn('id', $transactionIds)
+                ->get()
+                ->keyBy('id');
+        }
 
-        return $messages->map(function (ChatMessage $message) use ($existingMap) {
+        $existingDrafts = collect();
+        if (!empty($draftIds)) {
+            $existingDrafts = \App\Models\TransactionDraft::query()
+                ->where('user_id', $userId)
+                ->whereIn('id', $draftIds)
+                ->get()
+                ->keyBy('id');
+        }
+
+        // 3. Update messages content
+        return $messages->map(function (ChatMessage $message) use ($userId, $existingTransactions, $existingDrafts) {
             $content = $message->content ?? [];
             $changed = false;
 
@@ -300,14 +321,81 @@ class WebAdapter
                     continue;
                 }
 
-                $transactionId = (int) ($component['transaction']['id'] ?? 0);
-                if ($transactionId && !isset($existingMap[$transactionId])) {
-                    $component['needs_wallet'] = false;
-                    $component['transaction']['is_cancelled'] = true;
-                    $component['transaction']['is_cleared'] = false;
-                    $changed = true;
+                $isDraft = (bool) ($component['is_draft'] ?? ($component['transaction']['is_draft'] ?? false));
+                $id = (int) ($component['transaction']['id'] ?? 0);
+
+                if (!$id) {
+                    continue;
+                }
+
+                if ($isDraft) {
+                    $draft = $existingDrafts->get($id);
+                    if (!$draft) {
+                        // Draft tidak ditemukan → tandai sebagai cancelled
+                        $component['needs_wallet'] = false;
+                        $component['transaction']['is_cancelled'] = true;
+                        $component['transaction']['is_cleared'] = false;
+                        $changed = true;
+                    } else {
+                        // Draft ditemukan. Cek statusnya
+                        if ($draft->status === 'confirmed') {
+                            // Draft sudah dikonfirmasi!
+                            // Dapatkan ID transaksi log yang baru
+                            $confirmedLogId = !empty($draft->confirmed_transaction_ids) ? (int) $draft->confirmed_transaction_ids[0] : null;
+                            $transaction = $confirmedLogId ? \App\Models\TransactionLog::with(['category', 'sourceWallet', 'destinationWallet', 'type'])->find($confirmedLogId) : null;
+
+                            if ($transaction) {
+                                $typeKey = match (strtolower($transaction->type?->name ?? '')) {
+                                    'income'             => 'income',
+                                    'expense'            => 'expense',
+                                    'transfer'           => 'transfer',
+                                    'debt', 'receivable' => 'debt',
+                                    default              => 'other',
+                                };
+
+                                // Ubah komponen draft menjadi confirmed transaction card
+                                $component['needs_wallet'] = false;
+                                $component['is_draft'] = false;
+                                $component['transaction']['id'] = $transaction->id;
+                                $component['transaction']['draft_id'] = null;
+                                $component['transaction']['is_draft'] = false;
+                                $component['transaction']['is_cleared'] = true;
+                                $component['transaction']['is_cancelled'] = false;
+                                $component['transaction']['notes'] = $transaction->notes;
+                                $component['transaction']['type_key'] = $typeKey;
+                                $component['transaction']['source_wallet'] = $transaction->sourceWallet?->name;
+                                $component['transaction']['dest_wallet'] = $transaction->destinationWallet?->name;
+                                $component['transaction']['amount_formatted'] = \App\Support\MoneyFormatter::rupiah($transaction->amount);
+                                $component['transaction']['reference_number'] = $transaction->reference_number;
+                                $changed = true;
+                            } else {
+                                // Jika log tidak ditemukan karena alasan tertentu, set cancelled
+                                $component['needs_wallet'] = false;
+                                $component['transaction']['is_cancelled'] = true;
+                                $component['transaction']['is_cleared'] = false;
+                                $changed = true;
+                            }
+                        } elseif (in_array($draft->status, ['cancelled', 'expired'])) {
+                            // Draft dibatalkan atau expired
+                            $component['needs_wallet'] = false;
+                            $component['transaction']['is_cancelled'] = true;
+                            $component['transaction']['is_cleared'] = false;
+                            $changed = true;
+                        }
+                    }
+                } else {
+                    // Normal transaction card
+                    $trx = $existingTransactions->get($id);
+                    if (!$trx) {
+                        // Transaksi tidak ditemukan (dihapus dari DB)
+                        $component['needs_wallet'] = false;
+                        $component['transaction']['is_cancelled'] = true;
+                        $component['transaction']['is_cleared'] = false;
+                        $changed = true;
+                    }
                 }
             }
+            unset($component);
 
             if ($changed) {
                 $message->forceFill(['content' => $content])->save();

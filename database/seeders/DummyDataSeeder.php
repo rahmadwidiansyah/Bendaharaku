@@ -106,15 +106,15 @@ class DummyDataSeeder extends Seeder
             ['name' => 'Bayar Kost/Sewa', 'type' => 'Expense', 'icon' => '🏢'],
             
             // Transfer (1)
-            ['name' => 'Transfer Saldo', 'type' => 'Transfer', 'icon' => '🔄'],
+            ['name' => 'Transfer Saldo', 'type' => 'Transfer', 'icon' => '🔄', 'system_key' => 'TRANSFER'],
             
             // Debt (2)
-            ['name' => 'Dapat Hutangan', 'type' => 'Debt', 'icon' => '🤝'],
-            ['name' => 'Bayar Cicilan Hutang', 'type' => 'Debt', 'icon' => '💸'],
+            ['name' => 'Dapat Hutangan', 'type' => 'Debt', 'icon' => '🤝', 'system_key' => 'LOAN'],
+            ['name' => 'Bayar Cicilan Hutang', 'type' => 'Debt', 'icon' => '💸', 'system_key' => 'DEBT_PAYMENT'],
             
             // Receivable (2)
-            ['name' => 'Ngasih Piutang', 'type' => 'Receivable', 'icon' => '📄'],
-            ['name' => 'Terima Bayar Piutang', 'type' => 'Receivable', 'icon' => '💰'],
+            ['name' => 'Ngasih Piutang', 'type' => 'Receivable', 'icon' => '📄', 'system_key' => 'RECEIVABLE'],
+            ['name' => 'Terima Bayar Piutang', 'type' => 'Receivable', 'icon' => '💰', 'system_key' => 'RECEIVABLE_PAYMENT'],
         ];
 
         $createdCategories = Category::where('user_id', $user->id)->get()->keyBy('category_name')->all();
@@ -125,6 +125,7 @@ class DummyDataSeeder extends Seeder
                     'category_name' => $c['name'],
                     'type_id' => $types[$c['type']],
                     'icon' => $c['icon'],
+                    'system_key' => $c['system_key'] ?? null,
                     'is_active' => true,
                 ]);
             }

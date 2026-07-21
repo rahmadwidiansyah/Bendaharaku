@@ -67,7 +67,7 @@ class ChatTransactionOrchestrator
             // Wallet sistem dikelola internal oleh resolver — AI tidak perlu tahu.
             $wallets    = $user->wallets()
                 ->where('group_type', '!=', 'System')
-                ->get(['id', 'name', 'group_type', 'keyword'])
+                ->get(['id', 'name', 'group_type', 'keyword', 'balance'])
                 ->toArray();
             $categories = $user->categories()->get(['id', 'category_name', 'type_id', 'keyword'])->toArray();
             $activeMemories = $this->memoryService->getTopRelevantMemories($user->id, $text);
@@ -220,6 +220,22 @@ class ChatTransactionOrchestrator
             ])];
         }
 
+        // ── WEB Source atau Draft (is_cleared = false): Simpan ke transaction_drafts ──
+        if ($isWebSource || !$resolved->isCleared) {
+            return $this->processSingleWebDraft(
+                user:            $user,
+                text:            $text,
+                parsed:          $parsed,
+                resolved:        $resolved,
+                aiResult:        $aiResult,
+                finalConfidence: $finalConfidence,
+                finalSubject:    $finalSubject,
+                wallets:         $wallets,
+                categories:      $categories,
+            );
+        }
+
+        // ── Non-WEB (Telegram, dll): Simpan langsung ke transaction_logs ──
         $parseLogId = $this->parseLogService->createLog(user: $user, inputText: $text, result: $aiResult, finalConfidence: $finalConfidence);
 
         $transactionLog = $this->transactionAction->create([
@@ -244,6 +260,149 @@ class ChatTransactionOrchestrator
             'usage'       => $aiResult->usage,
             'transaction' => $transactionLog->load(['category', 'sourceWallet', 'destinationWallet', 'type']),
         ];
+    }
+
+    /**
+     * Simpan hasil parsing AI ke transaction_drafts untuk source WEB atau draft.
+     * Tidak membuat TransactionLog — hanya menyimpan preview draft.
+     *
+     * @return array{success: bool, is_web_draft: bool, draft: \App\Models\TransactionDraft, ...}
+     */
+    private function processSingleWebDraft(
+        User               $user,
+        string             $text,
+        ParsedTransaction  $parsed,
+        ResolvedTransaction $resolved,
+        object             $aiResult,
+        float              $finalConfidence,
+        string             $finalSubject,
+        array              $wallets,
+        array              $categories,
+    ): array {
+        // ── Resolusi nama kategori ───────────────────────────────────
+        $categoryName = null;
+        if ($resolved->categoryId) {
+            // Cari di koleksi categories yang sudah di-load
+            foreach ($categories as $cat) {
+                if (($cat['id'] ?? null) === $resolved->categoryId) {
+                    $categoryName = $cat['category_name'] ?? null;
+                    break;
+                }
+            }
+            // Fallback ke DB jika tidak ditemukan di koleksi
+            if ($categoryName === null) {
+                $categoryName = \App\Models\Category::find($resolved->categoryId)?->category_name;
+            }
+        }
+        // Fallback: gunakan nama kategori dari hasil parsing AI
+        if ($categoryName === null) {
+            $categoryName = $parsed->category;
+        }
+
+        // ── Resolusi nama wallet ─────────────────────────────────────
+        // Load semua wallet user (termasuk System) untuk resolusi nama
+        $allWallets = $user->wallets()->get(['id', 'name', 'group_type']);
+
+        $sourceWalletName      = null;
+        $destinationWalletName = null;
+
+        foreach ($allWallets as $wallet) {
+            if ($wallet->id === $resolved->sourceWalletId) {
+                $sourceWalletName = $wallet->name;
+            }
+            if ($wallet->id === $resolved->destinationWalletId) {
+                $destinationWalletName = $wallet->name;
+            }
+        }
+
+        // ── Tentukan needs_wallet ────────────────────────────────────
+        // needs_wallet = true jika source wallet adalah External System wallet
+        // (artinya user masih perlu memilih wallet yang sesungguhnya)
+        $externalWalletName = (string) config('bendaharaku.system_wallets.external', 'External System');
+        $needsWallet = $sourceWalletName !== null
+            && mb_strtolower($sourceWalletName) === mb_strtolower($externalWalletName);
+
+        // Untuk Income: dest wallet yang bisa jadi External
+        if (!$needsWallet && $destinationWalletName !== null) {
+            $needsWallet = mb_strtolower($destinationWalletName) === mb_strtolower($externalWalletName);
+        }
+
+        // ── Resolve type_key dari transactionType ────────────────────
+        $typeKey = $this->resolveTypeKey($parsed->transactionType);
+
+        // ── Resolve active conversation ID ───────────────────────────
+        $activeConversationId = $user->conversations()
+            ->where('is_active', true)
+            ->whereNull('archived_at')
+            ->whereNull('deleted_at')
+            ->latest()
+            ->value('id');
+
+        // ── Buat TransactionDraft ────────────────────────────────────
+        $draft = \App\Models\TransactionDraft::create([
+            'user_id'         => $user->id,
+            'conversation_id' => $activeConversationId,
+            'ai_provider'     => $aiResult->provider,
+            'ai_model'        => $aiResult->model,
+            'draft_type'      => 'single',
+            'status'          => 'pending',
+            'ai_confidence'   => $finalConfidence,
+            'original_text'   => $text,
+            'expires_at'      => now()->addHours(24),
+            'payload'         => [
+                'amount'                   => $resolved->amount,
+                'category_id'              => $resolved->categoryId,
+                'category_name'            => $categoryName,
+                'source_wallet_id'         => $resolved->sourceWalletId,
+                'source_wallet_name'       => $sourceWalletName,
+                'destination_wallet_id'    => $resolved->destinationWalletId,
+                'destination_wallet_name'  => $destinationWalletName,
+                'subject'                  => $finalSubject,
+                'notes'                    => $text, // teks asli, tanpa [DRAFT AI]
+                'type_key'                 => $typeKey,
+                'needs_wallet'             => $needsWallet,
+                'is_cleared'               => false,
+                'date'                     => now()->format('Y-m-d'),
+                'amount_formatted'         => \App\Support\MoneyFormatter::rupiah($resolved->amount),
+            ],
+        ]);
+
+        // Catat ke parse log untuk AI analytics (tidak ada transaction_log ID karena belum dibuat)
+        $this->parseLogService->createLog(
+            user:            $user,
+            inputText:       $text,
+            result:          $aiResult,
+            finalConfidence: $finalConfidence,
+        );
+
+        return [
+            'success'      => true,
+            'is_web_draft' => true,
+            'draft'        => $draft,
+            'provider'     => $aiResult->provider,
+            'model'        => $aiResult->model,
+            'confidence'   => $finalConfidence,
+            'usage'        => $aiResult->usage,
+        ];
+    }
+
+    /**
+     * Resolve transaction type ke string key untuk payload draft.
+     */
+    private function resolveTypeKey(?TransactionIntent $transactionType): string
+    {
+        if ($transactionType === null) {
+            return 'expense';
+        }
+
+        return match ($transactionType) {
+            TransactionIntent::Income     => 'income',
+            TransactionIntent::Expense    => 'expense',
+            TransactionIntent::Transfer   => 'transfer',
+            TransactionIntent::Debt       => 'debt',
+            TransactionIntent::Receivable => 'debt',
+            default                       => 'expense',
+        };
     }
 
     private function hasExplicitWalletMention(string $text, array $wallets): bool
@@ -443,6 +602,7 @@ class ChatTransactionOrchestrator
         //    jadi isolasi per-item sudah dijamin di level Action.
         $threshold = (float) config('bendaharaku.ai.confidence.threshold_auto_clear', 0.85);
         $results   = [];   // MultiTransactionItem[], urutan = urutan input
+        $isWebSource = strtoupper($source) === 'WEB';
 
         foreach ($multiResult->transactions as $idx => $parsed) {
             $num = $idx + 1;
@@ -493,10 +653,75 @@ class ChatTransactionOrchestrator
                     destinationWalletId: $resolved->destinationWalletId,
                     subject:             $resolved->subject ?? $user->name,
                     notes:               $rawText,
-                    isCleared:           ($multiResult->confidence >= $threshold),
+                    isCleared:           ($multiResult->confidence >= $threshold && !$isWebSource),
                 );
 
-                // ProcessTransactionAction::create() punya DB::transaction sendiri.
+                // ── WEB source atau Draft (is_cleared = false): simpan ke transaction_drafts ──
+                if ($isWebSource || !$resolved->isCleared) {
+                    // Resolusi nama untuk payload
+                    $allWallets  = $user->wallets()->get(['id', 'name', 'group_type']);
+                    $allCats     = $user->categories()->get(['id', 'category_name']);
+
+                    $categoryName = $allCats->firstWhere('id', $resolved->categoryId)?->category_name
+                        ?? $parsed->category;
+
+                    $sourceWalletName = $allWallets->firstWhere('id', $resolved->sourceWalletId)?->name;
+                    $destWalletName   = $allWallets->firstWhere('id', $resolved->destinationWalletId)?->name;
+
+                    $externalName = (string) config('bendaharaku.system_wallets.external', 'External System');
+                    $needsWallet  = $sourceWalletName !== null
+                        && mb_strtolower($sourceWalletName) === mb_strtolower($externalName);
+                    if (!$needsWallet && $destWalletName !== null) {
+                        $needsWallet = mb_strtolower($destWalletName) === mb_strtolower($externalName);
+                    }
+
+                    $typeKey = $this->resolveTypeKey($parsed->transactionType);
+
+                    $activeConversationId = $user->conversations()
+                        ->where('is_active', true)
+                        ->whereNull('archived_at')
+                        ->whereNull('deleted_at')
+                        ->latest()
+                        ->value('id');
+
+                    $draft = \App\Models\TransactionDraft::create([
+                        'user_id'         => $user->id,
+                        'conversation_id' => $activeConversationId,
+                        'ai_provider'     => $multiResult->provider,
+                        'ai_model'        => $multiResult->model,
+                        'draft_type'      => 'single', // masing-masing item multi jadi draft single
+                        'status'          => 'pending',
+                        'ai_confidence'   => $multiResult->confidence,
+                        'original_text'   => $rawText,
+                        'expires_at'      => now()->addHours(24),
+                        'payload'         => [
+                            'amount'                  => $resolved->amount,
+                            'category_id'             => $resolved->categoryId,
+                            'category_name'           => $categoryName,
+                            'source_wallet_id'        => $resolved->sourceWalletId,
+                            'source_wallet_name'      => $sourceWalletName,
+                            'destination_wallet_id'   => $resolved->destinationWalletId,
+                            'destination_wallet_name' => $destWalletName,
+                            'subject'                 => $resolved->subject ?? $user->name,
+                            'notes'                   => $rawText,
+                            'type_key'                => $typeKey,
+                            'needs_wallet'            => $needsWallet,
+                            'is_cleared'              => false,
+                            'date'                    => now()->format('Y-m-d'),
+                            'amount_formatted'        => \App\Support\MoneyFormatter::rupiah($resolved->amount),
+                        ],
+                    ]);
+
+                    $results[] = MultiTransactionItem::successDraft(
+                        index: $num,
+                        draft: $draft,
+                        raw:   $rawText,
+                    );
+
+                    continue;
+                }
+
+                // ── Non-WEB: ProcessTransactionAction::create() punya DB::transaction sendiri.
                 // Jika melempar exception, hanya item ini yang gagal.
                 $log = $this->transactionAction->create([
                     'date'                  => now()->format('Y-m-d'),

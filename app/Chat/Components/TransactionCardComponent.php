@@ -20,6 +20,10 @@ use App\Support\MoneyFormatter;
  *
  * needs_wallet = true  → wallet belum dipilih (draft), tampilkan QuickWalletPicker
  * needs_wallet = false → wallet sudah ada
+ *
+ * $draftId — jika tidak null, komponen ini merepresentasikan TransactionDraft
+ * (bukan TransactionLog). WebFormatter akan menggunakan draftId sebagai 'id'
+ * di output JSON sehingga frontend tahu ini adalah draft ID.
  */
 readonly class TransactionCardComponent implements ChatComponentInterface
 {
@@ -27,6 +31,7 @@ readonly class TransactionCardComponent implements ChatComponentInterface
         public TransactionLog $transaction,
         public ?int           $index       = null,
         public bool           $showDetails = true,
+        public ?int           $draftId     = null,
     ) {}
 
     public function type(): string
@@ -66,7 +71,7 @@ readonly class TransactionCardComponent implements ChatComponentInterface
         $destWallet   = $trx->destinationWallet?->name;
         $needsWallet  = !$trx->is_cleared && $sourceWallet === null && $destWallet === null;
 
-        return [
+        $result = [
             'type'         => $this->type(),
             'index'        => $this->index,
             'show_details' => $this->showDetails,
@@ -88,5 +93,16 @@ readonly class TransactionCardComponent implements ChatComponentInterface
                 'date'             => $trx->date?->toDateString(),
             ],
         ];
+
+        // Jika ini adalah draft, tambahkan draft_id ke output
+        // WebFormatter akan membaca property ini untuk menentukan ID yang dikirim ke frontend
+        if ($this->draftId !== null) {
+            $result['draft_id']            = $this->draftId;
+            $result['is_draft']            = true;
+            $result['transaction']['is_draft']  = true;
+            $result['transaction']['draft_id']  = $this->draftId;
+        }
+
+        return $result;
     }
 }

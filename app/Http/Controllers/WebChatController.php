@@ -10,6 +10,8 @@ use App\Actions\ProcessTransactionAction;
 use App\Models\Conversation;
 use App\Models\ChatMessage;
 use App\Models\TransactionLog;
+use App\Models\TransactionDraft;
+use App\Services\Chat\DraftConfirmationService;
 use App\Support\MoneyFormatter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,15 +29,18 @@ use Throwable;
  * - Terima pesan dari frontend, delegate ke WebAdapter
  * - Serve riwayat pesan untuk initial load + pagination
  * - Serve daftar command dari registry
+ * - Konfirmasi/batalkan/assign wallet untuk TransactionDraft dan TransactionLog
  *
  * Tidak ada AI logic di sini.
- * Tidak ada business rule — semua di WebAdapter & ChatApplicationService.
+ * Tidak ada business rule — semua di WebAdapter, ChatApplicationService,
+ * DraftConfirmationService, dan ProcessTransactionAction.
  */
 class WebChatController extends Controller
 {
     public function __construct(
-        private readonly WebAdapter          $adapter,
-        private readonly ChatCommandRegistry $commandRegistry,
+        private readonly WebAdapter               $adapter,
+        private readonly ChatCommandRegistry      $commandRegistry,
+        private readonly DraftConfirmationService $draftService,
     ) {}
 
     /**
@@ -260,8 +265,10 @@ class WebChatController extends Controller
 
     /**
      * PATCH /chat/transaction/{id}/wallet
-     * Assign wallet ke draft transaksi dan konfirmasi (is_cleared = true).
-     * Mutasi saldo wallet dilakukan di sini.
+     * Assign wallet ke draft transaksi dan konfirmasi.
+     *
+     * Mencoba draft di transaction_drafts terlebih dahulu.
+     * Jika tidak ada (backward compat), gunakan logic lama dari transaction_logs.
      */
     public function assignWallet(Request $request, int $id): JsonResponse
     {
@@ -271,30 +278,52 @@ class WebChatController extends Controller
 
         $user = $request->user();
 
-        // Pastikan transaksi milik user ini dan masih draft
+        // ── Coba cari di transaction_drafts terlebih dahulu ───────
+        $draft = TransactionDraft::where('user_id', $user->id)
+            ->where('status', 'pending')
+            ->find($id);
+
+        if ($draft !== null) {
+            try {
+                $transactionLog = $this->draftService->assignWallet(
+                    draft:    $draft,
+                    user:     $user,
+                    walletId: $validated['wallet_id'],
+                );
+
+                return response()->json([
+                    'success'     => true,
+                    'transaction' => $this->formatTransactionForChat($transactionLog),
+                ]);
+            } catch (Throwable $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                ], 422);
+            }
+        }
+
+        // ── Backward compat: cari di transaction_logs (draft lama) ──
         $transaction = $user->transactionLogs()
             ->with(['sourceWallet', 'destinationWallet', 'category', 'type'])
             ->where('is_cleared', false)
-            ->findOrFail($id);
+            ->find($id);
+
+        if (!$transaction) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Draft tidak ditemukan.',
+            ], 404);
+        }
 
         // Pastikan wallet milik user
         $wallet = $user->wallets()
             ->where('group_type', '!=', 'System')
             ->findOrFail($validated['wallet_id']);
 
-        // Resolve tipe transaksi
-        // Tentukan sisi wallet user berdasarkan kondisi source/dest yang sudah tersimpan di draft.
-        // Draft dibuat oleh resolveWebDraftWithoutWallet() dengan placeholder:
-        //   - Expense: source = External/placeholder, dest = Merchant → user ganti source
-        //   - Income: source = External, dest = External/placeholder → user ganti dest
-        //   - Debt terima: source = System Hutang, dest = External/placeholder → user ganti dest
-        //   - Debt bayar: source = External/placeholder, dest = System Hutang → user ganti source
-        //   - Receivable ngasih: source = External/placeholder, dest = System Piutang → user ganti source
-        //   - Receivable terima: source = System Piutang, dest = External/placeholder → user ganti dest
-        //
-        // Logika: jika source sudah merupakan System wallet yang "bermakna" (Hutang/Piutang),
+        // Logika resolusi wallet (sama dengan sebelumnya):
+        // Jika source sudah merupakan System wallet yang "bermakna" (Hutang/Piutang),
         // maka sisi user ada di dest. Sebaliknya user ada di source.
-
         $sourceWallet = $transaction->sourceWallet;
         $destWallet   = $transaction->destinationWallet;
         $sourceIsRealSystem = $sourceWallet && $sourceWallet->group_type === 'System'
@@ -329,29 +358,9 @@ class WebChatController extends Controller
         $transaction->refresh()->load(['sourceWallet', 'destinationWallet', 'category', 'type']);
         $this->markTransactionUpdatedInChatHistory($user->id, $transaction);
 
-        $typeKey = match (strtolower($transaction->type->name ?? '')) {
-            'income'   => 'income',
-            'expense'  => 'expense',
-            'transfer' => 'transfer',
-            default    => 'other',
-        };
-
         return response()->json([
             'success'     => true,
-            'transaction' => [
-                'id'               => $transaction->id,
-                'reference_number' => $transaction->reference_number,
-                'is_cleared'       => $transaction->is_cleared,
-                'is_cancelled'     => false,
-                'type_key'         => $typeKey,
-                'amount_formatted' => \App\Support\MoneyFormatter::rupiah($transaction->amount),
-                'source_wallet'    => $transaction->sourceWallet?->name,
-                'dest_wallet'      => $transaction->destinationWallet?->name,
-                'category'         => $transaction->category?->category_name,
-                'date'             => $transaction->date?->toDateString(),
-                'notes'            => $transaction->notes,
-                'created_at'       => $transaction->created_at?->toIso8601String(),
-            ],
+            'transaction' => $this->formatTransactionForChat($transaction),
         ]);
     }
 
@@ -384,13 +393,67 @@ class WebChatController extends Controller
     }
 
     /**
+     * GET /chat/draft/{id}/status
+     * Cek status TransactionDraft dari chat.
+     * Digunakan frontend untuk polling status draft.
+     */
+    public function draftStatus(Request $request, int $id): JsonResponse
+    {
+        $user  = $request->user();
+        $draft = TransactionDraft::where('user_id', $user->id)->find($id);
+
+        if (!$draft) {
+            return response()->json([
+                'exists'    => false,
+                'is_draft'  => true,
+                'draft'     => [
+                    'id'           => $id,
+                    'is_cancelled' => true,
+                    'is_cleared'   => false,
+                ],
+            ]);
+        }
+
+        return response()->json([
+            'exists'   => true,
+            'is_draft' => true,
+            'draft'    => $this->draftService->formatDraftForChat($draft),
+        ]);
+    }
+
+    /**
      * PATCH /chat/transaction/{id}/confirm
      * Konfirmasi draft yang wallet-nya sudah lengkap.
+     *
+     * Mencoba draft di transaction_drafts terlebih dahulu.
+     * Jika tidak ada, gunakan logic lama dari transaction_logs (backward compat).
      */
     public function confirmTransaction(Request $request, int $id, ProcessTransactionAction $action): JsonResponse
     {
-        $transaction = $request->user()
-            ->transactionLogs()
+        $user = $request->user();
+
+        // ── Coba cari di transaction_drafts terlebih dahulu ───────
+        $draft = TransactionDraft::where('user_id', $user->id)
+            ->where('status', 'pending')
+            ->find($id);
+
+        if ($draft !== null) {
+            try {
+                $transactionLog = $this->draftService->confirm($draft, $user);
+                return response()->json([
+                    'success'     => true,
+                    'transaction' => $this->formatTransactionForChat($transactionLog),
+                ]);
+            } catch (Throwable $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                ], 422);
+            }
+        }
+
+        // ── Backward compat: cari di transaction_logs ─────────────
+        $transaction = $user->transactionLogs()
             ->with(['sourceWallet', 'destinationWallet', 'category', 'type'])
             ->find($id);
 
@@ -418,6 +481,9 @@ class WebChatController extends Controller
             }
         }
 
+        // Sinkronisasi riwayat chat dengan status terbaru setelah konfirmasi
+        $this->markTransactionUpdatedInChatHistory($request->user()->id, $transaction);
+
         return response()->json([
             'success'     => true,
             'transaction' => $this->formatTransactionForChat($transaction),
@@ -426,12 +492,41 @@ class WebChatController extends Controller
 
     /**
      * DELETE /chat/transaction/{id}/cancel
-     * Batal/hapus transaksi dari chat, lalu simpan label batal di riwayat chat.
+     * Batal/hapus transaksi dari chat.
+     *
+     * Mencoba draft di transaction_drafts terlebih dahulu.
+     * Jika tidak ada, hapus dari transaction_logs (backward compat).
      */
     public function cancelTransaction(Request $request, int $id, ProcessTransactionAction $action): JsonResponse
     {
-        $transaction = $request->user()
-            ->transactionLogs()
+        $user = $request->user();
+
+        // ── Coba cari di transaction_drafts terlebih dahulu ───────
+        $draft = TransactionDraft::where('user_id', $user->id)->find($id);
+
+        if ($draft !== null) {
+            try {
+                $this->draftService->cancel($draft, $user);
+            } catch (Throwable $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                ], 422);
+            }
+
+            return response()->json([
+                'success'  => true,
+                'is_draft' => true,
+                'draft'    => [
+                    'id'           => $id,
+                    'is_cancelled' => true,
+                    'is_cleared'   => false,
+                ],
+            ]);
+        }
+
+        // ── Backward compat: cari di transaction_logs ─────────────
+        $transaction = $user->transactionLogs()
             ->with(['sourceWallet', 'destinationWallet', 'category', 'type'])
             ->find($id);
 
@@ -446,7 +541,7 @@ class WebChatController extends Controller
             }
         }
 
-        $this->markTransactionCancelledInChatHistory($request->user()->id, $id);
+        $this->markTransactionCancelledInChatHistory($user->id, $id);
 
         return response()->json([
             'success'     => true,
@@ -470,6 +565,7 @@ class WebChatController extends Controller
 
         return [
             'id'               => $transaction->id,
+            'is_draft'         => false,
             'reference_number' => $transaction->reference_number,
             'amount'           => $transaction->amount,
             'amount_formatted' => MoneyFormatter::rupiah($transaction->amount),
@@ -508,6 +604,58 @@ class WebChatController extends Controller
                         $component['needs_wallet'] = false;
                         $component['transaction']['is_cancelled'] = true;
                         $component['transaction']['is_cleared'] = false;
+                        $changed = true;
+                    }
+
+                    if ($changed) {
+                        $message->forceFill(['content' => $content])->save();
+                    }
+                }
+            });
+    }
+
+    /**
+     * Perbarui data transaksi di riwayat chat setelah konfirmasi.
+     * Ini memastikan apabila user scroll ke atas, bubble chat lama
+     * juga menampilkan status confirmed dan notes yang sudah bersih.
+     */
+    private function markTransactionUpdatedInChatHistory(int $userId, TransactionLog $transaction): void
+    {
+        $transactionId = $transaction->id;
+
+        $typeKey = match (strtolower($transaction->type?->name ?? '')) {
+            'income'             => 'income',
+            'expense'            => 'expense',
+            'transfer'           => 'transfer',
+            'debt', 'receivable' => 'debt',
+            default              => 'other',
+        };
+
+        ChatMessage::whereHas('conversation', fn($q) => $q->where('user_id', $userId))
+            ->where('role', 'assistant')
+            ->chunkById(100, function ($messages) use ($transactionId, $transaction, $typeKey) {
+                foreach ($messages as $message) {
+                    $content = $message->content ?? [];
+                    $changed = false;
+
+                    foreach ($content as &$component) {
+                        if (($component['type'] ?? null) !== 'transaction_card') {
+                            continue;
+                        }
+
+                        if ((int) ($component['transaction']['id'] ?? 0) !== $transactionId) {
+                            continue;
+                        }
+
+                        // Update status dan bersihkan notes di riwayat chat
+                        $component['needs_wallet']                    = false;
+                        $component['transaction']['is_cleared']       = true;
+                        $component['transaction']['is_cancelled']     = false;
+                        $component['transaction']['notes']            = $transaction->notes;
+                        $component['transaction']['type_key']         = $typeKey;
+                        $component['transaction']['source_wallet']    = $transaction->sourceWallet?->name;
+                        $component['transaction']['dest_wallet']      = $transaction->destinationWallet?->name;
+                        $component['transaction']['amount_formatted'] = \App\Support\MoneyFormatter::rupiah($transaction->amount);
                         $changed = true;
                     }
 

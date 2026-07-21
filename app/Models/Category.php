@@ -51,7 +51,50 @@ class Category extends Model
         'icon',
         'keyword',
         'is_active',
+        'system_key',
+        'custom_name',
+        'custom_icon',
     ];
+
+    /**
+     * Get the category name (display custom name if set for system categories).
+     */
+    public function getCategoryNameAttribute($value)
+    {
+        return $this->custom_name ?? $value;
+    }
+
+    /**
+     * Get the category icon (display custom icon if set for system categories).
+     */
+    public function getIconAttribute($value)
+    {
+        return $this->custom_icon ?? $value;
+    }
+
+    /**
+     * Set the category name (write to custom_name if it is a system category).
+     */
+    public function setCategoryNameAttribute($value)
+    {
+        if ($this->exists && $this->system_key !== null) {
+            $this->attributes['custom_name'] = $value;
+        } else {
+            $this->attributes['category_name'] = $value;
+        }
+    }
+
+    /**
+     * Set the category icon (write to custom_icon if it is a system category).
+     */
+    public function setIconAttribute($value)
+    {
+        if ($this->exists && $this->system_key !== null) {
+            $this->attributes['custom_icon'] = $value;
+        } else {
+            $this->attributes['icon'] = $value;
+        }
+    }
 
     /**
      * Relasi ke User (Kategori dimiliki oleh User).

@@ -28,12 +28,14 @@ class DashboardController extends Controller
         // 5. DATA ANALISIS ARUS KAS BULAN INI
         $now = Carbon::now();
         $thisMonthIncome = $user->transactionLogs()
+            ->where('is_cleared', true)
             ->whereHas('type', function($q){ $q->where('name', 'Income'); })
             ->whereMonth('date', $now->month)
             ->whereYear('date', $now->year)
             ->sum('amount');
 
         $thisMonthExpense = $user->transactionLogs()
+            ->where('is_cleared', true)
             ->whereHas('type', function($q){ $q->where('name', 'Expense'); })
             ->whereMonth('date', $now->month)
             ->whereYear('date', $now->year)
@@ -73,6 +75,7 @@ class DashboardController extends Controller
         $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->format('Y-m-d'));
 
         $query = $user->transactionLogs()->with(['type', 'category', 'sourceWallet', 'destinationWallet']);
+        $query->where('is_cleared', true);
         $query->whereBetween('date', [$startDate, $endDate]);
 
         if ($request->has('type') && $request->type != '') {
@@ -123,9 +126,82 @@ class DashboardController extends Controller
                                   ];
                               });
 
+        // ── Query Pending Drafts ──
+        $pendingDraftsQuery = $user->transactionDrafts()->where('status', 'pending');
+        $pendingDraftsQuery->whereBetween('created_at', [
+            Carbon::parse($startDate)->startOfDay(),
+            Carbon::parse($endDate)->endOfDay()
+        ]);
+
+        if ($request->filled('type')) {
+            $type = strtolower($request->type);
+            $pendingDraftsQuery->whereRaw('LOWER(payload->>\'type_key\') = ?', [$type]);
+        }
+
+        if ($request->filled('search')) {
+            $search = strtolower(trim($request->search));
+            $pendingDraftsQuery->where(function($q) use ($search) {
+                $q->whereRaw('LOWER(original_text) LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(payload->>\'notes\') LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(payload->>\'subject\') LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(payload->>\'category_name\') LIKE ?', ["%{$search}%"]);
+            });
+        }
+
+        $drafts = $pendingDraftsQuery->orderBy('created_at', 'desc')->get();
+
+        $draftData = $drafts->map(function ($draft) {
+            $payload = $draft->payload ?? [];
+            return [
+                'id' => $draft->id,
+                'is_draft' => true,
+                'draft_id' => $draft->id,
+                'amount' => (float) ($payload['amount'] ?? 0),
+                'notes' => $payload['notes'] ?? $draft->original_text,
+                'subject' => $payload['subject'] ?? '-',
+                'is_cleared' => false,
+                'reference_number' => null,
+                'date' => Carbon::parse($payload['date'] ?? $draft->created_at)->translatedFormat('d M Y'),
+                'raw_date' => $payload['date'] ?? $draft->created_at->toDateString(),
+                'time' => Carbon::parse($draft->created_at)->format('H:i'),
+                'type' => [
+                    'id' => null,
+                    'name' => ucfirst($payload['type_key'] ?? 'expense'),
+                ],
+                'category' => isset($payload['category_name']) ? [
+                    'id' => $payload['category_id'] ?? null,
+                    'category_name' => $payload['category_name'],
+                ] : null,
+                'source_wallet' => isset($payload['source_wallet_name']) ? [
+                    'id' => $payload['source_wallet_id'] ?? null,
+                    'name' => $payload['source_wallet_name'],
+                ] : null,
+                'destination_wallet' => isset($payload['destination_wallet_name']) ? [
+                    'id' => $payload['destination_wallet_id'] ?? null,
+                    'name' => $payload['destination_wallet_name'],
+                ] : null,
+                'due_date' => null,
+                'due_date_type' => null,
+                'due_date_interval' => null,
+            ];
+        });
+
+        $transactions = $transactions->concat($draftData)->sort(function ($a, $b) {
+            $dateCompare = strcmp($b['raw_date'], $a['raw_date']);
+            if ($dateCompare !== 0) {
+                return $dateCompare;
+            }
+            $timeCompare = strcmp($b['time'], $a['time']);
+            if ($timeCompare !== 0) {
+                return $timeCompare;
+            }
+            return $b['id'] <=> $a['id'];
+        })->values();
+
         // 7. NOTIFIKASI JATUH TEMPO HUTANG/PIUTANG
         $upcomingDebts = [];
         $debtsWithDueDate = $user->transactionLogs()->with('category')
+            ->where('is_cleared', true)
             ->whereNotNull('due_date_type')
             ->get();
             
@@ -172,6 +248,7 @@ class DashboardController extends Controller
                 // Show if it's due within 7 days, or overdue (negative)
                 if ($daysUntilDue <= 7) {
                     $allSubjectTrxs = $user->transactionLogs()->with('category')
+                        ->where('is_cleared', true)
                         ->where('subject', $trx->subject)
                         ->get();
                         

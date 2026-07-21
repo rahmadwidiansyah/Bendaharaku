@@ -22,6 +22,7 @@ class TransactionController extends Controller
         $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->format('Y-m-d'));
 
         $query = $user->transactionLogs()->with(['type', 'category', 'sourceWallet', 'destinationWallet']);
+        $query->where('is_cleared', true);
         $query->whereBetween('date', [$startDate, $endDate]);
 
         if ($request->filled('type')) {
@@ -53,6 +54,75 @@ class TransactionController extends Controller
                 'source_wallet' => $trx->sourceWallet,
                 'destination_wallet' => $trx->destinationWallet,
             ]);
+
+        // ── Query Pending Drafts ──
+        $pendingDraftsQuery = $user->transactionDrafts()->where('status', 'pending');
+        $pendingDraftsQuery->whereBetween('created_at', [
+            Carbon::parse($startDate)->startOfDay(),
+            Carbon::parse($endDate)->endOfDay()
+        ]);
+
+        if ($request->filled('type')) {
+            $type = strtolower($request->type);
+            $pendingDraftsQuery->whereRaw('LOWER(payload->>\'type_key\') = ?', [$type]);
+        }
+
+        if ($request->filled('search')) {
+            $search = strtolower(trim($request->search));
+            $pendingDraftsQuery->where(function($q) use ($search) {
+                $q->whereRaw('LOWER(original_text) LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(payload->>\'notes\') LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(payload->>\'subject\') LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(payload->>\'category_name\') LIKE ?', ["%{$search}%"]);
+            });
+        }
+
+        $drafts = $pendingDraftsQuery->orderBy('created_at', 'desc')->get();
+
+        $draftData = $drafts->map(function ($draft) {
+            $payload = $draft->payload ?? [];
+            return [
+                'id' => $draft->id,
+                'is_draft' => true,
+                'draft_id' => $draft->id,
+                'amount' => (float) ($payload['amount'] ?? 0),
+                'notes' => $payload['notes'] ?? $draft->original_text,
+                'subject' => $payload['subject'] ?? '-',
+                'is_cleared' => false,
+                'reference_number' => null,
+                'date' => Carbon::parse($payload['date'] ?? $draft->created_at)->translatedFormat('d M Y'),
+                'raw_date' => $payload['date'] ?? $draft->created_at->toDateString(),
+                'time' => Carbon::parse($draft->created_at)->format('H:i'),
+                'type' => [
+                    'id' => null,
+                    'name' => ucfirst($payload['type_key'] ?? 'expense'),
+                ],
+                'category' => isset($payload['category_name']) ? [
+                    'id' => $payload['category_id'] ?? null,
+                    'category_name' => $payload['category_name'],
+                ] : null,
+                'source_wallet' => isset($payload['source_wallet_name']) ? [
+                    'id' => $payload['source_wallet_id'] ?? null,
+                    'name' => $payload['source_wallet_name'],
+                ] : null,
+                'destination_wallet' => isset($payload['destination_wallet_name']) ? [
+                    'id' => $payload['destination_wallet_id'] ?? null,
+                    'name' => $payload['destination_wallet_name'],
+                ] : null,
+            ];
+        });
+
+        $transactions = $transactions->concat($draftData)->sort(function ($a, $b) {
+            $dateCompare = strcmp($b['raw_date'], $a['raw_date']);
+            if ($dateCompare !== 0) {
+                return $dateCompare;
+            }
+            $timeCompare = strcmp($b['time'], $a['time']);
+            if ($timeCompare !== 0) {
+                return $timeCompare;
+            }
+            return $b['id'] <=> $a['id'];
+        })->values();
 
         return Inertia::render('Transactions/Index', [
             'transactions' => ['data' => $transactions],
@@ -163,15 +233,21 @@ class TransactionController extends Controller
 
     /**
      * Standarisasi validasi form transaksi.
-     * Transfer tidak membutuhkan category_id karena tidak ada kategori Transfer per-user.
+     *
+     * Transfer, Debt, dan Receivable TIDAK membutuhkan category_id dari form
+     * karena sistem akan auto-resolve kategori sistem yang sesuai berdasarkan
+     * transaction_type di ProcessTransactionAction.
+     *
+     * Kategori Income/Expense tetap dipilih manual oleh user.
      */
     private function validateTransaction(Request $request): array
     {
-        $isTransfer = strtolower($request->input('transaction_type', '')) === 'transfer';
+        $type = strtolower($request->input('transaction_type', ''));
+        $isSystemManagedCategory = in_array($type, ['transfer', 'debt', 'receivable']);
 
         return $request->validate([
             'date'                   => 'required|date',
-            'category_id'            => $isTransfer ? 'nullable' : 'required|exists:categories,id',
+            'category_id'            => $isSystemManagedCategory ? 'nullable' : 'required|exists:categories,id',
             'source_wallet_id'       => 'required|exists:wallets,id',
             'destination_wallet_id'  => 'required|exists:wallets,id',
             'amount'                 => 'required|numeric|gt:0',
@@ -181,6 +257,9 @@ class TransactionController extends Controller
             'due_date'               => 'nullable|date',
             'due_date_type'          => 'nullable|in:fixed,monthly,daily',
             'due_date_interval'      => 'nullable|integer',
+            // debt_sub_type memberi tahu backend apakah ini "loan" atau "debt_payment"
+            // (dan "receivable" atau "receivable_payment")
+            'debt_sub_type'          => 'nullable|string',
         ]);
     }
 
@@ -205,10 +284,12 @@ class TransactionController extends Controller
             ->sortByDesc(fn($cat) => $categoryCounts->get($cat->id, 0))
             ->values();
 
-        // 3. Kalkulasi data subjek Hutang/Piutang aktif menggunakan PHP 8.4 match expression
+        // 3. Kalkulasi data subjek Hutang/Piutang aktif menggunakan system_key
+        // Tidak hardcoded nama kategori — kompatibel dengan custom_name personalisasi
         $transactions = $user->transactionLogs()->with('category')
-            ->whereHas('category', fn($q) => $q->whereIn('category_name', [
-                'Dapat Hutangan', 'Bayar Cicilan Hutang', 'Ngasih Piutang', 'Terima Bayar Piutang'
+            ->where('is_cleared', true)
+            ->whereHas('category', fn($q) => $q->whereIn('system_key', [
+                'LOAN', 'DEBT_PAYMENT', 'RECEIVABLE', 'RECEIVABLE_PAYMENT'
             ]))
             ->whereNotNull('subject')
             ->where('subject', '!=', '-')
@@ -220,25 +301,25 @@ class TransactionController extends Controller
         foreach ($transactions as $tx) {
             $subject = trim($tx->subject);
             $subjectKey = strtolower($subject);
-            $catName = $tx->category->category_name;
+            $systemKey = $tx->category->system_key;
 
             $debtBalances[$subjectKey] ??= ['name' => $subject, 'balance' => 0];
             $receivableBalances[$subjectKey] ??= ['name' => $subject, 'balance' => 0];
 
-            match ($catName) {
-                'Dapat Hutangan' => $debtBalances[$subjectKey]['balance'] += $tx->amount,
-                'Bayar Cicilan Hutang' => $debtBalances[$subjectKey]['balance'] -= $tx->amount,
-                'Ngasih Piutang' => $receivableBalances[$subjectKey]['balance'] += $tx->amount,
-                'Terima Bayar Piutang' => $receivableBalances[$subjectKey]['balance'] -= $tx->amount,
-                default => null,
+            match ($systemKey) {
+                'LOAN'               => $debtBalances[$subjectKey]['balance']       += $tx->amount,
+                'DEBT_PAYMENT'       => $debtBalances[$subjectKey]['balance']       -= $tx->amount,
+                'RECEIVABLE'         => $receivableBalances[$subjectKey]['balance'] += $tx->amount,
+                'RECEIVABLE_PAYMENT' => $receivableBalances[$subjectKey]['balance'] -= $tx->amount,
+                default              => null,
             };
         }
 
         return [
-            'wallets' => $wallets,
-            'systemWallets' => $systemWallets,
-            'categories' => $categories,
-            'debtSubjects' => collect($debtBalances)->filter(fn($i) => $i['balance'] > 0)->pluck('name')->values()->all(),
+            'wallets'            => $wallets,
+            'systemWallets'      => $systemWallets,
+            'categories'         => $categories,
+            'debtSubjects'       => collect($debtBalances)->filter(fn($i) => $i['balance'] > 0)->pluck('name')->values()->all(),
             'receivableSubjects' => collect($receivableBalances)->filter(fn($i) => $i['balance'] > 0)->pluck('name')->values()->all(),
         ];
     }

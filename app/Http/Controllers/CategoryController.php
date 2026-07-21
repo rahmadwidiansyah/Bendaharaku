@@ -75,15 +75,11 @@ class CategoryController extends Controller
     {
         if ($category->user_id !== Auth::id()) abort(403);
 
-        $systemTypes = ['Transfer', 'Debt', 'Receivable'];
-        if (in_array($category->type->name, $systemTypes)) {
-            return redirect()->route('categories.index')->with('error', 'Kategori sistem tidak boleh diubah.');
-        }
-
-        $types = \App\Models\TransactionType::whereIn('name', ['Income', 'Expense'])->get();
+        $types = \App\Models\TransactionType::all(); // Provide all types, but UI can disable changes for system categories
         return Inertia::render('Categories/Edit', [
             'category' => $category,
             'types' => $types,
+            'isSystem' => $category->system_key !== null,
         ]);
     }
 
@@ -98,6 +94,11 @@ class CategoryController extends Controller
             'icon_file'     => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'keyword'       => 'nullable|string|max:255',
         ]);
+
+        if ($category->system_key !== null) {
+            // Cannot change transaction type of system categories
+            unset($validated['type_id']);
+        }
 
         if ($request->hasFile('icon_file')) {
             if ($category->icon && \Str::contains($category->icon, '/')) {
@@ -131,7 +132,7 @@ class CategoryController extends Controller
     {
         if ($category->user_id !== Auth::id()) abort(403);
 
-        if (in_array($category->type->name, ['Transfer', 'Debt', 'Receivable'])) {
+        if ($category->system_key !== null || in_array($category->type->name, ['Transfer', 'Debt', 'Receivable'])) {
             return redirect()->route('categories.index')->with('error', 'Kategori sistem tidak bisa dihapus.');
         }
         
@@ -175,7 +176,7 @@ class CategoryController extends Controller
             ->get();
 
         $totalUsage = (float) $transactions->sum('amount');
-        $isSystem = in_array($category->type->name, ['Transfer', 'Debt', 'Receivable']);
+        $isSystem = $category->system_key !== null;
 
         return Inertia::render('Categories/Show', [
             'category' => $category->load('type'),

@@ -134,12 +134,21 @@ class WebFormatter implements ChatFormatterInterface
             default              => 'other',
         };
 
+        // Jika komponen memiliki draftId, gunakan itu sebagai 'id' di output JSON.
+        // Frontend membaca 'is_draft' => true untuk mengetahui bahwa ini adalah draft ID,
+        // bukan transaction_log ID, dan akan memanggil endpoint draft yang sesuai.
+        $isDraft = $c->draftId !== null;
+        $outputId = $isDraft ? $c->draftId : $trx->id;
+
         return [
             'type'         => 'transaction_card',
             'index'        => $c->index,
             'show_details' => $c->showDetails,
+            'is_draft'     => $isDraft,
             'transaction'  => [
-                'id'               => $trx->id,
+                'id'               => $outputId,
+                'draft_id'         => $isDraft ? $c->draftId : null,
+                'is_draft'         => $isDraft,
                 'reference_number' => $trx->reference_number,
                 'amount'           => $trx->amount,
                 'amount_formatted' => MoneyFormatter::rupiah($trx->amount),

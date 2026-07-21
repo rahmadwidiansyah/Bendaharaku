@@ -115,11 +115,19 @@ const getHeaderText = (typeName) => {
                 </div>
 
                 <div :class="['grid grid-cols-3 gap-3', isDesktopLayout ? 'lg:grid-cols-4 xl:grid-cols-6 lg:gap-5' : '']">
-                    <Link v-for="category in categories" :key="category.id"
-                        :href="route('categories.show', category.id)"
-                        :title="category.category_name"
-                        class="relative group bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center active:scale-95 transition-all duration-300"
-                        :class="[getTheme(typeName).glow, getTheme(typeName).border]">
+                <Link v-for="category in categories" :key="category.id"
+                    :href="route('categories.show', category.id)"
+                    :title="category.category_name"
+                    class="relative group bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center active:scale-95 transition-all duration-300"
+                    :class="[getTheme(typeName).glow, getTheme(typeName).border]">
+
+                        <!-- System category lock badge -->
+                        <div v-if="category.system_key"
+                            class="absolute top-2 right-2 w-4 h-4 flex items-center justify-center opacity-40 group-hover:opacity-70 transition-opacity">
+                            <svg class="w-3 h-3 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
 
                         <div
                             class="w-12 h-12 rounded-xl bg-linear-to-br from-gray-900 to-gray-800 flex items-center justify-center text-2xl border border-white/10 shrink-0 shadow-inner overflow-hidden p-0.5 mb-2.5 transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-1">

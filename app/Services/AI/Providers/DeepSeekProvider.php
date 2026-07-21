@@ -50,6 +50,14 @@ class DeepSeekProvider implements AIProviderInterface
             $jsonString = $response->json('choices.0.message.content');
             $aiRaw      = $this->decodeJson((string) $jsonString, 'DeepSeek');
 
+            if (isset($aiRaw['is_transaction']) && $aiRaw['is_transaction'] === false) {
+                return AIParseResult::failure(
+                    $aiRaw['reply_message'] ?? 'Maaf Bos, saya hanya bisa membantu mencatat keuangan di Bendaharaku.',
+                    'deepseek',
+                    $request->model
+                );
+            }
+
             if (!isset($aiRaw['amount'])) {
                 throw new AiProviderException('DeepSeek', 'Response tidak mengandung format transaksi yang valid.');
             }
@@ -169,6 +177,7 @@ class DeepSeekProvider implements AIProviderInterface
             subject:           $raw['subject'] ?? null,
             notes:             $raw['notes'] ?? $fallbackNotes,
             isCleared:         (bool) ($raw['isCleared'] ?? true),
+            useAllBalance:     (bool) ($raw['use_all_balance'] ?? false),
         );
     }
 

@@ -8,6 +8,7 @@ use App\DTO\ParsedTransaction;
 use App\DTO\ResolvedTransaction;
 use App\Enums\TransactionIntent;
 use App\Models\User;
+use App\Models\Wallet;
 use App\Exceptions\CategoryNotFoundException;
 use App\Exceptions\WalletNotFoundException;
 use Illuminate\Database\Eloquent\Collection;
@@ -17,6 +18,10 @@ class TransactionResolver
 {
     /**
      * Mentranslasikan ParsedTransaction menjadi entitas ID primitif database.
+     *
+     * Mendukung ALL_BALANCE intent: jika parsed->useAllBalance = true,
+     * backend mengambil saldo aktual wallet sumber sebagai amount.
+     * Backend adalah source of truth untuk saldo — AI hanya memahami intent.
      *
      * @throws CategoryNotFoundException
      * @throws WalletNotFoundException
@@ -37,7 +42,7 @@ class TransactionResolver
         }
 
         // 3. Optimalisasi Kueri N+1
-        $wallets = $user->wallets()->get();
+        $wallets    = $user->wallets()->get();
         $categories = $user->categories()->get();
 
         // 4. Resolusi ID Kategori
@@ -52,14 +57,24 @@ class TransactionResolver
         //   Receivable "Terima Bayar Piutang": System Piutang → wallet user (uang masuk, piutang berkurang)
         //
         // AI sudah memilih kategori yang tepat — kita cukup periksa nama kategori untuk arah.
+        $systemKey = $category->system_key;
         $categoryName = mb_strtolower($category->category_name ?? '');
 
-        $isReceivableReturn = $parsed->transactionType === TransactionIntent::Receivable
-            && (str_contains($categoryName, 'terima') || str_contains($categoryName, 'bayar') || str_contains($categoryName, 'kembali'));
-        $isDebtReceive = $parsed->transactionType === TransactionIntent::Debt
-            && (str_contains($categoryName, 'dapat') || str_contains($categoryName, 'terima') || str_contains($categoryName, 'pinjam'));
-        $isDebtPay = $parsed->transactionType === TransactionIntent::Debt
-            && !$isDebtReceive;
+        if ($systemKey !== null) {
+            $isReceivableReturn = $parsed->transactionType === TransactionIntent::Receivable
+                && $systemKey === 'RECEIVABLE_PAYMENT';
+            $isDebtReceive = $parsed->transactionType === TransactionIntent::Debt
+                && $systemKey === 'LOAN';
+            $isDebtPay = $parsed->transactionType === TransactionIntent::Debt
+                && $systemKey === 'DEBT_PAYMENT';
+        } else {
+            $isReceivableReturn = $parsed->transactionType === TransactionIntent::Receivable
+                && (str_contains($categoryName, 'terima') || str_contains($categoryName, 'bayar') || str_contains($categoryName, 'kembali'));
+            $isDebtReceive = $parsed->transactionType === TransactionIntent::Debt
+                && (str_contains($categoryName, 'dapat') || str_contains($categoryName, 'terima') || str_contains($categoryName, 'pinjam'));
+            $isDebtPay = $parsed->transactionType === TransactionIntent::Debt
+                && !$isDebtReceive;
+        }
 
         [$sourceWalletId, $destinationWalletId] = match ($parsed->transactionType) {
             TransactionIntent::Expense => [
@@ -98,15 +113,61 @@ class TransactionResolver
                 ],
         };
 
+        // 6. Resolusi Amount — Handle ALL_BALANCE intent
+        //
+        // Jika AI mengembalikan use_all_balance=true (perintah "pindahkan semua saldo"),
+        // backend mengambil saldo aktual wallet sumber sebagai amount.
+        // Ini memastikan backend adalah source of truth untuk nominal saldo.
+        $amount = $parsed->amount;
+        if ($parsed->useAllBalance) {
+            $amount = $this->resolveAllBalance($sourceWalletId, $wallets);
+        }
+
+        // Validasi final amount
+        if ($amount <= 0) {
+            if ($parsed->useAllBalance) {
+                $sourceWalletName = $wallets->firstWhere('id', $sourceWalletId)?->name ?? 'wallet';
+                throw new RuntimeException(
+                    "Transfer seluruh saldo gagal: saldo wallet '{$sourceWalletName}' adalah 0 atau kosong."
+                );
+            }
+            throw new RuntimeException("Validasi Gagal: Nominal transaksi harus lebih besar dari nol.");
+        }
+
         return new ResolvedTransaction(
-            amount: $parsed->amount,
-            categoryId: $category->id,
-            sourceWalletId: $sourceWalletId,
+            amount:              $amount,
+            categoryId:          $category->id,
+            sourceWalletId:      $sourceWalletId,
             destinationWalletId: $destinationWalletId,
-            subject: $parsed->subject,
-            notes: $parsed->notes,
-            isCleared: $parsed->isCleared
+            subject:             $parsed->subject,
+            notes:               $parsed->notes,
+            isCleared:           $parsed->isCleared
         );
+    }
+
+    /**
+     * Resolve amount berdasarkan saldo aktual wallet sumber.
+     * Backend adalah source of truth — tidak mengandalkan nilai yang dikirim AI.
+     *
+     * @throws RuntimeException jika saldo wallet tidak valid
+     */
+    private function resolveAllBalance(int $sourceWalletId, Collection $wallets): float
+    {
+        $wallet = $wallets->firstWhere('id', $sourceWalletId);
+
+        if (!$wallet) {
+            throw new RuntimeException("Wallet sumber tidak ditemukan saat resolve ALL_BALANCE.");
+        }
+
+        $balance = (float) $wallet->balance;
+
+        if ($balance <= 0) {
+            throw new RuntimeException(
+                "Transfer seluruh saldo gagal: saldo wallet '{$wallet->name}' adalah Rp 0 atau negatif."
+            );
+        }
+
+        return $balance;
     }
 
     /**
@@ -115,7 +176,15 @@ class TransactionResolver
      */
     private function resolveSystemWallet(string $walletName, Collection $wallets): int
     {
-        return $this->searchWalletToken($walletName, $wallets, 'Sistem (Auto)');
+        $match = $wallets->first(fn($w) => strtolower($w->name) === strtolower(trim($walletName)));
+
+        if (!$match) {
+            throw new WalletNotFoundException(
+                "Dompet sistem untuk arus kas '{$walletName}' tidak terdeteksi. Pastikan konfigurasi system wallets sudah benar."
+            );
+        }
+
+        return $match->id;
     }
 
     /**

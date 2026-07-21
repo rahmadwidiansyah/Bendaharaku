@@ -82,8 +82,8 @@ const formatDateRange = () => {
                     </svg>
                 </button>
 
-                <Link v-if="!isSystem" :href="route('categories.edit', category.id)"
-                    class="w-10 h-10 rounded-full bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 flex items-center justify-center text-purple-500 active:scale-95 transition-all">
+                <Link :href="route('categories.edit', category.id)"
+                    class="w-10 h-10 rounded-full bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 flex items-center justify-center text-purple-500 active:scale-95 transition-all hover:border-purple-500/50">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round"
                             d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -103,11 +103,20 @@ const formatDateRange = () => {
                 <div class="text-center">
                     <h1 class="text-3xl font-black text-white tracking-tight leading-none mb-2">{{
                         category.category_name }}</h1>
-                    <div
-                        class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-linear-to-br from-gray-900 to-gray-800 border border-white/10">
-                        <span class="w-1.5 h-1.5 rounded-full"
-                            :class="category.type.name === 'Income' ? 'bg-green-400' : 'bg-purple-500'"></span>
-                        <p class="text-2xs font-bold text-gray-400 uppercase tracking-[0.2em]">{{ getTypeName(category.type.name) }}</p>
+                    <div class="flex flex-col items-center gap-2">
+                        <div
+                            class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-linear-to-br from-gray-900 to-gray-800 border border-white/10">
+                            <span class="w-1.5 h-1.5 rounded-full"
+                                :class="category.type.name === 'Income' ? 'bg-green-400' : 'bg-purple-500'"></span>
+                            <p class="text-2xs font-bold text-gray-400 uppercase tracking-[0.2em]">{{ getTypeName(category.type.name) }}</p>
+                        </div>
+                        <div v-if="isSystem"
+                            class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30">
+                            <svg class="w-3 h-3 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                            </svg>
+                            <span class="text-2xs font-bold text-amber-400 uppercase tracking-[0.15em]">Kategori Sistem</span>
+                        </div>
                     </div>
                 </div>
             </div>

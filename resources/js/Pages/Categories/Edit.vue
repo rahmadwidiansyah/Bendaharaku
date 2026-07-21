@@ -9,6 +9,7 @@ const { t } = useI18n();
 const props = defineProps({
     category: Object,
     types: Array,
+    isSystem: Boolean,
 });
 
 const form = useForm({
@@ -33,6 +34,7 @@ const submit = () => {
 };
 
 const destroy = () => {
+    if (props.isSystem) return;
     if (confirm(t('category.deleteMsg'))) {
         form.delete(route('categories.destroy', props.category.id));
     }
@@ -61,7 +63,7 @@ const destroy = () => {
 
             <form @submit.prevent="submit" class="space-y-6">
 
-                <div>
+                <div v-if="!isSystem">
                     <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">{{ t('category.type') }}</label>
                     <div
                         class="grid grid-cols-2 gap-2 p-1.5 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl shadow-inner">
@@ -72,6 +74,12 @@ const destroy = () => {
                                 {{ type.name === 'Income' ? t('types.income') : t('types.expense') }}
                             </div>
                         </label>
+                    </div>
+                </div>
+                <div v-else>
+                    <label class="block text-sm font-medium text-gray-400 mb-2 ml-1">{{ t('category.type') }}</label>
+                    <div class="h-[50px] bg-gray-900/30 border border-white/5 rounded-xl px-5 flex items-center text-gray-500 text-sm font-medium select-none">
+                        {{ category.type?.name }} (System Kategori)
                     </div>
                 </div>
 
@@ -100,12 +108,13 @@ const destroy = () => {
                 </div>
 
                 <div class="flex gap-3 pt-4">
-                    <button type="button" @click="destroy"
+                    <button v-if="!isSystem" type="button" @click="destroy"
                         class="flex-1 bg-red-950/30 border border-red-900/50 text-red-500 font-bold text-sm tracking-wide py-4 rounded-xl active:scale-95 transition-all">
                         {{ t('btn.delete') }}
                     </button>
                     <button type="submit" :disabled="form.processing"
-                        class="flex-2 bg-linear-to-br from-purple-800 to-purple-700 text-white font-bold text-sm tracking-wide py-4 rounded-xl shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all">
+                        :class="isSystem ? 'w-full' : 'flex-2'"
+                        class="bg-linear-to-br from-purple-800 to-purple-700 text-white font-bold text-sm tracking-wide py-4 rounded-xl shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all">
                         {{ form.processing ? t('btn.saving') : t('btn.update') }}
                     </button>
                 </div>
