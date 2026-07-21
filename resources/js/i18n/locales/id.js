@@ -54,6 +54,7 @@ export default {
         success:        'Berhasil',
         error:          'Gagal',
         warning:        'Peringatan',
+        partial:        'Sebagian',
         info:           'Info',
         required:       'Wajib diisi',
         optional:       'Opsional',
@@ -78,6 +79,9 @@ export default {
         skipToContent:  'Langsung ke konten',
         processing:     'Memproses...',
         period:         'Periode',
+        today:          'Hari Ini',
+        saveAndAddMore: 'Simpan & tambah lagi',
+        open:           'Buka',
         // Generic error messages
         errors: {
             generic: 'Terjadi kesalahan. Silakan coba lagi nanti.'
@@ -118,6 +122,12 @@ export default {
         mainNav:    'Navigasi utama',
         profile:    'Profil',
         help:       'Bantuan',
+        homeDesc:      'Halaman utama',
+        assetDesc:     'Kelola dompet dan aset',
+        recordDesc:    'Riwayat transaksi',
+        analyticsDesc: 'Laporan keuangan',
+        chatDesc:      'Chat dengan AI',
+        settingsDesc:  'Semua pengaturan',
     },
 
     // ────────────────────────────────────────────────────────────────
@@ -208,6 +218,14 @@ export default {
         loanSubjectHint:'Nama pemberi/penerima hutang',
         selectType:     'Pilih Tipe',
         typeRequired:   'Pilih tipe transaksi',
+        stepOf:         'Langkah {step} dari {total}',
+        chooseTypeToContinue: 'Pilih jenis untuk melanjutkan',
+        chooseSourceWallet: 'Pilih dompet asal...',
+        chooseDestWallet: 'Pilih dompet tujuan...',
+        chooseDate:     'Pilih Tanggal',
+        nextNominal:    'Lanjut → Isi Nominal',
+        created:        'Dibuat',
+        updated:        'Diperbarui',
 
         // Validasi
         validation: {
@@ -217,6 +235,7 @@ export default {
             categoryRequired: 'Pilih kategori',
             sourceRequired:   'Pilih dompet sumber',
             destRequired:     'Pilih dompet tujuan',
+            sameWallet:       'Dompet asal dan tujuan tidak boleh sama',
             dateRequired:     'Pilih tanggal',
             dateFuture:       'Tanggal tidak boleh di masa depan',
             subjectRequired:  'Isi nama pihak',
@@ -260,7 +279,7 @@ export default {
     },
 
     chatTransaction: {
-        aiParsed:      'AI Parsed',
+        aiParsed:      'Hasil Parsing AI',
         copy:          'Salin',
         copied:        'Tersalin',
         copyMessage:   'Salin pesan',
@@ -276,7 +295,7 @@ export default {
         aiConfidence:  'Confidence AI',
         transactionTime: 'Waktu transaksi',
         rawPrompt:     'Prompt Asli',
-        seconds:       'detik',
+        seconds:       'Detik',
         confidence: {
             high:   'Tinggi',
             medium: 'Sedang',
@@ -306,7 +325,7 @@ export default {
         namePlaceholder:'Contoh: BCA, GoPay, Emas',
         icon:           'Ikon',
         iconHint:       'Emoji atau URL gambar',
-        keyword:        'Keyword',
+        keyword:        'Kata Kunci',
         keywordHint:    'Kata kunci untuk AI (contoh: bca, gopay)',
         groupType:      'Tipe Grup',
         balance:        'Saldo Awal',
@@ -344,7 +363,7 @@ export default {
         namePlaceholder:'Contoh: Makan, Transport',
         icon:           'Ikon',
         iconHint:       'Emoji atau URL gambar',
-        keyword:        'Keyword',
+        keyword:        'Kata Kunci',
         keywordHint:    'Kata kunci untuk AI',
         type:           'Tipe Transaksi',
         addNew:         'Buat Kategori Baru',
@@ -352,8 +371,9 @@ export default {
         deleteMsg:      'Kategori ini akan dihapus permanen.',
         deleteConfirm:  'Yakin ingin menghapus kategori ini?',
         totalLabel:     'Total',
-        collection:     'Collection',
-        transaction:    'transaksi',
+        collection:     'Koleksi',
+        transaction:    'Transaksi',
+        systemCategory: 'Kategori Sistem',
 
         // Type labels (untuk grouping)
         typeHeaders: {
@@ -545,6 +565,7 @@ export default {
                 accent_color: {
                     title:          'Warna Aksen',
                     description:    'Pilih warna aksen utama',
+                    custom:         'Warna Kustom...',
                 },
             },
             
@@ -958,6 +979,9 @@ export default {
         deleteAccountDesc: 'Hapus akun secara permanen beserta semua data.',
         deleteAccountConfirm: 'YAKIN HAPUS PERMANEN? Semua data keuangan kamu akan hilang.',
         passwordUpdated: 'Password berhasil diperbarui.',
+        newPhotoSelected: 'Foto baru terpilih — simpan untuk menerapkan',
+        socialConnections: 'Koneksi Sosial & Pesan',
+        socialConnectionsDesc: 'Hubungkan aplikasi perpesanan untuk integrasi AI',
 
         // Google OAuth
         google: {
@@ -989,7 +1013,7 @@ export default {
         receivable:     'Piutang',
         dueIn:          'Jatuh tempo dalam',
         overdue:        'Terlambat',
-        days:           'hari',
+        days:           'Hari',
     },
 
     // ────────────────────────────────────────────────────────────────
@@ -1050,7 +1074,7 @@ export default {
         backupAiDesc:       'AI lokal (Python) tetap berjalan pertama. Provider ini hanya digunakan jika Python tidak yakin atau sedang offline.',
         performanceTitle:   'Analitik Performa AI',
         tokenUsageTitle:    'Pemakaian Token per Provider',
-        tokenUnit:          'token',
+        tokenUnit:          'Token',
         tokenPrompt:        'Prompt',
         tokenCompletion:    'Completion',
         emptyTokenUsage:    'Belum ada pemakaian LLM tercatat.',
@@ -1065,7 +1089,7 @@ export default {
         last90Days:         '90 Hari Terakhir',
         emptyMemory:        'Belum ada memori yang terbentuk.',
         emptyCorrections:   'Belum ada log koreksi pengguna.',
-        corrections:        'koreksi',
+        corrections:        'Koreksi',
         categoryId:         'Kategori ID',
         hits:               'Hits',
         weight:             'Weight',
@@ -1133,7 +1157,62 @@ export default {
         uploadPhoto:    'Unggah Foto',
         removePhoto:    'Hapus Foto',
         presetNames:    'Nama Populer',
-        head:           'Bot Profile',
+        head:           'Profil Bot',
+    },
+
+    // ────────────────────────────────────────────────────────────────
+    // CHAT & SEARCH
+    // ────────────────────────────────────────────────────────────────
+    chat: {
+        history: 'Riwayat percakapan',
+        placeholder: 'Tanya saya apa saja...',
+        typing: 'Sedang mengetik...',
+        multi: {
+            result: 'Hasil Multi Transaksi',
+        },
+        assistant: 'Asisten Keuangan AI',
+        loadMore: 'Tampilkan Riwayat Sebelumnya',
+        loadingMore: 'Memuat riwayat...',
+        emptyState: 'Ceritakan transaksimu dengan bahasa alami, atau gunakan perintah di bawah.',
+        gettingStarted: 'Mulai dari sini',
+        commandButton: 'Buka menu perintah',
+        commandTitle: 'Perintah (/)',
+        sendButton: 'Kirim pesan',
+        desktopHint: 'Enter kirim · Shift+Enter baris baru',
+        sheetTitle: 'Perintah Cepat',
+        sheetDesc: 'Pilih perintah untuk memasukkannya ke chat',
+        sheetLabel: 'Daftar Perintah',
+        showMore: 'Lihat Selengkapnya',
+        collapse: 'Tutup',
+        scrollToBottom: 'Scroll ke pesan terbaru',
+        newMessages: 'Pesan Baru',
+        latest: 'Terbaru',
+        suggestionExpense: 'Catat pengeluaran',
+        suggestionIncome: 'Catat pemasukan',
+        suggestionTransfer: 'Transfer antar dompet',
+        suggestionBalance: 'Lihat saldo semua dompet',
+        suggestionSummary: 'Ringkasan keuangan',
+        suggestionReport: 'Laporan bulanan (dengan AI)',
+        suggestionStats: 'Statistik ringkas bulan ini',
+        suggestionHelp: 'Panduan penggunaan',
+        errorItem: 'Item #',
+        buttonClose: 'Tutup',
+        buttonSave: 'Simpan',
+    },
+
+    search: {
+        placeholder: 'Cari menu, pengaturan, halaman...',
+        clear: 'Hapus pencarian',
+        results: 'Hasil Pencarian',
+        shortcuts: 'Pintasan Cepat',
+        noResults: 'Tidak ada hasil untuk',
+        navigation: 'Navigasi',
+        settings: 'Pengaturan',
+        hints: {
+            navigate: 'Navigasi',
+            select: 'Pilih',
+            close: 'Tutup',
+        }
     },
 
     // ────────────────────────────────────────────────────────────────

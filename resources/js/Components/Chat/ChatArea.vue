@@ -11,6 +11,7 @@
  */
 
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import ChatMessage     from './ChatMessage.vue'
 import TypingIndicator from './Messages/TypingIndicator.vue'
 
@@ -24,6 +25,8 @@ const props = defineProps({
     userAvatar:    { type: String,  default: null },
     userName:      { type: String,  default: 'Kamu' },
 })
+
+const { t } = useI18n()
 
 const emit = defineEmits(['loadMore', 'scrollUpdate', 'retry', 'regenerate', 'suggest'])
 
@@ -57,7 +60,7 @@ defineExpose({ el: containerRef })
         style="scroll-behavior: auto;"
         @scroll="onScroll"
         role="log"
-        aria-label="Riwayat percakapan"
+        :aria-label="t('chat.history')"
         aria-live="polite"
     >
         <div class="h-2" aria-hidden="true"></div>
@@ -90,7 +93,7 @@ defineExpose({ el: containerRef })
                         <circle cx="12" cy="12" r="10"/>
                         <polyline points="12 6 12 12 16 14"/>
                     </svg>
-                    Tampilkan Riwayat Sebelumnya
+                    {{ t('chat.loadMore') }}
                 </button>
             </div>
         </Transition>
@@ -102,7 +105,7 @@ defineExpose({ el: containerRef })
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                 </svg>
-                Memuat riwayat...
+                {{ t('chat.loadingMore') }}
             </div>
         </div>
 

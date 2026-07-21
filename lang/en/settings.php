@@ -209,9 +209,8 @@ return [
             ],
             'model' => [
                 'label' => 'Model Selection',
-                'description' => 'Select the AI model to use',
-                'hint' => 'Different models have different capabilities and costs',
                 'description' => 'Choose your preferred model version',
+                'hint' => 'Different models have different capabilities and costs',
             ],
             'token_limit' => [
                 'label' => 'Token Limit',

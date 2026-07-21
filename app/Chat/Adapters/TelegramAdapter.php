@@ -75,14 +75,12 @@ class TelegramAdapter
 
         $timezone = $user->timezone ?? 'Asia/Jakarta';
 
-        // 3. Handle perintah dasar sebelum AI processing
-        $textLower = strtolower(trim($text));
-        if ($cmd = $this->handleCommand($textLower, $user, $chatId, $locale)) {
-            return $cmd;
+        // 4. Kirim typing indicator (hanya untuk non-command/AI query)
+        $isCommand = str_starts_with(trim($text), '/')
+            || in_array(strtolower(trim($text)), ['hai', 'halo', 'hello', 'hi', 'ping', 'p', 'tes', 'test', 'help', 'tolong']);
+        if (!$isCommand) {
+            $this->sendMessage($chatId, trans('chat.general.processing', [], $locale));
         }
-
-        // 4. Kirim typing indicator
-        $this->sendMessage($chatId, trans('chat.general.processing', [], $locale));
 
         // 5. Bangun ChatContext + ChatRequest
         $context = ChatContext::make(
@@ -94,6 +92,7 @@ class TelegramAdapter
             metadata:       [
                 'telegram_update_id' => $update['update_id'] ?? null,
                 'first_name'         => $update['message']['from']['first_name'] ?? null,
+                'platform'           => 'telegram',
             ],
         );
 
@@ -118,97 +117,6 @@ class TelegramAdapter
         ]);
 
         return ['status' => $response->success ? 'success' : 'failed'];
-    }
-
-    // ── Commands ──────────────────────────────────────────────────
-
-    /**
-     * Handle perintah platform-specific.
-     * Return array jika ditangani, null jika bukan perintah.
-     */
-    private function handleCommand(string $textLower, User $user, int|string $chatId, string $locale): ?array
-    {
-        if ($textLower === '/saldo') {
-            $this->sendBalanceReport($user, $chatId, $locale);
-            return ['status' => 'success'];
-        }
-
-        if ($textLower === '/web') {
-            $appUrl = config('app.url', 'https://bendaharaku.widihhh.my.id');
-            $msg    = trans('chat.command.web_link_msg', ['url' => $appUrl], $locale);
-            $this->sendMessage($chatId, $msg);
-            return ['status' => 'success'];
-        }
-
-        $greetings = ['/start', '/help', 'hai', 'halo', 'hello', 'p', 'ping', 'tes', 'test', 'help', 'tolong'];
-        if (in_array($textLower, $greetings)) {
-            $this->sendHelpMessage($user, $chatId, $locale);
-            return ['status' => 'success'];
-        }
-
-        return null;
-    }
-
-    private function sendBalanceReport(User $user, int|string $chatId, string $locale): void
-    {
-        $wallets = Wallet::where('user_id', $user->id)
-            ->whereIn('group_type', ['Asset', 'Liquid'])
-            ->orderByDesc('balance')
-            ->get();
-
-        if ($wallets->isEmpty()) {
-            $this->sendMessage($chatId, trans('chat.command.balance_empty', [], $locale));
-            return;
-        }
-
-        $totalBalance = 0;
-        $walletData   = [];
-        $maxNameLen   = 11;
-        $maxBalLen    = 0;
-
-        foreach ($wallets as $w) {
-            $name  = strtoupper($w->name);
-            $bal   = $w->balance; // sudah float karena cast di model Wallet
-            $totalBalance += $bal;
-            $balStr = MoneyFormatter::amount($bal);
-            if (strlen($name) > $maxNameLen) $maxNameLen = strlen($name);
-            if (strlen($balStr) > $maxBalLen) $maxBalLen = strlen($balStr);
-            $walletData[] = ['name' => $name, 'balStr' => $balStr];
-        }
-
-        $totalStr = MoneyFormatter::amount($totalBalance);
-        if (strlen($totalStr) > $maxBalLen) $maxBalLen = strlen($totalStr);
-
-        $textMsg = "```text\n";
-        foreach ($walletData as $wd) {
-            $textMsg .= str_pad($wd['name'], $maxNameLen, ' ', STR_PAD_RIGHT)
-                . ': Rp '
-                . str_pad($wd['balStr'], $maxBalLen, ' ', STR_PAD_LEFT) . "\n";
-        }
-        $textMsg .= str_repeat('-', $maxNameLen + 5 + $maxBalLen) . "\n";
-        $textMsg .= str_pad(trans('chat.command.total_balance', [], $locale), $maxNameLen, ' ', STR_PAD_RIGHT)
-            . ': Rp '
-            . str_pad($totalStr, $maxBalLen, ' ', STR_PAD_LEFT) . "\n```";
-
-        $this->sendMessage($chatId, trans('chat.command.balance_title', [], $locale) . "\n" . $textMsg);
-    }
-
-    private function sendHelpMessage(User $user, int|string $chatId, string $locale): void
-    {
-        $msg  = trans('chat.command.help_greeting', ['name' => $user->name], $locale) . ' ';
-        $msg .= trans('chat.command.help_intro', [], $locale) . "\n\n";
-        $msg .= trans('chat.command.help_guide', [], $locale) . "\n";
-        $msg .= trans('chat.command.help_example_intro', [], $locale) . "\n\n";
-        $msg .= "🔴 *Pengeluaran:* \n`Beli nasi goreng 15k bca`\n`Es jeruk 5000 dana`\n\n";
-        $msg .= "🟢 *Pemasukan:* \n`Gajian 5jt mandiri`\n`Dikasih emak 50rb cash`\n\n";
-        $msg .= "🔵 *Transfer:* \n`Transfer bca ke dana 100k`\n\n";
-        $msg .= "🤝 *Hutang & Piutang (Wajib #Nama):* \n`Pinjam duit 100k bca #Budi`\n\n";
-        $msg .= trans('chat.command.help_commands_title', [], $locale) . "\n";
-        $msg .= trans('chat.command.help_cmd_balance', [], $locale) . "\n";
-        $msg .= trans('chat.command.help_cmd_web', [], $locale) . "\n";
-        $msg .= trans('chat.command.help_cmd_help', [], $locale);
-
-        $this->sendMessage($chatId, $msg);
     }
 
     // ── Telegram API ──────────────────────────────────────────────

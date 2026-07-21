@@ -22,21 +22,47 @@ const isActive = (routeName?: string): boolean => {
   return currentUrl.value.includes(routeName.replaceAll('.', '/').replace('settings/', 'settings/'));
 };
 
-// ── Expanded categories ────────────────────────────────────────────────
-const expandedCategories = ref<Set<string>>(new Set());
+// ── Expanded categories (persisted to localStorage) ────────────────────
+const STORAGE_KEY = 'settings_sidebar_expanded';
 
-const toggleCategory = (id: string) => {
-  if (expandedCategories.value.has(id)) expandedCategories.value.delete(id);
-  else                                  expandedCategories.value.add(id);
+const loadExpanded = (): Set<string> => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) return new Set(JSON.parse(saved));
+  } catch { /* ignore */ }
+  return new Set();
 };
 
-// Auto-expand the category that owns the active page
+const saveExpanded = (s: Set<string>) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([...s]));
+  } catch { /* ignore */ }
+};
+
+const expandedCategories = ref<Set<string>>(loadExpanded());
+
+const toggleCategory = (id: string) => {
+  const next = new Set(expandedCategories.value);
+  if (next.has(id)) next.delete(id);
+  else              next.add(id);
+  expandedCategories.value = next;
+  saveExpanded(next);
+};
+
+// Auto-expand category yang memiliki halaman aktif, lalu simpan
 onMounted(() => {
+  const toExpand: string[] = [];
   settingsMenuTree.forEach((cat) => {
     if (cat.submenu?.some((item) => item.route && currentUrl.value.includes(item.id))) {
-      expandedCategories.value.add(cat.id);
+      toExpand.push(cat.id);
     }
   });
+  if (toExpand.length) {
+    const next = new Set(expandedCategories.value);
+    toExpand.forEach((id) => next.add(id));
+    expandedCategories.value = next;
+    saveExpanded(next);
+  }
 });
 
 // ── Href builder (Ziggy or fallback) ──────────────────────────────────

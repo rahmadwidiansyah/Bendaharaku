@@ -1,30 +1,16 @@
 <script setup>
 /**
  * ChatComposer.vue
- *
- * Input area chat — Telegram/WhatsApp quality.
- *
- * Layout (satu baris horizontal, semua items-center):
- *   [Command 44px] [12px] [Textarea flex-1] [12px] [Send 44px]
- *
- * Fitur:
- * - Textarea autogrow hingga MAX_ROWS baris, lalu scroll
- * - Enter = kirim, Shift+Enter = baris baru
- * - Animasi send button: scale + color transition
- * - Focus ring pada textarea
- * - Safe area bottom (iPhone home indicator)
- * - Shadow atas tipis agar terpisah dari chat list
- * - Disabled state saat isLoading
- *
- * Public API (defineExpose):
- *   insertText(value) — insert teks ke textarea (dari CommandSheet / suggestion)
  */
 
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
     isLoading:   { type: Boolean, default: false },
-    placeholder: { type: String,  default: 'Ketik pesan atau /perintah...' },
+    placeholder: { type: String,  default: '' },
 })
 
 const emit = defineEmits(['send', 'openCommands'])
@@ -69,6 +55,8 @@ function onKeydown(e) {
 }
 
 // ── Send ──────────────────────────────────────────────────────────
+const placeholderText = computed(() => props.placeholder || t('chat.placeholder'))
+
 const canSend = computed(() => text.value.trim().length > 0 && !props.isLoading)
 
 function submit() {
@@ -139,8 +127,8 @@ onBeforeUnmount(() => {
                         ? 'opacity-40 cursor-not-allowed bg-gray-800/60 border-white/8 text-gray-600'
                         : 'bg-gray-800/80 border-white/8 text-gray-400 hover:text-purple-400 hover:border-purple-500/30 hover:bg-gray-800 active:scale-95',
                 ]"
-                aria-label="Buka menu perintah"
-                title="Perintah (/)"
+                :aria-label="t('chat.commandButton')"
+                :title="t('chat.commandTitle')"
             >
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -162,7 +150,7 @@ onBeforeUnmount(() => {
                 <textarea
                     ref="textareaRef"
                     v-model="text"
-                    :placeholder="placeholder"
+                    :placeholder="placeholderText"
                     :disabled="isLoading"
                     rows="1"
                     @keydown="onKeydown"
@@ -171,7 +159,7 @@ onBeforeUnmount(() => {
                     @blur="isFocused = false"
                     class="w-full resize-none bg-transparent px-4 py-[11px] text-sm text-white placeholder-gray-500 outline-none focus:outline-none border-0 ring-0 focus:ring-0 disabled:opacity-50 leading-[22px] block"
                     style="min-height: 44px; overflow-y: hidden;"
-                    :aria-label="placeholder"
+                    :aria-label="placeholderText"
                     aria-multiline="true"
                 ></textarea>
             </div>
@@ -194,7 +182,7 @@ onBeforeUnmount(() => {
                         ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/25 hover:bg-purple-500 active:scale-95 active:shadow-none'
                         : 'bg-gray-800/80 border border-white/8 text-gray-600 cursor-not-allowed',
                 ]"
-                aria-label="Kirim pesan"
+                :aria-label="t('chat.sendButton')"
             >
                 <!-- Idle / Enabled: send icon -->
                 <svg
@@ -218,9 +206,8 @@ onBeforeUnmount(() => {
             </button>
         </div>
 
-        <!-- Desktop hint -->
         <p class="hidden lg:block text-center text-[11px] text-gray-700 pb-1.5 pt-0">
-            Enter kirim &nbsp;·&nbsp; Shift+Enter baris baru
+            {{ t('chat.desktopHint') }}
         </p>
     </div>
 </template>

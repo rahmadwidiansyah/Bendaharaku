@@ -53,14 +53,7 @@ class TelegramAdapterTest extends TestCase
             'api.telegram.org/*' => Http::response(['ok' => true], 200),
         ]);
 
-        // Mock ChatApplicationService — test /saldo tidak perlu AI
-        $mockChatService = Mockery::mock(ChatApplicationService::class);
-        $mockChatService->shouldReceive('handleMessage')->never(); // /saldo tidak lewat service
-
-        $this->adapter = new TelegramAdapter(
-            chatService: $mockChatService,
-            formatter:   new TelegramFormatter(),
-        );
+        $this->adapter = $this->app->make(TelegramAdapter::class);
     }
 
     // ── Helper: buat Telegram update payload ─────────────────────

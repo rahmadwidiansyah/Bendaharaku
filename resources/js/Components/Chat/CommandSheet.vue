@@ -1,13 +1,7 @@
 <script setup>
-/**
- * CommandSheet.vue
- *
- * Bottom sheet daftar command dari CommandRegistry.
- * Saat user memilih command, emit 'select' dengan command string
- * → ChatComposer.insertText() memasukkannya ke textarea.
- */
+import { useI18n } from 'vue-i18n'
 
-import { computed } from 'vue'
+const { t } = useI18n()
 
 const props = defineProps({
     modelValue:          { type: Boolean, required: true },
@@ -60,7 +54,7 @@ function selectCommand(cmd) {
                         v-if="modelValue"
                         role="dialog"
                         aria-modal="true"
-                        aria-label="Daftar Perintah"
+                        :aria-label="t('chat.sheetLabel')"
                         class="relative z-10 w-full max-w-md mx-auto bg-gray-900 border-t border-x border-white/10 rounded-t-3xl shadow-2xl max-h-[70vh] flex flex-col"
                     >
                         <!-- Handle -->
@@ -71,13 +65,13 @@ function selectCommand(cmd) {
                         <!-- Header -->
                         <div class="flex items-center justify-between px-5 py-3 border-b border-white/5 shrink-0">
                             <div>
-                                <h2 class="text-sm font-bold text-white">Perintah Cepat</h2>
-                                <p class="text-2xs text-gray-500 mt-0.5">Pilih perintah untuk memasukkannya ke chat</p>
+                                <h2 class="text-sm font-bold text-white">{{ t('chat.sheetTitle') }}</h2>
+                                <p class="text-2xs text-gray-500 mt-0.5">{{ t('chat.sheetDesc') }}</p>
                             </div>
                             <button
                                 @click="close"
                                 class="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/8 transition-colors"
-                                aria-label="Tutup"
+                                :aria-label="t('chat.buttonClose')"
                             >
                                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />

@@ -36,6 +36,21 @@ const footerText = computed(() => {
 })
 
 const titleText = computed(() => props.component.title || (props.component.translationKey ? t(props.component.translationKey) : ''))
+
+// Parse raw transaction strings like: "22/07 — Expense — Makan — Rp 15.000 — CASH"
+function parseItem(item) {
+    if (!item || typeof item !== 'string') return null
+    if (!item.includes(' — ')) return null
+    const parts = item.split(' — ')
+    if (parts.length < 4) return null
+    return {
+        date: parts[0],
+        type: parts[1],
+        category: parts[2],
+        amount: parts[3],
+        wallet: parts[4] || ''
+    }
+}
 </script>
 
 <template>
@@ -46,7 +61,7 @@ const titleText = computed(() => props.component.title || (props.component.trans
                 <div class="text-2xs text-gray-400 mt-1">{{ new Date().toLocaleDateString() }}</div>
             </div>
             <div v-if="footerText" class="text-sm font-semibold text-white text-right ml-2">
-                <div class="text-2xs text-gray-400">Total</div>
+                <div class="text-2xs text-gray-400">{{ t('common.total') }}</div>
                 <div class="text-lg font-bold">{{ footerText }}</div>
             </div>
         </div>
@@ -54,7 +69,7 @@ const titleText = computed(() => props.component.title || (props.component.trans
         <div class="p-3">
             <template v-if="variant === 'saldo'">
                 <div class="grid grid-cols-2 gap-2">
-                    <div v-for="(item, idx) in component.items" :key="idx" class="flex justify-between items-center p-2 rounded-md bg-gray-800/40">
+                    <div v-for="(item, idx) in component.items" :key="idx" class="flex justify-between items-center p-2 rounded-md bg-gray-800/40 border border-white/5">
                         <div class="text-2xs text-gray-300 truncate">{{ item.split(' — ')[1] ?? item }}</div>
                         <div class="text-2xs text-gray-100 font-mono">{{ item.split(' — ')[0] ?? '' }}</div>
                     </div>
@@ -65,7 +80,7 @@ const titleText = computed(() => props.component.title || (props.component.trans
                 <div class="space-y-2">
                     <div v-for="(item, idx) in component.items" :key="idx" class="p-3 rounded-md bg-gray-800/30 border border-white/6">
                         <div class="text-sm font-semibold text-white">{{ item.split(':')[0] ?? item }}</div>
-                        <div class="text-2xs text-gray-400 mt-1">Saldo</div>
+                        <div class="text-2xs text-gray-400 mt-1">{{ t('common.balance') }}</div>
                         <div class="text-base font-bold">{{ item.split(':').slice(1).join(':') ?? '' }}</div>
                     </div>
                 </div>
@@ -73,13 +88,37 @@ const titleText = computed(() => props.component.title || (props.component.trans
 
             <template v-else-if="variant === 'category'">
                 <div class="flex flex-wrap gap-2">
-                    <span v-for="(item, idx) in component.items" :key="idx" class="px-3 py-1 rounded-full bg-gray-800/30 text-2xs text-gray-200">{{ item }}</span>
+                    <span v-for="(item, idx) in component.items" :key="idx" class="px-3 py-1 rounded-full bg-gray-800/40 text-2xs text-gray-200 border border-white/5">{{ item }}</span>
                 </div>
             </template>
 
             <template v-else>
-                <ul class="space-y-2">
-                    <li v-for="(item, idx) in component.items" :key="idx" class="p-2 rounded-md bg-gray-800/30 text-2xs text-gray-200">{{ item }}</li>
+                <ul class="space-y-2 m-0 p-0">
+                    <li v-for="(item, idx) in component.items" :key="idx" class="list-none m-0 p-0">
+                        <div v-if="parseItem(item)" class="flex items-center justify-between p-2.5 rounded-lg bg-gray-800/40 border border-white/5 hover:bg-gray-800/60 transition-all hover:scale-[1.005]">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="text-3xs text-gray-500 font-mono shrink-0">{{ parseItem(item).date }}</span>
+                                <span :class="[
+                                    'px-1.5 py-0.5 rounded text-4xs font-semibold uppercase tracking-wider shrink-0',
+                                    parseItem(item).type.toLowerCase() === 'income' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/10' :
+                                    parseItem(item).type.toLowerCase() === 'expense' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/10' :
+                                    'bg-blue-500/20 text-blue-400 border border-blue-500/10'
+                                ]">{{ parseItem(item).type }}</span>
+                                <span class="text-xs text-gray-300 font-medium truncate">{{ parseItem(item).category }}</span>
+                                <span v-if="parseItem(item).wallet" class="text-4xs px-1.5 py-0.5 rounded-md bg-white/5 text-gray-400 border border-white/5 truncate shrink-0 max-w-[80px]">{{ parseItem(item).wallet }}</span>
+                            </div>
+                            <span :class="[
+                                'text-xs font-semibold font-mono text-right shrink-0 ml-2',
+                                parseItem(item).type.toLowerCase() === 'income' ? 'text-emerald-400' :
+                                parseItem(item).type.toLowerCase() === 'expense' ? 'text-rose-400' :
+                                'text-blue-400'
+                            ]">{{ parseItem(item).amount }}</span>
+                        </div>
+                        <div v-else class="flex items-start gap-2 p-2.5 rounded-lg bg-gray-800/30 text-2xs text-gray-300 border border-white/5">
+                            <span class="text-purple-400 shrink-0 select-none">✦</span>
+                            <span class="flex-1 leading-relaxed">{{ item }}</span>
+                        </div>
+                    </li>
                 </ul>
             </template>
         </div>

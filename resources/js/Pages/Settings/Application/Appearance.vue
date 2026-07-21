@@ -3,18 +3,13 @@ import { Head } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import SettingsLayout from '../Layouts/SettingsLayout.vue';
 import SettingsCard from '@/Components/Settings/SettingsCard.vue';
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch, onMounted, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import axios from 'axios';
-import { applyAccentColor, saveAccentColor, ACCENT_PALETTES } from '@/Composables/useAccentColor.js';
+import { applyAccentColor, saveAccentColor, ACCENT_PALETTES, isCustomColor, isValidHex, getColorValue } from '@/Composables/useAccentColor.js';
 
 const { t } = useI18n();
 
-const breadcrumbs = [
-  { label: t('settings.title'), href: route('settings.index') },
-  { label: t('settings.application.title') },
-  { label: t('settings.application.appearance.title') },
-];
 
 const props = defineProps<{
   userAccentColor: string;
@@ -22,11 +17,40 @@ const props = defineProps<{
 
 const theme = ref('dark');
 const accentColor = ref(props.userAccentColor);
+const customHex = ref('');
+const showCustomPicker = ref(false);
 const saving = ref(false);
 const successMessage = ref('');
 const errorMessage = ref('');
 
-// Preview langsung saat user klik warna — tidak perlu simpan dulu
+const isCustom = computed(() => isCustomColor(accentColor.value));
+
+const currentDisplayColor = computed(() => {
+  if (isCustom.value) return getColorValue(accentColor.value);
+  return ACCENT_PALETTES[accentColor.value]?.[600] || '#9333ea';
+});
+
+const customHexValid = computed(() => isValidHex(customHex.value));
+
+function applyCustomHex() {
+  const hex = customHex.value.trim();
+  if (!isValidHex(hex)) return;
+  accentColor.value = `custom:${hex}`;
+  showCustomPicker.value = false;
+}
+
+function selectPredefined(color: string) {
+  accentColor.value = color;
+  showCustomPicker.value = false;
+}
+
+function handlePickerInput(e: Event) {
+  const val = (e.target as HTMLInputElement).value;
+  customHex.value = val;
+  accentColor.value = `custom:${val}`;
+}
+
+// Preview langsung saat user klik warna
 watch(accentColor, (color) => {
   applyAccentColor(color);
 });
@@ -34,6 +58,9 @@ watch(accentColor, (color) => {
 // Pastikan warna dari DB diterapkan saat halaman dibuka
 onMounted(() => {
   applyAccentColor(accentColor.value);
+  if (isCustom.value) {
+    customHex.value = getColorValue(accentColor.value);
+  }
 });
 
 const handleSave = async () => {
@@ -67,7 +94,6 @@ const handleSave = async () => {
     <SettingsLayout
       :title="t('settings.application.appearance.title')"
       :description="t('settings.application.appearance.description')"
-      :breadcrumbs="breadcrumbs"
     >
       <!-- Messages -->
       <div v-if="successMessage" class="mb-4 p-4 bg-green-500/20 border border-green-500/50 rounded-lg">
@@ -102,26 +128,95 @@ const handleSave = async () => {
         :title="t('settings.application.appearance.accent_color.title')"
         :description="t('settings.application.appearance.accent_color.description')"
       >
+        <!-- Predefined colors grid -->
         <div class="grid grid-cols-6 gap-3">
           <button
             v-for="color in Object.keys(ACCENT_PALETTES)"
             :key="color"
-            @click="accentColor = color"
+            @click="selectPredefined(color)"
             :style="{ backgroundColor: ACCENT_PALETTES[color][600] }"
             :class="[
               'w-full h-12 rounded-lg transition-all',
-              accentColor === color
+              !isCustom && accentColor === color
                 ? 'ring-2 ring-white ring-offset-2 ring-offset-gray-900 scale-105'
                 : 'hover:scale-105 opacity-70 hover:opacity-100',
             ]"
             :aria-label="`Set ${color} as accent color`"
-            :aria-pressed="accentColor === color"
+            :aria-pressed="!isCustom && accentColor === color"
           />
         </div>
+
+        <!-- Custom color picker toggle -->
+        <button
+          type="button"
+          @click="showCustomPicker = !showCustomPicker"
+          :class="[
+            'mt-3 w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all',
+            isCustom
+              ? 'border-purple-500/40 bg-purple-500/10 ring-2 ring-purple-500/20'
+              : 'border-white/10 bg-gray-800/50 hover:bg-gray-800',
+          ]"
+        >
+          <div
+            class="w-6 h-6 rounded-md border border-white/20 shrink-0"
+            :style="{ backgroundColor: isCustom ? currentDisplayColor : '#888' }"
+          />
+          <span class="flex-1 text-left text-xs font-semibold text-gray-300">
+            {{ isCustom ? currentDisplayColor : t('settings.application.appearance.accent_color.custom') }}
+          </span>
+          <svg
+            class="w-3.5 h-3.5 text-gray-500 transition-transform"
+            :class="showCustomPicker ? 'rotate-180' : ''"
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        <!-- Custom color HEX input + native picker -->
+        <Transition
+          enter-active-class="transition-all duration-200 ease-out"
+          leave-active-class="transition-all duration-150 ease-in"
+          enter-from-class="opacity-0 -translate-y-2 max-h-0"
+          enter-to-class="opacity-100 translate-y-0 max-h-32"
+          leave-from-class="opacity-100 translate-y-0 max-h-32"
+          leave-to-class="opacity-0 -translate-y-2 max-h-0"
+        >
+          <div v-if="showCustomPicker" class="mt-3 overflow-hidden">
+            <div class="flex gap-2 items-center p-3 bg-gray-800/80 border border-white/10 rounded-xl">
+              <input
+                type="color"
+                :value="isCustom ? currentDisplayColor : '#8B5CF6'"
+                @input="handlePickerInput"
+                class="w-10 h-10 rounded-lg border border-white/10 cursor-pointer shrink-0 bg-transparent"
+              />
+              <input
+                v-model="customHex"
+                type="text"
+                placeholder="#8B5CF6"
+                maxlength="7"
+                class="flex-1 bg-transparent border-none text-sm text-white font-mono placeholder-gray-600 focus:ring-0 focus:outline-none"
+                @keyup.enter="applyCustomHex"
+              />
+              <button
+                type="button"
+                @click="applyCustomHex"
+                :disabled="!customHexValid"
+                class="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:cursor-not-allowed disabled:text-gray-400 text-white transition-colors"
+              >
+                {{ t('common.save') }}
+              </button>
+            </div>
+            <p v-if="customHex && !customHexValid" class="mt-1 text-2xs text-red-400 ml-1">
+              Format HEX tidak valid. Gunakan format #RRGGBB atau #RGB.
+            </p>
+          </div>
+        </Transition>
+
         <!-- Preview label warna terpilih -->
         <p class="mt-3 text-xs text-gray-400 capitalize">
           {{ t('settings.application.appearance.accent_color.title') }}:
-          <span class="text-white font-semibold">{{ accentColor }}</span>
+          <span class="text-white font-semibold">{{ isCustom ? currentDisplayColor : accentColor }}</span>
         </p>
       </SettingsCard>
 

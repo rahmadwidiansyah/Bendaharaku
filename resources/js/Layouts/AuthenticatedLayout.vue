@@ -37,6 +37,7 @@ import { useLayoutPreference } from '@/Composables/useLayoutPreference'
 import { usePageLoading }      from '@/Composables/usePageLoading'
 import { computed, ref }       from 'vue'
 
+
 const SKELETON_COMPONENTS = {
     DashboardSkeleton,
     TransactionSkeleton,
@@ -73,8 +74,19 @@ const activeSkeletonComponent = computed(() =>
 // 1. Sedang loading
 // 2. Ada skeleton yang cocok untuk halaman tujuan
 // 3. Bukan halaman fullscreen (hideNav = false)
+const isSettingsRoute = computed(() => {
+    try {
+        const current = route().current()
+        return current ? current.startsWith('settings.') : false
+    } catch {
+        return false
+    }
+})
+
+const effectiveHideNav = computed(() => props.hideNav || isSettingsRoute.value)
+
 const showSkeleton = computed(() =>
-    isLoading.value && activeSkeletonComponent.value !== null && !props.hideNav
+    isLoading.value && activeSkeletonComponent.value !== null && !effectiveHideNav.value
 )
 </script>
 
@@ -97,10 +109,10 @@ const showSkeleton = computed(() =>
                 'border-x border-white/5 relative',
                 'shadow-2xl shadow-black',
                 computedFullWidth ? 'max-w-md lg:max-w-full' : 'max-w-md',
-                computedFullWidth && isSidebarOpen ? 'lg:pl-64 transition-[padding] duration-300' : (computedFullWidth ? 'lg:pl-20 transition-[padding] duration-300' : ''),
+                !effectiveHideNav && computedFullWidth && isSidebarOpen ? 'lg:pl-64 transition-[padding] duration-300' : (!effectiveHideNav && computedFullWidth ? 'lg:pl-20 transition-[padding] duration-300' : ''),
             ]">
                 <!-- Global Top App Bar — sticky header dengan greeting, AI Chat & profil -->
-                <GlobalHeader v-if="!hideNav" />
+                <GlobalHeader v-if="!effectiveHideNav" />
 
                 <!--
                     Content area — dibuat `relative` agar skeleton overlay bisa `absolute inset-0`.
@@ -109,11 +121,11 @@ const showSkeleton = computed(() =>
                 <div
                     :class="[
                         'flex-1 relative overflow-hidden',
-                        !hideNav
+                        !effectiveHideNav
                             ? (computedFullWidth ? 'pb-28 lg:pb-8' : 'pb-28')
                             : 'pb-0',
                     ]"
-                    :style="!hideNav ? 'padding-bottom: max(7rem, calc(3.5rem + env(safe-area-inset-bottom, 0px) + 1rem));' : ''"
+                    :style="!effectiveHideNav ? 'padding-bottom: max(7rem, calc(3.5rem + env(safe-area-inset-bottom, 0px) + 1rem));' : ''"
                 >
                     <!--
                         ── Konten Halaman (slot) ──────────────────────────────────────
@@ -166,7 +178,7 @@ const showSkeleton = computed(() =>
                 </div>
 
                 <BottomNav
-                    v-if="!hideNav"
+                    v-if="!effectiveHideNav"
                     :is-sidebar-open="isSidebarOpen"
                     @toggle="isSidebarOpen = $event"
                 />

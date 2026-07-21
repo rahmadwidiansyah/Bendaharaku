@@ -7,11 +7,6 @@ import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 
-const breadcrumbs = [
-  { label: t('settings.title'), href: route('settings.index') },
-  { label: t('settings.finance.title') },
-  { label: t('settings.finance.budget.title') },
-];
 
 import { ref, onMounted } from 'vue';
 const budgets = ref([] as Array<{id:string,name:string,amount:number,period:string}>);
@@ -32,7 +27,6 @@ function removeBudget(i:number){ budgets.value.splice(i,1); persistBudgets(); }
     <SettingsLayout
       :title="t('settings.finance.budget.title')"
       :description="t('settings.finance.budget.description')"
-      :breadcrumbs="breadcrumbs"
     >
       <SettingsCard :title="t('settings.finance.budget.title')" :description="t('settings.finance.budget.description')">
         <div class="space-y-4">

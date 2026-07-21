@@ -38,22 +38,25 @@ class LocalRuleEngine
         $amount = $amountData['amount'];
         $useAllBalance = $amountData['useAllBalance'];
 
-        // 3. Match Category
-        $categoryMatch = $this->matchCategory($normalizedText, $categories);
+        // 3. Provisional Subject Extraction for Scoring
+        $provisionalSubject = $this->extractSubjectSimple($normalizedText);
+
+        // 4. Match Category with Indonesian NLP scoring
+        $categoryMatch = $this->matchCategory($normalizedText, $categories, $provisionalSubject);
         if ($categoryMatch === null) {
             return null; // Cannot determine category
         }
 
-        // 4. Resolve Transaction Intent
+        // 5. Resolve Transaction Intent
         $intent = $this->resolveIntent($categoryMatch);
         if ($intent === null) {
             return null;
         }
 
-        // 5. Match Wallets
+        // 6. Match Wallets
         $walletData = $this->matchWallets($normalizedText, $wallets, $intent);
 
-        // 6. Extract Subject for Debt/Receivable
+        // 7. Extract Subject for Debt/Receivable
         $subject = $this->extractSubject($normalizedText, $intent);
         if (in_array($intent, [TransactionIntent::Debt, TransactionIntent::Receivable]) && $subject === null) {
             // Debt and receivable require a subject
@@ -160,12 +163,23 @@ class LocalRuleEngine
     }
 
     /**
-     * Match Category using longest token match logic with substring support.
+     * Match Category using longest token match logic with substring support and NLP scoring.
      */
-    private function matchCategory(string $text, $categories): ?Category
+    private function matchCategory(string $text, $categories, ?string $subject): ?Category
     {
-        $matchedCategories = [];
         $lowerText = mb_strtolower($text);
+
+        // 1. Run scoring engine for the 4 system categories (LOAN, DEBT_PAYMENT, RECEIVABLE, RECEIVABLE_PAYMENT)
+        $scoredSystemKey = $this->scoreSystemCategory($lowerText, $subject);
+        if ($scoredSystemKey !== null) {
+            $systemCategory = $categories->firstWhere('system_key', $scoredSystemKey);
+            if ($systemCategory) {
+                return $systemCategory;
+            }
+        }
+
+        // 2. Fallback to token matching for all other categories
+        $matchedCategories = [];
 
         foreach ($categories as $category) {
             $tokens = array_filter([
@@ -176,6 +190,15 @@ class LocalRuleEngine
             foreach ($tokens as $token) {
                 $token = trim(mb_strtolower($token));
                 if ($token === '') continue;
+
+                // Prevent matching 'utang', 'hutang', or 'ngutang' when the word is actually 'piutang'
+                if (in_array($token, ['utang', 'hutang', 'ngutang']) && str_contains($lowerText, 'piutang')) {
+                    $utangCount = substr_count($lowerText, $token);
+                    $piutangCount = substr_count($lowerText, 'piutang');
+                    if ($utangCount <= $piutangCount) {
+                        continue;
+                    }
+                }
 
                 // Flexible substring check
                 if (str_contains($lowerText, $token)) {
@@ -214,6 +237,112 @@ class LocalRuleEngine
         }
 
         return $matchedCategories[0]['category'];
+    }
+
+    /**
+     * Indonesian NLP scoring logic for Hutang / Piutang system categories.
+     */
+    private function scoreSystemCategory(string $text, ?string $subject): ?string
+    {
+        $scores = [
+            'LOAN' => 0,
+            'DEBT_PAYMENT' => 0,
+            'RECEIVABLE' => 0,
+            'RECEIVABLE_PAYMENT' => 0,
+        ];
+
+        $hasBayar = str_contains($text, 'bayar') || str_contains($text, 'lunas') || str_contains($text, 'nyicil') || str_contains($text, 'cicil');
+        $hasBalikin = str_contains($text, 'balikin') || str_contains($text, 'kembali') || str_contains($text, 'ganti');
+        $hasPayment = $hasBayar || $hasBalikin;
+
+        $hasHutang = str_contains($text, 'hutang') || str_contains($text, 'utang');
+        // Prevent 'utang' matching inside 'piutang'
+        if ($hasHutang && str_contains($text, 'piutang')) {
+            $utangCount = substr_count($text, 'utang') + substr_count($text, 'hutang');
+            $piutangCount = substr_count($text, 'piutang');
+            if ($utangCount <= $piutangCount) {
+                $hasHutang = false;
+            }
+        }
+
+        $hasPiutang = str_contains($text, 'piutang');
+        
+        $hasPinjam = str_contains($text, 'pinjam') || str_contains($text, 'pinjem') || str_contains($text, 'minjam') || str_contains($text, 'minjem');
+        $hasPinjamin = str_contains($text, 'pinjamin') || str_contains($text, 'pinjemin') || str_contains($text, 'pinjamkan') || str_contains($text, 'ngutangin') || str_contains($text, 'ngasih pinjam') || str_contains($text, 'kasih pinjam') || str_contains($text, 'kasih utang') || str_contains($text, 'meminjamkan');
+
+        $hasKe = (bool) preg_match('/\b(ke|kepada)\b/u', $text);
+
+        // Rule 1: pinjamin/ngutangin/kasih pinjam -> RECEIVABLE
+        if ($hasPinjamin) {
+            $scores['RECEIVABLE'] += 100;
+            $scores['LOAN'] -= 50;
+        }
+
+        // Rule 2: bayar/balikin piutang -> RECEIVABLE_PAYMENT
+        if ($hasPayment && $hasPiutang) {
+            $scores['RECEIVABLE_PAYMENT'] += 100;
+            $scores['DEBT_PAYMENT'] -= 50;
+        }
+
+        // Rule 3: bayar/balikin/lunasi hutang/pinjaman
+        if ($hasPayment && ($hasHutang || $hasPinjam) && !$hasPinjamin) {
+            if ($hasKe) {
+                // "bayar hutang ke budi" -> DEBT_PAYMENT
+                $scores['DEBT_PAYMENT'] += 100;
+                $scores['RECEIVABLE_PAYMENT'] -= 50;
+            } elseif ($subject !== null && $subject !== '-') {
+                // "budi bayar hutang" / "budi balikin pinjaman" -> RECEIVABLE_PAYMENT
+                $scores['RECEIVABLE_PAYMENT'] += 100;
+                $scores['DEBT_PAYMENT'] -= 50;
+            } else {
+                // Ambiguous, default to paying our own debt
+                $scores['DEBT_PAYMENT'] += 70;
+            }
+        }
+
+        // Rule 4: "balikin uang" / "mengembalikan uang" / "balikin duit"
+        if ($hasBalikin && (str_contains($text, 'uang') || str_contains($text, 'duit') || str_contains($text, 'pinjaman'))) {
+            if ($hasKe) {
+                $scores['DEBT_PAYMENT'] += 100;
+                $scores['RECEIVABLE_PAYMENT'] -= 50;
+            } elseif ($subject !== null && $subject !== '-') {
+                $scores['RECEIVABLE_PAYMENT'] += 100;
+                $scores['DEBT_PAYMENT'] -= 50;
+            } else {
+                $scores['DEBT_PAYMENT'] += 70;
+            }
+        }
+
+        // Rule 5: general pinjam/hutang without payment keywords
+        if (!$hasPayment && ($hasHutang || $hasPinjam) && !$hasPinjamin) {
+            if ($hasKe) {
+                // "hutang ke budi", "pinjam ke budi" -> LOAN
+                $scores['LOAN'] += 100;
+                $scores['RECEIVABLE'] -= 50;
+            } elseif ($subject !== null && $subject !== '-') {
+                // "budi ngutang", "budi pinjam" -> RECEIVABLE
+                $scores['RECEIVABLE'] += 80;
+                $scores['LOAN'] -= 40;
+            } else {
+                // Default to LOAN (dapat hutangan)
+                $scores['LOAN'] += 70;
+            }
+        }
+
+        // Rule 6: Ngasih piutang (general receivable without payment)
+        if (!$hasPayment && $hasPiutang) {
+            $scores['RECEIVABLE'] += 90;
+        }
+
+        arsort($scores);
+        $maxScore = reset($scores);
+        $bestKey = key($scores);
+
+        if ($maxScore > 0) {
+            return $bestKey;
+        }
+
+        return null;
     }
 
     /**
@@ -322,31 +451,39 @@ class LocalRuleEngine
     }
 
     /**
-     * Extract Subject (Person's Name) for debt/receivable.
+     * Provisional subject extraction without intent dependencies.
      */
-    private function extractSubject(string $text, TransactionIntent $intent): ?string
+    private function extractSubjectSimple(string $text): ?string
     {
         // 1. Check hashtag
         if (preg_match('/#([a-zA-Z0-9_]+)/', $text, $matches)) {
             return $matches[1];
         }
 
-        if ($intent !== TransactionIntent::Debt && $intent !== TransactionIntent::Receivable) {
-            return null;
-        }
-
-        // 2. Pattern A: "Pinjamin Andi 100k" or "Kasih pinjam Budi"
+        // 2. Pattern A: "Pinjamin Andi 100k"
         $patternA = '/(?:pinjamin|pinjamkan|ngutangin|kasih pinjam|pinjamkan ke|kasih pinjam ke|pinjam ke)\s+([A-Za-z]+)/i';
         if (preg_match($patternA, $text, $matches)) {
             return $matches[1];
         }
 
-        // 3. Pattern B: "Iqbal bayar hutang" or "Budi balikin uang" or "Iqbal lunasin"
+        // 3. Pattern B: "Iqbal bayar hutang"
         $patternB = '/\b([A-Za-z]+)\s+(?:bayar|balikin|lunasin|mengembalikan|kembalikan|ngutang|utang|hutang|pinjam)\b/i';
         if (preg_match($patternB, $text, $matches)) {
             return $matches[1];
         }
 
         return null;
+    }
+
+    /**
+     * Extract Subject (Person's Name) for debt/receivable.
+     */
+    private function extractSubject(string $text, TransactionIntent $intent): ?string
+    {
+        if ($intent !== TransactionIntent::Debt && $intent !== TransactionIntent::Receivable) {
+            return null;
+        }
+
+        return $this->extractSubjectSimple($text);
     }
 }

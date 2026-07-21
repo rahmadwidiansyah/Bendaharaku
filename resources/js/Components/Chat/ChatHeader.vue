@@ -9,6 +9,7 @@
 
 import { computed } from 'vue'
 import { Link }     from '@inertiajs/vue3'
+import { useI18n }  from 'vue-i18n'
 import BotAvatar    from '@/Components/Chat/BotAvatar.vue'
 
 const props = defineProps({
@@ -18,8 +19,10 @@ const props = defineProps({
     status:    { type: String,  default: 'online' },
 })
 
+const { t } = useI18n()
+
 const statusText = computed(() =>
-    props.isTyping ? 'Sedang mengetik...' : 'AI Financial Assistant'
+    props.isTyping ? t('chat.typing') : t('chat.assistant')
 )
 </script>
 
@@ -33,13 +36,13 @@ const statusText = computed(() =>
         class="sticky top-0 z-20 bg-gray-950/95 backdrop-blur-xl border-b border-white/6"
         style="padding-top: env(safe-area-inset-top, 0px);"
     >
-    <div class="flex items-center gap-3 px-4 h-14">
+        <div class="flex items-center gap-3 px-4 h-14">
 
         <!-- Back button (mobile only) -->
         <Link
             :href="route('dashboard')"
             class="lg:hidden w-8 h-8 shrink-0 flex items-center justify-center rounded-xl text-gray-500 hover:text-white hover:bg-white/6 transition-colors"
-            aria-label="Kembali ke Dashboard"
+            :aria-label="t('btn.back')"
         >
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
@@ -70,7 +73,7 @@ const statusText = computed(() =>
             <Link
                 :href="route('settings.ai.bot')"
                 class="w-8 h-8 flex items-center justify-center rounded-xl text-gray-600 hover:text-white hover:bg-white/6 transition-colors"
-                aria-label="Pengaturan Bot"
+                :aria-label="t('chatBot.title')"
             >
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />

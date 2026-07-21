@@ -140,14 +140,14 @@ const routeLabel = computed(() => {
 })
 
 // ─── Tinggi header ────────────────────────────────────────────────
-// Dashboard expanded → h-16; collapsed atau halaman lain → h-14
+// Dashboard expanded → h-14; collapsed atau halaman lain → h-12
 const headerHeight = computed(() =>
-    shouldShowGreeting.value && !isCollapsed.value ? 'h-16' : 'h-14'
+    shouldShowGreeting.value && !isCollapsed.value ? 'h-14' : 'h-12'
 )
 
 // ─── Profile menu ─────────────────────────────────────────────────
 const showProfileMenu     = ref(false)
-const profileMenuPosition = ref({ top: 76, right: 16 })
+const profileMenuPosition = ref({ top: 64, right: 16 })
 
 const toggleProfileMenu = (rect) => {
     if (showProfileMenu.value) {

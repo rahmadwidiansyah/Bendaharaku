@@ -214,6 +214,59 @@ return [
         'help_example_debt'     => '🤝 Hutang/Piutang: "Pinjam duit 100k bca #Budi"',
         'total_balance'     => 'Total Saldo',
         'report_summary'   => 'Ringkasan: :summary',
+        'help_cmd_template' => '▫️ :icon `:command` - :description',
+    ],
+
+    'commands' => [
+        'help' => [
+            'description' => 'Tampilkan panduan penggunaan chatbot.',
+            'hint'        => 'Gunakan untuk melihat contoh format pesan.',
+        ],
+        'start' => [
+            'description' => 'Mulai percakapan dengan chatbot.',
+        ],
+        'saldo' => [
+            'description' => 'Cek saldo dompet saat ini.',
+            'hint'        => 'Contoh: /saldo',
+        ],
+        'wallet' => [
+            'description' => 'Daftar dompet dan saldo masing-masing.',
+        ],
+        'kategori' => [
+            'description' => 'Daftar kategori transaksi keuangan.',
+        ],
+        'aset' => [
+            'description' => 'Daftar aset keuangan.',
+        ],
+        'transaksi' => [
+            'description' => 'Daftar transaksi keuangan hari ini.',
+            'hint'        => 'Contoh: /transaksi',
+        ],
+        'pemasukan' => [
+            'description' => 'Daftar pemasukan bulan ini.',
+        ],
+        'pengeluaran' => [
+            'description' => 'Daftar pengeluaran bulan ini.',
+        ],
+        'transfer' => [
+            'description' => 'Catat transfer antar dompet.',
+        ],
+        'ringkasan' => [
+            'description' => 'Laporan ringkasan keuangan bulanan.',
+            'hint'        => 'Contoh: /ringkasan',
+        ],
+        'laporan' => [
+            'description' => 'Laporan keuangan detail bulanan.',
+        ],
+        'statistik' => [
+            'description' => 'Statistik keuangan pribadi.',
+        ],
+        'settings' => [
+            'description' => 'Buka pengaturan chatbot.',
+        ],
+        'web' => [
+            'description' => 'Buka dashboard Web Bendaharaku.',
+        ],
     ],
 
     'command_icon_saldo' => '💳',

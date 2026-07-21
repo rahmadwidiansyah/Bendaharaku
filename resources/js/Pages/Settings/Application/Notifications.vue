@@ -9,11 +9,6 @@ import axios from 'axios';
 
 const { t } = useI18n();
 
-const breadcrumbs = [
-  { label: t('settings.title'), href: route('settings.index') },
-  { label: t('settings.application.title') },
-  { label: t('settings.application.notifications.title') },
-];
 
 const emailNotifications = ref(true);
 const pushNotifications = ref(false);
@@ -51,7 +46,6 @@ const handleSave = async () => {
     <SettingsLayout
       :title="t('settings.application.notifications.title')"
       :description="t('settings.application.notifications.description')"
-      :breadcrumbs="breadcrumbs"
     >
       <!-- Messages -->
       <div v-if="successMessage" class="mb-4 p-4 bg-green-500/20 border border-green-500/50 rounded-lg">

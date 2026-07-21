@@ -24,9 +24,12 @@ const showDeleteConfirm = ref(false)
 
 // ─── Tentukan initialType dari transaksi yang sedang di-edit ─────
 const _initCat = props.categories.find(c => c.id === props.transaction.category_id)
-const _initType = _initCat?.type?.name ?? 'Expense'
-const _initDebtSubTab = (_initCat?.system_key === 'DEBT_PAYMENT' || _initCat?.system_key === 'RECEIVABLE')
-    ? 'expense' : 'income'
+const _initType = props.transaction.transaction_type
+    ? (props.transaction.transaction_type.charAt(0).toUpperCase() + props.transaction.transaction_type.slice(1))
+    : (_initCat?.type?.name ?? 'Expense')
+const _initDebtSubTab = props.transaction.debt_sub_type
+    ? props.transaction.debt_sub_type
+    : ((_initCat?.system_key === 'DEBT_PAYMENT' || _initCat?.system_key === 'RECEIVABLE') ? 'expense' : 'income')
 
 const form = useForm({
     category_id: props.transaction.category_id,
@@ -123,13 +126,13 @@ const transferErrors = ref({})
 
 const validateTransfer = () => {
     transferErrors.value = {}
-    if (!form.source_wallet_id)      transferErrors.value.source = 'Pilih dompet asal'
-    if (!form.destination_wallet_id) transferErrors.value.dest   = 'Pilih dompet tujuan'
+    if (!form.source_wallet_id)      transferErrors.value.source = t('transaction.validation.sourceRequired')
+    if (!form.destination_wallet_id) transferErrors.value.dest   = t('transaction.validation.destRequired')
     if (form.source_wallet_id && form.destination_wallet_id &&
         form.source_wallet_id === form.destination_wallet_id) {
-        transferErrors.value.same = 'Dompet asal dan tujuan tidak boleh sama'
+        transferErrors.value.same = t('transaction.validation.sameWallet')
     }
-    if (!form.amount || form.amount <= 0) transferErrors.value.amount = 'Nominal harus lebih dari 0'
+    if (!form.amount || form.amount <= 0) transferErrors.value.amount = t('transaction.validation.amountPositive')
     return Object.keys(transferErrors.value).length === 0
 }
 
@@ -145,7 +148,7 @@ const swapWallets = () => {
 const submitTransfer = () => {
     if (!validateTransfer()) return
     form.transaction_type = 'transfer'
-    form.put(route('transactions.update', props.transaction.id), {
+    form.put(route('transactions.update', { transaction: props.transaction.id, is_draft: props.transaction.is_draft }), {
         preserveScroll: true,
         onSuccess: () => handleBack(),
     })
@@ -158,7 +161,7 @@ const submit = () => {
     if (['Debt', 'Receivable'].includes(activeType.value) && (!form.subject || form.subject === '-')) {
         form.setError('subject', t('transaction.validation.subjectRequired')); return
     }
-    form.put(route('transactions.update', props.transaction.id), {
+    form.put(route('transactions.update', { transaction: props.transaction.id, is_draft: props.transaction.is_draft }), {
         preserveScroll: true,
         onSuccess: () => handleBack(),
     })
@@ -167,7 +170,7 @@ const submit = () => {
 const destroy = () => { showDeleteConfirm.value = true }
 const confirmDelete = () => {
     showDeleteConfirm.value = false
-    router.delete(route('transactions.destroy', props.transaction.id))
+    router.delete(route('transactions.destroy', { transaction: props.transaction.id, is_draft: props.transaction.is_draft }))
 }
 
 const handleBack = () => router.visit(route('dashboard'))

@@ -209,9 +209,8 @@ return [
             ],
             'model' => [
                 'label' => 'Pilihan Model',
-                'description' => 'Pilih model AI yang akan digunakan',
-                'hint' => 'Model berbeda memiliki kemampuan dan biaya yang berbeda',
                 'description' => 'Pilih versi model pilihan Anda',
+                'hint' => 'Model berbeda memiliki kemampuan dan biaya yang berbeda',
             ],
             'token_limit' => [
                 'label' => 'Batas Token',

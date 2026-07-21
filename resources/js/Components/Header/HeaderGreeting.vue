@@ -77,13 +77,13 @@ const displayName = computed(() =>
                 Greeting waktu + nama lengkap user
             -->
             <div v-if="isDashboard && !isCollapsed" key="dashboard-expanded">
-                <div class="flex items-center gap-1.5">
-                    <p class="text-2xs font-black uppercase tracking-[0.2em] text-purple-400 truncate leading-none">
+                <div class="flex items-center gap-1">
+                    <p class="text-2xs font-black uppercase tracking-[0.2em] text-purple-400 truncate leading-tight">
                         {{ greeting.text }}
                     </p>
                     <span class="text-xs leading-none shrink-0" aria-hidden="true">{{ greeting.emoji }}</span>
                 </div>
-                <h1 class="text-lg font-black text-white tracking-tight leading-tight truncate mt-0.5">
+                <h1 class="text-sm font-black text-white tracking-tight truncate leading-tight">
                     {{ displayName }}
                 </h1>
             </div>
@@ -93,10 +93,10 @@ const displayName = computed(() =>
                 Label "Dashboard" + subtitle "Bendaharaku"
             -->
             <div v-else-if="isDashboard && isCollapsed" key="dashboard-collapsed">
-                <h1 class="text-base font-black text-white tracking-tight truncate leading-tight">
+                <h1 class="text-sm font-black text-white tracking-tight truncate leading-tight">
                     {{ routeLabel }}
                 </h1>
-                <p class="text-2xs text-gray-500 font-semibold uppercase tracking-widest mt-0.5 truncate">
+                <p class="text-2xs text-gray-500 font-semibold uppercase tracking-widest leading-tight truncate">
                     Bendaharaku
                 </p>
             </div>
@@ -107,10 +107,10 @@ const displayName = computed(() =>
                 Tidak ada greeting, tidak peduli collapsed atau tidak.
             -->
             <div v-else key="page-title">
-                <h1 class="text-base font-black text-white tracking-tight truncate leading-tight">
+                <h1 class="text-sm font-black text-white tracking-tight truncate leading-tight">
                     {{ routeLabel }}
                 </h1>
-                <p class="text-2xs text-gray-500 font-semibold uppercase tracking-widest mt-0.5 truncate">
+                <p class="text-2xs text-gray-500 font-semibold uppercase tracking-widest leading-tight truncate">
                     Bendaharaku
                 </p>
             </div>

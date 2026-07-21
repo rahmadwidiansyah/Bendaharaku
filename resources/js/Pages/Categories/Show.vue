@@ -115,7 +115,7 @@ const formatDateRange = () => {
                             <svg class="w-3 h-3 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
                             </svg>
-                            <span class="text-2xs font-bold text-amber-400 uppercase tracking-[0.15em]">Kategori Sistem</span>
+                            <span class="text-2xs font-bold text-amber-400 uppercase tracking-[0.15em]">{{ $t('category.systemCategory') }}</span>
                         </div>
                     </div>
                 </div>

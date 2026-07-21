@@ -13,6 +13,7 @@
 
 import { ref, onMounted, nextTick, watch } from 'vue'
 import { Head, usePage } from '@inertiajs/vue3'
+import { useI18n } from 'vue-i18n'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import ChatHeader     from '@/Components/Chat/ChatHeader.vue'
 import ChatArea       from '@/Components/Chat/ChatArea.vue'
@@ -63,6 +64,8 @@ const {
     openSheet,
     closeSheet,
 } = useChatCommands(props.commands)
+
+const { t } = useI18n()
 
 // ── Refs ──────────────────────────────────────────────────────────
 const composerRef  = ref(null)
@@ -118,7 +121,7 @@ async function handleRegenerate(botMessage) {
 
 <template>
     <AuthenticatedLayout :hideNav="true">
-        <Head title="AI Chat" />
+        <Head :title="t('chat.assistant')" />
 
         <!--
             flex column, full viewport height.
@@ -179,7 +182,7 @@ async function handleRegenerate(botMessage) {
                     v-if="showJumpBtn"
                     @click="jumpToLatest"
                     class="absolute bottom-[76px] right-4 z-20 flex items-center gap-1.5 pl-2.5 pr-3 py-2 rounded-full bg-gray-900 border border-white/12 shadow-xl shadow-black/40 hover:bg-gray-800 hover:border-white/20 active:scale-95 transition-all"
-                    aria-label="Scroll ke pesan terbaru"
+                    :aria-label="t('chat.scrollToBottom')"
                     style="backdrop-filter: blur(12px);"
                 >
                     <!-- Arrow down icon -->
@@ -191,10 +194,10 @@ async function handleRegenerate(botMessage) {
                     <!-- Label + badge -->
                     <span class="text-xs font-semibold text-white leading-none">
                         <template v-if="unreadCount > 0">
-                            {{ unreadCount }} Pesan Baru
+                            {{ unreadCount }} {{ t('chat.newMessages') }}
                         </template>
                         <template v-else>
-                            Terbaru
+                            {{ t('chat.latest') }}
                         </template>
                     </span>
                 </button>

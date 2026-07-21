@@ -40,12 +40,6 @@ const saving = ref(false);
 const saveMessage = ref('');
 const saveMessageType = ref<'success' | 'error'>('success');
 
-// Breadcrumb
-const breadcrumbs = [
-  { label: t('settings.title'), href: route('settings.index') },
-  { label: t('settings.ai.title') },
-  { label: t('settings.ai.models.title') },
-];
 
 // ── Helpers ───────────────────────────────────────────────────────
 
@@ -133,7 +127,6 @@ const saveSettings = async () => {
     <SettingsLayout
       :title="t('settings.ai.models.title')"
       :description="t('settings.ai.models.description')"
-      :breadcrumbs="breadcrumbs"
     >
       <!-- Save / Error feedback banner -->
       <div

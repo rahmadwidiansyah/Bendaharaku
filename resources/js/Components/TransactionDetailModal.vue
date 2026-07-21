@@ -34,7 +34,7 @@ const isDeleting = ref(false)
 
 const deleteTransaction = () => {
     isDeleting.value = true
-    router.delete(route('transactions.destroy', props.transaction.id), {
+    router.delete(route('transactions.destroy', { transaction: props.transaction.id, is_draft: props.transaction.is_draft }), {
         preserveScroll: true,
         onSuccess: () => {
             showDeleteConfirm.value = false
@@ -50,7 +50,7 @@ const isConfirming = ref(false)
 
 const confirmDraft = () => {
     isConfirming.value = true
-    router.patch(route('transactions.confirm', props.transaction.id), {}, {
+    router.patch(route('transactions.confirm', { transaction: props.transaction.id, is_draft: props.transaction.is_draft }), {}, {
         preserveScroll: true,
         onSuccess: () => {
             showConfirmDraft.value = false
@@ -218,7 +218,7 @@ const dueDateDetail = (trx) => {
                 <!-- Edit & Hapus -->
                 <div class="flex gap-2">
                     <Link
-                        :href="route('transactions.edit', transaction.id)"
+                        :href="route('transactions.edit', { transaction: transaction.id, is_draft: transaction.is_draft })"
                         class="flex-1 py-3 rounded-xl bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 text-gray-300 text-2xs font-bold uppercase tracking-widest hover:border-purple-500/40 hover:text-white transition-all active:scale-[0.98] flex items-center justify-center gap-1.5">
                         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" />
@@ -232,7 +232,7 @@ const dueDateDetail = (trx) => {
                         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
-                        {{ $t('transaction.detail.deleteBtn') }}
+                        {{ transaction.is_draft ? 'Batalkan Draft' : $t('transaction.detail.deleteBtn') }}
                     </button>
                 </div>
             </div>
@@ -298,9 +298,11 @@ const dueDateDetail = (trx) => {
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
             </div>
-            <h3 class="text-base font-black text-white mb-2 tracking-tight">{{ $t('transaction.deleteTitle') }}</h3>
+            <h3 class="text-base font-black text-white mb-2 tracking-tight">
+                {{ transaction.is_draft ? 'Batalkan Draft Transaksi' : $t('transaction.deleteTitle') }}
+            </h3>
             <p class="text-sm text-red-200/80 leading-relaxed mb-6">
-                {{ $t('transaction.deleteWarn') }}
+                {{ transaction.is_draft ? 'Apakah Anda yakin ingin membatalkan draft transaksi ini?' : $t('transaction.deleteWarn') }}
             </p>
         </div>
 
@@ -321,7 +323,7 @@ const dueDateDetail = (trx) => {
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                 </svg>
-                {{ isDeleting ? $t('common.deleting') : $t('btn.yes') }}
+                {{ isDeleting ? (transaction.is_draft ? 'Membatalkan...' : $t('common.deleting')) : (transaction.is_draft ? 'Ya, Batalkan' : $t('btn.yes')) }}
             </button>
         </template>
     </BaseModal>

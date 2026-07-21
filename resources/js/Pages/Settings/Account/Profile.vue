@@ -75,11 +75,7 @@ const handleSave = () => {
   });
 };
 
-const breadcrumbs = [
-  { label: t('settings.title'), href: route('settings.index') },
-  { label: t('settings.account.title') },
-  { label: t('settings.account.profile.title') },
-];
+
 </script>
 
 <template>
@@ -89,7 +85,6 @@ const breadcrumbs = [
     <SettingsLayout
       :title="t('settings.account.profile.title')"
       :description="t('settings.account.profile.description')"
-      :breadcrumbs="breadcrumbs"
     >
       <!-- Success Banner -->
       <div v-if="status === 'profile-updated'" class="mb-4 p-4 bg-green-500/20 border border-green-500/50 rounded-xl">
@@ -100,8 +95,8 @@ const breadcrumbs = [
 
         <!-- ── AVATAR CARD ─────────────────────────────────────────── -->
         <SettingsCard
-          :title="t('profile.choosePhoto', 'Profile Photo')"
-          :description="t('settings.ai.bot.avatar.hint', 'Square image recommended. JPG, PNG or WebP.')"
+          :title="t('profile.choosePhoto')"
+          :description="t('settings.ai.bot.avatar.hint')"
         >
           <div class="flex flex-col sm:flex-row items-center gap-6">
             <!-- Avatar Preview -->
@@ -115,7 +110,7 @@ const breadcrumbs = [
                   <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                <span class="text-[9px] text-white font-bold uppercase tracking-widest">{{ t('profile.choosePhoto', 'Change') }}</span>
+                <span class="text-[9px] text-white font-bold uppercase tracking-widest">{{ t('profile.choosePhoto') }}</span>
               </div>
 
               <!-- Changed indicator -->
@@ -138,13 +133,13 @@ const breadcrumbs = [
                   @click="openCropModal"
                   class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors"
                 >
-                  {{ t('profile.choosePhoto', 'Choose Photo') }}
+                  {{ t('profile.choosePhoto') }}
                 </button>
                 <span v-if="previewUrl" class="inline-flex items-center text-2xs text-purple-400 font-semibold">
-                  ✓ {{ t('profile.newPhotoSelected', 'New photo selected — save to apply') }}
+                  ✓ {{ t('profile.newPhotoSelected') }}
                 </span>
               </div>
-              <p class="text-2xs text-gray-500">{{ t('settings.ai.bot.avatar.hint', 'Recommended: square, max 2MB.') }}</p>
+              <p class="text-2xs text-gray-500">{{ t('settings.ai.bot.avatar.hint') }}</p>
               <p v-if="form.errors.avatar_file" class="text-2xs text-red-400 font-semibold">{{ form.errors.avatar_file }}</p>
             </div>
           </div>
@@ -152,8 +147,8 @@ const breadcrumbs = [
 
         <!-- ── IDENTITY CARD ───────────────────────────────────────── -->
         <SettingsCard
-          :title="t('settings.account.profile.title', 'Personal Information')"
-          :description="t('settings.account.profile.description', 'Your name, email and contact info')"
+          :title="t('settings.account.profile.title')"
+          :description="t('settings.account.profile.description')"
         >
           <div class="space-y-4">
             <!-- Name -->
@@ -190,8 +185,8 @@ const breadcrumbs = [
 
         <!-- ── SOCIAL / CONTACTS CARD ──────────────────────────────── -->
         <SettingsCard
-          :title="t('profile.socialConnections', 'Social & Messaging')"
-          :description="t('profile.socialConnectionsDesc', 'Connect messaging apps for AI integration')"
+          :title="t('profile.socialConnections')"
+          :description="t('profile.socialConnectionsDesc')"
         >
           <div class="space-y-4">
             <!-- WhatsApp -->
@@ -234,7 +229,7 @@ const breadcrumbs = [
         <!-- ── GOOGLE CARD ──────────────────────────────────────────── -->
         <SettingsCard
           title="Google"
-          :description="t('profile.google.connect', 'Connect your Google account for easy sign-in')"
+          :description="t('profile.google.connect')"
         >
           <div v-if="!user.google_id">
             <a
@@ -267,7 +262,7 @@ const breadcrumbs = [
               </svg>
               {{ t('common.saving') }}
             </span>
-            <span v-else>{{ t('profile.updateProfile', 'Save Changes') }}</span>
+            <span v-else>{{ t('profile.updateProfile') }}</span>
           </button>
 
           <p v-if="form.recentlySuccessful" class="text-sm text-green-400 font-semibold">
@@ -298,7 +293,7 @@ const breadcrumbs = [
     <!-- Image Crop Modal -->
     <ImageCropModal
       v-model="showCropModal"
-      :title="t('profile.choosePhoto', 'Atur Foto Profil')"
+      :title="t('profile.choosePhoto')"
       :aspectRatio="1"
       :circle="true"
       :maxSizeKb="800"

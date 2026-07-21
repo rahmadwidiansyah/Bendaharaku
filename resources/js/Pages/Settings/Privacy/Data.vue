@@ -9,11 +9,6 @@ import { ref } from 'vue';
  
 const { t } = useI18n();
  
-const breadcrumbs = [
-  { label: t('settings.title'), href: route('settings.index') },
-  { label: t('settings.privacy.title') },
-  { label: t('settings.privacy.data.title') },
-];
 
 const isExporting = ref(false);
 const successMessage = ref('');
@@ -53,7 +48,6 @@ const handleExport = async () => {
     <SettingsLayout
       :title="t('settings.privacy.data.title')"
       :description="t('settings.privacy.data.description')"
-      :breadcrumbs="breadcrumbs"
     >
       <SettingsCard :title="t('settings.privacy.data.export.title')" :description="t('settings.privacy.data.export.description')">
       <!-- Messages -->

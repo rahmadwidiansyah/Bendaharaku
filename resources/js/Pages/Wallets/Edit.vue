@@ -2,7 +2,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import EmojiPicker from '@/Components/EmojiPicker.vue';
-import { computed } from 'vue';
+import ConfirmationDialog from '@/Components/ConfirmationDialog.vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
@@ -36,10 +37,12 @@ const displayAmount = computed({
 });
 
 const deleteForm = useForm({});
+const showDeleteConfirm = ref(false);
 const deleteWallet = () => {
-    if (confirm(t('wallet.deleteMsg'))) {
-        deleteForm.delete(route('wallets.destroy', props.wallet.id));
-    }
+    showDeleteConfirm.value = true;
+};
+const confirmDeleteWallet = () => {
+    deleteForm.delete(route('wallets.destroy', props.wallet.id));
 };
 </script>
 
@@ -126,14 +129,26 @@ const deleteWallet = () => {
                 </div>
             </form>
 
-            <form @submit.prevent="deleteWallet" class="mt-4 animate-slide-up opacity-0 relative z-20"
+            <div class="mt-4 animate-slide-up opacity-0 relative z-20"
                 style="animation-delay: 350ms;">
-                <button type="submit" :disabled="deleteForm.processing"
+                <button type="button" :disabled="deleteForm.processing" @click="deleteWallet"
                     class="w-full bg-linear-to-br from-red-800 to-red-900 text-white font-bold text-sm py-4 rounded-xl hover:translate-y-0.5 active:scale-95 transition-all">
                     {{ deleteForm.processing ? t('btn.deleting') : t('btn.delete') }}
                 </button>
-            </form>
+            </div>
         </div>
+
+        <ConfirmationDialog
+            :show="showDeleteConfirm"
+            :title="t('wallet.deleteTitle')"
+            :message="t('wallet.deleteMsg')"
+            :confirm-text="t('btn.delete')"
+            :cancel-text="t('common.cancel')"
+            variant="danger"
+            :loading="deleteForm.processing"
+            @close="showDeleteConfirm = false"
+            @confirm="confirmDeleteWallet"
+        />
     </AuthenticatedLayout>
 </template>
 

@@ -177,7 +177,7 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/appearance', function (\Illuminate\Http\Request $request) {
             $validated = $request->validate([
                 'theme'        => ['required', 'string', 'in:light,dark,system'],
-                'accent_color' => ['required', 'string', 'in:purple,blue,green,orange,red,pink'],
+                'accent_color' => ['required', 'string', 'regex:/^(purple|blue|green|orange|red|pink|custom:#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3}))$/'],
             ]);
 
             $user = $request->user();

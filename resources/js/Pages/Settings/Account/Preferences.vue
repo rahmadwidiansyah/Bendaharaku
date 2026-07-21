@@ -9,11 +9,6 @@ import axios from 'axios';
 
 const { t } = useI18n();
 
-const breadcrumbs = [
-  { label: t('settings.title'), href: route('settings.index') },
-  { label: t('settings.account.title') },
-  { label: t('settings.account.preferences.title') },
-];
 
 const props = defineProps<{
   userTimezone: string;
@@ -56,7 +51,6 @@ const handleSave = async () => {
     <SettingsLayout
       :title="t('settings.account.preferences.title')"
       :description="t('settings.account.preferences.description')"
-      :breadcrumbs="breadcrumbs"
     >
       <!-- Messages -->
       <div v-if="successMessage" class="mb-4 p-4 bg-green-500/20 border border-green-500/50 rounded-lg">

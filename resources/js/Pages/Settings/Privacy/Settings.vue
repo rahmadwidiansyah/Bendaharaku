@@ -7,11 +7,7 @@ import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 
-const breadcrumbs = [
-  { label: t('settings.title'), href: route('settings.index') },
-  { label: t('settings.privacy.title') },
-  { label: t('settings.privacy.settings.title') },
-];
+
 </script>
 
 <template>
@@ -21,7 +17,6 @@ const breadcrumbs = [
     <SettingsLayout
       :title="t('settings.privacy.settings.title')"
       :description="t('settings.privacy.settings.description')"
-      :breadcrumbs="breadcrumbs"
     >
       <SettingsCard :title="t('settings.privacy.settings.data_collection.title')" :description="t('settings.privacy.settings.data_collection.description')">
         <div class="p-4 bg-blue-900/20 border border-blue-500/20 rounded-lg">

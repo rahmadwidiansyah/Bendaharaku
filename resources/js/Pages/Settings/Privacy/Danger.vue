@@ -9,11 +9,6 @@ import { ref } from 'vue';
 
 const { t } = useI18n();
 
-const breadcrumbs = [
-  { label: t('settings.title'), href: route('settings.index') },
-  { label: t('settings.privacy.title') },
-  { label: t('settings.privacy.danger.title') },
-];
 
 const isDeleting = ref(false);
 const showDeleteConfirm = ref(false);
@@ -40,7 +35,6 @@ const handleDeleteAccount = async () => {
     <SettingsLayout
       :title="t('settings.privacy.danger.title')"
       :description="t('settings.privacy.danger.description')"
-      :breadcrumbs="breadcrumbs"
     >
       <!-- Messages -->
       <div v-if="errorMessage" class="mb-4 p-4 bg-red-500/20 border border-red-500/50 rounded-lg">
