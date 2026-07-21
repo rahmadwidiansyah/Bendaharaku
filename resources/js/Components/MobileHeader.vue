@@ -74,7 +74,7 @@ const pageTitle = computed(() => props.title ?? routeTitle.value)
         Desktop menggunakan sidebar yang sudah menyediakan navigasi & context.
     -->
     <header
-        class="lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 h-16 bg-gradient-to-b from-gray-900 via-gray-900 to-gray-900/95 backdrop-blur-xl border-b border-white/5 shadow-md"
+        class="lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 h-12 bg-gradient-to-b from-gray-900 via-gray-900 to-gray-900/95 backdrop-blur-xl border-b border-white/5 shadow-md"
         :aria-label="$t('nav.mainNav')"
     >
         <!-- Judul halaman aktif -->

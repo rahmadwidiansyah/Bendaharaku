@@ -198,27 +198,27 @@ onMounted(checkStatus)
             <div class="border-t border-white/5 divide-y divide-white/5">
                 <div v-if="localTrx.category" class="flex items-center gap-2.5 px-3.5 py-2">
                     <span class="text-sm w-4 text-center">📂</span>
-                    <span class="text-2xs text-gray-500 w-16 shrink-0">Kategori</span>
+                    <span class="text-2xs text-gray-500 w-16 shrink-0">{{ $t('transaction.detail.category') }}</span>
                     <span class="text-xs text-gray-200 font-medium truncate">{{ localTrx.category }}</span>
                 </div>
                 <div v-if="localTrx.source_wallet" class="flex items-center gap-2.5 px-3.5 py-2">
                     <span class="text-sm w-4 text-center">👛</span>
-                    <span class="text-2xs text-gray-500 w-16 shrink-0">Dompet</span>
+                    <span class="text-2xs text-gray-500 w-16 shrink-0">{{ $t('transaction.detail.wallet') }}</span>
                     <span class="text-xs text-gray-200 font-medium truncate">{{ localTrx.source_wallet }}</span>
                 </div>
                 <div v-if="localTrx.dest_wallet" class="flex items-center gap-2.5 px-3.5 py-2">
                     <span class="text-sm w-4 text-center">📥</span>
-                    <span class="text-2xs text-gray-500 w-16 shrink-0">Ke Dompet</span>
+                    <span class="text-2xs text-gray-500 w-16 shrink-0">{{ $t('transaction.detail.to') }} {{ $t('transaction.detail.wallet') }}</span>
                     <span class="text-xs text-gray-200 font-medium truncate">{{ localTrx.dest_wallet }}</span>
                 </div>
                 <div v-if="localTrx.subject" class="flex items-center gap-2.5 px-3.5 py-2">
                     <span class="text-sm w-4 text-center">👤</span>
-                    <span class="text-2xs text-gray-500 w-16 shrink-0">Subjek</span>
+                    <span class="text-2xs text-gray-500 w-16 shrink-0">{{ $t('transaction.detail.party') }}</span>
                     <span class="text-xs text-gray-200 font-medium truncate">{{ localTrx.subject }}</span>
                 </div>
                 <div v-if="localTrx.date" class="flex items-center gap-2.5 px-3.5 py-2">
                     <span class="text-sm w-4 text-center">📅</span>
-                    <span class="text-2xs text-gray-500 w-16 shrink-0">Tanggal</span>
+                    <span class="text-2xs text-gray-500 w-16 shrink-0">{{ $t('transaction.detail.date') }}</span>
                     <span class="text-xs text-gray-200 font-medium">{{ localTrx.date }}</span>
                 </div>
             </div>

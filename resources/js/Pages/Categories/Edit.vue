@@ -1,7 +1,9 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import EmojiPicker from '@/Components/EmojiPicker.vue';
+import ConfirmationDialog from '@/Components/ConfirmationDialog.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
@@ -33,11 +35,15 @@ const submit = () => {
     })).post(route('categories.update', props.category.id));
 };
 
+const showDeleteConfirm = ref(false);
+
 const destroy = () => {
     if (props.isSystem) return;
-    if (confirm(t('category.deleteMsg'))) {
-        form.delete(route('categories.destroy', props.category.id));
-    }
+    showDeleteConfirm.value = true;
+};
+
+const confirmDelete = () => {
+    form.delete(route('categories.destroy', props.category.id));
 };
 </script>
 
@@ -120,6 +126,18 @@ const destroy = () => {
                 </div>
             </form>
         </div>
+
+        <ConfirmationDialog
+            :show="showDeleteConfirm"
+            :title="t('category.deleteTitle')"
+            :message="t('category.deleteMsg')"
+            :confirm-text="t('btn.delete')"
+            :cancel-text="t('common.cancel')"
+            variant="danger"
+            :loading="form.processing"
+            @close="showDeleteConfirm = false"
+            @confirm="confirmDelete"
+        />
     </AuthenticatedLayout>
 </template>
 

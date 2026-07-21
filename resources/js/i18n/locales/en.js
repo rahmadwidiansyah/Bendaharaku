@@ -54,6 +54,7 @@ export default {
         success:        'Success',
         error:          'Error',
         warning:        'Warning',
+        partial:        'Partial',
         info:           'Info',
         required:       'Required',
         optional:       'Optional',
@@ -78,6 +79,9 @@ export default {
         skipToContent:  'Skip to content',
         processing:     'Processing...',
         period:         'Period',
+        today:          'Today',
+        saveAndAddMore: 'Save & add another',
+        open:           'Open',
         // Generic error messages
         errors: {
             generic: 'Something went wrong. Please try again later.'
@@ -118,6 +122,12 @@ export default {
         mainNav:    'Main navigation',
         profile:    'Profile',
         help:       'Help',
+        homeDesc:      'Main dashboard',
+        assetDesc:     'Manage wallets and assets',
+        recordDesc:    'Transaction history',
+        analyticsDesc: 'Financial reports',
+        chatDesc:      'Chat with AI Assistant',
+        settingsDesc:  'All application settings',
     },
 
     // ────────────────────────────────────────────────────────────────
@@ -206,6 +216,14 @@ export default {
         loanSubjectHint:'Name of the lender/borrower',
         selectType:     'Select Type',
         typeRequired:   'Select transaction type',
+        stepOf:         'Step {step} of {total}',
+        chooseTypeToContinue: 'Select type to continue',
+        chooseSourceWallet: 'Select source wallet...',
+        chooseDestWallet: 'Select destination wallet...',
+        chooseDate:     'Select Date',
+        nextNominal:    'Next → Enter Amount',
+        created:        'Created',
+        updated:        'Updated',
 
         validation: {
             amountRequired:   'Amount is required',
@@ -214,6 +232,7 @@ export default {
             categoryRequired: 'Select a category',
             sourceRequired:   'Select source wallet',
             destRequired:     'Select destination wallet',
+            sameWallet:       'Source and destination wallets cannot be the same',
             dateRequired:     'Select a date',
             dateFuture:       'Date cannot be in the future',
             subjectRequired:  'Party name is required',
@@ -347,6 +366,7 @@ export default {
         totalLabel:     'Total',
         collection:     'Collection',
         transaction:    'transaction',
+        systemCategory: 'System Category',
 
         typeHeaders: {
             Income:     'Income',
@@ -531,6 +551,7 @@ export default {
                 accent_color: {
                     title:          'Accent Color',
                     description:    'Choose primary accent color',
+                    custom:         'Custom Color...',
                 },
             },
             
@@ -944,6 +965,9 @@ export default {
         deleteAccountDesc: 'Permanently delete account and all data.',
         deleteAccountConfirm: 'CONFIRM PERMANENT DELETION? All your financial data will be lost.',
         passwordUpdated: 'Password updated successfully.',
+        newPhotoSelected: 'New photo selected — save to apply',
+        socialConnections: 'Social & Messaging',
+        socialConnectionsDesc: 'Connect messaging apps for AI integration',
 
         // Google OAuth
         google: {
@@ -1118,6 +1142,61 @@ export default {
         removePhoto:    'Remove Photo',
         presetNames:    'Popular Names',
         head:           'Bot Profile',
+    },
+
+    // ────────────────────────────────────────────────────────────────
+    // CHAT & SEARCH
+    // ────────────────────────────────────────────────────────────────
+    chat: {
+        history: 'Chat history',
+        placeholder: 'Ask me anything...',
+        typing: 'typing...',
+        multi: {
+            result: 'Multi Transaction Result',
+        },
+        assistant: 'AI Financial Assistant',
+        loadMore: 'Show Older History',
+        loadingMore: 'Loading history...',
+        emptyState: 'Tell me about your transactions in natural language, or use the commands below.',
+        gettingStarted: 'Getting started',
+        commandButton: 'Open command menu',
+        commandTitle: 'Commands (/)',
+        sendButton: 'Send message',
+        desktopHint: 'Enter to send · Shift+Enter new line',
+        sheetTitle: 'Quick Commands',
+        sheetDesc: 'Select a command to insert into chat',
+        sheetLabel: 'Command List',
+        showMore: 'Show More',
+        collapse: 'Collapse',
+        scrollToBottom: 'Scroll to latest message',
+        newMessages: 'New Messages',
+        latest: 'Latest',
+        suggestionExpense: 'Record expense',
+        suggestionIncome: 'Record income',
+        suggestionTransfer: 'Transfer between wallets',
+        suggestionBalance: 'Check all wallet balances',
+        suggestionSummary: 'Financial summary',
+        suggestionReport: 'Monthly report (with AI)',
+        suggestionStats: 'Monthly statistics',
+        suggestionHelp: 'Usage guide',
+        errorItem: 'Item #',
+        buttonClose: 'Close',
+        buttonSave: 'Save',
+    },
+
+    search: {
+        placeholder: 'Search menus, settings, pages...',
+        clear: 'Clear search',
+        results: 'Search Results',
+        shortcuts: 'Quick Shortcuts',
+        noResults: 'No results for',
+        navigation: 'Navigation',
+        settings: 'Settings',
+        hints: {
+            navigate: 'navigate',
+            select: 'select',
+            close: 'close',
+        }
     },
 
     // ────────────────────────────────────────────────────────────────

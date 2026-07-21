@@ -3,7 +3,7 @@ import { Head } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import SettingsLayout from '../Layouts/SettingsLayout.vue';
 import SettingsCard from '@/Components/Settings/SettingsCard.vue';
-import SettingsBreadcrumb from '@/Components/Settings/SettingsBreadcrumb.vue';
+
 import { useI18n } from 'vue-i18n';
 import { ref, onMounted } from 'vue';
 
@@ -17,11 +17,6 @@ const saving = ref(false);
 const successMessage = ref('');
 const errorMessage = ref('');
 
-const breadcrumbs = [
-  { label: t('settings.title'), href: route('settings.index') },
-  { label: t('settings.ai.title') },
-  { label: t('settings.ai.memory.title') },
-];
 
 onMounted(() => {
   try {
@@ -64,9 +59,7 @@ const handleSave = () => {
           <h2 class="text-2xl font-black text-white tracking-tight leading-none">{{ t('settings.ai.memory.title') }}</h2>
           <p class="text-sm text-gray-400 mt-1.5 font-medium">{{ t('settings.ai.memory.description') }}</p>
         </div>
-        <div class="mt-2">
-          <SettingsBreadcrumb :breadcrumbs="breadcrumbs" />
-        </div>
+      
       </template>
 
       <!-- Messages -->

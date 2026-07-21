@@ -3,7 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\TransactionLog;
+use App\Models\TransactionDraft;
+use App\Models\Category;
 use App\Actions\ProcessTransactionAction;
+use App\Services\Chat\DraftConfirmationService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -156,10 +160,70 @@ class TransactionController extends Controller
     }
 
     /**
-     * Menampilkan form edit transaksi.
+     * Menampilkan form edit transaksi / draft.
      */
-    public function edit(TransactionLog $transaction): Response
+    public function edit(Request $request, $id): Response
     {
+        $user = Auth::user();
+        $isDraft = $request->boolean('is_draft') || $request->input('is_draft') === 'true';
+
+        // 1. Coba cari di transaction_drafts terlebih dahulu
+        $draft = null;
+        if ($isDraft) {
+            $draft = TransactionDraft::where('user_id', $user->id)
+                ->where('status', 'pending')
+                ->find($id);
+        }
+
+        if (!$draft && !$request->has('is_draft')) {
+            $draft = TransactionDraft::where('user_id', $user->id)
+                ->where('status', 'pending')
+                ->find($id);
+        }
+
+        if ($draft) {
+            $payload = $draft->payload ?? [];
+            
+            $catId = $payload['category_id'] ?? null;
+            $category = $catId ? Category::find($catId) : null;
+            $systemKey = $category ? $category->system_key : null;
+            
+            $debtSubType = null;
+            $typeKey = strtolower($payload['type_key'] ?? 'expense');
+            if (in_array($typeKey, ['debt', 'receivable'])) {
+                if ($systemKey === 'DEBT_PAYMENT' || $systemKey === 'RECEIVABLE') {
+                    $debtSubType = 'expense';
+                } else {
+                    $debtSubType = 'income';
+                }
+            }
+
+            // Map payload agar sesuai dengan format yang diharapkan Edit.vue
+            $mappedTransaction = [
+                'id' => $draft->id,
+                'is_draft' => true,
+                'amount' => (float) ($payload['amount'] ?? 0),
+                'notes' => $payload['notes'] ?? $draft->original_text,
+                'subject' => $payload['subject'] ?? '-',
+                'date' => $payload['date'] ?? $draft->created_at->toDateString(),
+                'category_id' => $payload['category_id'] ?? null,
+                'source_wallet_id' => $payload['source_wallet_id'] ?? null,
+                'destination_wallet_id' => $payload['destination_wallet_id'] ?? null,
+                'due_date' => $payload['due_date'] ?? null,
+                'due_date_type' => $payload['due_date_type'] ?? null,
+                'due_date_interval' => $payload['due_date_interval'] ?? null,
+                'transaction_type' => $typeKey,
+                'debt_sub_type' => $debtSubType,
+            ];
+
+            return Inertia::render('Transactions/Edit', array_merge(
+                ['transaction' => $mappedTransaction],
+                $this->getFormData()
+            ));
+        }
+
+        // 2. Kalau tidak ada di drafts, cari di transaction_logs
+        $transaction = $user->transactionLogs()->findOrFail($id);
         $this->authorizeOwnership($transaction);
 
         return Inertia::render('Transactions/Edit', array_merge(
@@ -169,10 +233,70 @@ class TransactionController extends Controller
     }
 
     /**
-     * Memperbarui transaksi yang sudah ada.
+     * Memperbarui transaksi yang sudah ada / memproses draft menjadi transaksi final.
      */
-    public function update(Request $request, TransactionLog $transaction, ProcessTransactionAction $action)
+    public function update(Request $request, $id, ProcessTransactionAction $action, DraftConfirmationService $draftService)
     {
+        $user = Auth::user();
+        $isDraft = $request->boolean('is_draft') || $request->input('is_draft') === 'true';
+
+        // 1. Coba cari di transaction_drafts terlebih dahulu
+        $draft = null;
+        if ($isDraft) {
+            $draft = TransactionDraft::where('user_id', $user->id)
+                ->where('status', 'pending')
+                ->find($id);
+        }
+
+        if (!$draft && !$request->has('is_draft')) {
+            $draft = TransactionDraft::where('user_id', $user->id)
+                ->where('status', 'pending')
+                ->find($id);
+        }
+
+        if ($draft) {
+            $validated = $this->validateTransaction($request);
+
+            try {
+                $transactionLog = DB::transaction(function () use ($draft, $user, $validated, $action) {
+                    // a. Insert ke transactions (buat TransactionLog via ProcessTransactionAction)
+                    // b. Update saldo wallet (otomatis dilakukan di ProcessTransactionAction::create)
+                    $log = $action->create([
+                        'date'                  => $validated['date'],
+                        'category_id'           => $validated['category_id'],
+                        'source_wallet_id'      => $validated['source_wallet_id'],
+                        'destination_wallet_id' => $validated['destination_wallet_id'],
+                        'amount'                => $validated['amount'],
+                        'subject'               => $validated['subject'] ?? $user->name,
+                        'notes'                 => $validated['notes'] ?? null,
+                        'transaction_type'      => $validated['transaction_type'] ?? null,
+                        'debt_sub_type'         => $validated['debt_sub_type'] ?? null,
+                        'due_date'              => $validated['due_date'] ?? null,
+                        'due_date_type'         => $validated['due_date_type'] ?? null,
+                        'due_date_interval'     => $validated['due_date_interval'] ?? null,
+                        'is_cleared'            => true, // langsung cleared / final
+                    ], $user->id, 'WEB');
+
+                    // c. Hapus/Tandai Draft selesai (confirmed)
+                    $draft->update([
+                        'status'                    => 'confirmed',
+                        'confirmed_transaction_ids' => [$log->id],
+                    ]);
+
+                    return $log;
+                });
+
+                // Sinkronkan riwayat chat
+                $draftService->syncChatHistoryAfterConfirm($user->id, $draft->id, $transactionLog);
+
+                return redirect()->route('dashboard')->with('success', 'Draft berhasil disimpan dan dikonfirmasi!');
+            } catch (\Exception $e) {
+                return back()->with('error', $e->getMessage());
+            }
+        }
+
+        // 2. Kalau tidak ada di drafts, cari di transaction_logs
+        $transaction = $user->transactionLogs()->findOrFail($id);
         $this->authorizeOwnership($transaction);
         $validated = $this->validateTransaction($request);
 
@@ -188,9 +312,36 @@ class TransactionController extends Controller
      * Mengkonfirmasi transaksi Draft menjadi transaksi terkonfirmasi.
      * Memutasi saldo dompet yang sebelumnya ditahan.
      */
-    public function confirm(TransactionLog $transaction, ProcessTransactionAction $action)
+    public function confirm(Request $request, $id, ProcessTransactionAction $action, DraftConfirmationService $draftService)
     {
-        $this->authorizeOwnership($transaction);
+        $user = Auth::user();
+        $isDraft = $request->boolean('is_draft') || $request->input('is_draft') === 'true';
+
+        // 1. Coba cari di transaction_drafts terlebih dahulu
+        $draft = null;
+        if ($isDraft) {
+            $draft = TransactionDraft::where('user_id', $user->id)
+                ->where('status', 'pending')
+                ->find($id);
+        }
+
+        if (!$draft && !$request->has('is_draft')) {
+            $draft = TransactionDraft::where('user_id', $user->id)
+                ->where('status', 'pending')
+                ->find($id);
+        }
+
+        if ($draft) {
+            try {
+                $draftService->confirm($draft, $user);
+                return back()->with('success', 'Draft berhasil dikonfirmasi!');
+            } catch (\Exception $e) {
+                return back()->with('error', $e->getMessage());
+            }
+        }
+
+        // 2. Kalau tidak ada di drafts, cari di transaction_logs (backward compat)
+        $transaction = $user->transactionLogs()->findOrFail($id);
 
         if ($transaction->is_cleared) {
             return back()->with('error', 'Transaksi ini sudah terkonfirmasi.');
@@ -205,10 +356,39 @@ class TransactionController extends Controller
     }
 
     /**
-     * Menghapus transaksi.
+     * Menghapus transaksi / membatalkan draft.
      */
-    public function destroy(TransactionLog $transaction, ProcessTransactionAction $action)
+    public function destroy(Request $request, $id, ProcessTransactionAction $action, DraftConfirmationService $draftService)
     {
+        $user = Auth::user();
+        $isDraft = $request->boolean('is_draft') || $request->input('is_draft') === 'true';
+
+        // 1. Coba cari di transaction_drafts terlebih dahulu
+        $draft = null;
+        if ($isDraft) {
+            $draft = TransactionDraft::where('user_id', $user->id)->find($id);
+        }
+
+        if (!$draft && !$request->has('is_draft')) {
+            $draft = TransactionDraft::where('user_id', $user->id)->find($id);
+        }
+
+        if ($draft) {
+            try {
+                DB::transaction(function () use ($draft, $user, $draftService) {
+                    // a. Panggil logic Batal di Chat (DraftConfirmationService::cancel) untuk sinkronisasi riwayat chat
+                    $draftService->cancel($draft, $user);
+                    // b. Hapus draft dari tabel transaction_drafts
+                    $draft->delete();
+                });
+                return redirect()->route('dashboard')->with('success', 'Draft berhasil dibatalkan dan dihapus!');
+            } catch (\Exception $e) {
+                return back()->with('error', $e->getMessage());
+            }
+        }
+
+        // 2. Kalau tidak ada di drafts, cari di transaction_logs
+        $transaction = $user->transactionLogs()->findOrFail($id);
         $this->authorizeOwnership($transaction);
 
         try {

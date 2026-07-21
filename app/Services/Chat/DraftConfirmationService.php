@@ -221,7 +221,7 @@ class DraftConfirmationService
      * - Ganti draft_id dengan transaction_id yang sebenarnya
      * - Tandai is_cleared = true, is_draft = false
      */
-    private function syncChatHistoryAfterConfirm(int $userId, int $draftId, \App\Models\TransactionLog $transaction): void
+    public function syncChatHistoryAfterConfirm(int $userId, int $draftId, \App\Models\TransactionLog $transaction): void
     {
         $typeKey = match (strtolower($transaction->type?->name ?? '')) {
             'income'             => 'income',

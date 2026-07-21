@@ -121,13 +121,13 @@ const transferErrors = ref({})
 
 const validateTransfer = () => {
     transferErrors.value = {}
-    if (!form.source_wallet_id)      transferErrors.value.source = 'Pilih dompet asal'
-    if (!form.destination_wallet_id) transferErrors.value.dest   = 'Pilih dompet tujuan'
+    if (!form.source_wallet_id)      transferErrors.value.source = t('transaction.validation.sourceRequired')
+    if (!form.destination_wallet_id) transferErrors.value.dest   = t('transaction.validation.destRequired')
     if (form.source_wallet_id && form.destination_wallet_id &&
         form.source_wallet_id === form.destination_wallet_id) {
-        transferErrors.value.same = 'Dompet asal dan tujuan tidak boleh sama'
+        transferErrors.value.same = t('transaction.validation.sameWallet')
     }
-    if (!form.amount || form.amount <= 0) transferErrors.value.amount = 'Nominal harus lebih dari 0'
+    if (!form.amount || form.amount <= 0) transferErrors.value.amount = t('transaction.validation.amountPositive')
     return Object.keys(transferErrors.value).length === 0
 }
 

@@ -7,11 +7,7 @@ import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 
-const breadcrumbs = [
-  { label: t('settings.title'), href: route('settings.index') },
-  { label: t('settings.finance.title') },
-  { label: t('settings.finance.wallets.title') },
-];
+
 </script>
 
 <template>
@@ -21,7 +17,6 @@ const breadcrumbs = [
     <SettingsLayout
       :title="t('settings.finance.wallets.title')"
       :description="t('settings.finance.wallets.description')"
-      :breadcrumbs="breadcrumbs"
     >
       <SettingsCard :title="t('settings.finance.wallets.title')" :description="t('settings.finance.wallets.description')">
         <div class="text-center py-8">

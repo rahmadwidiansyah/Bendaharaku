@@ -9,11 +9,6 @@ import { ref } from 'vue';
 const { t } = useI18n();
 const page = usePage();
 
-const breadcrumbs = [
-  { label: t('settings.title'), href: route('settings.index') },
-  { label: t('settings.account.title') },
-  { label: t('settings.account.security.title') },
-];
 
 interface SessionInfo {
   ip: string;
@@ -71,7 +66,7 @@ const handleUpdatePassword = () => {
     preserveScroll: true,
     onSuccess: () => {
       form.reset();
-      successMessage.value = t('profile.passwordUpdated', 'Password updated successfully.');
+      successMessage.value = t('profile.passwordUpdated');
       setTimeout(() => { successMessage.value = ''; }, 4000);
     },
     onError: () => {
@@ -91,7 +86,6 @@ const handleUpdatePassword = () => {
     <SettingsLayout
       :title="t('settings.account.security.title')"
       :description="t('settings.account.security.description')"
-      :breadcrumbs="breadcrumbs"
     >
       <!-- Success/Error Banners -->
       <div v-if="successMessage" class="mb-4 p-4 bg-green-500/20 border border-green-500/50 rounded-lg">

@@ -1,18 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import SettingsSidebar from '@/Components/Settings/SettingsSidebar.vue';
-import SettingsBreadcrumb from '@/Components/Settings/SettingsBreadcrumb.vue';
 import { useScrollRestore } from '@/Composables/useScrollRestore.js';
-
-interface Breadcrumb {
-  label: string;
-  href?: string;
-}
 
 interface Props {
   title?: string;
   description?: string;
-  breadcrumbs?: Breadcrumb[];
 }
 
 withDefaults(defineProps<Props>(), {
@@ -59,7 +52,7 @@ const closeSidebar = () => { isSidebarOpen.value = false; };
   -->
   <div class="flex flex-row w-full">
 
-    <!-- Mobile overlay backdrop -->
+    <!-- Mobile overlay backdrop (hanya saat sidebar drawer terbuka) -->
     <div
       v-if="isSidebarOpen && !isDesktop"
       class="fixed inset-0 bg-black/60 z-30 lg:hidden"
@@ -76,34 +69,21 @@ const closeSidebar = () => { isSidebarOpen.value = false; };
     <!-- Main content — tidak ada background sendiri, inherit dari AuthenticatedLayout -->
     <div class="flex-1 min-w-0 flex flex-col">
 
-      <!-- Mobile: breadcrumb + hamburger row -->
-      <div class="flex items-center gap-3 px-4 pt-4 pb-0 lg:hidden">
-        <!-- Hamburger menu untuk mobile sidebar -->
+      <!-- Mobile: hamburger (tanpa breadcrumb) untuk membuka drawer sidebar -->
+      <div class="flex items-center px-4 pt-4 pb-0 lg:hidden">
         <button
           @click="isSidebarOpen = true"
-          class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors shrink-0"
+          class="p-2 -ml-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
           aria-label="Open settings menu"
         >
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-
-        <!-- Breadcrumb -->
-        <SettingsBreadcrumb
-          v-if="breadcrumbs && breadcrumbs.length"
-          :breadcrumbs="breadcrumbs"
-          class="flex-1 min-w-0"
-        />
       </div>
 
-      <!-- Desktop: page title + breadcrumb -->
+      <!-- Desktop: page title (tanpa breadcrumb — sidebar sudah menunjukkan navigasi) -->
       <div v-if="title" class="hidden lg:block px-6 pt-6 pb-0">
-        <SettingsBreadcrumb
-          v-if="breadcrumbs && breadcrumbs.length"
-          :breadcrumbs="breadcrumbs"
-          class="mb-3"
-        />
         <h1 class="text-lg font-bold text-white leading-tight">{{ title }}</h1>
         <p v-if="description" class="text-sm text-gray-400 mt-1">{{ description }}</p>
       </div>

@@ -68,6 +68,7 @@ const close  = () => { isOpen.value = false }
                     aria-label="Catat via Telegram AI Bot"
                     class="pointer-events-auto w-full flex items-center gap-4 px-5 py-4 rounded-2xl active:scale-95 transition-transform"
                     style="background-color: #2AABEE; box-shadow: 0 8px 24px rgba(42,171,238,0.35);"
+                    >
                 >
                     <span class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(255,255,255,0.2);">
                         <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -98,8 +99,7 @@ const close  = () => { isOpen.value = false }
                     :href="route('transactions.create')"
                     @click="close"
                     aria-label="Catat transaksi manual"
-                    class="pointer-events-auto w-full flex items-center gap-4 px-5 py-4 rounded-2xl active:scale-95 transition-transform"
-                    style="background: linear-gradient(135deg, #7c3aed, #4f46e5); box-shadow: 0 8px 24px rgba(124,58,237,0.35);"
+                    class="pointer-events-auto w-full flex items-center gap-4 px-5 py-4 rounded-2xl active:scale-95 transition-transform bg-gradient-to-br from-purple-700 to-purple-500 shadow-lg shadow-purple-500/30"
                 >
                     <span class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(255,255,255,0.2);">
                         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5" aria-hidden="true">
@@ -125,9 +125,9 @@ const close  = () => { isOpen.value = false }
             aria-haspopup="true"
             :aria-label="isOpen ? 'Tutup menu catat transaksi' : 'Catat transaksi'"
             class="pointer-events-auto w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl relative overflow-hidden active:scale-95 transition-transform focus:outline-none"
-            :style="isOpen
-                ? 'background: #1f2937; border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 4px 16px rgba(0,0,0,0.4);'
-                : 'background: linear-gradient(135deg, #9333ea 0%, #7c3aed 50%, #4f46e5 100%); box-shadow: 0 8px 32px rgba(124,58,237,0.5); border: 1px solid rgba(167,139,250,0.2);'"
+            :class="isOpen
+                ? 'bg-gray-800 border border-white/10 shadow-lg shadow-black/40'
+                : 'bg-gradient-to-br from-purple-700 via-purple-600 to-purple-500 shadow-lg shadow-purple-500/40 border border-purple-300/20'"
         >
             <!-- Shimmer sweep (hanya saat closed) -->
             <span

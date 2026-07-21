@@ -35,20 +35,21 @@ const selectedIndex = ref(-1)
 // ── Flatten settings menu ─────────────────────────────────────────
 const flatMenu = computed(() => {
     const out = []
-    const walk = (node) => {
+    const walk = (node, catId = null) => {
         if (!node) return
         if (node.route) {
             out.push({
                 id: node.id,
+                catId: catId,
                 label: node.label,
                 description: node.description || '',
                 route: node.route,
                 icon: node.icon || null,
             })
         }
-        if (node.submenu?.length) node.submenu.forEach((c) => walk(c))
+        if (node.submenu?.length) node.submenu.forEach((c) => walk(c, catId || node.id))
     }
-    settingsMenuTree.forEach((c) => walk(c))
+    settingsMenuTree.forEach((c) => walk(c, c.id))
     return out
 })
 
@@ -62,6 +63,42 @@ const quickLinks = [
     { label: 'Pengaturan', route: 'settings.index', icon: 'settings', description: 'Semua pengaturan' },
 ]
 
+const getTransLabel = (item) => {
+    if (item.category === 'Navigasi') {
+        const map = {
+            'dashboard': 'nav.home',
+            'wallets.index': 'nav.asset',
+            'transactions.index': 'nav.record',
+            'analytics.index': 'nav.analytics',
+            'chat.index': 'nav.telegram',
+            'settings.index': 'nav.settings',
+        }
+        return map[item.route] ? t(map[item.route]) : item.label
+    } else {
+        const key = `settings.${item.catId}.${item.id}.title`
+        const val = t(key)
+        return val !== key ? val : item.label
+    }
+}
+
+const getTransDesc = (item) => {
+    if (item.category === 'Navigasi') {
+        const map = {
+            'dashboard': 'nav.homeDesc',
+            'wallets.index': 'nav.assetDesc',
+            'transactions.index': 'nav.recordDesc',
+            'analytics.index': 'nav.analyticsDesc',
+            'chat.index': 'nav.chatDesc',
+            'settings.index': 'nav.settingsDesc',
+        }
+        return map[item.route] && t(map[item.route]) !== map[item.route] ? t(map[item.route]) : item.description
+    } else {
+        const key = `settings.${item.catId}.${item.id}.description`
+        const val = t(key)
+        return val !== key ? val : item.description
+    }
+}
+
 // ── Search results ────────────────────────────────────────────────
 const searchResults = computed(() => {
     const q = query.value.trim().toLowerCase()
@@ -74,8 +111,8 @@ const searchResults = computed(() => {
 
     return allItems.filter(
         (item) =>
-            item.label.toLowerCase().includes(q) ||
-            (item.description || '').toLowerCase().includes(q)
+            getTransLabel(item).toLowerCase().includes(q) ||
+            getTransDesc(item).toLowerCase().includes(q)
     ).slice(0, 10)
 })
 
@@ -200,7 +237,7 @@ const getIconPath = (icon) => iconMap[icon] || iconMap.search
                             ref="searchInput"
                             v-model="query"
                             type="search"
-                            placeholder="Cari menu, pengaturan, halaman…"
+                            :placeholder="t('search.placeholder')"
                             class="flex-1 bg-transparent text-white text-base placeholder-gray-500 outline-none caret-purple-400"
                             autocomplete="off"
                             autocorrect="off"
@@ -212,7 +249,7 @@ const getIconPath = (icon) => iconMap[icon] || iconMap.search
                             v-if="query"
                             type="button"
                             class="shrink-0 w-6 h-6 rounded-full bg-gray-700 flex items-center justify-center hover:bg-gray-600 transition-colors"
-                            aria-label="Hapus pencarian"
+                            :aria-label="t('search.clear')"
                             @click="query = ''"
                         >
                             <svg class="w-3 h-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
@@ -239,7 +276,7 @@ const getIconPath = (icon) => iconMap[icon] || iconMap.search
                             <!-- Section label -->
                             <div class="px-4 pt-3 pb-1">
                                 <p class="text-2xs font-bold text-gray-500 uppercase tracking-widest">
-                                    {{ query.trim() ? 'Hasil Pencarian' : 'Pintasan Cepat' }}
+                                    {{ query.trim() ? t('search.results') : t('search.shortcuts') }}
                                 </p>
                             </div>
 
@@ -281,10 +318,10 @@ const getIconPath = (icon) => iconMap[icon] || iconMap.search
                                         <div class="flex-1 min-w-0">
                                             <p class="text-sm font-semibold text-gray-200 truncate group-hover:text-white transition-colors"
                                                :class="selectedIndex === idx ? 'text-white' : ''">
-                                                {{ item.label }}
+                                                {{ getTransLabel(item) }}
                                             </p>
                                             <p v-if="item.description" class="text-2xs text-gray-500 truncate mt-0.5">
-                                                {{ item.description }}
+                                                {{ getTransDesc(item) }}
                                             </p>
                                         </div>
 
@@ -293,7 +330,7 @@ const getIconPath = (icon) => iconMap[icon] || iconMap.search
                                             v-if="query.trim() && item.category"
                                             class="shrink-0 text-2xs text-gray-600 font-semibold"
                                         >
-                                            {{ item.category }}
+                                            {{ item.category === 'Navigasi' ? t('search.navigation') : t('search.settings') }}
                                         </span>
 
                                         <!-- Arrow -->
@@ -314,22 +351,22 @@ const getIconPath = (icon) => iconMap[icon] || iconMap.search
 
                             <!-- No results -->
                             <div v-if="query.trim() && searchResults.length === 0" class="px-4 py-6 text-center">
-                                <p class="text-sm text-gray-500">Tidak ada hasil untuk "<span class="text-gray-300">{{ query }}</span>"</p>
+                                <p class="text-sm text-gray-500">{{ t('search.noResults') }} "<span class="text-gray-300">{{ query }}</span>"</p>
                             </div>
 
                             <!-- Footer hint -->
                             <div class="px-4 py-2 border-t border-white/5 flex items-center gap-4">
                                 <div class="flex items-center gap-1.5 text-gray-600 text-2xs">
                                     <kbd class="px-1.5 py-0.5 rounded bg-gray-800 border border-white/10 font-mono">↑↓</kbd>
-                                    <span>navigasi</span>
+                                    <span>{{ t('search.hints.navigate') }}</span>
                                 </div>
                                 <div class="flex items-center gap-1.5 text-gray-600 text-2xs">
                                     <kbd class="px-1.5 py-0.5 rounded bg-gray-800 border border-white/10 font-mono">↵</kbd>
-                                    <span>pilih</span>
+                                    <span>{{ t('search.hints.select') }}</span>
                                 </div>
                                 <div class="flex items-center gap-1.5 text-gray-600 text-2xs ml-auto">
                                     <kbd class="px-1.5 py-0.5 rounded bg-gray-800 border border-white/10 font-mono">ESC</kbd>
-                                    <span>tutup</span>
+                                    <span>{{ t('search.hints.close') }}</span>
                                 </div>
                             </div>
                         </div>

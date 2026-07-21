@@ -86,16 +86,12 @@ class ChatApplicationService
             'length'   => strlen($text),
         ]);
 
-        // ── Command handling (Web platform) ───────────────────────
-        // TelegramAdapter menangani command sebelum memanggil service ini.
-        // Web platform tidak punya layer tersebut, jadi kita handle di sini.
+        // ── Command handling (Unified platform-agnostic) ─────────
         // Command seperti /help, /saldo, dll tidak perlu melewati AI orchestrator.
-        // Guard: HANYA jalankan untuk Web — Telegram sudah handle sendiri.
-        if ($context->platform === \App\Enums\ChatPlatform::Web) {
-            $commandResponse = $this->handleWebCommand($text, $user, $context, $startTime);
-            if ($commandResponse !== null) {
-                return $commandResponse;
-            }
+        // Dijalankan untuk semua platform (Web, Telegram, dll) agar response konsisten.
+        $commandResponse = $this->handleCommand($text, $user, $context, $startTime);
+        if ($commandResponse !== null) {
+            return $commandResponse;
         }
 
         try {
@@ -567,18 +563,15 @@ class ChatApplicationService
      *
      * Dipanggil sebelum orchestrator. Jika bukan command, return null agar
      * alur normal tetap berjalan.
-     *
-     * Platform Web tidak punya layer handleCommand sendiri (berbeda dengan
-     * TelegramAdapter), sehingga command perlu ditangkap di sini.
      */
-    private function handleWebCommand(
+    private function handleCommand(
         string      $text,
         \App\Models\User $user,
         ChatContext $context,
         float       $startTime,
     ): ?ChatResponse {
         $lower = strtolower(trim($text));
-        $command = $this->normalizeWebCommand($lower);
+        $command = $this->normalizeCommand($lower);
 
         // Bukan command → lanjut ke orchestrator
         if ($command === null && !in_array($lower, ['hai', 'halo', 'hello', 'hi', 'ping', 'p', 'tes', 'test', 'help', 'tolong'])) {
@@ -626,6 +619,10 @@ class ChatApplicationService
             return $this->buildMonthlyReportResponse($user, $metadata, $text);
         }
 
+        if ($command === '/web') {
+            return $this->buildWebLinkResponse($locale, $metadata);
+        }
+
         // /help, /start, greeting, ping
         if (in_array($command ?? $lower, ['/help', '/start', 'hai', 'halo', 'hello', 'hi', 'ping', 'p', 'tes', 'test', 'help', 'tolong'])) {
             return $this->buildHelpResponse($user, $locale, $metadata);
@@ -648,7 +645,7 @@ class ChatApplicationService
         return null;
     }
 
-    private function normalizeWebCommand(string $lower): ?string
+    private function normalizeCommand(string $lower): ?string
     {
         $command = strtok($lower, " \t\n\r\0\x0B") ?: $lower;
 
@@ -663,6 +660,7 @@ class ChatApplicationService
             '/laporan', 'laporan' => '/laporan',
             '/ringkasan', 'ringkasan' => '/ringkasan',
             '/help', 'help', '/start' => $command,
+            '/web', 'web' => '/web',
             default => str_starts_with($command, '/') ? $command : null,
         };
     }
@@ -1345,52 +1343,78 @@ class ChatApplicationService
 
     private function buildHelpResponse(\App\Models\User $user, string $locale, array $metadata): ChatResponse
     {
+        $platform = $metadata['platform'] ?? 'web';
+        $registry = new ChatCommandRegistry();
+        $commands = $registry->forPlatform($platform, includeHidden: false);
+
+        $components = [
+            // Sapaan & intro
+            new TextComponent(
+                translationKey: 'chat.command.help_greeting',
+                params: ['name' => $user->name],
+                bold: true,
+            ),
+            new TextComponent(translationKey: 'chat.command.help_intro'),
+            new DividerComponent(),
+
+            // Panduan catat transaksi
+            new TextComponent(translationKey: 'chat.command.help_guide', bold: true),
+            new TextComponent(translationKey: 'chat.command.help_example_intro'),
+            new DividerComponent(),
+
+            // Contoh-contoh transaksi sebagai chip yang bisa diklik
+            new \App\Chat\Components\SuggestionComponent(
+                messageKey: 'chat.command.help_example_expense',
+                params: [],
+                actionUrl: null,
+            ),
+            new \App\Chat\Components\SuggestionComponent(
+                messageKey: 'chat.command.help_example_income',
+                params: [],
+                actionUrl: null,
+            ),
+            new \App\Chat\Components\SuggestionComponent(
+                messageKey: 'chat.command.help_example_transfer',
+                params: [],
+                actionUrl: null,
+            ),
+            new \App\Chat\Components\SuggestionComponent(
+                messageKey: 'chat.command.help_example_debt',
+                params: [],
+                actionUrl: null,
+            ),
+            new DividerComponent(),
+
+            // Daftar perintah bot
+            new TextComponent(translationKey: 'chat.command.help_commands_title', bold: true),
+        ];
+
+        foreach ($commands as $cmd) {
+            $components[] = new TextComponent(
+                translationKey: 'chat.command.help_cmd_template',
+                params: [
+                    'icon'        => $cmd['icon'],
+                    'command'     => $cmd['command'],
+                    'description' => trans($cmd['description'], [], $locale),
+                ],
+            );
+        }
+
         return ChatResponse::command(
-            components: [
-                // Sapaan & intro
-                new TextComponent(
-                    translationKey: 'chat.command.help_greeting',
-                    params: ['name' => $user->name],
-                    bold: true,
-                ),
-                new TextComponent(translationKey: 'chat.command.help_intro'),
-                new DividerComponent(),
-
-                // Panduan catat transaksi
-                new TextComponent(translationKey: 'chat.command.help_guide', bold: true),
-                new TextComponent(translationKey: 'chat.command.help_example_intro'),
-                new DividerComponent(),
-
-                // Contoh-contoh transaksi sebagai chip yang bisa diklik
-                new \App\Chat\Components\SuggestionComponent(
-                    messageKey: 'chat.command.help_example_expense',
-                    params: [],
-                    actionUrl: null,
-                ),
-                new \App\Chat\Components\SuggestionComponent(
-                    messageKey: 'chat.command.help_example_income',
-                    params: [],
-                    actionUrl: null,
-                ),
-                new \App\Chat\Components\SuggestionComponent(
-                    messageKey: 'chat.command.help_example_transfer',
-                    params: [],
-                    actionUrl: null,
-                ),
-                new \App\Chat\Components\SuggestionComponent(
-                    messageKey: 'chat.command.help_example_debt',
-                    params: [],
-                    actionUrl: null,
-                ),
-                new DividerComponent(),
-
-                // Daftar perintah bot
-                new TextComponent(translationKey: 'chat.command.help_commands_title', bold: true),
-                new TextComponent(translationKey: 'chat.command.help_cmd_balance'),
-                new TextComponent(translationKey: 'chat.command.help_cmd_help'),
-            ],
+            components: $components,
             metadata: $metadata,
         );
+    }
+
+    private function buildWebLinkResponse(string $locale, array $metadata): ChatResponse
+    {
+        $appUrl = config('app.url', 'https://bendaharaku.widihhh.my.id');
+        return ChatResponse::command([
+            new TextComponent(
+                translationKey: 'chat.command.web_link_msg',
+                params: ['url' => $appUrl],
+            ),
+        ], $metadata);
     }
 
     private function buildComparisonMetrics(array|\Illuminate\Support\Collection $currentMetrics, ?MonthlyReport $previousReport = null): ?array

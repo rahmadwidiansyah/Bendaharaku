@@ -13,11 +13,7 @@ const props = withDefaults(defineProps<{
   appVersion: '1.0.0',
 });
 
-const breadcrumbs = [
-  { label: t('settings.title'), href: route('settings.index') },
-  { label: t('settings.system.title') },
-  { label: t('settings.system.about.title') },
-];
+
 </script>
 
 <template>
@@ -27,7 +23,6 @@ const breadcrumbs = [
     <SettingsLayout
       :title="t('settings.system.about.title')"
       :description="t('settings.system.about.description')"
-      :breadcrumbs="breadcrumbs"
     >
       <SettingsCard :title="t('settings.system.about.app_name')" :description="t('settings.system.about.app_description')">
         <div class="space-y-4">

@@ -3,8 +3,10 @@ import { Head, useForm, router } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import SettingsLayout from '../Layouts/SettingsLayout.vue';
 import SettingsCard from '@/Components/Settings/SettingsCard.vue';
-import SettingsBreadcrumb from '@/Components/Settings/SettingsBreadcrumb.vue';
+import ImageCropModal from '@/Components/ImageCropModal.vue';
+
 import { useI18n } from 'vue-i18n';
+import ConfirmationDialog from '@/Components/ConfirmationDialog.vue';
 import { ref, onMounted } from 'vue';
 
 const { t } = useI18n();
@@ -26,28 +28,24 @@ const form = useForm({
 });
 
 const previewFile = ref<string | null>(null);
+const showCropModal = ref(false);
 const saveStatus = ref('');
 
 const suggestedNames = ['Ken-Chan', 'Kira', 'Nova', 'Aria', 'Zara', 'Luna', 'Rex', 'Byte', 'Sage', 'Echo'];
 
-const breadcrumbs = [
-  { label: t('settings.title'), href: route('settings.index') },
-  { label: t('settings.ai.title') },
-  { label: t('settings.ai.bot.title') },
-];
 
-const handleAvatarUpload = (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  const file = target.files?.[0];
-  
-  if (file) {
-    form.bot_avatar = file;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      previewFile.value = e.target?.result as string;
-    };
-    reader.readAsDataURL(file);
-  }
+const openCropModal = () => {
+  showCropModal.value = true;
+};
+
+const handleCropped = (blob: Blob) => {
+  const file = new File([blob], 'bot-avatar.webp', { type: blob.type });
+  form.bot_avatar = file;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    previewFile.value = e.target?.result as string;
+  };
+  reader.readAsDataURL(blob);
 };
 
 const saveBotSettings = () => {
@@ -66,18 +64,23 @@ const saveBotSettings = () => {
   });
 };
 
+const showDeleteAvatarConfirm = ref(false);
+
 const deleteBotAvatar = () => {
-  if (confirm('Are you sure you want to remove the bot avatar?')) {
-    router.delete(route('settings.chat.bot-avatar.destroy'), {
-      preserveScroll: true,
-      onSuccess: () => {
-        previewFile.value = null;
-        form.bot_avatar = null;
-        saveStatus.value = 'saved';
-        setTimeout(() => (saveStatus.value = ''), 3000);
-      }
-    });
-  }
+  showDeleteAvatarConfirm.value = true;
+};
+
+const confirmDeleteBotAvatar = () => {
+  router.delete(route('settings.chat.bot-avatar.destroy'), {
+    preserveScroll: true,
+    onSuccess: () => {
+      showDeleteAvatarConfirm.value = false;
+      previewFile.value = null;
+      form.bot_avatar = null;
+      saveStatus.value = 'saved';
+      setTimeout(() => (saveStatus.value = ''), 3000);
+    }
+  });
 };
 </script>
 
@@ -91,9 +94,7 @@ const deleteBotAvatar = () => {
           <h2 class="text-2xl font-black text-white tracking-tight leading-none">{{ t('settings.ai.bot.title') }}</h2>
           <p class="text-sm text-gray-400 mt-1.5 font-medium">{{ t('settings.ai.bot.description') }}</p>
         </div>
-        <div class="mt-2">
-          <SettingsBreadcrumb :breadcrumbs="breadcrumbs" />
-        </div>
+      
       </template>
 
       <!-- Messages -->
@@ -123,19 +124,15 @@ const deleteBotAvatar = () => {
             </div>
             
             <div class="flex flex-col gap-2">
-              <!-- Upload Button -->
-              <label class="cursor-pointer text-center">
-                <div class="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors">
-                  {{ t('settings.ai.bot.avatar.upload_button') }}
-                </div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  @change="handleAvatarUpload"
-                  class="hidden"
-                />
-              </label>
-              
+              <!-- Upload Button → buka crop modal -->
+              <button
+                type="button"
+                @click="openCropModal"
+                class="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors"
+              >
+                {{ t('settings.ai.bot.avatar.upload_button') }}
+              </button>
+
               <!-- Remove Button -->
               <button
                 v-if="botAvatar || previewFile"
@@ -206,5 +203,28 @@ const deleteBotAvatar = () => {
         </p>
       </div>
     </SettingsLayout>
+
+    <!-- Confirm Delete Avatar -->
+    <ConfirmationDialog
+      :show="showDeleteAvatarConfirm"
+      title="Hapus Avatar Bot?"
+      message="Apakah kamu yakin ingin menghapus avatar bot?"
+      :confirm-text="t('btn.delete')"
+      :cancel-text="t('common.cancel')"
+      variant="danger"
+      @close="showDeleteAvatarConfirm = false"
+      @confirm="confirmDeleteBotAvatar"
+    />
+
+    <!-- Image Crop Modal -->
+    <ImageCropModal
+      v-model="showCropModal"
+      :title="t('settings.ai.bot.avatar.upload_button')"
+      :aspectRatio="1"
+      :circle="true"
+      :maxSizeKb="800"
+      outputFormat="image/webp"
+      @cropped="handleCropped"
+    />
   </AuthenticatedLayout>
 </template>

@@ -28,11 +28,6 @@ const saving = ref(false);
 const successMessage = ref('');
 const errorMessage = ref('');
 
-const breadcrumbs = [
-  { label: t('settings.title'), href: route('settings.index') },
-  { label: t('settings.finance.title') },
-  { label: t('settings.finance.defaults.title') },
-];
 
 onMounted(() => {
   defaultWallet.value = localStorage.getItem('default_wallet') || (availableWallets.value[0]?.id?.toString() || '');
@@ -75,7 +70,6 @@ const handleSave = async () => {
     <SettingsLayout
       :title="t('settings.finance.defaults.title')"
       :description="t('settings.finance.defaults.description')"
-      :breadcrumbs="breadcrumbs"
     >
       <!-- Messages -->
       <div v-if="successMessage" class="mb-4 p-4 bg-green-500/20 border border-green-500/50 rounded-lg">

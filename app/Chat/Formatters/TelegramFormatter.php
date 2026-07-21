@@ -14,6 +14,7 @@ use App\Chat\Components\ErrorComponent;
 use App\Chat\Components\WarningComponent;
 use App\Chat\Components\SuggestionComponent;
 use App\Chat\Components\QuickReplyComponent;
+use App\Chat\Components\ReportSectionComponent;
 use App\Chat\DTOs\ChatResponse;
 use App\Chat\DTOs\ChatContext;
 use App\Chat\Errors\ErrorDetail;
@@ -78,6 +79,7 @@ class TelegramFormatter implements ChatFormatterInterface
             'error'            => $this->renderErrorComponent($component, $locale),
             'warning'          => $this->renderWarning($component, $locale),
             'suggestion'       => $this->renderSuggestion($component, $locale),
+            'report_section'   => $this->renderReportSection($component, $locale),
             'quick_reply'      => null, // Telegram quick reply = Reply Keyboard, handled by Adapter
             default            => null,
         };
@@ -178,6 +180,78 @@ class TelegramFormatter implements ChatFormatterInterface
     {
         $text = trans($c->messageKey, $c->params, $locale);
         return "💡 {$text}";
+    }
+
+    private function renderReportSection(ReportSectionComponent $c, string $locale): string
+    {
+        $title = $c->title ?: ($c->translationKey ? trans($c->translationKey, [], $locale) : '');
+        $emoji = $c->emoji ? $c->emoji . ' ' : '';
+        $header = "{$emoji}*{$title}*";
+
+        if (empty($c->items)) {
+            return $header;
+        }
+
+        $lines = [$header];
+
+        $isSaldoOrWallet = str_contains(strtolower($c->translationKey ?? ''), 'balance')
+            || str_contains(strtolower($c->translationKey ?? ''), 'saldo')
+            || str_contains(strtolower($c->translationKey ?? ''), 'wallet');
+
+        if ($isSaldoOrWallet) {
+            $walletData = [];
+            $maxNameLen = 0;
+            $maxBalLen  = 0;
+
+            foreach ($c->items as $item) {
+                if (str_contains($item, ':')) {
+                    $parts = explode(':', $item, 2);
+                    $name = trim($parts[0]);
+                    $balStr = trim($parts[1]);
+                } elseif (str_contains($item, ' — ')) {
+                    $parts = explode(' — ', $item, 2);
+                    $balStr = trim($parts[0]);
+                    $name = trim($parts[1]);
+                } else {
+                    $name = $item;
+                    $balStr = '';
+                }
+
+                $nameUpper = strtoupper($name);
+                if (strlen($nameUpper) > $maxNameLen) {
+                    $maxNameLen = strlen($nameUpper);
+                }
+                if (strlen($balStr) > $maxBalLen) {
+                    $maxBalLen = strlen($balStr);
+                }
+                $walletData[] = ['name' => $nameUpper, 'balStr' => $balStr];
+            }
+
+            if ($maxNameLen > 0) {
+                $textMsg = "```text\n";
+                foreach ($walletData as $wd) {
+                    if ($wd['balStr'] !== '') {
+                        $textMsg .= str_pad($wd['name'], $maxNameLen, ' ', STR_PAD_RIGHT)
+                            . ': '
+                            . str_pad($wd['balStr'], $maxBalLen, ' ', STR_PAD_LEFT) . "\n";
+                    } else {
+                        $textMsg .= $wd['name'] . "\n";
+                    }
+                }
+                $textMsg .= "```";
+                $lines[] = $textMsg;
+            } else {
+                foreach ($c->items as $item) {
+                    $lines[] = "▫️ {$item}";
+                }
+            }
+        } else {
+            foreach ($c->items as $item) {
+                $lines[] = "▫️ {$item}";
+            }
+        }
+
+        return implode("\n", $lines);
     }
 
     /**

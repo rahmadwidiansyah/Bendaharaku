@@ -13,6 +13,7 @@ import { useClipboard }  from '@/Composables/useClipboard.js'
 import { Link } from '@inertiajs/vue3'
 import axios from 'axios'
 import { useI18n } from 'vue-i18n'
+import ConfirmationDialog from '@/Components/ConfirmationDialog.vue'
 
 const { t, locale } = useI18n()
 
@@ -27,6 +28,7 @@ const emit = defineEmits(['update:modelValue', 'deleted'])
 function close() { emit('update:modelValue', false) }
 
 const isDeleting = ref(false)
+const showDeleteConfirm = ref(false)
 
 // Accordion
 const openAccordion = ref(null)
@@ -114,15 +116,20 @@ const parseStatus = computed(() =>
 
 const jsonMeta = computed(() => JSON.stringify(props.metadata ?? {}, null, 2))
 
-async function deleteTransaction() {
+function deleteTransaction() {
     if (!props.transaction?.id || isDeleting.value) return
-    if (!window.confirm(t('chatTransaction.confirmDelete'))) return
+    showDeleteConfirm.value = true
+}
+
+async function confirmDeleteTransaction() {
+    if (!props.transaction?.id || isDeleting.value) return
 
     isDeleting.value = true
     try {
         const { data } = await axios.delete(route('chat.transaction.cancel', { id: props.transaction.id }))
         if (data.success) {
             emit('deleted')
+            showDeleteConfirm.value = false
             close()
         }
     } catch (e) {
@@ -350,4 +357,16 @@ async function deleteTransaction() {
             </div>
         </Transition>
     </Teleport>
+
+    <ConfirmationDialog
+        :show="showDeleteConfirm"
+        title="Konfirmasi Hapus"
+        :message="t('chatTransaction.confirmDelete')"
+        :confirm-text="t('btn.delete')"
+        :cancel-text="t('common.cancel')"
+        variant="danger"
+        :loading="isDeleting"
+        @close="showDeleteConfirm = false"
+        @confirm="confirmDeleteTransaction"
+    />
 </template>

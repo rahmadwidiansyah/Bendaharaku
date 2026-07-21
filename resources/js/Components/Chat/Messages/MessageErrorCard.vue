@@ -1,5 +1,8 @@
 <script setup>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
     component: { type: Object, required: true },
@@ -18,7 +21,7 @@ const config = computed(() => isWarning.value ? { text: 'text-amber-300', raw: '
         <div class="flex-1 min-w-0">
             <!-- Index label -->
             <p v-if="component.index !== null && component.index !== undefined"
-                class="text-2xs font-bold text-gray-600 mb-1">Item #{{ component.index }}</p>
+                class="text-2xs font-bold text-gray-600 mb-1">{{ t('chat.errorItem') }}{{ component.index }}</p>
 
             <!-- Raw input -->
             <p v-if="component.raw" :class="['text-xs font-mono mb-1 truncate', config.raw]">

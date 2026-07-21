@@ -4,13 +4,10 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import SettingsLayout from './Layouts/SettingsLayout.vue';
 import { useI18n } from 'vue-i18n';
 import { computed, ref } from 'vue';
-import { useScrollRestore } from '@/Composables/useScrollRestore.js';
 
 const { t } = useI18n();
 const page = usePage();
 const user = computed(() => (page.props.auth as any)?.user ?? {});
-
-useScrollRestore('settings-index');
 
 const isUrl = (url: string) => url && (url.startsWith('http://') || url.startsWith('https://'));
 const avatarSrc = computed(() => {
