@@ -164,16 +164,17 @@ export function useTransactionForm(form, props, options = {}) {
         allWallets.value.find(w => w.id == form.destination_wallet_id)
     )
 
-    // Visibilitas dompet berdasarkan tipe (relevan untuk Edit)
+    // Resolved category object based on current category_id
     const selectedCategory = computed(() =>
         (props.categories ?? []).find(c => c.id === form.category_id)
     )
 
+    // ─── Visibility computed (untuk Edit — mana wallet yang perlu ditampilkan) ──
     const showSourceWallet = computed(() => {
         if (activeType.value === 'Income') return false
         if (['Debt', 'Receivable'].includes(activeType.value)) {
-            const name = selectedCategory.value?.category_name
-            if (name === 'Dapat Hutangan' || name === 'Terima Bayar Piutang') return false
+            const key = selectedCategory.value?.system_key
+            if (key === 'LOAN' || key === 'RECEIVABLE_PAYMENT') return false
         }
         return true
     })
@@ -181,8 +182,8 @@ export function useTransactionForm(form, props, options = {}) {
     const showDestWallet = computed(() => {
         if (activeType.value === 'Expense') return false
         if (['Debt', 'Receivable'].includes(activeType.value)) {
-            const name = selectedCategory.value?.category_name
-            if (name === 'Bayar Cicilan Hutang' || name === 'Ngasih Piutang') return false
+            const key = selectedCategory.value?.system_key
+            if (key === 'DEBT_PAYMENT' || key === 'RECEIVABLE') return false
         }
         return true
     })
@@ -199,11 +200,11 @@ export function useTransactionForm(form, props, options = {}) {
     const activeCategories = computed(() => {
         let cats = (props.categories ?? []).filter(cat => cat.type.name === activeType.value)
         if (activeType.value === 'Debt') {
-            if (debtSubTab.value === 'expense') cats = cats.filter(c => c.category_name === 'Bayar Cicilan Hutang')
-            else                                cats = cats.filter(c => c.category_name === 'Dapat Hutangan')
+            if (debtSubTab.value === 'expense') cats = cats.filter(c => c.system_key === 'DEBT_PAYMENT')
+            else                                cats = cats.filter(c => c.system_key === 'LOAN')
         } else if (activeType.value === 'Receivable') {
-            if (debtSubTab.value === 'expense') cats = cats.filter(c => c.category_name === 'Ngasih Piutang')
-            else                                cats = cats.filter(c => c.category_name === 'Terima Bayar Piutang')
+            if (debtSubTab.value === 'expense') cats = cats.filter(c => c.system_key === 'RECEIVABLE')
+            else                                cats = cats.filter(c => c.system_key === 'RECEIVABLE_PAYMENT')
         }
         return cats
     })
@@ -274,14 +275,15 @@ export function useTransactionForm(form, props, options = {}) {
         let filteredCats = (props.categories ?? []).filter(cat => cat.type.name === type)
 
         if (['Debt', 'Receivable'].includes(type) && filteredCats.length > 0) {
-            let targetCatName = ''
+            // Lookup by system_key — tidak bergantung pada category_name yang bisa diubah user
+            let targetSystemKey = ''
             if (type === 'Debt') {
-                targetCatName = debtSubTab.value === 'expense' ? 'Bayar Cicilan Hutang' : 'Dapat Hutangan'
+                targetSystemKey = debtSubTab.value === 'expense' ? 'DEBT_PAYMENT' : 'LOAN'
             } else {
-                targetCatName = debtSubTab.value === 'expense' ? 'Ngasih Piutang' : 'Terima Bayar Piutang'
+                targetSystemKey = debtSubTab.value === 'expense' ? 'RECEIVABLE' : 'RECEIVABLE_PAYMENT'
             }
 
-            const cat = filteredCats.find(c => c.category_name === targetCatName)
+            const cat = filteredCats.find(c => c.system_key === targetSystemKey)
             if (cat) {
                 form.category_id = cat.id
                 form.clearErrors('category_id')
@@ -292,17 +294,21 @@ export function useTransactionForm(form, props, options = {}) {
 
             if (type === 'Debt') {
                 if (debtSubTab.value === 'expense') {
+                    // Bayar hutang: dompet user → system hutang
                     form.source_wallet_id      = lastSource || null
                     form.destination_wallet_id = syH?.id ?? null
                 } else {
+                    // Dapat hutang: system hutang → dompet user
                     form.source_wallet_id      = syH?.id ?? null
                     form.destination_wallet_id = lastDest || null
                 }
             } else {
                 if (debtSubTab.value === 'expense') {
+                    // Kasih piutang: dompet user → system piutang
                     form.source_wallet_id      = lastSource || null
                     form.destination_wallet_id = syP?.id ?? null
                 } else {
+                    // Terima bayar piutang: system piutang → dompet user
                     form.source_wallet_id      = syP?.id ?? null
                     form.destination_wallet_id = lastDest || null
                 }

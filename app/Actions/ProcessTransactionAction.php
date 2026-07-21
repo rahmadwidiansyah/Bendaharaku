@@ -33,12 +33,16 @@ class ProcessTransactionAction
         return DB::transaction(function () use ($data, $userId, $sourcePrefix) {
             $user = User::findOrFail($userId);
 
-            // Transfer tidak memiliki kategori user — resolve Transfer system category
-            $isTransfer = strtolower($data['transaction_type'] ?? '') === 'transfer'
-                       || empty($data['category_id']);
+            // Resolve kategori: Transfer, Debt, Receivable menggunakan system category otomatis.
+            // Category_id dari form bisa null untuk tipe-tipe tersebut karena sudah ditentukan sistem.
+            $type = strtolower($data['transaction_type'] ?? '');
 
-            if ($isTransfer) {
+            if ($type === 'transfer' || ($type !== 'debt' && $type !== 'receivable' && empty($data['category_id']))) {
                 $category = $this->resolveTransferCategory($userId);
+            } elseif (in_array($type, ['debt', 'receivable'])) {
+                // Debt/Receivable: auto-resolve dari system_key berdasarkan debt_sub_type
+                $subType = $data['debt_sub_type'] ?? null;
+                $category = $this->resolveSystemCategory($userId, $type, $subType, $data['category_id'] ?? null);
             } else {
                 $category = Category::where('user_id', $userId)->where('id', $data['category_id'])->firstOrFail();
             }
@@ -101,12 +105,14 @@ class ProcessTransactionAction
         return DB::transaction(function () use ($transaction, $data, $userId) {
             $user = User::findOrFail($userId);
 
-            // Transfer tidak memiliki kategori user — resolve Transfer system category
-            $isTransfer = strtolower($data['transaction_type'] ?? '') === 'transfer'
-                       || empty($data['category_id']);
+            // Resolve kategori — sama dengan create()
+            $type = strtolower($data['transaction_type'] ?? '');
 
-            if ($isTransfer) {
+            if ($type === 'transfer' || ($type !== 'debt' && $type !== 'receivable' && empty($data['category_id']))) {
                 $newCategory = $this->resolveTransferCategory($userId);
+            } elseif (in_array($type, ['debt', 'receivable'])) {
+                $subType = $data['debt_sub_type'] ?? null;
+                $newCategory = $this->resolveSystemCategory($userId, $type, $subType, $data['category_id'] ?? null);
             } else {
                 $newCategory = Category::where('user_id', $userId)->where('id', $data['category_id'])->firstOrFail();
             }
@@ -161,6 +167,7 @@ class ProcessTransactionAction
     /**
      * Mengkonfirmasi transaksi Draft menjadi transaksi terkonfirmasi.
      * Memutasi saldo dompet yang sebelumnya ditahan karena status draft.
+     * Membersihkan tag [DRAFT AI] dan varian sejenis dari field notes.
      */
     public function confirm(TransactionLog $transaction): TransactionLog
     {
@@ -180,9 +187,21 @@ class ProcessTransactionAction
             $mainWallet   = ($source->group_type !== 'System') ? $source : $destination;
             $balanceAfter = Wallet::where('id', $mainWallet->id)->value('balance');
 
+            // Bersihkan semua tag draft dari notes agar transaksi final tidak
+            // menampilkan artefak draft seperti "[DRAFT AI]" atau "[DRAFT AI: wallet belum dipilih]"
+            $cleanNotes = $transaction->notes !== null
+                ? trim(preg_replace('/\s*\[DRAFT AI[^\]]*\]/u', '', $transaction->notes))
+                : null;
+
+            // Normalkan string kosong menjadi null
+            if ($cleanNotes === '') {
+                $cleanNotes = null;
+            }
+
             $transaction->update([
-                'is_cleared'     => true,
-                'balance_after'  => $balanceAfter,
+                'is_cleared'    => true,
+                'balance_after' => $balanceAfter,
+                'notes'         => $cleanNotes,
             ]);
 
             return $transaction;
@@ -226,10 +245,16 @@ class ProcessTransactionAction
             ]);
         }
 
-        // Cari kategori Transfer yang sudah ada milik user
+        // Cari kategori Transfer yang sudah ada milik user (TRANSFER system_key lebih diutamakan)
         $category = Category::where('user_id', $userId)
-            ->where('type_id', $transferType->id)
+            ->where('system_key', 'TRANSFER')
             ->first();
+
+        if (!$category) {
+            $category = Category::where('user_id', $userId)
+                ->where('type_id', $transferType->id)
+                ->first();
+        }
 
         // Fallback: buat jika belum ada (user baru / belum di-seed)
         if (!$category) {
@@ -240,10 +265,61 @@ class ProcessTransactionAction
                 'icon'          => '🔄',
                 'keyword'       => 'trf, transfer',
                 'is_active'     => true,
+                'system_key'    => 'TRANSFER',
             ]);
         }
 
         return $category;
+    }
+
+    /**
+     * Resolve kategori sistem untuk Debt dan Receivable berdasarkan system_key.
+     *
+     * Prioritas:
+     * 1. Jika category_id dari form sudah terisi, gunakan langsung (validasi milik user).
+     * 2. Jika tidak, resolve berdasarkan system_key menggunakan debt_sub_type.
+     *
+     * Mapping system_key:
+     *   Debt:
+     *     sub_type = 'loan' / 'income'  → system_key = LOAN (Dapat Hutangan)
+     *     sub_type = 'payment' / 'expense' → system_key = DEBT_PAYMENT (Bayar Hutang)
+     *   Receivable:
+     *     sub_type = 'give' / 'expense'  → system_key = RECEIVABLE (Kasih Piutang)
+     *     sub_type = 'receive' / 'income' → system_key = RECEIVABLE_PAYMENT (Terima Bayar Piutang)
+     */
+    private function resolveSystemCategory(int $userId, string $type, ?string $subType, ?int $categoryId): Category
+    {
+        // Jika form sudah mengirim category_id yang valid, gunakan itu
+        if (!empty($categoryId)) {
+            $cat = Category::where('user_id', $userId)->where('id', $categoryId)->first();
+            if ($cat) return $cat;
+        }
+
+        // Tentukan system_key berdasarkan tipe dan sub-tipe
+        $systemKey = match (true) {
+            $type === 'debt' && in_array($subType, ['loan', 'income', null])      => 'LOAN',
+            $type === 'debt' && in_array($subType, ['payment', 'expense'])         => 'DEBT_PAYMENT',
+            $type === 'receivable' && in_array($subType, ['give', 'expense'])      => 'RECEIVABLE',
+            $type === 'receivable' && in_array($subType, ['receive', 'income'])    => 'RECEIVABLE_PAYMENT',
+            // Default fallbacks
+            $type === 'debt'       => 'LOAN',
+            $type === 'receivable' => 'RECEIVABLE',
+            default                => null,
+        };
+
+        if ($systemKey !== null) {
+            $cat = Category::where('user_id', $userId)->where('system_key', $systemKey)->first();
+            if ($cat) return $cat;
+        }
+
+        // Last resort: ambil kategori pertama dari tipe tersebut
+        $transactionType = \App\Models\TransactionType::where('name', ucfirst($type))->first();
+        if ($transactionType) {
+            $cat = Category::where('user_id', $userId)->where('type_id', $transactionType->id)->first();
+            if ($cat) return $cat;
+        }
+
+        throw new InvalidArgumentException("Kategori sistem untuk tipe '{$type}' tidak ditemukan.");
     }
 
     /**

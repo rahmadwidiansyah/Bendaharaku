@@ -2,7 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import AmountKeypad from '@/Components/AmountKeypad.vue'
 import { Head, useForm, router, Link } from '@inertiajs/vue3'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useLayoutPreference } from '@/Composables/useLayoutPreference'
 import { useTransactionForm } from '@/Composables/useTransactionForm.js'
@@ -27,6 +27,7 @@ const form = useForm({
     subject: '-',
     notes: '',
     transaction_type: null,
+    debt_sub_type: null,
     due_date: null,
     due_date_type: null,
     due_date_interval: null,
@@ -71,12 +72,25 @@ const confirmType = (tab) => {
     setMainTab(tab)
     typeConfirmed.value = true
     form.transaction_type = tab.toLowerCase()
+    // Set debt_sub_type: 'income' = dapat hutang / terima piutang, 'expense' = bayar hutang / kasih piutang
+    if (['Debt', 'Receivable'].includes(tab)) {
+        form.debt_sub_type = debtSubTab.value  // 'income' or 'expense'
+    } else {
+        form.debt_sub_type = null
+    }
     // Transfer langsung ke step 2 (form lengkap), tipe lain tetap ke step 2 (kategori)
     formStep.value = 2
-    if (tab !== 'Transfer') {
+    if (!['Transfer', 'Debt', 'Receivable'].includes(tab)) {
         form.category_id = null
     }
 }
+
+// Sync debt_sub_type saat user ganti sub-tab (Dapat Hutang ↔ Bayar Hutang)
+watch(debtSubTab, (val) => {
+    if (['Debt', 'Receivable'].includes(mainTab.value)) {
+        form.debt_sub_type = val
+    }
+})
 
 const confirmCategory = () => {
     if (!form.category_id && !['Transfer', 'Debt', 'Receivable'].includes(mainTab.value)) return
@@ -93,7 +107,9 @@ const resetToStep = (step) => {
         showBottomPanel.value = false
     }
     if (step <= 2) {
-        form.category_id = null
+        if (!['Transfer', 'Debt', 'Receivable'].includes(mainTab.value)) {
+            form.category_id = null
+        }
         showBottomPanel.value = false
     }
 }

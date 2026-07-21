@@ -49,6 +49,11 @@ class User extends Authenticatable
         return $this->hasMany(TransactionLog::class);
     }
 
+    public function transactionDrafts(): HasMany
+    {
+        return $this->hasMany(TransactionDraft::class);
+    }
+
     public function aiCredentials(): HasMany
     {
         return $this->hasMany(UserAiCredential::class);
@@ -157,23 +162,24 @@ class User extends Authenticatable
                     'category_name' => 'Pindah Saldo', 
                     'type_id' => $transferType->id, 
                     'icon' => '🔄', 
-                    'keyword' => 'transfer, pindah uang, mutasi, pindah saldo'
+                    'keyword' => 'transfer, pindah uang, pindahkan saldo, kirim saldo, kirim uang, pindah semua saldo, transfer semua saldo, mutasi, pindah saldo',
+                    'system_key' => 'TRANSFER',
                 ]);
             }
 
             // 4. Buatkan Kategori Khusus Hutang (Debt)
             if ($debtType) {
                 $user->categories()->createMany([
-                    ['category_name' => 'Dapat Hutangan', 'type_id' => $debtType->id, 'icon' => '📥', 'keyword' => 'dapat hutangan, ngutang, pinjam duit, ditalangin, kasbon, pinjol, minjem uang, pinjam uang, dapet pinjeman'],
-                    ['category_name' => 'Bayar Cicilan Hutang', 'type_id' => $debtType->id, 'icon' => '💸', 'keyword' => 'bayar utang, bayar hutang, lunasin, nyicil, cicilan, balikin duit, balikin uang, ganti duit, nutup utang, bayar kasbon, bayar pinjol'],
+                    ['category_name' => 'Dapat Hutangan', 'type_id' => $debtType->id, 'icon' => '📥', 'keyword' => 'dapat hutangan, ngutang, pinjam duit, ditalangin, kasbon, pinjol, minjem uang, pinjam uang, dapet pinjeman, hutang, utang, pinjam, minjam, pinjem, berhutang, berutang', 'system_key' => 'LOAN'],
+                    ['category_name' => 'Bayar Cicilan Hutang', 'type_id' => $debtType->id, 'icon' => '💸', 'keyword' => 'bayar utang, bayar hutang, lunasin, nyicil, cicilan, balikin duit, balikin uang, ganti duit, nutup utang, bayar kasbon, bayar pinjol, lunasi hutang, lunasin utang, balikin pinjaman, melunasi pinjaman, kembalikan hutang', 'system_key' => 'DEBT_PAYMENT'],
                 ]);
             }
 
             // 5. Buatkan Kategori Khusus Piutang (Receivable)
             if ($receivableType) {
                 $user->categories()->createMany([
-                    ['category_name' => 'Ngasih Piutang', 'type_id' => $receivableType->id, 'icon' => '📤', 'keyword' => 'ngasih piutang, minjemin, ngutangin, dipinjem, dipinjam, nalangin, kasih utang, pinjemin, ngasih pinjaman'],
-                    ['category_name' => 'Terima Bayar Piutang', 'type_id' => $receivableType->id, 'icon' => '🤑', 'keyword' => 'terima bayar piutang, dibayar, utang dibayar, utang lunas, ditagih, nagih utang, teman balikin, uang kembali, pelunasan teman, piutang dibayar'],
+                    ['category_name' => 'Ngasih Piutang', 'type_id' => $receivableType->id, 'icon' => '📤', 'keyword' => 'ngasih piutang, minjemin, ngutangin, dipinjem, dipinjam, nalangin, kasih utang, pinjemin, ngasih pinjaman, kasih pinjam, meminjamkan, memberi pinjaman', 'system_key' => 'RECEIVABLE'],
+                    ['category_name' => 'Terima Bayar Piutang', 'type_id' => $receivableType->id, 'icon' => '🤑', 'keyword' => 'terima bayar piutang, dibayar, utang dibayar, utang lunas, ditagih, nagih utang, teman balikin, uang kembali, pelunasan teman, piutang dibayar, dibayar hutang, dibayar utang, balikin uang, balikin pinjaman, mengembalikan pinjaman, menerima pembayaran hutang, menerima pembayaran piutang', 'system_key' => 'RECEIVABLE_PAYMENT'],
                 ]);
             }
 

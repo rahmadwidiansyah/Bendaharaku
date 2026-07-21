@@ -123,7 +123,14 @@ class ChatTransactionOrchestratorTest extends TestCase
 
         // Assert Transaksi Disimpan sebagai Draft
         $this->assertTrue($result['success']);
-        $this->assertFalse($result['transaction']->is_cleared); // Wajib False!
+        $this->assertTrue($result['is_web_draft']);
+        $this->assertNotNull($result['draft']);
+        $this->assertEquals('pending', $result['draft']->status);
+        $this->assertDatabaseHas('transaction_drafts', [
+            'user_id' => $this->user->id,
+            'status' => 'pending',
+        ]);
+        $this->assertDatabaseCount('transaction_logs', 0);
         
         // Assert Saldo AMAN (Tetap 100.000)
         $this->assertEquals(100000, $this->sourceWallet->fresh()->balance);

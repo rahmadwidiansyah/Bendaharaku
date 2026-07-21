@@ -26,6 +26,7 @@ class WalletController extends Controller
         $totalPiutang = 0;
 
         $subjectGroups = $user->transactionLogs()->with('category')
+            ->where('is_cleared', true)
             ->whereHas('category', function($q) {
                 $q->whereIn('category_name', ['Dapat Hutangan', 'Bayar Cicilan Hutang', 'Ngasih Piutang', 'Terima Bayar Piutang']);
             })

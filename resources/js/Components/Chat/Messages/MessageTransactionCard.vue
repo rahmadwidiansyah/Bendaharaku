@@ -29,6 +29,18 @@ watch(trx, (newVal) => {
     }
 }, { deep: true })
 
+/**
+ * ID yang digunakan untuk API calls.
+ * - Jika transaksi masih draft (is_draft=true), gunakan draft_id
+ * - Jika sudah dikonfirmasi / bukan draft, gunakan transaction_log id (backward compat)
+ */
+const apiId = computed(() => {
+    if (props.component.is_draft && localTrx.value.draft_id) {
+        return localTrx.value.draft_id
+    }
+    return localTrx.value.id
+})
+
 const typeConfig = computed(() => ({
     income:   { label: t('types.income'),      icon: '↑', color: 'text-emerald-400', bg: 'bg-emerald-500/8',  border: 'border-emerald-500/15', badge: 'bg-emerald-500/12 text-emerald-300 border-emerald-500/20' },
     expense:  { label: t('types.expense'),     icon: '↓', color: 'text-red-400',     bg: 'bg-red-500/8',      border: 'border-red-500/15',     badge: 'bg-red-500/12 text-red-300 border-red-500/20' },
@@ -62,15 +74,39 @@ function markCancelled() {
 }
 
 async function checkStatus() {
-    if (!localTrx.value.id || localTrx.value.is_cancelled) return
+    if (!apiId.value || localTrx.value.is_cancelled) return
 
     try {
-        const { data } = await axios.get(route('chat.transaction.status', { id: localTrx.value.id }))
-        if (data.exists === false) {
-            markCancelled()
-            return
+        const routeName = props.component.is_draft ? 'chat.draft.status' : 'chat.transaction.status'
+        const { data } = await axios.get(route(routeName, { id: apiId.value }))
+        if (props.component.is_draft) {
+            if (data.exists === false) {
+                markCancelled()
+                return
+            }
+            if (data.draft) {
+                if (data.draft.is_cleared && !data.draft.is_draft) {
+                    applyTransactionPatch({
+                        ...data.draft,
+                        id: data.draft.id,
+                        draft_id: null,
+                        is_draft: false,
+                        is_cleared: true,
+                    })
+                    isConfirmed.value = true
+                } else if (data.draft.is_cancelled) {
+                    markCancelled()
+                } else {
+                    applyTransactionPatch(data.draft)
+                }
+            }
+        } else {
+            if (data.exists === false) {
+                markCancelled()
+                return
+            }
+            if (data.transaction) applyTransactionPatch(data.transaction)
         }
-        if (data.transaction) applyTransactionPatch(data.transaction)
     } catch (e) {
         if (e.response?.status === 404) markCancelled()
     }
@@ -80,7 +116,7 @@ async function assignWallet({ walletId }) {
     isAssigning.value = true
     try {
         const { data } = await axios.patch(
-            route('chat.transaction.assign-wallet', { id: localTrx.value.id }),
+            route('chat.transaction.assign-wallet', { id: apiId.value }),
             { wallet_id: walletId }
         )
         if (data.success) {
@@ -97,9 +133,16 @@ async function assignWallet({ walletId }) {
 
 async function confirmDraft() {
     try {
-        const { data } = await axios.patch(route('chat.transaction.confirm', { id: localTrx.value.id }))
+        const { data } = await axios.patch(route('chat.transaction.confirm', { id: apiId.value }))
         if (data.success && data.transaction) {
-            applyTransactionPatch(data.transaction)
+            // Update localTrx: tandai sebagai confirmed dan ganti draft_id dengan transaction_log id
+            applyTransactionPatch({
+                ...data.transaction,
+                id:        data.transaction.id,   // real transaction_log id dari server
+                draft_id:  undefined,             // hapus draft_id, sudah tidak relevan
+                is_draft:  false,
+                is_cleared: true,
+            })
             isConfirmed.value = true
         }
     } catch (e) {
@@ -110,7 +153,7 @@ async function confirmDraft() {
 
 async function cancelDraft() {
     try {
-        const { data } = await axios.delete(route('chat.transaction.cancel', { id: localTrx.value.id }))
+        const { data } = await axios.delete(route('chat.transaction.cancel', { id: apiId.value }))
         if (data.success) markCancelled()
     } catch (e) {
         if (e.response?.status === 404) markCancelled()

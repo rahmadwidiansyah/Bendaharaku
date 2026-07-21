@@ -22,6 +22,8 @@ use App\Enums\ChatIntent;
 use App\Models\MonthlyReport;
 use App\Models\UserAiCredential;
 use App\Models\Wallet;
+use App\Models\Category;
+use App\Models\TransactionType;
 use App\Services\Chat\ChatTransactionOrchestrator;
 use App\DTO\MultiTransactionResult;
 use App\DTO\MultiTransactionItem;
@@ -179,6 +181,14 @@ class ChatApplicationService
         array       $metadata,
         string      $originalText,
     ): ChatResponse {
+        // ── WEB Draft path ─────────────────────────────────────────
+        // Saat source WEB, orchestrator menyimpan ke transaction_drafts dan
+        // mengembalikan is_web_draft=true dengan objek TransactionDraft di 'draft'.
+        if (!empty($result['is_web_draft'])) {
+            return $this->convertWebDraftSuccess($result, $context, $metadata);
+        }
+
+        // ── Transaction Log path (non-WEB atau WEB lama) ───────────
         $trx        = $result['transaction'];
         $isCleared  = $trx->is_cleared;
         $locale     = $context->locale;
@@ -217,6 +227,145 @@ class ChatApplicationService
         }
 
         return ChatResponse::draft($components, $metadata);
+    }
+
+    /**
+     * Konversi hasil WEB Draft (is_web_draft = true) ke ChatResponse.
+     *
+     * Draft tersimpan di transaction_drafts. Frontend akan menerima draft_id
+     * (bukan transaction_log id) agar bisa memanggil endpoint /chat/draft/{id}/...
+     */
+    private function convertWebDraftSuccess(
+        array       $result,
+        ChatContext $context,
+        array       $metadata,
+    ): ChatResponse {
+        /** @var \App\Models\TransactionDraft $draft */
+        $draft   = $result['draft'];
+        $payload = $draft->payload ?? [];
+        $locale  = $context->locale;
+
+        // Buat TransactionLog sementara (tidak disimpan) hanya untuk TransactionCardComponent.
+        // Ini adalah "view model" — data dari payload draft diformat sebagai TransactionLog
+        // agar WebFormatter dapat menggunakan logika rendering yang sudah ada.
+        $fakeTrx = $this->buildFakeTransactionFromPayload($payload);
+
+        $needsWallet = (bool) ($payload['needs_wallet'] ?? false);
+
+        $components = [];
+
+        // Kartu transaksi — pakai draftId agar WebFormatter mengirim draft_id ke frontend
+        $components[] = new TransactionCardComponent(
+            transaction: $fakeTrx,
+            showDetails: true,
+            draftId: $draft->id,
+        );
+
+        if ($needsWallet) {
+            $components[] = new WarningComponent(
+                messageKey: 'chat.wallet.missing_choose',
+            );
+        }
+
+        // Divider + footer AI
+        $components[] = new DividerComponent();
+        $components[] = new TextComponent(
+            translationKey: 'chat.transaction.label_original_msg',
+        );
+        $components[] = new TextComponent(
+            translationKey: 'chat.transaction.label_ai_provider',
+            params: [
+                'provider'   => $metadata['provider'] ?? '',
+                'confidence' => isset($metadata['confidence'])
+                    ? round($metadata['confidence'] * 100) . '%'
+                    : '-',
+            ],
+        );
+
+        return ChatResponse::draft($components, $metadata);
+    }
+
+    /**
+     * Bangun TransactionLog palsu (tidak disimpan ke DB) dari payload draft.
+     * Digunakan hanya sebagai "view model" untuk TransactionCardComponent.
+     *
+     * Mengisi relasi sourceWallet, destinationWallet, category, type
+     * berdasarkan ID di payload agar WebFormatter bisa membaca nama wallet/kategori.
+     */
+    private function buildFakeTransactionFromPayload(array $payload): \App\Models\TransactionLog
+    {
+        $fakeTrx = new \App\Models\TransactionLog();
+        $fakeTrx->amount     = $payload['amount'] ?? 0;
+        $fakeTrx->is_cleared = false;
+        $fakeTrx->subject    = $payload['subject'] ?? null;
+        $fakeTrx->notes      = $payload['notes'] ?? null;
+        $fakeTrx->date       = isset($payload['date'])
+            ? \Illuminate\Support\Carbon::parse($payload['date'])
+            : now();
+
+        // Isi relasi dari payload (nama sudah tersimpan di payload)
+        // Gunakan accessor agar tidak perlu query DB lagi
+        if (isset($payload['source_wallet_name']) || isset($payload['source_wallet_id'])) {
+            $sourceWallet = new \App\Models\Wallet();
+            $sourceWallet->id         = $payload['source_wallet_id'] ?? null;
+            $sourceWallet->name       = $payload['source_wallet_name'] ?? null;
+            $sourceWallet->group_type = $this->resolveWalletGroupType($payload, 'source');
+            $fakeTrx->setRelation('sourceWallet', $sourceWallet);
+        }
+
+        if (isset($payload['destination_wallet_name']) || isset($payload['destination_wallet_id'])) {
+            $destWallet = new \App\Models\Wallet();
+            $destWallet->id         = $payload['destination_wallet_id'] ?? null;
+            $destWallet->name       = $payload['destination_wallet_name'] ?? null;
+            $destWallet->group_type = $this->resolveWalletGroupType($payload, 'destination');
+            $fakeTrx->setRelation('destinationWallet', $destWallet);
+        }
+
+        if (isset($payload['category_name'])) {
+            $category = new \App\Models\Category();
+            $category->id            = $payload['category_id'] ?? null;
+            $category->category_name = $payload['category_name'];
+            $fakeTrx->setRelation('category', $category);
+        }
+
+        // Set type dari type_key
+        $typeKey = $payload['type_key'] ?? 'expense';
+        $typeName = match ($typeKey) {
+            'income'   => 'Income',
+            'expense'  => 'Expense',
+            'transfer' => 'Transfer',
+            'debt'     => 'Debt',
+            default    => 'Expense',
+        };
+        $type = new \App\Models\TransactionType();
+        $type->name = $typeName;
+        $fakeTrx->setRelation('type', $type);
+
+        return $fakeTrx;
+    }
+
+    /**
+     * Tentukan group_type wallet berdasarkan payload.
+     * Digunakan untuk menentukan needs_wallet logic di WebFormatter.
+     *
+     * Jika wallet adalah External atau Merchant, group_type = 'System'.
+     * Frontend menggunakan ini untuk menentukan apakah perlu wallet picker.
+     */
+    private function resolveWalletGroupType(array $payload, string $side): string
+    {
+        $name = $side === 'source'
+            ? ($payload['source_wallet_name'] ?? '')
+            : ($payload['destination_wallet_name'] ?? '');
+
+        $nameLower = strtolower((string) $name);
+
+        if (str_contains($nameLower, 'external')
+            || str_contains($nameLower, 'merchant')
+            || str_contains($nameLower, 'system')) {
+            return 'System';
+        }
+
+        return 'Liquid';
     }
 
     /**
@@ -259,11 +408,25 @@ class ChatApplicationService
         foreach ($multiResult->results as $item) {
             /** @var MultiTransactionItem $item */
             if ($item->isSuccess()) {
-                $components[] = new TransactionCardComponent(
-                    transaction: $item->transaction,
-                    index:       $item->index,
-                    showDetails: false,
-                );
+                if ($item->isDraft()) {
+                    // WEB Draft item: bangun fake TransactionLog dari draft payload
+                    $draft   = $item->draft;
+                    $payload = $draft->payload ?? [];
+                    $fakeTrx = $this->buildFakeTransactionFromPayload($payload);
+
+                    $components[] = new TransactionCardComponent(
+                        transaction: $fakeTrx,
+                        index:       $item->index,
+                        showDetails: false,
+                        draftId:     $draft->id,
+                    );
+                } else {
+                    $components[] = new TransactionCardComponent(
+                        transaction: $item->transaction,
+                        index:       $item->index,
+                        showDetails: false,
+                    );
+                }
             } else {
                 // Error per-item sebagai ErrorComponent (inline dalam list)
                 $components[] = new ErrorComponent(
