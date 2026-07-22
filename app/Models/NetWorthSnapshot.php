@@ -21,5 +21,8 @@ class NetWorthSnapshot extends Model
         'net_worth' => 'float',
     ];
 
-    public function user(): BelongsTo { return $this->belongsTo(User::class); }
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 }

@@ -16,7 +16,7 @@ readonly class WarningComponent implements ChatComponentInterface
 {
     public function __construct(
         public string $messageKey,
-        public array  $params = [],
+        public array $params = [],
     ) {}
 
     public function type(): string
@@ -27,9 +27,9 @@ readonly class WarningComponent implements ChatComponentInterface
     public function toArray(): array
     {
         return [
-            'type'        => $this->type(),
+            'type' => $this->type(),
             'message_key' => $this->messageKey,
-            'params'      => $this->params,
+            'params' => $this->params,
         ];
     }
 }

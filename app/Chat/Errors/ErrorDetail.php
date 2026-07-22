@@ -26,14 +26,14 @@ use App\Enums\ChatErrorSeverity;
 readonly class ErrorDetail
 {
     public function __construct(
-        public string            $code,
-        public string            $messageKey,
-        public array             $params      = [],
-        public ?string           $field       = null,
-        public ?string           $rawValue    = null,
-        public ?string           $suggestion  = null,
-        public ChatErrorSeverity $severity    = ChatErrorSeverity::Error,
-        public bool              $recoverable = true,
+        public string $code,
+        public string $messageKey,
+        public array $params = [],
+        public ?string $field = null,
+        public ?string $rawValue = null,
+        public ?string $suggestion = null,
+        public ChatErrorSeverity $severity = ChatErrorSeverity::Error,
+        public bool $recoverable = true,
     ) {}
 
     // ── Named constructors untuk kasus umum ──────────────────────
@@ -41,12 +41,12 @@ readonly class ErrorDetail
     public static function walletNotFound(string $name): self
     {
         return new self(
-            code:        'WALLET_NOT_FOUND',
-            messageKey:  'chat.wallet.not_found',
-            params:      ['name' => $name],
-            rawValue:    $name,
-            suggestion:  'chat.suggestion.add_wallet',
-            severity:    ChatErrorSeverity::Error,
+            code: 'WALLET_NOT_FOUND',
+            messageKey: 'chat.wallet.not_found',
+            params: ['name' => $name],
+            rawValue: $name,
+            suggestion: 'chat.suggestion.add_wallet',
+            severity: ChatErrorSeverity::Error,
             recoverable: true,
         );
     }
@@ -54,12 +54,12 @@ readonly class ErrorDetail
     public static function categoryNotFound(string $name): self
     {
         return new self(
-            code:        'CATEGORY_NOT_FOUND',
-            messageKey:  'chat.category.not_found',
-            params:      ['name' => $name],
-            rawValue:    $name,
-            suggestion:  'chat.suggestion.add_category',
-            severity:    ChatErrorSeverity::Error,
+            code: 'CATEGORY_NOT_FOUND',
+            messageKey: 'chat.category.not_found',
+            params: ['name' => $name],
+            rawValue: $name,
+            suggestion: 'chat.suggestion.add_category',
+            severity: ChatErrorSeverity::Error,
             recoverable: true,
         );
     }
@@ -67,9 +67,9 @@ readonly class ErrorDetail
     public static function invalidAmount(): self
     {
         return new self(
-            code:        'INVALID_AMOUNT',
-            messageKey:  'chat.validation.invalid_amount',
-            severity:    ChatErrorSeverity::Error,
+            code: 'INVALID_AMOUNT',
+            messageKey: 'chat.validation.invalid_amount',
+            severity: ChatErrorSeverity::Error,
             recoverable: true,
         );
     }
@@ -77,9 +77,9 @@ readonly class ErrorDetail
     public static function sameWallet(): self
     {
         return new self(
-            code:        'SAME_WALLET',
-            messageKey:  'chat.validation.same_wallet',
-            severity:    ChatErrorSeverity::Error,
+            code: 'SAME_WALLET',
+            messageKey: 'chat.validation.same_wallet',
+            severity: ChatErrorSeverity::Error,
             recoverable: true,
         );
     }
@@ -87,9 +87,9 @@ readonly class ErrorDetail
     public static function aiNotConfigured(): self
     {
         return new self(
-            code:        'AI_NOT_CONFIGURED',
-            messageKey:  'chat.ai.not_configured',
-            severity:    ChatErrorSeverity::Critical,
+            code: 'AI_NOT_CONFIGURED',
+            messageKey: 'chat.ai.not_configured',
+            severity: ChatErrorSeverity::Critical,
             recoverable: false,
         );
     }
@@ -97,10 +97,10 @@ readonly class ErrorDetail
     public static function aiRateLimit(string $provider): self
     {
         return new self(
-            code:        'AI_RATE_LIMIT',
-            messageKey:  'chat.ai.rate_limit',
-            params:      ['provider' => $provider],
-            severity:    ChatErrorSeverity::Warning,
+            code: 'AI_RATE_LIMIT',
+            messageKey: 'chat.ai.rate_limit',
+            params: ['provider' => $provider],
+            severity: ChatErrorSeverity::Warning,
             recoverable: true,
         );
     }
@@ -108,10 +108,10 @@ readonly class ErrorDetail
     public static function aiTimeout(string $provider): self
     {
         return new self(
-            code:        'AI_TIMEOUT',
-            messageKey:  'chat.ai.timeout',
-            params:      ['provider' => $provider],
-            severity:    ChatErrorSeverity::Warning,
+            code: 'AI_TIMEOUT',
+            messageKey: 'chat.ai.timeout',
+            params: ['provider' => $provider],
+            severity: ChatErrorSeverity::Warning,
             recoverable: true,
         );
     }
@@ -119,10 +119,10 @@ readonly class ErrorDetail
     public static function aiTokenLimit(string $provider, int $estimatedTokens): self
     {
         return new self(
-            code:        'AI_TOKEN_LIMIT',
-            messageKey:  'chat.ai.token_limit',
-            params:      ['provider' => $provider, 'tokens' => $estimatedTokens],
-            severity:    ChatErrorSeverity::Warning,
+            code: 'AI_TOKEN_LIMIT',
+            messageKey: 'chat.ai.token_limit',
+            params: ['provider' => $provider, 'tokens' => $estimatedTokens],
+            severity: ChatErrorSeverity::Warning,
             recoverable: true,
         );
     }
@@ -130,10 +130,10 @@ readonly class ErrorDetail
     public static function aiProviderError(string $provider, string $message): self
     {
         return new self(
-            code:        'AI_PROVIDER_ERROR',
-            messageKey:  'chat.ai.provider_error',
-            params:      ['provider' => $provider, 'error' => $message],
-            severity:    ChatErrorSeverity::Error,
+            code: 'AI_PROVIDER_ERROR',
+            messageKey: 'chat.ai.provider_error',
+            params: ['provider' => $provider, 'error' => $message],
+            severity: ChatErrorSeverity::Error,
             recoverable: false,
         );
     }
@@ -141,9 +141,9 @@ readonly class ErrorDetail
     public static function systemError(): self
     {
         return new self(
-            code:        'SYSTEM_ERROR',
-            messageKey:  'chat.error.system',
-            severity:    ChatErrorSeverity::Critical,
+            code: 'SYSTEM_ERROR',
+            messageKey: 'chat.error.system',
+            severity: ChatErrorSeverity::Critical,
             recoverable: false,
         );
     }
@@ -153,13 +153,13 @@ readonly class ErrorDetail
     public function toArray(): array
     {
         return [
-            'code'        => $this->code,
+            'code' => $this->code,
             'message_key' => $this->messageKey,
-            'params'      => $this->params,
-            'field'       => $this->field,
-            'raw_value'   => $this->rawValue,
-            'suggestion'  => $this->suggestion,
-            'severity'    => $this->severity->value,
+            'params' => $this->params,
+            'field' => $this->field,
+            'raw_value' => $this->rawValue,
+            'suggestion' => $this->suggestion,
+            'severity' => $this->severity->value,
             'recoverable' => $this->recoverable,
         ];
     }

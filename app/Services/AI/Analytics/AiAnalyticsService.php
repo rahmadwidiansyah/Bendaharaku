@@ -6,7 +6,6 @@ namespace App\Services\AI\Analytics;
 
 use App\Models\AiDailyMetric;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 class AiAnalyticsService
 {
@@ -26,12 +25,12 @@ class AiAnalyticsService
         $requests = (int) $metrics->requests;
 
         return [
-            'total_requests'  => $requests,
-            'success_rate'    => $requests > 0 ? round(($metrics->success / $requests) * 100, 2) : 0,
-            'draft_rate'      => $requests > 0 ? round(($metrics->drafts / $requests) * 100, 2) : 0,
+            'total_requests' => $requests,
+            'success_rate' => $requests > 0 ? round(($metrics->success / $requests) * 100, 2) : 0,
+            'draft_rate' => $requests > 0 ? round(($metrics->drafts / $requests) * 100, 2) : 0,
             'correction_rate' => $requests > 0 ? round(($metrics->corrections / $requests) * 100, 2) : 0,
-            'total_tokens'    => (int) $metrics->tokens,
-            'estimated_cost'  => (float) $metrics->cost,
+            'total_tokens' => (int) $metrics->tokens,
+            'estimated_cost' => (float) $metrics->cost,
         ];
     }
 

@@ -35,16 +35,16 @@ return [
         ],
     ],
     'google' => [
-    'client_id' => env('GOOGLE_CLIENT_ID'),
-    'client_secret' => env('GOOGLE_CLIENT_SECRET'),
-    'redirect' => env('GOOGLE_REDIRECT_URI'),
-],
-  'telegram' => [
-    'token' => env('TELEGRAM_BOT_TOKEN'),
-  ],
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI'),
+    ],
+    'telegram' => [
+        'token' => env('TELEGRAM_BOT_TOKEN'),
+    ],
 
-  'ai_parser' => [
-    'url' => env('AI_PARSER_URL', 'http://ai-parser:3987'),
-  ],
+    'ai_parser' => [
+        'url' => env('AI_PARSER_URL', 'http://ai-parser:3987'),
+    ],
 
 ];

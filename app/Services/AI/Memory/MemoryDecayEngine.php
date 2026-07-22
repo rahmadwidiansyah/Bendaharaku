@@ -15,13 +15,13 @@ class MemoryDecayEngine
     public function calculateDecayedWeight(float $currentWeight, Carbon $lastAppliedAt): float
     {
         $daysElapsed = Carbon::now()->diffInDays($lastAppliedAt);
-        
+
         if ($daysElapsed <= 0) {
             return $currentWeight;
         }
 
         $lambda = (float) config('bendaharaku.ai.memory.decay_rate', 0.05);
-        
+
         // $currentWeight * exp(-lambda * days)
         $decayedWeight = $currentWeight * exp(-$lambda * $daysElapsed);
 

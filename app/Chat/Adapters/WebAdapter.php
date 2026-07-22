@@ -10,10 +10,13 @@ use App\Chat\DTOs\ChatRequest;
 use App\Chat\DTOs\ChatResponse;
 use App\Chat\Formatters\WebFormatter;
 use App\Enums\ChatPlatform;
-use App\Models\User;
-use App\Models\Conversation;
 use App\Models\ChatMessage;
+use App\Models\Conversation;
+use App\Models\TransactionDraft;
 use App\Models\TransactionLog;
+use App\Models\User;
+use App\Support\MoneyFormatter;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -35,16 +38,16 @@ class WebAdapter
 {
     public function __construct(
         private readonly ChatApplicationService $chatService,
-        private readonly WebFormatter           $formatter,
+        private readonly WebFormatter $formatter,
     ) {}
 
     /**
      * Proses satu pesan dari Web Chat.
      *
-     * @param  User    $user          User yang mengirim pesan
-     * @param  string  $rawMessage    Teks mentah dari user
-     * @param  int|null $conversationId  ID conversation (null = gunakan/buat active)
-     * @return array   JSON-ready response
+     * @param  User  $user  User yang mengirim pesan
+     * @param  string  $rawMessage  Teks mentah dari user
+     * @param  int|null  $conversationId  ID conversation (null = gunakan/buat active)
+     * @return array JSON-ready response
      */
     public function handle(User $user, string $rawMessage, ?int $conversationId = null): array
     {
@@ -54,7 +57,7 @@ class WebAdapter
         $conversation = $this->resolveConversation($user, $conversationId);
 
         // 2. Resolve locale & timezone
-        $locale   = ChatContext::resolveLocale($user->locale, null);
+        $locale = ChatContext::resolveLocale($user->locale, null);
         $timezone = $user->timezone ?? 'Asia/Jakarta';
 
         // 3. Simpan pesan user ke DB SEBELUM memproses AI.
@@ -63,26 +66,26 @@ class WebAdapter
         //    conversation_id tetap valid di response.
         $userMessage = ChatMessage::create([
             'conversation_id' => $conversation->id,
-            'role'            => 'user',
-            'content'         => [['type' => 'text', 'text' => $rawMessage]],
-            'raw_text'        => $rawMessage,
-            'metadata'        => null,
+            'role' => 'user',
+            'content' => [['type' => 'text', 'text' => $rawMessage]],
+            'raw_text' => $rawMessage,
+            'metadata' => null,
         ]);
 
         // 4. Bangun ChatContext + ChatRequest
         $context = ChatContext::make(
-            platform:       ChatPlatform::Web,
+            platform: ChatPlatform::Web,
             conversationId: (string) $conversation->id,
-            locale:         $locale,
-            timezone:       $timezone,
-            sessionId:      (string) $conversation->id,
-            metadata:       ['web_message_id' => $userMessage->id],
+            locale: $locale,
+            timezone: $timezone,
+            sessionId: (string) $conversation->id,
+            metadata: ['web_message_id' => $userMessage->id],
         );
 
         $request = ChatRequest::make(
             rawMessage: $rawMessage,
-            user:       $user,
-            context:    $context,
+            user: $user,
+            context: $context,
         );
 
         // 5–7. Proses AI + simpan bot message.
@@ -92,63 +95,63 @@ class WebAdapter
         //      - conversationId frontend tidak jadi null
         //      - history tidak hilang saat user kembali ke halaman chat
         try {
-            $response  = $this->chatService->handleMessage($request);
+            $response = $this->chatService->handleMessage($request);
             $formatted = $this->formatter->format($response, $context);
-            $latency   = (int) round((microtime(true) - $startTime) * 1000);
+            $latency = (int) round((microtime(true) - $startTime) * 1000);
 
             $botMessage = ChatMessage::create([
                 'conversation_id' => $conversation->id,
-                'role'            => 'assistant',
-                'content'         => $formatted['components'],
-                'raw_text'        => null,
-                'metadata'        => array_merge($response->metadata, [
-                    'intent'     => $response->intent->value,
-                    'success'    => $response->success,
+                'role' => 'assistant',
+                'content' => $formatted['components'],
+                'raw_text' => null,
+                'metadata' => array_merge($response->metadata, [
+                    'intent' => $response->intent->value,
+                    'success' => $response->success,
                     'latency_ms' => $latency,
                     'raw_prompt' => $rawMessage,
                 ]),
             ]);
 
             // Auto-set judul conversation dari pesan pertama
-            if (!$conversation->title && $conversation->messages()->count() <= 2) {
+            if (! $conversation->title && $conversation->messages()->count() <= 2) {
                 $conversation->update([
                     'title' => mb_substr($rawMessage, 0, 60),
                 ]);
             }
 
             Log::info('WebAdapter: message processed', [
-                'trace_id'        => $context->traceId,
-                'user_id'         => $user->id,
+                'trace_id' => $context->traceId,
+                'user_id' => $user->id,
                 'conversation_id' => $conversation->id,
-                'intent'          => $response->intent->value,
-                'success'         => $response->success,
-                'latency_ms'      => $latency,
+                'intent' => $response->intent->value,
+                'success' => $response->success,
+                'latency_ms' => $latency,
             ]);
 
             return [
-                'success'         => $response->success,
+                'success' => $response->success,
                 'conversation_id' => $conversation->id,
-                'user_message'    => [
-                    'id'         => $userMessage->id,
-                    'role'       => 'user',
-                    'content'    => [['type' => 'text', 'text' => $rawMessage]],
-                    'metadata'   => [],
+                'user_message' => [
+                    'id' => $userMessage->id,
+                    'role' => 'user',
+                    'content' => [['type' => 'text', 'text' => $rawMessage]],
+                    'metadata' => [],
                     'created_at' => $userMessage->created_at->toIso8601String(),
                 ],
                 'bot_message' => [
-                    'id'         => $botMessage->id,
-                    'role'       => 'assistant',
-                    'content'    => $formatted['components'],
-                    'metadata'   => [
-                        'intent'       => $response->intent->value,
-                        'success'      => $response->success,
-                        'trace_id'     => $context->traceId,
-                        'latency_ms'   => $latency,
-                        'provider'     => $response->meta('provider'),
-                        'model'        => $response->meta('model'),
-                        'confidence'   => $response->meta('confidence'),
+                    'id' => $botMessage->id,
+                    'role' => 'assistant',
+                    'content' => $formatted['components'],
+                    'metadata' => [
+                        'intent' => $response->intent->value,
+                        'success' => $response->success,
+                        'trace_id' => $context->traceId,
+                        'latency_ms' => $latency,
+                        'provider' => $response->meta('provider'),
+                        'model' => $response->meta('model'),
+                        'confidence' => $response->meta('confidence'),
                         'total_tokens' => $response->meta('total_tokens'),
-                        'raw_prompt'   => $rawMessage,
+                        'raw_prompt' => $rawMessage,
                     ],
                     'created_at' => $botMessage->created_at->toIso8601String(),
                 ],
@@ -157,55 +160,55 @@ class WebAdapter
         } catch (\Throwable $e) {
             // AI / formatter crash — simpan error message ke DB agar
             // riwayat percakapan tetap lengkap dan bisa diaudit
-            $latency    = (int) round((microtime(true) - $startTime) * 1000);
-            $errorMsg   = __('chat.error.system');
+            $latency = (int) round((microtime(true) - $startTime) * 1000);
+            $errorMsg = __('chat.error.system');
 
             $botMessage = ChatMessage::create([
                 'conversation_id' => $conversation->id,
-                'role'            => 'assistant',
-                'content'         => [[
-                    'type'     => 'error',
-                    'message'  => $errorMsg,
+                'role' => 'assistant',
+                'content' => [[
+                    'type' => 'error',
+                    'message' => $errorMsg,
                     'severity' => 'error',
                 ]],
-                'raw_text'        => null,
-                'metadata'        => [
-                    'trace_id'   => $context->traceId,
-                    'error'      => true,
+                'raw_text' => null,
+                'metadata' => [
+                    'trace_id' => $context->traceId,
+                    'error' => true,
                     'latency_ms' => $latency,
-                    'exception'  => get_class($e),
+                    'exception' => get_class($e),
                 ],
             ]);
 
             Log::error('WebAdapter: handle exception', [
-                'trace_id'        => $context->traceId,
-                'user_id'         => $user->id,
+                'trace_id' => $context->traceId,
+                'user_id' => $user->id,
                 'conversation_id' => $conversation->id,
-                'latency_ms'      => $latency,
-                'exception'       => $e->getMessage(),
+                'latency_ms' => $latency,
+                'exception' => $e->getMessage(),
             ]);
 
             // Tetap return conversation_id + user_message + bot_message
             // agar frontend tidak kehilangan conversationId
             return [
-                'success'         => false,
+                'success' => false,
                 'conversation_id' => $conversation->id,
-                'user_message'    => [
-                    'id'         => $userMessage->id,
-                    'role'       => 'user',
-                    'content'    => [['type' => 'text', 'text' => $rawMessage]],
-                    'metadata'   => [],
+                'user_message' => [
+                    'id' => $userMessage->id,
+                    'role' => 'user',
+                    'content' => [['type' => 'text', 'text' => $rawMessage]],
+                    'metadata' => [],
                     'created_at' => $userMessage->created_at->toIso8601String(),
                 ],
                 'bot_message' => [
-                    'id'         => $botMessage->id,
-                    'role'       => 'assistant',
-                    'content'    => [[
-                        'type'     => 'error',
-                        'message'  => $errorMsg,
+                    'id' => $botMessage->id,
+                    'role' => 'assistant',
+                    'content' => [[
+                        'type' => 'error',
+                        'message' => $errorMsg,
                         'severity' => 'error',
                     ]],
-                    'metadata'   => ['error' => true, 'latency_ms' => $latency],
+                    'metadata' => ['error' => true, 'latency_ms' => $latency],
                     'created_at' => $botMessage->created_at->toIso8601String(),
                 ],
             ];
@@ -216,7 +219,7 @@ class WebAdapter
      * Ambil semua pesan sejak tanggal tertentu (untuk initial load 7 hari).
      * Diurutkan ascending (chronological) untuk render chat.
      */
-    public function getHistorySince(Conversation $conversation, \Carbon\Carbon $since): array
+    public function getHistorySince(Conversation $conversation, Carbon $since): array
     {
         $messages = $conversation->messages()
             ->where('created_at', '>=', $since)
@@ -224,10 +227,10 @@ class WebAdapter
             ->get();
 
         return $this->syncTransactionCardsWithDb($messages, $conversation->user_id)->map(fn (ChatMessage $msg) => [
-            'id'         => $msg->id,
-            'role'       => $msg->role,
-            'content'    => $msg->content ?? [],
-            'metadata'   => $msg->metadata ?? [],
+            'id' => $msg->id,
+            'role' => $msg->role,
+            'content' => $msg->content ?? [],
+            'metadata' => $msg->metadata ?? [],
             'created_at' => $msg->created_at->toIso8601String(),
         ])->all();
     }
@@ -235,10 +238,8 @@ class WebAdapter
     /**
      * Ambil riwayat pesan dari conversation (untuk pagination ke belakang).
      *
-     * @param  Conversation  $conversation
-     * @param  int           $limit    Jumlah pesan terbaru
-     * @param  int|null      $before   Cursor ID (untuk pagination ke belakang)
-     * @return array
+     * @param  int  $limit  Jumlah pesan terbaru
+     * @param  int|null  $before  Cursor ID (untuk pagination ke belakang)
      */
     public function getHistory(Conversation $conversation, int $limit = 30, ?int $before = null): array
     {
@@ -255,10 +256,10 @@ class WebAdapter
 
         return $this->syncTransactionCardsWithDb($messages, $conversation->user_id)->map(function (ChatMessage $msg) {
             return [
-                'id'         => $msg->id,
-                'role'       => $msg->role,
-                'content'    => $msg->content ?? [],
-                'metadata'   => $msg->metadata ?? [],
+                'id' => $msg->id,
+                'role' => $msg->role,
+                'content' => $msg->content ?? [],
+                'metadata' => $msg->metadata ?? [],
                 'created_at' => $msg->created_at->toIso8601String(),
             ];
         })->all();
@@ -294,8 +295,8 @@ class WebAdapter
 
         // 2. Query data dari DB
         $existingTransactions = collect();
-        if (!empty($transactionIds)) {
-            $existingTransactions = \App\Models\TransactionLog::query()
+        if (! empty($transactionIds)) {
+            $existingTransactions = TransactionLog::query()
                 ->where('user_id', $userId)
                 ->whereIn('id', $transactionIds)
                 ->get()
@@ -303,8 +304,8 @@ class WebAdapter
         }
 
         $existingDrafts = collect();
-        if (!empty($draftIds)) {
-            $existingDrafts = \App\Models\TransactionDraft::query()
+        if (! empty($draftIds)) {
+            $existingDrafts = TransactionDraft::query()
                 ->where('user_id', $userId)
                 ->whereIn('id', $draftIds)
                 ->get()
@@ -312,7 +313,7 @@ class WebAdapter
         }
 
         // 3. Update messages content
-        return $messages->map(function (ChatMessage $message) use ($userId, $existingTransactions, $existingDrafts) {
+        return $messages->map(function (ChatMessage $message) use ($existingTransactions, $existingDrafts) {
             $content = $message->content ?? [];
             $changed = false;
 
@@ -324,13 +325,13 @@ class WebAdapter
                 $isDraft = (bool) ($component['is_draft'] ?? ($component['transaction']['is_draft'] ?? false));
                 $id = (int) ($component['transaction']['id'] ?? 0);
 
-                if (!$id) {
+                if (! $id) {
                     continue;
                 }
 
                 if ($isDraft) {
                     $draft = $existingDrafts->get($id);
-                    if (!$draft) {
+                    if (! $draft) {
                         // Draft tidak ditemukan → tandai sebagai cancelled
                         $component['needs_wallet'] = false;
                         $component['transaction']['is_cancelled'] = true;
@@ -341,16 +342,16 @@ class WebAdapter
                         if ($draft->status === 'confirmed') {
                             // Draft sudah dikonfirmasi!
                             // Dapatkan ID transaksi log yang baru
-                            $confirmedLogId = !empty($draft->confirmed_transaction_ids) ? (int) $draft->confirmed_transaction_ids[0] : null;
-                            $transaction = $confirmedLogId ? \App\Models\TransactionLog::with(['category', 'sourceWallet', 'destinationWallet', 'type'])->find($confirmedLogId) : null;
+                            $confirmedLogId = ! empty($draft->confirmed_transaction_ids) ? (int) $draft->confirmed_transaction_ids[0] : null;
+                            $transaction = $confirmedLogId ? TransactionLog::with(['category', 'sourceWallet', 'destinationWallet', 'type'])->find($confirmedLogId) : null;
 
                             if ($transaction) {
                                 $typeKey = match (strtolower($transaction->type?->name ?? '')) {
-                                    'income'             => 'income',
-                                    'expense'            => 'expense',
-                                    'transfer'           => 'transfer',
+                                    'income' => 'income',
+                                    'expense' => 'expense',
+                                    'transfer' => 'transfer',
                                     'debt', 'receivable' => 'debt',
-                                    default              => 'other',
+                                    default => 'other',
                                 };
 
                                 // Ubah komponen draft menjadi confirmed transaction card
@@ -365,7 +366,7 @@ class WebAdapter
                                 $component['transaction']['type_key'] = $typeKey;
                                 $component['transaction']['source_wallet'] = $transaction->sourceWallet?->name;
                                 $component['transaction']['dest_wallet'] = $transaction->destinationWallet?->name;
-                                $component['transaction']['amount_formatted'] = \App\Support\MoneyFormatter::rupiah($transaction->amount);
+                                $component['transaction']['amount_formatted'] = MoneyFormatter::rupiah($transaction->amount);
                                 $component['transaction']['reference_number'] = $transaction->reference_number;
                                 $changed = true;
                             } else {
@@ -386,7 +387,7 @@ class WebAdapter
                 } else {
                     // Normal transaction card
                     $trx = $existingTransactions->get($id);
-                    if (!$trx) {
+                    if (! $trx) {
                         // Transaksi tidak ditemukan (dihapus dari DB)
                         $component['needs_wallet'] = false;
                         $component['transaction']['is_cancelled'] = true;
@@ -439,8 +440,8 @@ class WebAdapter
 
         // Buat conversation baru
         return Conversation::create([
-            'user_id'   => $user->id,
-            'title'     => null,
+            'user_id' => $user->id,
+            'title' => null,
             'is_active' => true,
         ]);
     }

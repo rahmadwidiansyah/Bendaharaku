@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Wallet;
+use App\Support\SettingsChangeLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -14,7 +15,7 @@ class WalletController extends Controller
     public function index()
     {
         $user = Auth::user();
-        
+
         // FIX: Blokir dompet 'System' agar tidak tampil di list UI frontend
         $wallets = $user->wallets()
             ->where('group_type', '!=', 'System')
@@ -27,7 +28,7 @@ class WalletController extends Controller
 
         $subjectGroups = $user->transactionLogs()->with('category')
             ->where('is_cleared', true)
-            ->whereHas('category', function($q) {
+            ->whereHas('category', function ($q) {
                 $q->whereIn('category_name', ['Dapat Hutangan', 'Bayar Cicilan Hutang', 'Ngasih Piutang', 'Terima Bayar Piutang']);
             })
             ->whereNotNull('subject')
@@ -72,7 +73,7 @@ class WalletController extends Controller
             'icon_file' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'keyword' => 'nullable|string|max:255',
             'group_type' => 'required|string',
-            'is_pinned' => 'nullable|boolean'
+            'is_pinned' => 'nullable|boolean',
         ]);
 
         if ($request->hasFile('icon_file')) {
@@ -83,7 +84,7 @@ class WalletController extends Controller
         $wallet = Auth::user()->wallets()->create($validated);
 
         // Log wallet creation
-        \App\Support\SettingsChangeLogger::logChange(
+        SettingsChangeLogger::logChange(
             Auth::user(),
             'wallet_created',
             'settings.finance.wallets',
@@ -97,43 +98,55 @@ class WalletController extends Controller
     // DETAIL WALLET
     public function show(Wallet $wallet)
     {
-        if ($wallet->user_id !== Auth::id()) abort(403);
-        
+        if ($wallet->user_id !== Auth::id()) {
+            abort(403);
+        }
+
         // FIX: Blokir akses direct URL ke dompet System
-        if ($wallet->group_type === 'System') abort(403, 'Akses ke Dompet Sistem tidak diizinkan.');
+        if ($wallet->group_type === 'System') {
+            abort(403, 'Akses ke Dompet Sistem tidak diizinkan.');
+        }
 
         $transactions = Auth::user()->transactionLogs()
             ->with(['type', 'category', 'sourceWallet', 'destinationWallet'])
             ->where(function ($q) use ($wallet) {
                 $q->where('source_wallet_id', $wallet->id)
-                  ->orWhere('destination_wallet_id', $wallet->id);
+                    ->orWhere('destination_wallet_id', $wallet->id);
             })
             ->orderBy('date', 'desc')->orderBy('created_at', 'desc')->paginate(20);
 
         return Inertia::render('Wallets/Show', [
             'wallet' => $wallet,
-            'transactions' => $transactions
+            'transactions' => $transactions,
         ]);
     }
 
     // Tampilkan Form Edit
     public function edit(Wallet $wallet)
     {
-        if ($wallet->user_id !== Auth::id()) abort(403);
-        
+        if ($wallet->user_id !== Auth::id()) {
+            abort(403);
+        }
+
         // FIX: Blokir edit dompet System via URL
-        if ($wallet->group_type === 'System') abort(403, 'Dompet Sistem tidak boleh diedit.');
+        if ($wallet->group_type === 'System') {
+            abort(403, 'Dompet Sistem tidak boleh diedit.');
+        }
 
         return Inertia::render('Wallets/Edit', [
-            'wallet' => $wallet
+            'wallet' => $wallet,
         ]);
     }
 
     // Proses Update
     public function update(Request $request, Wallet $wallet)
     {
-        if ($wallet->user_id !== Auth::id()) abort(403);
-        if ($wallet->group_type === 'System') abort(403, 'Dompet Sistem tidak boleh diedit.');
+        if ($wallet->user_id !== Auth::id()) {
+            abort(403);
+        }
+        if ($wallet->group_type === 'System') {
+            abort(403, 'Dompet Sistem tidak boleh diedit.');
+        }
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -160,9 +173,9 @@ class WalletController extends Controller
         foreach ($validated as $key => $value) {
             $oldVal = $original[$key] ?? null;
             if ((string) $oldVal !== (string) $value) {
-                \App\Support\SettingsChangeLogger::logChange(
+                SettingsChangeLogger::logChange(
                     Auth::user(),
-                    'wallet:' . $key,
+                    'wallet:'.$key,
                     'settings.finance.wallets',
                     $oldVal,
                     $value
@@ -178,10 +191,14 @@ class WalletController extends Controller
      */
     public function destroy(Wallet $wallet)
     {
-        if ($wallet->user_id !== Auth::id()) abort(403);
-        
+        if ($wallet->user_id !== Auth::id()) {
+            abort(403);
+        }
+
         // FIX: Blokir hapus dompet System
-        if ($wallet->group_type === 'System') abort(403, 'Dompet Sistem tidak boleh dihapus.');
+        if ($wallet->group_type === 'System') {
+            abort(403, 'Dompet Sistem tidak boleh dihapus.');
+        }
 
         try {
             // Hapus file icon jika itu adalah hasil upload (bukan emoji)
@@ -193,7 +210,7 @@ class WalletController extends Controller
             $wallet->delete();
 
             // Log deletion
-            \App\Support\SettingsChangeLogger::logChange(
+            SettingsChangeLogger::logChange(
                 Auth::user(),
                 'wallet_deleted',
                 'settings.finance.wallets',
@@ -202,7 +219,7 @@ class WalletController extends Controller
             );
 
             return redirect()->route('dashboard')->with('success', 'Dompet berhasil dihapus!');
-            
+
         } catch (\Exception $e) {
             // Jika gagal karena ada relasi transaksi, kirim pesan error
             return back()->withErrors(['error' => 'Gagal menghapus dompet. Pastikan tidak ada transaksi yang terhubung.']);
@@ -212,18 +229,22 @@ class WalletController extends Controller
     // SET PIN
     public function setPin(Request $request, Wallet $wallet)
     {
-        if ($wallet->user_id !== Auth::id()) abort(403);
-        if ($wallet->group_type === 'System') abort(403);
+        if ($wallet->user_id !== Auth::id()) {
+            abort(403);
+        }
+        if ($wallet->group_type === 'System') {
+            abort(403);
+        }
 
         $validated = $request->validate([
-            'state' => 'required|boolean'
+            'state' => 'required|boolean',
         ]);
 
         $oldVal = $wallet->is_pinned;
         $wallet->update(['is_pinned' => $validated['state']]);
 
         // Log pin/unpin action
-        \App\Support\SettingsChangeLogger::logChange(
+        SettingsChangeLogger::logChange(
             Auth::user(),
             'wallet:is_pinned',
             'settings.finance.wallets',
@@ -232,6 +253,7 @@ class WalletController extends Controller
         );
 
         $message = $validated['state'] ? 'Dompet berhasil ditambahkan ke Dashboard!' : 'Dompet berhasil dilepas dari Dashboard!';
+
         return back()->with('success', $message);
     }
 }

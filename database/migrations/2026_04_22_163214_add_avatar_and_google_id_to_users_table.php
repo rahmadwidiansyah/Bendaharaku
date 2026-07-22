@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::table('users', function (Blueprint $table) {
             // TARUH DI DALAM UP() YA BANG!
             $table->string('google_id')->nullable();
-            $table->string('avatar')->nullable(); 
+            $table->string('avatar')->nullable();
         });
     }
 

@@ -29,9 +29,9 @@ readonly class TransactionCardComponent implements ChatComponentInterface
 {
     public function __construct(
         public TransactionLog $transaction,
-        public ?int           $index       = null,
-        public bool           $showDetails = true,
-        public ?int           $draftId     = null,
+        public ?int $index = null,
+        public bool $showDetails = true,
+        public ?int $draftId = null,
     ) {}
 
     public function type(): string
@@ -45,62 +45,62 @@ readonly class TransactionCardComponent implements ChatComponentInterface
 
         // Resolve type key
         $typeName = strtolower($trx->type?->name ?? '');
-        $typeKey  = match ($typeName) {
-            'income'      => 'income',
-            'expense'     => 'expense',
-            'transfer'    => 'transfer',
-            'debt'        => 'debt',
-            'receivable'  => 'debt',
-            default       => 'other',
+        $typeKey = match ($typeName) {
+            'income' => 'income',
+            'expense' => 'expense',
+            'transfer' => 'transfer',
+            'debt' => 'debt',
+            'receivable' => 'debt',
+            default => 'other',
         };
 
         // Human-readable type label (Indonesian)
         $typeLabel = match ($typeName) {
-            'income'     => 'Pemasukan',
-            'expense'    => 'Pengeluaran',
-            'transfer'   => 'Transfer',
-            'debt'       => 'Hutang/Piutang',
+            'income' => 'Pemasukan',
+            'expense' => 'Pengeluaran',
+            'transfer' => 'Transfer',
+            'debt' => 'Hutang/Piutang',
             'receivable' => 'Hutang/Piutang',
-            default      => 'Transaksi',
+            default => 'Transaksi',
         };
 
         // Transaksi needs_wallet = true jika:
         // - belum di-clear (is_cleared = false), DAN
         // - tidak ada source wallet (dan bukan income ke dest wallet)
         $sourceWallet = $trx->sourceWallet?->name;
-        $destWallet   = $trx->destinationWallet?->name;
-        $needsWallet  = !$trx->is_cleared && $sourceWallet === null && $destWallet === null;
+        $destWallet = $trx->destinationWallet?->name;
+        $needsWallet = ! $trx->is_cleared && $sourceWallet === null && $destWallet === null;
 
         $result = [
-            'type'         => $this->type(),
-            'index'        => $this->index,
+            'type' => $this->type(),
+            'index' => $this->index,
             'show_details' => $this->showDetails,
             'needs_wallet' => $needsWallet,
-            'transaction'  => [
-                'id'               => $trx->id,
+            'transaction' => [
+                'id' => $trx->id,
                 'reference_number' => $trx->reference_number,
-                'amount'           => $trx->amount,
+                'amount' => $trx->amount,
                 'amount_formatted' => MoneyFormatter::rupiah((float) ($trx->amount ?? 0)),
-                'is_cleared'       => $trx->is_cleared,
-                'type_key'         => $typeKey,
-                'type_label'       => $typeLabel,
-                'category'         => $trx->category?->category_name,
-                'type'             => $trx->type?->name,
-                'source_wallet'    => $sourceWallet,
-                'dest_wallet'      => $destWallet,
-                'subject'          => $trx->subject,
-                'notes'            => $trx->notes,
-                'date'             => $trx->date?->toDateString(),
+                'is_cleared' => $trx->is_cleared,
+                'type_key' => $typeKey,
+                'type_label' => $typeLabel,
+                'category' => $trx->category?->category_name,
+                'type' => $trx->type?->name,
+                'source_wallet' => $sourceWallet,
+                'dest_wallet' => $destWallet,
+                'subject' => $trx->subject,
+                'notes' => $trx->notes,
+                'date' => $trx->date?->toDateString(),
             ],
         ];
 
         // Jika ini adalah draft, tambahkan draft_id ke output
         // WebFormatter akan membaca property ini untuk menentukan ID yang dikirim ke frontend
         if ($this->draftId !== null) {
-            $result['draft_id']            = $this->draftId;
-            $result['is_draft']            = true;
-            $result['transaction']['is_draft']  = true;
-            $result['transaction']['draft_id']  = $this->draftId;
+            $result['draft_id'] = $this->draftId;
+            $result['is_draft'] = true;
+            $result['transaction']['is_draft'] = true;
+            $result['transaction']['draft_id'] = $this->draftId;
         }
 
         return $result;

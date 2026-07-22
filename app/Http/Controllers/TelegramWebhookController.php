@@ -32,12 +32,14 @@ class TelegramWebhookController extends Controller
 
         try {
             $result = $this->adapter->handle($request->all());
+
             return response()->json($result);
         } catch (\Throwable $e) {
             Log::error('TelegramWebhookController: unhandled crash', [
                 'exception' => $e,
-                'message'   => $e->getMessage(),
+                'message' => $e->getMessage(),
             ]);
+
             return response()->json(['status' => 'error'], 500);
         }
     }

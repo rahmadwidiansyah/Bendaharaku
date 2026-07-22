@@ -42,16 +42,16 @@ readonly class ChatRequest
      * Factory cepat tanpa perlu buat Carbon manual.
      */
     public static function make(
-        string      $rawMessage,
-        User        $user,
+        string $rawMessage,
+        User $user,
         ChatContext $context,
-        array       $attachments = [],
+        array $attachments = [],
     ): self {
         return new self(
-            rawMessage:  $rawMessage,
-            user:        $user,
-            context:     $context,
-            timestamp:   Carbon::now($context->timezone),
+            rawMessage: $rawMessage,
+            user: $user,
+            context: $context,
+            timestamp: Carbon::now($context->timezone),
             attachments: $attachments,
         );
     }

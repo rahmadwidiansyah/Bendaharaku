@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Services\AI;
 
 use App\DTO\AIParseResult;
@@ -9,7 +11,7 @@ class TransactionValidationService
 {
     public function validateAndGuard(AIParseResult $result): AIParseResult
     {
-        if (!$result->success || !$result->transaction) {
+        if (! $result->success || ! $result->transaction) {
             return $result;
         }
 
@@ -17,10 +19,10 @@ class TransactionValidationService
 
         // 1. Hard Validation (Tolak langsung jika tidak logis)
         if ($trx->amount <= 0) {
-            return AIParseResult::failure("Validasi Gagal: Nominal transaksi harus lebih besar dari nol.");
+            return AIParseResult::failure('Validasi Gagal: Nominal transaksi harus lebih besar dari nol.');
         }
         if (empty($trx->transactionType)) {
-            return AIParseResult::failure("Validasi Gagal: Tipe transaksi tidak dapat diidentifikasi.");
+            return AIParseResult::failure('Validasi Gagal: Tipe transaksi tidak dapat diidentifikasi.');
         }
 
         // 2. Confidence Guard Strategy (Drafting)
@@ -33,7 +35,7 @@ class TransactionValidationService
                 sourceWallet: $trx->sourceWallet,
                 destinationWallet: $trx->destinationWallet,
                 subject: $trx->subject,
-                notes: $trx->notes . " [WARNING: LOW CONFIDENCE {$result->confidence}]",
+                notes: $trx->notes." [WARNING: LOW CONFIDENCE {$result->confidence}]",
                 isCleared: false // FORCED DRAFT
             );
 

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Support\SettingsChangeLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -34,9 +36,9 @@ class ChatBotProfileController extends Controller
         $user = $request->user();
 
         return Inertia::render('Settings/ChatBotProfile', [
-            'botName'   => $user->bot_name ?? 'Ken-Chan',
+            'botName' => $user->bot_name ?? 'Ken-Chan',
             'botAvatar' => $user->bot_avatar
-                ? asset('storage/' . $user->bot_avatar)
+                ? asset('storage/'.$user->bot_avatar)
                 : null,
         ]);
     }
@@ -56,7 +58,7 @@ class ChatBotProfileController extends Controller
         // During automated tests, mark that the controller was invoked to help debugging
         if (app()->environment('testing')) {
             try {
-                \Illuminate\Support\Facades\DB::table('user_settings_changes')->insert([
+                DB::table('user_settings_changes')->insert([
                     'user_id' => $user->id,
                     'setting_key' => 'debug_controller_invoked',
                     'setting_page' => 'settings.chat.bot-profile',
@@ -70,7 +72,7 @@ class ChatBotProfileController extends Controller
         }
 
         $validated = $request->validate([
-            'bot_name'   => ['nullable', 'string', 'max:50'],
+            'bot_name' => ['nullable', 'string', 'max:50'],
             'bot_avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
@@ -101,7 +103,7 @@ class ChatBotProfileController extends Controller
             $updates['bot_avatar'] = $path;
         }
 
-        if (!empty($updates)) {
+        if (! empty($updates)) {
             // record old values
             $old = [
                 'bot_name' => $user->getOriginal('bot_name'),
@@ -114,13 +116,13 @@ class ChatBotProfileController extends Controller
             $logged = false;
             foreach ($updates as $key => $value) {
                 $oldVal = $old[$key] ?? null;
-                \App\Support\SettingsChangeLogger::logChange($user, $key, 'settings.chat.bot-profile', $oldVal, $value);
+                SettingsChangeLogger::logChange($user, $key, 'settings.chat.bot-profile', $oldVal, $value);
                 $logged = true;
             }
 
             // Fallback: ensure at least one audit row exists for bot-profile updates
             if (! $logged) {
-                \App\Support\SettingsChangeLogger::logChange($user, 'bot_profile_updated', 'settings.chat.bot-profile', null, array_keys($updates));
+                SettingsChangeLogger::logChange($user, 'bot_profile_updated', 'settings.chat.bot-profile', null, array_keys($updates));
             }
         }
 
@@ -141,7 +143,7 @@ class ChatBotProfileController extends Controller
             Storage::disk('public')->delete($user->bot_avatar);
             $user->update(['bot_avatar' => null]);
 
-            \App\Support\SettingsChangeLogger::logChange($user, 'bot_avatar', 'settings.chat.bot-profile', $old, null);
+            SettingsChangeLogger::logChange($user, 'bot_avatar', 'settings.chat.bot-profile', $old, null);
         }
 
         return back()->with('success', __('settings.botProfile.avatarRemoved'));

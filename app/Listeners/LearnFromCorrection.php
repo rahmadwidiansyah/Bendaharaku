@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Listeners;
 
 use App\Events\TransactionCorrected;
-use App\Jobs\UpdateUserMemoryJob;
 use App\Jobs\BuildTrainingSampleJob;
+use App\Jobs\UpdateUserMemoryJob;
 use App\Services\AI\AiFeedbackService;
 
 class LearnFromCorrection
@@ -28,7 +28,7 @@ class LearnFromCorrection
             $event->correctedData
         );
 
-        if (!$feedbackLog) {
+        if (! $feedbackLog) {
             return;
         }
 

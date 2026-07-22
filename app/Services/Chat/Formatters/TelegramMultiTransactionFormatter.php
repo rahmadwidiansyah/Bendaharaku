@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\Chat\Formatters;
 
-use App\DTO\MultiTransactionResult;
 use App\DTO\MultiTransactionItem;
+use App\DTO\MultiTransactionResult;
 use App\Support\MoneyFormatter;
 
 /**
@@ -63,9 +63,9 @@ class TelegramMultiTransactionFormatter
 
     private function buildHeader(MultiTransactionResult $result): string
     {
-        $total   = $result->totalCount();
+        $total = $result->totalCount();
         $success = $result->successCount();
-        $failed  = $result->failedCount();
+        $failed = $result->failedCount();
 
         if ($result->allSuccess()) {
             return "✅ *Berhasil memproses {$total} transaksi.*";
@@ -89,11 +89,11 @@ class TelegramMultiTransactionFormatter
         $num = $item->index;
 
         if ($item->isSuccess()) {
-            $trx    = $item->transaction;
+            $trx = $item->transaction;
             $amount = MoneyFormatter::rupiahCompact($trx->amount); // sudah float karena cast di model TransactionLog
-            $cat    = $trx->category?->category_name ?? '?';
+            $cat = $trx->category?->category_name ?? '?';
             $wallet = $trx->sourceWallet?->name ?? $trx->destinationWallet?->name ?? '?';
-            $emoji  = $this->typeEmoji($trx->type?->name ?? '');
+            $emoji = $this->typeEmoji($trx->type?->name ?? '');
 
             // "1. ✅ Bensin Rp20.000 (Cash)"
             return "{$num}. ✅ {$emoji} _{$cat}_ *{$amount}* ({$wallet})";
@@ -101,7 +101,7 @@ class TelegramMultiTransactionFormatter
 
         // Gagal: dua baris
         $amount = $this->extractAmountFromRaw($item);
-        $label  = $item->raw ?? "Transaksi #{$num}";
+        $label = $item->raw ?? "Transaksi #{$num}";
 
         // Baris 1: nomor + ❌ + label/raw
         $line1 = "{$num}. ❌ _{$label}_";
@@ -109,20 +109,20 @@ class TelegramMultiTransactionFormatter
         // Baris 2: alasan (indent 3 spasi agar terlihat sub-item)
         $line2 = "   {$item->reason}";
 
-        return $line1 . "\n" . $line2;
+        return $line1."\n".$line2;
     }
 
     private function buildFooter(MultiTransactionResult $result): string
     {
         $providerLabel = match (strtoupper($result->provider)) {
-            'GEMINI'     => '✨ Gemini',
-            'OPENAI'     => '🤖 OpenAI',
-            'DEEPSEEK'   => '🔍 DeepSeek',
+            'GEMINI' => '✨ Gemini',
+            'OPENAI' => '🤖 OpenAI',
+            'DEEPSEEK' => '🔍 DeepSeek',
             'PYTHON-NLP' => '🐍 Python NLP',
-            default      => '🤖 ' . strtoupper($result->provider),
+            default => '🤖 '.strtoupper($result->provider),
         };
 
-        $confidencePct = round($result->confidence * 100) . '%';
+        $confidencePct = round($result->confidence * 100).'%';
 
         return "🧠 _{$providerLabel} · Keyakinan AI: {$confidencePct}_";
     }
@@ -130,11 +130,11 @@ class TelegramMultiTransactionFormatter
     private function typeEmoji(string $typeName): string
     {
         return match (strtolower($typeName)) {
-            'income'               => '💰',
-            'expense'              => '💸',
-            'transfer'             => '🔄',
-            'debt', 'receivable'   => '🤝',
-            default                => '',
+            'income' => '💰',
+            'expense' => '💸',
+            'transfer' => '🔄',
+            'debt', 'receivable' => '🤝',
+            default => '',
         };
     }
 

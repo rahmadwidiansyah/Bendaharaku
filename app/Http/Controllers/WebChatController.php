@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Actions\ProcessTransactionAction;
 use App\Chat\Adapters\WebAdapter;
 use App\Chat\ChatCommandRegistry;
-use App\Actions\ProcessTransactionAction;
-use App\Models\Conversation;
 use App\Models\ChatMessage;
-use App\Models\TransactionLog;
+use App\Models\Conversation;
 use App\Models\TransactionDraft;
+use App\Models\TransactionLog;
 use App\Services\Chat\DraftConfirmationService;
 use App\Support\MoneyFormatter;
 use Illuminate\Http\JsonResponse;
@@ -38,8 +38,8 @@ use Throwable;
 class WebChatController extends Controller
 {
     public function __construct(
-        private readonly WebAdapter               $adapter,
-        private readonly ChatCommandRegistry      $commandRegistry,
+        private readonly WebAdapter $adapter,
+        private readonly ChatCommandRegistry $commandRegistry,
         private readonly DraftConfirmationService $draftService,
     ) {}
 
@@ -49,7 +49,7 @@ class WebChatController extends Controller
      */
     public function index(Request $request): Response
     {
-        $user   = $request->user();
+        $user = $request->user();
         $locale = $user->locale ?? 'id';
 
         // Resolve atau buat conversation aktif
@@ -62,7 +62,7 @@ class WebChatController extends Controller
 
         // Load pesan 7 hari terakhir (ambil +1 untuk deteksi hasMore)
         $messages = [];
-        $hasMore  = false;
+        $hasMore = false;
         if ($conversation) {
             $sevenDaysAgo = now()->subDays(7)->startOfDay();
             $raw = $this->adapter->getHistorySince($conversation, $sevenDaysAgo);
@@ -76,19 +76,19 @@ class WebChatController extends Controller
         }
 
         return Inertia::render('Chat/Index', [
-            'conversation'   => $conversation ? [
-                'id'    => $conversation->id,
+            'conversation' => $conversation ? [
+                'id' => $conversation->id,
                 'title' => $conversation->title,
             ] : null,
             'initialMessages' => $messages,
-            'initialHasMore'  => $hasMore,
-            'botProfile'      => [
-                'name'   => $user->bot_name ?? 'Ken-Chan',
+            'initialHasMore' => $hasMore,
+            'botProfile' => [
+                'name' => $user->bot_name ?? 'Ken-Chan',
                 'avatar' => $user->bot_avatar
-                    ? asset('storage/' . $user->bot_avatar)
+                    ? asset('storage/'.$user->bot_avatar)
                     : null,
             ],
-            'commands'        => $this->commandRegistry->toApiResponse('web', $locale),
+            'commands' => $this->commandRegistry->toApiResponse('web', $locale),
         ]);
     }
 
@@ -99,14 +99,14 @@ class WebChatController extends Controller
     public function sendMessage(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'message'         => ['required', 'string', 'max:2000'],
+            'message' => ['required', 'string', 'max:2000'],
             'conversation_id' => ['nullable', 'integer'],
         ]);
 
         try {
             $result = $this->adapter->handle(
-                user:           $request->user(),
-                rawMessage:     $validated['message'],
+                user: $request->user(),
+                rawMessage: $validated['message'],
                 conversationId: $validated['conversation_id'] ?? null,
             );
 
@@ -117,15 +117,15 @@ class WebChatController extends Controller
             // sebelum conversation bisa di-resolve (sangat jarang).
             // Tetap kirim conversation_id agar frontend tidak reset ke null.
             Log::error('WebChatController: sendMessage fatal error', [
-                'user_id'         => $request->user()->id,
+                'user_id' => $request->user()->id,
                 'conversation_id' => $validated['conversation_id'] ?? null,
-                'error'           => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
 
             // Coba ambil conversation_id yang valid dari DB sebagai fallback
             $fallbackConvId = $validated['conversation_id'] ?? null;
-            if (!$fallbackConvId) {
-                $fallbackConv = \App\Models\Conversation::where('user_id', $request->user()->id)
+            if (! $fallbackConvId) {
+                $fallbackConv = Conversation::where('user_id', $request->user()->id)
                     ->where('is_active', true)
                     ->whereNull('deleted_at')
                     ->latest()
@@ -134,17 +134,17 @@ class WebChatController extends Controller
             }
 
             return response()->json([
-                'success'         => false,
+                'success' => false,
                 'conversation_id' => $fallbackConvId,
-                'bot_message'     => [
-                    'id'         => null,
-                    'role'       => 'assistant',
-                    'content'    => [[
-                        'type'     => 'error',
-                        'message'  => __('chat.error.system'),
+                'bot_message' => [
+                    'id' => null,
+                    'role' => 'assistant',
+                    'content' => [[
+                        'type' => 'error',
+                        'message' => __('chat.error.system'),
                         'severity' => 'error',
                     ]],
-                    'metadata'   => ['error' => true],
+                    'metadata' => ['error' => true],
                     'created_at' => now()->toIso8601String(),
                 ],
             ], 500);
@@ -159,8 +159,8 @@ class WebChatController extends Controller
     {
         $validated = $request->validate([
             'conversation_id' => ['nullable', 'integer'],
-            'before'          => ['nullable', 'integer'],
-            'limit'           => ['nullable', 'integer', 'min:1', 'max:50'],
+            'before' => ['nullable', 'integer'],
+            'limit' => ['nullable', 'integer', 'min:1', 'max:50'],
         ]);
 
         $user = $request->user();
@@ -171,12 +171,12 @@ class WebChatController extends Controller
             ? Conversation::where('id', $conversationId)->where('user_id', $user->id)->first()
             : Conversation::where('user_id', $user->id)->where('is_active', true)->latest()->first();
 
-        if (!$conversation) {
+        if (! $conversation) {
             return response()->json(['messages' => [], 'has_more' => false]);
         }
 
-        $limit    = $validated['limit'] ?? 30;
-        $before   = $validated['before'] ?? null;
+        $limit = $validated['limit'] ?? 30;
+        $before = $validated['before'] ?? null;
         $messages = $this->adapter->getHistory($conversation, $limit + 1, $before);
 
         $hasMore = count($messages) > $limit;
@@ -197,7 +197,7 @@ class WebChatController extends Controller
      */
     public function commands(Request $request): JsonResponse
     {
-        $locale   = $request->user()->locale ?? 'id';
+        $locale = $request->user()->locale ?? 'id';
         $commands = $this->commandRegistry->toApiResponse('web', $locale);
 
         return response()->json(['commands' => $commands]);
@@ -221,7 +221,7 @@ class WebChatController extends Controller
         $walletIds = $wallets->pluck('id')->all();
         $usageCounts = array_fill_keys($walletIds, 0);
 
-        if (!empty($walletIds)) {
+        if (! empty($walletIds)) {
             $user->transactionLogs()
                 ->where(function ($query) use ($walletIds) {
                     $query->whereIn('source_wallet_id', $walletIds)
@@ -256,8 +256,8 @@ class WebChatController extends Controller
             ->values();
 
         return response()->json([
-            'wallets' => $wallets->map(fn($w) => [
-                'id'   => $w->id,
+            'wallets' => $wallets->map(fn ($w) => [
+                'id' => $w->id,
                 'name' => $w->name,
             ])->values(),
         ]);
@@ -286,13 +286,13 @@ class WebChatController extends Controller
         if ($draft !== null) {
             try {
                 $transactionLog = $this->draftService->assignWallet(
-                    draft:    $draft,
-                    user:     $user,
+                    draft: $draft,
+                    user: $user,
                     walletId: $validated['wallet_id'],
                 );
 
                 return response()->json([
-                    'success'     => true,
+                    'success' => true,
                     'transaction' => $this->formatTransactionForChat($transactionLog),
                 ]);
             } catch (Throwable $e) {
@@ -309,7 +309,7 @@ class WebChatController extends Controller
             ->where('is_cleared', false)
             ->find($id);
 
-        if (!$transaction) {
+        if (! $transaction) {
             return response()->json([
                 'success' => false,
                 'message' => 'Draft tidak ditemukan.',
@@ -325,10 +325,10 @@ class WebChatController extends Controller
         // Jika source sudah merupakan System wallet yang "bermakna" (Hutang/Piutang),
         // maka sisi user ada di dest. Sebaliknya user ada di source.
         $sourceWallet = $transaction->sourceWallet;
-        $destWallet   = $transaction->destinationWallet;
+        $destWallet = $transaction->destinationWallet;
         $sourceIsRealSystem = $sourceWallet && $sourceWallet->group_type === 'System'
-            && !str_contains(strtolower($sourceWallet->name ?? ''), 'external')
-            && !str_contains(strtolower($sourceWallet->name ?? ''), 'merchant');
+            && ! str_contains(strtolower($sourceWallet->name ?? ''), 'external')
+            && ! str_contains(strtolower($sourceWallet->name ?? ''), 'merchant');
 
         DB::transaction(function () use ($transaction, $wallet, $user, $sourceIsRealSystem) {
             if ($sourceIsRealSystem) {
@@ -338,18 +338,18 @@ class WebChatController extends Controller
                 $balanceBefore = $wallet->balance;
                 $wallet->increment('balance', $transaction->amount);
                 $transaction->balance_before = $balanceBefore;
-                $transaction->balance_after  = $wallet->fresh()->balance;
+                $transaction->balance_after = $wallet->fresh()->balance;
             } else {
                 // Dest sudah ditetapkan (Merchant / System Piutang / System Hutang), user mengisi source
                 // Artinya: uang KELUAR dari wallet user (kurangi saldo)
                 $transaction->source_wallet_id = $wallet->id;
                 $balanceBefore = $wallet->balance;
-                if (!$user->allow_negative_balance && $wallet->balance < $transaction->amount) {
+                if (! $user->allow_negative_balance && $wallet->balance < $transaction->amount) {
                     throw new \InvalidArgumentException('Saldo tidak mencukupi.');
                 }
                 $wallet->decrement('balance', $transaction->amount);
                 $transaction->balance_before = $balanceBefore;
-                $transaction->balance_after  = $wallet->fresh()->balance;
+                $transaction->balance_after = $wallet->fresh()->balance;
             }
             $transaction->is_cleared = true;
             $transaction->save();
@@ -359,7 +359,7 @@ class WebChatController extends Controller
         $this->markTransactionUpdatedInChatHistory($user->id, $transaction);
 
         return response()->json([
-            'success'     => true,
+            'success' => true,
             'transaction' => $this->formatTransactionForChat($transaction),
         ]);
     }
@@ -375,19 +375,19 @@ class WebChatController extends Controller
             ->with(['sourceWallet', 'destinationWallet', 'category', 'type'])
             ->find($id);
 
-        if (!$transaction) {
+        if (! $transaction) {
             return response()->json([
-                'exists'      => false,
+                'exists' => false,
                 'transaction' => [
-                    'id'           => $id,
+                    'id' => $id,
                     'is_cancelled' => true,
-                    'is_cleared'   => false,
+                    'is_cleared' => false,
                 ],
             ]);
         }
 
         return response()->json([
-            'exists'      => true,
+            'exists' => true,
             'transaction' => $this->formatTransactionForChat($transaction),
         ]);
     }
@@ -399,25 +399,25 @@ class WebChatController extends Controller
      */
     public function draftStatus(Request $request, int $id): JsonResponse
     {
-        $user  = $request->user();
+        $user = $request->user();
         $draft = TransactionDraft::where('user_id', $user->id)->find($id);
 
-        if (!$draft) {
+        if (! $draft) {
             return response()->json([
-                'exists'    => false,
-                'is_draft'  => true,
-                'draft'     => [
-                    'id'           => $id,
+                'exists' => false,
+                'is_draft' => true,
+                'draft' => [
+                    'id' => $id,
                     'is_cancelled' => true,
-                    'is_cleared'   => false,
+                    'is_cleared' => false,
                 ],
             ]);
         }
 
         return response()->json([
-            'exists'   => true,
+            'exists' => true,
             'is_draft' => true,
-            'draft'    => $this->draftService->formatDraftForChat($draft),
+            'draft' => $this->draftService->formatDraftForChat($draft),
         ]);
     }
 
@@ -440,8 +440,9 @@ class WebChatController extends Controller
         if ($draft !== null) {
             try {
                 $transactionLog = $this->draftService->confirm($draft, $user);
+
                 return response()->json([
-                    'success'     => true,
+                    'success' => true,
                     'transaction' => $this->formatTransactionForChat($transactionLog),
                 ]);
             } catch (Throwable $e) {
@@ -457,19 +458,19 @@ class WebChatController extends Controller
             ->with(['sourceWallet', 'destinationWallet', 'category', 'type'])
             ->find($id);
 
-        if (!$transaction) {
+        if (! $transaction) {
             return response()->json([
-                'success'     => false,
-                'message'     => 'Transaksi sudah batal.',
+                'success' => false,
+                'message' => 'Transaksi sudah batal.',
                 'transaction' => [
-                    'id'           => $id,
+                    'id' => $id,
                     'is_cancelled' => true,
-                    'is_cleared'   => false,
+                    'is_cleared' => false,
                 ],
             ], 404);
         }
 
-        if (!$transaction->is_cleared) {
+        if (! $transaction->is_cleared) {
             try {
                 $action->confirm($transaction);
                 $transaction->refresh()->load(['sourceWallet', 'destinationWallet', 'category', 'type']);
@@ -485,7 +486,7 @@ class WebChatController extends Controller
         $this->markTransactionUpdatedInChatHistory($request->user()->id, $transaction);
 
         return response()->json([
-            'success'     => true,
+            'success' => true,
             'transaction' => $this->formatTransactionForChat($transaction),
         ]);
     }
@@ -515,12 +516,12 @@ class WebChatController extends Controller
             }
 
             return response()->json([
-                'success'  => true,
+                'success' => true,
                 'is_draft' => true,
-                'draft'    => [
-                    'id'           => $id,
+                'draft' => [
+                    'id' => $id,
                     'is_cancelled' => true,
-                    'is_cleared'   => false,
+                    'is_cleared' => false,
                 ],
             ]);
         }
@@ -544,11 +545,11 @@ class WebChatController extends Controller
         $this->markTransactionCancelledInChatHistory($user->id, $id);
 
         return response()->json([
-            'success'     => true,
+            'success' => true,
             'transaction' => [
-                'id'           => $id,
+                'id' => $id,
                 'is_cancelled' => true,
-                'is_cleared'   => false,
+                'is_cleared' => false,
             ],
         ]);
     }
@@ -556,36 +557,36 @@ class WebChatController extends Controller
     private function formatTransactionForChat(TransactionLog $transaction): array
     {
         $typeKey = match (strtolower($transaction->type?->name ?? '')) {
-            'income'             => 'income',
-            'expense'            => 'expense',
-            'transfer'           => 'transfer',
+            'income' => 'income',
+            'expense' => 'expense',
+            'transfer' => 'transfer',
             'debt', 'receivable' => 'debt',
-            default              => 'other',
+            default => 'other',
         };
 
         return [
-            'id'               => $transaction->id,
-            'is_draft'         => false,
+            'id' => $transaction->id,
+            'is_draft' => false,
             'reference_number' => $transaction->reference_number,
-            'amount'           => $transaction->amount,
+            'amount' => $transaction->amount,
             'amount_formatted' => MoneyFormatter::rupiah($transaction->amount),
-            'is_cleared'       => (bool) $transaction->is_cleared,
-            'is_cancelled'     => false,
-            'needs_wallet'     => !$transaction->is_cleared && $transaction->sourceWallet?->group_type === 'System',
-            'type_key'         => $typeKey,
-            'category'         => $transaction->category?->category_name,
-            'source_wallet'    => $transaction->sourceWallet?->name,
-            'dest_wallet'      => $transaction->destinationWallet?->name,
-            'subject'          => $transaction->subject,
-            'notes'            => $transaction->notes,
-            'date'             => $transaction->date?->toDateString(),
-            'created_at'       => $transaction->created_at?->toIso8601String(),
+            'is_cleared' => (bool) $transaction->is_cleared,
+            'is_cancelled' => false,
+            'needs_wallet' => ! $transaction->is_cleared && $transaction->sourceWallet?->group_type === 'System',
+            'type_key' => $typeKey,
+            'category' => $transaction->category?->category_name,
+            'source_wallet' => $transaction->sourceWallet?->name,
+            'dest_wallet' => $transaction->destinationWallet?->name,
+            'subject' => $transaction->subject,
+            'notes' => $transaction->notes,
+            'date' => $transaction->date?->toDateString(),
+            'created_at' => $transaction->created_at?->toIso8601String(),
         ];
     }
 
     private function markTransactionCancelledInChatHistory(int $userId, int $transactionId): void
     {
-        ChatMessage::whereHas('conversation', fn($q) => $q->where('user_id', $userId))
+        ChatMessage::whereHas('conversation', fn ($q) => $q->where('user_id', $userId))
             ->where('role', 'assistant')
             ->chunkById(100, function ($messages) use ($transactionId) {
                 foreach ($messages as $message) {
@@ -624,14 +625,14 @@ class WebChatController extends Controller
         $transactionId = $transaction->id;
 
         $typeKey = match (strtolower($transaction->type?->name ?? '')) {
-            'income'             => 'income',
-            'expense'            => 'expense',
-            'transfer'           => 'transfer',
+            'income' => 'income',
+            'expense' => 'expense',
+            'transfer' => 'transfer',
             'debt', 'receivable' => 'debt',
-            default              => 'other',
+            default => 'other',
         };
 
-        ChatMessage::whereHas('conversation', fn($q) => $q->where('user_id', $userId))
+        ChatMessage::whereHas('conversation', fn ($q) => $q->where('user_id', $userId))
             ->where('role', 'assistant')
             ->chunkById(100, function ($messages) use ($transactionId, $transaction, $typeKey) {
                 foreach ($messages as $message) {
@@ -648,14 +649,14 @@ class WebChatController extends Controller
                         }
 
                         // Update status dan bersihkan notes di riwayat chat
-                        $component['needs_wallet']                    = false;
-                        $component['transaction']['is_cleared']       = true;
-                        $component['transaction']['is_cancelled']     = false;
-                        $component['transaction']['notes']            = $transaction->notes;
-                        $component['transaction']['type_key']         = $typeKey;
-                        $component['transaction']['source_wallet']    = $transaction->sourceWallet?->name;
-                        $component['transaction']['dest_wallet']      = $transaction->destinationWallet?->name;
-                        $component['transaction']['amount_formatted'] = \App\Support\MoneyFormatter::rupiah($transaction->amount);
+                        $component['needs_wallet'] = false;
+                        $component['transaction']['is_cleared'] = true;
+                        $component['transaction']['is_cancelled'] = false;
+                        $component['transaction']['notes'] = $transaction->notes;
+                        $component['transaction']['type_key'] = $typeKey;
+                        $component['transaction']['source_wallet'] = $transaction->sourceWallet?->name;
+                        $component['transaction']['dest_wallet'] = $transaction->destinationWallet?->name;
+                        $component['transaction']['amount_formatted'] = MoneyFormatter::rupiah($transaction->amount);
                         $changed = true;
                     }
 

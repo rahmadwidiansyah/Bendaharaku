@@ -8,15 +8,17 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class PasswordResetLinkController extends Controller
 {
     /**
      * Display the password reset link request view.
      */
-    public function create(): \Inertia\Response
+    public function create(): Response
     {
-        return \Inertia\Inertia::render('Auth/ForgotPassword', [
+        return Inertia::render('Auth/ForgotPassword', [
             'status' => session('status'),
         ]);
     }

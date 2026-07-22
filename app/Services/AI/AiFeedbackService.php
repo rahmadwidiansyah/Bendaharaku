@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services\AI;
 
-use App\Models\User;
-use App\Models\TransactionLog;
 use App\Models\AiFeedbackLog;
+use App\Models\TransactionLog;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 class AiFeedbackService
@@ -14,13 +14,13 @@ class AiFeedbackService
     public function recordFeedback(User $user, TransactionLog $log, array $original, array $corrected): ?AiFeedbackLog
     {
         $parseLog = DB::table('ai_parse_logs')->where('transaction_log_id', $log->id)->first();
-        if (!$parseLog) {
+        if (! $parseLog) {
             return null;
         }
 
         // Weighted Divergence Score (Total 100% = 1.0000)
         $score = 0.0000;
-        
+
         // Asumsi tipe transaksi direpresentasikan dari category/intent
         if (($original['transaction_type'] ?? '') !== ($corrected['transaction_type'] ?? '')) {
             $score += 0.4000;
@@ -28,7 +28,7 @@ class AiFeedbackService
         if (($original['category_id'] ?? 0) !== ($corrected['category_id'] ?? 0)) {
             $score += 0.2500;
         }
-        if (($original['source_wallet_id'] ?? 0) !== ($corrected['source_wallet_id'] ?? 0) || 
+        if (($original['source_wallet_id'] ?? 0) !== ($corrected['source_wallet_id'] ?? 0) ||
             ($original['destination_wallet_id'] ?? 0) !== ($corrected['destination_wallet_id'] ?? 0)) {
             $score += 0.2000;
         }

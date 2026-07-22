@@ -25,16 +25,16 @@ use App\Enums\ChatIntent;
 class ChatResponse
 {
     /**
-     * @param ChatComponentInterface[] $components  Ordered list untuk render
-     * @param ErrorDetail[]            $errors      Error terstruktur
-     * @param array                    $metadata    Observability data
+     * @param  ChatComponentInterface[]  $components  Ordered list untuk render
+     * @param  ErrorDetail[]  $errors  Error terstruktur
+     * @param  array  $metadata  Observability data
      */
     public function __construct(
-        public readonly bool        $success,
-        public readonly ChatIntent  $intent,
-        public readonly array       $components = [],
-        public readonly array       $errors     = [],
-        public readonly array       $metadata   = [],
+        public readonly bool $success,
+        public readonly ChatIntent $intent,
+        public readonly array $components = [],
+        public readonly array $errors = [],
+        public readonly array $metadata = [],
     ) {}
 
     // ── Named constructors ────────────────────────────────────────
@@ -47,10 +47,10 @@ class ChatResponse
         array $metadata = [],
     ): self {
         return new self(
-            success:    true,
-            intent:     ChatIntent::SingleTransaction,
+            success: true,
+            intent: ChatIntent::SingleTransaction,
             components: $components,
-            metadata:   $metadata,
+            metadata: $metadata,
         );
     }
 
@@ -62,10 +62,10 @@ class ChatResponse
         array $metadata = [],
     ): self {
         return new self(
-            success:    true,   // draft tetap "success" — transaksi tersimpan
-            intent:     ChatIntent::Draft,
+            success: true,   // draft tetap "success" — transaksi tersimpan
+            intent: ChatIntent::Draft,
             components: $components,
-            metadata:   $metadata,
+            metadata: $metadata,
         );
     }
 
@@ -73,15 +73,15 @@ class ChatResponse
      * Multi-transaction (bisa semua sukses, parsial, atau semua gagal).
      */
     public static function multiResult(
-        bool  $hasAnySuccess,
+        bool $hasAnySuccess,
         array $components,
         array $metadata = [],
     ): self {
         return new self(
-            success:    $hasAnySuccess,
-            intent:     ChatIntent::MultiTransaction,
+            success: $hasAnySuccess,
+            intent: ChatIntent::MultiTransaction,
             components: $components,
-            metadata:   $metadata,
+            metadata: $metadata,
         );
     }
 
@@ -93,29 +93,29 @@ class ChatResponse
         array $metadata = [],
     ): self {
         return new self(
-            success:    true,
-            intent:     ChatIntent::Command,
+            success: true,
+            intent: ChatIntent::Command,
             components: $components,
-            metadata:   $metadata,
+            metadata: $metadata,
         );
     }
 
     /**
      * Error — AI gagal, konfigurasi salah, dll.
      *
-     * @param ErrorDetail[] $errors
+     * @param  ErrorDetail[]  $errors
      */
     public static function failure(
         array $errors,
         array $components = [],
-        array $metadata   = [],
+        array $metadata = [],
     ): self {
         return new self(
-            success:    false,
-            intent:     ChatIntent::Error,
+            success: false,
+            intent: ChatIntent::Error,
             components: $components,
-            errors:     $errors,
-            metadata:   $metadata,
+            errors: $errors,
+            metadata: $metadata,
         );
     }
 
@@ -123,7 +123,7 @@ class ChatResponse
 
     public function hasErrors(): bool
     {
-        return !empty($this->errors);
+        return ! empty($this->errors);
     }
 
     public function firstError(): ?ErrorDetail
@@ -145,11 +145,11 @@ class ChatResponse
     public function toArray(): array
     {
         return [
-            'success'    => $this->success,
-            'intent'     => $this->intent->value,
+            'success' => $this->success,
+            'intent' => $this->intent->value,
             'components' => array_map(fn (ChatComponentInterface $c) => $c->toArray(), $this->components),
-            'errors'     => array_map(fn (ErrorDetail $e) => $e->toArray(), $this->errors),
-            'metadata'   => $this->metadata,
+            'errors' => array_map(fn (ErrorDetail $e) => $e->toArray(), $this->errors),
+            'metadata' => $this->metadata,
         ];
     }
 }

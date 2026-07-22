@@ -2,24 +2,25 @@
 
 namespace Tests\Unit;
 
-use Tests\TestCase;
+use App\Chat\ChatApplicationService;
 use Illuminate\Support\Collection;
+use Tests\TestCase;
 
 class MonthlyMetricsTest extends TestCase
 {
-    public function testBuildMonthlyMetricsHandlesArrayAndCollection()
+    public function test_build_monthly_metrics_handles_array_and_collection()
     {
         // instantiate service without constructor so we can call private methods
-        $ref = new \ReflectionClass(\App\Chat\ChatApplicationService::class);
+        $ref = new \ReflectionClass(ChatApplicationService::class);
         $service = $ref->newInstanceWithoutConstructor();
 
         // prepare fake transactions as array
-        $tx = new \stdClass();
+        $tx = new \stdClass;
         $tx->amount = 10000;
-        $tx->type = (object)['name' => 'expense'];
+        $tx->type = (object) ['name' => 'expense'];
         $tx->is_cleared = true;
         $tx->created_at = '2026-07-19 10:00:00';
-        $tx->category = (object)['category_name' => 'Makan'];
+        $tx->category = (object) ['category_name' => 'Makan'];
 
         $method = $ref->getMethod('buildMonthlyMetrics');
         $method->setAccessible(true);
@@ -33,9 +34,9 @@ class MonthlyMetricsTest extends TestCase
         $this->assertInstanceOf(Collection::class, $resultCollection);
     }
 
-    public function testBuildLocalMonthlyReportHandlesEmpty()
+    public function test_build_local_monthly_report_handles_empty()
     {
-        $ref = new \ReflectionClass(\App\Chat\ChatApplicationService::class);
+        $ref = new \ReflectionClass(ChatApplicationService::class);
         $service = $ref->newInstanceWithoutConstructor();
 
         $method = $ref->getMethod('buildLocalMonthlyReport');

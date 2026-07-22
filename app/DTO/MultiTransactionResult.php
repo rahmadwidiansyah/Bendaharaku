@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace App\DTO;
 
-use App\Enums\MultiTransactionErrorCode;
-use App\Models\TransactionLog;
-
 /**
  * DTO hasil akhir dari processMulti() di ChatTransactionOrchestrator.
  *
@@ -29,16 +26,16 @@ use App\Models\TransactionLog;
 readonly class MultiTransactionResult
 {
     /**
-     * @param MultiTransactionItem[] $results  Ordered list, urutan = urutan input user
-     * @param string                 $provider Nama AI provider yang dipakai (untuk info di UI)
-     * @param string                 $model    Nama model yang dipakai
-     * @param float                  $confidence Rata-rata confidence LLM
+     * @param  MultiTransactionItem[]  $results  Ordered list, urutan = urutan input user
+     * @param  string  $provider  Nama AI provider yang dipakai (untuk info di UI)
+     * @param  string  $model  Nama model yang dipakai
+     * @param  float  $confidence  Rata-rata confidence LLM
      */
     public function __construct(
-        public array  $results,
+        public array $results,
         public string $provider,
         public string $model,
-        public float  $confidence,
+        public float $confidence,
     ) {}
 
     // ── Computed helpers ──────────────────────────────────────────
@@ -99,9 +96,9 @@ readonly class MultiTransactionResult
     public function summary(): array
     {
         return [
-            'total'   => $this->totalCount(),
+            'total' => $this->totalCount(),
             'success' => $this->successCount(),
-            'failed'  => $this->failedCount(),
+            'failed' => $this->failedCount(),
         ];
     }
 
@@ -111,10 +108,10 @@ readonly class MultiTransactionResult
     public function toArray(): array
     {
         return [
-            'results'    => array_map(fn (MultiTransactionItem $i) => $i->toArray(), $this->results),
-            'summary'    => $this->summary(),
-            'provider'   => $this->provider,
-            'model'      => $this->model,
+            'results' => array_map(fn (MultiTransactionItem $i) => $i->toArray(), $this->results),
+            'summary' => $this->summary(),
+            'provider' => $this->provider,
+            'model' => $this->model,
             'confidence' => $this->confidence,
         ];
     }

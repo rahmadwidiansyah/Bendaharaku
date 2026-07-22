@@ -7,12 +7,13 @@ namespace App\Http\Controllers\Settings;
 use App\Enums\AiProvider;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SaveAiSettingsRequest;
-use App\Models\UserAiCredential;
 use App\Models\AiParseLog;
 use App\Models\AiUsageLog;
+use App\Models\UserAiCredential;
 use App\Services\AI\AiCredentialManager;
 use App\Services\AI\AiPreferenceManager;
 use App\Services\AI\PlaceholderConnectionTester;
+use App\Support\SettingsChangeLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -66,24 +67,24 @@ class AiSettingsController extends Controller
                 // status bisa: 'draft', 'executed', 'failed', 'rate_limit', 'timeout', dll.
                 $rawStatus = strtolower((string) ($log->status ?? ''));
 
-                $status = match(true) {
-                    $rawStatus === 'draft'                                   => 'Draft',
+                $status = match (true) {
+                    $rawStatus === 'draft' => 'Draft',
                     in_array($rawStatus, ['executed', 'success', ''])
-                        && $log->is_success                                  => 'Executed',
+                        && $log->is_success => 'Executed',
                     str_contains($rawStatus, 'rate') || str_contains($rawStatus, 'quota') => 'Rate Limit',
-                    str_contains($rawStatus, 'timeout')                     => 'Timeout',
-                    !$log->is_success                                        => 'Failed',
-                    default                                                  => ucfirst($rawStatus) ?: 'Executed',
+                    str_contains($rawStatus, 'timeout') => 'Timeout',
+                    ! $log->is_success => 'Failed',
+                    default => ucfirst($rawStatus) ?: 'Executed',
                 };
 
                 return [
-                    'id'         => $log->id,
-                    'provider'   => strtoupper($log->provider ?? 'PYTHON-NLP'),
+                    'id' => $log->id,
+                    'provider' => strtoupper($log->provider ?? 'PYTHON-NLP'),
                     'input_text' => $log->input_text,
                     'confidence' => $log->final_confidence ? round($log->final_confidence * 100) : null,
-                    'status'     => $status,
-                    'error'      => $log->error_message,
-                    'date'       => $log->created_at->diffForHumans(),
+                    'status' => $status,
+                    'error' => $log->error_message,
+                    'date' => $log->created_at->diffForHumans(),
                 ];
             });
 
@@ -110,13 +111,13 @@ class AiSettingsController extends Controller
         $oldModel = $oldPreference?->selected_model ?? null;
         $oldActive = $oldPreference?->is_active_provider ?? false;
         $oldCredential = $user->aiCredentials()->where('provider', $provider->value)->first();
-        $hadCredential = $oldCredential instanceof \App\Models\UserAiCredential;
+        $hadCredential = $oldCredential instanceof UserAiCredential;
 
         if ($request->filled('api_key')) {
             $this->credentialManager->setCredential($user, $provider, $request->validated('api_key'));
 
             // log that api key/credential was updated (do not store the key itself)
-            \App\Support\SettingsChangeLogger::logChange(
+            SettingsChangeLogger::logChange(
                 $user,
                 'ai_credentials',
                 'settings.ai.providers',
@@ -126,12 +127,12 @@ class AiSettingsController extends Controller
         }
 
         // Jadikan aktif jika: user centang checkbox ATAU belum ada provider aktif sama sekali
-        $hasNoActiveProvider = !$user->aiPreferences()->where('is_active_provider', true)->exists();
+        $hasNoActiveProvider = ! $user->aiPreferences()->where('is_active_provider', true)->exists();
         if ($request->boolean('is_active_provider') || $hasNoActiveProvider) {
             $this->preferenceManager->switchActiveProvider($user, $provider);
 
             // log active provider switch
-            \App\Support\SettingsChangeLogger::logChange(
+            SettingsChangeLogger::logChange(
                 $user,
                 'is_active_provider',
                 'settings.ai.providers',
@@ -144,7 +145,7 @@ class AiSettingsController extends Controller
 
         // log model change if differs
         if ($oldModel !== $selectedModel) {
-            \App\Support\SettingsChangeLogger::logChange(
+            SettingsChangeLogger::logChange(
                 $user,
                 'selected_model',
                 'settings.ai.providers',
@@ -155,7 +156,7 @@ class AiSettingsController extends Controller
 
         return redirect()
             ->back()
-            ->with('success', 'Pengaturan AI untuk ' . strtoupper($provider->value) . ' berhasil diperbarui.');
+            ->with('success', 'Pengaturan AI untuk '.strtoupper($provider->value).' berhasil diperbarui.');
     }
 
     public function testConnection(Request $request, PlaceholderConnectionTester $tester): JsonResponse
@@ -167,7 +168,7 @@ class AiSettingsController extends Controller
 
         $provider = AiProvider::tryFrom((string) $request->input('provider'));
 
-        if (!$provider) {
+        if (! $provider) {
             return response()->json([
                 'success' => false,
                 'message' => 'Provider tidak terdaftar di sistem.',

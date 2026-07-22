@@ -4,19 +4,18 @@ declare(strict_types=1);
 
 namespace App\Chat\Formatters;
 
-use App\Chat\Contracts\ChatFormatterInterface;
 use App\Chat\Components\ChatComponentInterface;
-use App\Chat\Components\TextComponent;
-use App\Chat\Components\DividerComponent;
-use App\Chat\Components\TransactionCardComponent;
-use App\Chat\Components\SummaryCardComponent;
 use App\Chat\Components\ErrorComponent;
-use App\Chat\Components\WarningComponent;
-use App\Chat\Components\SuggestionComponent;
 use App\Chat\Components\QuickReplyComponent;
 use App\Chat\Components\ReportSectionComponent;
-use App\Chat\DTOs\ChatResponse;
+use App\Chat\Components\SuggestionComponent;
+use App\Chat\Components\SummaryCardComponent;
+use App\Chat\Components\TextComponent;
+use App\Chat\Components\TransactionCardComponent;
+use App\Chat\Components\WarningComponent;
+use App\Chat\Contracts\ChatFormatterInterface;
 use App\Chat\DTOs\ChatContext;
+use App\Chat\DTOs\ChatResponse;
 use App\Chat\Errors\ErrorDetail;
 use App\Enums\ChatIntent;
 use App\Support\MoneyFormatter;
@@ -53,7 +52,7 @@ class WebFormatter implements ChatFormatterInterface
      */
     public function format(ChatResponse $response, ChatContext $context): array
     {
-        $locale     = $context->locale;
+        $locale = $context->locale;
         $components = [];
 
         // Error-only response (AI gagal, konfigurasi salah, dll)
@@ -61,10 +60,11 @@ class WebFormatter implements ChatFormatterInterface
             foreach ($response->errors as $error) {
                 $components[] = $this->formatError($error, $locale);
             }
+
             return [
                 'components' => $components,
-                'errors'     => array_map(fn ($e) => $e->toArray(), $response->errors),
-                'metadata'   => $response->metadata,
+                'errors' => array_map(fn ($e) => $e->toArray(), $response->errors),
+                'metadata' => $response->metadata,
             ];
         }
 
@@ -83,8 +83,8 @@ class WebFormatter implements ChatFormatterInterface
 
         return [
             'components' => $components,
-            'errors'     => array_map(fn ($e) => $e->toArray(), $response->errors),
-            'metadata'   => $response->metadata,
+            'errors' => array_map(fn ($e) => $e->toArray(), $response->errors),
+            'metadata' => $response->metadata,
         ];
     }
 
@@ -93,16 +93,16 @@ class WebFormatter implements ChatFormatterInterface
     private function renderComponent(ChatComponentInterface $component, string $locale): ?array
     {
         return match ($component->type()) {
-            'text'             => $this->renderText($component, $locale),
-            'divider'          => $this->renderDivider(),
+            'text' => $this->renderText($component, $locale),
+            'divider' => $this->renderDivider(),
             'transaction_card' => $this->renderTransactionCard($component, $locale),
-            'summary_card'     => $this->renderSummaryCard($component, $locale),
-            'error'            => $this->renderErrorComponent($component, $locale),
-            'warning'          => $this->renderWarning($component, $locale),
-            'suggestion'       => $this->renderSuggestion($component, $locale),
-            'quick_reply'      => $this->renderQuickReply($component, $locale),
-            'report_section'   => $this->renderReportSection($component, $locale),
-            default            => null,
+            'summary_card' => $this->renderSummaryCard($component, $locale),
+            'error' => $this->renderErrorComponent($component, $locale),
+            'warning' => $this->renderWarning($component, $locale),
+            'suggestion' => $this->renderSuggestion($component, $locale),
+            'quick_reply' => $this->renderQuickReply($component, $locale),
+            'report_section' => $this->renderReportSection($component, $locale),
+            default => null,
         };
     }
 
@@ -127,11 +127,11 @@ class WebFormatter implements ChatFormatterInterface
         $trx = $c->transaction;
 
         $typeKey = match (strtolower($trx->type?->name ?? '')) {
-            'income'             => 'income',
-            'expense'            => 'expense',
-            'transfer'           => 'transfer',
+            'income' => 'income',
+            'expense' => 'expense',
+            'transfer' => 'transfer',
             'debt', 'receivable' => 'debt',
-            default              => 'other',
+            default => 'other',
         };
 
         // Jika komponen memiliki draftId, gunakan itu sebagai 'id' di output JSON.
@@ -141,28 +141,28 @@ class WebFormatter implements ChatFormatterInterface
         $outputId = $isDraft ? $c->draftId : $trx->id;
 
         return [
-            'type'         => 'transaction_card',
-            'index'        => $c->index,
+            'type' => 'transaction_card',
+            'index' => $c->index,
             'show_details' => $c->showDetails,
-            'is_draft'     => $isDraft,
-            'transaction'  => [
-                'id'               => $outputId,
-                'draft_id'         => $isDraft ? $c->draftId : null,
-                'is_draft'         => $isDraft,
+            'is_draft' => $isDraft,
+            'transaction' => [
+                'id' => $outputId,
+                'draft_id' => $isDraft ? $c->draftId : null,
+                'is_draft' => $isDraft,
                 'reference_number' => $trx->reference_number,
-                'amount'           => $trx->amount,
+                'amount' => $trx->amount,
                 'amount_formatted' => MoneyFormatter::rupiah($trx->amount),
-                'is_cleared'       => $trx->is_cleared,
-                'needs_wallet'     => !$trx->is_cleared && $trx->sourceWallet?->group_type === 'System',
-                'type_key'         => $typeKey,
-                'type_label'       => trans("chat.transaction.type_{$typeKey}", [], $locale),
-                'category'         => $trx->category?->category_name,
-                'source_wallet'    => $trx->sourceWallet?->name,
-                'dest_wallet'      => $trx->destinationWallet?->name,
-                'subject'          => $trx->subject,
-                'notes'            => $trx->notes,
-                'date'             => $trx->date?->toDateString(),
-                'created_at'       => $trx->created_at?->toIso8601String(),
+                'is_cleared' => $trx->is_cleared,
+                'needs_wallet' => ! $trx->is_cleared && $trx->sourceWallet?->group_type === 'System',
+                'type_key' => $typeKey,
+                'type_label' => trans("chat.transaction.type_{$typeKey}", [], $locale),
+                'category' => $trx->category?->category_name,
+                'source_wallet' => $trx->sourceWallet?->name,
+                'dest_wallet' => $trx->destinationWallet?->name,
+                'subject' => $trx->subject,
+                'notes' => $trx->notes,
+                'date' => $trx->date?->toDateString(),
+                'created_at' => $trx->created_at?->toIso8601String(),
             ],
         ];
     }
@@ -170,14 +170,14 @@ class WebFormatter implements ChatFormatterInterface
     private function renderSummaryCard(SummaryCardComponent $c, string $locale): array
     {
         return [
-            'type'       => 'summary_card',
-            'total'      => $c->total,
-            'success'    => $c->success,
-            'failed'     => $c->failed,
+            'type' => 'summary_card',
+            'total' => $c->total,
+            'success' => $c->success,
+            'failed' => $c->failed,
             'confidence' => round($c->confidence * 100),
             'all_success' => $c->allSuccess(),
-            'all_failed'  => $c->allFailed(),
-            'label'       => $c->allSuccess()
+            'all_failed' => $c->allFailed(),
+            'label' => $c->allSuccess()
                 ? trans('chat.multi.all_success', ['count' => $c->total], $locale)
                 : ($c->allFailed()
                     ? trans('chat.multi.all_failed', ['count' => $c->total], $locale)
@@ -188,11 +188,11 @@ class WebFormatter implements ChatFormatterInterface
     private function renderErrorComponent(ErrorComponent $c, string $locale): array
     {
         return [
-            'type'        => 'error',
-            'index'       => $c->index,
-            'message'     => trans($c->messageKey, $c->params, $locale),
-            'raw'         => $c->raw,
-            'severity'    => $c->severity->value,
+            'type' => 'error',
+            'index' => $c->index,
+            'message' => trans($c->messageKey, $c->params, $locale),
+            'raw' => $c->raw,
+            'severity' => $c->severity->value,
             'recoverable' => $c->recoverable,
         ];
     }
@@ -200,7 +200,7 @@ class WebFormatter implements ChatFormatterInterface
     private function renderWarning(WarningComponent $c, string $locale): array
     {
         return [
-            'type'    => 'warning',
+            'type' => 'warning',
             'message' => trans($c->messageKey, $c->params, $locale),
             'severity' => 'warning',
         ];
@@ -219,17 +219,17 @@ class WebFormatter implements ChatFormatterInterface
         }
 
         return [
-            'type'        => 'suggestion',
-            'message'     => $message,
+            'type' => 'suggestion',
+            'message' => $message,
             'insert_text' => $insertText,
-            'action_url'  => $c->actionUrl,
+            'action_url' => $c->actionUrl,
         ];
     }
 
     private function renderQuickReply(QuickReplyComponent $c, string $locale): array
     {
         return [
-            'type'    => 'quick_reply',
+            'type' => 'quick_reply',
             'options' => $c->options,
         ];
     }
@@ -237,6 +237,7 @@ class WebFormatter implements ChatFormatterInterface
     private function renderReportSection(ReportSectionComponent $c, string $locale): array
     {
         $title = $c->title ?: ($c->translationKey ? trans($c->translationKey, [], $locale) : '');
+
         return [
             'type' => 'report_section',
             'title' => $title,
@@ -251,10 +252,10 @@ class WebFormatter implements ChatFormatterInterface
     private function formatError(ErrorDetail $error, string $locale): array
     {
         return [
-            'type'     => 'error',
-            'index'    => null,
-            'message'  => trans($error->messageKey, $error->params, $locale),
-            'raw'      => null,
+            'type' => 'error',
+            'index' => null,
+            'message' => trans($error->messageKey, $error->params, $locale),
+            'raw' => null,
             'severity' => $error->severity->value,
         ];
     }

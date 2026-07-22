@@ -7,7 +7,7 @@ namespace App\Services\AI\Prompt;
 class TransactionPromptBuilder
 {
     public function __construct(
-        private readonly ContextBuilder $contextBuilder = new ContextBuilder()
+        private readonly ContextBuilder $contextBuilder = new ContextBuilder
     ) {}
 
     public function build(string $text, array $wallets, array $categories, array $activeMemories = []): string

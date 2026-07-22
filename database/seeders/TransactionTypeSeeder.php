@@ -1,4 +1,5 @@
 <?php
+
 namespace Database\Seeders;
 
 use App\Models\TransactionType;
@@ -12,7 +13,7 @@ class TransactionTypeSeeder extends Seeder
             ['name' => 'Income', 'keyword' => 'in, +'],
             ['name' => 'Expense', 'keyword' => 'out, -'],
             ['name' => 'Transfer', 'keyword' => 'trf'],
-            ['name' => 'Debt', 'keyword' => 'debt'],       
+            ['name' => 'Debt', 'keyword' => 'debt'],
             ['name' => 'Receivable', 'keyword' => 'rec'],
         ];
 

@@ -2,11 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
+use App\Support\SettingsChangeLogger;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
-use App\Models\User;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Str;
 
 class SettingsChangeLoggingTest extends TestCase
 {
@@ -46,7 +45,7 @@ class SettingsChangeLoggingTest extends TestCase
         $response->assertSessionHasNoErrors();
 
         // Debug: direct logger call to ensure logger works in test environment
-        \App\Support\SettingsChangeLogger::logChange($user, 'test_direct', 'settings.test', null, 'ok');
+        SettingsChangeLogger::logChange($user, 'test_direct', 'settings.test', null, 'ok');
         $this->assertDatabaseHas('user_settings_changes', [
             'user_id' => $user->id,
             'setting_key' => 'test_direct',
@@ -54,7 +53,7 @@ class SettingsChangeLoggingTest extends TestCase
 
         // Record redirect location from response so we can inspect where request went
         $location = $response->headers->get('Location');
-        \App\Support\SettingsChangeLogger::logChange($user, 'test_loc', 'settings.test', null, $location);
+        SettingsChangeLogger::logChange($user, 'test_loc', 'settings.test', null, $location);
 
         // At least one change related to bot-profile should be recorded
         $this->assertDatabaseHas('user_settings_changes', [

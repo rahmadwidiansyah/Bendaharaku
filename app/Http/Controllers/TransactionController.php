@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\TransactionLog;
-use App\Models\TransactionDraft;
-use App\Models\Category;
 use App\Actions\ProcessTransactionAction;
+use App\Models\Category;
+use App\Models\TransactionDraft;
+use App\Models\TransactionLog;
 use App\Services\Chat\DraftConfirmationService;
-use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
-use Carbon\Carbon;
 
 class TransactionController extends Controller
 {
@@ -30,22 +30,22 @@ class TransactionController extends Controller
         $query->whereBetween('date', [$startDate, $endDate]);
 
         if ($request->filled('type')) {
-            $query->whereHas('type', fn($q) => $q->where('name', $request->type));
+            $query->whereHas('type', fn ($q) => $q->where('name', $request->type));
         }
 
         if ($request->filled('search')) {
             $search = strtolower($request->search);
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->whereRaw('LOWER(notes) LIKE ?', ["%{$search}%"])
-                  ->orWhereRaw('LOWER(subject) LIKE ?', ["%{$search}%"])
-                  ->orWhereHas('category', fn($qCat) => $qCat->whereRaw('LOWER(category_name) LIKE ?', ["%{$search}%"]));
+                    ->orWhereRaw('LOWER(subject) LIKE ?', ["%{$search}%"])
+                    ->orWhereHas('category', fn ($qCat) => $qCat->whereRaw('LOWER(category_name) LIKE ?', ["%{$search}%"]));
             });
         }
 
         $transactions = $query->orderByDesc('date')
             ->orderByDesc('created_at')
             ->get()
-            ->map(fn($trx) => [
+            ->map(fn ($trx) => [
                 'id' => $trx->id,
                 'amount' => (float) $trx->amount,
                 'notes' => $trx->notes,
@@ -63,7 +63,7 @@ class TransactionController extends Controller
         $pendingDraftsQuery = $user->transactionDrafts()->where('status', 'pending');
         $pendingDraftsQuery->whereBetween('created_at', [
             Carbon::parse($startDate)->startOfDay(),
-            Carbon::parse($endDate)->endOfDay()
+            Carbon::parse($endDate)->endOfDay(),
         ]);
 
         if ($request->filled('type')) {
@@ -73,11 +73,11 @@ class TransactionController extends Controller
 
         if ($request->filled('search')) {
             $search = strtolower(trim($request->search));
-            $pendingDraftsQuery->where(function($q) use ($search) {
+            $pendingDraftsQuery->where(function ($q) use ($search) {
                 $q->whereRaw('LOWER(original_text) LIKE ?', ["%{$search}%"])
-                  ->orWhereRaw('LOWER(payload->>\'notes\') LIKE ?', ["%{$search}%"])
-                  ->orWhereRaw('LOWER(payload->>\'subject\') LIKE ?', ["%{$search}%"])
-                  ->orWhereRaw('LOWER(payload->>\'category_name\') LIKE ?', ["%{$search}%"]);
+                    ->orWhereRaw('LOWER(payload->>\'notes\') LIKE ?', ["%{$search}%"])
+                    ->orWhereRaw('LOWER(payload->>\'subject\') LIKE ?', ["%{$search}%"])
+                    ->orWhereRaw('LOWER(payload->>\'category_name\') LIKE ?', ["%{$search}%"]);
             });
         }
 
@@ -85,6 +85,7 @@ class TransactionController extends Controller
 
         $draftData = $drafts->map(function ($draft) {
             $payload = $draft->payload ?? [];
+
             return [
                 'id' => $draft->id,
                 'is_draft' => true,
@@ -125,6 +126,7 @@ class TransactionController extends Controller
             if ($timeCompare !== 0) {
                 return $timeCompare;
             }
+
             return $b['id'] <=> $a['id'];
         })->values();
 
@@ -153,6 +155,7 @@ class TransactionController extends Controller
 
         try {
             $action->create($validated, Auth::id());
+
             return redirect()->route('dashboard')->with('success', 'Transaksi Berhasil!');
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
@@ -175,7 +178,7 @@ class TransactionController extends Controller
                 ->find($id);
         }
 
-        if (!$draft && !$request->has('is_draft')) {
+        if (! $draft && ! $request->has('is_draft')) {
             $draft = TransactionDraft::where('user_id', $user->id)
                 ->where('status', 'pending')
                 ->find($id);
@@ -183,11 +186,11 @@ class TransactionController extends Controller
 
         if ($draft) {
             $payload = $draft->payload ?? [];
-            
+
             $catId = $payload['category_id'] ?? null;
             $category = $catId ? Category::find($catId) : null;
             $systemKey = $category ? $category->system_key : null;
-            
+
             $debtSubType = null;
             $typeKey = strtolower($payload['type_key'] ?? 'expense');
             if (in_array($typeKey, ['debt', 'receivable'])) {
@@ -248,7 +251,7 @@ class TransactionController extends Controller
                 ->find($id);
         }
 
-        if (!$draft && !$request->has('is_draft')) {
+        if (! $draft && ! $request->has('is_draft')) {
             $draft = TransactionDraft::where('user_id', $user->id)
                 ->where('status', 'pending')
                 ->find($id);
@@ -262,24 +265,24 @@ class TransactionController extends Controller
                     // a. Insert ke transactions (buat TransactionLog via ProcessTransactionAction)
                     // b. Update saldo wallet (otomatis dilakukan di ProcessTransactionAction::create)
                     $log = $action->create([
-                        'date'                  => $validated['date'],
-                        'category_id'           => $validated['category_id'],
-                        'source_wallet_id'      => $validated['source_wallet_id'],
+                        'date' => $validated['date'],
+                        'category_id' => $validated['category_id'],
+                        'source_wallet_id' => $validated['source_wallet_id'],
                         'destination_wallet_id' => $validated['destination_wallet_id'],
-                        'amount'                => $validated['amount'],
-                        'subject'               => $validated['subject'] ?? $user->name,
-                        'notes'                 => $validated['notes'] ?? null,
-                        'transaction_type'      => $validated['transaction_type'] ?? null,
-                        'debt_sub_type'         => $validated['debt_sub_type'] ?? null,
-                        'due_date'              => $validated['due_date'] ?? null,
-                        'due_date_type'         => $validated['due_date_type'] ?? null,
-                        'due_date_interval'     => $validated['due_date_interval'] ?? null,
-                        'is_cleared'            => true, // langsung cleared / final
+                        'amount' => $validated['amount'],
+                        'subject' => $validated['subject'] ?? $user->name,
+                        'notes' => $validated['notes'] ?? null,
+                        'transaction_type' => $validated['transaction_type'] ?? null,
+                        'debt_sub_type' => $validated['debt_sub_type'] ?? null,
+                        'due_date' => $validated['due_date'] ?? null,
+                        'due_date_type' => $validated['due_date_type'] ?? null,
+                        'due_date_interval' => $validated['due_date_interval'] ?? null,
+                        'is_cleared' => true, // langsung cleared / final
                     ], $user->id, 'WEB');
 
                     // c. Hapus/Tandai Draft selesai (confirmed)
                     $draft->update([
-                        'status'                    => 'confirmed',
+                        'status' => 'confirmed',
                         'confirmed_transaction_ids' => [$log->id],
                     ]);
 
@@ -302,6 +305,7 @@ class TransactionController extends Controller
 
         try {
             $action->update($transaction, $validated);
+
             return redirect()->route('dashboard')->with('success', 'Transaksi diupdate!');
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
@@ -325,7 +329,7 @@ class TransactionController extends Controller
                 ->find($id);
         }
 
-        if (!$draft && !$request->has('is_draft')) {
+        if (! $draft && ! $request->has('is_draft')) {
             $draft = TransactionDraft::where('user_id', $user->id)
                 ->where('status', 'pending')
                 ->find($id);
@@ -334,6 +338,7 @@ class TransactionController extends Controller
         if ($draft) {
             try {
                 $draftService->confirm($draft, $user);
+
                 return back()->with('success', 'Draft berhasil dikonfirmasi!');
             } catch (\Exception $e) {
                 return back()->with('error', $e->getMessage());
@@ -349,6 +354,7 @@ class TransactionController extends Controller
 
         try {
             $action->confirm($transaction);
+
             return back()->with('success', 'Transaksi berhasil dikonfirmasi!');
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
@@ -369,7 +375,7 @@ class TransactionController extends Controller
             $draft = TransactionDraft::where('user_id', $user->id)->find($id);
         }
 
-        if (!$draft && !$request->has('is_draft')) {
+        if (! $draft && ! $request->has('is_draft')) {
             $draft = TransactionDraft::where('user_id', $user->id)->find($id);
         }
 
@@ -381,6 +387,7 @@ class TransactionController extends Controller
                     // b. Hapus draft dari tabel transaction_drafts
                     $draft->delete();
                 });
+
                 return redirect()->route('dashboard')->with('success', 'Draft berhasil dibatalkan dan dihapus!');
             } catch (\Exception $e) {
                 return back()->with('error', $e->getMessage());
@@ -393,6 +400,7 @@ class TransactionController extends Controller
 
         try {
             $action->delete($transaction);
+
             return redirect()->route('dashboard')->with('success', 'Transaksi dihapus!');
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
@@ -426,20 +434,20 @@ class TransactionController extends Controller
         $isSystemManagedCategory = in_array($type, ['transfer', 'debt', 'receivable']);
 
         return $request->validate([
-            'date'                   => 'required|date',
-            'category_id'            => $isSystemManagedCategory ? 'nullable' : 'required|exists:categories,id',
-            'source_wallet_id'       => 'required|exists:wallets,id',
-            'destination_wallet_id'  => 'required|exists:wallets,id',
-            'amount'                 => 'required|numeric|gt:0',
-            'transaction_type'       => 'nullable|string',
-            'subject'                => 'nullable|string|max:255',
-            'notes'                  => 'nullable|string',
-            'due_date'               => 'nullable|date',
-            'due_date_type'          => 'nullable|in:fixed,monthly,daily',
-            'due_date_interval'      => 'nullable|integer',
+            'date' => 'required|date',
+            'category_id' => $isSystemManagedCategory ? 'nullable' : 'required|exists:categories,id',
+            'source_wallet_id' => 'required|exists:wallets,id',
+            'destination_wallet_id' => 'required|exists:wallets,id',
+            'amount' => 'required|numeric|gt:0',
+            'transaction_type' => 'nullable|string',
+            'subject' => 'nullable|string|max:255',
+            'notes' => 'nullable|string',
+            'due_date' => 'nullable|date',
+            'due_date_type' => 'nullable|in:fixed,monthly,daily',
+            'due_date_interval' => 'nullable|integer',
             // debt_sub_type memberi tahu backend apakah ini "loan" atau "debt_payment"
             // (dan "receivable" atau "receivable_payment")
-            'debt_sub_type'          => 'nullable|string',
+            'debt_sub_type' => 'nullable|string',
         ]);
     }
 
@@ -461,15 +469,15 @@ class TransactionController extends Controller
             ->pluck('count', 'category_id');
 
         $categories = $user->categories()->with('type')->get()
-            ->sortByDesc(fn($cat) => $categoryCounts->get($cat->id, 0))
+            ->sortByDesc(fn ($cat) => $categoryCounts->get($cat->id, 0))
             ->values();
 
         // 3. Kalkulasi data subjek Hutang/Piutang aktif menggunakan system_key
         // Tidak hardcoded nama kategori — kompatibel dengan custom_name personalisasi
         $transactions = $user->transactionLogs()->with('category')
             ->where('is_cleared', true)
-            ->whereHas('category', fn($q) => $q->whereIn('system_key', [
-                'LOAN', 'DEBT_PAYMENT', 'RECEIVABLE', 'RECEIVABLE_PAYMENT'
+            ->whereHas('category', fn ($q) => $q->whereIn('system_key', [
+                'LOAN', 'DEBT_PAYMENT', 'RECEIVABLE', 'RECEIVABLE_PAYMENT',
             ]))
             ->whereNotNull('subject')
             ->where('subject', '!=', '-')
@@ -487,20 +495,20 @@ class TransactionController extends Controller
             $receivableBalances[$subjectKey] ??= ['name' => $subject, 'balance' => 0];
 
             match ($systemKey) {
-                'LOAN'               => $debtBalances[$subjectKey]['balance']       += $tx->amount,
-                'DEBT_PAYMENT'       => $debtBalances[$subjectKey]['balance']       -= $tx->amount,
-                'RECEIVABLE'         => $receivableBalances[$subjectKey]['balance'] += $tx->amount,
+                'LOAN' => $debtBalances[$subjectKey]['balance'] += $tx->amount,
+                'DEBT_PAYMENT' => $debtBalances[$subjectKey]['balance'] -= $tx->amount,
+                'RECEIVABLE' => $receivableBalances[$subjectKey]['balance'] += $tx->amount,
                 'RECEIVABLE_PAYMENT' => $receivableBalances[$subjectKey]['balance'] -= $tx->amount,
-                default              => null,
+                default => null,
             };
         }
 
         return [
-            'wallets'            => $wallets,
-            'systemWallets'      => $systemWallets,
-            'categories'         => $categories,
-            'debtSubjects'       => collect($debtBalances)->filter(fn($i) => $i['balance'] > 0)->pluck('name')->values()->all(),
-            'receivableSubjects' => collect($receivableBalances)->filter(fn($i) => $i['balance'] > 0)->pluck('name')->values()->all(),
+            'wallets' => $wallets,
+            'systemWallets' => $systemWallets,
+            'categories' => $categories,
+            'debtSubjects' => collect($debtBalances)->filter(fn ($i) => $i['balance'] > 0)->pluck('name')->values()->all(),
+            'receivableSubjects' => collect($receivableBalances)->filter(fn ($i) => $i['balance'] > 0)->pluck('name')->values()->all(),
         ];
     }
 }

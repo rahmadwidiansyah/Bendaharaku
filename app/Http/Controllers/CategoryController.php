@@ -4,12 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\TransactionType;
+use App\Support\SettingsChangeLogger;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Http\Requests\StoreCategoryRequest;
 use Illuminate\Support\Facades\Storage;
-use Carbon\Carbon;
-
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -21,7 +20,7 @@ class CategoryController extends Controller
             ->with('type')
             ->orderBy('category_name')
             ->get()
-            ->groupBy(function($data) {
+            ->groupBy(function ($data) {
                 return $data->type->name;
             });
 
@@ -32,10 +31,11 @@ class CategoryController extends Controller
             'totalCategories' => $totalCategories,
         ]);
     }
-    
+
     public function create(Request $request): Response
     {
-        $types = \App\Models\TransactionType::whereIn('name', ['Income', 'Expense'])->get();
+        $types = TransactionType::whereIn('name', ['Income', 'Expense'])->get();
+
         return Inertia::render('Categories/Create', [
             'types' => $types,
             'defaultType' => $request->query('type', 'Expense'),
@@ -60,7 +60,7 @@ class CategoryController extends Controller
         $category = Auth::user()->categories()->create($validated);
 
         // Log category creation
-        \App\Support\SettingsChangeLogger::logChange(
+        SettingsChangeLogger::logChange(
             Auth::user(),
             'category_created',
             'settings.finance.categories',
@@ -73,9 +73,12 @@ class CategoryController extends Controller
 
     public function edit(Category $category): Response
     {
-        if ($category->user_id !== Auth::id()) abort(403);
+        if ($category->user_id !== Auth::id()) {
+            abort(403);
+        }
 
-        $types = \App\Models\TransactionType::all(); // Provide all types, but UI can disable changes for system categories
+        $types = TransactionType::all(); // Provide all types, but UI can disable changes for system categories
+
         return Inertia::render('Categories/Edit', [
             'category' => $category,
             'types' => $types,
@@ -85,14 +88,16 @@ class CategoryController extends Controller
 
     public function update(Request $request, Category $category)
     {
-        if ($category->user_id !== Auth::id()) abort(403);
-        
+        if ($category->user_id !== Auth::id()) {
+            abort(403);
+        }
+
         $validated = $request->validate([
             'category_name' => 'required|string|max:255',
-            'type_id'       => 'required|exists:transaction_types,id',
-            'icon'          => 'nullable|string|max:255',
-            'icon_file'     => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'keyword'       => 'nullable|string|max:255',
+            'type_id' => 'required|exists:transaction_types,id',
+            'icon' => 'nullable|string|max:255',
+            'icon_file' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'keyword' => 'nullable|string|max:255',
         ]);
 
         if ($category->system_key !== null) {
@@ -115,9 +120,9 @@ class CategoryController extends Controller
         foreach ($validated as $key => $value) {
             $oldVal = $original[$key] ?? null;
             if ((string) $oldVal !== (string) $value) {
-                \App\Support\SettingsChangeLogger::logChange(
+                SettingsChangeLogger::logChange(
                     Auth::user(),
-                    'category:' . $key,
+                    'category:'.$key,
                     'settings.finance.categories',
                     $oldVal,
                     $value
@@ -130,17 +135,19 @@ class CategoryController extends Controller
 
     public function destroy(Category $category)
     {
-        if ($category->user_id !== Auth::id()) abort(403);
+        if ($category->user_id !== Auth::id()) {
+            abort(403);
+        }
 
         if ($category->system_key !== null || in_array($category->type->name, ['Transfer', 'Debt', 'Receivable'])) {
             return redirect()->route('categories.index')->with('error', 'Kategori sistem tidak bisa dihapus.');
         }
-        
+
         $old = $category->toArray();
         $category->delete();
 
         // Log deletion
-        \App\Support\SettingsChangeLogger::logChange(
+        SettingsChangeLogger::logChange(
             Auth::user(),
             'category_deleted',
             'settings.finance.categories',
@@ -153,7 +160,9 @@ class CategoryController extends Controller
 
     public function show(Request $request, Category $category): Response
     {
-        if ($category->user_id !== Auth::id()) abort(403);
+        if ($category->user_id !== Auth::id()) {
+            abort(403);
+        }
 
         // Detail dari Vault selalu fokus ke bulan berjalan. Saat dibuka dari
         // Analytics, rentang tanggal pada URL dipakai supaya angkanya konsisten.

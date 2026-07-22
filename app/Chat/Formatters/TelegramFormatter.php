@@ -4,19 +4,17 @@ declare(strict_types=1);
 
 namespace App\Chat\Formatters;
 
-use App\Chat\Contracts\ChatFormatterInterface;
 use App\Chat\Components\ChatComponentInterface;
-use App\Chat\Components\TextComponent;
-use App\Chat\Components\DividerComponent;
-use App\Chat\Components\TransactionCardComponent;
-use App\Chat\Components\SummaryCardComponent;
 use App\Chat\Components\ErrorComponent;
-use App\Chat\Components\WarningComponent;
-use App\Chat\Components\SuggestionComponent;
-use App\Chat\Components\QuickReplyComponent;
 use App\Chat\Components\ReportSectionComponent;
-use App\Chat\DTOs\ChatResponse;
+use App\Chat\Components\SuggestionComponent;
+use App\Chat\Components\SummaryCardComponent;
+use App\Chat\Components\TextComponent;
+use App\Chat\Components\TransactionCardComponent;
+use App\Chat\Components\WarningComponent;
+use App\Chat\Contracts\ChatFormatterInterface;
 use App\Chat\DTOs\ChatContext;
+use App\Chat\DTOs\ChatResponse;
 use App\Chat\Errors\ErrorDetail;
 use App\Enums\ChatIntent;
 use App\Support\MoneyFormatter;
@@ -44,7 +42,7 @@ class TelegramFormatter implements ChatFormatterInterface
     public function format(ChatResponse $response, ChatContext $context): string
     {
         $locale = $context->locale;
-        $lines  = [];
+        $lines = [];
 
         // Error-only response (AI gagal, konfigurasi salah, dll)
         if ($response->intent === ChatIntent::Error && $response->hasErrors()) {
@@ -64,7 +62,7 @@ class TelegramFormatter implements ChatFormatterInterface
             $lines[] = $this->renderError($error, $locale);
         }
 
-        return implode("\n", array_filter($lines, fn($l) => $l !== ''));
+        return implode("\n", array_filter($lines, fn ($l) => $l !== ''));
     }
 
     // ── Component dispatch ────────────────────────────────────────
@@ -72,16 +70,16 @@ class TelegramFormatter implements ChatFormatterInterface
     private function renderComponent(ChatComponentInterface $component, string $locale): ?string
     {
         return match ($component->type()) {
-            'text'             => $this->renderText($component, $locale),
-            'divider'          => $this->renderDivider(),
+            'text' => $this->renderText($component, $locale),
+            'divider' => $this->renderDivider(),
             'transaction_card' => $this->renderTransactionCard($component, $locale),
-            'summary_card'     => $this->renderSummaryCard($component, $locale),
-            'error'            => $this->renderErrorComponent($component, $locale),
-            'warning'          => $this->renderWarning($component, $locale),
-            'suggestion'       => $this->renderSuggestion($component, $locale),
-            'report_section'   => $this->renderReportSection($component, $locale),
-            'quick_reply'      => null, // Telegram quick reply = Reply Keyboard, handled by Adapter
-            default            => null,
+            'summary_card' => $this->renderSummaryCard($component, $locale),
+            'error' => $this->renderErrorComponent($component, $locale),
+            'warning' => $this->renderWarning($component, $locale),
+            'suggestion' => $this->renderSuggestion($component, $locale),
+            'report_section' => $this->renderReportSection($component, $locale),
+            'quick_reply' => null, // Telegram quick reply = Reply Keyboard, handled by Adapter
+            default => null,
         };
     }
 
@@ -90,6 +88,7 @@ class TelegramFormatter implements ChatFormatterInterface
     private function renderText(TextComponent $c, string $locale): string
     {
         $text = trans($c->translationKey, $c->params, $locale);
+
         return $c->bold ? $text : $text;  // Bold sudah di-embed di translation string
     }
 
@@ -100,46 +99,47 @@ class TelegramFormatter implements ChatFormatterInterface
 
     private function renderTransactionCard(TransactionCardComponent $c, string $locale): string
     {
-        $trx    = $c->transaction;
+        $trx = $c->transaction;
         $amount = MoneyFormatter::rupiah($trx->amount);
 
         $typeName = match (strtolower($trx->type?->name ?? '')) {
-            'income'               => trans('chat.transaction.type_income', [], $locale),
-            'expense'              => trans('chat.transaction.type_expense', [], $locale),
-            'transfer'             => trans('chat.transaction.type_transfer', [], $locale),
-            'debt', 'receivable'   => trans('chat.transaction.type_debt_receivable', [], $locale),
-            default                => trans('chat.transaction.type_default', [], $locale),
+            'income' => trans('chat.transaction.type_income', [], $locale),
+            'expense' => trans('chat.transaction.type_expense', [], $locale),
+            'transfer' => trans('chat.transaction.type_transfer', [], $locale),
+            'debt', 'receivable' => trans('chat.transaction.type_debt_receivable', [], $locale),
+            default => trans('chat.transaction.type_default', [], $locale),
         };
 
         $statusIcon = $trx->is_cleared
             ? trans('chat.transaction.cleared', [], $locale)
             : trans('chat.transaction.uncleared', [], $locale);
 
-        if (!$c->showDetails) {
+        if (! $c->showDetails) {
             // Ringkas: untuk list dalam multi-transaction
-            $index      = $c->index !== null ? "{$c->index}. ✅ " : '✅ ';
-            $catName    = $trx->category?->category_name ?? '?';
-            $wallet     = $trx->sourceWallet?->name ?? $trx->destinationWallet?->name ?? '?';
+            $index = $c->index !== null ? "{$c->index}. ✅ " : '✅ ';
+            $catName = $trx->category?->category_name ?? '?';
+            $wallet = $trx->sourceWallet?->name ?? $trx->destinationWallet?->name ?? '?';
+
             return "{$index}_{$catName}_ *{$amount}* ({$wallet})";
         }
 
         // Detail: untuk single transaction
-        $labelRef    = trans('chat.transaction.label_ref', [], $locale);
-        $labelAmt    = trans('chat.transaction.label_amount', [], $locale);
-        $labelCat    = trans('chat.transaction.label_category', [], $locale);
-        $labelSrc    = trans('chat.transaction.label_source', [], $locale);
-        $labelDst    = trans('chat.transaction.label_destination', [], $locale);
-        $labelSubj   = trans('chat.transaction.label_subject', [], $locale);
+        $labelRef = trans('chat.transaction.label_ref', [], $locale);
+        $labelAmt = trans('chat.transaction.label_amount', [], $locale);
+        $labelCat = trans('chat.transaction.label_category', [], $locale);
+        $labelSrc = trans('chat.transaction.label_source', [], $locale);
+        $labelDst = trans('chat.transaction.label_destination', [], $locale);
+        $labelSubj = trans('chat.transaction.label_subject', [], $locale);
 
-        $catName     = $trx->category?->category_name ?? '-';
-        $srcName     = $trx->sourceWallet?->name ?? '-';
-        $dstName     = $trx->destinationWallet?->name ?? '-';
-        $refNumber   = $trx->reference_number ?? '-';
+        $catName = $trx->category?->category_name ?? '-';
+        $srcName = $trx->sourceWallet?->name ?? '-';
+        $dstName = $trx->destinationWallet?->name ?? '-';
+        $refNumber = $trx->reference_number ?? '-';
 
         return implode("\n", [
             "{$statusIcon}",
             "_{$typeName}_",
-            "",
+            '',
             "🏷 *{$labelRef}    :* `{$refNumber}`",
             "💰 *{$labelAmt} :* {$amount}",
             "📂 *{$labelCat} :* {$catName}",
@@ -157,15 +157,16 @@ class TelegramFormatter implements ChatFormatterInterface
         if ($c->allFailed()) {
             return trans('chat.multi.all_failed', ['count' => $c->total], $locale);
         }
+
         return trans('chat.multi.partial', ['success' => $c->success, 'failed' => $c->failed], $locale);
     }
 
     private function renderErrorComponent(ErrorComponent $c, string $locale): string
     {
         $message = trans($c->messageKey, $c->params, $locale);
-        $prefix  = $c->index !== null ? "{$c->index}. ❌" : '❌';
-        $raw     = $c->raw ? " _{$c->raw}_" : '';
-        $reason  = trans('chat.error.reason_prefix', [], $locale) . $message;
+        $prefix = $c->index !== null ? "{$c->index}. ❌" : '❌';
+        $raw = $c->raw ? " _{$c->raw}_" : '';
+        $reason = trans('chat.error.reason_prefix', [], $locale).$message;
 
         return "{$prefix}{$raw}\n   {$reason}";
     }
@@ -173,19 +174,21 @@ class TelegramFormatter implements ChatFormatterInterface
     private function renderWarning(WarningComponent $c, string $locale): string
     {
         $text = trans($c->messageKey, $c->params, $locale);
+
         return "⚠️ {$text}";
     }
 
     private function renderSuggestion(SuggestionComponent $c, string $locale): string
     {
         $text = trans($c->messageKey, $c->params, $locale);
+
         return "💡 {$text}";
     }
 
     private function renderReportSection(ReportSectionComponent $c, string $locale): string
     {
         $title = $c->title ?: ($c->translationKey ? trans($c->translationKey, [], $locale) : '');
-        $emoji = $c->emoji ? $c->emoji . ' ' : '';
+        $emoji = $c->emoji ? $c->emoji.' ' : '';
         $header = "{$emoji}*{$title}*";
 
         if (empty($c->items)) {
@@ -201,11 +204,11 @@ class TelegramFormatter implements ChatFormatterInterface
         if ($isSaldoOrWallet) {
             $walletData = [];
             $maxNameLen = 0;
-            $maxBalLen  = 0;
+            $maxBalLen = 0;
 
             foreach ($c->items as $item) {
                 if (is_array($item)) {
-                    $name   = $item['name'] ?? $item['category'] ?? '-';
+                    $name = $item['name'] ?? $item['category'] ?? '-';
                     $balStr = $item['amount'] ?? '';
                 } elseif (str_contains($item, ':')) {
                     $parts = explode(':', $item, 2);
@@ -235,13 +238,13 @@ class TelegramFormatter implements ChatFormatterInterface
                 foreach ($walletData as $wd) {
                     if ($wd['balStr'] !== '') {
                         $textMsg .= str_pad($wd['name'], $maxNameLen, ' ', STR_PAD_RIGHT)
-                            . ': '
-                            . str_pad($wd['balStr'], $maxBalLen, ' ', STR_PAD_LEFT) . "\n";
+                            .': '
+                            .str_pad($wd['balStr'], $maxBalLen, ' ', STR_PAD_LEFT)."\n";
                     } else {
-                        $textMsg .= $wd['name'] . "\n";
+                        $textMsg .= $wd['name']."\n";
                     }
                 }
-                $textMsg .= "```";
+                $textMsg .= '```';
                 $lines[] = $textMsg;
             } else {
                 foreach ($c->items as $item) {
@@ -251,7 +254,7 @@ class TelegramFormatter implements ChatFormatterInterface
         } else {
             $isCategorySection = str_contains(strtolower($c->translationKey ?? ''), 'category');
 
-            if ($isCategorySection && !empty($c->items) && is_array($c->items[0]) && isset($c->items[0]['categories'])) {
+            if ($isCategorySection && ! empty($c->items) && is_array($c->items[0]) && isset($c->items[0]['categories'])) {
                 // Structured category sections
                 foreach ($c->items as $section) {
                     $typeIcon = $section['type_icon'] ?? '📁';
@@ -265,12 +268,12 @@ class TelegramFormatter implements ChatFormatterInterface
             } else {
                 foreach ($c->items as $item) {
                     if (is_array($item)) {
-                        $icon     = $item['category_icon'] ?? '📄';
+                        $icon = $item['category_icon'] ?? '📄';
                         $category = $item['category'] ?? '-';
-                        $amount   = $item['amount'] ?? '';
-                        $date     = $item['date'] ?? '';
-                        $wallet   = $item['wallet'] ?? '';
-                        $lines[]  = "{$icon} {$category} — {$amount} ({$date} - {$wallet})";
+                        $amount = $item['amount'] ?? '';
+                        $date = $item['date'] ?? '';
+                        $wallet = $item['wallet'] ?? '';
+                        $lines[] = "{$icon} {$category} — {$amount} ({$date} - {$wallet})";
                     } else {
                         $lines[] = "▫️ {$item}";
                     }
@@ -300,11 +303,12 @@ class TelegramFormatter implements ChatFormatterInterface
     {
         $key = match (strtoupper($provider)) {
             'PYTHON-NLP' => 'chat.ai.provider_python',
-            'GEMINI'     => 'chat.ai.provider_gemini',
-            'OPENAI'     => 'chat.ai.provider_openai',
-            'DEEPSEEK'   => 'chat.ai.provider_deepseek',
-            default      => 'chat.ai.provider_default',
+            'GEMINI' => 'chat.ai.provider_gemini',
+            'OPENAI' => 'chat.ai.provider_openai',
+            'DEEPSEEK' => 'chat.ai.provider_deepseek',
+            default => 'chat.ai.provider_default',
         };
+
         return trans($key, ['provider' => strtoupper($provider)], $locale);
     }
 }

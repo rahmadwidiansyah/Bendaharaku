@@ -4,28 +4,32 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Services;
 
-use Tests\TestCase;
-use App\Models\User;
-use App\Models\Wallet;
-use App\Models\Category;
-use App\Models\TransactionType;
-use App\Services\Chat\ChatTransactionOrchestrator;
-use App\Services\AI\AIManager;
 use App\DTO\AIParseResult;
 use App\DTO\ParsedTransaction;
 use App\Enums\TransactionIntent;
+use App\Models\Category;
+use App\Models\TransactionType;
+use App\Models\User;
+use App\Models\Wallet;
+use App\Services\AI\AIManager;
+use App\Services\Chat\ChatTransactionOrchestrator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Mockery\MockInterface;
+use Tests\TestCase;
 
 class ChatTransactionOrchestratorTest extends TestCase
 {
     use RefreshDatabase;
 
     private User $user;
+
     private Wallet $sourceWallet;
+
     private Wallet $destWallet;
+
     private Category $category;
+
     private ChatTransactionOrchestrator $orchestrator;
 
     protected function setUp(): void
@@ -34,28 +38,28 @@ class ChatTransactionOrchestratorTest extends TestCase
 
         // 1. Setup User & Data Master
         $this->user = User::factory()->create(['name' => 'Budi']);
-        
+
         // HAPUS DATA BAWAAN BOOT AGAR TIDAK DUPLIKAT DENGAN DATA TEST
         $this->user->wallets()->forceDelete();
         $this->user->categories()->forceDelete();
-        
+
         $expenseType = TransactionType::create(['name' => 'Expense']);
-        
+
         $this->category = $this->user->categories()->create([
             'category_name' => 'Makan & Minum',
-            'keyword'       => 'makan',
-            'type_id'       => $expenseType->id,
+            'keyword' => 'makan',
+            'type_id' => $expenseType->id,
         ]);
 
         $this->sourceWallet = $this->user->wallets()->create([
-            'name'       => 'Dompet Cash',
-            'keyword'    => 'cash',
-            'balance'    => 100000,
+            'name' => 'Dompet Cash',
+            'keyword' => 'cash',
+            'balance' => 100000,
             'group_type' => 'Liquid',
         ]);
 
         $this->destWallet = $this->user->wallets()->create([
-            'name'       => 'Merchant System',
+            'name' => 'Merchant System',
             'group_type' => 'System',
         ]);
 
@@ -72,7 +76,7 @@ class ChatTransactionOrchestratorTest extends TestCase
             transactionType: TransactionIntent::Expense,
             category: 'makan',
             sourceWallet: 'cash',
-            isCleared: true 
+            isCleared: true
         );
 
         $mockAiResult = new AIParseResult(true, 0.95, null, $parsedTransaction);
@@ -86,7 +90,7 @@ class ChatTransactionOrchestratorTest extends TestCase
         );
 
         $this->orchestrator = $this->app->make(ChatTransactionOrchestrator::class);
-        $result = $this->orchestrator->process($this->user, "beli kopi 15rb cash", 'TEL');
+        $result = $this->orchestrator->process($this->user, 'beli kopi 15rb cash', 'TEL');
 
         // Assert Transaksi Sukses & Tereksekusi
         $this->assertTrue($result['success']);
@@ -119,7 +123,7 @@ class ChatTransactionOrchestratorTest extends TestCase
         );
 
         $this->orchestrator = $this->app->make(ChatTransactionOrchestrator::class);
-        $result = $this->orchestrator->process($this->user, "kayaknya kemarin beli makan 50rb", 'TEL');
+        $result = $this->orchestrator->process($this->user, 'kayaknya kemarin beli makan 50rb', 'TEL');
 
         // Assert Transaksi Disimpan sebagai Draft
         $this->assertTrue($result['success']);
@@ -131,7 +135,7 @@ class ChatTransactionOrchestratorTest extends TestCase
             'status' => 'pending',
         ]);
         $this->assertDatabaseCount('transaction_logs', 0);
-        
+
         // Assert Saldo AMAN (Tetap 100.000)
         $this->assertEquals(100000, $this->sourceWallet->fresh()->balance);
     }
@@ -140,7 +144,7 @@ class ChatTransactionOrchestratorTest extends TestCase
     public function test_it_rejects_transaction_when_ai_extraction_fails()
     {
         // Simulasi AI gagal mengenali instruksi
-        $mockAiResult = AIParseResult::failure("AI tidak menemukan format transaksi yang valid.");
+        $mockAiResult = AIParseResult::failure('AI tidak menemukan format transaksi yang valid.');
 
         $this->instance(
             AIManager::class,
@@ -150,12 +154,12 @@ class ChatTransactionOrchestratorTest extends TestCase
         );
 
         $this->orchestrator = $this->app->make(ChatTransactionOrchestrator::class);
-        $result = $this->orchestrator->process($this->user, "halo apa kabar bot", 'TEL');
+        $result = $this->orchestrator->process($this->user, 'halo apa kabar bot', 'TEL');
 
         // Assert Transaksi Gagal
         $this->assertFalse($result['success']);
-        $this->assertStringContainsString("AI Gagal memproses", $result['message']);
-        
+        $this->assertStringContainsString('AI Gagal memproses', $result['message']);
+
         // Assert Saldo Tidak Berubah
         $this->assertEquals(100000, $this->sourceWallet->fresh()->balance);
     }

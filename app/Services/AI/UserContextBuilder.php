@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\AI;
 
-use App\Models\User;
 use App\Models\TransactionLog;
+use App\Models\User;
 
 /**
  * UserContextBuilder
@@ -47,7 +47,7 @@ class UserContextBuilder
             ->toArray();
 
         // Bangun flat keyword → nama map untuk quick alias lookup
-        $walletKeywords   = $this->buildKeywordMap($wallets, 'name');
+        $walletKeywords = $this->buildKeywordMap($wallets, 'name');
         $categoryKeywords = $this->buildKeywordMap($categories, 'category_name');
 
         // Merchant dari notes transaksi terbaru (unik, max 20, token-efficient)
@@ -66,28 +66,28 @@ class UserContextBuilder
         return [
             // Daftar wallet user (non-System) dengan keyword dan saldo-nya
             'wallets' => array_map(fn ($w) => [
-                'id'       => $w['id'],
-                'name'     => $w['name'],
-                'balance'  => (float) ($w['balance'] ?? 0),
+                'id' => $w['id'],
+                'name' => $w['name'],
+                'balance' => (float) ($w['balance'] ?? 0),
                 'keywords' => $this->parseKeywords($w['keyword'] ?? ''),
             ], $wallets),
 
             // Daftar kategori user dengan keyword-nya
             'categories' => array_map(fn ($c) => [
-                'id'       => $c['id'],
-                'name'     => $c['category_name'],
+                'id' => $c['id'],
+                'name' => $c['category_name'],
                 'keywords' => $this->parseKeywords($c['keyword'] ?? ''),
             ], $categories),
 
             // Flat alias map: 'spay' => 'ShopeePay', 'dana' => 'Dana', dst.
-            'wallet_keywords'   => $walletKeywords,
+            'wallet_keywords' => $walletKeywords,
             'category_keywords' => $categoryKeywords,
 
             // Merchant yang pernah dipakai (untuk referensi AI)
-            'recent_merchants'  => $recentMerchants,
+            'recent_merchants' => $recentMerchants,
 
             // Preferensi user
-            'locale'   => $user->locale   ?? 'id',
+            'locale' => $user->locale ?? 'id',
             'timezone' => $user->timezone ?? 'Asia/Jakarta',
         ];
     }
@@ -110,7 +110,7 @@ class UserContextBuilder
 
             // Keyword tambahan dari field keyword
             foreach ($this->parseKeywords($item['keyword'] ?? '') as $kw) {
-                if (!empty($kw)) {
+                if (! empty($kw)) {
                     $map[strtolower(trim($kw))] = $name;
                 }
             }

@@ -40,13 +40,13 @@ enum MultiTransactionErrorCode: string
     public function label(): string
     {
         return match ($this) {
-            self::WALLET_NOT_FOUND      => 'Dompet tidak ditemukan',
-            self::CATEGORY_NOT_FOUND    => 'Kategori tidak ditemukan',
-            self::INVALID_AMOUNT        => 'Nominal tidak valid',
-            self::SAME_WALLET           => 'Dompet asal dan tujuan sama',
-            self::INSUFFICIENT_BALANCE  => 'Saldo tidak mencukupi',
-            self::VALIDATION_ERROR      => 'Validasi gagal',
-            self::UNKNOWN_ERROR         => 'Error tidak diketahui',
+            self::WALLET_NOT_FOUND => 'Dompet tidak ditemukan',
+            self::CATEGORY_NOT_FOUND => 'Kategori tidak ditemukan',
+            self::INVALID_AMOUNT => 'Nominal tidak valid',
+            self::SAME_WALLET => 'Dompet asal dan tujuan sama',
+            self::INSUFFICIENT_BALANCE => 'Saldo tidak mencukupi',
+            self::VALIDATION_ERROR => 'Validasi gagal',
+            self::UNKNOWN_ERROR => 'Error tidak diketahui',
         };
     }
 }

@@ -16,9 +16,9 @@ namespace App\Chat\Components;
 readonly class SummaryCardComponent implements ChatComponentInterface
 {
     public function __construct(
-        public int   $total,
-        public int   $success,
-        public int   $failed,
+        public int $total,
+        public int $success,
+        public int $failed,
         public float $confidence = 0.0,
     ) {}
 
@@ -39,16 +39,16 @@ readonly class SummaryCardComponent implements ChatComponentInterface
 
     public function isPartial(): bool
     {
-        return !$this->allSuccess() && !$this->allFailed();
+        return ! $this->allSuccess() && ! $this->allFailed();
     }
 
     public function toArray(): array
     {
         return [
-            'type'       => $this->type(),
-            'total'      => $this->total,
-            'success'    => $this->success,
-            'failed'     => $this->failed,
+            'type' => $this->type(),
+            'total' => $this->total,
+            'success' => $this->success,
+            'failed' => $this->failed,
             'confidence' => $this->confidence,
         ];
     }

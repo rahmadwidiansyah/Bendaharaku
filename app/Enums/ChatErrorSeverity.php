@@ -14,13 +14,13 @@ namespace App\Enums;
 enum ChatErrorSeverity: string
 {
     /** Info saja — tidak mempengaruhi hasil */
-    case Info     = 'info';
+    case Info = 'info';
 
     /** Peringatan — hasil mungkin tidak sempurna */
-    case Warning  = 'warning';
+    case Warning = 'warning';
 
     /** Error — item gagal, tapi batch lain bisa lanjut */
-    case Error    = 'error';
+    case Error = 'error';
 
     /** Fatal — seluruh operasi dibatalkan */
     case Critical = 'critical';
@@ -28,9 +28,9 @@ enum ChatErrorSeverity: string
     public function emoji(): string
     {
         return match ($this) {
-            self::Info     => 'ℹ️',
-            self::Warning  => '⚠️',
-            self::Error    => '❌',
+            self::Info => 'ℹ️',
+            self::Warning => '⚠️',
+            self::Error => '❌',
             self::Critical => '🚨',
         };
     }

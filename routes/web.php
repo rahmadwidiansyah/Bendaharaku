@@ -1,23 +1,28 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\TransactionController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\AnalyticsController;
-use App\Http\Controllers\WalletController;
-use App\Http\Controllers\LoanController;
-use App\Http\Controllers\Settings\AiSettingsController;
+use App\Console\Commands\AggregateAiMetricsCommand;
+use App\Console\Commands\PruneAiMemoriesCommand;
 use App\Http\Controllers\AiAnalyticsController;
-use App\Http\Controllers\GoogleController;
-use App\Http\Controllers\WebChatController;
+use App\Http\Controllers\AnalyticsController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ChatBotProfileController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\GoogleController;
+use App\Http\Controllers\LoanController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Settings\AiSettingsController;
+use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\WalletController;
+use App\Http\Controllers\WebChatController;
+use App\Models\Wallet;
+use App\Support\SettingsChangeLogger;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schedule;
-use App\Console\Commands\PruneAiMemoriesCommand;
-use App\Console\Commands\AggregateAiMetricsCommand;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\DB;
 
 // Google Auth
 Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])->name('google.login');
@@ -36,12 +41,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
 
     // Settings
-    Route::get('/settings', function (\Illuminate\Http\Request $request) {
+    Route::get('/settings', function (Request $request) {
         return Inertia::render('Settings/Index', [
             'allowNegativeBalance' => $request->user()->allow_negative_balance,
         ]);
     })->name('settings.index');
-    Route::patch('/settings/transaction-logic', function (\Illuminate\Http\Request $request) {
+    Route::patch('/settings/transaction-logic', function (Request $request) {
         $validated = $request->validate(['allow_negative_balance' => ['required', 'boolean']]);
 
         $user = $request->user();
@@ -49,7 +54,7 @@ Route::middleware(['auth'])->group(function () {
         $user->update($validated);
 
         // Log change
-        \App\Support\SettingsChangeLogger::logChange(
+        SettingsChangeLogger::logChange(
             $user,
             'allow_negative_balance',
             'settings.transaction',
@@ -61,7 +66,7 @@ Route::middleware(['auth'])->group(function () {
     })->name('settings.transaction-logic.update');
 
     // Simpan preferensi locale user ke DB agar chat (Telegram & Web) bisa baca
-    Route::patch('/settings/locale', function (\Illuminate\Http\Request $request) {
+    Route::patch('/settings/locale', function (Request $request) {
         $validated = $request->validate(['locale' => ['required', 'string', 'in:id,en,auto']]);
         // 'auto' = null di DB (ikuti platform/default)
         $user = $request->user();
@@ -70,7 +75,7 @@ Route::middleware(['auth'])->group(function () {
         $user->update(['locale' => $newLocale]);
 
         // Log change
-        \App\Support\SettingsChangeLogger::logChange(
+        SettingsChangeLogger::logChange(
             $user,
             'locale',
             'settings.application.language',
@@ -84,10 +89,11 @@ Route::middleware(['auth'])->group(function () {
     // ── SETTINGS PAGES - NEW HIERARCHY ────────────────────────────────
     // Account
     Route::prefix('settings/account')->name('settings.account.')->group(function () {
-        Route::get('/profile', function (\Illuminate\Http\Request $request) {
+        Route::get('/profile', function (Request $request) {
             $user = $request->user();
+
             return Inertia::render('Settings/Account/Profile', [
-                'user'   => $user,
+                'user' => $user,
                 'status' => session('status'),
             ]);
         })->name('profile');
@@ -95,7 +101,7 @@ Route::middleware(['auth'])->group(function () {
         // Full profile update (name, email, whatsapp, telegram, avatar) via ProfileController
         Route::match(['post', 'patch'], '/profile', [ProfileController::class, 'update'])->name('profile.update');
 
-        Route::get('/security', function (\Illuminate\Http\Request $request) {
+        Route::get('/security', function (Request $request) {
             $user = $request->user();
             $currentSessionId = $request->session()->getId();
 
@@ -107,54 +113,55 @@ Route::middleware(['auth'])->group(function () {
 
             $sessions = $dbSessions->map(function ($s) use ($currentSessionId) {
                 return [
-                    'id'            => $s->id,
-                    'ip'            => $s->ip_address,
-                    'user_agent'    => $s->user_agent,
-                    'last_activity' => \Carbon\Carbon::createFromTimestamp($s->last_activity)->toDateTimeString(),
-                    'is_current'    => $s->id === $currentSessionId,
+                    'id' => $s->id,
+                    'ip' => $s->ip_address,
+                    'user_agent' => $s->user_agent,
+                    'last_activity' => Carbon::createFromTimestamp($s->last_activity)->toDateTimeString(),
+                    'is_current' => $s->id === $currentSessionId,
                 ];
             })->values()->all();
 
             // If no DB sessions found (e.g. driver mismatch), fall back to current-request info
             if (empty($sessions)) {
                 $sessions = [[
-                    'id'            => $currentSessionId,
-                    'ip'            => $request->ip(),
-                    'user_agent'    => $request->userAgent(),
+                    'id' => $currentSessionId,
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
                     'last_activity' => now()->toDateTimeString(),
-                    'is_current'    => true,
+                    'is_current' => true,
                 ]];
             }
 
             $currentSession = collect($sessions)->firstWhere('is_current', true) ?? $sessions[0];
-            $otherSessions  = collect($sessions)->where('is_current', false)->values()->all();
+            $otherSessions = collect($sessions)->where('is_current', false)->values()->all();
 
             return Inertia::render('Settings/Account/Security', [
                 'currentSession' => $currentSession,
-                'otherSessions'  => $otherSessions,
+                'otherSessions' => $otherSessions,
             ]);
         })->name('security');
 
-        Route::get('/preferences', function (\Illuminate\Http\Request $request) {
+        Route::get('/preferences', function (Request $request) {
             $user = $request->user();
+
             return Inertia::render('Settings/Account/Preferences', [
-                'userTimezone'   => $user->timezone ?? 'Asia/Jakarta',
+                'userTimezone' => $user->timezone ?? 'Asia/Jakarta',
                 'userDateFormat' => $user->date_format ?? 'DD/MM/YYYY',
             ]);
         })->name('preferences');
-        Route::patch('/preferences', function (\Illuminate\Http\Request $request) {
+        Route::patch('/preferences', function (Request $request) {
             $validated = $request->validate([
-                'timezone'    => ['required', 'string', 'timezone'],
+                'timezone' => ['required', 'string', 'timezone'],
                 'date_format' => ['required', 'string', 'in:DD/MM/YYYY,MM/DD/YYYY,YYYY-MM-DD'],
             ]);
 
             $user = $request->user();
             $user->update([
-                'timezone'    => $validated['timezone'],
+                'timezone' => $validated['timezone'],
                 'date_format' => $validated['date_format'],
             ]);
 
-            \App\Support\SettingsChangeLogger::logChange(
+            SettingsChangeLogger::logChange(
                 $user,
                 'preferences',
                 'settings.account.preferences',
@@ -168,22 +175,23 @@ Route::middleware(['auth'])->group(function () {
 
     // Application
     Route::prefix('settings/application')->name('settings.application.')->group(function () {
-        Route::get('/appearance', function (\Illuminate\Http\Request $request) {
+        Route::get('/appearance', function (Request $request) {
             $user = $request->user();
+
             return Inertia::render('Settings/Application/Appearance', [
                 'userAccentColor' => $user->accent_color ?? 'purple',
             ]);
         })->name('appearance');
-        Route::patch('/appearance', function (\Illuminate\Http\Request $request) {
+        Route::patch('/appearance', function (Request $request) {
             $validated = $request->validate([
-                'theme'        => ['required', 'string', 'in:light,dark,system'],
+                'theme' => ['required', 'string', 'in:light,dark,system'],
                 'accent_color' => ['required', 'string', 'regex:/^(purple|blue|green|orange|red|pink|custom:#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3}))$/'],
             ]);
 
             $user = $request->user();
             $user->update(['accent_color' => $validated['accent_color']]);
 
-            \App\Support\SettingsChangeLogger::logChange(
+            SettingsChangeLogger::logChange(
                 $user,
                 'appearance',
                 'settings.application.appearance',
@@ -194,13 +202,14 @@ Route::middleware(['auth'])->group(function () {
             return response()->json(['success' => true, 'message' => 'Tampilan berhasil diperbarui.']);
         })->name('appearance.update');
 
-        Route::get('/language', function (\Illuminate\Http\Request $request) {
+        Route::get('/language', function (Request $request) {
             $user = $request->user();
+
             return Inertia::render('Settings/Application/Language', [
                 'userLanguage' => $user->locale ?? 'id',
             ]);
         })->name('language');
-        Route::patch('/language', function (\Illuminate\Http\Request $request) {
+        Route::patch('/language', function (Request $request) {
             $validated = $request->validate([
                 'language' => ['required', 'string', 'in:id,en'],
             ]);
@@ -208,7 +217,7 @@ Route::middleware(['auth'])->group(function () {
             $user = $request->user();
             $user->update(['locale' => $validated['language']]);
 
-            \App\Support\SettingsChangeLogger::logChange(
+            SettingsChangeLogger::logChange(
                 $user,
                 'language',
                 'settings.application.language',
@@ -219,8 +228,8 @@ Route::middleware(['auth'])->group(function () {
             return response()->json(['success' => true, 'message' => 'Bahasa berhasil diperbarui.']);
         })->name('language.update');
 
-        Route::get('/notifications', fn() => Inertia::render('Settings/Application/Notifications'))->name('notifications');
-        Route::patch('/notifications', function (\Illuminate\Http\Request $request) {
+        Route::get('/notifications', fn () => Inertia::render('Settings/Application/Notifications'))->name('notifications');
+        Route::patch('/notifications', function (Request $request) {
             $validated = $request->validate([
                 'email_notifications' => ['required', 'boolean'],
                 'push_notifications' => ['required', 'boolean'],
@@ -228,8 +237,8 @@ Route::middleware(['auth'])->group(function () {
 
             $user = $request->user();
             // Store notification preferences
-            
-            \App\Support\SettingsChangeLogger::logChange(
+
+            SettingsChangeLogger::logChange(
                 $user,
                 'notifications',
                 'settings.application.notifications',
@@ -243,12 +252,12 @@ Route::middleware(['auth'])->group(function () {
 
     // Finance
     Route::prefix('settings/finance')->name('settings.finance.')->group(function () {
-        Route::get('/defaults', function (\Illuminate\Http\Request $request) {
+        Route::get('/defaults', function (Request $request) {
             return Inertia::render('Settings/Finance/Defaults', [
-                'wallets' => \App\Models\Wallet::where('user_id', $request->user()->id)->get(),
+                'wallets' => Wallet::where('user_id', $request->user()->id)->get(),
             ]);
         })->name('defaults');
-        Route::patch('/defaults', function (\Illuminate\Http\Request $request) {
+        Route::patch('/defaults', function (Request $request) {
             $validated = $request->validate([
                 'default_wallet' => ['required', 'exists:wallets,id'],
                 'default_currency' => ['required', 'string'],
@@ -259,7 +268,7 @@ Route::middleware(['auth'])->group(function () {
             $old = ['allow_negative_balance' => $user->allow_negative_balance];
             $user->update(['allow_negative_balance' => $validated['allow_negative_balance']]);
 
-            \App\Support\SettingsChangeLogger::logChange(
+            SettingsChangeLogger::logChange(
                 $user,
                 'finance_defaults',
                 'settings.finance.defaults',
@@ -270,15 +279,15 @@ Route::middleware(['auth'])->group(function () {
             return response()->json(['success' => true, 'message' => 'Default berhasil diperbarui.']);
         })->name('defaults.update');
 
-        Route::get('/categories', fn() => Inertia::render('Settings/Finance/Categories'))->name('categories');
-        Route::get('/wallets', fn() => Inertia::render('Settings/Finance/Wallets'))->name('wallets');
-        Route::get('/budget', fn() => Inertia::render('Settings/Finance/Budget'))->name('budget');
+        Route::get('/categories', fn () => Inertia::render('Settings/Finance/Categories'))->name('categories');
+        Route::get('/wallets', fn () => Inertia::render('Settings/Finance/Wallets'))->name('wallets');
+        Route::get('/budget', fn () => Inertia::render('Settings/Finance/Budget'))->name('budget');
     });
 
     // Privacy & Data
     Route::prefix('settings/privacy')->name('settings.privacy.')->group(function () {
-        Route::get('/settings', fn() => Inertia::render('Settings/Privacy/Settings'))->name('settings');
-        Route::patch('/settings', function (\Illuminate\Http\Request $request) {
+        Route::get('/settings', fn () => Inertia::render('Settings/Privacy/Settings'))->name('settings');
+        Route::patch('/settings', function (Request $request) {
             $validated = $request->validate([
                 'data_collection' => ['required', 'boolean'],
                 'analytics' => ['required', 'boolean'],
@@ -286,8 +295,8 @@ Route::middleware(['auth'])->group(function () {
 
             $user = $request->user();
             // Store privacy preferences
-            
-            \App\Support\SettingsChangeLogger::logChange(
+
+            SettingsChangeLogger::logChange(
                 $user,
                 'privacy',
                 'settings.privacy.settings',
@@ -298,21 +307,21 @@ Route::middleware(['auth'])->group(function () {
             return response()->json(['success' => true, 'message' => 'Privasi berhasil diperbarui.']);
         })->name('settings.update');
 
-        Route::get('/data', fn() => Inertia::render('Settings/Privacy/Data'))->name('data');
-        Route::get('/danger', fn() => Inertia::render('Settings/Privacy/Danger'))->name('danger');
+        Route::get('/data', fn () => Inertia::render('Settings/Privacy/Data'))->name('data');
+        Route::get('/danger', fn () => Inertia::render('Settings/Privacy/Danger'))->name('danger');
     });
 
     // API helpers used by frontend Settings (cache clear, account delete, account export)
-    Route::post('/api/cache/clear', function (\Illuminate\Http\Request $request) {
+    Route::post('/api/cache/clear', function (Request $request) {
         // In many hosted/dev environments cache clearing from web can cause DB or permission errors.
         // Return a clear, actionable response instead of attempting operations that may fail.
         return response()->json([
             'success' => false,
-            'message' => 'Cache clearing via web disabled. Run "php artisan cache:clear" on the server or change the cache driver to a non-database store.'
+            'message' => 'Cache clearing via web disabled. Run "php artisan cache:clear" on the server or change the cache driver to a non-database store.',
         ], 501);
     })->name('api.cache.clear');
 
-    Route::post('/api/account/delete', function (\Illuminate\Http\Request $request) {
+    Route::post('/api/account/delete', function (Request $request) {
         $user = $request->user();
 
         if (! $user) {
@@ -321,20 +330,20 @@ Route::middleware(['auth'])->group(function () {
 
         try {
             // Invalidate session and logout first
-            \Illuminate\Support\Facades\Auth::logout();
+            Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
             // Attempt deletion (soft-delete if model supports it)
             $user->delete();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
 
         return response()->json(['success' => true, 'message' => 'Account deleted']);
     })->name('api.account.delete');
 
-    Route::post('/api/account/export', function (\Illuminate\Http\Request $request) {
+    Route::post('/api/account/export', function (Request $request) {
         $user = $request->user();
         if (! $user) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
@@ -353,10 +362,11 @@ Route::middleware(['auth'])->group(function () {
             'transactions' => DB::table('transactions')->where('user_id', $user->id)->limit(1000)->get(),
         ];
 
-        $json = json_encode($export, JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE);
+        $json = json_encode($export, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
         return response($json, 200, [
             'Content-Type' => 'application/json',
-            'Content-Disposition' => 'attachment; filename="bendaharaku-export.json"'
+            'Content-Disposition' => 'attachment; filename="bendaharaku-export.json"',
         ]);
     })->name('api.account.export');
 
@@ -377,24 +387,25 @@ Route::middleware(['auth'])->group(function () {
     // AI Settings - Restructured Hierarchy
     Route::prefix('settings/ai')->name('settings.ai.')->group(function () {
         Route::get('/models', [AiSettingsController::class, 'index'])->name('models');
-        Route::get('/bot', function (\Illuminate\Http\Request $request) {
+        Route::get('/bot', function (Request $request) {
             $user = $request->user();
+
             return Inertia::render('Settings/AI/Bot', [
-                'botName'   => $user->bot_name ?? 'Ken-Chan',
+                'botName' => $user->bot_name ?? 'Ken-Chan',
                 'botAvatar' => $user->bot_avatar
-                    ? asset('storage/' . $user->bot_avatar)
+                    ? asset('storage/'.$user->bot_avatar)
                     : null,
             ]);
         })->name('bot');
-        Route::get('/memory', fn() => Inertia::render('Settings/AI/Memory'))->name('memory');
-        Route::get('/integrations', fn() => Inertia::render('Settings/AI/Integration'))->name('integrations');
-        
+        Route::get('/memory', fn () => Inertia::render('Settings/AI/Memory'))->name('memory');
+        Route::get('/integrations', fn () => Inertia::render('Settings/AI/Integration'))->name('integrations');
+
         // Legacy endpoints (for backward compatibility)
-        Route::get('/', fn() => redirect()->route('settings.ai.models'))->name('index');
+        Route::get('/', fn () => redirect()->route('settings.ai.models'))->name('index');
         Route::patch('/', [AiSettingsController::class, 'store'])->name('store');
         Route::post('/test', [AiSettingsController::class, 'testConnection'])->name('test');
-        Route::get('/integration', fn() => Inertia::render('Settings/AI/Integration'))->name('integration');
-        
+        Route::get('/integration', fn () => Inertia::render('Settings/AI/Integration'))->name('integration');
+
         // API untuk Dashboard (not in settings, but for reference)
         Route::get('/api/dashboard', [AiAnalyticsController::class, 'dashboard'])->name('api.dashboard');
         Route::get('/api/feedback', [AiAnalyticsController::class, 'feedback'])->name('api.feedback');
@@ -407,7 +418,7 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // Recent settings changes (for Settings Home widget)
-    Route::get('/settings/recent-changes', function (\Illuminate\Http\Request $request) {
+    Route::get('/settings/recent-changes', function (Request $request) {
         $userId = $request->user()->id;
         $rows = DB::table('user_settings_changes')
             ->where('user_id', $userId)
@@ -420,11 +431,11 @@ Route::middleware(['auth'])->group(function () {
 
     // ── Chat ──────────────────────────────────────────────────────
     Route::prefix('chat')->name('chat.')->group(function () {
-        Route::get('/',          [WebChatController::class, 'index'])->name('index');
-        Route::post('/message',  [WebChatController::class, 'sendMessage'])->name('message');
-        Route::get('/history',   [WebChatController::class, 'history'])->name('history');
-        Route::get('/commands',  [WebChatController::class, 'commands'])->name('commands');
-        Route::get('/wallets',   [WebChatController::class, 'wallets'])->name('wallets');
+        Route::get('/', [WebChatController::class, 'index'])->name('index');
+        Route::post('/message', [WebChatController::class, 'sendMessage'])->name('message');
+        Route::get('/history', [WebChatController::class, 'history'])->name('history');
+        Route::get('/commands', [WebChatController::class, 'commands'])->name('commands');
+        Route::get('/wallets', [WebChatController::class, 'wallets'])->name('wallets');
         Route::get('/transaction/{id}/status', [WebChatController::class, 'transactionStatus'])->name('transaction.status');
         Route::patch('/transaction/{id}/confirm', [WebChatController::class, 'confirmTransaction'])->name('transaction.confirm');
         Route::patch('/transaction/{id}/wallet', [WebChatController::class, 'assignWallet'])->name('transaction.assign-wallet');
@@ -435,13 +446,13 @@ Route::middleware(['auth'])->group(function () {
 
     // ── Chat Bot Profile settings ─────────────────────────────────
     Route::prefix('settings/chat')->name('settings.chat.')->group(function () {
-        Route::get('/bot-profile',    [ChatBotProfileController::class, 'show'])->name('bot-profile');
-        Route::patch('/bot-profile',  [ChatBotProfileController::class, 'update'])->name('bot-profile.update');
-        Route::delete('/bot-avatar',  [ChatBotProfileController::class, 'destroyAvatar'])->name('bot-avatar.destroy');
+        Route::get('/bot-profile', [ChatBotProfileController::class, 'show'])->name('bot-profile');
+        Route::patch('/bot-profile', [ChatBotProfileController::class, 'update'])->name('bot-profile.update');
+        Route::delete('/bot-avatar', [ChatBotProfileController::class, 'destroyAvatar'])->name('bot-avatar.destroy');
     });
 
     // ── Redirects for backward compatibility ───────────────────────
-    Route::get('/settings/chat/bot-profile', fn() => redirect('/settings/ai/bot', 301));
+    Route::get('/settings/chat/bot-profile', fn () => redirect('/settings/ai/bot', 301));
     Route::redirect('/settings/ai', '/settings/ai/models', 301);
 
     // Resources CRUD
@@ -456,9 +467,9 @@ Route::middleware(['auth'])->group(function () {
 // Health check
 Route::get('/health', function () {
     return response()->json([
-        'status'  => 'ok',
+        'status' => 'ok',
         'service' => 'laravel',
-        'time'    => now()->toIso8601String(),
+        'time' => now()->toIso8601String(),
     ]);
 });
 
@@ -466,4 +477,4 @@ Route::get('/health', function () {
 Schedule::command(PruneAiMemoriesCommand::class)->dailyAt('02:00')->withoutOverlapping();
 Schedule::command(AggregateAiMetricsCommand::class)->dailyAt('00:10')->withoutOverlapping();
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';

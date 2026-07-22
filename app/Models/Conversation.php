@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,15 +17,15 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * Phase awal: satu active conversation per user.
  * Future: multiple conversations dengan title, archive, dsb.
  *
- * @property int         $id
- * @property int         $user_id
+ * @property int $id
+ * @property int $user_id
  * @property string|null $title
- * @property bool        $is_active
- * @property \Carbon\Carbon|null $archived_at
- * @property array|null  $metadata
- * @property \Carbon\Carbon $created_at
- * @property \Carbon\Carbon $updated_at
- * @property \Carbon\Carbon|null $deleted_at
+ * @property bool $is_active
+ * @property Carbon|null $archived_at
+ * @property array|null $metadata
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property Carbon|null $deleted_at
  */
 class Conversation extends Model
 {
@@ -41,9 +42,9 @@ class Conversation extends Model
     protected function casts(): array
     {
         return [
-            'is_active'   => 'boolean',
+            'is_active' => 'boolean',
             'archived_at' => 'datetime',
-            'metadata'    => 'array',
+            'metadata' => 'array',
         ];
     }
 
@@ -90,7 +91,7 @@ class Conversation extends Model
     public function archive(): void
     {
         $this->update([
-            'is_active'   => false,
+            'is_active' => false,
             'archived_at' => now(),
         ]);
     }
@@ -101,7 +102,7 @@ class Conversation extends Model
     public function unarchive(): void
     {
         $this->update([
-            'is_active'   => true,
+            'is_active' => true,
             'archived_at' => null,
         ]);
     }

@@ -4,17 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Chat;
 
-use Tests\TestCase;
 use App\Chat\Adapters\TelegramAdapter;
-use App\Chat\ChatApplicationService;
-use App\Chat\Formatters\TelegramFormatter;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Support\MoneyFormatter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
-use Mockery;
-use Mockery\MockInterface;
+use Tests\TestCase;
 
 /**
  * Feature test untuk TelegramAdapter.
@@ -34,9 +30,11 @@ class TelegramAdapterTest extends TestCase
 {
     use RefreshDatabase;
 
-    private User             $user;
-    private TelegramAdapter  $adapter;
-    private array            $capturedMessages = [];
+    private User $user;
+
+    private TelegramAdapter $adapter;
+
+    private array $capturedMessages = [];
 
     protected function setUp(): void
     {
@@ -44,8 +42,8 @@ class TelegramAdapterTest extends TestCase
 
         $this->user = User::factory()->create([
             'telegram_id' => 99999999,
-            'locale'      => 'id',
-            'timezone'    => 'Asia/Jakarta',
+            'locale' => 'id',
+            'timezone' => 'Asia/Jakarta',
         ]);
 
         // Mock HTTP agar tidak memanggil Telegram API sungguhan
@@ -62,11 +60,11 @@ class TelegramAdapterTest extends TestCase
     {
         return [
             'update_id' => 1,
-            'message'   => [
-                'message_id'  => 100,
-                'chat'        => ['id' => $chatId],
-                'from'        => ['language_code' => 'id'],
-                'text'        => $text,
+            'message' => [
+                'message_id' => 100,
+                'chat' => ['id' => $chatId],
+                'from' => ['language_code' => 'id'],
+                'text' => $text,
             ],
         ];
     }
@@ -79,8 +77,8 @@ class TelegramAdapterTest extends TestCase
     public function test_saldo_command_returns_success_status(): void
     {
         $this->user->wallets()->create([
-            'name'       => 'Cash',
-            'balance'    => 100000.00,
+            'name' => 'Cash',
+            'balance' => 100000.00,
             'group_type' => 'Liquid',
         ]);
 
@@ -93,8 +91,8 @@ class TelegramAdapterTest extends TestCase
     public function test_saldo_command_sends_message_to_telegram_api(): void
     {
         $this->user->wallets()->create([
-            'name'       => 'Cash',
-            'balance'    => 100000.00,
+            'name' => 'Cash',
+            'balance' => 100000.00,
             'group_type' => 'Liquid',
         ]);
 
@@ -110,8 +108,8 @@ class TelegramAdapterTest extends TestCase
         // Root bug: PostgreSQL DECIMAL → PDO string "102100.00"
         // Setelah fix: model cast ke float → MoneyFormatter::amount() → "102.100"
         $this->user->wallets()->create([
-            'name'       => 'BCA',
-            'balance'    => 102100.00, // disimpan sebagai DECIMAL(15,2)
+            'name' => 'BCA',
+            'balance' => 102100.00, // disimpan sebagai DECIMAL(15,2)
             'group_type' => 'Liquid',
         ]);
 
@@ -135,18 +133,18 @@ class TelegramAdapterTest extends TestCase
     public function test_saldo_command_calculates_total_balance_correctly(): void
     {
         $this->user->wallets()->create([
-            'name'       => 'BCA',
-            'balance'    => 500000.00,
+            'name' => 'BCA',
+            'balance' => 500000.00,
             'group_type' => 'Liquid',
         ]);
         $this->user->wallets()->create([
-            'name'       => 'Dana',
-            'balance'    => 250000.00,
+            'name' => 'Dana',
+            'balance' => 250000.00,
             'group_type' => 'Liquid',
         ]);
         $this->user->wallets()->create([
-            'name'       => 'Saham',
-            'balance'    => 1000000.00,
+            'name' => 'Saham',
+            'balance' => 1000000.00,
             'group_type' => 'Asset',
         ]);
 
@@ -166,8 +164,8 @@ class TelegramAdapterTest extends TestCase
         // User::booted() otomatis membuat "Dompet Cash" (Liquid) + 4 System wallets.
         // Kita tambah 1 wallet Asset untuk test.
         $this->user->wallets()->create([
-            'name'       => 'Saham',
-            'balance'    => 5000000.00,
+            'name' => 'Saham',
+            'balance' => 5000000.00,
             'group_type' => 'Asset',
         ]);
 
@@ -252,11 +250,11 @@ class TelegramAdapterTest extends TestCase
     {
         $update = [
             'update_id' => 2,
-            'message'   => [
+            'message' => [
                 'message_id' => 101,
-                'chat'       => ['id' => 99999999],
+                'chat' => ['id' => 99999999],
                 // Tidak ada 'text' key
-                'sticker'    => ['file_id' => 'abc123'],
+                'sticker' => ['file_id' => 'abc123'],
             ],
         ];
 

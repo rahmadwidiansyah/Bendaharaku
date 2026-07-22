@@ -13,10 +13,10 @@ readonly class ReportSectionComponent implements ChatComponentInterface
     public function __construct(
         public string $title,
         public string $emoji = '📊',
-        public array  $items = [],
+        public array $items = [],
         public ?string $translationKey = null,
         public string $total = '',
-        public int    $count = 0,
+        public int $count = 0,
     ) {}
 
     public function type(): string
@@ -27,13 +27,13 @@ readonly class ReportSectionComponent implements ChatComponentInterface
     public function toArray(): array
     {
         return [
-            'type'            => $this->type(),
-            'title'           => $this->title,
-            'emoji'           => $this->emoji,
-            'items'           => $this->items,
-            'translationKey'  => $this->translationKey,
-            'total'           => $this->total,
-            'count'           => $this->count,
+            'type' => $this->type(),
+            'title' => $this->title,
+            'emoji' => $this->emoji,
+            'items' => $this->items,
+            'translationKey' => $this->translationKey,
+            'total' => $this->total,
+            'count' => $this->count,
         ];
     }
 }

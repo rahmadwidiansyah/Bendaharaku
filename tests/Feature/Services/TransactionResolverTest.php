@@ -4,30 +4,32 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Services;
 
-use Tests\TestCase;
-use App\Models\User;
-use App\Models\TransactionType;
 use App\DTO\ParsedTransaction;
 use App\Enums\TransactionIntent;
-use App\Services\AI\TransactionResolver;
-use App\Exceptions\CategoryNotFoundException;
 use App\Exceptions\WalletNotFoundException;
+use App\Models\TransactionType;
+use App\Models\User;
+use App\Services\AI\TransactionResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class TransactionResolverTest extends TestCase
 {
     use RefreshDatabase;
 
     private TransactionResolver $resolver;
+
     private User $user;
+
     private TransactionType $expenseType;
+
     private TransactionType $incomeType;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
-        $this->resolver = new TransactionResolver();
+
+        $this->resolver = new TransactionResolver;
 
         $this->incomeType = TransactionType::create(['name' => 'Income']);
         $this->expenseType = TransactionType::create(['name' => 'Expense']);
@@ -44,13 +46,13 @@ class TransactionResolverTest extends TestCase
     {
         $this->user->categories()->create([
             'category_name' => 'Makan & Minum',
-            'keyword'       => 'makan',
-            'type_id'       => $this->expenseType->id,
+            'keyword' => 'makan',
+            'type_id' => $this->expenseType->id,
         ]);
 
         $this->user->wallets()->create([
-            'name'       => 'Dompet Cash',
-            'keyword'    => 'cash',
+            'name' => 'Dompet Cash',
+            'keyword' => 'cash',
             'group_type' => 'Liquid',
         ]);
 
@@ -76,18 +78,18 @@ class TransactionResolverTest extends TestCase
     {
         $category = $this->user->categories()->create([
             'category_name' => 'Makan & Minum',
-            'keyword'       => 'makan',
-            'type_id'       => $this->expenseType->id,
+            'keyword' => 'makan',
+            'type_id' => $this->expenseType->id,
         ]);
 
         $sourceWallet = $this->user->wallets()->create([
-            'name'       => 'Dompet Cash',
-            'keyword'    => 'cash',
+            'name' => 'Dompet Cash',
+            'keyword' => 'cash',
             'group_type' => 'Liquid',
         ]);
 
         $merchantWallet = $this->user->wallets()->create([
-            'name'       => 'Toko Merchant Internal',
+            'name' => 'Toko Merchant Internal',
             'group_type' => 'System',
         ]);
 
@@ -113,18 +115,18 @@ class TransactionResolverTest extends TestCase
     {
         $category = $this->user->categories()->create([
             'category_name' => 'Gajian Bulanan',
-            'keyword'       => 'gaji, bonus',
-            'type_id'       => $this->incomeType->id,
+            'keyword' => 'gaji, bonus',
+            'type_id' => $this->incomeType->id,
         ]);
 
         $destWallet = $this->user->wallets()->create([
-            'name'       => 'Bank BCA',
-            'keyword'    => 'bca',
+            'name' => 'Bank BCA',
+            'keyword' => 'bca',
             'group_type' => 'Liquid',
         ]);
 
         $externalWallet = $this->user->wallets()->create([
-            'name'       => 'Pihak Luar Eksternal',
+            'name' => 'Pihak Luar Eksternal',
             'group_type' => 'System',
         ]);
 
@@ -151,27 +153,27 @@ class TransactionResolverTest extends TestCase
     {
         $category = $this->user->categories()->create([
             'category_name' => 'Cemilan',
-            'keyword'       => 'snack | jajan ; kerupuk, roti',
-            'type_id'       => $this->expenseType->id
+            'keyword' => 'snack | jajan ; kerupuk, roti',
+            'type_id' => $this->expenseType->id,
         ]);
 
         $this->user->wallets()->create([
-            'name'       => 'Dompet Tunai',
-            'keyword'    => 'cash',
-            'group_type' => 'Liquid'
+            'name' => 'Dompet Tunai',
+            'keyword' => 'cash',
+            'group_type' => 'Liquid',
         ]);
 
         // Pastikan config default ada agar tidak trigger Exception pada expense
         $this->user->wallets()->create([
-            'name'       => 'Merchant System',
-            'group_type' => 'System'
+            'name' => 'Merchant System',
+            'group_type' => 'System',
         ]);
         config(['bendaharaku.system_wallets.merchant' => 'Merchant System']);
 
         $parsed = new ParsedTransaction(
             amount: 15000,
             transactionType: TransactionIntent::Expense,
-            category: 'jajan', 
+            category: 'jajan',
             sourceWallet: 'cash'
         );
 

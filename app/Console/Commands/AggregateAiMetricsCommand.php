@@ -4,19 +4,20 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 class AggregateAiMetricsCommand extends Command
 {
     protected $signature = 'ai:aggregate-metrics {--date= : Tanggal agregasi (Y-m-d), default kemarin}';
+
     protected $description = 'Melakukan agregasi log parse AI ke tabel daily metrics.';
 
     // Estimasi harga per 1 Juta Token (USD) [Contoh Rate 2026]
     private const RATES = [
-        'openai'   => ['prompt' => 0.150, 'completion' => 0.600], // gpt-4o-mini
-        'gemini'   => ['prompt' => 0.075, 'completion' => 0.300], // 2.5-flash
+        'openai' => ['prompt' => 0.150, 'completion' => 0.600], // gpt-4o-mini
+        'gemini' => ['prompt' => 0.075, 'completion' => 0.300], // 2.5-flash
         'deepseek' => ['prompt' => 0.140, 'completion' => 0.280], // deepseek-chat
     ];
 
@@ -24,7 +25,7 @@ class AggregateAiMetricsCommand extends Command
     {
         $targetDate = $this->option('date') ? Carbon::parse($this->option('date')) : Carbon::yesterday();
         $dateString = $targetDate->format('Y-m-d');
-        
+
         $this->info("Memulai agregasi metrik AI untuk tanggal: {$dateString}");
 
         // Eksekusi Agregasi menggunakan Subquery dan Group By di level DB (Sangat Cepat)
@@ -72,7 +73,7 @@ class AggregateAiMetricsCommand extends Command
             ];
         }
 
-        if (!empty($upsertData)) {
+        if (! empty($upsertData)) {
             DB::table('ai_daily_metrics')->upsert(
                 $upsertData,
                 ['user_id', 'date', 'provider'], // Unique keys
@@ -80,7 +81,8 @@ class AggregateAiMetricsCommand extends Command
             );
         }
 
-        $this->info("Berhasil memproses " . count($upsertData) . " baris agregasi.");
+        $this->info('Berhasil memproses '.count($upsertData).' baris agregasi.');
+
         return self::SUCCESS;
     }
 }

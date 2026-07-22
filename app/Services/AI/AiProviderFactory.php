@@ -6,9 +6,9 @@ namespace App\Services\AI;
 
 use App\Enums\AiProvider;
 use App\Services\AI\Contracts\AIProviderInterface;
+use App\Services\AI\Providers\DeepSeekProvider;
 use App\Services\AI\Providers\GeminiProvider;
 use App\Services\AI\Providers\OpenAIProvider;
-use App\Services\AI\Providers\DeepSeekProvider;
 
 readonly class AiProviderFactory
 {

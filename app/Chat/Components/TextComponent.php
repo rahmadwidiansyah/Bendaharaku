@@ -18,8 +18,8 @@ readonly class TextComponent implements ChatComponentInterface
 {
     public function __construct(
         public string $translationKey,
-        public array  $params = [],
-        public bool   $bold   = false,
+        public array $params = [],
+        public bool $bold = false,
     ) {}
 
     public function type(): string
@@ -30,10 +30,10 @@ readonly class TextComponent implements ChatComponentInterface
     public function toArray(): array
     {
         return [
-            'type'            => $this->type(),
-            'translationKey'  => $this->translationKey,
-            'params'          => $this->params,
-            'bold'            => $this->bold,
+            'type' => $this->type(),
+            'translationKey' => $this->translationKey,
+            'params' => $this->params,
+            'bold' => $this->bold,
         ];
     }
 }
