@@ -19,7 +19,7 @@ namespace App\Chat\Components;
 readonly class QuickReplyComponent implements ChatComponentInterface
 {
     /**
-     * @param array<int, array{label: string, value: string}> $options
+     * @param  array<int, array{label: string, value: string}>  $options
      */
     public function __construct(
         public array $options,
@@ -33,7 +33,7 @@ readonly class QuickReplyComponent implements ChatComponentInterface
     public function toArray(): array
     {
         return [
-            'type'    => $this->type(),
+            'type' => $this->type(),
             'options' => $this->options,
         ];
     }

@@ -7,10 +7,11 @@ namespace App\Services\AI;
 use App\DTO\ParsedTransaction;
 use App\DTO\ResolvedTransaction;
 use App\Enums\TransactionIntent;
-use App\Models\User;
-use App\Models\Wallet;
 use App\Exceptions\CategoryNotFoundException;
 use App\Exceptions\WalletNotFoundException;
+use App\Models\Category;
+use App\Models\User;
+use App\Models\Wallet;
 use Illuminate\Database\Eloquent\Collection;
 use RuntimeException;
 
@@ -31,7 +32,7 @@ class TransactionResolver
     {
         // 1. Validasi Kehadiran Intent Transaksi
         if ($parsed->transactionType === null) {
-            throw new RuntimeException("Validasi Gagal: Intensi transaksi (TransactionIntent) tidak boleh kosong.");
+            throw new RuntimeException('Validasi Gagal: Intensi transaksi (TransactionIntent) tidak boleh kosong.');
         }
 
         // 2. Validasi Khusus Transfer
@@ -42,7 +43,7 @@ class TransactionResolver
         }
 
         // 3. Optimalisasi Kueri N+1
-        $wallets    = $user->wallets()->get();
+        $wallets = $user->wallets()->get();
         $categories = $user->categories()->get();
 
         // 4. Resolusi ID Kategori
@@ -73,21 +74,21 @@ class TransactionResolver
             $isDebtReceive = $parsed->transactionType === TransactionIntent::Debt
                 && (str_contains($categoryName, 'dapat') || str_contains($categoryName, 'terima') || str_contains($categoryName, 'pinjam'));
             $isDebtPay = $parsed->transactionType === TransactionIntent::Debt
-                && !$isDebtReceive;
+                && ! $isDebtReceive;
         }
 
         [$sourceWalletId, $destinationWalletId] = match ($parsed->transactionType) {
             TransactionIntent::Expense => [
                 $this->searchWalletToken($parsed->sourceWallet, $wallets, 'Asal'),
-                $this->resolveSystemWallet((string) config('bendaharaku.system_wallets.merchant'), $wallets)
+                $this->resolveSystemWallet((string) config('bendaharaku.system_wallets.merchant'), $wallets),
             ],
             TransactionIntent::Income => [
                 $this->resolveSystemWallet((string) config('bendaharaku.system_wallets.external'), $wallets),
-                $this->searchWalletToken($parsed->destinationWallet ?? $parsed->sourceWallet, $wallets, 'Tujuan')
+                $this->searchWalletToken($parsed->destinationWallet ?? $parsed->sourceWallet, $wallets, 'Tujuan'),
             ],
             TransactionIntent::Transfer => [
                 $this->searchWalletToken($parsed->sourceWallet, $wallets, 'Asal'),
-                $this->searchWalletToken($parsed->destinationWallet, $wallets, 'Tujuan')
+                $this->searchWalletToken($parsed->destinationWallet, $wallets, 'Tujuan'),
             ],
             TransactionIntent::Debt => $isDebtReceive
                 // Terima hutang: System Hutang → wallet user
@@ -131,17 +132,17 @@ class TransactionResolver
                     "Transfer seluruh saldo gagal: saldo wallet '{$sourceWalletName}' adalah 0 atau kosong."
                 );
             }
-            throw new RuntimeException("Validasi Gagal: Nominal transaksi harus lebih besar dari nol.");
+            throw new RuntimeException('Validasi Gagal: Nominal transaksi harus lebih besar dari nol.');
         }
 
         return new ResolvedTransaction(
-            amount:              $amount,
-            categoryId:          $category->id,
-            sourceWalletId:      $sourceWalletId,
+            amount: $amount,
+            categoryId: $category->id,
+            sourceWalletId: $sourceWalletId,
             destinationWalletId: $destinationWalletId,
-            subject:             $parsed->subject,
-            notes:               $parsed->notes,
-            isCleared:           $parsed->isCleared
+            subject: $parsed->subject,
+            notes: $parsed->notes,
+            isCleared: $parsed->isCleared
         );
     }
 
@@ -155,8 +156,8 @@ class TransactionResolver
     {
         $wallet = $wallets->firstWhere('id', $sourceWalletId);
 
-        if (!$wallet) {
-            throw new RuntimeException("Wallet sumber tidak ditemukan saat resolve ALL_BALANCE.");
+        if (! $wallet) {
+            throw new RuntimeException('Wallet sumber tidak ditemukan saat resolve ALL_BALANCE.');
         }
 
         $balance = (float) $wallet->balance;
@@ -176,9 +177,9 @@ class TransactionResolver
      */
     private function resolveSystemWallet(string $walletName, Collection $wallets): int
     {
-        $match = $wallets->first(fn($w) => strtolower($w->name) === strtolower(trim($walletName)));
+        $match = $wallets->first(fn ($w) => strtolower($w->name) === strtolower(trim($walletName)));
 
-        if (!$match) {
+        if (! $match) {
             throw new WalletNotFoundException(
                 "Dompet sistem untuk arus kas '{$walletName}' tidak terdeteksi. Pastikan konfigurasi system wallets sudah benar."
             );
@@ -190,22 +191,25 @@ class TransactionResolver
     /**
      * Pencarian Regex Token multi-delimiter untuk Kategori.
      */
-    private function searchCategory(?string $text, Collection $categories): \App\Models\Category
+    private function searchCategory(?string $text, Collection $categories): Category
     {
         if (blank($text)) {
-            throw new CategoryNotFoundException("Input kategori kosong.");
+            throw new CategoryNotFoundException('Input kategori kosong.');
         }
 
         $search = strtolower(trim($text));
 
-        $match = $categories->first(fn($c) => strtolower($c->category_name) === $search);
+        $match = $categories->first(fn ($c) => strtolower($c->category_name) === $search);
         if ($match) {
             return $match;
         }
 
         $match = $categories->first(function ($c) use ($search) {
-            if (blank($c->keyword)) return false;
+            if (blank($c->keyword)) {
+                return false;
+            }
             $tokens = preg_split('/[,|;]+/', strtolower($c->keyword), -1, PREG_SPLIT_NO_EMPTY);
+
             return in_array($search, array_map('trim', $tokens), true);
         });
 
@@ -227,14 +231,17 @@ class TransactionResolver
 
         $search = strtolower(trim($text));
 
-        $match = $wallets->first(fn($w) => strtolower($w->name) === $search);
+        $match = $wallets->first(fn ($w) => strtolower($w->name) === $search);
         if ($match) {
             return $match->id;
         }
 
         $match = $wallets->first(function ($w) use ($search) {
-            if (blank($w->keyword)) return false;
+            if (blank($w->keyword)) {
+                return false;
+            }
             $tokens = preg_split('/[,|;]+/', strtolower($w->keyword), -1, PREG_SPLIT_NO_EMPTY);
+
             return in_array($search, array_map('trim', $tokens), true);
         });
 

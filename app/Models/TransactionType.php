@@ -1,18 +1,22 @@
-<?php 
+<?php
+
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
  * @property int|null $user_id
  * @property string $name
  * @property string|null $keyword
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Category> $categories
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Collection<int, Category> $categories
  * @property-read int|null $categories_count
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TransactionType newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TransactionType newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TransactionType query()
@@ -22,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TransactionType whereName($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TransactionType whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TransactionType whereUserId($value)
+ *
  * @mixin \Eloquent
  */
 class TransactionType extends Model

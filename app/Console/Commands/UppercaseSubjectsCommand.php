@@ -34,14 +34,16 @@ class UppercaseSubjectsCommand extends Command
 
         if ($rows->isEmpty()) {
             $this->info('Tidak ada data subject yang perlu diubah.');
+
             return self::SUCCESS;
         }
 
         // Pisahkan yang perlu diubah (yang belum uppercase)
-        $toUpdate = $rows->filter(fn($r) => $r->subject !== strtoupper($r->subject));
+        $toUpdate = $rows->filter(fn ($r) => $r->subject !== strtoupper($r->subject));
 
         if ($toUpdate->isEmpty()) {
             $this->info('Semua subject sudah dalam format UPPERCASE. Tidak ada yang perlu diubah.');
+
             return self::SUCCESS;
         }
 
@@ -51,8 +53,9 @@ class UppercaseSubjectsCommand extends Command
             $this->warn('[DRY RUN] Perubahan TIDAK disimpan. Preview:');
             $this->table(
                 ['ID', 'Subject Lama', 'Subject Baru'],
-                $toUpdate->map(fn($r) => [$r->id, $r->subject, strtoupper($r->subject)])->toArray()
+                $toUpdate->map(fn ($r) => [$r->id, $r->subject, strtoupper($r->subject)])->toArray()
             );
+
             return self::SUCCESS;
         }
 

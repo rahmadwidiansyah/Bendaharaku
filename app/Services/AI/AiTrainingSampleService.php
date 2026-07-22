@@ -13,16 +13,16 @@ class AiTrainingSampleService
     public function generateSampleFromFeedback(int $feedbackLogId): void
     {
         $feedback = AiFeedbackLog::find($feedbackLogId);
-        if (!$feedback) {
+        if (! $feedback) {
             return;
         }
 
         $parseLog = DB::table('ai_parse_logs')->where('id', $feedback->parse_log_id)->first();
-        if (!$parseLog) {
+        if (! $parseLog) {
             return;
         }
 
-        $signature = hash('sha256', $parseLog->user_id . '_' . trim(strtolower($parseLog->input_text)));
+        $signature = hash('sha256', $parseLog->user_id.'_'.trim(strtolower($parseLog->input_text)));
 
         AiTrainingSample::updateOrCreate(
             ['hash_signature' => $signature],

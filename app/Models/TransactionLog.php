@@ -3,8 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -21,14 +22,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $subject
  * @property string|null $notes
  * @property bool $is_cleared
- * @property \Illuminate\Support\Carbon|null $deleted_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Category|null $category
- * @property-read \App\Models\Wallet|null $destinationWallet
- * @property-read \App\Models\Wallet|null $sourceWallet
- * @property-read \App\Models\TransactionType $type
- * @property-read \App\Models\User $user
+ * @property Carbon|null $deleted_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Category|null $category
+ * @property-read Wallet|null $destinationWallet
+ * @property-read Wallet|null $sourceWallet
+ * @property-read TransactionType $type
+ * @property-read User $user
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TransactionLog newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TransactionLog newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TransactionLog onlyTrashed()
@@ -52,6 +54,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TransactionLog whereUserId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TransactionLog withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TransactionLog withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class TransactionLog extends Model
@@ -80,19 +83,38 @@ class TransactionLog extends Model
     protected $casts = [
         // PostgreSQL DECIMAL(15,2) dikembalikan sebagai string oleh PDO.
         // Cast ke float agar seluruh consumer (Formatter, Adapter, API) menerima tipe numerik.
-        'amount'         => 'float',
+        'amount' => 'float',
         'balance_before' => 'float',
-        'balance_after'  => 'float',
-        'is_cleared'     => 'boolean',
+        'balance_after' => 'float',
+        'is_cleared' => 'boolean',
         // Cast date ke Carbon agar ->toDateString() dan method Carbon lainnya tersedia.
-        'date'           => 'date',
-        'due_date'       => 'date',
+        'date' => 'date',
+        'due_date' => 'date',
     ];
 
     // Relasi
-    public function user(): BelongsTo { return $this->belongsTo(User::class); }
-    public function type(): BelongsTo { return $this->belongsTo(TransactionType::class, 'type_id'); }
-    public function category(): BelongsTo { return $this->belongsTo(Category::class); }
-    public function sourceWallet(): BelongsTo { return $this->belongsTo(Wallet::class, 'source_wallet_id'); }
-    public function destinationWallet(): BelongsTo { return $this->belongsTo(Wallet::class, 'destination_wallet_id'); }
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function type(): BelongsTo
+    {
+        return $this->belongsTo(TransactionType::class, 'type_id');
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
+    }
+
+    public function sourceWallet(): BelongsTo
+    {
+        return $this->belongsTo(Wallet::class, 'source_wallet_id');
+    }
+
+    public function destinationWallet(): BelongsTo
+    {
+        return $this->belongsTo(Wallet::class, 'destination_wallet_id');
+    }
 }

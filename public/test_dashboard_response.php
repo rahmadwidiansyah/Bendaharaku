@@ -1,19 +1,24 @@
 <?php
 
-require __DIR__ . '/../vendor/autoload.php';
-$app = require_once __DIR__ . '/../bootstrap/app.php';
+use App\Models\User;
+use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 
-$kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
+require __DIR__.'/../vendor/autoload.php';
+$app = require_once __DIR__.'/../bootstrap/app.php';
+
+$kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
-$user = App\Models\User::where('email', 'test@example.com')->firstOrFail();
+$user = User::where('email', 'test@example.com')->firstOrFail();
 auth()->login($user);
 
-$request = Illuminate\Http\Request::create('/dashboard', 'GET');
+$request = Request::create('/dashboard', 'GET');
 $response = $kernel->handle($request);
 
-if ($response instanceof \Illuminate\Http\RedirectResponse) {
-    echo "Redirected to: " . $response->getTargetUrl() . "\n";
+if ($response instanceof RedirectResponse) {
+    echo 'Redirected to: '.$response->getTargetUrl()."\n";
     exit(1);
 }
 
@@ -25,15 +30,15 @@ if (str_contains($content, 'data-page')) {
         $page = json_decode(html_entity_decode($matches[1]), true);
         $props = $page['props'] ?? [];
         $transactions = $props['transactions']['data'] ?? [];
-        
-        echo "Total Transactions: " . count($transactions) . "\n";
-        
+
+        echo 'Total Transactions: '.count($transactions)."\n";
+
         $types = [];
         $sample = [];
         foreach ($transactions as $tx) {
             $name = $tx['type']['name'] ?? 'Unknown';
             $types[$name] = ($types[$name] ?? 0) + 1;
-            if (!isset($sample[$name])) {
+            if (! isset($sample[$name])) {
                 $sample[$name] = [
                     'id' => $tx['id'],
                     'amount' => $tx['amount'],
@@ -44,7 +49,7 @@ if (str_contains($content, 'data-page')) {
                 ];
             }
         }
-        
+
         print_r($types);
         print_r($sample);
     } else {

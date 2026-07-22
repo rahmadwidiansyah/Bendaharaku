@@ -19,12 +19,12 @@ use App\Enums\ChatErrorSeverity;
 readonly class ErrorComponent implements ChatComponentInterface
 {
     public function __construct(
-        public string            $messageKey,
-        public array             $params      = [],
-        public ?string           $raw         = null,
-        public ?int              $index       = null,
-        public ChatErrorSeverity $severity    = ChatErrorSeverity::Error,
-        public bool              $recoverable = true,
+        public string $messageKey,
+        public array $params = [],
+        public ?string $raw = null,
+        public ?int $index = null,
+        public ChatErrorSeverity $severity = ChatErrorSeverity::Error,
+        public bool $recoverable = true,
     ) {}
 
     public function type(): string
@@ -35,12 +35,12 @@ readonly class ErrorComponent implements ChatComponentInterface
     public function toArray(): array
     {
         return [
-            'type'        => $this->type(),
+            'type' => $this->type(),
             'message_key' => $this->messageKey,
-            'params'      => $this->params,
-            'raw'         => $this->raw,
-            'index'       => $this->index,
-            'severity'    => $this->severity->value,
+            'params' => $this->params,
+            'raw' => $this->raw,
+            'index' => $this->index,
+            'severity' => $this->severity->value,
             'recoverable' => $this->recoverable,
         ];
     }

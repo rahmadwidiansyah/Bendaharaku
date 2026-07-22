@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Chat;
 
-use Tests\TestCase;
-use App\Services\Chat\Formatters\TelegramMultiTransactionFormatter;
-use App\DTO\MultiTransactionResult;
 use App\DTO\MultiTransactionItem;
+use App\DTO\MultiTransactionResult;
 use App\Enums\MultiTransactionErrorCode;
+use App\Models\Category;
 use App\Models\TransactionLog;
 use App\Models\TransactionType;
-use App\Models\Category;
-use App\Models\Wallet;
 use App\Models\User;
+use App\Models\Wallet;
+use App\Services\Chat\Formatters\TelegramMultiTransactionFormatter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 /**
  * Feature test untuk TelegramMultiTransactionFormatter.
@@ -38,27 +38,31 @@ class TelegramMultiTransactionFormatterTest extends TestCase
     use RefreshDatabase;
 
     private TelegramMultiTransactionFormatter $formatter;
-    private User           $user;
+
+    private User $user;
+
     private TransactionType $expenseType;
-    private Category       $category;
-    private Wallet         $wallet;
+
+    private Category $category;
+
+    private Wallet $wallet;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->formatter   = new TelegramMultiTransactionFormatter();
-        $this->user        = User::factory()->create(['name' => 'Budi']);
+        $this->formatter = new TelegramMultiTransactionFormatter;
+        $this->user = User::factory()->create(['name' => 'Budi']);
         $this->expenseType = TransactionType::create(['name' => 'Expense']);
-        $this->category    = $this->user->categories()->create([
+        $this->category = $this->user->categories()->create([
             'category_name' => 'Makan & Minum',
-            'keyword'       => 'makan',
-            'type_id'       => $this->expenseType->id,
+            'keyword' => 'makan',
+            'type_id' => $this->expenseType->id,
         ]);
         $this->wallet = $this->user->wallets()->create([
-            'name'       => 'Cash',
-            'keyword'    => 'cash',
-            'balance'    => 200000.00,
+            'name' => 'Cash',
+            'keyword' => 'cash',
+            'balance' => 200000.00,
             'group_type' => 'Liquid',
         ]);
     }
@@ -68,19 +72,19 @@ class TelegramMultiTransactionFormatterTest extends TestCase
     private function makeTrx(float $amount): TransactionLog
     {
         return TransactionLog::create([
-            'reference_number'      => 'TEST-' . uniqid(),
-            'user_id'               => $this->user->id,
-            'date'                  => now()->format('Y-m-d'),
-            'type_id'               => $this->expenseType->id,
-            'category_id'           => $this->category->id,
-            'source_wallet_id'      => $this->wallet->id,
+            'reference_number' => 'TEST-'.uniqid(),
+            'user_id' => $this->user->id,
+            'date' => now()->format('Y-m-d'),
+            'type_id' => $this->expenseType->id,
+            'category_id' => $this->category->id,
+            'source_wallet_id' => $this->wallet->id,
             'destination_wallet_id' => null,
-            'amount'                => $amount,
-            'balance_before'        => 200000.00,
-            'balance_after'         => 200000.00 - $amount,
-            'subject'               => $this->user->name,
-            'notes'                 => "transaksi {$amount}",
-            'is_cleared'            => true,
+            'amount' => $amount,
+            'balance_before' => 200000.00,
+            'balance_after' => 200000.00 - $amount,
+            'subject' => $this->user->name,
+            'notes' => "transaksi {$amount}",
+            'is_cleared' => true,
         ])->load(['category', 'sourceWallet', 'destinationWallet', 'type']);
     }
 
@@ -91,15 +95,15 @@ class TelegramMultiTransactionFormatterTest extends TestCase
     /** @test */
     public function test_all_success_renders_success_header(): void
     {
-        $trx1   = $this->makeTrx(15000.00);
-        $trx2   = $this->makeTrx(30000.00);
+        $trx1 = $this->makeTrx(15000.00);
+        $trx2 = $this->makeTrx(30000.00);
         $result = new MultiTransactionResult(
             results: [
                 MultiTransactionItem::success(1, $trx1, 'bensin 15k cash'),
                 MultiTransactionItem::success(2, $trx2, 'makan 30k cash'),
             ],
-            provider:   'GEMINI',
-            model:      'gemini-1.5-flash',
+            provider: 'GEMINI',
+            model: 'gemini-1.5-flash',
             confidence: 0.95,
         );
 
@@ -114,13 +118,13 @@ class TelegramMultiTransactionFormatterTest extends TestCase
     {
         // KUNCI: format seharusnya "Rp20.000" (tanpa spasi, titik sebagai ribuan)
         // bukan "Rp 20,000" atau "Rp20000"
-        $trx    = $this->makeTrx(20000.00);
+        $trx = $this->makeTrx(20000.00);
         $result = new MultiTransactionResult(
             results: [
                 MultiTransactionItem::success(1, $trx, 'bensin 20k cash'),
             ],
-            provider:   'GEMINI',
-            model:      'gemini-1.5-flash',
+            provider: 'GEMINI',
+            model: 'gemini-1.5-flash',
             confidence: 0.90,
         );
 
@@ -135,15 +139,15 @@ class TelegramMultiTransactionFormatterTest extends TestCase
     /** @test */
     public function test_all_success_renders_each_item_with_index(): void
     {
-        $trx1   = $this->makeTrx(15000.00);
-        $trx2   = $this->makeTrx(50000.00);
+        $trx1 = $this->makeTrx(15000.00);
+        $trx2 = $this->makeTrx(50000.00);
         $result = new MultiTransactionResult(
             results: [
                 MultiTransactionItem::success(1, $trx1, 'bensin 15k cash'),
                 MultiTransactionItem::success(2, $trx2, 'makan 50k cash'),
             ],
-            provider:   'OPENAI',
-            model:      'gpt-4o-mini',
+            provider: 'OPENAI',
+            model: 'gpt-4o-mini',
             confidence: 0.92,
         );
 
@@ -158,13 +162,13 @@ class TelegramMultiTransactionFormatterTest extends TestCase
     /** @test */
     public function test_all_success_shows_ai_provider_footer(): void
     {
-        $trx    = $this->makeTrx(10000.00);
+        $trx = $this->makeTrx(10000.00);
         $result = new MultiTransactionResult(
             results: [
                 MultiTransactionItem::success(1, $trx, 'kopi 10k cash'),
             ],
-            provider:   'GEMINI',
-            model:      'gemini-1.5-flash',
+            provider: 'GEMINI',
+            model: 'gemini-1.5-flash',
             confidence: 0.88,
         );
 
@@ -185,20 +189,20 @@ class TelegramMultiTransactionFormatterTest extends TestCase
         $result = new MultiTransactionResult(
             results: [
                 MultiTransactionItem::failed(
-                    index:     1,
-                    raw:       'makan 20k spay',
+                    index: 1,
+                    raw: 'makan 20k spay',
                     errorCode: MultiTransactionErrorCode::WALLET_NOT_FOUND,
-                    reason:    "Dompet 'spay' tidak ditemukan.",
+                    reason: "Dompet 'spay' tidak ditemukan.",
                 ),
                 MultiTransactionItem::failed(
-                    index:     2,
-                    raw:       'bensin 50k ovo',
+                    index: 2,
+                    raw: 'bensin 50k ovo',
                     errorCode: MultiTransactionErrorCode::WALLET_NOT_FOUND,
-                    reason:    "Dompet 'ovo' tidak ditemukan.",
+                    reason: "Dompet 'ovo' tidak ditemukan.",
                 ),
             ],
-            provider:   'GEMINI',
-            model:      'gemini-1.5-flash',
+            provider: 'GEMINI',
+            model: 'gemini-1.5-flash',
             confidence: 0.70,
         );
 
@@ -214,14 +218,14 @@ class TelegramMultiTransactionFormatterTest extends TestCase
         $result = new MultiTransactionResult(
             results: [
                 MultiTransactionItem::failed(
-                    index:     1,
-                    raw:       'makan 20k spay',
+                    index: 1,
+                    raw: 'makan 20k spay',
                     errorCode: MultiTransactionErrorCode::WALLET_NOT_FOUND,
-                    reason:    "Dompet 'spay' tidak ditemukan.",
+                    reason: "Dompet 'spay' tidak ditemukan.",
                 ),
             ],
-            provider:   'GEMINI',
-            model:      'gemini-1.5-flash',
+            provider: 'GEMINI',
+            model: 'gemini-1.5-flash',
             confidence: 0.60,
         );
 
@@ -237,14 +241,14 @@ class TelegramMultiTransactionFormatterTest extends TestCase
         $result = new MultiTransactionResult(
             results: [
                 MultiTransactionItem::failed(
-                    index:     1,
-                    raw:       'test',
+                    index: 1,
+                    raw: 'test',
                     errorCode: MultiTransactionErrorCode::INVALID_AMOUNT,
-                    reason:    'Nominal tidak valid.',
+                    reason: 'Nominal tidak valid.',
                 ),
             ],
-            provider:   'GEMINI',
-            model:      'gemini-1.5-flash',
+            provider: 'GEMINI',
+            model: 'gemini-1.5-flash',
             confidence: 0.40,
         );
 
@@ -262,25 +266,25 @@ class TelegramMultiTransactionFormatterTest extends TestCase
     /** @test */
     public function test_partial_renders_mixed_success_and_failure(): void
     {
-        $trx1   = $this->makeTrx(15000.00);
+        $trx1 = $this->makeTrx(15000.00);
         $result = new MultiTransactionResult(
             results: [
                 MultiTransactionItem::success(1, $trx1, 'bensin 15k cash'),
                 MultiTransactionItem::failed(
-                    index:     2,
-                    raw:       'kopi 10k spay',
+                    index: 2,
+                    raw: 'kopi 10k spay',
                     errorCode: MultiTransactionErrorCode::WALLET_NOT_FOUND,
-                    reason:    "Dompet 'spay' tidak ditemukan.",
+                    reason: "Dompet 'spay' tidak ditemukan.",
                 ),
                 MultiTransactionItem::failed(
-                    index:     3,
-                    raw:       'test',
+                    index: 3,
+                    raw: 'test',
                     errorCode: MultiTransactionErrorCode::INVALID_AMOUNT,
-                    reason:    'Nominal tidak valid.',
+                    reason: 'Nominal tidak valid.',
                 ),
             ],
-            provider:   'DEEPSEEK',
-            model:      'deepseek-chat',
+            provider: 'DEEPSEEK',
+            model: 'deepseek-chat',
             confidence: 0.80,
         );
 
@@ -302,19 +306,19 @@ class TelegramMultiTransactionFormatterTest extends TestCase
     /** @test */
     public function test_partial_preserves_item_order(): void
     {
-        $trx2   = $this->makeTrx(30000.00);
+        $trx2 = $this->makeTrx(30000.00);
         $result = new MultiTransactionResult(
             results: [
                 MultiTransactionItem::failed(
-                    index:     1,
-                    raw:       'item pertama gagal',
+                    index: 1,
+                    raw: 'item pertama gagal',
                     errorCode: MultiTransactionErrorCode::CATEGORY_NOT_FOUND,
-                    reason:    'Kategori tidak terdeteksi.',
+                    reason: 'Kategori tidak terdeteksi.',
                 ),
                 MultiTransactionItem::success(2, $trx2, 'item kedua sukses'),
             ],
-            provider:   'OPENAI',
-            model:      'gpt-4o-mini',
+            provider: 'OPENAI',
+            model: 'gpt-4o-mini',
             confidence: 0.75,
         );
 
@@ -339,14 +343,14 @@ class TelegramMultiTransactionFormatterTest extends TestCase
         $result = new MultiTransactionResult(
             results: [
                 MultiTransactionItem::failed(
-                    index:     1,
-                    raw:       'transfer 100k ke mandiri',
+                    index: 1,
+                    raw: 'transfer 100k ke mandiri',
                     errorCode: MultiTransactionErrorCode::WALLET_NOT_FOUND,
-                    reason:    "Dompet 'mandiri' tidak ditemukan.",
+                    reason: "Dompet 'mandiri' tidak ditemukan.",
                 ),
             ],
-            provider:   'GEMINI',
-            model:      'gemini-1.5-flash',
+            provider: 'GEMINI',
+            model: 'gemini-1.5-flash',
             confidence: 0.55,
         );
 
@@ -362,14 +366,14 @@ class TelegramMultiTransactionFormatterTest extends TestCase
         $result = new MultiTransactionResult(
             results: [
                 MultiTransactionItem::failed(
-                    index:     1,
-                    raw:       'beli sesuatu 50k cash',
+                    index: 1,
+                    raw: 'beli sesuatu 50k cash',
                     errorCode: MultiTransactionErrorCode::CATEGORY_NOT_FOUND,
-                    reason:    'Kategori tidak terdeteksi oleh AI.',
+                    reason: 'Kategori tidak terdeteksi oleh AI.',
                 ),
             ],
-            provider:   'GEMINI',
-            model:      'gemini-1.5-flash',
+            provider: 'GEMINI',
+            model: 'gemini-1.5-flash',
             confidence: 0.50,
         );
 
@@ -385,14 +389,14 @@ class TelegramMultiTransactionFormatterTest extends TestCase
         $result = new MultiTransactionResult(
             results: [
                 MultiTransactionItem::failed(
-                    index:     1,
-                    raw:       'makan cash',
+                    index: 1,
+                    raw: 'makan cash',
                     errorCode: MultiTransactionErrorCode::INVALID_AMOUNT,
-                    reason:    'Nominal tidak valid atau nol.',
+                    reason: 'Nominal tidak valid atau nol.',
                 ),
             ],
-            provider:   'GEMINI',
-            model:      'gemini-1.5-flash',
+            provider: 'GEMINI',
+            model: 'gemini-1.5-flash',
             confidence: 0.45,
         );
 

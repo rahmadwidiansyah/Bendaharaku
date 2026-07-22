@@ -10,10 +10,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class AiDailyMetric extends Model
 {
     protected $fillable = [
-        'user_id', 'date', 'provider', 
+        'user_id', 'date', 'provider',
         'total_requests', 'total_success', 'total_drafts', 'total_corrections',
-        'avg_raw_confidence', 'avg_final_confidence', 
-        'prompt_tokens', 'completion_tokens', 'total_tokens', 'estimated_cost_usd'
+        'avg_raw_confidence', 'avg_final_confidence',
+        'prompt_tokens', 'completion_tokens', 'total_tokens', 'estimated_cost_usd',
     ];
 
     protected function casts(): array

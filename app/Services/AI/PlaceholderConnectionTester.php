@@ -17,7 +17,7 @@ class PlaceholderConnectionTester
 
         return [
             'success' => true,
-            'message' => 'Handshake sukses. Koneksi menuju ' . strtoupper($provider->value) . ' terverifikasi aktif.',
+            'message' => 'Handshake sukses. Koneksi menuju '.strtoupper($provider->value).' terverifikasi aktif.',
         ];
     }
 }

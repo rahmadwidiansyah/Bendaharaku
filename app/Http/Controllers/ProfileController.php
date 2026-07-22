@@ -7,9 +7,11 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
-use Illuminate\View\View;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str; // <-- Ini yang kelupaan
+use Illuminate\Support\Str;
+use Inertia\Inertia;
+
+ // <-- Ini yang kelupaan
 
 class ProfileController extends Controller
 {
@@ -18,7 +20,7 @@ class ProfileController extends Controller
      */
     public function edit(Request $request)
     {
-        return \Inertia\Inertia::render('Profile/Edit', [
+        return Inertia::render('Profile/Edit', [
             'user' => $request->user(),
             'status' => session('status'),
         ]);
@@ -40,7 +42,7 @@ class ProfileController extends Controller
         // Handle Upload File Avatar Manual
         if ($request->hasFile('avatar_file')) {
             // Hapus avatar lama jika ada dan bukan URL dari Google
-            if ($user->avatar && !Str::startsWith($user->avatar, 'http')) {
+            if ($user->avatar && ! Str::startsWith($user->avatar, 'http')) {
                 Storage::disk('public')->delete($user->avatar);
             }
 

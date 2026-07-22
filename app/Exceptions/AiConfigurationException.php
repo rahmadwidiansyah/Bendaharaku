@@ -6,6 +6,4 @@ namespace App\Exceptions;
 
 use Exception;
 
-class AiConfigurationException extends Exception
-{
-}
+class AiConfigurationException extends Exception {}

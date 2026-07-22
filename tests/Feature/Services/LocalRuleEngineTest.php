@@ -4,27 +4,27 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Services;
 
-use Tests\TestCase;
+use App\Enums\TransactionIntent;
+use App\Models\TransactionType;
 use App\Models\User;
 use App\Models\Wallet;
-use App\Models\Category;
-use App\Models\TransactionType;
 use App\Services\AI\LocalRuleEngine;
-use App\Enums\TransactionIntent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class LocalRuleEngineTest extends TestCase
 {
     use RefreshDatabase;
 
     private User $user;
+
     private LocalRuleEngine $ruleEngine;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->ruleEngine = new LocalRuleEngine();
+        $this->ruleEngine = new LocalRuleEngine;
 
         // 1. Create Transaction Types
         $incomeType = TransactionType::create(['name' => 'Income']);
@@ -35,7 +35,7 @@ class LocalRuleEngineTest extends TestCase
 
         // 2. Create User
         $this->user = User::factory()->create(['name' => 'Budi']);
-        
+
         // Clear default boot categories/wallets to avoid duplication
         $this->user->wallets()->forceDelete();
         $this->user->categories()->forceDelete();
@@ -94,7 +94,7 @@ class LocalRuleEngineTest extends TestCase
     {
         // 1. "Iqbal bayar hutang 20 ribu tunai"
         // Intent: Debt (DEBT_PAYMENT), Amount: 20000, Wallet: Dompet Cash, Subject: Iqbal
-        $result = $this->ruleEngine->parse($this->user, "Iqbal bayar hutang 20 ribu tunai");
+        $result = $this->ruleEngine->parse($this->user, 'Iqbal bayar hutang 20 ribu tunai');
         $this->assertNotNull($result);
         $this->assertTrue($result->success);
         $this->assertEquals(20000, $result->transaction->amount);
@@ -105,7 +105,7 @@ class LocalRuleEngineTest extends TestCase
 
         // 2. "Iqbal balikin pinjaman 20 ribu"
         // Intent: Debt (DEBT_PAYMENT), Amount: 20000, Subject: Iqbal
-        $result = $this->ruleEngine->parse($this->user, "Iqbal balikin pinjaman 20 ribu");
+        $result = $this->ruleEngine->parse($this->user, 'Iqbal balikin pinjaman 20 ribu');
         $this->assertNotNull($result);
         $this->assertTrue($result->success);
         $this->assertEquals(20000, $result->transaction->amount);
@@ -114,7 +114,7 @@ class LocalRuleEngineTest extends TestCase
         $this->assertEquals('Iqbal', $result->transaction->subject);
 
         // 3. "Iqbal mengembalikan uang yang kupinjamkan 20 ribu"
-        $result = $this->ruleEngine->parse($this->user, "Iqbal mengembalikan uang yang kupinjamkan 20 ribu");
+        $result = $this->ruleEngine->parse($this->user, 'Iqbal mengembalikan uang yang kupinjamkan 20 ribu');
         $this->assertNotNull($result);
         $this->assertTrue($result->success);
         $this->assertEquals(20000, $result->transaction->amount);
@@ -123,11 +123,11 @@ class LocalRuleEngineTest extends TestCase
         $this->assertEquals('Iqbal', $result->transaction->subject);
 
         // 4. "Iqbal lunasin hutangnya" -> Fallback to AI because no amount (rule engine returns null)
-        $result = $this->ruleEngine->parse($this->user, "Iqbal lunasin hutangnya");
+        $result = $this->ruleEngine->parse($this->user, 'Iqbal lunasin hutangnya');
         $this->assertNull($result);
 
         // Test with amount: "Iqbal lunasin hutangnya 20k"
-        $result = $this->ruleEngine->parse($this->user, "Iqbal lunasin hutangnya 20k");
+        $result = $this->ruleEngine->parse($this->user, 'Iqbal lunasin hutangnya 20k');
         $this->assertNotNull($result);
         $this->assertEquals(20000, $result->transaction->amount);
         $this->assertEquals(TransactionIntent::Debt, $result->transaction->transactionType);
@@ -136,7 +136,7 @@ class LocalRuleEngineTest extends TestCase
 
         // 5. "Pinjamin Andi 100 ribu"
         // Intent: Receivable (RECEIVABLE), Amount: 100000, Subject: Andi
-        $result = $this->ruleEngine->parse($this->user, "Pinjamin Andi 100 ribu");
+        $result = $this->ruleEngine->parse($this->user, 'Pinjamin Andi 100 ribu');
         $this->assertNotNull($result);
         $this->assertTrue($result->success);
         $this->assertEquals(100000, $result->transaction->amount);
@@ -146,7 +146,7 @@ class LocalRuleEngineTest extends TestCase
 
         // 6. "Kasih pinjam Budi 50 ribu"
         // Intent: Receivable (RECEIVABLE), Amount: 50000, Subject: Budi
-        $result = $this->ruleEngine->parse($this->user, "Kasih pinjam Budi 50 ribu");
+        $result = $this->ruleEngine->parse($this->user, 'Kasih pinjam Budi 50 ribu');
         $this->assertNotNull($result);
         $this->assertTrue($result->success);
         $this->assertEquals(50000, $result->transaction->amount);
@@ -156,7 +156,7 @@ class LocalRuleEngineTest extends TestCase
 
         // 7. "Budi balikin uang 50 ribu"
         // Intent: Receivable (RECEIVABLE_PAYMENT), Amount: 50000, Subject: Budi
-        $result = $this->ruleEngine->parse($this->user, "Budi balikin uang 50 ribu");
+        $result = $this->ruleEngine->parse($this->user, 'Budi balikin uang 50 ribu');
         $this->assertNotNull($result);
         $this->assertTrue($result->success);
         $this->assertEquals(50000, $result->transaction->amount);
@@ -170,7 +170,7 @@ class LocalRuleEngineTest extends TestCase
     {
         // 1. "Transfer semua saldo BCA ke Cash"
         // Intent: Transfer, useAllBalance: true, Source: Bank BCA, Destination: Dompet Cash
-        $result = $this->ruleEngine->parse($this->user, "Transfer semua saldo BCA ke Cash");
+        $result = $this->ruleEngine->parse($this->user, 'Transfer semua saldo BCA ke Cash');
         $this->assertNotNull($result);
         $this->assertTrue($result->success);
         $this->assertTrue($result->transaction->useAllBalance);
@@ -181,11 +181,11 @@ class LocalRuleEngineTest extends TestCase
 
         // 2. "Pindahkan uang ke OVO"
         // Intent: Transfer, Amount: none (so fallback to AI, wait - since no amount or all balance, returns null)
-        $result = $this->ruleEngine->parse($this->user, "Pindahkan uang ke OVO");
+        $result = $this->ruleEngine->parse($this->user, 'Pindahkan uang ke OVO');
         $this->assertNull($result);
 
         // With amount: "Pindahkan uang 50k ke OVO"
-        $result = $this->ruleEngine->parse($this->user, "Pindahkan uang 50k ke OVO");
+        $result = $this->ruleEngine->parse($this->user, 'Pindahkan uang 50k ke OVO');
         $this->assertNotNull($result);
         $this->assertEquals(50000, $result->transaction->amount);
         $this->assertEquals(TransactionIntent::Transfer, $result->transaction->transactionType);

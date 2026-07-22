@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
-use App\Models\Wallet;
-use App\Models\Category;
 use App\Models\TransactionLog;
+use App\Models\User;
+use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class TransactionFlowTest extends TestCase
@@ -19,7 +19,7 @@ class TransactionFlowTest extends TestCase
     {
         parent::setUp();
         // Seed standard DatabaseSeeder to get all standard system wallets and categories
-        $this->seed(\Database\Seeders\DatabaseSeeder::class);
+        $this->seed(DatabaseSeeder::class);
         $this->user = User::where('email', 'test@example.com')->firstOrFail();
     }
 
@@ -32,27 +32,27 @@ class TransactionFlowTest extends TestCase
         $systemHutang = $this->user->wallets()->where('name', 'Hutang System')->firstOrFail();
 
         $payload = [
-            'date'                  => now()->format('Y-m-d'),
-            'category_id'           => null, // nullable for debt
-            'source_wallet_id'      => $systemHutang->id,
+            'date' => now()->format('Y-m-d'),
+            'category_id' => null, // nullable for debt
+            'source_wallet_id' => $systemHutang->id,
             'destination_wallet_id' => $liquidWallet->id,
-            'amount'                => 150000,
-            'transaction_type'      => 'debt',
-            'debt_sub_type'         => 'income', // sub_type for LOAN (Dapat Hutang)
-            'subject'               => 'BUDI',
-            'notes'                 => 'Pinjam uang ke Budi',
+            'amount' => 150000,
+            'transaction_type' => 'debt',
+            'debt_sub_type' => 'income', // sub_type for LOAN (Dapat Hutang)
+            'subject' => 'BUDI',
+            'notes' => 'Pinjam uang ke Budi',
         ];
 
         $response = $this->actingAs($this->user)
             ->post(route('transactions.store'), $payload);
 
         $response->assertRedirect(route('dashboard'));
-        
+
         $this->assertDatabaseHas('transaction_logs', [
-            'user_id'               => $this->user->id,
-            'amount'                => 150000,
-            'subject'               => 'BUDI',
-            'source_wallet_id'      => $systemHutang->id,
+            'user_id' => $this->user->id,
+            'amount' => 150000,
+            'subject' => 'BUDI',
+            'source_wallet_id' => $systemHutang->id,
             'destination_wallet_id' => $liquidWallet->id,
         ]);
 
@@ -69,27 +69,27 @@ class TransactionFlowTest extends TestCase
         $systemHutang = $this->user->wallets()->where('name', 'Hutang System')->firstOrFail();
 
         $payload = [
-            'date'                  => now()->format('Y-m-d'),
-            'category_id'           => null,
-            'source_wallet_id'      => $liquidWallet->id,
+            'date' => now()->format('Y-m-d'),
+            'category_id' => null,
+            'source_wallet_id' => $liquidWallet->id,
             'destination_wallet_id' => $systemHutang->id,
-            'amount'                => 50000,
-            'transaction_type'      => 'debt',
-            'debt_sub_type'         => 'expense', // sub_type for DEBT_PAYMENT
-            'subject'               => 'BUDI',
-            'notes'                 => 'Bayar cicilan hutang ke Budi',
+            'amount' => 50000,
+            'transaction_type' => 'debt',
+            'debt_sub_type' => 'expense', // sub_type for DEBT_PAYMENT
+            'subject' => 'BUDI',
+            'notes' => 'Bayar cicilan hutang ke Budi',
         ];
 
         $response = $this->actingAs($this->user)
             ->post(route('transactions.store'), $payload);
 
         $response->assertRedirect(route('dashboard'));
-        
+
         $this->assertDatabaseHas('transaction_logs', [
-            'user_id'               => $this->user->id,
-            'amount'                => 50000,
-            'subject'               => 'BUDI',
-            'source_wallet_id'      => $liquidWallet->id,
+            'user_id' => $this->user->id,
+            'amount' => 50000,
+            'subject' => 'BUDI',
+            'source_wallet_id' => $liquidWallet->id,
             'destination_wallet_id' => $systemHutang->id,
         ]);
 
@@ -106,15 +106,15 @@ class TransactionFlowTest extends TestCase
         $systemPiutang = $this->user->wallets()->where('name', 'Piutang System')->firstOrFail();
 
         $payload = [
-            'date'                  => now()->format('Y-m-d'),
-            'category_id'           => null,
-            'source_wallet_id'      => $liquidWallet->id,
+            'date' => now()->format('Y-m-d'),
+            'category_id' => null,
+            'source_wallet_id' => $liquidWallet->id,
             'destination_wallet_id' => $systemPiutang->id,
-            'amount'                => 200000,
-            'transaction_type'      => 'receivable',
-            'debt_sub_type'         => 'expense', // sub_type for RECEIVABLE
-            'subject'               => 'ANI',
-            'notes'                 => 'Pinjamkan uang ke Ani',
+            'amount' => 200000,
+            'transaction_type' => 'receivable',
+            'debt_sub_type' => 'expense', // sub_type for RECEIVABLE
+            'subject' => 'ANI',
+            'notes' => 'Pinjamkan uang ke Ani',
         ];
 
         $response = $this->actingAs($this->user)
@@ -123,10 +123,10 @@ class TransactionFlowTest extends TestCase
         $response->assertRedirect(route('dashboard'));
 
         $this->assertDatabaseHas('transaction_logs', [
-            'user_id'               => $this->user->id,
-            'amount'                => 200000,
-            'subject'               => 'ANI',
-            'source_wallet_id'      => $liquidWallet->id,
+            'user_id' => $this->user->id,
+            'amount' => 200000,
+            'subject' => 'ANI',
+            'source_wallet_id' => $liquidWallet->id,
             'destination_wallet_id' => $systemPiutang->id,
         ]);
 
@@ -143,15 +143,15 @@ class TransactionFlowTest extends TestCase
         $systemPiutang = $this->user->wallets()->where('name', 'Piutang System')->firstOrFail();
 
         $payload = [
-            'date'                  => now()->format('Y-m-d'),
-            'category_id'           => null,
-            'source_wallet_id'      => $systemPiutang->id,
+            'date' => now()->format('Y-m-d'),
+            'category_id' => null,
+            'source_wallet_id' => $systemPiutang->id,
             'destination_wallet_id' => $liquidWallet->id,
-            'amount'                => 100000,
-            'transaction_type'      => 'receivable',
-            'debt_sub_type'         => 'income', // sub_type for RECEIVABLE_PAYMENT
-            'subject'               => 'ANI',
-            'notes'                 => 'Terima cicilan piutang dari Ani',
+            'amount' => 100000,
+            'transaction_type' => 'receivable',
+            'debt_sub_type' => 'income', // sub_type for RECEIVABLE_PAYMENT
+            'subject' => 'ANI',
+            'notes' => 'Terima cicilan piutang dari Ani',
         ];
 
         $response = $this->actingAs($this->user)
@@ -160,10 +160,10 @@ class TransactionFlowTest extends TestCase
         $response->assertRedirect(route('dashboard'));
 
         $this->assertDatabaseHas('transaction_logs', [
-            'user_id'               => $this->user->id,
-            'amount'                => 100000,
-            'subject'               => 'ANI',
-            'source_wallet_id'      => $systemPiutang->id,
+            'user_id' => $this->user->id,
+            'amount' => 100000,
+            'subject' => 'ANI',
+            'source_wallet_id' => $systemPiutang->id,
             'destination_wallet_id' => $liquidWallet->id,
         ]);
 
@@ -182,14 +182,14 @@ class TransactionFlowTest extends TestCase
         $w2 = $wallets[1];
 
         $payload = [
-            'date'                  => now()->format('Y-m-d'),
-            'category_id'           => null,
-            'source_wallet_id'      => $w1->id,
+            'date' => now()->format('Y-m-d'),
+            'category_id' => null,
+            'source_wallet_id' => $w1->id,
             'destination_wallet_id' => $w2->id,
-            'amount'                => 300000,
-            'transaction_type'      => 'transfer',
-            'subject'               => '-',
-            'notes'                 => 'Pindah dana antar dompet',
+            'amount' => 300000,
+            'transaction_type' => 'transfer',
+            'subject' => '-',
+            'notes' => 'Pindah dana antar dompet',
         ];
 
         $response = $this->actingAs($this->user)
@@ -198,9 +198,9 @@ class TransactionFlowTest extends TestCase
         $response->assertRedirect(route('dashboard'));
 
         $this->assertDatabaseHas('transaction_logs', [
-            'user_id'               => $this->user->id,
-            'amount'                => 300000,
-            'source_wallet_id'      => $w1->id,
+            'user_id' => $this->user->id,
+            'amount' => 300000,
+            'source_wallet_id' => $w1->id,
             'destination_wallet_id' => $w2->id,
         ]);
 
@@ -219,31 +219,31 @@ class TransactionFlowTest extends TestCase
 
         // Create transaction first
         $transaction = TransactionLog::create([
-            'reference_number'      => 'TRX-' . \Illuminate\Support\Str::ulid(),
-            'user_id'               => $this->user->id,
-            'date'                  => now()->format('Y-m-d'),
-            'type_id'               => $loanCategory->type_id,
-            'category_id'           => $loanCategory->id,
-            'source_wallet_id'      => $systemHutang->id,
+            'reference_number' => 'TRX-'.Str::ulid(),
+            'user_id' => $this->user->id,
+            'date' => now()->format('Y-m-d'),
+            'type_id' => $loanCategory->type_id,
+            'category_id' => $loanCategory->id,
+            'source_wallet_id' => $systemHutang->id,
             'destination_wallet_id' => $liquidWallet->id,
-            'amount'                => 150000,
-            'balance_before'        => $liquidWallet->balance,
-            'balance_after'         => $liquidWallet->balance + 150000,
-            'subject'               => 'BUDI',
-            'notes'                 => 'Hutang awal',
-            'is_cleared'            => true,
+            'amount' => 150000,
+            'balance_before' => $liquidWallet->balance,
+            'balance_after' => $liquidWallet->balance + 150000,
+            'subject' => 'BUDI',
+            'notes' => 'Hutang awal',
+            'is_cleared' => true,
         ]);
 
         $payload = [
-            'date'                  => now()->format('Y-m-d'),
-            'category_id'           => null, // test auto-resolve during edit/update
-            'source_wallet_id'      => $liquidWallet->id, // swap direction to DEBT_PAYMENT
+            'date' => now()->format('Y-m-d'),
+            'category_id' => null, // test auto-resolve during edit/update
+            'source_wallet_id' => $liquidWallet->id, // swap direction to DEBT_PAYMENT
             'destination_wallet_id' => $systemHutang->id,
-            'amount'                => 75000,
-            'transaction_type'      => 'debt',
-            'debt_sub_type'         => 'expense', // change subtype to Bayar Hutang
-            'subject'               => 'BUDI-EDITED',
-            'notes'                 => 'Hutang terupdate',
+            'amount' => 75000,
+            'transaction_type' => 'debt',
+            'debt_sub_type' => 'expense', // change subtype to Bayar Hutang
+            'subject' => 'BUDI-EDITED',
+            'notes' => 'Hutang terupdate',
         ];
 
         $response = $this->actingAs($this->user)

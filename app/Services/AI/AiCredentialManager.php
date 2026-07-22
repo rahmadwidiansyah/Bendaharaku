@@ -12,7 +12,7 @@ use InvalidArgumentException;
 class AiCredentialManager
 {
     /**
-     * @param array<string, mixed> $meta
+     * @param  array<string, mixed>  $meta
      */
     public function setCredential(
         User $user,

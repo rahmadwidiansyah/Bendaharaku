@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Services\AI\Memory;
 
 use App\Models\UserAiMemory;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 readonly class UserMemoryService
@@ -19,7 +21,7 @@ readonly class UserMemoryService
     public function upsertMemory(int $userId, array $correctedData): void
     {
         $subject = $correctedData['subject'] ?? null;
-        
+
         // Abaikan jika tidak ada subjek eksplisit. Kita tidak mau mengingat 'noise'
         if (blank($subject) || $subject === '-' || $subject === 'System') {
             return;
@@ -39,8 +41,8 @@ readonly class UserMemoryService
             ]);
 
             // Jika memori sudah ada, kalkulasi pelemahan bobotnya sejak terakhir dipakai, lalu tambah 1.0 (Reward)
-            $currentWeight = $memory->exists 
-                ? $this->decayEngine->calculateDecayedWeight((float)$memory->weight, $memory->last_applied_at ?? now())
+            $currentWeight = $memory->exists
+                ? $this->decayEngine->calculateDecayedWeight((float) $memory->weight, $memory->last_applied_at ?? now())
                 : 0.0;
 
             $newWeight = min(5.0, $currentWeight + 1.0); // Cap bobot maksimal di 5.0
@@ -67,17 +69,17 @@ readonly class UserMemoryService
     {
         $cacheKey = "ai-mem-v2-{$userId}";
 
-        $memories = \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function () use ($userId) {
-            return \App\Models\UserAiMemory::where('user_id', $userId)
+        $memories = Cache::remember($cacheKey, 300, function () use ($userId) {
+            return UserAiMemory::where('user_id', $userId)
                 ->with('category:id,category_name')
                 ->orderByDesc('weight')
                 ->get();
         });
 
         // Validasi: Jika cache return bukan Collection (corrupt), clear dan re-fetch
-        if (!($memories instanceof \Illuminate\Support\Collection)) {
-            \Illuminate\Support\Facades\Cache::forget($cacheKey);
-            $memories = \App\Models\UserAiMemory::where('user_id', $userId)
+        if (! ($memories instanceof Collection)) {
+            Cache::forget($cacheKey);
+            $memories = UserAiMemory::where('user_id', $userId)
                 ->with('category:id,category_name')
                 ->orderByDesc('weight')
                 ->get();
@@ -90,20 +92,20 @@ readonly class UserMemoryService
         foreach ($memories as $memory) {
             // Guard ketat: pastikan ia betul-betul Eloquent model UserAiMemory
             // (bukan string, array, __PHP_Incomplete_Class, atau object lain)
-            if (!($memory instanceof \App\Models\UserAiMemory)) {
+            if (! ($memory instanceof UserAiMemory)) {
                 continue;
             }
 
             $pattern = $memory->keyword_pattern;
 
             // Pastikan keyword_pattern adalah string yang valid
-            if (!is_string($pattern) || $pattern === '') {
+            if (! is_string($pattern) || $pattern === '') {
                 continue;
             }
 
-            if (preg_match("/\b" . preg_quote(strtolower($pattern), '/') . "\b/i", $textLower)) {
+            if (preg_match("/\b".preg_quote(strtolower($pattern), '/')."\b/i", $textLower)) {
                 $matched[] = [
-                    'keyword'  => $pattern,
+                    'keyword' => $pattern,
                     'category' => $memory->category?->category_name,
                 ];
             }
@@ -111,6 +113,7 @@ readonly class UserMemoryService
 
         // Batasi maksimal 5 memori paling relevan agar token LLM tidak meledak
         $limit = (int) config('bendaharaku.ai.memory.max_memories', 5);
+
         return array_slice($matched, 0, $limit);
     }
 }

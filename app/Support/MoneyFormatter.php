@@ -37,7 +37,7 @@ class MoneyFormatter
      */
     public static function rupiah(int|float $amount): string
     {
-        return 'Rp ' . self::amount($amount);
+        return 'Rp '.self::amount($amount);
     }
 
     /**
@@ -48,7 +48,7 @@ class MoneyFormatter
      */
     public static function rupiahCompact(int|float $amount): string
     {
-        return 'Rp' . self::amount($amount);
+        return 'Rp'.self::amount($amount);
     }
 
     /**
@@ -58,6 +58,6 @@ class MoneyFormatter
      */
     public static function rupiahDecimal(int|float $amount, int $decimals = 2): string
     {
-        return 'Rp ' . number_format($amount, $decimals, ',', '.');
+        return 'Rp '.number_format($amount, $decimals, ',', '.');
     }
 }

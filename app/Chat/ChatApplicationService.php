@@ -4,42 +4,47 @@ declare(strict_types=1);
 
 namespace App\Chat;
 
+use App\Chat\Components\DividerComponent;
+use App\Chat\Components\ErrorComponent;
+use App\Chat\Components\ReportSectionComponent;
+use App\Chat\Components\SuggestionComponent;
+use App\Chat\Components\SummaryCardComponent;
+use App\Chat\Components\TextComponent;
+use App\Chat\Components\TransactionCardComponent;
+use App\Chat\Components\WarningComponent;
+use App\Chat\DTOs\ChatContext;
 use App\Chat\DTOs\ChatRequest;
 use App\Chat\DTOs\ChatResponse;
-use App\Chat\DTOs\ChatContext;
-use App\Chat\Components\TextComponent;
-use App\Chat\Components\DividerComponent;
-use App\Chat\Components\ReportSectionComponent;
-use App\Chat\Components\TransactionCardComponent;
-use App\Chat\Components\SummaryCardComponent;
-use App\Chat\Components\ErrorComponent;
-use App\Chat\Components\WarningComponent;
-use App\Chat\Components\SuggestionComponent;
 use App\Chat\Errors\ErrorDetail;
+use App\DTO\MultiTransactionItem;
+use App\DTO\MultiTransactionResult;
 use App\Enums\AiProvider;
 use App\Enums\ChatErrorSeverity;
-use App\Enums\ChatIntent;
-use App\Models\MonthlyReport;
-use App\Models\UserAiCredential;
-use App\Models\Wallet;
-use App\Models\Category;
-use App\Models\TransactionType;
-use App\Services\Chat\ChatTransactionOrchestrator;
-use App\DTO\MultiTransactionResult;
-use App\DTO\MultiTransactionItem;
 use App\Exceptions\AiConfigurationException;
+use App\Exceptions\AiProviderException;
 use App\Exceptions\AiRateLimitException;
 use App\Exceptions\AiTimeoutException;
 use App\Exceptions\AiTokenLimitException;
-use App\Exceptions\AiProviderException;
 use App\Exceptions\CategoryNotFoundException;
 use App\Exceptions\WalletNotFoundException;
+use App\Models\Category;
+use App\Models\MonthlyReport;
+use App\Models\TransactionDraft;
+use App\Models\TransactionLog;
+use App\Models\TransactionType;
+use App\Models\User;
+use App\Models\UserAiCredential;
+use App\Models\Wallet;
+use App\Services\Chat\ChatTransactionOrchestrator;
+use App\Support\MoneyFormatter;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\Client\Response;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Carbon;
-use Throwable;
 use InvalidArgumentException;
+use Throwable;
 
 /**
  * Entry point tunggal untuk semua platform chat.
@@ -73,17 +78,17 @@ class ChatApplicationService
      */
     public function handleMessage(ChatRequest $request): ChatResponse
     {
-        $context   = $request->context;
-        $user      = $request->user;
-        $text      = $request->normalizedMessage();
-        $source    = $context->sourcePrefix();
+        $context = $request->context;
+        $user = $request->user;
+        $text = $request->normalizedMessage();
+        $source = $context->sourcePrefix();
         $startTime = microtime(true);
 
         Log::info('ChatApplicationService: processing message', [
             'trace_id' => $context->traceId,
             'platform' => $context->platform->value,
-            'user_id'  => $user->id,
-            'length'   => strlen($text),
+            'user_id' => $user->id,
+            'length' => strlen($text),
         ]);
 
         // ── Command handling (Unified platform-agnostic) ─────────
@@ -97,16 +102,16 @@ class ChatApplicationService
         try {
             $result = $this->orchestrator->process($user, $text, $source);
 
-            $latency  = (int) round((microtime(true) - $startTime) * 1000);
+            $latency = (int) round((microtime(true) - $startTime) * 1000);
             $metadata = $this->buildMetadata($result, $context, $latency);
 
             // ── Multi-transaction ──────────────────────────────────
-            if (!empty($result['is_multi'])) {
+            if (! empty($result['is_multi'])) {
                 return $this->convertMultiResult($result['multi_result'], $context, $metadata);
             }
 
             // ── Single gagal (AI error, validasi, dll) ─────────────
-            if (!$result['success']) {
+            if (! $result['success']) {
                 return $this->convertSingleFailure($result, $metadata);
             }
 
@@ -124,44 +129,46 @@ class ChatApplicationService
 
         } catch (AiTokenLimitException $e) {
             return $this->failureResponse([
-                ErrorDetail::aiTokenLimit($e->getProvider(), $e->getEstimatedTokens())
+                ErrorDetail::aiTokenLimit($e->getProvider(), $e->getEstimatedTokens()),
             ], $context, $startTime);
 
         } catch (AiProviderException $e) {
             return $this->failureResponse([ErrorDetail::aiProviderError($e->getMessage(), $e->getMessage())], $context, $startTime);
 
-        } catch (CategoryNotFoundException | WalletNotFoundException $e) {
+        } catch (CategoryNotFoundException|WalletNotFoundException $e) {
             // Dilempar oleh single flow — multi sudah menangkap per-item
             $error = str_contains($e->getMessage(), 'ategori')
                 ? ErrorDetail::categoryNotFound($e->getMessage())
                 : ErrorDetail::walletNotFound($e->getMessage());
+
             return $this->failureResponse([$error], $context, $startTime);
 
         } catch (ModelNotFoundException $e) {
             return $this->failureResponse([
                 new ErrorDetail(
-                    code:       'DATA_NOT_FOUND',
+                    code: 'DATA_NOT_FOUND',
                     messageKey: 'chat.error.data_not_found_single',
-                    severity:   ChatErrorSeverity::Error,
+                    severity: ChatErrorSeverity::Error,
                 ),
             ], $context, $startTime);
 
-        } catch (InvalidArgumentException | \RuntimeException $e) {
+        } catch (InvalidArgumentException|\RuntimeException $e) {
             return $this->failureResponse([
                 new ErrorDetail(
-                    code:       'VALIDATION_ERROR',
+                    code: 'VALIDATION_ERROR',
                     messageKey: 'chat.error.runtime',
-                    params:     ['message' => $e->getMessage()],
-                    severity:   ChatErrorSeverity::Error,
+                    params: ['message' => $e->getMessage()],
+                    severity: ChatErrorSeverity::Error,
                 ),
             ], $context, $startTime);
 
         } catch (Throwable $e) {
             Log::error('ChatApplicationService: unhandled exception', [
-                'trace_id'  => $context->traceId,
-                'user_id'   => $user->id,
+                'trace_id' => $context->traceId,
+                'user_id' => $user->id,
                 'exception' => $e,
             ]);
+
             return $this->failureResponse([ErrorDetail::systemError()], $context, $startTime);
         }
     }
@@ -172,22 +179,22 @@ class ChatApplicationService
      * Single transaction sukses (termasuk draft).
      */
     private function convertSingleSuccess(
-        array       $result,
+        array $result,
         ChatContext $context,
-        array       $metadata,
-        string      $originalText,
+        array $metadata,
+        string $originalText,
     ): ChatResponse {
         // ── WEB Draft path ─────────────────────────────────────────
         // Saat source WEB, orchestrator menyimpan ke transaction_drafts dan
         // mengembalikan is_web_draft=true dengan objek TransactionDraft di 'draft'.
-        if (!empty($result['is_web_draft'])) {
+        if (! empty($result['is_web_draft'])) {
             return $this->convertWebDraftSuccess($result, $context, $metadata);
         }
 
         // ── Transaction Log path (non-WEB atau WEB lama) ───────────
-        $trx        = $result['transaction'];
-        $isCleared  = $trx->is_cleared;
-        $locale     = $context->locale;
+        $trx = $result['transaction'];
+        $isCleared = $trx->is_cleared;
+        $locale = $context->locale;
 
         $components = [];
 
@@ -197,23 +204,23 @@ class ChatApplicationService
             showDetails: true,
         );
 
-        if (!$isCleared && $trx->sourceWallet?->group_type === 'System') {
+        if (! $isCleared && $trx->sourceWallet?->group_type === 'System') {
             $components[] = new WarningComponent(
                 messageKey: 'chat.wallet.missing_choose',
             );
         }
 
         // Divider + footer AI
-        $components[] = new DividerComponent();
+        $components[] = new DividerComponent;
         $components[] = new TextComponent(
             translationKey: 'chat.transaction.label_original_msg',
         );
         $components[] = new TextComponent(
             translationKey: 'chat.transaction.label_ai_provider',
             params: [
-                'provider'    => $metadata['provider'] ?? '',
-                'confidence'  => isset($metadata['confidence'])
-                    ? round($metadata['confidence'] * 100) . '%'
+                'provider' => $metadata['provider'] ?? '',
+                'confidence' => isset($metadata['confidence'])
+                    ? round($metadata['confidence'] * 100).'%'
                     : '-',
             ],
         );
@@ -232,14 +239,14 @@ class ChatApplicationService
      * (bukan transaction_log id) agar bisa memanggil endpoint /chat/draft/{id}/...
      */
     private function convertWebDraftSuccess(
-        array       $result,
+        array $result,
         ChatContext $context,
-        array       $metadata,
+        array $metadata,
     ): ChatResponse {
-        /** @var \App\Models\TransactionDraft $draft */
-        $draft   = $result['draft'];
+        /** @var TransactionDraft $draft */
+        $draft = $result['draft'];
         $payload = $draft->payload ?? [];
-        $locale  = $context->locale;
+        $locale = $context->locale;
 
         // Buat TransactionLog sementara (tidak disimpan) hanya untuk TransactionCardComponent.
         // Ini adalah "view model" — data dari payload draft diformat sebagai TransactionLog
@@ -264,16 +271,16 @@ class ChatApplicationService
         }
 
         // Divider + footer AI
-        $components[] = new DividerComponent();
+        $components[] = new DividerComponent;
         $components[] = new TextComponent(
             translationKey: 'chat.transaction.label_original_msg',
         );
         $components[] = new TextComponent(
             translationKey: 'chat.transaction.label_ai_provider',
             params: [
-                'provider'   => $metadata['provider'] ?? '',
+                'provider' => $metadata['provider'] ?? '',
                 'confidence' => isset($metadata['confidence'])
-                    ? round($metadata['confidence'] * 100) . '%'
+                    ? round($metadata['confidence'] * 100).'%'
                     : '-',
             ],
         );
@@ -288,38 +295,38 @@ class ChatApplicationService
      * Mengisi relasi sourceWallet, destinationWallet, category, type
      * berdasarkan ID di payload agar WebFormatter bisa membaca nama wallet/kategori.
      */
-    private function buildFakeTransactionFromPayload(array $payload): \App\Models\TransactionLog
+    private function buildFakeTransactionFromPayload(array $payload): TransactionLog
     {
-        $fakeTrx = new \App\Models\TransactionLog();
-        $fakeTrx->amount     = $payload['amount'] ?? 0;
+        $fakeTrx = new TransactionLog;
+        $fakeTrx->amount = $payload['amount'] ?? 0;
         $fakeTrx->is_cleared = false;
-        $fakeTrx->subject    = $payload['subject'] ?? null;
-        $fakeTrx->notes      = $payload['notes'] ?? null;
-        $fakeTrx->date       = isset($payload['date'])
-            ? \Illuminate\Support\Carbon::parse($payload['date'])
+        $fakeTrx->subject = $payload['subject'] ?? null;
+        $fakeTrx->notes = $payload['notes'] ?? null;
+        $fakeTrx->date = isset($payload['date'])
+            ? Carbon::parse($payload['date'])
             : now();
 
         // Isi relasi dari payload (nama sudah tersimpan di payload)
         // Gunakan accessor agar tidak perlu query DB lagi
         if (isset($payload['source_wallet_name']) || isset($payload['source_wallet_id'])) {
-            $sourceWallet = new \App\Models\Wallet();
-            $sourceWallet->id         = $payload['source_wallet_id'] ?? null;
-            $sourceWallet->name       = $payload['source_wallet_name'] ?? null;
+            $sourceWallet = new Wallet;
+            $sourceWallet->id = $payload['source_wallet_id'] ?? null;
+            $sourceWallet->name = $payload['source_wallet_name'] ?? null;
             $sourceWallet->group_type = $this->resolveWalletGroupType($payload, 'source');
             $fakeTrx->setRelation('sourceWallet', $sourceWallet);
         }
 
         if (isset($payload['destination_wallet_name']) || isset($payload['destination_wallet_id'])) {
-            $destWallet = new \App\Models\Wallet();
-            $destWallet->id         = $payload['destination_wallet_id'] ?? null;
-            $destWallet->name       = $payload['destination_wallet_name'] ?? null;
+            $destWallet = new Wallet;
+            $destWallet->id = $payload['destination_wallet_id'] ?? null;
+            $destWallet->name = $payload['destination_wallet_name'] ?? null;
             $destWallet->group_type = $this->resolveWalletGroupType($payload, 'destination');
             $fakeTrx->setRelation('destinationWallet', $destWallet);
         }
 
         if (isset($payload['category_name'])) {
-            $category = new \App\Models\Category();
-            $category->id            = $payload['category_id'] ?? null;
+            $category = new Category;
+            $category->id = $payload['category_id'] ?? null;
             $category->category_name = $payload['category_name'];
             $fakeTrx->setRelation('category', $category);
         }
@@ -327,13 +334,13 @@ class ChatApplicationService
         // Set type dari type_key
         $typeKey = $payload['type_key'] ?? 'expense';
         $typeName = match ($typeKey) {
-            'income'   => 'Income',
-            'expense'  => 'Expense',
+            'income' => 'Income',
+            'expense' => 'Expense',
             'transfer' => 'Transfer',
-            'debt'     => 'Debt',
-            default    => 'Expense',
+            'debt' => 'Debt',
+            default => 'Expense',
         };
-        $type = new \App\Models\TransactionType();
+        $type = new TransactionType;
         $type->name = $typeName;
         $fakeTrx->setRelation('type', $type);
 
@@ -374,7 +381,7 @@ class ChatApplicationService
     {
         // Coba kenali tipe error dari message string (temporary, Tahap 1)
         $message = $result['message'] ?? '';
-        $error   = $this->detectErrorFromMessage($message);
+        $error = $this->detectErrorFromMessage($message);
 
         return ChatResponse::failure([$error], [], $metadata);
     }
@@ -384,21 +391,21 @@ class ChatApplicationService
      */
     private function convertMultiResult(
         MultiTransactionResult $multiResult,
-        ChatContext            $context,
-        array                  $metadata,
+        ChatContext $context,
+        array $metadata,
     ): ChatResponse {
         $components = [];
-        $errors     = [];
+        $errors = [];
 
         // Header: SummaryCard
         $components[] = new SummaryCardComponent(
-            total:      $multiResult->totalCount(),
-            success:    $multiResult->successCount(),
-            failed:     $multiResult->failedCount(),
+            total: $multiResult->totalCount(),
+            success: $multiResult->successCount(),
+            failed: $multiResult->failedCount(),
             confidence: $multiResult->confidence,
         );
 
-        $components[] = new DividerComponent();
+        $components[] = new DividerComponent;
 
         // Setiap item, urutan dipertahankan
         foreach ($multiResult->results as $item) {
@@ -406,20 +413,20 @@ class ChatApplicationService
             if ($item->isSuccess()) {
                 if ($item->isDraft()) {
                     // WEB Draft item: bangun fake TransactionLog dari draft payload
-                    $draft   = $item->draft;
+                    $draft = $item->draft;
                     $payload = $draft->payload ?? [];
                     $fakeTrx = $this->buildFakeTransactionFromPayload($payload);
 
                     $components[] = new TransactionCardComponent(
                         transaction: $fakeTrx,
-                        index:       $item->index,
+                        index: $item->index,
                         showDetails: false,
-                        draftId:     $draft->id,
+                        draftId: $draft->id,
                     );
                 } else {
                     $components[] = new TransactionCardComponent(
                         transaction: $item->transaction,
-                        index:       $item->index,
+                        index: $item->index,
                         showDetails: false,
                     );
                 }
@@ -427,61 +434,62 @@ class ChatApplicationService
                 // Error per-item sebagai ErrorComponent (inline dalam list)
                 $components[] = new ErrorComponent(
                     messageKey: $this->mapErrorCodeToKey($item->errorCode?->value),
-                    params:     $this->extractErrorParams($item->reason ?? '', $item->errorCode?->value),
-                    raw:        $item->raw,
-                    index:      $item->index,
-                    severity:   ChatErrorSeverity::Error,
+                    params: $this->extractErrorParams($item->reason ?? '', $item->errorCode?->value),
+                    raw: $item->raw,
+                    index: $item->index,
+                    severity: ChatErrorSeverity::Error,
                     recoverable: true,
                 );
             }
         }
 
         // Footer AI
-        $components[] = new DividerComponent();
+        $components[] = new DividerComponent;
         $components[] = new TextComponent(
             translationKey: 'chat.transaction.label_ai_provider',
             params: [
-                'provider'   => $metadata['provider'] ?? '',
+                'provider' => $metadata['provider'] ?? '',
                 'confidence' => isset($metadata['confidence'])
-                    ? round($metadata['confidence'] * 100) . '%'
+                    ? round($metadata['confidence'] * 100).'%'
                     : '-',
             ],
         );
 
         return ChatResponse::multiResult(
             hasAnySuccess: $multiResult->hasAnySuccess(),
-            components:    $components,
-            metadata:      $metadata,
+            components: $components,
+            metadata: $metadata,
         );
     }
 
     // ── Helpers ───────────────────────────────────────────────────
 
     private function failureResponse(
-        array       $errors,
+        array $errors,
         ChatContext $context,
-        float       $startTime,
+        float $startTime,
     ): ChatResponse {
         $latency = (int) round((microtime(true) - $startTime) * 1000);
+
         return ChatResponse::failure($errors, [], [
-            'trace_id'   => $context->traceId,
-            'platform'   => $context->platform->value,
+            'trace_id' => $context->traceId,
+            'platform' => $context->platform->value,
             'latency_ms' => $latency,
         ]);
     }
 
     private function buildMetadata(array $result, ChatContext $context, int|float $latency): array
     {
-        $usage        = $result['usage'] ?? ($result['multi_result']?->usage ?? []);
-        $totalTokens  = $usage['total'] ?? null;
+        $usage = $result['usage'] ?? ($result['multi_result']?->usage ?? []);
+        $totalTokens = $usage['total'] ?? null;
 
         return [
-            'trace_id'     => $context->traceId,
-            'platform'     => $context->platform->value,
-            'provider'     => $result['provider'] ?? ($result['multi_result']?->provider ?? null),
-            'model'        => $result['model'] ?? ($result['multi_result']?->model ?? null),
-            'confidence'   => $result['confidence'] ?? ($result['multi_result']?->confidence ?? null),
-            'latency_ms'   => (int) $latency,
+            'trace_id' => $context->traceId,
+            'platform' => $context->platform->value,
+            'provider' => $result['provider'] ?? ($result['multi_result']?->provider ?? null),
+            'model' => $result['model'] ?? ($result['multi_result']?->model ?? null),
+            'confidence' => $result['confidence'] ?? ($result['multi_result']?->confidence ?? null),
+            'latency_ms' => (int) $latency,
             'total_tokens' => $totalTokens,
         ];
     }
@@ -517,11 +525,12 @@ class ChatApplicationService
                 ['reason' => trans('chat.ai.parse_failed_default')],
             );
         }
+
         // Fallback: gunakan pesan asli apa adanya (Tahap 1 bridge, akan dihapus Tahap 2)
         return new ErrorDetail(
-            code:       'UNKNOWN',
+            code: 'UNKNOWN',
             messageKey: 'chat.error.system',
-            severity:   ChatErrorSeverity::Error,
+            severity: ChatErrorSeverity::Error,
         );
     }
 
@@ -531,13 +540,13 @@ class ChatApplicationService
     private function mapErrorCodeToKey(?string $errorCode): string
     {
         return match ($errorCode) {
-            'WALLET_NOT_FOUND'     => 'chat.wallet.not_found',
-            'CATEGORY_NOT_FOUND'   => 'chat.category.not_found',
-            'INVALID_AMOUNT'       => 'chat.validation.invalid_amount',
-            'SAME_WALLET'          => 'chat.validation.same_wallet',
+            'WALLET_NOT_FOUND' => 'chat.wallet.not_found',
+            'CATEGORY_NOT_FOUND' => 'chat.category.not_found',
+            'INVALID_AMOUNT' => 'chat.validation.invalid_amount',
+            'SAME_WALLET' => 'chat.validation.same_wallet',
             'INSUFFICIENT_BALANCE' => 'chat.wallet.insufficient',
-            'VALIDATION_ERROR'     => 'chat.validation.invalid_amount',
-            default                => 'chat.error.system',
+            'VALIDATION_ERROR' => 'chat.validation.invalid_amount',
+            default => 'chat.error.system',
         };
     }
 
@@ -553,6 +562,7 @@ class ChatApplicationService
                 return ['name' => $m[1]];
             }
         }
+
         return ['message' => $reason];
     }
 
@@ -565,24 +575,24 @@ class ChatApplicationService
      * alur normal tetap berjalan.
      */
     private function handleCommand(
-        string      $text,
-        \App\Models\User $user,
+        string $text,
+        User $user,
         ChatContext $context,
-        float       $startTime,
+        float $startTime,
     ): ?ChatResponse {
         $lower = strtolower(trim($text));
         $command = $this->normalizeCommand($lower);
 
         // Bukan command → lanjut ke orchestrator
-        if ($command === null && !in_array($lower, ['hai', 'halo', 'hello', 'hi', 'ping', 'p', 'tes', 'test', 'help', 'tolong'])) {
+        if ($command === null && ! in_array($lower, ['hai', 'halo', 'hello', 'hi', 'ping', 'p', 'tes', 'test', 'help', 'tolong'])) {
             return null;
         }
 
-        $locale   = $context->locale;
-        $latency  = (int) round((microtime(true) - $startTime) * 1000);
+        $locale = $context->locale;
+        $latency = (int) round((microtime(true) - $startTime) * 1000);
         $metadata = [
-            'trace_id'   => $context->traceId,
-            'platform'   => $context->platform->value,
+            'trace_id' => $context->traceId,
+            'platform' => $context->platform->value,
             'latency_ms' => $latency,
         ];
 
@@ -665,7 +675,7 @@ class ChatApplicationService
         };
     }
 
-    private function buildSaldoResponse(\App\Models\User $user, string $locale, array $metadata): ChatResponse
+    private function buildSaldoResponse(User $user, string $locale, array $metadata): ChatResponse
     {
         $wallets = Wallet::where('user_id', $user->id)
             ->whereIn('group_type', ['Asset', 'Liquid'])
@@ -682,22 +692,22 @@ class ChatApplicationService
         }
 
         $totalBalance = 0.0;
-        $items        = [];
+        $items = [];
 
         foreach ($wallets as $w) {
             $totalBalance += (float) $w->balance;
             $items[] = [
-                'name'        => $w->name,
-                'group_type'  => $w->group_type,
-                'icon'        => $w->icon ?? '💳',
-                'amount'      => \App\Support\MoneyFormatter::rupiah((float) $w->balance),
+                'name' => $w->name,
+                'group_type' => $w->group_type,
+                'icon' => $w->icon ?? '💳',
+                'amount' => MoneyFormatter::rupiah((float) $w->balance),
             ];
         }
 
         $headerItems = [
             [
                 'label' => trans('chat.command.balance_total_label', [], $locale),
-                'value' => \App\Support\MoneyFormatter::rupiah($totalBalance),
+                'value' => MoneyFormatter::rupiah($totalBalance),
             ],
             [
                 'label' => trans('chat.command.balance_wallet_count', ['count' => $wallets->count()], $locale),
@@ -707,7 +717,7 @@ class ChatApplicationService
 
         $components = [
             // Header section
-            new \App\Chat\Components\ReportSectionComponent(
+            new ReportSectionComponent(
                 title: trans('chat.command.balance_title', [], $locale),
                 emoji: '💳',
                 items: $headerItems,
@@ -716,14 +726,14 @@ class ChatApplicationService
                 count: 0,
             ),
             // Divider
-            new \App\Chat\Components\DividerComponent(),
+            new DividerComponent,
             // Wallet list
-            new \App\Chat\Components\ReportSectionComponent(
+            new ReportSectionComponent(
                 title: '',
                 emoji: '',
                 items: $items,
                 translationKey: 'chat.command.balance_list',
-                total: \App\Support\MoneyFormatter::rupiah($totalBalance),
+                total: MoneyFormatter::rupiah($totalBalance),
                 count: $wallets->count(),
             ),
         ];
@@ -731,7 +741,7 @@ class ChatApplicationService
         return ChatResponse::command(components: $components, metadata: $metadata);
     }
 
-    private function buildWalletResponse(\App\Models\User $user, array $metadata): ChatResponse
+    private function buildWalletResponse(User $user, array $metadata): ChatResponse
     {
         $wallets = Wallet::where('user_id', $user->id)
             ->where('group_type', '!=', 'System')
@@ -747,11 +757,11 @@ class ChatApplicationService
 
         $lines = [];
         foreach ($wallets as $wallet) {
-            $lines[] = "{$wallet->group_type} — {$wallet->name}: " . \App\Support\MoneyFormatter::rupiah((float) $wallet->balance);
+            $lines[] = "{$wallet->group_type} — {$wallet->name}: ".MoneyFormatter::rupiah((float) $wallet->balance);
         }
 
         $components = [
-            new \App\Chat\Components\ReportSectionComponent(
+            new ReportSectionComponent(
                 title: '',
                 emoji: '👛',
                 items: $lines,
@@ -762,7 +772,7 @@ class ChatApplicationService
         return ChatResponse::command($components, $metadata);
     }
 
-    private function buildAssetResponse(\App\Models\User $user, array $metadata): ChatResponse
+    private function buildAssetResponse(User $user, array $metadata): ChatResponse
     {
         $assets = Wallet::where('user_id', $user->id)
             ->where('group_type', 'Asset')
@@ -778,20 +788,20 @@ class ChatApplicationService
         $total = (float) $assets->sum('balance');
         $lines = [];
         foreach ($assets as $asset) {
-            $lines[] = "{$asset->name}: " . \App\Support\MoneyFormatter::rupiah((float) $asset->balance);
+            $lines[] = "{$asset->name}: ".MoneyFormatter::rupiah((float) $asset->balance);
         }
 
         $components = [
-            new \App\Chat\Components\ReportSectionComponent(
+            new ReportSectionComponent(
                 title: '',
                 emoji: '📈',
                 items: $lines,
                 translationKey: 'chat.command.asset_title',
             ),
-            new DividerComponent(),
+            new DividerComponent,
             new TextComponent(
                 translationKey: 'chat.command.balance_total',
-                params: ['total' => \App\Support\MoneyFormatter::rupiah($total)],
+                params: ['total' => MoneyFormatter::rupiah($total)],
                 bold: true,
             ),
         ];
@@ -799,7 +809,7 @@ class ChatApplicationService
         return ChatResponse::command($components, $metadata);
     }
 
-    private function buildCategoryResponse(\App\Models\User $user, array $metadata): ChatResponse
+    private function buildCategoryResponse(User $user, array $metadata): ChatResponse
     {
         $categories = $user->categories()
             ->with('type')
@@ -813,26 +823,26 @@ class ChatApplicationService
             ], $metadata);
         }
 
-        $grouped = $categories->groupBy(fn($category) => $category->type?->name ?? 'Other');
+        $grouped = $categories->groupBy(fn ($category) => $category->type?->name ?? 'Other');
 
         // Build structured sections: each section has a type header + list of category names
         $sections = [];
         foreach ($grouped as $typeName => $items) {
             $sectionKey = match (strtolower($typeName)) {
-                'income'   => 'chat.command.category_section_income',
-                'expense'  => 'chat.command.category_section_expense',
+                'income' => 'chat.command.category_section_income',
+                'expense' => 'chat.command.category_section_expense',
                 'transfer' => 'chat.command.category_section_transfer',
-                'debt'     => 'chat.command.category_section_debt',
+                'debt' => 'chat.command.category_section_debt',
                 'receivable' => 'chat.command.category_section_receivable',
-                default    => null,
+                default => null,
             };
             $typeIcon = match (strtolower($typeName)) {
-                'income'     => '💰',
-                'expense'    => '💸',
-                'transfer'   => '🔄',
-                'debt'       => '🤝',
+                'income' => '💰',
+                'expense' => '💸',
+                'transfer' => '🔄',
+                'debt' => '🤝',
                 'receivable' => '💵',
-                default      => '📁',
+                default => '📁',
             };
 
             $sections[] = [
@@ -844,7 +854,7 @@ class ChatApplicationService
         }
 
         $components = [
-            new \App\Chat\Components\ReportSectionComponent(
+            new ReportSectionComponent(
                 title: '',
                 emoji: '🏷️',
                 items: $sections,
@@ -856,7 +866,7 @@ class ChatApplicationService
         return ChatResponse::command($components, $metadata);
     }
 
-    private function buildTodayTransactionResponse(\App\Models\User $user, array $metadata): ChatResponse
+    private function buildTodayTransactionResponse(User $user, array $metadata): ChatResponse
     {
         $transactions = $user->transactionLogs()
             ->with(['type', 'category', 'sourceWallet', 'destinationWallet'])
@@ -877,7 +887,7 @@ class ChatApplicationService
         }
 
         $components = [
-            new \App\Chat\Components\ReportSectionComponent(
+            new ReportSectionComponent(
                 title: '',
                 emoji: '📋',
                 items: $lines,
@@ -888,16 +898,16 @@ class ChatApplicationService
         return ChatResponse::command($components, $metadata);
     }
 
-    private function buildTypeSummaryResponse(\App\Models\User $user, string $type, array $metadata): ChatResponse
+    private function buildTypeSummaryResponse(User $user, string $type, array $metadata): ChatResponse
     {
         $monthStart = now()->startOfMonth();
-        $monthEnd   = now()->endOfMonth();
-        $typeName    = $type === 'income' ? 'Income' : 'Expense';
+        $monthEnd = now()->endOfMonth();
+        $typeName = $type === 'income' ? 'Income' : 'Expense';
 
         $transactions = $user->transactionLogs()
             ->with(['category', 'sourceWallet', 'destinationWallet'])
             ->whereBetween('date', [$monthStart->toDateString(), $monthEnd->toDateString()])
-            ->whereHas('type', fn($query) => $query->where('name', $typeName))
+            ->whereHas('type', fn ($query) => $query->where('name', $typeName))
             ->latest('date')
             ->latest('id')
             ->get();
@@ -916,31 +926,31 @@ class ChatApplicationService
         $items = [];
         foreach ($transactions->take(10) as $transaction) {
             $items[] = [
-                'date'          => $transaction->date?->format('d/m') ?? '-',
-                'type'          => strtolower($transaction->type?->name ?? 'transaksi'),
-                'category'      => $transaction->category?->category_name ?? '-',
+                'date' => $transaction->date?->format('d/m') ?? '-',
+                'type' => strtolower($transaction->type?->name ?? 'transaksi'),
+                'category' => $transaction->category?->category_name ?? '-',
                 'category_icon' => $transaction->category?->icon ?? '📄',
-                'amount'        => \App\Support\MoneyFormatter::rupiah((float) $transaction->amount),
-                'wallet'        => $transaction->sourceWallet?->name ?? $transaction->destinationWallet?->name ?? '-',
+                'amount' => MoneyFormatter::rupiah((float) $transaction->amount),
+                'wallet' => $transaction->sourceWallet?->name ?? $transaction->destinationWallet?->name ?? '-',
             ];
         }
 
         $emoji = $type === 'income' ? '🟢' : '🔴';
 
         $components = [
-            new \App\Chat\Components\ReportSectionComponent(
+            new ReportSectionComponent(
                 title: '',
                 emoji: $emoji,
                 items: $items,
                 translationKey: $titleKey,
-                total: \App\Support\MoneyFormatter::rupiah($total),
+                total: MoneyFormatter::rupiah($total),
                 count: $transactions->count(),
             ),
             new TextComponent(
                 translationKey: 'chat.command.month_type_total',
                 params: [
                     'count' => $transactions->count(),
-                    'total' => \App\Support\MoneyFormatter::rupiah($total),
+                    'total' => MoneyFormatter::rupiah($total),
                 ],
                 bold: true,
             ),
@@ -949,17 +959,17 @@ class ChatApplicationService
         return ChatResponse::command($components, $metadata);
     }
 
-    private function buildMonthlyReportResponse(\App\Models\User $user, array $metadata, string $rawText): ChatResponse
+    private function buildMonthlyReportResponse(User $user, array $metadata, string $rawText): ChatResponse
     {
         $period = $this->resolveReportPeriod($rawText);
         $monthStart = $period->copy()->startOfMonth();
-        $monthEnd   = $period->copy()->endOfMonth();
+        $monthEnd = $period->copy()->endOfMonth();
         $periodKey = $monthStart->toDateString();
-        
+
         // Auto-generate previous month report jika belum ada
         $previousMonthStart = $monthStart->copy()->subMonthNoOverflow()->startOfMonth();
         $this->ensureMonthlyReportExists($user, $previousMonthStart);
-        
+
         $previousReport = MonthlyReport::where('user_id', $user->id)
             ->whereDate('period_month', $previousMonthStart->toDateString())
             ->first();
@@ -993,7 +1003,7 @@ class ChatApplicationService
                 'period_month' => $periodKey,
             ],
             [
-                'title' => 'Laporan ' . $monthStart->translatedFormat('F Y'),
+                'title' => 'Laporan '.$monthStart->translatedFormat('F Y'),
                 'local_summary' => $localReport,
                 'ai_summary' => $geminiReport,
                 'final_summary' => $finalReport,
@@ -1024,8 +1034,8 @@ class ChatApplicationService
         }
 
         // Comparison section jika ada data bulan sebelumnya
-        if ($comparisonMetrics && !empty($comparisonMetrics)) {
-            $components[] = new DividerComponent();
+        if ($comparisonMetrics && ! empty($comparisonMetrics)) {
+            $components[] = new DividerComponent;
             $comparisonItems = [];
 
             if (isset($comparisonMetrics['income_diff'])) {
@@ -1037,7 +1047,7 @@ class ChatApplicationService
                 };
                 $comparisonItems[] = __('chat.command.report_comparison_income', [
                     'emoji' => $emoji,
-                    'amount' => $this->formatCurrency($comparisonMetrics['income_diff'])
+                    'amount' => $this->formatCurrency($comparisonMetrics['income_diff']),
                 ]);
             }
 
@@ -1050,11 +1060,11 @@ class ChatApplicationService
                 };
                 $comparisonItems[] = __('chat.command.report_comparison_expense', [
                     'emoji' => $emoji,
-                    'amount' => $this->formatCurrency($comparisonMetrics['expense_diff'])
+                    'amount' => $this->formatCurrency($comparisonMetrics['expense_diff']),
                 ]);
             }
 
-            if (!empty($comparisonItems)) {
+            if (! empty($comparisonItems)) {
                 $components[] = new ReportSectionComponent(
                     title: __('chat.command.report_comparison_title'),
                     emoji: '📊',
@@ -1065,7 +1075,7 @@ class ChatApplicationService
         }
 
         // Save notification
-        $components[] = new DividerComponent();
+        $components[] = new DividerComponent;
         $components[] = new TextComponent(translationKey: 'chat.command.report_saved');
 
         if ($geminiReport === null) {
@@ -1080,7 +1090,8 @@ class ChatApplicationService
     private function formatCurrency(float $amount): string
     {
         $formatted = number_format(abs($amount), 0, ',', '.');
-        return ($amount < 0 ? '-' : '+') . 'Rp ' . $formatted;
+
+        return ($amount < 0 ? '-' : '+').'Rp '.$formatted;
     }
 
     private function resolveReportPeriod(string $rawText): Carbon
@@ -1108,7 +1119,7 @@ class ChatApplicationService
         ];
 
         foreach ($months as $name => $month) {
-            if (!preg_match('/\b' . preg_quote($name, '/') . '\b/u', $text)) {
+            if (! preg_match('/\b'.preg_quote($name, '/').'\b/u', $text)) {
                 continue;
             }
 
@@ -1128,24 +1139,24 @@ class ChatApplicationService
     private function buildMonthlyMetrics($transactions)
     {
         // Normalize input: accept Collection or array — treat consistently
-        $transactions = \Illuminate\Support\Collection::make($transactions);
+        $transactions = Collection::make($transactions);
 
         $income = (float) $transactions
-            ->filter(fn($trx) => strtolower($trx->type?->name ?? '') === 'income')
+            ->filter(fn ($trx) => strtolower($trx->type?->name ?? '') === 'income')
             ->sum('amount');
         $expense = (float) $transactions
-            ->filter(fn($trx) => strtolower($trx->type?->name ?? '') === 'expense')
+            ->filter(fn ($trx) => strtolower($trx->type?->name ?? '') === 'expense')
             ->sum('amount');
 
-        return \Illuminate\Support\Collection::make([
+        return Collection::make([
             'transaction_count' => $transactions->count(),
             'income' => $income,
             'expense' => $expense,
             'net' => $income - $expense,
             'top_expense_categories' => $transactions
-                ->filter(fn($trx) => strtolower($trx->type?->name ?? '') === 'expense')
-                ->groupBy(fn($trx) => $trx->category?->category_name ?? '-')
-                ->map(fn($items) => (float) $items->sum('amount'))
+                ->filter(fn ($trx) => strtolower($trx->type?->name ?? '') === 'expense')
+                ->groupBy(fn ($trx) => $trx->category?->category_name ?? '-')
+                ->map(fn ($items) => (float) $items->sum('amount'))
                 ->sortDesc()
                 ->take(5)
                 ->toArray(),
@@ -1155,31 +1166,31 @@ class ChatApplicationService
     private function buildLocalMonthlyReport($transactions, ?Carbon $period = null, ?MonthlyReport $previousReport = null)
     {
         // Normalize input to Collection for consistent operations
-        $transactions = \Illuminate\Support\Collection::make($transactions);
+        $transactions = Collection::make($transactions);
 
         $income = (float) $transactions
-            ->filter(fn($trx) => strtolower($trx->type?->name ?? '') === 'income')
+            ->filter(fn ($trx) => strtolower($trx->type?->name ?? '') === 'income')
             ->sum('amount');
         $expense = (float) $transactions
-            ->filter(fn($trx) => strtolower($trx->type?->name ?? '') === 'expense')
+            ->filter(fn ($trx) => strtolower($trx->type?->name ?? '') === 'expense')
             ->sum('amount');
         $net = $income - $expense;
 
         $topCategories = $transactions
-            ->filter(fn($trx) => strtolower($trx->type?->name ?? '') === 'expense')
-            ->groupBy(fn($trx) => $trx->category?->category_name ?? '-')
-            ->map(fn($items) => (float) $items->sum('amount'))
+            ->filter(fn ($trx) => strtolower($trx->type?->name ?? '') === 'expense')
+            ->groupBy(fn ($trx) => $trx->category?->category_name ?? '-')
+            ->map(fn ($items) => (float) $items->sum('amount'))
             ->sortDesc()
             ->take(5)
-            ->map(fn($amount, $category) => "{$category}: " . \App\Support\MoneyFormatter::rupiah($amount))
+            ->map(fn ($amount, $category) => "{$category}: ".MoneyFormatter::rupiah($amount))
             ->values()
             ->join("\n");
 
         $reportText = implode("\n", array_filter([
             __('chat.command.report_period', ['period' => $period ? $period->translatedFormat('F Y') : now()->translatedFormat('F Y')]),
-            __('chat.command.report_income', ['amount' => \App\Support\MoneyFormatter::rupiah($income)]),
-            __('chat.command.report_expense', ['amount' => \App\Support\MoneyFormatter::rupiah($expense)]),
-            __('chat.command.report_net', ['amount' => \App\Support\MoneyFormatter::rupiah($net)]),
+            __('chat.command.report_income', ['amount' => MoneyFormatter::rupiah($income)]),
+            __('chat.command.report_expense', ['amount' => MoneyFormatter::rupiah($expense)]),
+            __('chat.command.report_net', ['amount' => MoneyFormatter::rupiah($net)]),
             $previousReport ? __('chat.command.report_previous', ['summary' => $previousReport->final_summary]) : null,
             $topCategories ? __('chat.command.report_top_categories', ['categories' => $topCategories]) : null,
         ]));
@@ -1199,19 +1210,18 @@ class ChatApplicationService
     }
 
     private function generateGeminiMonthlyReport(
-        \App\Models\User $user,
+        User $user,
         $transactions,
         string $localReport,
         Carbon $period,
         ?MonthlyReport $previousReport = null,
-    ): ?array
-    {
+    ): ?array {
         $credential = UserAiCredential::where('user_id', $user->id)
             ->where('provider', AiProvider::Gemini->value)
             ->where('is_valid', true)
             ->first();
 
-        if (!$credential || blank($credential->api_key)) {
+        if (! $credential || blank($credential->api_key)) {
             return null;
         }
 
@@ -1222,7 +1232,7 @@ class ChatApplicationService
 
         // Limit transactions to avoid excessively long prompts (keep top 50)
         // Ensure transactions is a Collection to avoid "call to member function filter() on array" errors
-        $transactionsCollection = \Illuminate\Support\Collection::make($transactions);
+        $transactionsCollection = Collection::make($transactions);
         $transactionsForPayload = $transactionsCollection->take(50);
 
         $payload = [
@@ -1232,10 +1242,10 @@ class ChatApplicationService
                 'periode' => $previousReport->period_month?->format('Y-m'),
                 'ringkasan' => $previousReport->final_summary,
                 'metrics' => $previousReport->metrics,
-                'comparison' => $this->buildComparisonMetrics($this->buildMonthlyMetrics(\Illuminate\Support\Collection::make([])), $previousReport),
+                'comparison' => $this->buildComparisonMetrics($this->buildMonthlyMetrics(Collection::make([])), $previousReport),
             ] : null,
             // Use a truncated transactions list to keep prompt size bounded
-            'transaksi' => $transactionsForPayload->map(fn($trx) => [
+            'transaksi' => $transactionsForPayload->map(fn ($trx) => [
                 'tanggal' => $trx->date?->toDateString(),
                 'tipe' => $trx->type?->name,
                 'kategori' => $trx->category?->category_name,
@@ -1293,7 +1303,7 @@ class ChatApplicationService
                 try {
                     $response = Http::timeout(60)
                         ->withHeaders(['Content-Type' => 'application/json'])
-                        ->post($url . '?key=' . $credential->api_key, [
+                        ->post($url.'?key='.$credential->api_key, [
                             'contents' => [['parts' => [['text' => $prompt]]]],
                         ]);
 
@@ -1307,7 +1317,9 @@ class ChatApplicationService
                     ]);
 
                     // If successful, break
-                    if ($response->successful()) break;
+                    if ($response->successful()) {
+                        break;
+                    }
 
                     // Non-successful responses will be logged by assertSuccessful below
 
@@ -1331,6 +1343,7 @@ class ChatApplicationService
 
             if ($response === null) {
                 Log::warning('Gemini all attempts failed', ['user_id' => $user->id, 'model' => $model]);
+
                 return null;
             }
 
@@ -1349,25 +1362,28 @@ class ChatApplicationService
                 'user_id' => $user->id,
                 'message' => $e->getMessage(),
             ]);
+
             return null;
         }
 
     }
 
-    private function formatTransactionLine(\App\Models\TransactionLog $transaction): string
+    private function formatTransactionLine(TransactionLog $transaction): string
     {
         $type = $transaction->type?->name ?? 'Transaksi';
         $category = $transaction->category?->category_name ?? '-';
         $wallet = $transaction->sourceWallet?->name ?? $transaction->destinationWallet?->name ?? '-';
-        $amount = \App\Support\MoneyFormatter::rupiah((float) $transaction->amount);
+        $amount = MoneyFormatter::rupiah((float) $transaction->amount);
         $date = $transaction->date?->format('d/m') ?? '-';
 
         return "{$date} — {$type} — {$category} — {$amount} — {$wallet}";
     }
 
-    private function assertSuccessful(\Illuminate\Http\Client\Response $response, string $provider): void
+    private function assertSuccessful(Response $response, string $provider): void
     {
-        if ($response->successful()) return;
+        if ($response->successful()) {
+            return;
+        }
         $statusCode = $response->status();
         $body = $response->body();
         $bodyLower = mb_strtolower($body);
@@ -1386,8 +1402,8 @@ class ChatApplicationService
 
         // Token limit errors: HTTP 400 + keyword "token" atau "context" atau "input too long"
         if ($statusCode === 400) {
-            if (str_contains($bodyLower, 'token') || 
-                str_contains($bodyLower, 'context') || 
+            if (str_contains($bodyLower, 'token') ||
+                str_contains($bodyLower, 'context') ||
                 str_contains($bodyLower, 'input too long') ||
                 str_contains($bodyLower, 'exceeded') ||
                 str_contains($bodyLower, 'maximum')) {
@@ -1395,13 +1411,13 @@ class ChatApplicationService
             }
         }
 
-        throw new AiProviderException($provider, "HTTP {$statusCode}: " . substr($body, 0, 200));
+        throw new AiProviderException($provider, "HTTP {$statusCode}: ".substr($body, 0, 200));
     }
 
-    private function buildHelpResponse(\App\Models\User $user, string $locale, array $metadata): ChatResponse
+    private function buildHelpResponse(User $user, string $locale, array $metadata): ChatResponse
     {
         $platform = $metadata['platform'] ?? 'web';
-        $registry = new ChatCommandRegistry();
+        $registry = new ChatCommandRegistry;
         $commands = $registry->forPlatform($platform, includeHidden: false);
 
         $components = [
@@ -1412,35 +1428,35 @@ class ChatApplicationService
                 bold: true,
             ),
             new TextComponent(translationKey: 'chat.command.help_intro'),
-            new DividerComponent(),
+            new DividerComponent,
 
             // Panduan catat transaksi
             new TextComponent(translationKey: 'chat.command.help_guide', bold: true),
             new TextComponent(translationKey: 'chat.command.help_example_intro'),
-            new DividerComponent(),
+            new DividerComponent,
 
             // Contoh-contoh transaksi sebagai chip yang bisa diklik
-            new \App\Chat\Components\SuggestionComponent(
+            new SuggestionComponent(
                 messageKey: 'chat.command.help_example_expense',
                 params: [],
                 actionUrl: null,
             ),
-            new \App\Chat\Components\SuggestionComponent(
+            new SuggestionComponent(
                 messageKey: 'chat.command.help_example_income',
                 params: [],
                 actionUrl: null,
             ),
-            new \App\Chat\Components\SuggestionComponent(
+            new SuggestionComponent(
                 messageKey: 'chat.command.help_example_transfer',
                 params: [],
                 actionUrl: null,
             ),
-            new \App\Chat\Components\SuggestionComponent(
+            new SuggestionComponent(
                 messageKey: 'chat.command.help_example_debt',
                 params: [],
                 actionUrl: null,
             ),
-            new DividerComponent(),
+            new DividerComponent,
 
             // Daftar perintah bot
             new TextComponent(translationKey: 'chat.command.help_commands_title', bold: true),
@@ -1450,8 +1466,8 @@ class ChatApplicationService
             $components[] = new TextComponent(
                 translationKey: 'chat.command.help_cmd_template',
                 params: [
-                    'icon'        => $cmd['icon'],
-                    'command'     => $cmd['command'],
+                    'icon' => $cmd['icon'],
+                    'command' => $cmd['command'],
                     'description' => trans($cmd['description'], [], $locale),
                 ],
             );
@@ -1466,6 +1482,7 @@ class ChatApplicationService
     private function buildWebLinkResponse(string $locale, array $metadata): ChatResponse
     {
         $appUrl = config('app.url', 'https://bendaharaku.widihhh.my.id');
+
         return ChatResponse::command([
             new TextComponent(
                 translationKey: 'chat.command.web_link_msg',
@@ -1474,23 +1491,23 @@ class ChatApplicationService
         ], $metadata);
     }
 
-    private function buildComparisonMetrics(array|\Illuminate\Support\Collection $currentMetrics, ?MonthlyReport $previousReport = null): ?array
+    private function buildComparisonMetrics(array|Collection $currentMetrics, ?MonthlyReport $previousReport = null): ?array
     {
-        if (!$previousReport || !$previousReport->metrics) {
+        if (! $previousReport || ! $previousReport->metrics) {
             return null;
         }
 
         $prev = $previousReport->metrics;
         // Normalize current metrics: accept array or Collection
-        $curr = is_array($currentMetrics) ? $currentMetrics : \Illuminate\Support\Collection::make($currentMetrics)->toArray();
+        $curr = is_array($currentMetrics) ? $currentMetrics : Collection::make($currentMetrics)->toArray();
 
         return [
             'income_diff' => ($curr['income'] ?? 0) - ($prev['income'] ?? 0),
-            'income_diff_percent' => ($prev['income'] ?? 0) > 0 
+            'income_diff_percent' => ($prev['income'] ?? 0) > 0
                 ? round((($curr['income'] ?? 0) - ($prev['income'] ?? 0)) / ($prev['income'] ?? 0) * 100, 2)
                 : 0,
             'expense_diff' => ($curr['expense'] ?? 0) - ($prev['expense'] ?? 0),
-            'expense_diff_percent' => ($prev['expense'] ?? 0) > 0 
+            'expense_diff_percent' => ($prev['expense'] ?? 0) > 0
                 ? round((($curr['expense'] ?? 0) - ($prev['expense'] ?? 0)) / ($prev['expense'] ?? 0) * 100, 2)
                 : 0,
             'net_diff' => ($curr['net'] ?? 0) - ($prev['net'] ?? 0),
@@ -1503,20 +1520,20 @@ class ChatApplicationService
         ];
     }
 
-    private function ensureMonthlyReportExists(\App\Models\User $user, \Carbon\Carbon $monthStart): void
+    private function ensureMonthlyReportExists(User $user, \Carbon\Carbon $monthStart): void
     {
         $monthEnd = $monthStart->copy()->endOfMonth();
         $periodKey = $monthStart->toDateString();
-        
+
         // Check if report sudah ada
         $existing = MonthlyReport::where('user_id', $user->id)
             ->whereDate('period_month', $periodKey)
             ->first();
-        
+
         if ($existing) {
             return;
         }
-        
+
         // Cari transactions untuk bulan sebelumnya
         $transactions = $user->transactionLogs()
             ->with(['type', 'category', 'sourceWallet', 'destinationWallet'])
@@ -1524,21 +1541,21 @@ class ChatApplicationService
             ->orderBy('date')
             ->orderBy('id')
             ->get();
-        
+
         // Skip jika tidak ada transaksi
         if ($transactions->isEmpty()) {
             return;
         }
-        
+
         // Build metrics untuk previous month
         $metrics = $this->buildMonthlyMetrics($transactions);
         $localReport = $this->buildLocalMonthlyReport($transactions, $monthStart, null);
-        
+
         // Generate Gemini summary untuk previous month
         $geminiResult = $this->generateGeminiMonthlyReport($user, $transactions, $localReport, $monthStart, null);
         $geminiReport = $geminiResult['summary'] ?? null;
         $finalReport = $geminiReport ?? $localReport;
-        
+
         // Save report ke database
         MonthlyReport::updateOrCreate(
             [

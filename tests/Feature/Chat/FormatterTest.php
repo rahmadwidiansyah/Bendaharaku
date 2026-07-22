@@ -4,28 +4,27 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Chat;
 
-use Tests\TestCase;
+use App\Chat\Components\DividerComponent;
+use App\Chat\Components\ErrorComponent;
+use App\Chat\Components\SuggestionComponent;
+use App\Chat\Components\SummaryCardComponent;
+use App\Chat\Components\TransactionCardComponent;
+use App\Chat\Components\WarningComponent;
+use App\Chat\DTOs\ChatContext;
+use App\Chat\DTOs\ChatResponse;
+use App\Chat\Errors\ErrorDetail;
 use App\Chat\Formatters\TelegramFormatter;
 use App\Chat\Formatters\WebFormatter;
-use App\Chat\DTOs\ChatResponse;
-use App\Chat\DTOs\ChatContext;
-use App\Chat\Components\TextComponent;
-use App\Chat\Components\DividerComponent;
-use App\Chat\Components\TransactionCardComponent;
-use App\Chat\Components\SummaryCardComponent;
-use App\Chat\Components\ErrorComponent;
-use App\Chat\Components\WarningComponent;
-use App\Chat\Components\SuggestionComponent;
-use App\Chat\Errors\ErrorDetail;
+use App\Enums\ChatErrorSeverity;
 use App\Enums\ChatIntent;
 use App\Enums\ChatPlatform;
-use App\Enums\ChatErrorSeverity;
+use App\Models\Category;
 use App\Models\TransactionLog;
 use App\Models\TransactionType;
-use App\Models\Category;
-use App\Models\Wallet;
 use App\Models\User;
+use App\Models\Wallet;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 /**
  * Feature test untuk TelegramFormatter dan WebFormatter.
@@ -48,37 +47,43 @@ class FormatterTest extends TestCase
     use RefreshDatabase;
 
     private TelegramFormatter $telegramFormatter;
-    private WebFormatter      $webFormatter;
-    private ChatContext       $context;
-    private User              $user;
-    private TransactionType   $expenseType;
-    private Category          $category;
-    private Wallet            $wallet;
+
+    private WebFormatter $webFormatter;
+
+    private ChatContext $context;
+
+    private User $user;
+
+    private TransactionType $expenseType;
+
+    private Category $category;
+
+    private Wallet $wallet;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->telegramFormatter = new TelegramFormatter();
-        $this->webFormatter      = new WebFormatter();
+        $this->telegramFormatter = new TelegramFormatter;
+        $this->webFormatter = new WebFormatter;
 
         $this->context = ChatContext::make(
-            platform:       ChatPlatform::Telegram,
+            platform: ChatPlatform::Telegram,
             conversationId: '123456789',
-            locale:         'id',
+            locale: 'id',
         );
 
-        $this->user        = User::factory()->create(['name' => 'Budi']);
+        $this->user = User::factory()->create(['name' => 'Budi']);
         $this->expenseType = TransactionType::create(['name' => 'Expense']);
-        $this->category    = $this->user->categories()->create([
+        $this->category = $this->user->categories()->create([
             'category_name' => 'Makan & Minum',
-            'keyword'       => 'makan',
-            'type_id'       => $this->expenseType->id,
+            'keyword' => 'makan',
+            'type_id' => $this->expenseType->id,
         ]);
         $this->wallet = $this->user->wallets()->create([
-            'name'       => 'Cash',
-            'keyword'    => 'cash',
-            'balance'    => 100000.00,
+            'name' => 'Cash',
+            'keyword' => 'cash',
+            'balance' => 100000.00,
             'group_type' => 'Liquid',
         ]);
     }
@@ -91,19 +96,19 @@ class FormatterTest extends TestCase
     private function makeTransaction(float $amount = 15000.00, bool $isCleared = true): TransactionLog
     {
         return TransactionLog::create([
-            'reference_number'     => 'TEST-' . uniqid(),
-            'user_id'              => $this->user->id,
-            'date'                 => now()->format('Y-m-d'),
-            'type_id'              => $this->expenseType->id,
-            'category_id'          => $this->category->id,
-            'source_wallet_id'     => $this->wallet->id,
-            'destination_wallet_id'=> null,
-            'amount'               => $amount,
-            'balance_before'       => 100000.00,
-            'balance_after'        => 100000.00 - $amount,
-            'subject'              => $this->user->name,
-            'notes'                => 'test transaksi',
-            'is_cleared'           => $isCleared,
+            'reference_number' => 'TEST-'.uniqid(),
+            'user_id' => $this->user->id,
+            'date' => now()->format('Y-m-d'),
+            'type_id' => $this->expenseType->id,
+            'category_id' => $this->category->id,
+            'source_wallet_id' => $this->wallet->id,
+            'destination_wallet_id' => null,
+            'amount' => $amount,
+            'balance_before' => 100000.00,
+            'balance_after' => 100000.00 - $amount,
+            'subject' => $this->user->name,
+            'notes' => 'test transaksi',
+            'is_cleared' => $isCleared,
         ])->load(['category', 'sourceWallet', 'destinationWallet', 'type']);
     }
 
@@ -114,7 +119,7 @@ class FormatterTest extends TestCase
     /** @test */
     public function test_telegram_renders_single_transaction_with_rupiah_format(): void
     {
-        $trx      = $this->makeTransaction(15000.00);
+        $trx = $this->makeTransaction(15000.00);
         $response = ChatResponse::singleSuccess([
             new TransactionCardComponent(transaction: $trx, showDetails: true),
         ]);
@@ -130,7 +135,7 @@ class FormatterTest extends TestCase
     /** @test */
     public function test_telegram_renders_single_transaction_card_with_correct_fields(): void
     {
-        $trx      = $this->makeTransaction(50000.00);
+        $trx = $this->makeTransaction(50000.00);
         $response = ChatResponse::singleSuccess([
             new TransactionCardComponent(transaction: $trx, showDetails: true),
         ]);
@@ -145,7 +150,7 @@ class FormatterTest extends TestCase
     /** @test */
     public function test_telegram_renders_draft_transaction_as_uncleared(): void
     {
-        $trx      = $this->makeTransaction(25000.00, isCleared: false);
+        $trx = $this->makeTransaction(25000.00, isCleared: false);
         $response = ChatResponse::draft([
             new TransactionCardComponent(transaction: $trx, showDetails: true),
         ]);
@@ -159,7 +164,7 @@ class FormatterTest extends TestCase
     /** @test */
     public function test_telegram_single_compact_card_renders_amount_for_multi_list(): void
     {
-        $trx      = $this->makeTransaction(20000.00);
+        $trx = $this->makeTransaction(20000.00);
         $response = ChatResponse::singleSuccess([
             new TransactionCardComponent(transaction: $trx, index: 1, showDetails: false),
         ]);
@@ -183,7 +188,7 @@ class FormatterTest extends TestCase
 
         $response = ChatResponse::multiResult(hasAnySuccess: true, components: [
             new SummaryCardComponent(total: 2, success: 2, failed: 0, confidence: 0.95),
-            new DividerComponent(),
+            new DividerComponent,
             new TransactionCardComponent(transaction: $trx1, index: 1, showDetails: false),
             new TransactionCardComponent(transaction: $trx2, index: 2, showDetails: false),
         ]);
@@ -206,14 +211,14 @@ class FormatterTest extends TestCase
 
         $response = ChatResponse::multiResult(hasAnySuccess: true, components: [
             new SummaryCardComponent(total: 2, success: 1, failed: 1, confidence: 0.90),
-            new DividerComponent(),
+            new DividerComponent,
             new TransactionCardComponent(transaction: $trx1, index: 1, showDetails: false),
             new ErrorComponent(
                 messageKey: 'chat.wallet.not_found',
-                params:     ['name' => 'spay'],
-                raw:        'kopi 15k spay',
-                index:      2,
-                severity:   ChatErrorSeverity::Error,
+                params: ['name' => 'spay'],
+                raw: 'kopi 15k spay',
+                index: 2,
+                severity: ChatErrorSeverity::Error,
                 recoverable: true,
             ),
         ]);
@@ -234,21 +239,21 @@ class FormatterTest extends TestCase
     {
         $response = ChatResponse::multiResult(hasAnySuccess: false, components: [
             new SummaryCardComponent(total: 2, success: 0, failed: 2, confidence: 0.50),
-            new DividerComponent(),
+            new DividerComponent,
             new ErrorComponent(
-                messageKey:  'chat.wallet.not_found',
-                params:      ['name' => 'dana'],
-                raw:         'makan 20k dana',
-                index:       1,
-                severity:    ChatErrorSeverity::Error,
+                messageKey: 'chat.wallet.not_found',
+                params: ['name' => 'dana'],
+                raw: 'makan 20k dana',
+                index: 1,
+                severity: ChatErrorSeverity::Error,
                 recoverable: true,
             ),
             new ErrorComponent(
-                messageKey:  'chat.wallet.not_found',
-                params:      ['name' => 'ovo'],
-                raw:         'bensin 50k ovo',
-                index:       2,
-                severity:    ChatErrorSeverity::Error,
+                messageKey: 'chat.wallet.not_found',
+                params: ['name' => 'ovo'],
+                raw: 'bensin 50k ovo',
+                index: 2,
+                severity: ChatErrorSeverity::Error,
                 recoverable: true,
             ),
         ]);
@@ -367,7 +372,7 @@ class FormatterTest extends TestCase
         $response = ChatResponse::singleSuccess([
             new WarningComponent(
                 messageKey: 'chat.warning.low_confidence',
-                params:     [],
+                params: [],
             ),
         ]);
 
@@ -382,7 +387,7 @@ class FormatterTest extends TestCase
         $response = ChatResponse::singleSuccess([
             new SuggestionComponent(
                 messageKey: 'chat.suggestion.add_wallet',
-                params:     [],
+                params: [],
             ),
         ]);
 
@@ -395,7 +400,7 @@ class FormatterTest extends TestCase
     public function test_telegram_renders_divider_component(): void
     {
         $response = ChatResponse::singleSuccess([
-            new DividerComponent(),
+            new DividerComponent,
         ]);
 
         $output = $this->telegramFormatter->format($response, $this->context);
@@ -410,15 +415,15 @@ class FormatterTest extends TestCase
     /** @test */
     public function test_web_formatter_returns_structured_array(): void
     {
-        $trx      = $this->makeTransaction(50000.00);
+        $trx = $this->makeTransaction(50000.00);
         $response = ChatResponse::singleSuccess([
             new TransactionCardComponent(transaction: $trx, showDetails: true),
         ]);
 
         $webContext = ChatContext::make(
-            platform:       ChatPlatform::Web,
+            platform: ChatPlatform::Web,
             conversationId: 'web-session-123',
-            locale:         'id',
+            locale: 'id',
         );
 
         $output = $this->webFormatter->format($response, $webContext);
@@ -432,19 +437,19 @@ class FormatterTest extends TestCase
     /** @test */
     public function test_web_formatter_transaction_card_has_float_amount(): void
     {
-        $trx      = $this->makeTransaction(50000.00);
+        $trx = $this->makeTransaction(50000.00);
         $response = ChatResponse::singleSuccess([
             new TransactionCardComponent(transaction: $trx, showDetails: true),
         ]);
 
         $webContext = ChatContext::make(
-            platform:       ChatPlatform::Web,
+            platform: ChatPlatform::Web,
             conversationId: 'web-session-123',
-            locale:         'id',
+            locale: 'id',
         );
 
-        $output     = $this->webFormatter->format($response, $webContext);
-        $txCard     = $output['components'][0];
+        $output = $this->webFormatter->format($response, $webContext);
+        $txCard = $output['components'][0];
 
         $this->assertSame('transaction_card', $txCard['type']);
         // amount harus float (bukan string) karena cast di model
@@ -460,25 +465,25 @@ class FormatterTest extends TestCase
         $trx = $this->makeTransaction(30000.00);
 
         $webContext = ChatContext::make(
-            platform:       ChatPlatform::Web,
+            platform: ChatPlatform::Web,
             conversationId: 'web-session-456',
-            locale:         'id',
+            locale: 'id',
         );
 
         $response = ChatResponse::multiResult(hasAnySuccess: true, components: [
             new SummaryCardComponent(total: 2, success: 1, failed: 1, confidence: 0.88),
             new TransactionCardComponent(transaction: $trx, index: 1, showDetails: false),
             new ErrorComponent(
-                messageKey:  'chat.category.not_found',
-                params:      ['name' => 'groceries'],
-                raw:         'belanja groceries 50k',
-                index:       2,
-                severity:    ChatErrorSeverity::Error,
+                messageKey: 'chat.category.not_found',
+                params: ['name' => 'groceries'],
+                raw: 'belanja groceries 50k',
+                index: 2,
+                severity: ChatErrorSeverity::Error,
                 recoverable: true,
             ),
         ]);
 
-        $output     = $this->webFormatter->format($response, $webContext);
+        $output = $this->webFormatter->format($response, $webContext);
         $components = $output['components'];
 
         $this->assertCount(3, $components);
@@ -500,9 +505,9 @@ class FormatterTest extends TestCase
     public function test_web_formatter_renders_error_response_for_failure(): void
     {
         $webContext = ChatContext::make(
-            platform:       ChatPlatform::Web,
+            platform: ChatPlatform::Web,
             conversationId: 'web-session-789',
-            locale:         'id',
+            locale: 'id',
         );
 
         $response = ChatResponse::failure([

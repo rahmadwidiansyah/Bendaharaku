@@ -3,8 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -15,10 +16,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $icon
  * @property string|null $keyword
  * @property bool $is_active
- * @property \Illuminate\Support\Carbon|null $deleted_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\User $user
+ * @property Carbon|null $deleted_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read User $user
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Wallet newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Wallet newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Wallet onlyTrashed()
@@ -36,6 +38,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Wallet whereUserId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Wallet withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Wallet withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class Wallet extends Model
@@ -56,7 +59,7 @@ class Wallet extends Model
     protected $casts = [
         // PostgreSQL DECIMAL(15,2) dikembalikan sebagai string oleh PDO.
         // Cast ke float agar seluruh consumer menerima tipe numerik yang benar.
-        'balance'   => 'float',
+        'balance' => 'float',
         'is_pinned' => 'boolean',
     ];
 

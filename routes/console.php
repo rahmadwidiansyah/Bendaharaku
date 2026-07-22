@@ -8,7 +8,6 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-
 // Mengagregasi data hari sebelumnya setiap jam 00:30
 Schedule::command('ai:aggregate-metrics')->dailyAt('00:30')->withoutOverlapping();
 

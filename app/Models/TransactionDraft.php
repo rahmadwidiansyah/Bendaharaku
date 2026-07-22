@@ -6,6 +6,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * Model untuk staging area hasil parsing AI Chat.
@@ -18,15 +19,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $conversation_id
  * @property string|null $ai_provider
  * @property string|null $ai_model
- * @property string $draft_type            'single' | 'multi'
- * @property array $payload               Data hasil parsing AI
- * @property string $status               'pending' | 'confirmed' | 'cancelled' | 'expired'
+ * @property string $draft_type 'single' | 'multi'
+ * @property array $payload Data hasil parsing AI
+ * @property string $status 'pending' | 'confirmed' | 'cancelled' | 'expired'
  * @property array|null $confirmed_transaction_ids
- * @property \Illuminate\Support\Carbon|null $expires_at
+ * @property Carbon|null $expires_at
  * @property float|null $ai_confidence
  * @property string|null $original_text
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
 class TransactionDraft extends Model
 {
@@ -45,10 +46,10 @@ class TransactionDraft extends Model
     ];
 
     protected $casts = [
-        'payload'                   => 'array',
+        'payload' => 'array',
         'confirmed_transaction_ids' => 'array',
-        'ai_confidence'             => 'float',
-        'expires_at'                => 'datetime',
+        'ai_confidence' => 'float',
+        'expires_at' => 'datetime',
     ];
 
     // ── Relasi ────────────────────────────────────────────────────

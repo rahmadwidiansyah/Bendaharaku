@@ -4,24 +4,28 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Services;
 
-use Tests\TestCase;
-use App\Models\User;
-use App\Models\Wallet;
 use App\Models\Category;
-use App\Models\TransactionType;
 use App\Models\TransactionDraft;
 use App\Models\TransactionLog;
+use App\Models\TransactionType;
+use App\Models\User;
+use App\Models\Wallet;
 use App\Services\Chat\DraftConfirmationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class DraftConfirmationServiceTest extends TestCase
 {
     use RefreshDatabase;
 
     private User $user;
+
     private Wallet $sourceWallet;
+
     private Wallet $destWallet;
+
     private Category $category;
+
     private DraftConfirmationService $draftService;
 
     protected function setUp(): void
@@ -29,28 +33,28 @@ class DraftConfirmationServiceTest extends TestCase
         parent::setUp();
 
         $this->user = User::factory()->create(['name' => 'Budi']);
-        
+
         // Hapus data starter agar clean
         $this->user->wallets()->forceDelete();
         $this->user->categories()->forceDelete();
 
         $expenseType = TransactionType::create(['name' => 'Expense']);
-        
+
         $this->category = $this->user->categories()->create([
             'category_name' => 'Makan & Minum',
-            'keyword'       => 'makan',
-            'type_id'       => $expenseType->id,
+            'keyword' => 'makan',
+            'type_id' => $expenseType->id,
         ]);
 
         $this->sourceWallet = $this->user->wallets()->create([
-            'name'       => 'Dompet Cash',
-            'keyword'    => 'cash',
-            'balance'    => 100000,
+            'name' => 'Dompet Cash',
+            'keyword' => 'cash',
+            'balance' => 100000,
             'group_type' => 'Liquid',
         ]);
 
         $this->destWallet = $this->user->wallets()->create([
-            'name'       => 'Merchant System',
+            'name' => 'Merchant System',
             'group_type' => 'System',
         ]);
 
@@ -64,33 +68,33 @@ class DraftConfirmationServiceTest extends TestCase
     {
         // 1. Buat Draft
         $draft = TransactionDraft::create([
-            'user_id'       => $this->user->id,
-            'ai_provider'   => 'gemini',
-            'ai_model'      => 'gemini-1.5-flash',
-            'draft_type'    => 'single',
-            'status'        => 'pending',
+            'user_id' => $this->user->id,
+            'ai_provider' => 'gemini',
+            'ai_model' => 'gemini-1.5-flash',
+            'draft_type' => 'single',
+            'status' => 'pending',
             'ai_confidence' => 0.90,
             'original_text' => 'beli bakso 15rb cash',
-            'payload'       => [
-                'amount'                  => 15000,
-                'category_id'             => $this->category->id,
-                'category_name'           => $this->category->category_name,
-                'source_wallet_id'        => $this->sourceWallet->id,
-                'source_wallet_name'      => $this->sourceWallet->name,
-                'destination_wallet_id'   => $this->destWallet->id,
+            'payload' => [
+                'amount' => 15000,
+                'category_id' => $this->category->id,
+                'category_name' => $this->category->category_name,
+                'source_wallet_id' => $this->sourceWallet->id,
+                'source_wallet_name' => $this->sourceWallet->name,
+                'destination_wallet_id' => $this->destWallet->id,
                 'destination_wallet_name' => $this->destWallet->name,
-                'subject'                 => 'Budi',
-                'notes'                   => 'beli bakso 15rb cash',
-                'type_key'                => 'expense',
-                'needs_wallet'            => false,
-                'is_cleared'              => false,
-                'date'                    => now()->format('Y-m-d'),
+                'subject' => 'Budi',
+                'notes' => 'beli bakso 15rb cash',
+                'type_key' => 'expense',
+                'needs_wallet' => false,
+                'is_cleared' => false,
+                'date' => now()->format('Y-m-d'),
             ],
         ]);
 
         // Assert draft terekam di staging DB
         $this->assertDatabaseHas('transaction_drafts', [
-            'id'     => $draft->id,
+            'id' => $draft->id,
             'status' => 'pending',
         ]);
 
@@ -105,27 +109,27 @@ class DraftConfirmationServiceTest extends TestCase
     public function test_it_confirms_a_pending_draft_mutates_balance_and_saves_to_transaction_logs()
     {
         $draft = TransactionDraft::create([
-            'user_id'       => $this->user->id,
-            'ai_provider'   => 'gemini',
-            'ai_model'      => 'gemini-1.5-flash',
-            'draft_type'    => 'single',
-            'status'        => 'pending',
+            'user_id' => $this->user->id,
+            'ai_provider' => 'gemini',
+            'ai_model' => 'gemini-1.5-flash',
+            'draft_type' => 'single',
+            'status' => 'pending',
             'ai_confidence' => 0.90,
             'original_text' => 'beli bakso 15rb cash',
-            'payload'       => [
-                'amount'                  => 15000,
-                'category_id'             => $this->category->id,
-                'category_name'           => $this->category->category_name,
-                'source_wallet_id'        => $this->sourceWallet->id,
-                'source_wallet_name'      => $this->sourceWallet->name,
-                'destination_wallet_id'   => $this->destWallet->id,
+            'payload' => [
+                'amount' => 15000,
+                'category_id' => $this->category->id,
+                'category_name' => $this->category->category_name,
+                'source_wallet_id' => $this->sourceWallet->id,
+                'source_wallet_name' => $this->sourceWallet->name,
+                'destination_wallet_id' => $this->destWallet->id,
                 'destination_wallet_name' => $this->destWallet->name,
-                'subject'                 => 'Budi',
-                'notes'                   => 'beli bakso 15rb cash',
-                'type_key'                => 'expense',
-                'needs_wallet'            => false,
-                'is_cleared'              => false,
-                'date'                    => now()->format('Y-m-d'),
+                'subject' => 'Budi',
+                'notes' => 'beli bakso 15rb cash',
+                'type_key' => 'expense',
+                'needs_wallet' => false,
+                'is_cleared' => false,
+                'date' => now()->format('Y-m-d'),
             ],
         ]);
 
@@ -150,27 +154,27 @@ class DraftConfirmationServiceTest extends TestCase
     public function test_it_guarantees_idempotency_when_confirming_multiple_times()
     {
         $draft = TransactionDraft::create([
-            'user_id'       => $this->user->id,
-            'ai_provider'   => 'gemini',
-            'ai_model'      => 'gemini-1.5-flash',
-            'draft_type'    => 'single',
-            'status'        => 'pending',
+            'user_id' => $this->user->id,
+            'ai_provider' => 'gemini',
+            'ai_model' => 'gemini-1.5-flash',
+            'draft_type' => 'single',
+            'status' => 'pending',
             'ai_confidence' => 0.90,
             'original_text' => 'beli bakso 15rb cash',
-            'payload'       => [
-                'amount'                  => 15000,
-                'category_id'             => $this->category->id,
-                'category_name'           => $this->category->category_name,
-                'source_wallet_id'        => $this->sourceWallet->id,
-                'source_wallet_name'      => $this->sourceWallet->name,
-                'destination_wallet_id'   => $this->destWallet->id,
+            'payload' => [
+                'amount' => 15000,
+                'category_id' => $this->category->id,
+                'category_name' => $this->category->category_name,
+                'source_wallet_id' => $this->sourceWallet->id,
+                'source_wallet_name' => $this->sourceWallet->name,
+                'destination_wallet_id' => $this->destWallet->id,
                 'destination_wallet_name' => $this->destWallet->name,
-                'subject'                 => 'Budi',
-                'notes'                   => 'beli bakso 15rb cash',
-                'type_key'                => 'expense',
-                'needs_wallet'            => false,
-                'is_cleared'              => false,
-                'date'                    => now()->format('Y-m-d'),
+                'subject' => 'Budi',
+                'notes' => 'beli bakso 15rb cash',
+                'type_key' => 'expense',
+                'needs_wallet' => false,
+                'is_cleared' => false,
+                'date' => now()->format('Y-m-d'),
             ],
         ]);
 
@@ -194,27 +198,27 @@ class DraftConfirmationServiceTest extends TestCase
     public function test_it_cancels_a_pending_draft_and_does_not_create_transaction_log()
     {
         $draft = TransactionDraft::create([
-            'user_id'       => $this->user->id,
-            'ai_provider'   => 'gemini',
-            'ai_model'      => 'gemini-1.5-flash',
-            'draft_type'    => 'single',
-            'status'        => 'pending',
+            'user_id' => $this->user->id,
+            'ai_provider' => 'gemini',
+            'ai_model' => 'gemini-1.5-flash',
+            'draft_type' => 'single',
+            'status' => 'pending',
             'ai_confidence' => 0.90,
             'original_text' => 'beli bakso 15rb cash',
-            'payload'       => [
-                'amount'                  => 15000,
-                'category_id'             => $this->category->id,
-                'category_name'           => $this->category->category_name,
-                'source_wallet_id'        => $this->sourceWallet->id,
-                'source_wallet_name'      => $this->sourceWallet->name,
-                'destination_wallet_id'   => $this->destWallet->id,
+            'payload' => [
+                'amount' => 15000,
+                'category_id' => $this->category->id,
+                'category_name' => $this->category->category_name,
+                'source_wallet_id' => $this->sourceWallet->id,
+                'source_wallet_name' => $this->sourceWallet->name,
+                'destination_wallet_id' => $this->destWallet->id,
                 'destination_wallet_name' => $this->destWallet->name,
-                'subject'                 => 'Budi',
-                'notes'                   => 'beli bakso 15rb cash',
-                'type_key'                => 'expense',
-                'needs_wallet'            => false,
-                'is_cleared'              => false,
-                'date'                    => now()->format('Y-m-d'),
+                'subject' => 'Budi',
+                'notes' => 'beli bakso 15rb cash',
+                'type_key' => 'expense',
+                'needs_wallet' => false,
+                'is_cleared' => false,
+                'date' => now()->format('Y-m-d'),
             ],
         ]);
 

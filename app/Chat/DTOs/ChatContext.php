@@ -66,46 +66,46 @@ readonly class ChatContext
     /**
      * Factory: buat ChatContext baru dengan traceId di-generate otomatis.
      *
-     * @param array $metadata  Metadata tambahan dari platform
+     * @param  array  $metadata  Metadata tambahan dari platform
      */
     public static function make(
         ChatPlatform $platform,
-        string       $conversationId,
-        string       $locale    = 'id',
-        string       $timezone  = 'Asia/Jakarta',
-        ?string      $messageId = null,
-        ?string      $replyTo   = null,
-        ?string      $sessionId = null,
-        array        $metadata  = [],
+        string $conversationId,
+        string $locale = 'id',
+        string $timezone = 'Asia/Jakarta',
+        ?string $messageId = null,
+        ?string $replyTo = null,
+        ?string $sessionId = null,
+        array $metadata = [],
     ): self {
         return new self(
-            platform:       $platform,
+            platform: $platform,
             conversationId: $conversationId,
-            locale:         $locale,
-            timezone:       $timezone,
-            traceId:        (string) Str::ulid(),
-            messageId:      $messageId,
-            replyTo:        $replyTo,
-            sessionId:      $sessionId,
-            metadata:       $metadata,
+            locale: $locale,
+            timezone: $timezone,
+            traceId: (string) Str::ulid(),
+            messageId: $messageId,
+            replyTo: $replyTo,
+            sessionId: $sessionId,
+            metadata: $metadata,
         );
     }
 
     /**
      * Resolve locale dari tiga sumber dengan priority order.
      *
-     * @param string|null $userLocale     Dari users.locale (DB)
-     * @param string|null $platformLocale Dari metadata platform (mis. Telegram language_code)
+     * @param  string|null  $userLocale  Dari users.locale (DB)
+     * @param  string|null  $platformLocale  Dari metadata platform (mis. Telegram language_code)
      */
     public static function resolveLocale(
         ?string $userLocale,
         ?string $platformLocale,
     ): string {
-        if (!blank($userLocale)) {
+        if (! blank($userLocale)) {
             return $userLocale;
         }
 
-        if (!blank($platformLocale)) {
+        if (! blank($platformLocale)) {
             return $platformLocale;
         }
 

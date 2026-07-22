@@ -13,14 +13,14 @@ namespace App\Enums;
  */
 enum ChatPlatform: string
 {
-    case Telegram  = 'telegram';
-    case WhatsApp  = 'whatsapp';
-    case Discord   = 'discord';
-    case Web       = 'web';
-    case Slack     = 'slack';
-    case Line      = 'line';
+    case Telegram = 'telegram';
+    case WhatsApp = 'whatsapp';
+    case Discord = 'discord';
+    case Web = 'web';
+    case Slack = 'slack';
+    case Line = 'line';
     case Messenger = 'messenger';
-    case Unknown   = 'unknown';
+    case Unknown = 'unknown';
 
     /**
      * Source prefix untuk reference_number transaksi.
@@ -29,14 +29,14 @@ enum ChatPlatform: string
     public function sourcePrefix(): string
     {
         return match ($this) {
-            self::Telegram  => 'TEL',
-            self::WhatsApp  => 'WA',
-            self::Discord   => 'DSC',
-            self::Web       => 'WEB',
-            self::Slack     => 'SLK',
-            self::Line      => 'LIN',
+            self::Telegram => 'TEL',
+            self::WhatsApp => 'WA',
+            self::Discord => 'DSC',
+            self::Web => 'WEB',
+            self::Slack => 'SLK',
+            self::Line => 'LIN',
             self::Messenger => 'MSG',
-            self::Unknown   => 'UNK',
+            self::Unknown => 'UNK',
         };
     }
 

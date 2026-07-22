@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Wallet;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -11,7 +12,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
-use App\Models\Wallet;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -34,7 +34,7 @@ class RegisteredUserController extends Controller
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
@@ -45,22 +45,22 @@ class RegisteredUserController extends Controller
         ]);
 
         Wallet::create([
-            'user_id'    => $user->id,
-            'name'       => 'External System',
+            'user_id' => $user->id,
+            'name' => 'External System',
             'group_type' => 'System',
-            'balance'    => 0,
-            'icon'       => '🌐',
-            'is_active'  => true,
+            'balance' => 0,
+            'icon' => '🌐',
+            'is_active' => true,
         ]);
 
         // 2. Wallet untuk Pengeluaran (Merchant)
         Wallet::create([
-            'user_id'    => $user->id,
-            'name'       => 'Merchant System',
+            'user_id' => $user->id,
+            'name' => 'Merchant System',
             'group_type' => 'System',
-            'balance'    => 0,
-            'icon'       => '🛒',
-            'is_active'  => true,
+            'balance' => 0,
+            'icon' => '🛒',
+            'is_active' => true,
         ]);
 
         event(new Registered($user));

@@ -2,15 +2,14 @@
 
 namespace Database\Seeders;
 
+use App\Models\Category;
+use App\Models\TransactionLog;
+use App\Models\TransactionType;
 use App\Models\User;
 use App\Models\Wallet;
-use App\Models\Category;
-use App\Models\TransactionType;
-use App\Models\TransactionLog;
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 
 class DummyDataSeeder extends Seeder
 {
@@ -62,7 +61,7 @@ class DummyDataSeeder extends Seeder
             ['name' => 'Hasil Investasi', 'type' => 'Income', 'icon' => '✨'],
             ['name' => 'Uang Saku', 'type' => 'Income', 'icon' => '👛'],
             ['name' => 'Pendapatan Lain', 'type' => 'Income', 'icon' => '💰'],
-            
+
             // Expense (40)
             ['name' => 'Makan & Minum', 'type' => 'Expense', 'icon' => '🍔'],
             ['name' => 'Transportasi', 'type' => 'Expense', 'icon' => '🚗'],
@@ -104,14 +103,14 @@ class DummyDataSeeder extends Seeder
             ['name' => 'Cicilan Gadget', 'type' => 'Expense', 'icon' => '📱'],
             ['name' => 'Perawatan Wajah', 'type' => 'Expense', 'icon' => '🧖‍♀️'],
             ['name' => 'Bayar Kost/Sewa', 'type' => 'Expense', 'icon' => '🏢'],
-            
+
             // Transfer (1)
             ['name' => 'Transfer Saldo', 'type' => 'Transfer', 'icon' => '🔄', 'system_key' => 'TRANSFER'],
-            
+
             // Debt (2)
             ['name' => 'Dapat Hutangan', 'type' => 'Debt', 'icon' => '🤝', 'system_key' => 'LOAN'],
             ['name' => 'Bayar Cicilan Hutang', 'type' => 'Debt', 'icon' => '💸', 'system_key' => 'DEBT_PAYMENT'],
-            
+
             // Receivable (2)
             ['name' => 'Ngasih Piutang', 'type' => 'Receivable', 'icon' => '📄', 'system_key' => 'RECEIVABLE'],
             ['name' => 'Terima Bayar Piutang', 'type' => 'Receivable', 'icon' => '💰', 'system_key' => 'RECEIVABLE_PAYMENT'],
@@ -135,7 +134,7 @@ class DummyDataSeeder extends Seeder
         $liquidWallets = [
             $createdWallets['Dompet Utama'],
             $createdWallets['BCA'],
-            $createdWallets['Mandiri']
+            $createdWallets['Mandiri'],
         ];
 
         // Delete existing transactions for the user to start fresh
@@ -144,37 +143,45 @@ class DummyDataSeeder extends Seeder
         // 5. Create Transaction Logs (Full 2 months of transactions)
         $now = Carbon::now();
         // Go exactly 2 full months ago
-        $startOfPeriod = $now->copy()->subMonth()->startOfMonth(); 
+        $startOfPeriod = $now->copy()->subMonth()->startOfMonth();
         $daysPassed = $startOfPeriod->diffInDays($now) + 1;
-        
+
         $transactionsToInsert = [];
         // Generate 400 transactions to thoroughly populate the 2 month span
         for ($i = 0; $i < 400; $i++) {
             $date = $startOfPeriod->copy()->addDays(rand(0, $daysPassed - 1));
-            
+
             // Weighted randomization
             $rand = rand(1, 100);
-            if ($rand <= 60) $typeName = 'Expense';
-            elseif ($rand <= 80) $typeName = 'Income';
-            elseif ($rand <= 85) $typeName = 'Transfer';
-            elseif ($rand <= 92) $typeName = 'Debt';
-            else $typeName = 'Receivable';
-            
+            if ($rand <= 60) {
+                $typeName = 'Expense';
+            } elseif ($rand <= 80) {
+                $typeName = 'Income';
+            } elseif ($rand <= 85) {
+                $typeName = 'Transfer';
+            } elseif ($rand <= 92) {
+                $typeName = 'Debt';
+            } else {
+                $typeName = 'Receivable';
+            }
+
             $amount = rand(10000, 500000);
-            if (rand(1, 10) > 8) $amount = rand(1000000, 5000000);
+            if (rand(1, 10) > 8) {
+                $amount = rand(1000000, 5000000);
+            }
 
             $cat = null;
             $source = null;
             $dest = null;
 
             if ($typeName === 'Income') {
-                $incomeCats = array_values(array_filter($categories, fn($c) => $c['type'] === 'Income'));
+                $incomeCats = array_values(array_filter($categories, fn ($c) => $c['type'] === 'Income'));
                 $catName = $incomeCats[array_rand($incomeCats)]['name'];
                 $cat = $createdCategories[$catName];
                 $source = $createdWallets['External'];
                 $dest = $liquidWallets[rand(0, count($liquidWallets) - 1)];
             } elseif ($typeName === 'Expense') {
-                $expenseCats = array_values(array_filter($categories, fn($c) => $c['type'] === 'Expense'));
+                $expenseCats = array_values(array_filter($categories, fn ($c) => $c['type'] === 'Expense'));
                 $catName = $expenseCats[array_rand($expenseCats)]['name'];
                 $cat = $createdCategories[$catName];
                 $source = $liquidWallets[rand(0, count($liquidWallets) - 1)];
@@ -210,7 +217,7 @@ class DummyDataSeeder extends Seeder
             }
 
             $transactionsToInsert[] = [
-                'reference_number' => 'TRX-' . strtoupper(Str::random(10)),
+                'reference_number' => 'TRX-'.strtoupper(Str::random(10)),
                 'user_id' => $user->id,
                 'date' => $date->format('Y-m-d'),
                 'type_id' => $types[$typeName],
@@ -220,8 +227,8 @@ class DummyDataSeeder extends Seeder
                 'amount' => $amount,
                 'balance_before' => 0,
                 'balance_after' => 0,
-                'subject' => in_array($typeName, ['Debt', 'Receivable']) ? 'Teman ' . rand(1, 5) : '-',
-                'notes' => 'Testing ' . $cat->category_name . ' (' . ($i + 1) . ')',
+                'subject' => in_array($typeName, ['Debt', 'Receivable']) ? 'Teman '.rand(1, 5) : '-',
+                'notes' => 'Testing '.$cat->category_name.' ('.($i + 1).')',
                 'is_cleared' => true,
                 'created_at' => $date->copy()->addHours(rand(8, 20))->addMinutes(rand(0, 59)),
                 'updated_at' => Carbon::now(),

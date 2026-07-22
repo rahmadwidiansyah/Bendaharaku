@@ -2,13 +2,13 @@
 
 namespace App\Actions;
 
-use App\Models\TransactionLog;
-use App\Models\Wallet;
 use App\Models\Category;
+use App\Models\TransactionLog;
+use App\Models\TransactionType;
 use App\Models\User;
+use App\Models\Wallet;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -23,11 +23,11 @@ class ProcessTransactionAction
     public function create(array $data, int $userId, string $sourcePrefix = 'TRX'): TransactionLog
     {
         if ($data['source_wallet_id'] === $data['destination_wallet_id']) {
-            throw new InvalidArgumentException("Transaksi gagal: Dompet asal dan dompet tujuan tidak boleh sama.");
+            throw new InvalidArgumentException('Transaksi gagal: Dompet asal dan dompet tujuan tidak boleh sama.');
         }
 
         if ($data['amount'] <= 0) {
-            throw new InvalidArgumentException("Transaksi gagal: Nominal transaksi harus lebih besar dari nol.");
+            throw new InvalidArgumentException('Transaksi gagal: Nominal transaksi harus lebih besar dari nol.');
         }
 
         return DB::transaction(function () use ($data, $userId, $sourcePrefix) {
@@ -46,7 +46,7 @@ class ProcessTransactionAction
             } else {
                 $category = Category::where('user_id', $userId)->where('id', $data['category_id'])->firstOrFail();
             }
-            
+
             $source = Wallet::where('user_id', $userId)->where('id', $data['source_wallet_id'])->lockForUpdate()->firstOrFail();
             $destination = Wallet::where('user_id', $userId)->where('id', $data['destination_wallet_id'])->lockForUpdate()->firstOrFail();
 
@@ -66,22 +66,22 @@ class ProcessTransactionAction
             $finalSubject = $subjectInput === '' ? '-' : $subjectInput;
 
             return TransactionLog::create([
-                'reference_number'      => $sourcePrefix . '-' . Str::ulid(),
-                'user_id'               => $userId,
-                'date'                  => $data['date'],
-                'type_id'               => $category->type_id,
-                'category_id'           => $category->id,
-                'source_wallet_id'      => $source->id,
+                'reference_number' => $sourcePrefix.'-'.Str::ulid(),
+                'user_id' => $userId,
+                'date' => $data['date'],
+                'type_id' => $category->type_id,
+                'category_id' => $category->id,
+                'source_wallet_id' => $source->id,
                 'destination_wallet_id' => $destination->id,
-                'amount'                => $data['amount'],
-                'balance_before'        => $balanceBefore,
-                'balance_after'         => $balanceAfter,
-                'subject'               => $finalSubject,
-                'notes'                 => $data['notes'] ?? null,
-                'is_cleared'            => $isCleared,
-                'due_date'              => $data['due_date'] ?? null,
-                'due_date_type'         => $data['due_date_type'] ?? null,
-                'due_date_interval'     => $data['due_date_interval'] ?? null,
+                'amount' => $data['amount'],
+                'balance_before' => $balanceBefore,
+                'balance_after' => $balanceAfter,
+                'subject' => $finalSubject,
+                'notes' => $data['notes'] ?? null,
+                'is_cleared' => $isCleared,
+                'due_date' => $data['due_date'] ?? null,
+                'due_date_type' => $data['due_date_type'] ?? null,
+                'due_date_interval' => $data['due_date_interval'] ?? null,
             ]);
         });
     }
@@ -95,11 +95,11 @@ class ProcessTransactionAction
         $userId = $transaction->user_id;
 
         if ($data['source_wallet_id'] === $data['destination_wallet_id']) {
-            throw new InvalidArgumentException("Update gagal: Dompet asal dan dompet tujuan tidak boleh sama.");
+            throw new InvalidArgumentException('Update gagal: Dompet asal dan dompet tujuan tidak boleh sama.');
         }
 
         if ($data['amount'] <= 0) {
-            throw new InvalidArgumentException("Update gagal: Nominal transaksi harus lebih besar dari nol.");
+            throw new InvalidArgumentException('Update gagal: Nominal transaksi harus lebih besar dari nol.');
         }
 
         return DB::transaction(function () use ($transaction, $data, $userId) {
@@ -121,7 +121,7 @@ class ProcessTransactionAction
             if ($transaction->is_cleared) {
                 $oldSource = Wallet::where('user_id', $userId)->where('id', $transaction->source_wallet_id)->lockForUpdate()->first();
                 $oldDest = Wallet::where('user_id', $userId)->where('id', $transaction->destination_wallet_id)->lockForUpdate()->first();
-                
+
                 if ($oldSource && $oldDest) {
                     $this->reverseTransaction($oldSource, $oldDest, $transaction->amount, $user->allow_negative_balance);
                 }
@@ -144,20 +144,20 @@ class ProcessTransactionAction
 
             // 6. Update rekaman data Transaction Log (Reference Number lama dipertahankan)
             $transaction->update([
-                'date'                  => $data['date'],
-                'category_id'           => $newCategory->id,
-                'type_id'               => $newCategory->type_id,
-                'source_wallet_id'      => $newSource->id,
+                'date' => $data['date'],
+                'category_id' => $newCategory->id,
+                'type_id' => $newCategory->type_id,
+                'source_wallet_id' => $newSource->id,
                 'destination_wallet_id' => $newDest->id,
-                'amount'                => $data['amount'],
-                'balance_before'        => $currentBalance + $data['amount'],
-                'balance_after'         => $currentBalance,
-                'subject'               => $finalSubject,
-                'notes'                 => $data['notes'] ?? null,
-                'is_cleared'            => true,
-                'due_date'              => $data['due_date'] ?? null,
-                'due_date_type'         => $data['due_date_type'] ?? null,
-                'due_date_interval'     => $data['due_date_interval'] ?? null,
+                'amount' => $data['amount'],
+                'balance_before' => $currentBalance + $data['amount'],
+                'balance_after' => $currentBalance,
+                'subject' => $finalSubject,
+                'notes' => $data['notes'] ?? null,
+                'is_cleared' => true,
+                'due_date' => $data['due_date'] ?? null,
+                'due_date_type' => $data['due_date_type'] ?? null,
+                'due_date_interval' => $data['due_date_interval'] ?? null,
             ]);
 
             return $transaction;
@@ -172,19 +172,19 @@ class ProcessTransactionAction
     public function confirm(TransactionLog $transaction): TransactionLog
     {
         if ($transaction->is_cleared) {
-            throw new InvalidArgumentException("Konfirmasi gagal: Transaksi ini sudah terkonfirmasi.");
+            throw new InvalidArgumentException('Konfirmasi gagal: Transaksi ini sudah terkonfirmasi.');
         }
 
         return DB::transaction(function () use ($transaction) {
             $user = User::findOrFail($transaction->user_id);
 
-            $source      = Wallet::where('user_id', $transaction->user_id)->where('id', $transaction->source_wallet_id)->lockForUpdate()->firstOrFail();
+            $source = Wallet::where('user_id', $transaction->user_id)->where('id', $transaction->source_wallet_id)->lockForUpdate()->firstOrFail();
             $destination = Wallet::where('user_id', $transaction->user_id)->where('id', $transaction->destination_wallet_id)->lockForUpdate()->firstOrFail();
 
             // Terapkan mutasi saldo yang sebelumnya ditahan
             $this->applyTransaction($source, $destination, $transaction->amount, $user->allow_negative_balance);
 
-            $mainWallet   = ($source->group_type !== 'System') ? $source : $destination;
+            $mainWallet = ($source->group_type !== 'System') ? $source : $destination;
             $balanceAfter = Wallet::where('id', $mainWallet->id)->value('balance');
 
             // Bersihkan semua tag draft dari notes agar transaksi final tidak
@@ -199,9 +199,9 @@ class ProcessTransactionAction
             }
 
             $transaction->update([
-                'is_cleared'    => true,
+                'is_cleared' => true,
                 'balance_after' => $balanceAfter,
-                'notes'         => $cleanNotes,
+                'notes' => $cleanNotes,
             ]);
 
             return $transaction;
@@ -219,11 +219,12 @@ class ProcessTransactionAction
                 // Kunci baris data wallet saat pemulihan penghapusan transaksi
                 $source = Wallet::where('user_id', $transaction->user_id)->where('id', $transaction->source_wallet_id)->lockForUpdate()->first();
                 $destination = Wallet::where('user_id', $transaction->user_id)->where('id', $transaction->destination_wallet_id)->lockForUpdate()->first();
-                
+
                 if ($source && $destination) {
                     $this->reverseTransaction($source, $destination, $transaction->amount, $allowNegativeBalance);
                 }
             }
+
             return $transaction->delete();
         });
     }
@@ -236,11 +237,11 @@ class ProcessTransactionAction
      */
     private function resolveTransferCategory(int $userId): Category
     {
-        $transferType = \App\Models\TransactionType::where('name', 'Transfer')->first();
+        $transferType = TransactionType::where('name', 'Transfer')->first();
 
-        if (!$transferType) {
-            $transferType = \App\Models\TransactionType::create([
-                'name'    => 'Transfer',
+        if (! $transferType) {
+            $transferType = TransactionType::create([
+                'name' => 'Transfer',
                 'keyword' => 'trf',
             ]);
         }
@@ -250,22 +251,22 @@ class ProcessTransactionAction
             ->where('system_key', 'TRANSFER')
             ->first();
 
-        if (!$category) {
+        if (! $category) {
             $category = Category::where('user_id', $userId)
                 ->where('type_id', $transferType->id)
                 ->first();
         }
 
         // Fallback: buat jika belum ada (user baru / belum di-seed)
-        if (!$category) {
+        if (! $category) {
             $category = Category::create([
-                'user_id'       => $userId,
-                'type_id'       => $transferType->id,
+                'user_id' => $userId,
+                'type_id' => $transferType->id,
                 'category_name' => 'Transfer Saldo',
-                'icon'          => '🔄',
-                'keyword'       => 'trf, transfer',
-                'is_active'     => true,
-                'system_key'    => 'TRANSFER',
+                'icon' => '🔄',
+                'keyword' => 'trf, transfer',
+                'is_active' => true,
+                'system_key' => 'TRANSFER',
             ]);
         }
 
@@ -290,33 +291,39 @@ class ProcessTransactionAction
     private function resolveSystemCategory(int $userId, string $type, ?string $subType, ?int $categoryId): Category
     {
         // Jika form sudah mengirim category_id yang valid, gunakan itu
-        if (!empty($categoryId)) {
+        if (! empty($categoryId)) {
             $cat = Category::where('user_id', $userId)->where('id', $categoryId)->first();
-            if ($cat) return $cat;
+            if ($cat) {
+                return $cat;
+            }
         }
 
         // Tentukan system_key berdasarkan tipe dan sub-tipe
         $systemKey = match (true) {
-            $type === 'debt' && in_array($subType, ['loan', 'income', null])      => 'LOAN',
-            $type === 'debt' && in_array($subType, ['payment', 'expense'])         => 'DEBT_PAYMENT',
-            $type === 'receivable' && in_array($subType, ['give', 'expense'])      => 'RECEIVABLE',
-            $type === 'receivable' && in_array($subType, ['receive', 'income'])    => 'RECEIVABLE_PAYMENT',
+            $type === 'debt' && in_array($subType, ['loan', 'income', null]) => 'LOAN',
+            $type === 'debt' && in_array($subType, ['payment', 'expense']) => 'DEBT_PAYMENT',
+            $type === 'receivable' && in_array($subType, ['give', 'expense']) => 'RECEIVABLE',
+            $type === 'receivable' && in_array($subType, ['receive', 'income']) => 'RECEIVABLE_PAYMENT',
             // Default fallbacks
-            $type === 'debt'       => 'LOAN',
+            $type === 'debt' => 'LOAN',
             $type === 'receivable' => 'RECEIVABLE',
-            default                => null,
+            default => null,
         };
 
         if ($systemKey !== null) {
             $cat = Category::where('user_id', $userId)->where('system_key', $systemKey)->first();
-            if ($cat) return $cat;
+            if ($cat) {
+                return $cat;
+            }
         }
 
         // Last resort: ambil kategori pertama dari tipe tersebut
-        $transactionType = \App\Models\TransactionType::where('name', ucfirst($type))->first();
+        $transactionType = TransactionType::where('name', ucfirst($type))->first();
         if ($transactionType) {
             $cat = Category::where('user_id', $userId)->where('type_id', $transactionType->id)->first();
-            if ($cat) return $cat;
+            if ($cat) {
+                return $cat;
+            }
         }
 
         throw new InvalidArgumentException("Kategori sistem untuk tipe '{$type}' tidak ditemukan.");
@@ -327,7 +334,7 @@ class ProcessTransactionAction
      */
     private function applyTransaction(Wallet $source, Wallet $destination, float|int $amount, bool $allowNegativeBalance): void
     {
-        if (!$allowNegativeBalance && $source->group_type !== 'System' && ($source->balance - $amount) < 0) {
+        if (! $allowNegativeBalance && $source->group_type !== 'System' && ($source->balance - $amount) < 0) {
             throw new RuntimeException("Transaksi ditolak: Saldo pada dompet '{$source->name}' tidak mencukupi.");
         }
 
@@ -340,7 +347,7 @@ class ProcessTransactionAction
      */
     private function reverseTransaction(Wallet $source, Wallet $destination, float|int $amount, bool $allowNegativeBalance): void
     {
-        if (!$allowNegativeBalance && $destination->group_type !== 'System' && ($destination->balance - $amount) < 0) {
+        if (! $allowNegativeBalance && $destination->group_type !== 'System' && ($destination->balance - $amount) < 0) {
             throw new RuntimeException("Rollback gagal: Saldo pada dompet '{$destination->name}' tidak mencukupi untuk proses pembalikan.");
         }
 

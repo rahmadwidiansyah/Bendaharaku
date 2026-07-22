@@ -20,6 +20,7 @@ class AiPreferenceManager
         if (blank($modelName)) {
             throw new InvalidArgumentException('Nama model tidak boleh kosong.');
         }
+
         return UserAiPreference::updateOrCreate(
             [
                 'user_id' => $user->id,

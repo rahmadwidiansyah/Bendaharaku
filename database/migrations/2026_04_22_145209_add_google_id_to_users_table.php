@@ -22,8 +22,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-    $table->string('google_id')->nullable()->after('email');
-    $table->string('avatar')->nullable()->after('password'); // Sekalian buat simpan foto profil
-});
+            $table->string('google_id')->nullable()->after('email');
+            $table->string('avatar')->nullable()->after('password'); // Sekalian buat simpan foto profil
+        });
     }
 };

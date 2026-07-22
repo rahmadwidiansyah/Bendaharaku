@@ -8,7 +8,9 @@ class MemoryMatchService
 {
     public function calculateScore(string $inputText, array $activeMemories): float
     {
-        if (empty($activeMemories)) return 0.0;
+        if (empty($activeMemories)) {
+            return 0.0;
+        }
 
         $inputLower = strtolower($inputText);
         $highestWeight = 0.0;
@@ -20,7 +22,7 @@ class MemoryMatchService
         }
 
         $maxEffective = (float) config('bendaharaku.ai.memory.max_effective_weight', 10.0);
-        
+
         return min(1.0, $highestWeight / $maxEffective);
     }
 }

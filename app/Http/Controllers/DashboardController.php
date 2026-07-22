@@ -2,12 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Wallet;
-use App\Models\TransactionLog;
-use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
-
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -21,7 +18,7 @@ class DashboardController extends Controller
         $totalPortfolio = $user->wallets()
             ->whereIn('group_type', ['Asset', 'Liquid'])
             ->sum('balance');
-        
+
         $totalLiquid = $user->wallets()->where('group_type', 'Liquid')->sum('balance');
         $totalInvest = $user->wallets()->where('group_type', 'Asset')->sum('balance');
 
@@ -29,14 +26,18 @@ class DashboardController extends Controller
         $now = Carbon::now();
         $thisMonthIncome = $user->transactionLogs()
             ->where('is_cleared', true)
-            ->whereHas('type', function($q){ $q->where('name', 'Income'); })
+            ->whereHas('type', function ($q) {
+                $q->where('name', 'Income');
+            })
             ->whereMonth('date', $now->month)
             ->whereYear('date', $now->year)
             ->sum('amount');
 
         $thisMonthExpense = $user->transactionLogs()
             ->where('is_cleared', true)
-            ->whereHas('type', function($q){ $q->where('name', 'Expense'); })
+            ->whereHas('type', function ($q) {
+                $q->where('name', 'Expense');
+            })
             ->whereMonth('date', $now->month)
             ->whereYear('date', $now->year)
             ->sum('amount');
@@ -46,7 +47,7 @@ class DashboardController extends Controller
 
         if ($pinnedWallets->count() < 4) {
             $pinnedIds = $pinnedWallets->pluck('id')->toArray();
-            
+
             $fallbackWallets = $user->wallets()
                 ->whereNotIn('id', $pinnedIds)
                 ->whereNull('is_pinned') // Hanya ambil dompet yang belum pernah di-pin atau di-unpin secara manual
@@ -58,12 +59,12 @@ class DashboardController extends Controller
                 })
                 ->take(4 - $pinnedWallets->count())
                 ->values();
-            
+
             // Tandai dompet fallback agar frontend tahu bahwa ini adalah "virtual pin"
-            $fallbackWallets->each(function($w) {
+            $fallbackWallets->each(function ($w) {
                 $w->is_virtual_pin = true;
             });
-                
+
             $pinnedWallets = $pinnedWallets->concat($fallbackWallets)->values();
         }
 
@@ -79,58 +80,58 @@ class DashboardController extends Controller
         $query->whereBetween('date', [$startDate, $endDate]);
 
         if ($request->has('type') && $request->type != '') {
-            $query->whereHas('type', function($q) use ($request) {
+            $query->whereHas('type', function ($q) use ($request) {
                 $q->where('name', $request->type);
             });
         }
 
         if ($request->has('search') && $request->search != '') {
             $search = strtolower(trim($request->search));
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 // Search by numeric ID jika input adalah angka murni
                 if (ctype_digit($search)) {
                     $q->where('id', (int) $search)
-                      ->orWhereRaw('LOWER(reference_number) LIKE ?', ["%{$search}%"]);
+                        ->orWhereRaw('LOWER(reference_number) LIKE ?', ["%{$search}%"]);
                 } else {
                     $q->whereRaw('LOWER(notes) LIKE ?', ["%{$search}%"])
-                      ->orWhereRaw('LOWER(subject) LIKE ?', ["%{$search}%"])
-                      ->orWhereRaw('LOWER(reference_number) LIKE ?', ["%{$search}%"])
-                      ->orWhereHas('category', function($qCat) use ($search) {
-                          $qCat->whereRaw('LOWER(category_name) LIKE ?', ["%{$search}%"]);
-                      });
+                        ->orWhereRaw('LOWER(subject) LIKE ?', ["%{$search}%"])
+                        ->orWhereRaw('LOWER(reference_number) LIKE ?', ["%{$search}%"])
+                        ->orWhereHas('category', function ($qCat) use ($search) {
+                            $qCat->whereRaw('LOWER(category_name) LIKE ?', ["%{$search}%"]);
+                        });
                 }
             });
         }
 
         $transactions = $query->orderBy('date', 'desc')
-                              ->orderBy('created_at', 'desc')
-                              ->get()
-                              ->map(function ($trx) {
-                                  return [
-                                      'id' => $trx->id,
-                                      'amount' => (float) $trx->amount,
-                                      'notes' => $trx->notes,
-                                      'subject' => $trx->subject,
-                                      'is_cleared' => (bool) $trx->is_cleared,
-                                      'reference_number' => $trx->reference_number,
-                                      'date' => Carbon::parse($trx->date)->translatedFormat('d M Y'),
-                                      'raw_date' => $trx->date,
-                                      'time' => Carbon::parse($trx->created_at)->format('H:i'),
-                                      'type' => $trx->type,
-                                      'category' => $trx->category,
-                                      'source_wallet' => $trx->sourceWallet,
-                                      'destination_wallet' => $trx->destinationWallet,
-                                      'due_date' => $trx->due_date,
-                                      'due_date_type' => $trx->due_date_type,
-                                      'due_date_interval' => $trx->due_date_interval,
-                                  ];
-                              });
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($trx) {
+                return [
+                    'id' => $trx->id,
+                    'amount' => (float) $trx->amount,
+                    'notes' => $trx->notes,
+                    'subject' => $trx->subject,
+                    'is_cleared' => (bool) $trx->is_cleared,
+                    'reference_number' => $trx->reference_number,
+                    'date' => Carbon::parse($trx->date)->translatedFormat('d M Y'),
+                    'raw_date' => $trx->date,
+                    'time' => Carbon::parse($trx->created_at)->format('H:i'),
+                    'type' => $trx->type,
+                    'category' => $trx->category,
+                    'source_wallet' => $trx->sourceWallet,
+                    'destination_wallet' => $trx->destinationWallet,
+                    'due_date' => $trx->due_date,
+                    'due_date_type' => $trx->due_date_type,
+                    'due_date_interval' => $trx->due_date_interval,
+                ];
+            });
 
         // ── Query Pending Drafts ──
         $pendingDraftsQuery = $user->transactionDrafts()->where('status', 'pending');
         $pendingDraftsQuery->whereBetween('created_at', [
             Carbon::parse($startDate)->startOfDay(),
-            Carbon::parse($endDate)->endOfDay()
+            Carbon::parse($endDate)->endOfDay(),
         ]);
 
         if ($request->filled('type')) {
@@ -140,11 +141,11 @@ class DashboardController extends Controller
 
         if ($request->filled('search')) {
             $search = strtolower(trim($request->search));
-            $pendingDraftsQuery->where(function($q) use ($search) {
+            $pendingDraftsQuery->where(function ($q) use ($search) {
                 $q->whereRaw('LOWER(original_text) LIKE ?', ["%{$search}%"])
-                  ->orWhereRaw('LOWER(payload->>\'notes\') LIKE ?', ["%{$search}%"])
-                  ->orWhereRaw('LOWER(payload->>\'subject\') LIKE ?', ["%{$search}%"])
-                  ->orWhereRaw('LOWER(payload->>\'category_name\') LIKE ?', ["%{$search}%"]);
+                    ->orWhereRaw('LOWER(payload->>\'notes\') LIKE ?', ["%{$search}%"])
+                    ->orWhereRaw('LOWER(payload->>\'subject\') LIKE ?', ["%{$search}%"])
+                    ->orWhereRaw('LOWER(payload->>\'category_name\') LIKE ?', ["%{$search}%"]);
             });
         }
 
@@ -152,6 +153,7 @@ class DashboardController extends Controller
 
         $draftData = $drafts->map(function ($draft) {
             $payload = $draft->payload ?? [];
+
             return [
                 'id' => $draft->id,
                 'is_draft' => true,
@@ -195,6 +197,7 @@ class DashboardController extends Controller
             if ($timeCompare !== 0) {
                 return $timeCompare;
             }
+
             return $b['id'] <=> $a['id'];
         })->values();
 
@@ -204,23 +207,27 @@ class DashboardController extends Controller
             ->where('is_cleared', true)
             ->whereNotNull('due_date_type')
             ->get();
-            
+
         $processedSubjects = []; // Track to avoid duplicate checks per subject/type
 
         foreach ($debtsWithDueDate as $trx) {
             $catName = strtolower($trx->category->category_name);
             $isDebt = str_contains($catName, 'dapat hutang');
             $isReceivable = str_contains($catName, 'ngasih piutang');
-            
-            if (!$isDebt && !$isReceivable) continue;
-            
-            $cacheKey = $trx->subject . '_' . ($isDebt ? 'debt' : 'receivable');
-            if (isset($processedSubjects[$cacheKey])) continue;
+
+            if (! $isDebt && ! $isReceivable) {
+                continue;
+            }
+
+            $cacheKey = $trx->subject.'_'.($isDebt ? 'debt' : 'receivable');
+            if (isset($processedSubjects[$cacheKey])) {
+                continue;
+            }
             $processedSubjects[$cacheKey] = true;
 
             $now = Carbon::now()->startOfDay();
             $nextDueDate = null;
-            
+
             if ($trx->due_date_type === 'fixed' && $trx->due_date) {
                 $nextDueDate = Carbon::parse($trx->due_date)->startOfDay();
             } elseif ($trx->due_date_type === 'monthly' && $trx->due_date_interval) {
@@ -233,7 +240,7 @@ class DashboardController extends Controller
                 $start = Carbon::parse($trx->date)->startOfDay();
                 $interval = $trx->due_date_interval;
                 $diff = $now->diffInDays($start);
-                
+
                 if ($start->isAfter($now)) {
                     $nextDueDate = $start;
                 } else {
@@ -244,17 +251,17 @@ class DashboardController extends Controller
 
             if ($nextDueDate) {
                 $daysUntilDue = (int) $now->diffInDays($nextDueDate, false);
-                
+
                 // Show if it's due within 7 days, or overdue (negative)
                 if ($daysUntilDue <= 7) {
                     $allSubjectTrxs = $user->transactionLogs()->with('category')
                         ->where('is_cleared', true)
                         ->where('subject', $trx->subject)
                         ->get();
-                        
+
                     $totalBorrowed = 0;
                     $totalPaid = 0;
-                    
+
                     if ($isDebt) {
                         $totalBorrowed = $allSubjectTrxs->where('category.category_name', 'Dapat Hutangan')->sum('amount');
                         $totalPaid = $allSubjectTrxs->where('category.category_name', 'Bayar Cicilan Hutang')->sum('amount');
@@ -262,9 +269,9 @@ class DashboardController extends Controller
                         $totalBorrowed = $allSubjectTrxs->where('category.category_name', 'Ngasih Piutang')->sum('amount');
                         $totalPaid = $allSubjectTrxs->where('category.category_name', 'Terima Bayar Piutang')->sum('amount');
                     }
-                    
+
                     $remaining = $totalBorrowed - $totalPaid;
-                    
+
                     if ($remaining > 0) {
                         $upcomingDebts[] = [
                             'subject' => $trx->subject,
@@ -277,9 +284,9 @@ class DashboardController extends Controller
                 }
             }
         }
-        
+
         // Sort upcoming debts by closest due date
-        usort($upcomingDebts, function($a, $b) {
+        usort($upcomingDebts, function ($a, $b) {
             return $a['days_until'] <=> $b['days_until'];
         });
 
@@ -291,7 +298,7 @@ class DashboardController extends Controller
             'thisMonthExpense' => (int) $thisMonthExpense,
             'pinnedWallets' => $pinnedWallets,
             'transactions' => [
-                'data' => $transactions
+                'data' => $transactions,
             ],
             'startDate' => $startDate,
             'endDate' => $endDate,

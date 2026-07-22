@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Chat\Contracts;
 
-use App\Chat\DTOs\ChatResponse;
 use App\Chat\DTOs\ChatContext;
+use App\Chat\DTOs\ChatResponse;
 
 /**
  * Kontrak untuk semua platform formatter.
@@ -32,7 +32,7 @@ interface ChatFormatterInterface
     /**
      * Format ChatResponse menjadi output siap kirim untuk platform ini.
      *
-     * @return string|array  String untuk text platform, array untuk web/API
+     * @return string|array String untuk text platform, array untuk web/API
      */
     public function format(ChatResponse $response, ChatContext $context): string|array;
 

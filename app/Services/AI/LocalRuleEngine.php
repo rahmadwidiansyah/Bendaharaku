@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Services\AI;
 
-use App\Models\User;
-use App\Models\Category;
-use App\Models\Wallet;
 use App\DTO\AIParseResult;
 use App\DTO\ParsedTransaction;
 use App\Enums\TransactionIntent;
+use App\Models\Category;
+use App\Models\User;
+use App\Models\Wallet;
 use Illuminate\Support\Facades\Log;
 
 class LocalRuleEngine
@@ -76,19 +76,19 @@ class LocalRuleEngine
             }
         }
 
-        $isCleared = $hasRequiredWallets && ($subject !== null || !in_array($intent, [TransactionIntent::Debt, TransactionIntent::Receivable]));
+        $isCleared = $hasRequiredWallets && ($subject !== null || ! in_array($intent, [TransactionIntent::Debt, TransactionIntent::Receivable]));
 
         // Construct ParsedTransaction
         $parsedTransaction = new ParsedTransaction(
-            amount:             $amount,
-            transactionType:    $intent,
-            category:           $categoryMatch->category_name,
-            sourceWallet:       $walletData['sourceWallet'],
-            destinationWallet:  $walletData['destinationWallet'],
-            subject:            $subject,
-            notes:              $text,
-            isCleared:          $isCleared,
-            useAllBalance:      $useAllBalance
+            amount: $amount,
+            transactionType: $intent,
+            category: $categoryMatch->category_name,
+            sourceWallet: $walletData['sourceWallet'],
+            destinationWallet: $walletData['destinationWallet'],
+            subject: $subject,
+            notes: $text,
+            isCleared: $isCleared,
+            useAllBalance: $useAllBalance
         );
 
         Log::info('LocalRuleEngine: successfully parsed intent locally', [
@@ -100,17 +100,17 @@ class LocalRuleEngine
             'source' => $walletData['sourceWallet'],
             'dest' => $walletData['destinationWallet'],
             'subject' => $subject,
-            'use_all_balance' => $useAllBalance
+            'use_all_balance' => $useAllBalance,
         ]);
 
         return new AIParseResult(
-            success:     true,
-            confidence:  1.0, // Rule engine matches are 100% confident
-            error:       null,
+            success: true,
+            confidence: 1.0, // Rule engine matches are 100% confident
+            error: null,
             transaction: $parsedTransaction,
-            usage:       ['prompt' => 0, 'completion' => 0, 'total' => 0],
-            provider:    'local-rules',
-            model:       'regex'
+            usage: ['prompt' => 0, 'completion' => 0, 'total' => 0],
+            provider: 'local-rules',
+            model: 'regex'
         );
     }
 
@@ -146,7 +146,7 @@ class LocalRuleEngine
                 if ($val > 0) {
                     return [
                         'amount' => $val,
-                        'useAllBalance' => $useAllBalance
+                        'useAllBalance' => $useAllBalance,
                     ];
                 }
             }
@@ -155,7 +155,7 @@ class LocalRuleEngine
         if ($useAllBalance) {
             return [
                 'amount' => 0.0,
-                'useAllBalance' => true
+                'useAllBalance' => true,
             ];
         }
 
@@ -184,12 +184,14 @@ class LocalRuleEngine
         foreach ($categories as $category) {
             $tokens = array_filter([
                 $category->category_name,
-                ...preg_split('/[,|;]+/', (string) $category->keyword, -1, PREG_SPLIT_NO_EMPTY)
+                ...preg_split('/[,|;]+/', (string) $category->keyword, -1, PREG_SPLIT_NO_EMPTY),
             ]);
 
             foreach ($tokens as $token) {
                 $token = trim(mb_strtolower($token));
-                if ($token === '') continue;
+                if ($token === '') {
+                    continue;
+                }
 
                 // Prevent matching 'utang', 'hutang', or 'ngutang' when the word is actually 'piutang'
                 if (in_array($token, ['utang', 'hutang', 'ngutang']) && str_contains($lowerText, 'piutang')) {
@@ -205,7 +207,7 @@ class LocalRuleEngine
                     $matchedCategories[] = [
                         'category' => $category,
                         'token' => $token,
-                        'length' => strlen($token)
+                        'length' => strlen($token),
                     ];
                 }
             }
@@ -216,7 +218,7 @@ class LocalRuleEngine
         }
 
         // Sort by matching token length descending (longest wins)
-        usort($matchedCategories, fn($a, $b) => $b['length'] <=> $a['length']);
+        usort($matchedCategories, fn ($a, $b) => $b['length'] <=> $a['length']);
 
         // Disambiguate if multiple matches have the same longest length
         if (count($matchedCategories) >= 2 && $matchedCategories[0]['length'] === $matchedCategories[1]['length']) {
@@ -266,7 +268,7 @@ class LocalRuleEngine
         }
 
         $hasPiutang = str_contains($text, 'piutang');
-        
+
         $hasPinjam = str_contains($text, 'pinjam') || str_contains($text, 'pinjem') || str_contains($text, 'minjam') || str_contains($text, 'minjem');
         $hasPinjamin = str_contains($text, 'pinjamin') || str_contains($text, 'pinjemin') || str_contains($text, 'pinjamkan') || str_contains($text, 'ngutangin') || str_contains($text, 'ngasih pinjam') || str_contains($text, 'kasih pinjam') || str_contains($text, 'kasih utang') || str_contains($text, 'meminjamkan');
 
@@ -285,7 +287,7 @@ class LocalRuleEngine
         }
 
         // Rule 3: bayar/balikin/lunasi hutang/pinjaman
-        if ($hasPayment && ($hasHutang || $hasPinjam) && !$hasPinjamin) {
+        if ($hasPayment && ($hasHutang || $hasPinjam) && ! $hasPinjamin) {
             if ($hasKe) {
                 // "bayar hutang ke budi" -> DEBT_PAYMENT
                 $scores['DEBT_PAYMENT'] += 100;
@@ -314,7 +316,7 @@ class LocalRuleEngine
         }
 
         // Rule 5: general pinjam/hutang without payment keywords
-        if (!$hasPayment && ($hasHutang || $hasPinjam) && !$hasPinjamin) {
+        if (! $hasPayment && ($hasHutang || $hasPinjam) && ! $hasPinjamin) {
             if ($hasKe) {
                 // "hutang ke budi", "pinjam ke budi" -> LOAN
                 $scores['LOAN'] += 100;
@@ -330,7 +332,7 @@ class LocalRuleEngine
         }
 
         // Rule 6: Ngasih piutang (general receivable without payment)
-        if (!$hasPayment && $hasPiutang) {
+        if (! $hasPayment && $hasPiutang) {
             $scores['RECEIVABLE'] += 90;
         }
 
@@ -362,6 +364,7 @@ class LocalRuleEngine
         }
 
         $typeName = $category->type->name ?? '';
+
         return TransactionIntent::tryFrom(strtolower($typeName)) ?? match ($typeName) {
             'Income' => TransactionIntent::Income,
             'Expense' => TransactionIntent::Expense,
@@ -388,12 +391,14 @@ class LocalRuleEngine
 
             $tokens = array_filter([
                 $wallet->name,
-                ...preg_split('/[,|;]+/', (string) $wallet->keyword, -1, PREG_SPLIT_NO_EMPTY)
+                ...preg_split('/[,|;]+/', (string) $wallet->keyword, -1, PREG_SPLIT_NO_EMPTY),
             ]);
 
             foreach ($tokens as $token) {
                 $token = trim(mb_strtolower($token));
-                if ($token === '') continue;
+                if ($token === '') {
+                    continue;
+                }
 
                 $pos = mb_strpos($lowerText, $token);
                 if ($pos !== false) {
@@ -410,14 +415,14 @@ class LocalRuleEngine
         $uniqueMatches = [];
         foreach ($matchedWallets as $match) {
             $walletId = $match['wallet']->id;
-            if (!isset($uniqueMatches[$walletId])) {
+            if (! isset($uniqueMatches[$walletId])) {
                 $uniqueMatches[$walletId] = $match;
             }
         }
         $matchedWallets = array_values($uniqueMatches);
 
         // Sort by offset position in the text
-        usort($matchedWallets, fn($a, $b) => $a['offset'] <=> $b['offset']);
+        usort($matchedWallets, fn ($a, $b) => $a['offset'] <=> $b['offset']);
 
         $sourceWallet = null;
         $destinationWallet = null;

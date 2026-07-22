@@ -40,7 +40,7 @@ class ContextBuilder
         // Modular context construction
         $context = [];
 
-        if (!$isTransaction) {
+        if (! $isTransaction) {
             // General query / Out of scope -> do not send wallets, categories, or historical patterns
             return $context;
         }
@@ -48,8 +48,10 @@ class ContextBuilder
         // Add Wallets context (only names and keywords, NO balances unless requested)
         $walletList = [];
         foreach ($wallets as $w) {
-            if (empty($w['name'])) continue;
-            
+            if (empty($w['name'])) {
+                continue;
+            }
+
             // We omit the actual 'balance' for parsing transactions to limit scope and protect privacy.
             $walletList[] = [
                 'name' => $w['name'],
@@ -67,7 +69,9 @@ class ContextBuilder
         // Add Categories context
         $categoryList = [];
         foreach ($categories as $c) {
-            if (empty($c['category_name'])) continue;
+            if (empty($c['category_name'])) {
+                continue;
+            }
             $categoryList[] = [
                 'name' => $c['category_name'],
                 'keyword' => $c['keyword'] ?? '',
@@ -76,7 +80,7 @@ class ContextBuilder
         $context['available_categories'] = $categoryList;
 
         // Add historical patterns if relevant memories are found
-        if (!empty($activeMemories)) {
+        if (! empty($activeMemories)) {
             $historicalMappings = array_map(function ($m) {
                 return ['keyword' => $m['keyword'], 'target_category' => $m['category']];
             }, $activeMemories);

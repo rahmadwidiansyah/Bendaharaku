@@ -11,8 +11,6 @@ use App\Chat\DTOs\ChatResponse;
 use App\Chat\Formatters\TelegramFormatter;
 use App\Enums\ChatPlatform;
 use App\Models\User;
-use App\Models\Wallet;
-use App\Support\MoneyFormatter;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -34,24 +32,24 @@ class TelegramAdapter
 {
     public function __construct(
         private readonly ChatApplicationService $chatService,
-        private readonly TelegramFormatter      $formatter,
+        private readonly TelegramFormatter $formatter,
     ) {}
 
     /**
      * Handle satu Telegram Update payload.
      * Dipanggil oleh TelegramWebhookController.
      *
-     * @param array $update  Telegram Update object dari request body
-     * @return array         Response sederhana untuk HTTP reply ke Telegram
+     * @param  array  $update  Telegram Update object dari request body
+     * @return array Response sederhana untuk HTTP reply ke Telegram
      */
     public function handle(array $update): array
     {
-        if (!isset($update['message']['text'])) {
+        if (! isset($update['message']['text'])) {
             return ['status' => 'ignored'];
         }
 
-        $chatId    = $update['message']['chat']['id'];
-        $text      = $update['message']['text'];
+        $chatId = $update['message']['chat']['id'];
+        $text = $update['message']['text'];
         $messageId = (string) ($update['message']['message_id'] ?? null);
 
         // Telegram language_code (opsional, mis. 'id', 'en')
@@ -59,17 +57,18 @@ class TelegramAdapter
 
         // 1. Resolve user
         $user = User::where('telegram_id', $chatId)->first();
-        if (!$user) {
+        if (! $user) {
             $this->sendMessage($chatId, __(
                 'chat.general.unauthorized',
                 ['platform_id' => $chatId],
             ));
+
             return ['status' => 'unauthorized'];
         }
 
         // 2. Resolve locale (priority: user settings > platform > default)
         $locale = ChatContext::resolveLocale(
-            userLocale:     $user->locale,
+            userLocale: $user->locale,
             platformLocale: $platformLocale,
         );
 
@@ -78,28 +77,28 @@ class TelegramAdapter
         // 4. Kirim typing indicator (hanya untuk non-command/AI query)
         $isCommand = str_starts_with(trim($text), '/')
             || in_array(strtolower(trim($text)), ['hai', 'halo', 'hello', 'hi', 'ping', 'p', 'tes', 'test', 'help', 'tolong']);
-        if (!$isCommand) {
+        if (! $isCommand) {
             $this->sendMessage($chatId, trans('chat.general.processing', [], $locale));
         }
 
         // 5. Bangun ChatContext + ChatRequest
         $context = ChatContext::make(
-            platform:       ChatPlatform::Telegram,
+            platform: ChatPlatform::Telegram,
             conversationId: (string) $chatId,
-            locale:         $locale,
-            timezone:       $timezone,
-            messageId:      $messageId,
-            metadata:       [
+            locale: $locale,
+            timezone: $timezone,
+            messageId: $messageId,
+            metadata: [
                 'telegram_update_id' => $update['update_id'] ?? null,
-                'first_name'         => $update['message']['from']['first_name'] ?? null,
-                'platform'           => 'telegram',
+                'first_name' => $update['message']['from']['first_name'] ?? null,
+                'platform' => 'telegram',
             ],
         );
 
         $request = ChatRequest::make(
             rawMessage: $text,
-            user:       $user,
-            context:    $context,
+            user: $user,
+            context: $context,
         );
 
         // 6. Proses via ChatApplicationService
@@ -110,10 +109,10 @@ class TelegramAdapter
         $this->sendMessage($chatId, $formatted);
 
         Log::info('TelegramAdapter: response sent', [
-            'trace_id'  => $context->traceId,
-            'chat_id'   => $chatId,
-            'intent'    => $response->intent->value,
-            'success'   => $response->success,
+            'trace_id' => $context->traceId,
+            'chat_id' => $chatId,
+            'intent' => $response->intent->value,
+            'success' => $response->success,
         ]);
 
         return ['status' => $response->success ? 'success' : 'failed'];
@@ -125,8 +124,8 @@ class TelegramAdapter
     {
         $token = config('services.telegram.token');
         Http::post("https://api.telegram.org/bot{$token}/sendMessage", [
-            'chat_id'    => $chatId,
-            'text'       => $text,
+            'chat_id' => $chatId,
+            'text' => $text,
             'parse_mode' => 'Markdown',
         ]);
     }

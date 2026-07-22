@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Services\Chat;
 
+use App\Actions\ProcessTransactionAction;
+use App\Models\ChatMessage;
 use App\Models\TransactionDraft;
+use App\Models\TransactionLog;
 use App\Models\User;
 use App\Models\Wallet;
-use App\Models\ChatMessage;
-use App\Actions\ProcessTransactionAction;
 use App\Support\MoneyFormatter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
-use RuntimeException;
 
 /**
  * DraftConfirmationService — Mengonversi TransactionDraft menjadi TransactionLog.
@@ -35,20 +35,19 @@ class DraftConfirmationService
      * Konfirmasi draft: buat TransactionLog dari payload draft.
      * Hanya berlaku untuk draft dengan status 'pending'.
      *
-     * @return \App\Models\TransactionLog
      * @throws InvalidArgumentException jika draft sudah dikonfirmasi/dibatalkan/expired
      */
-    public function confirm(TransactionDraft $draft, User $user): \App\Models\TransactionLog
+    public function confirm(TransactionDraft $draft, User $user): TransactionLog
     {
-        if ($draft->isConfirmed() && !empty($draft->confirmed_transaction_ids)) {
+        if ($draft->isConfirmed() && ! empty($draft->confirmed_transaction_ids)) {
             $logId = $draft->confirmed_transaction_ids[0];
-            $existingLog = \App\Models\TransactionLog::find($logId);
+            $existingLog = TransactionLog::find($logId);
             if ($existingLog) {
                 return $existingLog->load(['category', 'sourceWallet', 'destinationWallet', 'type']);
             }
         }
 
-        if (!$draft->isPending()) {
+        if (! $draft->isPending()) {
             throw new InvalidArgumentException(
                 "Draft #{$draft->id} tidak dapat dikonfirmasi (status: {$draft->status})."
             );
@@ -67,19 +66,19 @@ class DraftConfirmationService
             // Buat TransactionLog via ProcessTransactionAction
             // ProcessTransactionAction::create() menangani mutasi saldo, reference number, dll.
             $log = $this->transactionAction->create([
-                'date'                  => $payload['date'] ?? now()->format('Y-m-d'),
-                'category_id'           => $payload['category_id'],
-                'source_wallet_id'      => $payload['source_wallet_id'],
+                'date' => $payload['date'] ?? now()->format('Y-m-d'),
+                'category_id' => $payload['category_id'],
+                'source_wallet_id' => $payload['source_wallet_id'],
                 'destination_wallet_id' => $payload['destination_wallet_id'],
-                'amount'                => $payload['amount'],
-                'subject'               => $payload['subject'] ?? $user->name,
-                'notes'                 => $payload['notes'] ?? null,
-                'is_cleared'            => true, // Konfirmasi → langsung cleared
+                'amount' => $payload['amount'],
+                'subject' => $payload['subject'] ?? $user->name,
+                'notes' => $payload['notes'] ?? null,
+                'is_cleared' => true, // Konfirmasi → langsung cleared
             ], $user->id, 'WEB');
 
             // Tandai draft sebagai confirmed + simpan referensi ke transaction_log
             $draft->update([
-                'status'                    => 'confirmed',
+                'status' => 'confirmed',
                 'confirmed_transaction_ids' => [$log->id],
             ]);
 
@@ -90,9 +89,9 @@ class DraftConfirmationService
         $this->syncChatHistoryAfterConfirm($user->id, $draft->id, $transactionLog);
 
         Log::info('DraftConfirmationService: draft dikonfirmasi', [
-            'draft_id'       => $draft->id,
+            'draft_id' => $draft->id,
             'transaction_id' => $transactionLog->id,
-            'user_id'        => $user->id,
+            'user_id' => $user->id,
         ]);
 
         return $transactionLog->load(['category', 'sourceWallet', 'destinationWallet', 'type']);
@@ -105,12 +104,11 @@ class DraftConfirmationService
      * - Jika source wallet adalah System wallet "bermakna" (Hutang/Piutang) → user mengisi dest
      * - Sebaliknya → user mengisi source
      *
-     * @return \App\Models\TransactionLog
      * @throws InvalidArgumentException
      */
-    public function assignWallet(TransactionDraft $draft, User $user, int $walletId): \App\Models\TransactionLog
+    public function assignWallet(TransactionDraft $draft, User $user, int $walletId): TransactionLog
     {
-        if (!$draft->isPending()) {
+        if (! $draft->isPending()) {
             throw new InvalidArgumentException(
                 "Draft #{$draft->id} tidak dapat dimodifikasi (status: {$draft->status})."
             );
@@ -132,24 +130,24 @@ class DraftConfirmationService
             $sourceWallet = Wallet::find($sourceWalletId);
             $sourceIsRealSystem = $sourceWallet
                 && $sourceWallet->group_type === 'System'
-                && !str_contains(strtolower($sourceWallet->name ?? ''), 'external')
-                && !str_contains(strtolower($sourceWallet->name ?? ''), 'merchant');
+                && ! str_contains(strtolower($sourceWallet->name ?? ''), 'external')
+                && ! str_contains(strtolower($sourceWallet->name ?? ''), 'merchant');
         }
 
         // Update payload dengan wallet yang dipilih user
         if ($sourceIsRealSystem) {
             // Source = System (Hutang/Piutang) → user mengisi dest (uang masuk ke wallet user)
-            $payload['destination_wallet_id']   = $wallet->id;
+            $payload['destination_wallet_id'] = $wallet->id;
             $payload['destination_wallet_name'] = $wallet->name;
         } else {
             // Dest = System/Merchant → user mengisi source (uang keluar dari wallet user)
-            $payload['source_wallet_id']   = $wallet->id;
+            $payload['source_wallet_id'] = $wallet->id;
             $payload['source_wallet_name'] = $wallet->name;
         }
 
         // Wallet sudah dipilih → needs_wallet = false
         $payload['needs_wallet'] = false;
-        $payload['is_cleared']   = true;
+        $payload['is_cleared'] = true;
 
         // Simpan payload yang sudah diupdate sementara sebelum konfirmasi
         $draft->payload = $payload;
@@ -161,7 +159,6 @@ class DraftConfirmationService
     /**
      * Batalkan draft.
      *
-     * @return void
      * @throws InvalidArgumentException jika draft sudah bukan pending
      */
     public function cancel(TransactionDraft $draft, User $user): void
@@ -179,7 +176,7 @@ class DraftConfirmationService
 
         Log::info('DraftConfirmationService: draft dibatalkan', [
             'draft_id' => $draft->id,
-            'user_id'  => $user->id,
+            'user_id' => $user->id,
         ]);
     }
 
@@ -192,25 +189,25 @@ class DraftConfirmationService
         $payload = $draft->payload ?? [];
 
         return [
-            'id'               => $draft->id,
-            'is_draft'         => true,
+            'id' => $draft->id,
+            'is_draft' => true,
             'reference_number' => null,
-            'amount'           => $payload['amount'] ?? 0,
+            'amount' => $payload['amount'] ?? 0,
             'amount_formatted' => $payload['amount_formatted']
                 ?? MoneyFormatter::rupiah((float) ($payload['amount'] ?? 0)),
-            'is_cleared'       => false,
-            'is_cancelled'     => $draft->status === 'cancelled',
-            'needs_wallet'     => $payload['needs_wallet'] ?? false,
-            'type_key'         => $payload['type_key'] ?? 'other',
-            'category'         => $payload['category_name'] ?? null,
-            'source_wallet'    => $payload['source_wallet_name'] ?? null,
-            'dest_wallet'      => $payload['destination_wallet_name'] ?? null,
-            'subject'          => $payload['subject'] ?? null,
-            'notes'            => $payload['notes'] ?? null,
-            'date'             => $payload['date'] ?? null,
-            'created_at'       => $draft->created_at?->toIso8601String(),
-            'expires_at'       => $draft->expires_at?->toIso8601String(),
-            'ai_confidence'    => $draft->ai_confidence,
+            'is_cleared' => false,
+            'is_cancelled' => $draft->status === 'cancelled',
+            'needs_wallet' => $payload['needs_wallet'] ?? false,
+            'type_key' => $payload['type_key'] ?? 'other',
+            'category' => $payload['category_name'] ?? null,
+            'source_wallet' => $payload['source_wallet_name'] ?? null,
+            'dest_wallet' => $payload['destination_wallet_name'] ?? null,
+            'subject' => $payload['subject'] ?? null,
+            'notes' => $payload['notes'] ?? null,
+            'date' => $payload['date'] ?? null,
+            'created_at' => $draft->created_at?->toIso8601String(),
+            'expires_at' => $draft->expires_at?->toIso8601String(),
+            'ai_confidence' => $draft->ai_confidence,
         ];
     }
 
@@ -221,14 +218,14 @@ class DraftConfirmationService
      * - Ganti draft_id dengan transaction_id yang sebenarnya
      * - Tandai is_cleared = true, is_draft = false
      */
-    public function syncChatHistoryAfterConfirm(int $userId, int $draftId, \App\Models\TransactionLog $transaction): void
+    public function syncChatHistoryAfterConfirm(int $userId, int $draftId, TransactionLog $transaction): void
     {
         $typeKey = match (strtolower($transaction->type?->name ?? '')) {
-            'income'             => 'income',
-            'expense'            => 'expense',
-            'transfer'           => 'transfer',
+            'income' => 'income',
+            'expense' => 'expense',
+            'transfer' => 'transfer',
             'debt', 'receivable' => 'debt',
-            default              => 'other',
+            default => 'other',
         };
 
         ChatMessage::whereHas('conversation', fn ($q) => $q->where('user_id', $userId))
@@ -246,29 +243,29 @@ class DraftConfirmationService
                         $trxData = $component['transaction'] ?? [];
 
                         // Cocokkan berdasarkan draft_id atau id (untuk backward compat)
-                        $isDraftMatch   = isset($trxData['draft_id'])
+                        $isDraftMatch = isset($trxData['draft_id'])
                             && (int) $trxData['draft_id'] === $draftId;
-                        $isLegacyMatch  = !isset($trxData['draft_id'])
+                        $isLegacyMatch = ! isset($trxData['draft_id'])
                             && isset($trxData['is_draft'])
                             && $trxData['is_draft'] === true
                             && (int) ($trxData['id'] ?? 0) === $draftId;
 
-                        if (!$isDraftMatch && !$isLegacyMatch) {
+                        if (! $isDraftMatch && ! $isLegacyMatch) {
                             continue;
                         }
 
                         // Update komponen ke state confirmed
-                        $component['needs_wallet']                    = false;
-                        $component['is_draft']                        = false;
-                        $component['transaction']['id']               = $transaction->id;
-                        $component['transaction']['draft_id']         = null;
-                        $component['transaction']['is_draft']         = false;
-                        $component['transaction']['is_cleared']       = true;
-                        $component['transaction']['is_cancelled']     = false;
-                        $component['transaction']['notes']            = $transaction->notes;
-                        $component['transaction']['type_key']         = $typeKey;
-                        $component['transaction']['source_wallet']    = $transaction->sourceWallet?->name;
-                        $component['transaction']['dest_wallet']      = $transaction->destinationWallet?->name;
+                        $component['needs_wallet'] = false;
+                        $component['is_draft'] = false;
+                        $component['transaction']['id'] = $transaction->id;
+                        $component['transaction']['draft_id'] = null;
+                        $component['transaction']['is_draft'] = false;
+                        $component['transaction']['is_cleared'] = true;
+                        $component['transaction']['is_cancelled'] = false;
+                        $component['transaction']['notes'] = $transaction->notes;
+                        $component['transaction']['type_key'] = $typeKey;
+                        $component['transaction']['source_wallet'] = $transaction->sourceWallet?->name;
+                        $component['transaction']['dest_wallet'] = $transaction->destinationWallet?->name;
                         $component['transaction']['amount_formatted'] = MoneyFormatter::rupiah($transaction->amount);
                         $component['transaction']['reference_number'] = $transaction->reference_number;
                         $changed = true;
@@ -301,20 +298,20 @@ class DraftConfirmationService
 
                         $trxData = $component['transaction'] ?? [];
 
-                        $isDraftMatch  = isset($trxData['draft_id'])
+                        $isDraftMatch = isset($trxData['draft_id'])
                             && (int) $trxData['draft_id'] === $draftId;
-                        $isLegacyMatch = !isset($trxData['draft_id'])
+                        $isLegacyMatch = ! isset($trxData['draft_id'])
                             && isset($trxData['is_draft'])
                             && $trxData['is_draft'] === true
                             && (int) ($trxData['id'] ?? 0) === $draftId;
 
-                        if (!$isDraftMatch && !$isLegacyMatch) {
+                        if (! $isDraftMatch && ! $isLegacyMatch) {
                             continue;
                         }
 
-                        $component['needs_wallet']                    = false;
-                        $component['transaction']['is_cancelled']     = true;
-                        $component['transaction']['is_cleared']       = false;
+                        $component['needs_wallet'] = false;
+                        $component['transaction']['is_cancelled'] = true;
+                        $component['transaction']['is_cleared'] = false;
                         $changed = true;
                     }
                     unset($component);

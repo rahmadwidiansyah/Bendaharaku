@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -15,13 +17,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $icon
  * @property string|null $keyword
  * @property bool $is_active
- * @property \Illuminate\Support\Carbon|null $deleted_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\TransactionLog> $transactionLogs
+ * @property Carbon|null $deleted_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Collection<int, TransactionLog> $transactionLogs
  * @property-read int|null $transaction_logs_count
- * @property-read \App\Models\TransactionType $type
- * @property-read \App\Models\User $user
+ * @property-read TransactionType $type
+ * @property-read User $user
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Category newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Category newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Category onlyTrashed()
@@ -38,6 +41,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Category whereUserId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Category withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Category withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class Category extends Model

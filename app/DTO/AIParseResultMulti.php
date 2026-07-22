@@ -21,13 +21,13 @@ namespace App\DTO;
 readonly class AIParseResultMulti
 {
     /**
-     * @param bool                $success      Apakah parsing berhasil
-     * @param ParsedTransaction[] $transactions Array hasil parsing (kosong jika gagal)
-     * @param float               $confidence   Rata-rata confidence seluruh transaksi
-     * @param string|null         $error        Pesan error jika gagal
-     * @param array               $usage        Token usage { prompt, completion, total }
-     * @param string              $provider     Nama provider yang digunakan
-     * @param string              $model        Model yang digunakan
+     * @param  bool  $success  Apakah parsing berhasil
+     * @param  ParsedTransaction[]  $transactions  Array hasil parsing (kosong jika gagal)
+     * @param  float  $confidence  Rata-rata confidence seluruh transaksi
+     * @param  string|null  $error  Pesan error jika gagal
+     * @param  array  $usage  Token usage { prompt, completion, total }
+     * @param  string  $provider  Nama provider yang digunakan
+     * @param  string  $model  Model yang digunakan
      */
     public function __construct(
         public bool $success,
