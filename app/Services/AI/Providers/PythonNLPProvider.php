@@ -15,38 +15,25 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
-/**
- * Provider untuk Python NLP local service (FastAPI + thefuzz).
- * Dipanggil sebagai Circuit Breaker 1 sebelum LLM eksternal (Gemini/OpenAI/DeepSeek).
- * Source: https://github.com/rahmadwidiansyah/script_pencatat_keuangan
- *
- * Endpoint: POST /analyze
- * Auth    : Header X-API-KEY
- */
 class PythonNLPProvider implements AIProviderInterface
 {
     private string $baseUrl;
-    private string $apiKey;
 
     public function __construct()
     {
-        $this->baseUrl = rtrim((string) config('services.python_ai.url', ''), '/');
-        $this->apiKey  = (string) config('services.python_ai.key', '');
+        $this->baseUrl = rtrim((string) config('services.ai_parser.url', 'http://ai-parser:3987'), '/');
     }
 
     public function parseTransaction(AiProviderRequest $request): AIParseResult
     {
         if (blank($this->baseUrl)) {
-            Log::warning('PythonNLPProvider: PYTHON_AI_URL tidak dikonfigurasi, skip.');
-            return AIParseResult::failure('Python NLP tidak dikonfigurasi.', 'python-nlp', 'local');
+            Log::warning('PythonNLPProvider: AI_PARSER_URL tidak dikonfigurasi, skip.');
+            return AIParseResult::failure('AI Parser tidak dikonfigurasi.', 'python-nlp', 'local');
         }
 
         try {
             $response = Http::timeout(8)
-                ->withHeaders([
-                    'X-API-KEY'    => $this->apiKey,
-                    'Content-Type' => 'application/json',
-                ])
+                ->withHeaders(['Content-Type' => 'application/json'])
                 ->post($this->baseUrl . '/analyze', [
                     'text'       => $request->text,
                     'wallets'    => $request->wallets,
@@ -59,7 +46,7 @@ class PythonNLPProvider implements AIProviderInterface
                     'body'   => $response->body(),
                 ]);
                 return AIParseResult::failure(
-                    "Python NLP Error ({$response->status()}): {$response->body()}",
+                    "AI Parser Error ({$response->status()}): {$response->body()}",
                     'python-nlp',
                     'local'
                 );
@@ -67,16 +54,14 @@ class PythonNLPProvider implements AIProviderInterface
 
             $data = $response->json();
 
-            // Validasi field wajib ada
             if (empty($data['success']) || !isset($data['amount']) || $data['amount'] === null) {
                 return AIParseResult::failure(
-                    'Python NLP: Response tidak valid atau amount kosong.',
+                    'AI Parser: Response tidak valid atau amount kosong.',
                     'python-nlp',
                     'local'
                 );
             }
 
-            // Normalize transaction_type string -> TransactionIntent enum
             $intentString      = strtolower(trim($data['transaction_type'] ?? 'expense'));
             $transactionIntent = TransactionIntent::tryFrom($intentString) ?? TransactionIntent::Expense;
 
@@ -108,21 +93,16 @@ class PythonNLPProvider implements AIProviderInterface
                 'url'     => $this->baseUrl,
                 'message' => $e->getMessage(),
             ]);
-            return AIParseResult::failure('Python NLP timeout/tidak terjangkau.', 'python-nlp', 'local');
+            return AIParseResult::failure('AI Parser timeout/tidak terjangkau.', 'python-nlp', 'local');
         } catch (Throwable $e) {
             Log::error('PythonNLPProvider: Unexpected error', [
                 'message' => $e->getMessage(),
                 'text'    => $request->text,
             ]);
-            return AIParseResult::failure('Python NLP error: ' . $e->getMessage(), 'python-nlp', 'local');
+            return AIParseResult::failure('AI Parser error: ' . $e->getMessage(), 'python-nlp', 'local');
         }
     }
 
-    /**
-     * Python NLP service hanya mendukung single transaction (/analyze).
-     * Multi-transaction tidak didukung — kembalikan failure agar pipeline
-     * melanjutkan ke LLM berikutnya (Gemini/OpenAI/DeepSeek).
-     */
     public function parseMultiTransaction(AiProviderRequest $request): AIParseResultMulti
     {
         Log::info('PythonNLPProvider: parseMultiTransaction tidak didukung, skip ke LLM berikutnya.');

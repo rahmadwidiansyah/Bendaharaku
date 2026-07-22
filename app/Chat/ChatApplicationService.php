@@ -681,28 +681,50 @@ class ChatApplicationService
             );
         }
 
-        // Buat baris untuk setiap dompet
         $totalBalance = 0.0;
-        $lines        = [];
+        $items        = [];
 
         foreach ($wallets as $w) {
             $totalBalance += (float) $w->balance;
-            $lines[] = \App\Support\MoneyFormatter::rupiah((float) $w->balance) . ' — ' . $w->name;
+            $items[] = [
+                'name'        => $w->name,
+                'group_type'  => $w->group_type,
+                'icon'        => $w->icon ?? '💳',
+                'amount'      => \App\Support\MoneyFormatter::rupiah((float) $w->balance),
+            ];
         }
 
-        // Gunakan ReportSectionComponent agar frontend dapat merender list dengan styling konsisten
+        $headerItems = [
+            [
+                'label' => trans('chat.command.balance_total_label', [], $locale),
+                'value' => \App\Support\MoneyFormatter::rupiah($totalBalance),
+            ],
+            [
+                'label' => trans('chat.command.balance_wallet_count', ['count' => $wallets->count()], $locale),
+                'value' => '',
+            ],
+        ];
+
         $components = [
+            // Header section
+            new \App\Chat\Components\ReportSectionComponent(
+                title: trans('chat.command.balance_title', [], $locale),
+                emoji: '💳',
+                items: $headerItems,
+                translationKey: 'chat.command.balance_title',
+                total: '',
+                count: 0,
+            ),
+            // Divider
+            new \App\Chat\Components\DividerComponent(),
+            // Wallet list
             new \App\Chat\Components\ReportSectionComponent(
                 title: '',
-                emoji: '💳',
-                items: $lines,
-                translationKey: 'chat.command.balance_title',
-            ),
-            new DividerComponent(),
-            new TextComponent(
-                translationKey: 'chat.command.balance_total',
-                params: ['total' => \App\Support\MoneyFormatter::rupiah($totalBalance)],
-                bold: true,
+                emoji: '',
+                items: $items,
+                translationKey: 'chat.command.balance_list',
+                total: \App\Support\MoneyFormatter::rupiah($totalBalance),
+                count: $wallets->count(),
             ),
         ];
 
@@ -791,17 +813,43 @@ class ChatApplicationService
             ], $metadata);
         }
 
-        $lines = [];
-        foreach ($categories->groupBy(fn($category) => $category->type?->name ?? 'Other') as $typeName => $items) {
-            $lines[] = "{$typeName}: " . $items->pluck('category_name')->join(', ');
+        $grouped = $categories->groupBy(fn($category) => $category->type?->name ?? 'Other');
+
+        // Build structured sections: each section has a type header + list of category names
+        $sections = [];
+        foreach ($grouped as $typeName => $items) {
+            $sectionKey = match (strtolower($typeName)) {
+                'income'   => 'chat.command.category_section_income',
+                'expense'  => 'chat.command.category_section_expense',
+                'transfer' => 'chat.command.category_section_transfer',
+                'debt'     => 'chat.command.category_section_debt',
+                'receivable' => 'chat.command.category_section_receivable',
+                default    => null,
+            };
+            $typeIcon = match (strtolower($typeName)) {
+                'income'     => '💰',
+                'expense'    => '💸',
+                'transfer'   => '🔄',
+                'debt'       => '🤝',
+                'receivable' => '💵',
+                default      => '📁',
+            };
+
+            $sections[] = [
+                'type_name' => $typeName,
+                'type_icon' => $typeIcon,
+                'label_key' => $sectionKey,
+                'categories' => $items->pluck('category_name')->values()->all(),
+            ];
         }
 
         $components = [
             new \App\Chat\Components\ReportSectionComponent(
                 title: '',
                 emoji: '🏷️',
-                items: $lines,
+                items: $sections,
                 translationKey: 'chat.command.category_title',
+                count: $categories->count(),
             ),
         ];
 
@@ -865,9 +913,16 @@ class ChatApplicationService
 
         $total = (float) $transactions->sum('amount');
 
-        $lines = [];
+        $items = [];
         foreach ($transactions->take(10) as $transaction) {
-            $lines[] = $this->formatTransactionLine($transaction);
+            $items[] = [
+                'date'          => $transaction->date?->format('d/m') ?? '-',
+                'type'          => strtolower($transaction->type?->name ?? 'transaksi'),
+                'category'      => $transaction->category?->category_name ?? '-',
+                'category_icon' => $transaction->category?->icon ?? '📄',
+                'amount'        => \App\Support\MoneyFormatter::rupiah((float) $transaction->amount),
+                'wallet'        => $transaction->sourceWallet?->name ?? $transaction->destinationWallet?->name ?? '-',
+            ];
         }
 
         $emoji = $type === 'income' ? '🟢' : '🔴';
@@ -876,8 +931,10 @@ class ChatApplicationService
             new \App\Chat\Components\ReportSectionComponent(
                 title: '',
                 emoji: $emoji,
-                items: $lines,
+                items: $items,
                 translationKey: $titleKey,
+                total: \App\Support\MoneyFormatter::rupiah($total),
+                count: $transactions->count(),
             ),
             new TextComponent(
                 translationKey: 'chat.command.month_type_total',

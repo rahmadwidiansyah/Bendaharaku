@@ -1,0 +1,60 @@
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Environment
+.env
+.env.*
+!env.example
+
+# Node — excluded from prod stage (copied from frontend stage)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Laravel — excluded from prod stage (copied from vendor stage)
+vendor/
+.phpunit.*
+
+# Storage (runtime, not buildtime)
+storage/framework/cache/data/*
+storage/logs/*
+storage/debugbar/*
+bootstrap/cache/*.php
+
+# Python AI Parser — build artifacts only
+script_pencatat_keuangan/.venv/
+script_pencatat_keuangan/__pycache__/
+script_pencatat_keuangan/*.pyc
+script_pencatat_keuangan/.pytest_cache/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker config
+docker-compose*.yml
+.dockerignore
+
+# CI
+.github/
+
+# Build (runtime, not buildtime)
+public/build/
+public/hot
+
+# Logs
+*.log
+
+# Misc
+/md_files/
+/md file/

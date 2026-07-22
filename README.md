@@ -17,12 +17,21 @@ Ingin melihat dan mencoba Bendaharaku V4 secara langsung? Silakan kunjungi tauta
 
 ---
 
-## 🔗 Arsitektur & Repositori
+## 🔗 Arsitektur
 
-Sistem ini berjalan dengan arsitektur terpisah untuk memastikan performa yang maksimal:
-- **Core Web & Backend (Repo Ini):** Menggunakan Laravel, Vue 3, Inertia.js, Tailwind CSS, dan PostgreSQL.
-- **AI Microservice:** Menangani pemrosesan teks Telegram menggunakan Python FastAPI. Source code dapat diakses di repositori berikut:  
-  👉 **[script_pencatat_keuangan](https://github.com/rahmadwidiansyah/script_pencatat_keuangan.git)**
+Proyek ini adalah **monorepo** — seluruh service berada dalam satu repository:
+
+```
+Bendaharaku/
+├── app/                          # Laravel backend (PHP 8.4)
+├── resources/                    # Vue 3 frontend (Inertia)
+├── script_pencatat_keuangan/     # Python AI Parser (FastAPI + thefuzz)
+├── docker/                       # Entrypoint, nginx config
+├── Dockerfile                    # Multi-stage build (Laravel + Python)
+└── docker-compose.yml            # Semua service
+```
+
+Komunikasi Laravel ↔ Python dilakukan melalui HTTP internal (Docker bridge network), tanpa API key.
 
 ## ✨ Fitur Utama
 
@@ -51,23 +60,23 @@ git clone https://github.com/rahmadwidiansyah/Bendaharaku.git
 cd Bendaharaku
 ```
 
-**2. Install Composer Dependencies (Initial)**
-```bash
-docker run --rm \
--u "$(id -u):$(id -g)" \
--v "$(pwd):/var/www/html" \
--w /var/www/html \
-laravelsail/php83-composer:latest \
-composer install --ignore-platform-reqs
-```
-
-**3. Setup Environment File**
+**2. Setup Environment File**
 ```bash
 cp .env.example .env
 ```
 *(Lihat bagian [Konfigurasi Environment](#-konfigurasi-environment) di bawah untuk mengatur API Keys).*
 
-**4. Start the Containers**
+**3. Install dependencies & build**
+```bash
+# Composer
+docker compose run --rm node run ci
+docker compose run --rm node run build
+
+# Frontend (development mode with hot reload)
+docker compose run --rm node run dev
+```
+
+**4. Start all containers**
 ```bash
 docker compose up -d
 ```
@@ -82,10 +91,10 @@ docker compose exec app php artisan key:generate
 docker compose exec app php artisan migrate
 ```
 
-**7. Install & Build Frontend Assets**
+**7. Verify**
 ```bash
-docker compose exec app npm install
-docker compose exec app npm run dev
+curl http://localhost:4000/health
+# → {"status":"ok","service":"laravel","time":"..."}
 ```
 
 ---
@@ -97,7 +106,7 @@ Setelah melakukan *copy* file `.env` (Langkah 3), pastikan Anda melengkapi krede
 ```env
 # Koneksi Database (Sudah diatur otomatis oleh Docker Compose)
 DB_CONNECTION=pgsql
-DB_HOST=pgsql
+DB_HOST=db
 DB_PORT=5432
 DB_DATABASE=bendaharaku
 DB_USERNAME=sail
@@ -108,10 +117,9 @@ GOOGLE_CLIENT_ID="your_google_client_id"
 GOOGLE_CLIENT_SECRET="your_google_client_secret"
 GOOGLE_REDIRECT_URI="http://localhost:8000/auth/google/callback"
 
-# Integrasi Telegram & AI Python
+# Integrasi Telegram & AI Parser
 TELEGRAM_BOT_TOKEN="your_telegram_bot_token"
-PYTHON_AI_URL="http://ip_atau_domain_python_ai_kalian:8001"
-PYTHON_AI_KEY="your_ai_secret_key"
+AI_PARSER_URL="http://ai-parser:3987"
 ```
 
 > 💡 **Catatan untuk Testing Telegram:** Saat *development* di `localhost`, URL web Anda tidak bisa diakses langsung oleh Telegram. Gunakan Ngrok atau Cloudflare Tunnel, lalu setel webhook Telegram ke URL tersebut.

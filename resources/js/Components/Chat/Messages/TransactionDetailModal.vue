@@ -48,15 +48,15 @@ const sourceInfo = computed(() => {
     const ref = props.transaction?.reference_number ?? ''
     const prefix = ref.split('-')[0] ?? ''
     const map = {
-        'WEB': { label: 'Web Chat',     icon: '💬', color: 'text-purple-400' },
-        'TEL': { label: 'Telegram Bot', icon: '📡', color: 'text-blue-400' },
-        'WA':  { label: 'WhatsApp',     icon: '📱', color: 'text-emerald-400' },
-        'DSC': { label: 'Discord',      icon: '🎮', color: 'text-indigo-400' },
-        'API': { label: 'REST API',     icon: '⚡', color: 'text-yellow-400' },
-        'IMP': { label: 'Import',       icon: '📂', color: 'text-orange-400' },
-        'MNL': { label: 'Manual Entry', icon: '✏️', color: 'text-gray-400' },
+        'WEB': { label: t('chat.source.web'),       icon: '💬', color: 'text-purple-400' },
+        'TEL': { label: t('chat.source.telegram'),  icon: '📡', color: 'text-blue-400' },
+        'WA':  { label: t('chat.source.whatsapp'),  icon: '📱', color: 'text-emerald-400' },
+        'DSC': { label: t('chat.source.discord'),   icon: '🎮', color: 'text-indigo-400' },
+        'API': { label: t('chat.source.api'),       icon: '⚡', color: 'text-yellow-400' },
+        'IMP': { label: t('chat.source.import'),    icon: '📂', color: 'text-orange-400' },
+        'MNL': { label: t('chat.source.manual'),    icon: '✏️', color: 'text-gray-400' },
     }
-    return map[prefix] ?? { label: 'Web Dashboard', icon: '🌐', color: 'text-gray-400' }
+    return map[prefix] ?? { label: t('chat.source.dashboard'), icon: '🌐', color: 'text-gray-400' }
 })
 
 function formatDateTime(dt) {

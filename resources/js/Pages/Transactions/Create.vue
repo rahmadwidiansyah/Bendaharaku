@@ -6,6 +6,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useLayoutPreference } from '@/Composables/useLayoutPreference'
 import { useTransactionForm } from '@/Composables/useTransactionForm.js'
+import { useWizardNavigation } from '@/Composables/useWizardNavigation.js'
 
 const { t } = useI18n()
 const { isDesktopLayout } = useLayoutPreference()
@@ -48,6 +49,11 @@ const {
     selectedCategory, activeCategories, activeSubjects, isMoneyIn, selectCategory,
 } = tx
 
+const { goBack, pushStepState } = useWizardNavigation({
+    formStep, resetToStep,
+    onBackFromFirstStep: () => router.visit(route('dashboard')),
+})
+
 onMounted(() => {
     setType('Expense')
     loadWalletFrequency()
@@ -80,6 +86,7 @@ const confirmType = (tab) => {
     }
     // Transfer langsung ke step 2 (form lengkap), tipe lain tetap ke step 2 (kategori)
     formStep.value = 2
+    pushStepState()
     if (!['Transfer', 'Debt', 'Receivable'].includes(tab)) {
         form.category_id = null
     }
@@ -95,6 +102,7 @@ watch(debtSubTab, (val) => {
 const confirmCategory = () => {
     if (!form.category_id && !['Transfer', 'Debt', 'Receivable'].includes(mainTab.value)) return
     formStep.value = 3
+    pushStepState()
     showBottomPanel.value = true
 }
 
@@ -185,6 +193,8 @@ const submit = (closeAfter = true) => {
 const submitAndClose = () => submit(true)
 const submitAndStay  = () => submit(false)
 const handleBack = () => router.visit(route('dashboard'))
+
+// goBack dari composable dipakai oleh tombol X dan gesture Back
 </script>
 
 <template>
@@ -204,7 +214,7 @@ const handleBack = () => router.visit(route('dashboard'))
                     <span class="text-xs font-black text-gray-500 uppercase tracking-widest">Catat Transaksi</span>
                     <button
                         type="button"
-                        @click="handleBack"
+                        @click="goBack"
                         class="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-gray-800 border border-white/10 text-gray-400 hover:text-red-400 hover:border-red-500/30 active:scale-90 transition-all"
                         aria-label="Tutup"
                     >

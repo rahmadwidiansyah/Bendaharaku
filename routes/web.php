@@ -453,6 +453,15 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/loans/{type}', [LoanController::class, 'index'])->name('loans.index');
 });
 
+// Health check
+Route::get('/health', function () {
+    return response()->json([
+        'status'  => 'ok',
+        'service' => 'laravel',
+        'time'    => now()->toIso8601String(),
+    ]);
+});
+
 // Scheduling
 Schedule::command(PruneAiMemoriesCommand::class)->dailyAt('02:00')->withoutOverlapping();
 Schedule::command(AggregateAiMetricsCommand::class)->dailyAt('00:10')->withoutOverlapping();

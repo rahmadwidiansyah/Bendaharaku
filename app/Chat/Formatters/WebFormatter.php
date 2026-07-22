@@ -243,6 +243,8 @@ class WebFormatter implements ChatFormatterInterface
             'emoji' => $c->emoji,
             'items' => array_values($c->items),
             'translationKey' => $c->translationKey,
+            'total' => $c->total,
+            'count' => $c->count,
         ];
     }
 

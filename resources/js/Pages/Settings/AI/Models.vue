@@ -3,7 +3,6 @@ import { Head } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import SettingsLayout from '../Layouts/SettingsLayout.vue';
 import SettingsCard from '@/Components/Settings/SettingsCard.vue';
-import SettingsBreadcrumb from '@/Components/Settings/SettingsBreadcrumb.vue';
 import { useI18n } from 'vue-i18n';
 import { ref, computed, watch } from 'vue';
 import axios from 'axios';

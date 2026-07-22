@@ -43,9 +43,8 @@ return [
     'token' => env('TELEGRAM_BOT_TOKEN'),
   ],
 
-  'python_ai' => [
-    'url' => env('PYTHON_AI_URL'),
-    'key' => env('PYTHON_AI_KEY', 'kunci-rahasia-v4'),
+  'ai_parser' => [
+    'url' => env('AI_PARSER_URL', 'http://ai-parser:3987'),
   ],
 
 ];

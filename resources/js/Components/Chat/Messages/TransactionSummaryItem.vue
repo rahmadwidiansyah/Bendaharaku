@@ -1,0 +1,35 @@
+<script setup>
+import { computed } from 'vue'
+
+const props = defineProps({
+  type:         { type: String, default: 'expense' },
+  category:     { type: String, default: '' },
+  categoryIcon: { type: String, default: '📄' },
+  date:         { type: String, default: '' },
+  amount:       { type: String, default: '' },
+  wallet:       { type: String, default: '' },
+  groupType:    { type: String, default: '' },
+})
+
+const isExpense = computed(() => props.type === 'expense')
+const isWallet = computed(() => !!props.groupType)
+const accentClass = computed(() => {
+  if (isWallet.value) return 'text-white font-bold'
+  return isExpense.value ? 'text-rose-400/90' : 'text-emerald-400/90'
+})
+</script>
+
+<template>
+  <div class="flex items-center gap-2.5 px-3.5 py-1.5 hover:bg-white/[0.02] transition-colors min-h-[2.25rem]">
+    <span class="w-4.5 text-center shrink-0 text-sm leading-none">{{ categoryIcon }}</span>
+    <div class="flex-1 min-w-0">
+      <span class="text-xs font-medium text-gray-200 truncate leading-tight block">{{ category }}</span>
+      <span v-if="groupType" class="text-2xs text-gray-600 leading-tight block mt-px">{{ groupType }}</span>
+      <span v-if="wallet && !isWallet" class="text-2xs text-gray-600 leading-tight block mt-px sm:hidden">{{ wallet }}</span>
+    </div>
+    <div class="text-right shrink-0">
+      <span class="text-xs font-semibold tabular-nums leading-tight" :class="accentClass">{{ amount }}</span>
+      <span v-if="date && !isWallet" class="block text-2xs text-gray-600 leading-tight mt-px">{{ date }}</span>
+    </div>
+  </div>
+</template>

@@ -552,6 +552,7 @@ export default {
                     title:          'Accent Color',
                     description:    'Choose primary accent color',
                     custom:         'Custom Color...',
+                    setAccent:      'Set {name} as accent color',
                 },
             },
             
@@ -968,6 +969,9 @@ export default {
         newPhotoSelected: 'New photo selected — save to apply',
         socialConnections: 'Social & Messaging',
         socialConnectionsDesc: 'Connect messaging apps for AI integration',
+        whatsapp: 'WhatsApp',
+        telegram: 'Telegram',
+        google: 'Google',
 
         // Google OAuth
         google: {
@@ -1148,6 +1152,16 @@ export default {
     // CHAT & SEARCH
     // ────────────────────────────────────────────────────────────────
     chat: {
+        source: {
+            web: 'Web Chat',
+            telegram: 'Telegram Bot',
+            whatsapp: 'WhatsApp',
+            discord: 'Discord',
+            api: 'REST API',
+            import: 'Import',
+            manual: 'Manual Entry',
+            dashboard: 'Web Dashboard',
+        },
         history: 'Chat history',
         placeholder: 'Ask me anything...',
         typing: 'typing...',

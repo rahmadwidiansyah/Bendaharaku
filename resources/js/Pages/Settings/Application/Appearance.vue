@@ -10,7 +10,6 @@ import { applyAccentColor, saveAccentColor, ACCENT_PALETTES, isCustomColor, isVa
 
 const { t } = useI18n();
 
-
 const props = defineProps<{
   userAccentColor: string;
 }>();
@@ -32,30 +31,26 @@ const currentDisplayColor = computed(() => {
 
 const customHexValid = computed(() => isValidHex(customHex.value));
 
-function applyCustomHex() {
-  const hex = customHex.value.trim();
-  if (!isValidHex(hex)) return;
-  accentColor.value = `custom:${hex}`;
-  showCustomPicker.value = false;
-}
-
 function selectPredefined(color: string) {
   accentColor.value = color;
+  customHex.value = '';
   showCustomPicker.value = false;
 }
 
 function handlePickerInput(e: Event) {
-  const val = (e.target as HTMLInputElement).value;
-  customHex.value = val;
-  accentColor.value = `custom:${val}`;
+  customHex.value = (e.target as HTMLInputElement).value;
 }
 
-// Preview langsung saat user klik warna
+watch(customHex, (hex) => {
+  if (isValidHex(hex)) {
+    accentColor.value = `custom:${hex}`;
+  }
+});
+
 watch(accentColor, (color) => {
   applyAccentColor(color);
 });
 
-// Pastikan warna dari DB diterapkan saat halaman dibuka
 onMounted(() => {
   applyAccentColor(accentColor.value);
   if (isCustom.value) {
@@ -73,10 +68,7 @@ const handleSave = async () => {
       theme: theme.value,
       accent_color: accentColor.value,
     });
-
-    // Simpan ke localStorage agar tetap aktif saat reload sebelum DB di-load
     saveAccentColor(accentColor.value);
-
     successMessage.value = t('toast.updated');
     setTimeout(() => { successMessage.value = ''; }, 3000);
   } catch (error: any) {
@@ -141,7 +133,7 @@ const handleSave = async () => {
                 ? 'ring-2 ring-white ring-offset-2 ring-offset-gray-900 scale-105'
                 : 'hover:scale-105 opacity-70 hover:opacity-100',
             ]"
-            :aria-label="`Set ${color} as accent color`"
+            :aria-label="t('settings.application.appearance.accent_color.setAccent', { name: color })"
             :aria-pressed="!isCustom && accentColor === color"
           />
         </div>
@@ -196,16 +188,7 @@ const handleSave = async () => {
                 placeholder="#8B5CF6"
                 maxlength="7"
                 class="flex-1 bg-transparent border-none text-sm text-white font-mono placeholder-gray-600 focus:ring-0 focus:outline-none"
-                @keyup.enter="applyCustomHex"
               />
-              <button
-                type="button"
-                @click="applyCustomHex"
-                :disabled="!customHexValid"
-                class="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:cursor-not-allowed disabled:text-gray-400 text-white transition-colors"
-              >
-                {{ t('common.save') }}
-              </button>
             </div>
             <p v-if="customHex && !customHexValid" class="mt-1 text-2xs text-red-400 ml-1">
               Format HEX tidak valid. Gunakan format #RRGGBB atau #RGB.
