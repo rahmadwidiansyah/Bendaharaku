@@ -7,6 +7,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useLayoutPreference } from '@/Composables/useLayoutPreference'
 import { useTransactionForm } from '@/Composables/useTransactionForm.js'
+import { useWizardNavigation } from '@/Composables/useWizardNavigation.js'
 
 const { t } = useI18n()
 const { isDesktopLayout } = useLayoutPreference()
@@ -67,10 +68,15 @@ const {
     selectedCategory, activeCategories, activeSubjects, isMoneyIn, selectCategory,
 } = tx
 
-onMounted(() => { loadWalletFrequency() })
-
 // ─── Step flow (Edit mulai dari step 2, bisa kembali ke type selector) ──
 const formStep = ref(2)
+
+const { goBack, pushStepState } = useWizardNavigation({
+    formStep, resetToStep,
+    onBackFromFirstStep: () => router.visit(route('dashboard')),
+})
+
+onMounted(() => { loadWalletFrequency() })
 
 // TYPE_ITEMS — sama dengan Create untuk type selector chip
 const TYPE_ITEMS = computed(() => [
@@ -95,6 +101,7 @@ const selectType = (tab) => {
         form.category_id = null
     }
     formStep.value = 2
+    pushStepState()
 }
 
 // Sync debt_sub_type saat user ganti sub-tab (Dapat Hutang ↔ Bayar Hutang)
@@ -107,6 +114,7 @@ watch(debtSubTab, (val) => {
 const goToNominal = () => {
     if (!form.category_id && !['Transfer', 'Debt', 'Receivable'].includes(mainTab.value)) return
     formStep.value = 3
+    pushStepState()
 }
 
 // Navigate back ke step tertentu — Edit tidak seagresif Create karena sudah ada data
@@ -191,7 +199,7 @@ const handleBack = () => router.visit(route('dashboard'))
                         <button type="button" @click="destroy" class="w-8 h-8 flex items-center justify-center rounded-full bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 active:scale-90 transition-all" :aria-label="$t('transaction.deleteTitle')">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                         </button>
-                        <button type="button" @click="handleBack" class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-800 border border-white/10 text-gray-400 hover:text-red-400 hover:border-red-500/30 active:scale-90 transition-all" aria-label="Tutup">
+                        <button type="button" @click="goBack" class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-800 border border-white/10 text-gray-400 hover:text-red-400 hover:border-red-500/30 active:scale-90 transition-all" aria-label="Tutup">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                         </button>
                     </div>

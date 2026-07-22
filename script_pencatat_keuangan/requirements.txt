@@ -1,0 +1,6 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+thefuzz==0.22.1
+rapidfuzz==3.12.2
+python-multipart==0.0.20

@@ -204,7 +204,10 @@ class TelegramFormatter implements ChatFormatterInterface
             $maxBalLen  = 0;
 
             foreach ($c->items as $item) {
-                if (str_contains($item, ':')) {
+                if (is_array($item)) {
+                    $name   = $item['name'] ?? $item['category'] ?? '-';
+                    $balStr = $item['amount'] ?? '';
+                } elseif (str_contains($item, ':')) {
                     $parts = explode(':', $item, 2);
                     $name = trim($parts[0]);
                     $balStr = trim($parts[1]);
@@ -246,8 +249,32 @@ class TelegramFormatter implements ChatFormatterInterface
                 }
             }
         } else {
-            foreach ($c->items as $item) {
-                $lines[] = "▫️ {$item}";
+            $isCategorySection = str_contains(strtolower($c->translationKey ?? ''), 'category');
+
+            if ($isCategorySection && !empty($c->items) && is_array($c->items[0]) && isset($c->items[0]['categories'])) {
+                // Structured category sections
+                foreach ($c->items as $section) {
+                    $typeIcon = $section['type_icon'] ?? '📁';
+                    $typeLabel = $section['label_key'] ? trans($section['label_key'], [], $locale) : ($section['type_name'] ?? 'Other');
+                    $lines[] = "{$typeIcon} *{$typeLabel}*";
+                    foreach ($section['categories'] as $cat) {
+                        $lines[] = "  • {$cat}";
+                    }
+                    $lines[] = '';
+                }
+            } else {
+                foreach ($c->items as $item) {
+                    if (is_array($item)) {
+                        $icon     = $item['category_icon'] ?? '📄';
+                        $category = $item['category'] ?? '-';
+                        $amount   = $item['amount'] ?? '';
+                        $date     = $item['date'] ?? '';
+                        $wallet   = $item['wallet'] ?? '';
+                        $lines[]  = "{$icon} {$category} — {$amount} ({$date} - {$wallet})";
+                    } else {
+                        $lines[] = "▫️ {$item}";
+                    }
+                }
             }
         }
 

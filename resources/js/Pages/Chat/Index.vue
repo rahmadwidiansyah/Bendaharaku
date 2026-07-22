@@ -127,7 +127,7 @@ async function handleRegenerate(botMessage) {
             flex column, full viewport height.
             `relative` agar FAB bisa absolute di dalam container ini.
         -->
-        <div class="flex flex-col h-screen max-w-2xl mx-auto relative">
+        <div class="flex flex-col max-w-2xl mx-auto relative" style="height: 100dvh;">
 
             <!-- Header -->
             <ChatHeader

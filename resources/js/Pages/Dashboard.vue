@@ -511,7 +511,7 @@ const handleImageError = (e, fallback) => {
 												<div class="flex-1 min-w-0 pr-2">
 													<div class="flex items-center gap-1.5 mb-1">
 														<p class="text-xs font-bold text-white leading-tight">
-															{{ trx.category?.category_name || 'Transfer' }}
+															{{ trx.category?.category_name || t('types.transfer') }}
 														</p>
 														<!-- Indikator DRAFT -->
 														<span
@@ -520,7 +520,7 @@ const handleImageError = (e, fallback) => {
 															<svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
 																<path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
 															</svg>
-															Draft
+															{{ t('transaction.draft') }}
 														</span>
 													</div>
 													<div class="flex items-center gap-1.5 min-w-0">

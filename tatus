@@ -1,0 +1,1314 @@
+[1mdiff --git a/.gitignore b/.gitignore[m
+[1mindex bb92942..f126cc6 100644[m
+[1m--- a/.gitignore[m
+[1m+++ b/.gitignore[m
+[36m@@ -24,3 +24,5 @@[m [mHomestead.json[m
+ Homestead.yaml[m
+ Thumbs.db[m
+ .env.save[m
+[32m+[m[32m/md_files/[m
+[32m+[m[32m/md file/[m
+[1mdiff --git a/app/Actions/ProcessTransactionAction.php b/app/Actions/ProcessTransactionAction.php[m
+[1mindex 472845a..ac84558 100644[m
+[1m--- a/app/Actions/ProcessTransactionAction.php[m
+[1m+++ b/app/Actions/ProcessTransactionAction.php[m
+[36m@@ -33,12 +33,16 @@[m [mpublic function create(array $data, int $userId, string $sourcePrefix = 'TRX'):[m
+         return DB::transaction(function () use ($data, $userId, $sourcePrefix) {[m
+             $user = User::findOrFail($userId);[m
+ [m
+[31m-            // Transfer tidak memiliki kategori user — resolve Transfer system category[m
+[31m-            $isTransfer = strtolower($data['transaction_type'] ?? '') === 'transfer'[m
+[31m-                       || empty($data['category_id']);[m
+[32m+[m[32m            // Resolve kategori: Transfer, Debt, Receivable menggunakan system category otomatis.[m
+[32m+[m[32m            // Category_id dari form bisa null untuk tipe-tipe tersebut karena sudah ditentukan sistem.[m
+[32m+[m[32m            $type = strtolower($data['transaction_type'] ?? '');[m
+ [m
+[31m-            if ($isTransfer) {[m
+[32m+[m[32m            if ($type === 'transfer' || ($type !== 'debt' && $type !== 'receivable' && empty($data['category_id']))) {[m
+                 $category = $this->resolveTransferCategory($userId);[m
+[32m+[m[32m            } elseif (in_array($type, ['debt', 'receivable'])) {[m
+[32m+[m[32m                // Debt/Receivable: auto-resolve dari system_key berdasarkan debt_sub_type[m
+[32m+[m[32m                $subType = $data['debt_sub_type'] ?? null;[m
+[32m+[m[32m                $category = $this->resolveSystemCategory($userId, $type, $subType, $data['category_id'] ?? null);[m
+             } else {[m
+                 $category = Category::where('user_id', $userId)->where('id', $data['category_id'])->firstOrFail();[m
+             }[m
+[36m@@ -101,12 +105,14 @@[m [mpublic function update(TransactionLog $transaction, array $data): TransactionLog[m
+         return DB::transaction(function () use ($transaction, $data, $userId) {[m
+             $user = User::findOrFail($userId);[m
+ [m
+[31m-            // Transfer tidak memiliki kategori user — resolve Transfer system category[m
+[31m-            $isTransfer = strtolower($data['transaction_type'] ?? '') === 'transfer'[m
+[31m-                       || empty($data['category_id']);[m
+[32m+[m[32m            // Resolve kategori — sama dengan create()[m
+[32m+[m[32m            $type = strtolower($data['transaction_type'] ?? '');[m
+ [m
+[31m-            if ($isTransfer) {[m
+[32m+[m[32m            if ($type === 'transfer' || ($type !== 'debt' && $type !== 'receivable' && empty($data['category_id']))) {[m
+                 $newCategory = $this->resolveTransferCategory($userId);[m
+[32m+[m[32m            } elseif (in_array($type, ['debt', 'receivable'])) {[m
+[32m+[m[32m                $subType = $data['debt_sub_type'] ?? null;[m
+[32m+[m[32m                $newCategory = $this->resolveSystemCategory($userId, $type, $subType, $data['category_id'] ?? null);[m
+             } else {[m
+                 $newCategory = Category::where('user_id', $userId)->where('id', $data['category_id'])->firstOrFail();[m
+             }[m
+[36m@@ -161,6 +167,7 @@[m [mpublic function update(TransactionLog $transaction, array $data): TransactionLog[m
+     /**[m
+      * Mengkonfirmasi transaksi Draft menjadi transaksi terkonfirmasi.[m
+      * Memutasi saldo dompet yang sebelumnya ditahan karena status draft.[m
+[32m+[m[32m     * Membersihkan tag [DRAFT AI] dan varian sejenis dari field notes.[m
+      */[m
+     public function confirm(TransactionLog $transaction): TransactionLog[m
+     {[m
+[36m@@ -180,9 +187,21 @@[m [mpublic function confirm(TransactionLog $transaction): TransactionLog[m
+             $mainWallet   = ($source->group_type !== 'System') ? $source : $destination;[m
+             $balanceAfter = Wallet::where('id', $mainWallet->id)->value('balance');[m
+ [m
+[32m+[m[32m            // Bersihkan semua tag draft dari notes agar transaksi final tidak[m
+[32m+[m[32m            // menampilkan artefak draft seperti "[DRAFT AI]" atau "[DRAFT AI: wallet belum dipilih]"[m
+[32m+[m[32m            $cleanNotes = $transaction->notes !== null[m
+[32m+[m[32m                ? trim(preg_replace('/\s*\[DRAFT AI[^\]]*\]/u', '', $transaction->notes))[m
+[32m+[m[32m                : null;[m
+[32m+[m
+[32m+[m[32m            // Normalkan string kosong menjadi null[m
+[32m+[m[32m            if ($cleanNotes === '') {[m
+[32m+[m[32m                $cleanNotes = null;[m
+[32m+[m[32m            }[m
+[32m+[m
+             $transaction->update([[m
+[31m-                'is_cleared'     => true,[m
+[31m-                'balance_after'  => $balanceAfter,[m
+[32m+[m[32m                'is_cleared'    => true,[m
+[32m+[m[32m                'balance_after' => $balanceAfter,[m
+[32m+[m[32m                'notes'         => $cleanNotes,[m
+             ]);[m
+ [m
+             return $transaction;[m
+[36m@@ -226,11 +245,17 @@[m [mprivate function resolveTransferCategory(int $userId): Category[m
+             ]);[m
+         }[m
+ [m
+[31m-        // Cari kategori Transfer yang sudah ada milik user[m
+[32m+[m[32m        // Cari kategori Transfer yang sudah ada milik user (TRANSFER system_key lebih diutamakan)[m
+         $category = Category::where('user_id', $userId)[m
+[31m-            ->where('type_id', $transferType->id)[m
+[32m+[m[32m            ->where('system_key', 'TRANSFER')[m
+             ->first();[m
+ [m
+[32m+[m[32m        if (!$category) {[m
+[32m+[m[32m            $category = Category::where('user_id', $userId)[m
+[32m+[m[32m                ->where('type_id', $transferType->id)[m
+[32m+[m[32m                ->first();[m
+[32m+[m[32m        }[m
+[32m+[m
+         // Fallback: buat jika belum ada (user baru / belum di-seed)[m
+         if (!$category) {[m
+             $category = Category::create([[m
+[36m@@ -240,12 +265,63 @@[m [mprivate function resolveTransferCategory(int $userId): Category[m
+                 'icon'          => '🔄',[m
+                 'keyword'       => 'trf, transfer',[m
+                 'is_active'     => true,[m
+[32m+[m[32m                'system_key'    => 'TRANSFER',[m
+             ]);[m
+         }[m
+ [m
+         return $category;[m
+     }[m
+ [m
+[32m+[m[32m    /**[m
+[32m+[m[32m     * Resolve kategori sistem untuk Debt dan Receivable berdasarkan system_key.[m
+[32m+[m[32m     *[m
+[32m+[m[32m     * Prioritas:[m
+[32m+[m[32m     * 1. Jika category_id dari form sudah terisi, gunakan langsung (validasi milik user).[m
+[32m+[m[32m     * 2. Jika tidak, resolve berdasarkan system_key menggunakan debt_sub_type.[m
+[32m+[m[32m     *[m
+[32m+[m[32m     * Mapping system_key:[m
+[32m+[m[32m     *   Debt:[m
+[32m+[m[32m     *     sub_type = 'loan' / 'income'  → system_key = LOAN (Dapat Hutangan)[m
+[32m+[m[32m     *     sub_type = 'payment' / 'expense' → system_key = DEBT_PAYMENT (Bayar Hutang)[m
+[32m+[m[32m     *   Receivable:[m
+[32m+[m[32m     *     sub_type = 'give' / 'expense'  → system_key = RECEIVABLE (Kasih Piutang)[m
+[32m+[m[32m     *     sub_type = 'receive' / 'income' → system_key = RECEIVABLE_PAYMENT (Terima Bayar Piutang)[m
+[32m+[m[32m     */[m
+[32m+[m[32m    private function resolveSystemCategory(int $userId, string $type, ?string $subType, ?int $categoryId): Category[m
+[32m+[m[32m    {[m
+[32m+[m[32m        // Jika form sudah mengirim category_id yang valid, gunakan itu[m
+[32m+[m[32m        if (!empty($categoryId)) {[m
+[32m+[m[32m            $cat = Category::where('user_id', $userId)->where('id', $categoryId)->first();[m
+[32m+[m[32m            if ($cat) return $cat;[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        // Tentukan system_key berdasarkan tipe dan sub-tipe[m
+[32m+[m[32m        $systemKey = match (true) {[m
+[32m+[m[32m            $type === 'debt' && in_array($subType, ['loan', 'income', null])      => 'LOAN',[m
+[32m+[m[32m            $type === 'debt' && in_array($subType, ['payment', 'expense'])         => 'DEBT_PAYMENT',[m
+[32m+[m[32m            $type === 'receivable' && in_array($subType, ['give', 'expense'])      => 'RECEIVABLE',[m
+[32m+[m[32m            $type === 'receivable' && in_array($subType, ['receive', 'income'])    => 'RECEIVABLE_PAYMENT',[m
+[32m+[m[32m            // Default fallbacks[m
+[32m+[m[32m            $type === 'debt'       => 'LOAN',[m
+[32m+[m[32m            $type === 'receivable' => 'RECEIVABLE',[m
+[32m+[m[32m            default                => null,[m
+[32m+[m[32m        };[m
+[32m+[m
+[32m+[m[32m        if ($systemKey !== null) {[m
+[32m+[m[32m            $cat = Category::where('user_id', $userId)->where('system_key', $systemKey)->first();[m
+[32m+[m[32m            if ($cat) return $cat;[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        // Last resort: ambil kategori pertama dari tipe tersebut[m
+[32m+[m[32m        $transactionType = \App\Models\TransactionType::where('name', ucfirst($type))->first();[m
+[32m+[m[32m        if ($transactionType) {[m
+[32m+[m[32m            $cat = Category::where('user_id', $userId)->where('type_id', $transactionType->id)->first();[m
+[32m+[m[32m            if ($cat) return $cat;[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        throw new InvalidArgumentException("Kategori sistem untuk tipe '{$type}' tidak ditemukan.");[m
+[32m+[m[32m    }[m
+[32m+[m
+     /**[m
+      * Method Internal: Menerapkan mutasi nominal sesuai preferensi saldo pengguna.[m
+      */[m
+[1mdiff --git a/app/Chat/Adapters/TelegramAdapter.php b/app/Chat/Adapters/TelegramAdapter.php[m
+[1mindex f9c7805..7a2ac25 100644[m
+[1m--- a/app/Chat/Adapters/TelegramAdapter.php[m
+[1m+++ b/app/Chat/Adapters/TelegramAdapter.php[m
+[36m@@ -75,15 +75,13 @@[m [mpublic function handle(array $update): array[m
+ [m
+         $timezone = $user->timezone ?? 'Asia/Jakarta';[m
+ [m
+[31m-        // 3. Handle perintah dasar sebelum AI processing[m
+[31m-        $textLower = strtolower(trim($text));[m
+[31m-        if ($cmd = $this->handleCommand($textLower, $user, $chatId, $locale)) {[m
+[31m-            return $cmd;[m
+[32m+[m[32m        // 4. Kirim typing indicator (hanya untuk non-command/AI query)[m
+[32m+[m[32m        $isCommand = str_starts_with(trim($text), '/')[m
+[32m+[m[32m            || in_array(strtolower(trim($text)), ['hai', 'halo', 'hello', 'hi', 'ping', 'p', 'tes', 'test', 'help', 'tolong']);[m
+[32m+[m[32m        if (!$isCommand) {[m
+[32m+[m[32m            $this->sendMessage($chatId, trans('chat.general.processing', [], $locale));[m
+         }[m
+ [m
+[31m-        // 4. Kirim typing indicator[m
+[31m-        $this->sendMessage($chatId, trans('chat.general.processing', [], $locale));[m
+[31m-[m
+         // 5. Bangun ChatContext + ChatRequest[m
+         $context = ChatContext::make([m
+             platform:       ChatPlatform::Telegram,[m
+[36m@@ -94,6 +92,7 @@[m [mpublic function handle(array $update): array[m
+             metadata:       [[m
+                 'telegram_update_id' => $update['update_id'] ?? null,[m
+                 'first_name'         => $update['message']['from']['first_name'] ?? null,[m
+[32m+[m[32m                'platform'           => 'telegram',[m
+             ],[m
+         );[m
+ [m
+[36m@@ -120,97 +119,6 @@[m [mpublic function handle(array $update): array[m
+         return ['status' => $response->success ? 'success' : 'failed'];[m
+     }[m
+ [m
+[31m-    // ── Commands ──────────────────────────────────────────────────[m
+[31m-[m
+[31m-    /**[m
+[31m-     * Handle perintah platform-specific.[m
+[31m-     * Return array jika ditangani, null jika bukan perintah.[m
+[31m-     */[m
+[31m-    private function handleCommand(string $textLower, User $user, int|string $chatId, string $locale): ?array[m
+[31m-    {[m
+[31m-        if ($textLower === '/saldo') {[m
+[31m-            $this->sendBalanceReport($user, $chatId, $locale);[m
+[31m-            return ['status' => 'success'];[m
+[31m-        }[m
+[31m-[m
+[31m-        if ($textLower === '/web') {[m
+[31m-            $appUrl = config('app.url', 'https://bendaharaku.widihhh.my.id');[m
+[31m-            $msg    = trans('chat.command.web_link_msg', ['url' => $appUrl], $locale);[m
+[31m-            $this->sendMessage($chatId, $msg);[m
+[31m-            return ['status' => 'success'];[m
+[31m-        }[m
+[31m-[m
+[31m-        $greetings = ['/start', '/help', 'hai', 'halo', 'hello', 'p', 'ping', 'tes', 'test', 'help', 'tolong'];[m
+[31m-        if (in_array($textLower, $greetings)) {[m
+[31m-            $this->sendHelpMessage($user, $chatId, $locale);[m
+[31m-            return ['status' => 'success'];[m
+[31m-        }[m
+[31m-[m
+[31m-        return null;[m
+[31m-    }[m
+[31m-[m
+[31m-    private function sendBalanceReport(User $user, int|string $chatId, string $locale): void[m
+[31m-    {[m
+[31m-        $wallets = Wallet::where('user_id', $user->id)[m
+[31m-            ->whereIn('group_type', ['Asset', 'Liquid'])[m
+[31m-            ->orderByDesc('balance')[m
+[31m-            ->get();[m
+[31m-[m
+[31m-        if ($wallets->isEmpty()) {[m
+[31m-            $this->sendMessage($chatId, trans('chat.command.balance_empty', [], $locale));[m
+[31m-            return;[m
+[31m-        }[m
+[31m-[m
+[31m-        $totalBalance = 0;[m
+[31m-        $walletData   = [];[m
+[31m-        $maxNameLen   = 11;[m
+[31m-        $maxBalLen    = 0;[m
+[31m-[m
+[31m-        foreach ($wallets as $w) {[m
+[31m-            $name  = strtoupper($w->name);[m
+[31m-            $bal   = $w->balance; // sudah float karena cast di model Wallet[m
+[31m-            $totalBalance += $bal;[m
+[31m-            $balStr = MoneyFormatter::amount($bal);[m
+[31m-            if (strlen($name) > $maxNameLen) $maxNameLen = strlen($name);[m
+[31m-            if (strlen($balStr) > $maxBalLen) $maxBalLen = strlen($balStr);[m
+[31m-            $walletData[] = ['name' => $name, 'balStr' => $balStr];[m
+[31m-        }[m
+[31m-[m
+[31m-        $totalStr = MoneyFormatter::amount($totalBalance);[m
+[31m-        if (strlen($totalStr) > $maxBalLen) $maxBalLen = strlen($totalStr);[m
+[31m-[m
+[31m-        $textMsg = "```text\n";[m
+[31m-        foreach ($walletData as $wd) {[m
+[31m-            $textMsg .= str_pad($wd['name'], $maxNameLen, ' ', STR_PAD_RIGHT)[m
+[31m-                . ': Rp '[m
+[31m-                . str_pad($wd['balStr'], $maxBalLen, ' ', STR_PAD_LEFT) . "\n";[m
+[31m-        }[m
+[31m-        $textMsg .= str_repeat('-', $maxNameLen + 5 + $maxBalLen) . "\n";[m
+[31m-        $textMsg .= str_pad(trans('chat.command.total_balance', [], $locale), $maxNameLen, ' ', STR_PAD_RIGHT)[m
+[31m-            . ': Rp '[m
+[31m-            . str_pad($totalStr, $maxBalLen, ' ', STR_PAD_LEFT) . "\n```";[m
+[31m-[m
+[31m-        $this->sendMessage($chatId, trans('chat.command.balance_title', [], $locale) . "\n" . $textMsg);[m
+[31m-    }[m
+[31m-[m
+[31m-    private function sendHelpMessage(User $user, int|string $chatId, string $locale): void[m
+[31m-    {[m
+[31m-        $msg  = trans('chat.command.help_greeting', ['name' => $user->name], $locale) . ' ';[m
+[31m-        $msg .= trans('chat.command.help_intro', [], $locale) . "\n\n";[m
+[31m-        $msg .= trans('chat.command.help_guide', [], $locale) . "\n";[m
+[31m-        $msg .= trans('chat.command.help_example_intro', [], $locale) . "\n\n";[m
+[31m-        $msg .= "🔴 *Pengeluaran:* \n`Beli nasi goreng 15k bca`\n`Es jeruk 5000 dana`\n\n";[m
+[31m-        $msg .= "🟢 *Pemasukan:* \n`Gajian 5jt mandiri`\n`Dikasih emak 50rb cash`\n\n";[m
+[31m-        $msg .= "🔵 *Transfer:* \n`Transfer bca ke dana 100k`\n\n";[m
+[31m-        $msg .= "🤝 *Hutang & Piutang (Wajib #Nama):* \n`Pinjam duit 100k bca #Budi`\n\n";[m
+[31m-        $msg .= trans('chat.command.help_commands_title', [], $locale) . "\n";[m
+[31m-        $msg .= trans('chat.command.help_cmd_balance', [], $locale) . "\n";[m
+[31m-        $msg .= trans('chat.command.help_cmd_web', [], $locale) . "\n";[m
+[31m-        $msg .= trans('chat.command.help_cmd_help', [], $locale);[m
+[31m-[m
+[31m-        $this->sendMessage($chatId, $msg);[m
+[31m-    }[m
+[31m-[m
+     // ── Telegram API ──────────────────────────────────────────────[m
+ [m
+     public function sendMessage(int|string $chatId, string $text): void[m
+[1mdiff --git a/app/Chat/Adapters/WebAdapter.php b/app/Chat/Adapters/WebAdapter.php[m
+[1mindex 0b37474..05debe4 100644[m
+[1m--- a/app/Chat/Adapters/WebAdapter.php[m
+[1m+++ b/app/Chat/Adapters/WebAdapter.php[m
+[36m@@ -268,30 +268,51 @@[m [mpublic function getHistory(Conversation $conversation, int $limit = 30, ?int $be[m
+ [m
+     private function syncTransactionCardsWithDb($messages, int $userId)[m
+     {[m
+[31m-        $transactionIds = $messages[m
+[31m-            ->flatMap(function (ChatMessage $message) {[m
+[31m-                return collect($message->content ?? [])[m
+[31m-                    ->filter(fn ($component) => ($component['type'] ?? null) === 'transaction_card')[m
+[31m-                    ->map(fn ($component) => (int) ($component['transaction']['id'] ?? 0))[m
+[31m-                    ->filter();[m
+[31m-            })[m
+[31m-            ->unique()[m
+[31m-            ->values();[m
+[31m-[m
+[31m-        if ($transactionIds->isEmpty()) {[m
+[31m-            return $messages;[m
+[32m+[m[32m        // 1. Kumpulkan semua transaction ID (non-draft) dan draft ID dari messages[m
+[32m+[m[32m        $transactionIds = [];[m
+[32m+[m[32m        $draftIds = [];[m
+[32m+[m
+[32m+[m[32m        foreach ($messages as $message) {[m
+[32m+[m[32m            foreach ($message->content ?? [] as $component) {[m
+[32m+[m[32m                if (($component['type'] ?? null) !== 'transaction_card') {[m
+[32m+[m[32m                    continue;[m
+[32m+[m[32m                }[m
+[32m+[m[32m                $isDraft = (bool) ($component['is_draft'] ?? ($component['transaction']['is_draft'] ?? false));[m
+[32m+[m[32m                $id = (int) ($component['transaction']['id'] ?? 0);[m
+[32m+[m[32m                if ($id > 0) {[m
+[32m+[m[32m                    if ($isDraft) {[m
+[32m+[m[32m                        $draftIds[] = $id;[m
+[32m+[m[32m                    } else {[m
+[32m+[m[32m                        $transactionIds[] = $id;[m
+[32m+[m[32m                    }[m
+[32m+[m[32m                }[m
+[32m+[m[32m            }[m
+         }[m
+ [m
+[31m-        $existingIds = TransactionLog::query()[m
+[31m-            ->where('user_id', $userId)[m
+[31m-            ->whereIn('id', $transactionIds)[m
+[31m-            ->pluck('id')[m
+[31m-            ->map(fn ($id) => (int) $id)[m
+[31m-            ->all();[m
+[32m+[m[32m        $transactionIds = array_values(array_unique($transactionIds));[m
+[32m+[m[32m        $draftIds = array_values(array_unique($draftIds));[m
+[32m+[m
+[32m+[m[32m        // 2. Query data dari DB[m
+[32m+[m[32m        $existingTransactions = collect();[m
+[32m+[m[32m        if (!empty($transactionIds)) {[m
+[32m+[m[32m            $existingTransactions = \App\Models\TransactionLog::query()[m
+[32m+[m[32m                ->where('user_id', $userId)[m
+[32m+[m[32m                ->whereIn('id', $transactionIds)[m
+[32m+[m[32m                ->get()[m
+[32m+[m[32m                ->keyBy('id');[m
+[32m+[m[32m        }[m
+ [m
+[31m-        $existingMap = array_flip($existingIds);[m
+[32m+[m[32m        $existingDrafts = collect();[m
+[32m+[m[32m        if (!empty($draftIds)) {[m
+[32m+[m[32m            $existingDrafts = \App\Models\TransactionDraft::query()[m
+[32m+[m[32m                ->where('user_id', $userId)[m
+[32m+[m[32m                ->whereIn('id', $draftIds)[m
+[32m+[m[32m                ->get()[m
+[32m+[m[32m                ->keyBy('id');[m
+[32m+[m[32m        }[m
+ [m
+[31m-        return $messages->map(function (ChatMessage $message) use ($existingMap) {[m
+[32m+[m[32m        // 3. Update messages content[m
+[32m+[m[32m        return $messages->map(function (ChatMessage $message) use ($userId, $existingTransactions, $existingDrafts) {[m
+             $content = $message->content ?? [];[m
+             $changed = false;[m
+ [m
+[36m@@ -300,14 +321,81 @@[m [mprivate function syncTransactionCardsWithDb($messages, int $userId)[m
+                     continue;[m
+                 }[m
+ [m
+[31m-                $transactionId = (int) ($component['transaction']['id'] ?? 0);[m
+[31m-                if ($transactionId && !isset($existingMap[$transactionId])) {[m
+[31m-                    $component['needs_wallet'] = false;[m
+[31m-                    $component['transaction']['is_cancelled'] = true;[m
+[31m-                    $component['transaction']['is_cleared'] = false;[m
+[31m-                    $changed = true;[m
+[32m+[m[32m                $isDraft = (bool) ($component['is_draft'] ?? ($component['transaction']['is_draft'] ?? false));[m
+[32m+[m[32m                $id = (int) ($component['transaction']['id'] ?? 0);[m
+[32m+[m
+[32m+[m[32m                if (!$id) {[m
+[32m+[m[32m                    continue;[m
+[32m+[m[32m                }[m
+[32m+[m
+[32m+[m[32m                if ($isDraft) {[m
+[32m+[m[32m                    $draft = $existingDrafts->get($id);[m
+[32m+[m[32m                    if (!$draft) {[m
+[32m+[m[32m                        // Draft tidak ditemukan → tandai sebagai cancelled[m
+[32m+[m[32m                        $component['needs_wallet'] = false;[m
+[32m+[m[32m                        $component['transaction']['is_cancelled'] = true;[m
+[32m+[m[32m                        $component['transaction']['is_cleared'] = false;[m
+[32m+[m[32m                        $changed = true;[m
+[32m+[m[32m                    } else {[m
+[32m+[m[32m                        // Draft ditemukan. Cek statusnya[m
+[32m+[m[32m                        if ($draft->status === 'confirmed') {[m
+[32m+[m[32m                            // Draft sudah dikonfirmasi![m
+[32m+[m[32m                            // Dapatkan ID transaksi log yang baru[m
+[32m+[m[32m                            $confirmedLogId = !empty($draft->confirmed_transaction_ids) ? (int) $draft->confirmed_transaction_ids[0] : null;[m
+[32m+[m[32m                            $transaction = $confirmedLogId ? \App\Models\TransactionLog::with(['category', 'sourceWallet', 'destinationWallet', 'type'])->find($confirmedLogId) : null;[m
+[32m+[m
+[32m+[m[32m                            if ($transaction) {[m
+[32m+[m[32m                                $typeKey = match (strtolower($transaction->type?->name ?? '')) {[m
+[32m+[m[32m                                    'income'             => 'income',[m
+[32m+[m[32m                                    'expense'            => 'expense',[m
+[32m+[m[32m                                    'transfer'           => 'transfer',[m
+[32m+[m[32m                                    'debt', 'receivable' => 'debt',[m
+[32m+[m[32m                                    default              => 'other',[m
+[32m+[m[32m                                };[m
+[32m+[m
+[32m+[m[32m                                // Ubah komponen draft menjadi confirmed transaction card[m
+[32m+[m[32m                                $component['needs_wallet'] = false;[m
+[32m+[m[32m                                $component['is_draft'] = false;[m
+[32m+[m[32m                                $component['transaction']['id'] = $transaction->id;[m
+[32m+[m[32m                                $component['transaction']['draft_id'] = null;[m
+[32m+[m[32m                                $component['transaction']['is_draft'] = false;[m
+[32m+[m[32m                                $component['transaction']['is_cleared'] = true;[m
+[32m+[m[32m                                $component['transaction']['is_cancelled'] = false;[m
+[32m+[m[32m                                $component['transaction']['notes'] = $transaction->notes;[m
+[32m+[m[32m                                $component['transaction']['type_key'] = $typeKey;[m
+[32m+[m[32m                                $component['transaction']['source_wallet'] = $transaction->sourceWallet?->name;[m
+[32m+[m[32m                                $component['transaction']['dest_wallet'] = $transaction->destinationWallet?->name;[m
+[32m+[m[32m                                $component['transaction']['amount_formatted'] = \App\Support\MoneyFormatter::rupiah($transaction->amount);[m
+[32m+[m[32m                                $component['transaction']['reference_number'] = $transaction->reference_number;[m
+[32m+[m[32m                                $changed = true;[m
+[32m+[m[32m                            } else {[m
+[32m+[m[32m                                // Jika log tidak ditemukan karena alasan tertentu, set cancelled[m
+[32m+[m[32m                                $component['needs_wallet'] = false;[m
+[32m+[m[32m                                $component['transaction']['is_cancelled'] = true;[m
+[32m+[m[32m                                $component['transaction']['is_cleared'] = false;[m
+[32m+[m[32m                                $changed = true;[m
+[32m+[m[32m                            }[m
+[32m+[m[32m                        } elseif (in_array($draft->status, ['cancelled', 'expired'])) {[m
+[32m+[m[32m                            // Draft dibatalkan atau expired[m
+[32m+[m[32m                            $component['needs_wallet'] = false;[m
+[32m+[m[32m                            $component['transaction']['is_cancelled'] = true;[m
+[32m+[m[32m                            $component['transaction']['is_cleared'] = false;[m
+[32m+[m[32m                            $changed = true;[m
+[32m+[m[32m                        }[m
+[32m+[m[32m                    }[m
+[32m+[m[32m                } else {[m
+[32m+[m[32m                    // Normal transaction card[m
+[32m+[m[32m                    $trx = $existingTransactions->get($id);[m
+[32m+[m[32m                    if (!$trx) {[m
+[32m+[m[32m                        // Transaksi tidak ditemukan (dihapus dari DB)[m
+[32m+[m[32m                        $component['needs_wallet'] = false;[m
+[32m+[m[32m                        $component['transaction']['is_cancelled'] = true;[m
+[32m+[m[32m                        $component['transaction']['is_cleared'] = false;[m
+[32m+[m[32m                        $changed = true;[m
+[32m+[m[32m                    }[m
+                 }[m
+             }[m
+[32m+[m[32m            unset($component);[m
+ [m
+             if ($changed) {[m
+                 $message->forceFill(['content' => $content])->save();[m
+[1mdiff --git a/app/Chat/ChatApplicationService.php b/app/Chat/ChatApplicationService.php[m
+[1mindex 636a298..10968f1 100644[m
+[1m--- a/app/Chat/ChatApplicationService.php[m
+[1m+++ b/app/Chat/ChatApplicationService.php[m
+[36m@@ -9,6 +9,7 @@[m
+ use App\Chat\DTOs\ChatContext;[m
+ use App\Chat\Components\TextComponent;[m
+ use App\Chat\Components\DividerComponent;[m
+[32m+[m[32muse App\Chat\Components\ReportSectionComponent;[m
+ use App\Chat\Components\TransactionCardComponent;[m
+ use App\Chat\Components\SummaryCardComponent;[m
+ use App\Chat\Components\ErrorComponent;[m
+[36m@@ -21,12 +22,15 @@[m
+ use App\Models\MonthlyReport;[m
+ use App\Models\UserAiCredential;[m
+ use App\Models\Wallet;[m
+[32m+[m[32muse App\Models\Category;[m
+[32m+[m[32muse App\Models\TransactionType;[m
+ use App\Services\Chat\ChatTransactionOrchestrator;[m
+ use App\DTO\MultiTransactionResult;[m
+ use App\DTO\MultiTransactionItem;[m
+ use App\Exceptions\AiConfigurationException;[m
+ use App\Exceptions\AiRateLimitException;[m
+ use App\Exceptions\AiTimeoutException;[m
+[32m+[m[32muse App\Exceptions\AiTokenLimitException;[m
+ use App\Exceptions\AiProviderException;[m
+ use App\Exceptions\CategoryNotFoundException;[m
+ use App\Exceptions\WalletNotFoundException;[m
+[36m@@ -82,16 +86,12 @@[m [mpublic function handleMessage(ChatRequest $request): ChatResponse[m
+             'length'   => strlen($text),[m
+         ]);[m
+ [m
+[31m-        // ── Command handling (Web platform) ───────────────────────[m
+[31m-        // TelegramAdapter menangani command sebelum memanggil service ini.[m
+[31m-        // Web platform tidak punya layer tersebut, jadi kita handle di sini.[m
+[32m+[m[32m        // ── Command handling (Unified platform-agnostic) ─────────[m
+         // Command seperti /help, /saldo, dll tidak perlu melewati AI orchestrator.[m
+[31m-        // Guard: HANYA jalankan untuk Web — Telegram sudah handle sendiri.[m
+[31m-        if ($context->platform === \App\Enums\ChatPlatform::Web) {[m
+[31m-            $commandResponse = $this->handleWebCommand($text, $user, $context, $startTime);[m
+[31m-            if ($commandResponse !== null) {[m
+[31m-                return $commandResponse;[m
+[31m-            }[m
+[32m+[m[32m        // Dijalankan untuk semua platform (Web, Telegram, dll) agar response konsisten.[m
+[32m+[m[32m        $commandResponse = $this->handleCommand($text, $user, $context, $startTime);[m
+[32m+[m[32m        if ($commandResponse !== null) {[m
+[32m+[m[32m            return $commandResponse;[m
+         }[m
+ [m
+         try {[m
+[36m@@ -122,6 +122,11 @@[m [mpublic function handleMessage(ChatRequest $request): ChatResponse[m
+         } catch (AiTimeoutException $e) {[m
+             return $this->failureResponse([ErrorDetail::aiTimeout($e->getMessage())], $context, $startTime);[m
+ [m
+[32m+[m[32m        } catch (AiTokenLimitException $e) {[m
+[32m+[m[32m            return $this->failureResponse([[m
+[32m+[m[32m                ErrorDetail::aiTokenLimit($e->getProvider(), $e->getEstimatedTokens())[m
+[32m+[m[32m            ], $context, $startTime);[m
+[32m+[m
+         } catch (AiProviderException $e) {[m
+             return $this->failureResponse([ErrorDetail::aiProviderError($e->getMessage(), $e->getMessage())], $context, $startTime);[m
+ [m
+[36m@@ -172,6 +177,14 @@[m [mprivate function convertSingleSuccess([m
+         array       $metadata,[m
+         string      $originalText,[m
+     ): ChatResponse {[m
+[32m+[m[32m        // ── WEB Draft path ─────────────────────────────────────────[m
+[32m+[m[32m        // Saat source WEB, orchestrator menyimpan ke transaction_drafts dan[m
+[32m+[m[32m        // mengembalikan is_web_draft=true dengan objek TransactionDraft di 'draft'.[m
+[32m+[m[32m        if (!empty($result['is_web_draft'])) {[m
+[32m+[m[32m            return $this->convertWebDraftSuccess($result, $context, $metadata);[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        // ── Transaction Log path (non-WEB atau WEB lama) ───────────[m
+         $trx        = $result['transaction'];[m
+         $isCleared  = $trx->is_cleared;[m
+         $locale     = $context->locale;[m
+[36m@@ -212,6 +225,145 @@[m [mprivate function convertSingleSuccess([m
+         return ChatResponse::draft($components, $metadata);[m
+     }[m
+ [m
+[32m+[m[32m    /**[m
+[32m+[m[32m     * Konversi hasil WEB Draft (is_web_draft = true) ke ChatResponse.[m
+[32m+[m[32m     *[m
+[32m+[m[32m     * Draft tersimpan di transaction_drafts. Frontend akan menerima draft_id[m
+[32m+[m[32m     * (bukan transaction_log id) agar bisa memanggil endpoint /chat/draft/{id}/...[m
+[32m+[m[32m     */[m
+[32m+[m[32m    private function convertWebDraftSuccess([m
+[32m+[m[32m        array       $result,[m
+[32m+[m[32m        ChatContext $context,[m
+[32m+[m[32m        array       $metadata,[m
+[32m+[m[32m    ): ChatResponse {[m
+[32m+[m[32m        /** @var \App\Models\TransactionDraft $draft */[m
+[32m+[m[32m        $draft   = $result['draft'];[m
+[32m+[m[32m        $payload = $draft->payload ?? [];[m
+[32m+[m[32m        $locale  = $context->locale;[m
+[32m+[m
+[32m+[m[32m        // Buat TransactionLog sementara (tidak disimpan) hanya untuk TransactionCardComponent.[m
+[32m+[m[32m        // Ini adalah "view model" — data dari payload draft diformat sebagai TransactionLog[m
+[32m+[m[32m        // agar WebFormatter dapat menggunakan logika rendering yang sudah ada.[m
+[32m+[m[32m        $fakeTrx = $this->buildFakeTransactionFromPayload($payload);[m
+[32m+[m
+[32m+[m[32m        $needsWallet = (bool) ($payload['needs_wallet'] ?? false);[m
+[32m+[m
+[32m+[m[32m        $components = [];[m
+[32m+[m
+[32m+[m[32m        // Kartu transaksi — pakai draftId agar WebFormatter mengirim draft_id ke frontend[m
+[32m+[m[32m        $components[] = new TransactionCardComponent([m
+[32m+[m[32m            transaction: $fakeTrx,[m
+[32m+[m[32m            showDetails: true,[m
+[32m+[m[32m            draftId: $draft->id,[m
+[32m+[m[32m        );[m
+[32m+[m
+[32m+[m[32m        if ($needsWallet) {[m
+[32m+[m[32m            $components[] = new WarningComponent([m
+[32m+[m[32m                messageKey: 'chat.wallet.missing_choose',[m
+[32m+[m[32m            );[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        // Divider + footer AI[m
+[32m+[m[32m        $components[] = new DividerComponent();[m
+[32m+[m[32m        $components[] = new TextComponent([m
+[32m+[m[32m            translationKey: 'chat.transaction.label_original_msg',[m
+[32m+[m[32m        );[m
+[32m+[m[32m        $components[] = new TextComponent([m
+[32m+[m[32m            translationKey: 'chat.transaction.label_ai_provider',[m
+[32m+[m[32m            params: [[m
+[32m+[m[32m                'provider'   => $metadata['provider'] ?? '',[m
+[32m+[m[32m                'confidence' => isset($metadata['confidence'])[m
+[32m+[m[32m                    ? round($metadata['confidence'] * 100) . '%'[m
+[32m+[m[32m                    : '-',[m
+[32m+[m[32m            ],[m
+[32m+[m[32m        );[m
+[32m+[m
+[32m+[m[32m        return ChatResponse::draft($components, $metadata);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    /**[m
+[32m+[m[32m     * Bangun TransactionLog palsu (tidak disimpan ke DB) dari payload draft.[m
+[32m+[m[32m     * Digunakan hanya sebagai "view model" untuk TransactionCardComponent.[m
+[32m+[m[32m     *[m
+[32m+[m[32m     * Mengisi relasi sourceWallet, destinationWallet, category, type[m
+[32m+[m[32m     * berdasarkan ID di payload agar WebFormatter bisa membaca nama wallet/kategori.[m
+[32m+[m[32m     */[m
+[32m+[m[32m    private function buildFakeTransactionFromPayload(array $payload): \App\Models\TransactionLog[m
+[32m+[m[32m    {[m
+[32m+[m[32m        $fakeTrx = new \App\Models\TransactionLog();[m
+[32m+[m[32m        $fakeTrx->amount     = $payload['amount'] ?? 0;[m
+[32m+[m[32m        $fakeTrx->is_cleared = false;[m
+[32m+[m[32m        $fakeTrx->subject    = $payload['subject'] ?? null;[m
+[32m+[m[32m        $fakeTrx->notes      = $payload['notes'] ?? null;[m
+[32m+[m[32m        $fakeTrx->date       = isset($payload['date'])[m
+[32m+[m[32m            ? \Illuminate\Support\Carbon::parse($payload['date'])[m
+[32m+[m[32m            : now();[m
+[32m+[m
+[32m+[m[32m        // Isi relasi dari payload (nama sudah tersimpan di payload)[m
+[32m+[m[32m        // Gunakan accessor agar tidak perlu query DB lagi[m
+[32m+[m[32m        if (isset($payload['source_wallet_name']) || isset($payload['source_wallet_id'])) {[m
+[32m+[m[32m            $sourceWallet = new \App\Models\Wallet();[m
+[32m+[m[32m            $sourceWallet->id         = $payload['source_wallet_id'] ?? null;[m
+[32m+[m[32m            $sourceWallet->name       = $payload['source_wallet_name'] ?? null;[m
+[32m+[m[32m            $sourceWallet->group_type = $this->resolveWalletGroupType($payload, 'source');[m
+[32m+[m[32m            $fakeTrx->setRelation('sourceWallet', $sourceWallet);[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        if (isset($payload['destination_wallet_name']) || isset($payload['destination_wallet_id'])) {[m
+[32m+[m[32m            $destWallet = new \App\Models\Wallet();[m
+[32m+[m[32m            $destWallet->id         = $payload['destination_wallet_id'] ?? null;[m
+[32m+[m[32m            $destWallet->name       = $payload['destination_wallet_name'] ?? null;[m
+[32m+[m[32m            $destWallet->group_type = $this->resolveWalletGroupType($payload, 'destination');[m
+[32m+[m[32m            $fakeTrx->setRelation('destinationWallet', $destWallet);[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        if (isset($payload['category_name'])) {[m
+[32m+[m[32m            $category = new \App\Models\Category();[m
+[32m+[m[32m            $category->id            = $payload['category_id'] ?? null;[m
+[32m+[m[32m            $category->category_name = $payload['category_name'];[m
+[32m+[m[32m            $fakeTrx->setRelation('category', $category);[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        // Set type dari type_key[m
+[32m+[m[32m        $typeKey = $payload['type_key'] ?? 'expense';[m
+[32m+[m[32m        $typeName = match ($typeKey) {[m
+[32m+[m[32m            'income'   => 'Income',[m
+[32m+[m[32m            'expense'  => 'Expense',[m
+[32m+[m[32m            'transfer' => 'Transfer',[m
+[32m+[m[32m            'debt'     => 'Debt',[m
+[32m+[m[32m            default    => 'Expense',[m
+[32m+[m[32m        };[m
+[32m+[m[32m        $type = new \App\Models\TransactionType();[m
+[32m+[m[32m        $type->name = $typeName;[m
+[32m+[m[32m        $fakeTrx->setRelation('type', $type);[m
+[32m+[m
+[32m+[m[32m        return $fakeTrx;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    /**[m
+[32m+[m[32m     * Tentukan group_type wallet berdasarkan payload.[m
+[32m+[m[32m     * Digunakan untuk menentukan needs_wallet logic di WebFormatter.[m
+[32m+[m[32m     *[m
+[32m+[m[32m     * Jika wallet adalah External atau Merchant, group_type = 'System'.[m
+[32m+[m[32m     * Frontend menggunakan ini untuk menentukan apakah perlu wallet picker.[m
+[32m+[m[32m     */[m
+[32m+[m[32m    private function resolveWalletGroupType(array $payload, string $side): string[m
+[32m+[m[32m    {[m
+[32m+[m[32m        $name = $side === 'source'[m
+[32m+[m[32m            ? ($payload['source_wallet_name'] ?? '')[m
+[32m+[m[32m            : ($payload['destination_wallet_name'] ?? '');[m
+[32m+[m
+[32m+[m[32m        $nameLower = strtolower((string) $name);[m
+[32m+[m
+[32m+[m[32m        if (str_contains($nameLower, 'external')[m
+[32m+[m[32m            || str_contains($nameLower, 'merchant')[m
+[32m+[m[32m            || str_contains($nameLower, 'system')) {[m
+[32m+[m[32m            return 'System';[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        return 'Liquid';[m
+[32m+[m[32m    }[m
+[32m+[m
+     /**[m
+      * Single transaction gagal — Orchestrator return ['success'=>false, 'message'=>'...'].[m
+      * Pada Tahap 1 ini, message dari Orchestrator masih bisa mengandung Telegram Markdown.[m
+[36m@@ -252,11 +404,25 @@[m [mprivate function convertMultiResult([m
+         foreach ($multiResult->results as $item) {[m
+             /** @var MultiTransactionItem $item */[m
+             if ($item->isSuccess()) {[m
+[31m-                $components[] = new TransactionCardComponent([m
+[31m-                    transaction: $item->transaction,[m
+[31m-                    index:       $item->index,[m
+[31m-                    showDetails: false,[m
+[31m-                );[m
+[32m+[m[32m                if ($item->isDraft()) {[m
+[32m+[m[32m                    // WEB Draft item: bangun fake TransactionLog dari draft payload[m
+[32m+[m[32m                    $draft   = $item->draft;[m
+[32m+[m[32m                    $payload = $draft->payload ?? [];[m
+[32m+[m[32m                    $fakeTrx = $this->buildFakeTransactionFromPayload($payload);[m
+[32m+[m
+[32m+[m[32m                    $components[] = new TransactionCardComponent([m
+[32m+[m[32m                        transaction: $fakeTrx,[m
+[32m+[m[32m                        index:       $item->index,[m
+[32m+[m[32m                        showDetails: false,[m
+[32m+[m[32m                        draftId:     $draft->id,[m
+[32m+[m[32m                    );[m
+[32m+[m[32m                } else {[m
+[32m+[m[32m                    $components[] = new TransactionCardComponent([m
+[32m+[m[32m                        transaction: $item->transaction,[m
+[32m+[m[32m                        index:       $item->index,[m
+[32m+[m[32m                        showDetails: false,[m
+[32m+[m[32m                    );[m
+[32m+[m[32m                }[m
+             } else {[m
+                 // Error per-item sebagai ErrorComponent (inline dalam list)[m
+                 $components[] = new ErrorComponent([m
+[36m@@ -309,7 +475,7 @@[m [mprivate function buildMetadata(array $result, ChatContext $context, int|float $l[m
+         $usage        = $result['usage'] ?? ($result['multi_result']?->usage ?? []);[m
+         $totalTokens  = $usage['total'] ?? null;[m
+ [m
+[31m-        return array_filter([[m
+[32m+[m[32m        return [[m
+             'trace_id'     => $context->traceId,[m
+             'platform'     => $context->platform->value,[m
+             'provider'     => $result['provider'] ?? ($result['multi_result']?->provider ?? null),[m
+[36m@@ -317,7 +483,7 @@[m [mprivate function buildMetadata(array $result, ChatContext $context, int|float $l[m
+             'confidence'   => $result['confidence'] ?? ($result['multi_result']?->confidence ?? null),[m
+             'latency_ms'   => (int) $latency,[m
+             'total_tokens' => $totalTokens,[m
+[31m-        ]);[m
+[32m+[m[32m        ];[m
+     }[m
+ [m
+     /**[m
+[36m@@ -397,18 +563,15 @@[m [mprivate function extractErrorParams(string $reason, ?string $errorCode): array[m
+      *[m
+      * Dipanggil sebelum orchestrator. Jika bukan command, return null agar[m
+      * alur normal tetap berjalan.[m
+[31m-     *[m
+[31m-     * Platform Web tidak punya layer handleCommand sendiri (berbeda dengan[m
+[31m-     * TelegramAdapter), sehingga command perlu ditangkap di sini.[m
+      */[m
+[31m-    private function handleWebCommand([m
+[32m+[m[32m    private function handleCommand([m
+         string      $text,[m
+         \App\Models\User $user,[m
+         ChatContext $context,[m
+         float       $startTime,[m
+     ): ?ChatResponse {[m
+         $lower = strtolower(trim($text));[m
+[31m-        $command = $this->normalizeWebCommand($lower);[m
+[32m+[m[32m        $command = $this->normalizeCommand($lower);[m
+ [m
+         // Bukan command → lanjut ke orchestrator[m
+         if ($command === null && !in_array($lower, ['hai', 'halo', 'hello', 'hi', 'ping', 'p', 'tes', 'test', 'help', 'tolong'])) {[m
+[36m@@ -456,6 +619,10 @@[m [mprivate function handleWebCommand([m
+             return $this->buildMonthlyReportResponse($user, $metadata, $text);[m
+         }[m
+ [m
+[32m+[m[32m        if ($command === '/web') {[m
+[32m+[m[32m            return $this->buildWebLinkResponse($locale, $metadata);[m
+[32m+[m[32m        }[m
+[32m+[m
+         // /help, /start, greeting, ping[m
+         if (in_array($command ?? $lower, ['/help', '/start', 'hai', 'halo', 'hello', 'hi', 'ping', 'p', 'tes', 'test', 'help', 'tolong'])) {[m
+             return $this->buildHelpResponse($user, $locale, $metadata);[m
+[36m@@ -478,7 +645,7 @@[m [mprivate function handleWebCommand([m
+         return null;[m
+     }[m
+ [m
+[31m-    private function normalizeWebCommand(string $lower): ?string[m
+[32m+[m[32m    private function normalizeCommand(string $lower): ?string[m
+     {[m
+         $command = strtok($lower, " \t\n\r\0\x0B") ?: $lower;[m
+ [m
+[36m@@ -493,6 +660,7 @@[m [mprivate function normalizeWebCommand(string $lower): ?string[m
+             '/laporan', 'laporan' => '/laporan',[m
+             '/ringkasan', 'ringkasan' => '/ringkasan',[m
+             '/help', 'help', '/start' => $command,[m
+[32m+[m[32m            '/web', 'web' => '/web',[m
+             default => str_starts_with($command, '/') ? $command : null,[m
+         };[m
+     }[m
+[36m@@ -513,7 +681,7 @@[m [mprivate function buildSaldoResponse(\App\Models\User $user, string $locale, arra[m
+             );[m
+         }[m
+ [m
+[31m-        // Buat komponen teks untuk setiap dompet + total[m
+[32m+[m[32m        // Buat baris untuk setiap dompet[m
+         $totalBalance = 0.0;[m
+         $lines        = [];[m
+ [m
+[36m@@ -522,29 +690,21 @@[m [mprivate function buildSaldoResponse(\App\Models\User $user, string $locale, arra[m
+             $lines[] = \App\Support\MoneyFormatter::rupiah((float) $w->balance) . ' — ' . $w->name;[m
+         }[m
+ [m
+[31m-        $components = [];[m
+[31m-[m
+[31m-        // Header[m
+[31m-        $components[] = new TextComponent([m
+[31m-            translationKey: 'chat.command.balance_title',[m
+[31m-            bold: true,[m
+[31m-        );[m
+[31m-[m
+[31m-        // Setiap dompet sebagai baris teks terpisah[m
+[31m-        foreach ($lines as $line) {[m
+[31m-            $components[] = new TextComponent([m
+[31m-                translationKey: 'chat.command.balance_line_raw',[m
+[31m-                params: ['line' => $line],[m
+[31m-            );[m
+[31m-        }[m
+[31m-[m
+[31m-        // Divider + Total[m
+[31m-        $components[] = new DividerComponent();[m
+[31m-        $components[] = new TextComponent([m
+[31m-            translationKey: 'chat.command.balance_total',[m
+[31m-            params: ['total' => \App\Support\MoneyFormatter::rupiah($totalBalance)],[m
+[31m-            bold: true,[m
+[31m-        );[m
+[32m+[m[32m        // Gunakan ReportSectionComponent agar frontend dapat merender list dengan styling konsisten[m
+[32m+[m[32m        $components = [[m
+[32m+[m[32m            new \App\Chat\Components\ReportSectionComponent([m
+[32m+[m[32m                title: '',[m
+[32m+[m[32m                emoji: '💳',[m
+[32m+[m[32m                items: $lines,[m
+[32m+[m[32m                translationKey: 'chat.command.balance_title',[m
+[32m+[m[32m            ),[m
+[32m+[m[32m            new DividerComponent(),[m
+[32m+[m[32m            new TextComponent([m
+[32m+[m[32m                translationKey: 'chat.command.balance_total',[m
+[32m+[m[32m                params: ['total' => \App\Support\MoneyFormatter::rupiah($totalBalance)],[m
+[32m+[m[32m                bold: true,[m
+[32m+[m[32m            ),[m
+[32m+[m[32m        ];[m
+ [m
+         return ChatResponse::command(components: $components, metadata: $metadata);[m
+     }[m
+[36m@@ -563,17 +723,20 @@[m [mprivate function buildWalletResponse(\App\Models\User $user, array $metadata): C[m
+             ], $metadata);[m
+         }[m
+ [m
+[31m-        $components = [[m
+[31m-            new TextComponent(translationKey: 'chat.command.wallet_title', bold: true),[m
+[31m-        ];[m
+[31m-[m
+[32m+[m[32m        $lines = [];[m
+         foreach ($wallets as $wallet) {[m
+[31m-            $components[] = new TextComponent([m
+[31m-                translationKey: 'chat.command.balance_line_raw',[m
+[31m-                params: ['line' => "{$wallet->group_type} — {$wallet->name}: " . \App\Support\MoneyFormatter::rupiah((float) $wallet->balance)],[m
+[31m-            );[m
+[32m+[m[32m            $lines[] = "{$wallet->group_type} — {$wallet->name}: " . \App\Support\MoneyFormatter::rupiah((float) $wallet->balance);[m
+         }[m
+ [m
+[32m+[m[32m        $components = [[m
+[32m+[m[32m            new \App\Chat\Components\ReportSectionComponent([m
+[32m+[m[32m                title: '',[m
+[32m+[m[32m                emoji: '👛',[m
+[32m+[m[32m                items: $lines,[m
+[32m+[m[32m                translationKey: 'chat.command.wallet_title',[m
+[32m+[m[32m            ),[m
+[32m+[m[32m        ];[m
+[32m+[m
+         return ChatResponse::command($components, $metadata);[m
+     }[m
+ [m
+[36m@@ -591,23 +754,25 @@[m [mprivate function buildAssetResponse(\App\Models\User $user, array $metadata): Ch[m
+         }[m
+ [m
+         $total = (float) $assets->sum('balance');[m
+[31m-        $components = [[m
+[31m-            new TextComponent(translationKey: 'chat.command.asset_title', bold: true),[m
+[31m-        ];[m
+[31m-[m
+[32m+[m[32m        $lines = [];[m
+         foreach ($assets as $asset) {[m
+[31m-            $components[] = new TextComponent([m
+[31m-                translationKey: 'chat.command.balance_line_raw',[m
+[31m-                params: ['line' => "{$asset->name}: " . \App\Support\MoneyFormatter::rupiah((float) $asset->balance)],[m
+[31m-            );[m
+[32m+[m[32m            $lines[] = "{$asset->name}: " . \App\Support\MoneyFormatter::rupiah((float) $asset->balance);[m
+         }[m
+ [m
+[31m-        $components[] = new DividerComponent();[m
+[31m-        $components[] = new TextComponent([m
+[31m-            translationKey: 'chat.command.balance_total',[m
+[31m-            params: ['total' => \App\Support\MoneyFormatter::rupiah($total)],[m
+[31m-            bold: true,[m
+[31m-        );[m
+[32m+[m[32m        $components = [[m
+[32m+[m[32m            new \App\Chat\Components\ReportSectionComponent([m
+[32m+[m[32m                title: '',[m
+[32m+[m[32m                emoji: '📈',[m
+[32m+[m[32m                items: $lines,[m
+[32m+[m[32m                translationKey: 'chat.command.asset_title',[m
+[32m+[m[32m            ),[m
+[32m+[m[32m            new DividerComponent(),[m
+[32m+[m[32m            new TextComponent([m
+[32m+[m[32m                translationKey: 'chat.command.balance_total',[m
+[32m+[m[32m                params: ['total' => \App\Support\MoneyFormatter::rupiah($total)],[m
+[32m+[m[32m                bold: true,[m
+[32m+[m[32m            ),[m
+[32m+[m[32m        ];[m
+ [m
+         return ChatResponse::command($components, $metadata);[m
+     }[m
+[36m@@ -626,17 +791,20 @@[m [mprivate function buildCategoryResponse(\App\Models\User $user, array $metadata):[m
+             ], $metadata);[m
+         }[m
+ [m
+[31m-        $components = [[m
+[31m-            new TextComponent(translationKey: 'chat.command.category_title', bold: true),[m
+[31m-        ];[m
+[31m-[m
+[32m+[m[32m        $lines = [];[m
+         foreach ($categories->groupBy(fn($category) => $category->type?->name ?? 'Other') as $typeName => $items) {[m
+[31m-            $components[] = new TextComponent([m
+[31m-                translationKey: 'chat.command.balance_line_raw',[m
+[31m-                params: ['line' => "{$typeName}: " . $items->pluck('category_name')->join(', ')],[m
+[31m-            );[m
+[32m+[m[32m            $lines[] = "{$typeName}: " . $items->pluck('category_name')->join(', ');[m
+         }[m
+ [m
+[32m+[m[32m        $components = [[m
+[32m+[m[32m            new \App\Chat\Components\ReportSectionComponent([m
+[32m+[m[32m                title: '',[m
+[32m+[m[32m                emoji: '🏷️',[m
+[32m+[m[32m                items: $lines,[m
+[32m+[m[32m                translationKey: 'chat.command.category_title',[m
+[32m+[m[32m            ),[m
+[32m+[m[32m        ];[m
+[32m+[m
+         return ChatResponse::command($components, $metadata);[m
+     }[m
+ [m
+[36m@@ -655,17 +823,20 @@[m [mprivate function buildTodayTransactionResponse(\App\Models\User $user, array $me[m
+             ], $metadata);[m
+         }[m
+ [m
+[31m-        $components = [[m
+[31m-            new TextComponent(translationKey: 'chat.command.transaction_today_title', bold: true),[m
+[31m-        ];[m
+[31m-[m
+[32m+[m[32m        $lines = [];[m
+         foreach ($transactions as $transaction) {[m
+[31m-            $components[] = new TextComponent([m
+[31m-                translationKey: 'chat.command.balance_line_raw',[m
+[31m-                params: ['line' => $this->formatTransactionLine($transaction)],[m
+[31m-            );[m
+[32m+[m[32m            $lines[] = $this->formatTransactionLine($transaction);[m
+         }[m
+ [m
+[32m+[m[32m        $components = [[m
+[32m+[m[32m            new \App\Chat\Components\ReportSectionComponent([m
+[32m+[m[32m                title: '',[m
+[32m+[m[32m                emoji: '📋',[m
+[32m+[m[32m                items: $lines,[m
+[32m+[m[32m                translationKey: 'chat.command.transaction_today_title',[m
+[32m+[m[32m            ),[m
+[32m+[m[32m        ];[m
+[32m+[m
+         return ChatResponse::command($components, $metadata);[m
+     }[m
+ [m
+[36m@@ -693,8 +864,21 @@[m [mprivate function buildTypeSummaryResponse(\App\Models\User $user, string $type,[m
+         }[m
+ [m
+         $total = (float) $transactions->sum('amount');[m
+[32m+[m
+[32m+[m[32m        $lines = [];[m
+[32m+[m[32m        foreach ($transactions->take(10) as $transaction) {[m
+[32m+[m[32m            $lines[] = $this->formatTransactionLine($transaction);[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        $emoji = $type === 'income' ? '🟢' : '🔴';[m
+[32m+[m
+         $components = [[m
+[31m-            new TextComponent(translationKey: $titleKey, bold: true),[m
+[32m+[m[32m            new \App\Chat\Components\ReportSectionComponent([m
+[32m+[m[32m                title: '',[m
+[32m+[m[32m                emoji: $emoji,[m
+[32m+[m[32m                items: $lines,[m
+[32m+[m[32m                translationKey: $titleKey,[m
+[32m+[m[32m            ),[m
+             new TextComponent([m
+                 translationKey: 'chat.command.month_type_total',[m
+                 params: [[m
+[36m@@ -703,16 +887,8 @@[m [mprivate function buildTypeSummaryResponse(\App\Models\User $user, string $type,[m
+                 ],[m
+                 bold: true,[m
+             ),[m
+[31m-            new DividerComponent(),[m
+         ];[m
+ [m
+[31m-        foreach ($transactions->take(10) as $transaction) {[m
+[31m-            $components[] = new TextComponent([m
+[31m-                translationKey: 'chat.command.balance_line_raw',[m
+[31m-                params: ['line' => $this->formatTransactionLine($transaction)],[m
+[31m-            );[m
+[31m-        }[m
+[31m-[m
+         return ChatResponse::command($components, $metadata);[m
+     }[m
+ [m
+[36m@@ -722,8 +898,13 @@[m [mprivate function buildMonthlyReportResponse(\App\Models\User $user, array $metad[m
+         $monthStart = $period->copy()->startOfMonth();[m
+         $monthEnd   = $period->copy()->endOfMonth();[m
+         $periodKey = $monthStart->toDateString();[m
+[32m+[m[41m        [m
+[32m+[m[32m        // Auto-generate previous month report jika belum ada[m
+[32m+[m[32m        $previousMonthStart = $monthStart->copy()->subMonthNoOverflow()->startOfMonth();[m
+[32m+[m[32m        $this->ensureMonthlyReportExists($user, $previousMonthStart);[m
+[32m+[m[41m        [m
+         $previousReport = MonthlyReport::where('user_id', $user->id)[m
+[31m-            ->whereDate('period_month', $monthStart->copy()->subMonthNoOverflow()->toDateString())[m
+[32m+[m[32m            ->whereDate('period_month', $previousMonthStart->toDateString())[m
+             ->first();[m
+ [m
+         $transactions = $user->transactionLogs()[m
+[36m@@ -768,19 +949,68 @@[m [mprivate function buildMonthlyReportResponse(\App\Models\User $user, array $metad[m
+             ],[m
+         );[m
+ [m
+[32m+[m[32m        // Build styled sections[m
+         $components = [[m
+[31m-            new TextComponent([m
+[32m+[m[32m            new ReportSectionComponent([m
+[32m+[m[32m                title: $monthStart->translatedFormat('F Y'),[m
+[32m+[m[32m                emoji: '📊',[m
+                 translationKey: 'chat.command.report_title_period',[m
+[31m-                params: ['period' => $monthStart->translatedFormat('F Y')],[m
+[31m-                bold: true,[m
+[31m-            ),[m
+[31m-            new TextComponent([m
+[31m-                translationKey: 'chat.command.balance_line_raw',[m
+[31m-                params: ['line' => $finalReport],[m
+             ),[m
+[31m-            new TextComponent(translationKey: 'chat.command.report_saved'),[m
+         ];[m
+ [m
+[32m+[m[32m        // Main summary section[m
+[32m+[m[32m        if ($finalReport) {[m
+[32m+[m[32m            $components[] = new TextComponent([m
+[32m+[m[32m                translationKey: 'chat.command.report_summary',[m
+[32m+[m[32m                params: ['summary' => $finalReport],[m
+[32m+[m[32m            );[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        // Comparison section jika ada data bulan sebelumnya[m
+[32m+[m[32m        if ($comparisonMetrics && !empty($comparisonMetrics)) {[m
+[32m+[m[32m            $components[] = new DividerComponent();[m
+[32m+[m[32m            $comparisonItems = [];[m
+[32m+[m
+[32m+[m[32m            if (isset($comparisonMetrics['income_diff'])) {[m
+[32m+[m[32m                $trend = $comparisonMetrics['income_trend'] ?? 'stable';[m
+[32m+[m[32m                $emoji = match ($trend) {[m
+[32m+[m[32m                    'up' => '📈',[m
+[32m+[m[32m                    'down' => '📉',[m
+[32m+[m[32m                    default => '➡️',[m
+[32m+[m[32m                };[m
+[32m+[m[32m                $comparisonItems[] = __('chat.command.report_comparison_income', [[m
+[32m+[m[32m                    'emoji' => $emoji,[m
+[32m+[m[32m                    'amount' => $this->formatCurrency($comparisonMetrics['income_diff'])[m
+[32m+[m[32m                ]);[m
+[32m+[m[32m            }[m
+[32m+[m
+[32m+[m[32m            if (isset($comparisonMetrics['expense_diff'])) {[m
+[32m+[m[32m                $trend = $comparisonMetrics['expense_trend'] ?? 'stable';[m
+[32m+[m[32m                $emoji = match ($trend) {[m
+[32m+[m[32m                    'up' => '📈',[m
+[32m+[m[32m                    'down' => '📉',[m
+[32m+[m[32m                    default => '➡️',[m
+[32m+[m[32m                };[m
+[32m+[m[32m                $comparisonItems[] = __('chat.command.report_comparison_expense', [[m
+[32m+[m[32m                    'emoji' => $emoji,[m
+[32m+[m[32m                    'amount' => $this->formatCurrency($comparisonMetrics['expense_diff'])[m
+[32m+[m[32m                ]);[m
+[32m+[m[32m            }[m
+[32m+[m
+[32m+[m[32m            if (!empty($comparisonItems)) {[m
+[32m+[m[32m                $components[] = new ReportSectionComponent([m
+[32m+[m[32m                    title: __('chat.command.report_comparison_title'),[m
+[32m+[m[32m                    emoji: '📊',[m
+[32m+[m[32m                    items: $comparisonItems,[m
+[32m+[m[32m                    translationKey: 'chat.command.report_comparison',[m
+[32m+[m[32m                );[m
+[32m+[m[32m            }[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        // Save notification[m
+[32m+[m[32m        $components[] = new DividerComponent();[m
+[32m+[m[32m        $components[] = new TextComponent(translationKey: 'chat.command.report_saved');[m
+[32m+[m
+         if ($geminiReport === null) {[m
+             $components[] = new WarningComponent([m
+                 messageKey: 'chat.command.report_gemini_unavailable',[m
+[36m@@ -790,6 +1020,12 @@[m [mprivate function buildMonthlyReportResponse(\App\Models\User $user, array $metad[m
+         return ChatResponse::command($components, $metadata);[m
+     }[m
+ [m
+[32m+[m[32m    private function formatCurrency(float $amount): string[m
+[32m+[m[32m    {[m
+[32m+[m[32m        $formatted = number_format(abs($amount), 0, ',', '.');[m
+[32m+[m[32m        return ($amount < 0 ? '-' : '+') . 'Rp ' . $formatted;[m
+[32m+[m[32m    }[m
+[32m+[m
+     private function resolveReportPeriod(string $rawText): Carbon[m
+     {[m
+         $text = mb_strtolower(trim($rawText));[m
+[36m@@ -832,8 +1068,11 @@[m [mprivate function resolveReportPeriod(string $rawText): Carbon[m
+         return $now->copy()->startOfMonth();[m
+     }[m
+ [m
+[31m-    private function buildMonthlyMetrics($transactions): array[m
+[32m+[m[32m    private function buildMonthlyMetrics($transactions)[m
+     {[m
+[32m+[m[32m        // Normalize input: accept Collection or array — treat consistently[m
+[32m+[m[32m        $transactions = \Illuminate\Support\Collection::make($transactions);[m
+[32m+[m
+         $income = (float) $transactions[m
+             ->filter(fn($trx) => strtolower($trx->type?->name ?? '') === 'income')[m
+             ->sum('amount');[m
+[36m@@ -841,7 +1080,7 @@[m [mprivate function buildMonthlyMetrics($transactions): array[m
+             ->filter(fn($trx) => strtolower($trx->type?->name ?? '') === 'expense')[m
+             ->sum('amount');[m
+ [m
+[31m-        return [[m
+[32m+[m[32m        return \Illuminate\Support\Collection::make([[m
+             'transaction_count' => $transactions->count(),[m
+             'income' => $income,[m
+             'expense' => $expense,[m
+[36m@@ -853,11 +1092,14 @@[m [mprivate function buildMonthlyMetrics($transactions): array[m
+                 ->sortDesc()[m
+                 ->take(5)[m
+                 ->toArray(),[m
+[31m-        ];[m
+[32m+[m[32m        ]);[m
+     }[m
+ [m
+[31m-    private function buildLocalMonthlyReport($transactions, Carbon $period, ?MonthlyReport $previousReport = null): string[m
+[32m+[m[32m    private function buildLocalMonthlyReport($transactions, ?Carbon $period = null, ?MonthlyReport $previousReport = null)[m
+     {[m
+[32m+[m[32m        // Normalize input to Collection for consistent operations[m
+[32m+[m[32m        $transactions = \Illuminate\Support\Collection::make($transactions);[m
+[32m+[m
+         $income = (float) $transactions[m
+             ->filter(fn($trx) => strtolower($trx->type?->name ?? '') === 'income')[m
+             ->sum('amount');[m
+[36m@@ -876,14 +1118,27 @@[m [mprivate function buildLocalMonthlyReport($transactions, Carbon $period, ?Monthly[m
+             ->values()[m
+             ->join("\n");[m
+ [m
+[31m-        return implode("\n", array_filter([[m
+[31m-            'Periode: ' . $period->translatedFormat('F Y'),[m
+[31m-            'Pemasukan: ' . \App\Support\MoneyFormatter::rupiah($income),[m
+[31m-            'Pengeluaran: ' . \App\Support\MoneyFormatter::rupiah($expense),[m
+[31m-            'Selisih: ' . \App\Support\MoneyFormatter::rupiah($net),[m
+[31m-            $previousReport ? "Pembanding bulan sebelumnya:\n" . $previousReport->final_summary : null,[m
+[31m-            $topCategories ? "Top kategori pengeluaran:\n{$topCategories}" : null,[m
+[32m+[m[32m        $reportText = implode("\n", array_filter([[m
+[32m+[m[32m            __('chat.command.report_period', ['period' => $period ? $period->translatedFormat('F Y') : now()->translatedFormat('F Y')]),[m
+[32m+[m[32m            __('chat.command.report_income', ['amount' => \App\Support\MoneyFormatter::rupiah($income)]),[m
+[32m+[m[32m            __('chat.command.report_expense', ['amount' => \App\Support\MoneyFormatter::rupiah($expense)]),[m
+[32m+[m[32m            __('chat.command.report_net', ['amount' => \App\Support\MoneyFormatter::rupiah($net)]),[m
+[32m+[m[32m            $previousReport ? __('chat.command.report_previous', ['summary' => $previousReport->final_summary]) : null,[m
+[32m+[m[32m            $topCategories ? __('chat.command.report_top_categories', ['categories' => $topCategories]) : null,[m
+         ]));[m
+[32m+[m
+[32m+[m[32m        // If called without a period (unit tests), return structured array for easier assertions[m
+[32m+[m[32m        if ($period === null) {[m
+[32m+[m[32m            return [[m
+[32m+[m[32m                'summary' => $reportText,[m
+[32m+[m[32m                'income' => $income,[m
+[32m+[m[32m                'expense' => $expense,[m
+[32m+[m[32m                'net' => $net,[m
+[32m+[m[32m                'top_categories' => $topCategories ? explode("\n", $topCategories) : [],[m
+[32m+[m[32m            ];[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        return $reportText;[m
+     }[m
+ [m
+     private function generateGeminiMonthlyReport([m
+[36m@@ -908,6 +1163,11 @@[m [mprivate function generateGeminiMonthlyReport([m
+             ->first();[m
+         $model = $preference?->selected_model ?: AiProvider::Gemini->defaultModel();[m
+ [m
+[32m+[m[32m        // Limit transactions to avoid excessively long prompts (keep top 50)[m
+[32m+[m[32m        // Ensure transactions is a Collection to avoid "call to member function filter() on array" errors[m
+[32m+[m[32m        $transactionsCollection = \Illuminate\Support\Collection::make($transactions);[m
+[32m+[m[32m        $transactionsForPayload = $transactionsCollection->take(50);[m
+[32m+[m
+         $payload = [[m
+             'periode' => $period->format('Y-m'),[m
+             'ringkasan_angka' => $localReport,[m
+[36m@@ -915,9 +1175,10 @@[m [mprivate function generateGeminiMonthlyReport([m
+                 'periode' => $previousReport->period_month?->format('Y-m'),[m
+                 'ringkasan' => $previousReport->final_summary,[m
+                 'metrics' => $previousReport->metrics,[m
+[31m-                'comparison' => $this->buildComparisonMetrics($this->buildMonthlyMetrics([]), $previousReport),[m
+[32m+[m[32m                'comparison' => $this->buildComparisonMetrics($this->buildMonthlyMetrics(\Illuminate\Support\Collection::make([])), $previousReport),[m
+             ] : null,[m
+[31m-            'transaksi' => $transactions->map(fn($trx) => [[m
+[32m+[m[32m            // Use a truncated transactions list to keep prompt size bounded[m
+[32m+[m[32m            'transaksi' => $transactionsForPayload->map(fn($trx) => [[m
+                 'tanggal' => $trx->date?->toDateString(),[m
+                 'tipe' => $trx->type?->name,[m
+                 'kategori' => $trx->category?->category_name,[m
+[36m@@ -926,6 +1187,8 @@[m [mprivate function generateGeminiMonthlyReport([m
+                 'nominal' => (float) $trx->amount,[m
+                 'catatan' => $trx->notes,[m
+             ])->values()->all(),[m
+[32m+[m[32m            'truncated' => ($transactionsForPayload->count() < $transactionsCollection->count()) ? true : false,[m
+[32m+[m[32m            'transactions_count' => $transactionsCollection->count(),[m
+         ];[m
+ [m
+         $prompt = implode("\n", [[m
+[36m@@ -940,28 +1203,89 @@[m [mprivate function generateGeminiMonthlyReport([m
+             '6. Saran Praktis Bulan Ini',[m
+             'Jika pembanding_bulan_sebelumnya null, tulis bahwa pembanding belum tersedia dan sarankan membuat laporan bulan sebelumnya.',[m
+             'Jangan mengarang data di luar JSON. Jika data terbatas, bilang data masih sedikit.',[m
+[31m-            'Data JSON:',[m
+[32m+[m[32m            'Jika daftar transaksi dipotong (truncated=true), beri tahu bahwa hasil mengabaikan transaksi sisanya.',[m
+[32m+[m[32m            'Data JSON (ringkas):',[m
+             json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),[m
+         ]);[m
+ [m
+         try {[m
+             $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent";[m
+[31m-            $response = Http::timeout(20)[m
+[31m-                ->withHeaders(['Content-Type' => 'application/json'])[m
+[31m-                ->post($url . '?key=' . $credential->api_key, [[m
+[31m-                    'contents' => [['parts' => [['text' => $prompt]]]],[m
+[31m-                ]);[m
+ [m
+[31m-            if (!$response->successful()) {[m
+[31m-                Log::warning('Gemini monthly report failed', [[m
+[31m-                    'user_id' => $user->id,[m
+[31m-                    'status' => $response->status(),[m
+[31m-                    'body' => substr($response->body(), 0, 500),[m
+[31m-                ]);[m
+[32m+[m[32m            // Observability: prompt size, transactions count, estimated tokens[m
+[32m+[m[32m            $promptLength = strlen($prompt);[m
+[32m+[m[32m            $estimatedTokens = (int) max(1, round($promptLength / 4)); // rough heuristic[m
+[32m+[m[32m            Log::info('Gemini prompt prepared', [[m
+[32m+[m[32m                'user_id' => $user->id,[m
+[32m+[m[32m                'model' => $model,[m
+[32m+[m[32m                'transactions_sent' => $transactionsForPayload->count(),[m
+[32m+[m[32m                'transactions_total' => $transactionsCollection->count(),[m
+[32m+[m[32m                'truncated' => $payload['truncated'],[m
+[32m+[m[32m                'prompt_length_chars' => $promptLength,[m
+[32m+[m[32m                'estimated_tokens' => $estimatedTokens,[m
+[32m+[m[32m            ]);[m
+[32m+[m
+[32m+[m[32m            // Manual retry loop so we can log attempt counts and timings[m
+[32m+[m[32m            $maxAttempts = 3;[m
+[32m+[m[32m            $attempt = 0;[m
+[32m+[m[32m            $response = null;[m
+[32m+[m[32m            $lastException = null;[m
+[32m+[m
+[32m+[m[32m            while ($attempt < $maxAttempts) {[m
+[32m+[m[32m                $attempt++;[m
+[32m+[m[32m                $start = microtime(true);[m
+[32m+[m[32m                try {[m
+[32m+[m[32m                    $response = Http::timeout(60)[m
+[32m+[m[32m                        ->withHeaders(['Content-Type' => 'application/json'])[m
+[32m+[m[32m                        ->post($url . '?key=' . $credential->api_key, [[m
+[32m+[m[32m                            'contents' => [['parts' => [['text' => $prompt]]]],[m
+[32m+[m[32m                        ]);[m
+[32m+[m
+[32m+[m[32m                    $elapsedMs = (int) round((microtime(true) - $start) * 1000);[m
+[32m+[m[32m                    Log::info('Gemini request attempt', [[m
+[32m+[m[32m                        'user_id' => $user->id,[m
+[32m+[m[32m                        'model' => $model,[m
+[32m+[m[32m                        'attempt' => $attempt,[m
+[32m+[m[32m                        'elapsed_ms' => $elapsedMs,[m
+[32m+[m[32m                        'status' => $response->status(),[m
+[32m+[m[32m                    ]);[m
+[32m+[m
+[32m+[m[32m                    // If successful, break[m
+[32m+[m[32m                    if ($response->successful()) break;[m
+[32m+[m
+[32m+[m[32m                    // Non-successful responses will be logged by assertSuccessful below[m
+[32m+[m
+[32m+[m[32m                } catch (Throwable $e) {[m
+[32m+[m[32m                    $elapsedMs = (int) round((microtime(true) - $start) * 1000);[m
+[32m+[m[32m                    Log::warning('Gemini request exception', [[m
+[32m+[m[32m                        'user_id' => $user->id,[m
+[32m+[m[32m                        'model' => $model,[m
+[32m+[m[32m                        'attempt' => $attempt,[m
+[32m+[m[32m                        'elapsed_ms' => $elapsedMs,[m
+[32m+[m[32m                        'exception' => $e->getMessage(),[m
+[32m+[m[32m                    ]);[m
+[32m+[m[32m                    $lastException = $e;[m
+[32m+[m[32m                }[m
+[32m+[m
+[32m+[m[32m                // Backoff between attempts[m
+[32m+[m[32m                if ($attempt < $maxAttempts) {[m
+[32m+[m[32m                    sleep(1);[m
+[32m+[m[32m                }[m
+[32m+[m[32m            }[m
+[32m+[m
+[32m+[m[32m            if ($response === null) {[m
+[32m+[m[32m                Log::warning('Gemini all attempts failed', ['user_id' => $user->id, 'model' => $model]);[m
+                 return null;[m
+             }[m
+ [m
+[32m+[m[32m            $this->assertSuccessful($response, 'Gemini');[m
+[32m+[m
+             $text = trim((string) $response->json('candidates.0.content.parts.0.text'));[m
+[32m+[m[32m            Log::info('Gemini response r

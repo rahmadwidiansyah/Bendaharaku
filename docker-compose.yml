@@ -1,17 +1,24 @@
-name: python-test
+name: bendaharaku
 
 services:
 
+  # ────────────────────────────────────────────────────────────────
+  # Utility
+  # ────────────────────────────────────────────────────────────────
   node:
     image: node:20-alpine
+    container_name: bendaharaku_node
     volumes:
       - .:/usr/src/app
     working_dir: /usr/src/app
-    entrypoint: [ "npm" ]
+    entrypoint: ["npm"]
 
+  # ────────────────────────────────────────────────────────────────
+  # Database
+  # ────────────────────────────────────────────────────────────────
   db:
     image: postgres:15-alpine
-    container_name: laravel_db
+    container_name: bendaharaku_db
     restart: always
     environment:
       POSTGRES_DB: ${DB_DATABASE:-laravel}
@@ -21,77 +28,80 @@ services:
       - db_data:/var/lib/postgresql/data
     networks:
       - laravel
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-sail} -d ${DB_DATABASE:-laravel}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
-  # --- SERVICE LARAVEL APP ---
+  # ────────────────────────────────────────────────────────────────
+  # Laravel App (PHP + Apache) — self-contained image
+  # ────────────────────────────────────────────────────────────────
   app:
     build: .
-    container_name: laravel_app
+    image: bendaharaku:latest
+    container_name: bendaharaku_app
     restart: always
-    ports:
-      - "5173:5173"
+    command: ["apache-only"]
+    env_file:
+      - .env
     volumes:
-      - .:/var/www
+      - ./.env:/var/www/.env
     networks:
       - laravel
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
 
-  # --- SERVICE NGINX ---
+  # ────────────────────────────────────────────────────────────────
+  # Nginx
+  # ────────────────────────────────────────────────────────────────
   nginx:
-    image: nginx:latest
-    container_name: laravel_nginx
+    image: nginx:alpine
+    container_name: bendaharaku_nginx
     restart: always
     ports:
       - "4000:80"
     volumes:
-      - .:/var/www
       - ./docker/nginx:/etc/nginx/conf.d
     depends_on:
       - app
     networks:
       - laravel
 
-  # --- SERVICE PYTHON AI (PENCATAT KEUANGAN) ---
-  api:
-    cpu_shares: 90
-    command: []
-    container_name: script-pencatat-keuangan
-    hostname: script-pencatat-keuangan
-    image: ghcr.io/rahmadwidiansyah/script_pencatat_keuangan_api:v4
-    deploy:
-      resources:
-        limits:
-          memory: "1946157056"
-    labels:
-      icon: https://raw.githubusercontent.com/rahmadwidiansyah/script_pencatat_keuangan/refs/heads/main/logo.png
-    ports:
-      - mode: ingress
-        target: 3987
-        published: "3987"
-        protocol: tcp
-    env_file:
-      - .env
+  # ────────────────────────────────────────────────────────────────
+  # AI Parser (Python FastAPI) — from the SAME image
+  # ────────────────────────────────────────────────────────────────
+  ai-parser:
+    image: bendaharaku:latest
+    container_name: bendaharaku_ai_parser
+    hostname: ai-parser
     restart: unless-stopped
+    command: ["ai-parser"]
+    expose:
+      - "3987"
     networks:
       - laravel
+    depends_on:
+      app:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3987/ready"]
+      interval: 15s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
 
-# --- KONFIGURASI NETWORK ---
 networks:
   laravel:
     driver: bridge
-    # name: python-test_default
 
-# --- PERSISTENT STORAGE ---
 volumes:
   db_data:
-
-    # --- METADATA CASAOS ---
-x-casaos:
-  author: self
-  category: self
-  hostname: ""
-  icon: https://raw.githubusercontent.com/rahmadwidiansyah/script_pencatat_keuangan/refs/heads/main/logo.png
-  index: /
-  is_uncontrolled: false
-  port_map: "3987"
-  scheme: http
-  title:
-    custom: Pencatat Keuangan

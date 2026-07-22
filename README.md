@@ -51,23 +51,23 @@ git clone https://github.com/rahmadwidiansyah/Bendaharaku.git
 cd Bendaharaku
 ```
 
-**2. Install Composer Dependencies (Initial)**
-```bash
-docker run --rm \
--u "$(id -u):$(id -g)" \
--v "$(pwd):/var/www/html" \
--w /var/www/html \
-laravelsail/php83-composer:latest \
-composer install --ignore-platform-reqs
-```
-
-**3. Setup Environment File**
+**2. Setup Environment File**
 ```bash
 cp .env.example .env
 ```
 *(Lihat bagian [Konfigurasi Environment](#-konfigurasi-environment) di bawah untuk mengatur API Keys).*
 
-**4. Start the Containers**
+**3. Install dependencies & build**
+```bash
+# Composer
+docker compose run --rm node run ci
+docker compose run --rm node run build
+
+# Frontend (development mode with hot reload)
+docker compose run --rm node run dev
+```
+
+**4. Start all containers**
 ```bash
 docker compose up -d
 ```
@@ -82,10 +82,10 @@ docker compose exec app php artisan key:generate
 docker compose exec app php artisan migrate
 ```
 
-**7. Install & Build Frontend Assets**
+**7. Verify**
 ```bash
-docker compose exec app npm install
-docker compose exec app npm run dev
+curl http://localhost:4000/health
+# → {"status":"ok","service":"laravel","time":"..."}
 ```
 
 ---
@@ -97,7 +97,7 @@ Setelah melakukan *copy* file `.env` (Langkah 3), pastikan Anda melengkapi krede
 ```env
 # Koneksi Database (Sudah diatur otomatis oleh Docker Compose)
 DB_CONNECTION=pgsql
-DB_HOST=pgsql
+DB_HOST=db
 DB_PORT=5432
 DB_DATABASE=bendaharaku
 DB_USERNAME=sail

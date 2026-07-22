@@ -566,6 +566,7 @@ export default {
                     title:          'Warna Aksen',
                     description:    'Pilih warna aksen utama',
                     custom:         'Warna Kustom...',
+                    setAccent:      'Set {name} sebagai warna aksen',
                 },
             },
             
@@ -982,6 +983,9 @@ export default {
         newPhotoSelected: 'Foto baru terpilih — simpan untuk menerapkan',
         socialConnections: 'Koneksi Sosial & Pesan',
         socialConnectionsDesc: 'Hubungkan aplikasi perpesanan untuk integrasi AI',
+        whatsapp: 'WhatsApp',
+        telegram: 'Telegram',
+        google: 'Google',
 
         // Google OAuth
         google: {
@@ -1164,6 +1168,16 @@ export default {
     // CHAT & SEARCH
     // ────────────────────────────────────────────────────────────────
     chat: {
+        source: {
+            web: 'Web Chat',
+            telegram: 'Bot Telegram',
+            whatsapp: 'WhatsApp',
+            discord: 'Discord',
+            api: 'REST API',
+            import: 'Impor',
+            manual: 'Entri Manual',
+            dashboard: 'Dashboard Web',
+        },
         history: 'Riwayat percakapan',
         placeholder: 'Tanya saya apa saja...',
         typing: 'Sedang mengetik...',
