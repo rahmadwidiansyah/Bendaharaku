@@ -60,6 +60,24 @@ return [
             'report' => false,
         ],
 
+        /*
+        |--------------------------------------------------------------------------
+        | Evidence Disk
+        |--------------------------------------------------------------------------
+        |
+        | Private disk untuk menyimpan file bukti transaksi (gambar) yang di-upload
+        | user melalui chat. File disimpan di storage/app/private/evidence/ dan
+        | tidak dapat diakses langsung via URL publik.
+        |
+        */
+        'evidence' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/evidence'),
+            'serve' => false,
+            'throw' => true,
+            'report' => true,
+        ],
+
     ],
 
     /*

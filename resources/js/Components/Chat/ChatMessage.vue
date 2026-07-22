@@ -31,7 +31,7 @@ const props = defineProps({
     showAvatar: { type: Boolean, default: true },
 })
 
-const emit = defineEmits(['retry', 'regenerate', 'suggest'])
+const emit = defineEmits(['retry', 'regenerate', 'suggest', 'review'])
 
 // ── Content parsing (delegasi ke composable) ──────────────────────
 const {
@@ -87,7 +87,16 @@ const {
         <!-- Bubble user -->
         <div class="flex flex-col gap-1 min-w-0 items-end" style="max-width: 80%">
             <div class="bg-gradient-to-br from-purple-600 to-purple-500 text-white text-sm leading-relaxed px-3.5 pt-2 pb-1.5 rounded-2xl rounded-tr-md shadow-sm shadow-purple-500/20 break-words">
-                <p class="whitespace-pre-wrap break-words">{{ userText }}</p>
+                <!-- Render semua inline components (text + image) -->
+                <template v-for="(comp, i) in filteredInline" :key="i">
+                    <MessageRenderer
+                        :component="comp"
+                        @suggest="emit('suggest', $event)"
+                        @review="emit('review', $event)"
+                    />
+                </template>
+                <!-- Fallback: hanya teks (backward compat untuk pesan lama tanpa filteredInline) -->
+                <p v-if="filteredInline.length === 0 && userText" class="whitespace-pre-wrap break-words">{{ userText }}</p>
                 <div class="flex justify-end mt-0.5">
                     <ChatTimestamp
                         :datetime="message.created_at"

@@ -15,14 +15,17 @@ import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { Head, usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
-import ChatHeader     from '@/Components/Chat/ChatHeader.vue'
-import ChatArea       from '@/Components/Chat/ChatArea.vue'
-import ChatComposer   from '@/Components/Chat/ChatComposer.vue'
-import CommandSheet   from '@/Components/Chat/CommandSheet.vue'
-import ChatEmptyState from '@/Components/Chat/ChatEmptyState.vue'
+import ChatHeader      from '@/Components/Chat/ChatHeader.vue'
+import ChatArea        from '@/Components/Chat/ChatArea.vue'
+import ChatComposer    from '@/Components/Chat/ChatComposer.vue'
+import CommandSheet    from '@/Components/Chat/CommandSheet.vue'
+import ChatEmptyState  from '@/Components/Chat/ChatEmptyState.vue'
+import ChatUploadSheet    from '@/Components/Chat/ChatUploadSheet.vue'
+import EvidenceReviewSheet from '@/Components/Chat/EvidenceReviewSheet.vue'
 import { useChat }            from '@/Composables/useChat.js'
 import { useChatCommands }    from '@/Composables/useChatCommands.js'
 import { useVisualViewport }  from '@/Composables/useVisualViewport.js'
+import { useEvidenceUpload }  from '@/Composables/useEvidenceUpload.js'
 
 // ── Props dari Inertia (server-side) ──────────────────────────────
 const props = defineProps({
@@ -47,6 +50,7 @@ const {
     isLoadingMore,
     chatAreaRef,
     sendMessage,
+    sendEvidenceMessage,
     loadMore,
     scrollToBottom,
     showJumpBtn,
@@ -55,6 +59,7 @@ const {
     onScrollUpdate,
     retryLastMessage,
     regenerateMessage,
+    updateEvidenceInMessage,
 } = useChat(props.initialMessages, props.conversation?.id ?? null, props.initialHasMore)
 
 const {
@@ -70,6 +75,21 @@ const { t } = useI18n()
 
 // ── Visual viewport (responsive to Android keyboard) ───────────────
 const { height: viewportHeight } = useVisualViewport()
+
+// ── Evidence upload ───────────────────────────────────────────────
+const {
+    setFile,
+    upload,
+    localPreviewUrl,
+    evidence,
+    reset: resetUpload,
+} = useEvidenceUpload()
+
+const isUploadSheetOpen = ref(false)
+
+// ── Evidence review ───────────────────────────────────────────────
+const isReviewSheetOpen = ref(false)
+const reviewUuid        = ref(null)
 
 // Dynamic container height: use visualViewport when available, fallback to 100dvh
 const containerStyle = computed(() => ({
@@ -110,6 +130,25 @@ async function handleSend(text) {
     await sendMessage(text)
 }
 
+async function handleFileSelected(file) {
+    if (chatAreaComp.value?.el && !chatAreaRef.value) {
+        chatAreaRef.value = chatAreaComp.value.el
+    }
+
+    // Siapkan file dan buat local preview URL
+    setFile(file)
+
+    // Upload ke backend dulu, dapatkan UUID
+    await upload()
+
+    // Setelah upload selesai, evidence.value berisi { uuid, url, ... }
+    if (evidence.value?.uuid) {
+        await sendEvidenceMessage(evidence.value.uuid, localPreviewUrl.value ?? evidence.value.url)
+    }
+
+    resetUpload()
+}
+
 async function handleCommandSelect(commandText) {
     closeSheet()
     await handleSend(commandText)
@@ -127,6 +166,16 @@ async function handleRegenerate(botMessage) {
         chatAreaRef.value = chatAreaComp.value.el
     }
     await regenerateMessage(botMessage)
+}
+
+function handleReview(uuid) {
+    reviewUuid.value        = uuid
+    isReviewSheetOpen.value = true
+}
+
+function handleCommitSuccess({ uuid }) {
+    // Update bubble gambar agar status berubah ke COMMITTED dan tombol Review hilang
+    updateEvidenceInMessage(uuid)
 }
 </script>
 
@@ -163,6 +212,7 @@ async function handleRegenerate(botMessage) {
                 @scrollUpdate="onScrollUpdate"
                 @regenerate="handleRegenerate"
                 @suggest="handleSuggestionSelect"
+                @review="handleReview"
                 class="flex-1"
             >
                 <template v-if="messages.length === 0 && !isLoading">
@@ -230,6 +280,20 @@ async function handleRegenerate(botMessage) {
                 :is-loading="isLoading"
                 @send="handleSend"
                 @openCommands="openSheet"
+                @openUpload="isUploadSheetOpen = true"
+            />
+
+            <!-- Upload bottom sheet -->
+            <ChatUploadSheet
+                v-model="isUploadSheetOpen"
+                @camera="handleFileSelected"
+            />
+
+            <!-- Evidence review sheet -->
+            <EvidenceReviewSheet
+                v-model="isReviewSheetOpen"
+                :evidence-uuid="reviewUuid"
+                @commitSuccess="handleCommitSuccess"
             />
 
         </div>

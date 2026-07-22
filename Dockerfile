@@ -45,12 +45,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     python3-pip \
     python3-venv \
+    tesseract-ocr \
+    libtesseract-dev \
     libpq-dev \
     libonig-dev \
     libzip-dev \
     libpng-dev \
     libjpeg-dev \
     libfreetype6-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # --- 2. Create Python virtual environment ---
@@ -102,7 +105,7 @@ ENV LOG_CHANNEL=stdout
 COPY docker/entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-EXPOSE 80 3987
+EXPOSE 80 3987 8000
 
 STOPSIGNAL SIGTERM
 

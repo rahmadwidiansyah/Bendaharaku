@@ -138,6 +138,27 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        /*
+        |--------------------------------------------------------------------------
+        | Evidence Pipeline Log Channel
+        |--------------------------------------------------------------------------
+        |
+        | Channel khusus untuk seluruh log pipeline pemrosesan evidence (OCR,
+        | Normalize, Classification, Parsing, Resolve, Commit). Dipisah dari
+        | log Laravel utama agar mudah di-monitor dan di-debug secara terpisah.
+        |
+        | Semua Log::channel('evidence') di dalam Evidence Pipeline diarahkan
+        | ke file ini.
+        |
+        */
+        'evidence' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/evidence.log'),
+            'level' => env('EVIDENCE_LOG_LEVEL', 'debug'),
+            'days' => env('EVIDENCE_LOG_DAYS', 14),
+            'replace_placeholders' => true,
+        ],
+
     ],
 
 ];

@@ -28,7 +28,7 @@ const props = defineProps({
 
 const { t } = useI18n()
 
-const emit = defineEmits(['loadMore', 'scrollUpdate', 'retry', 'regenerate', 'suggest'])
+const emit = defineEmits(['loadMore', 'scrollUpdate', 'retry', 'regenerate', 'suggest', 'review'])
 
 /** Avatar grouping: tampilkan avatar hanya di awal grup role yang sama */
 function shouldShowAvatar(messages, index) {
@@ -132,6 +132,7 @@ defineExpose({ el: containerRef })
                 @retry="emit('retry', $event)"
                 @regenerate="emit('regenerate', $event)"
                 @suggest="emit('suggest', $event)"
+                @review="emit('review', $event)"
             />
         </TransitionGroup>
 

@@ -9,7 +9,7 @@ const props = defineProps({
   placeholder: { type: String,  default: '' },
 })
 
-const emit = defineEmits(['send', 'openCommands'])
+const emit = defineEmits(['send', 'openCommands', 'openUpload'])
 
 const text        = ref('')
 const textareaRef = ref(null)
@@ -103,6 +103,27 @@ onBeforeUnmount(() => {
       >
         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+        </svg>
+      </button>
+
+      <!-- Attachment button -->
+      <button
+        type="button"
+        @click="$emit('openUpload')"
+        :disabled="isLoading"
+        :class="[
+          'shrink-0 w-11 h-11 rounded-2xl flex items-center justify-center',
+          'border transition-all duration-200',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50',
+          isLoading
+            ? 'opacity-40 cursor-not-allowed bg-gray-800/60 border-white/8 text-gray-600'
+            : 'bg-gray-800/80 border-white/8 text-gray-400 hover:text-sky-400 hover:border-sky-500/30 hover:bg-gray-800 active:scale-95',
+        ]"
+        :aria-label="t('chat.attachmentButton')"
+        :title="t('chat.attachmentTitle')"
+      >
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
         </svg>
       </button>
 

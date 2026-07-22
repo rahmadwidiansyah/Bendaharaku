@@ -71,6 +71,17 @@ const {
 // ─── Step flow (Edit mulai dari step 2, bisa kembali ke type selector) ──
 const formStep = ref(2)
 
+// Navigate back ke step tertentu — Edit tidak seagresif Create karena sudah ada data
+const resetToStep = (step) => {
+    formStep.value = step
+    if (step <= 2) {
+        // Reset category hanya jika kembali ke step 2, biarkan wallet tetap
+        if (step === 2 && !['Transfer', 'Debt', 'Receivable'].includes(mainTab.value)) {
+            form.category_id = null
+        }
+    }
+}
+
 const { goBack, pushStepState } = useWizardNavigation({
     formStep, resetToStep,
     onBackFromFirstStep: () => router.visit(route('dashboard')),
@@ -117,16 +128,7 @@ const goToNominal = () => {
     pushStepState()
 }
 
-// Navigate back ke step tertentu — Edit tidak seagresif Create karena sudah ada data
-const resetToStep = (step) => {
-    formStep.value = step
-    if (step <= 2) {
-        // Reset category hanya jika kembali ke step 2, biarkan wallet tetap
-        if (step === 2 && !['Transfer', 'Debt', 'Receivable'].includes(mainTab.value)) {
-            form.category_id = null
-        }
-    }
-}
+
 
 // ─── Transfer: animasi swap ───────────────────────────────────────
 const isSwapping = ref(false)

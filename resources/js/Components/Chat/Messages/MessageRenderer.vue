@@ -20,6 +20,7 @@ import MessageSummaryCard     from './MessageSummaryCard.vue'
 import MessageErrorCard       from './MessageErrorCard.vue'
 import MessageSuggestion      from './MessageSuggestion.vue'
 import MessageReportSection   from './MessageReportSection.vue'
+import MessageImage           from './MessageImage.vue'
 
 defineProps({
     component: {
@@ -36,7 +37,7 @@ defineProps({
     },
 })
 
-const emit = defineEmits(['suggest'])
+const emit = defineEmits(['suggest', 'review'])
 
 const componentMap = {
     text:             MessageText,
@@ -47,11 +48,7 @@ const componentMap = {
     warning:          MessageErrorCard,    // Reuse ErrorCard, severity prop menentukan style
     suggestion:       MessageSuggestion,
     report_section:   MessageReportSection,
-    // Future:
-    // quick_reply:   MessageQuickReply,
-    // image:         MessageImage,
-    // code:          MessageCode,
-    // markdown:      MessageMarkdown,
+    image:            MessageImage,
 }
 </script>
 
@@ -63,6 +60,7 @@ const componentMap = {
         :content="content"
         v-bind="component.type === 'transaction_card' ? { metadata } : {}"
         @suggest="emit('suggest', $event)"
+        @review="emit('review', $event)"
     />
     <!-- Fallback: tipe tidak dikenal, tampilkan teks mentah (debug only) -->
     <div v-else class="text-2xs text-gray-600 font-mono px-2 py-1">
