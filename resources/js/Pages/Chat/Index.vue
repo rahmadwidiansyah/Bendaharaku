@@ -11,7 +11,7 @@
  * dan tidak menutupi bubble/card.
  */
 
-import { ref, onMounted, nextTick, watch } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { Head, usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
@@ -20,8 +20,9 @@ import ChatArea       from '@/Components/Chat/ChatArea.vue'
 import ChatComposer   from '@/Components/Chat/ChatComposer.vue'
 import CommandSheet   from '@/Components/Chat/CommandSheet.vue'
 import ChatEmptyState from '@/Components/Chat/ChatEmptyState.vue'
-import { useChat }         from '@/Composables/useChat.js'
-import { useChatCommands } from '@/Composables/useChatCommands.js'
+import { useChat }            from '@/Composables/useChat.js'
+import { useChatCommands }    from '@/Composables/useChatCommands.js'
+import { useVisualViewport }  from '@/Composables/useVisualViewport.js'
 
 // ── Props dari Inertia (server-side) ──────────────────────────────
 const props = defineProps({
@@ -66,6 +67,16 @@ const {
 } = useChatCommands(props.commands)
 
 const { t } = useI18n()
+
+// ── Visual viewport (responsive to Android keyboard) ───────────────
+const { height: viewportHeight } = useVisualViewport()
+
+// Dynamic container height: use visualViewport when available, fallback to 100dvh
+const containerStyle = computed(() => ({
+    height: viewportHeight.value > 0
+        ? viewportHeight.value + 'px'
+        : '100dvh',
+}))
 
 // ── Refs ──────────────────────────────────────────────────────────
 const composerRef  = ref(null)
@@ -125,9 +136,10 @@ async function handleRegenerate(botMessage) {
 
         <!--
             flex column, full viewport height.
+            Uses visualViewport API for accurate height on Android when keyboard opens.
             `relative` agar FAB bisa absolute di dalam container ini.
         -->
-        <div class="flex flex-col max-w-2xl mx-auto relative" style="height: 100dvh;">
+        <div class="flex flex-col max-w-2xl mx-auto relative" :style="containerStyle">
 
             <!-- Header -->
             <ChatHeader

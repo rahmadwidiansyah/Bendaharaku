@@ -14,7 +14,6 @@ const emit = defineEmits(['send', 'openCommands'])
 const text        = ref('')
 const textareaRef = ref(null)
 const isFocused   = ref(false)
-const keyboardOffset = ref(0)
 
 function insertText(value) {
   text.value = value
@@ -68,37 +67,21 @@ function handleGlobalKeydown(e) {
   if (textareaRef.value) textareaRef.value.focus()
 }
 
-function onViewportChange() {
-  if (typeof window !== 'undefined' && window.visualViewport) {
-    const vv = window.visualViewport
-    const diff = window.innerHeight - vv.height
-    keyboardOffset.value = diff > 0 ? diff : 0
-  }
-}
-
 onMounted(() => {
   window.addEventListener('keydown', handleGlobalKeydown)
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', onViewportChange)
-    onViewportChange()
-  }
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleGlobalKeydown)
-  if (window.visualViewport) {
-    window.visualViewport.removeEventListener('resize', onViewportChange)
-  }
 })
 </script>
 
 <template>
   <div
-    class="sticky bottom-0 z-10 bg-gray-950/96 backdrop-blur-xl"
+    class="z-10 shrink-0 bg-gray-950/96 backdrop-blur-xl border-t border-white/6"
     :style="{
-      boxShadow: '0 -1px 0 rgba(255,255,255,0.06), 0 -8px 24px rgba(0,0,0,0.4)',
-      paddingBottom: keyboardOffset ? keyboardOffset + 'px' : 'max(10px, env(safe-area-inset-bottom, 10px))',
-      transition: 'padding-bottom 0.15s ease-out',
+      boxShadow: '0 -8px 24px rgba(0,0,0,0.4)',
+      paddingBottom: 'max(10px, env(safe-area-inset-bottom, 10px))',
     }"
   >
     <div class="flex items-center gap-3 px-3 pt-2.5 pb-1.5">

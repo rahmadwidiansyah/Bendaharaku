@@ -18,6 +18,12 @@
  *   │ Bendaharaku                              │
  *   └─────────────────────────────────────────┘
  *
+ *   Settings sub-page:
+ *   ┌─────────────────────────────────────────┐
+ *   │ ← Profile                    🔔  💬  👤 │
+ *   │ Bendaharaku                              │
+ *   └─────────────────────────────────────────┘
+ *
  * ── Scroll behavior ─────────────────────────────────────────────────
  *   expanded  → h-16 (default)
  *   collapsed → h-14 (setelah scroll 40px, hanya di Dashboard)
@@ -28,8 +34,8 @@
  *   showNotification — Tampilkan tombol notifikasi (default: true)
  *   showChat         — Tampilkan shortcut AI Chat (default: true)
  *   showProfile      — Tampilkan avatar (default: true)
- *   showBackButton   — Tampilkan tombol back (default: false)
- *   backHref         — URL tombol back (default: browser history)
+ *   showBackButton   — Tampilkan tombol back (default: auto-detect dari route)
+ *   backHref         — URL tombol back (default: router history / /dashboard)
  */
 
 import { ref, computed, onMounted, onUnmounted } from 'vue'
@@ -45,7 +51,7 @@ const props = defineProps({
     showNotification: { type: Boolean, default: true  },
     showChat:         { type: Boolean, default: true  },
     showProfile:      { type: Boolean, default: true  },
-    showBackButton:   { type: Boolean, default: false },
+    showBackButton:   { type: Boolean, default: null  },  // null = auto-detect
     backHref:         { type: String,  default: null  },
 })
 
@@ -62,6 +68,29 @@ const isDashboard = computed(() => {
         return false
     }
 })
+
+// ─── Deteksi halaman Settings (sub-page membutuhkan tombol back) ──
+const isSettingsIndex = computed(() => {
+    try {
+        return route().current('settings.index')
+    } catch {
+        return false
+    }
+})
+
+const isSettingsSubPage = computed(() => {
+    try {
+        const current = route().current()
+        return current && current.startsWith('settings.') && current !== 'settings.index'
+    } catch {
+        return false
+    }
+})
+
+// showBackButton: jika prop diset manual, ikuti prop; jika null, auto
+const effectiveShowBackButton = computed(() =>
+    props.showBackButton !== null ? props.showBackButton : isSettingsSubPage.value
+)
 
 // showGreeting: jika prop diset manual, ikuti prop; jika null, auto dari route
 const shouldShowGreeting = computed(() =>
@@ -170,8 +199,27 @@ const closeProfileMenu = () => { showProfileMenu.value = false }
 const handleBack = () => {
     if (props.backHref) {
         router.visit(props.backHref)
-    } else {
-        window.history.back()
+        return
+    }
+
+    // Untuk halaman settings sub-page, kembali ke settings index
+    if (isSettingsSubPage.value) {
+        try {
+            router.visit(route('settings.index'))
+        } catch {
+            router.visit('/dashboard')
+        }
+        return
+    }
+
+    // Fallback: gunakan Inertia router.back() yang aman
+    // Jika tidak ada riwayat navigasi, arahkan ke dashboard
+    try {
+        window.history.length > 1
+            ? router.back()
+            : router.visit('/dashboard')
+    } catch {
+        router.visit('/dashboard')
     }
 }
 
@@ -203,9 +251,9 @@ const handleOpenNotif = () => { /* TODO: notification center */ }
         >
             <!-- ── Back Button (opsional) ── -->
             <button
-                v-if="showBackButton"
+                v-if="effectiveShowBackButton"
                 type="button"
-                class="shrink-0 w-9 h-9 flex items-center justify-center rounded-2xl text-gray-400 hover:text-white hover:bg-white/8 active:scale-90 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 mr-0.5"
+                class="shrink-0 w-11 h-11 flex items-center justify-center rounded-2xl text-gray-400 hover:text-white hover:bg-white/8 active:scale-90 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 mr-0.5"
                 :aria-label="$t('btn.back')"
                 @click="handleBack"
             >
