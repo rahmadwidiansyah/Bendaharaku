@@ -4,45 +4,36 @@
   <img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL">
   <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
 
-  <h1>🏦 Bendaharaku V4</h1>
+  <h1>Bendaharaku V4</h1>
   <p>Aplikasi manajemen keuangan pribadi cerdas yang memadukan pencatatan Web Dashboard dengan pemrosesan bahasa natural (NLP) via AI Telegram Bot.</p>
 </div>
 
 ---
 
-## 🌐 Live Demo
+## Live Demo
 
 Ingin melihat dan mencoba Bendaharaku V4 secara langsung? Silakan kunjungi tautan berikut:  
-👉 **[bendaharaku.widihhh.my.id](https://bendaharaku.widihhh.my.id)**
+ **[bendaharaku.widihhh.my.id](https://bendaharaku.widihhh.my.id)**
 
 ---
 
-## 🔗 Arsitektur
+## Arsitektur & Repositori
 
-Proyek ini adalah **monorepo** — seluruh service berada dalam satu repository:
+Sistem ini berjalan dengan arsitektur terpisah untuk memastikan performa yang maksimal:
+- **Core Web & Backend (Repo Ini):** Menggunakan Laravel, Vue 3, Inertia.js, Tailwind CSS, dan PostgreSQL.
+- **AI Microservice:** Menangani pemrosesan teks Telegram menggunakan Python FastAPI. Source code dapat diakses di repositori berikut:  
+   **[script_pencatat_keuangan](https://github.com/rahmadwidiansyah/script_pencatat_keuangan.git)**
 
-```
-Bendaharaku/
-├── app/                          # Laravel backend (PHP 8.4)
-├── resources/                    # Vue 3 frontend (Inertia)
-├── script_pencatat_keuangan/     # Python AI Parser (FastAPI + thefuzz)
-├── docker/                       # Entrypoint, nginx config
-├── Dockerfile                    # Multi-stage build (Laravel + Python)
-└── docker-compose.yml            # Semua service
-```
+## Fitur Utama
 
-Komunikasi Laravel ↔ Python dilakukan melalui HTTP internal (Docker bridge network), tanpa API key.
-
-## ✨ Fitur Utama
-
-- 🤖 **AI Telegram Bot (Natural Language):** Catat transaksi hanya dengan *chat* santai. Sistem mencocokkan teks ke Kategori dan Dompet di *database* secara dinamis tanpa *hardcoded keyword*.
-- 💼 **Smart Wallet Management:** Manajemen dompet yang terstruktur, memisahkan tab **Liquid** dan **Investment / Asset** secara otomatis.
-- 🤝 **Debt & Receivable Tracker:** Sistem cerdas untuk mendeteksi dan menghitung hutang/piutang berdasarkan *hashtag* (contoh: *"Pinjam duit 100k bca #Budi"*).
-- 🔐 **SSO Google Authentication:** Registrasi dan login yang cepat, aman, dan mulus terintegrasi langsung dengan akun Google.
+- **AI Telegram Bot (Natural Language):** Catat transaksi hanya dengan *chat* santai. Sistem mencocokkan teks ke Kategori dan Dompet di *database* secara dinamis tanpa *hardcoded keyword*.
+- **Smart Wallet Management:** Manajemen dompet yang terstruktur, memisahkan tab **Liquid** dan **Investment / Asset** secara otomatis.
+- **Debt & Receivable Tracker:** Sistem cerdas untuk mendeteksi dan menghitung hutang/piutang berdasarkan *hashtag* (contoh: *"Pinjam duit 100k bca #Budi"*).
+- **SSO Google Authentication:** Registrasi dan login yang cepat, aman, dan mulus terintegrasi langsung dengan akun Google.
 
 ---
 
-## 🛠️ Prasyarat
+## Prasyarat
 
 Karena aplikasi ini sudah dikonfigurasi penuh menggunakan kontainer, Anda hanya membutuhkan:
 - **Git** (Untuk kloning repositori)
@@ -50,7 +41,7 @@ Karena aplikasi ini sudah dikonfigurasi penuh menggunakan kontainer, Anda hanya 
 
 ---
 
-## 🚀 Panduan Instalasi (Docker Setup)
+## Panduan Instalasi (Docker Setup)
 
 Ikuti langkah-langkah di bawah ini untuk menjalankan aplikasi di lingkungan lokal Anda menggunakan Docker:
 
@@ -99,7 +90,7 @@ curl http://localhost:4000/health
 
 ---
 
-## ⚙️ Konfigurasi Environment
+## Konfigurasi Environment
 
 Setelah melakukan *copy* file `.env` (Langkah 3), pastikan Anda melengkapi kredensial berikut di dalam file `.env` agar seluruh fitur aplikasi dapat berjalan normal:
 
@@ -113,20 +104,21 @@ DB_USERNAME=sail
 DB_PASSWORD=password
 
 # Google OAuth (Untuk Fitur Login)
-GOOGLE_CLIENT_ID="your_google_client_id"
-GOOGLE_CLIENT_SECRET="your_google_client_secret"
+GOOGLE_CLIENT_ID="google_client_id"
+GOOGLE_CLIENT_SECRET="google_client_secret"
 GOOGLE_REDIRECT_URI="http://localhost:8000/auth/google/callback"
 
-# Integrasi Telegram & AI Parser
-TELEGRAM_BOT_TOKEN="your_telegram_bot_token"
-AI_PARSER_URL="http://ai-parser:3987"
+# Integrasi Telegram & AI Python
+TELEGRAM_BOT_TOKEN="telegram_bot_token"
+PYTHON_AI_URL="http://ip_atau_domain_python_ai:8001"
+PYTHON_AI_KEY="ai_secret_key"
 ```
 
-> 💡 **Catatan untuk Testing Telegram:** Saat *development* di `localhost`, URL web Anda tidak bisa diakses langsung oleh Telegram. Gunakan Ngrok atau Cloudflare Tunnel, lalu setel webhook Telegram ke URL tersebut.
+> **Catatan untuk Testing Telegram:** Saat *development* di `localhost`, URL web Anda tidak bisa diakses langsung oleh Telegram. Gunakan Ngrok atau Cloudflare Tunnel, lalu setel webhook Telegram ke URL tersebut.
 
 ---
 
-## 👨‍💻 Kontributor
+## Kontributor
 
 Proyek ini dibangun dan dikembangkan secara kolaboratif oleh:
 - **Rahmad Widiansyah** - [@rahmadwidiansyah](https://github.com/rahmadwidiansyah)
