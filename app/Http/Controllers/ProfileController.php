@@ -11,8 +11,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
- // <-- Ini yang kelupaan
-
 class ProfileController extends Controller
 {
     /**

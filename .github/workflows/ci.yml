@@ -108,7 +108,7 @@ jobs:
           DB_DATABASE: testing
           DB_USERNAME: postgres
           DB_PASSWORD: postgres
-        run: php artisan test --parallel --without-tty
+        run: php artisan test --without-tty
 
   # ──────────────────────────────────────────────────────────────────
   # 3. PYTHON TESTS
