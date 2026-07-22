@@ -74,16 +74,7 @@ const activeSkeletonComponent = computed(() =>
 // 1. Sedang loading
 // 2. Ada skeleton yang cocok untuk halaman tujuan
 // 3. Bukan halaman fullscreen (hideNav = false)
-const isSettingsRoute = computed(() => {
-    try {
-        const current = route().current()
-        return current ? current.startsWith('settings.') : false
-    } catch {
-        return false
-    }
-})
-
-const effectiveHideNav = computed(() => props.hideNav || isSettingsRoute.value)
+const effectiveHideNav = computed(() => props.hideNav)
 
 const showSkeleton = computed(() =>
     isLoading.value && activeSkeletonComponent.value !== null && !effectiveHideNav.value

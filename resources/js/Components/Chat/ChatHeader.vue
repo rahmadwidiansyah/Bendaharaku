@@ -33,7 +33,7 @@ const statusText = computed(() =>
         min-height 56px setelah safe area
     -->
     <header
-        class="sticky top-0 z-20 bg-gray-950/95 backdrop-blur-xl border-b border-white/6"
+        class="sticky top-0 z-20 shrink-0 bg-gray-950/95 backdrop-blur-xl border-b border-white/6"
         style="padding-top: env(safe-area-inset-top, 0px);"
     >
         <div class="flex items-center gap-3 px-4 h-14">
