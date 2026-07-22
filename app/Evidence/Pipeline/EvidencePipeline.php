@@ -26,8 +26,8 @@ class EvidencePipeline
         $pipelineStart = microtime(true);
 
         $stageNames = array_map(
-            fn ($s) => is_string($s) ? class_basename($s) : class_basename(get_class($s)),
-            $this->stages
+            fn ($stage) => is_string($stage) ? class_basename($stage) : class_basename(get_class($stage)),
+            $this->stages,
         );
 
         Log::channel('evidence')->info('Pipeline started', [
@@ -54,42 +54,41 @@ class EvidencePipeline
     private function buildPipeline(array $stages, int $index): Closure
     {
         if ($index >= count($stages)) {
-            return function (EvidenceContext $ctx) {
-                // End of pipeline — no-op
+            return static function (EvidenceContext $context): void {
+                // End of pipeline.
             };
         }
 
         $stage = $this->resolveStage($stages[$index]);
         $next = $this->buildPipeline($stages, $index + 1);
 
-        return function (EvidenceContext $ctx) use ($stage, $next, $stages, $index) {
+        return function (EvidenceContext $context) use ($stage, $next, $index): void {
             $stageName = class_basename($stage);
             $start = microtime(true);
 
-            Log::channel('evidence')->info("{$stageName} Started", [
-                'evidence_id' => $ctx->evidence->id,
+            Log::channel('evidence')->info($stageName.' Started', [
+                'evidence_id' => $context->evidence->id,
                 'stage_index' => $index,
-            });
+            ]);
 
             try {
-                $stage->handle($ctx, $next);
+                $stage->handle($context, $next);
 
                 $duration = (int) ((microtime(true) - $start) * 1000);
                 $stageKey = strtoupper(str_replace('Stage', '', $stageName));
-                $ctx->recordStageDuration($stageKey, $duration);
+                $context->recordStageDuration($stageKey, $duration);
 
-                Log::channel('evidence')->info("{$stageName} Finished", [
-                    'evidence_id' => $ctx->evidence->id,
+                Log::channel('evidence')->info($stageName.' Finished', [
+                    'evidence_id' => $context->evidence->id,
                     'duration_ms' => $duration,
                 ]);
-
             } catch (\Throwable $e) {
                 $duration = (int) ((microtime(true) - $start) * 1000);
                 $stageKey = strtoupper(str_replace('Stage', '', $stageName));
-                $ctx->recordStageDuration($stageKey, $duration);
+                $context->recordStageDuration($stageKey, $duration);
 
-                Log::channel('evidence')->error("{$stageName} Failed", [
-                    'evidence_id' => $ctx->evidence->id,
+                Log::channel('evidence')->error($stageName.' Failed', [
+                    'evidence_id' => $context->evidence->id,
                     'duration_ms' => $duration,
                     'error' => $e->getMessage(),
                     'file' => $e->getFile(),
@@ -98,7 +97,7 @@ class EvidencePipeline
 
                 $pipelineService = app(EvidencePipelineService::class);
                 $pipelineService->fail(
-                    evidence: $ctx->evidence,
+                    evidence: $context->evidence,
                     errorMessage: "[{$stageName}] {$e->getMessage()}",
                     stage: $stageKey,
                     exception: $e,

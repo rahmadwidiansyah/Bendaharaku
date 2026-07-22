@@ -6,6 +6,9 @@ use App\Http\Controllers\AiAnalyticsController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ChatBotProfileController;
+use App\Http\Controllers\EvidenceController;
+use App\Http\Controllers\EvidenceDebugController;
+use App\Http\Controllers\EvidenceReviewController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\LoanController;
@@ -442,6 +445,22 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/transaction/{id}/cancel', [WebChatController::class, 'cancelTransaction'])->name('transaction.cancel');
         // Draft-specific route: status check berdasarkan draft ID
         Route::get('/draft/{id}/status', [WebChatController::class, 'draftStatus'])->name('draft.status');
+
+        // ── Evidence (OCR Upload & Review) ────────────────────────
+        // Upload gambar bukti transaksi, trigger OCR pipeline
+        Route::post('/evidence', [EvidenceController::class, 'store'])->name('evidence.store');
+
+        // Review & edit draft hasil OCR
+        Route::get('/evidence/{uuid}/draft', [EvidenceReviewController::class, 'show'])->name('evidence.draft.show');
+        Route::patch('/evidence/{uuid}/draft', [EvidenceReviewController::class, 'update'])->name('evidence.draft.update');
+
+        // Commit draft menjadi transaksi nyata
+        Route::post('/evidence/{uuid}/commit', [EvidenceReviewController::class, 'commit'])->name('evidence.commit');
+
+        // Debug & monitoring pipeline
+        Route::get('/evidence/{uuid}/timeline', [EvidenceDebugController::class, 'timeline'])->name('evidence.timeline');
+        Route::get('/evidence/stats', [EvidenceDebugController::class, 'stats'])->name('evidence.stats');
+        Route::get('/evidence/health', [EvidenceDebugController::class, 'health'])->name('evidence.health');
     });
 
     // ── Chat Bot Profile settings ─────────────────────────────────
@@ -466,6 +485,14 @@ Route::middleware(['auth'])->group(function () {
 
 // Health check
 Route::get('/health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'service' => 'laravel',
+        'time' => now()->toIso8601String(),
+    ]);
+});
+
+Route::get('/ready', function () {
     return response()->json([
         'status' => 'ok',
         'service' => 'laravel',

@@ -49,6 +49,26 @@ const {
     selectedCategory, activeCategories, activeSubjects, isMoneyIn, selectCategory,
 } = tx
 
+// ─── Step flow ────────────────────────────────────────────────────
+const formStep = ref(1)
+const typeConfirmed = ref(false)
+
+const resetToStep = (step) => {
+    formStep.value = step
+    if (step <= 1) {
+        typeConfirmed.value = false
+        form.category_id = null
+        form.transaction_type = null
+        showBottomPanel.value = false
+    }
+    if (step <= 2) {
+        if (!['Transfer', 'Debt', 'Receivable'].includes(mainTab.value)) {
+            form.category_id = null
+        }
+        showBottomPanel.value = false
+    }
+}
+
 const { goBack, pushStepState } = useWizardNavigation({
     formStep, resetToStep,
     onBackFromFirstStep: () => router.visit(route('dashboard')),
@@ -58,10 +78,6 @@ onMounted(() => {
     setType('Expense')
     loadWalletFrequency()
 })
-
-// ─── Step flow ────────────────────────────────────────────────────
-const formStep = ref(1)
-const typeConfirmed = ref(false)
 
 // Transfer: animasi swap
 const isSwapping = ref(false)
@@ -106,21 +122,7 @@ const confirmCategory = () => {
     showBottomPanel.value = true
 }
 
-const resetToStep = (step) => {
-    formStep.value = step
-    if (step <= 1) {
-        typeConfirmed.value = false
-        form.category_id = null
-        form.transaction_type = null
-        showBottomPanel.value = false
-    }
-    if (step <= 2) {
-        if (!['Transfer', 'Debt', 'Receivable'].includes(mainTab.value)) {
-            form.category_id = null
-        }
-        showBottomPanel.value = false
-    }
-}
+
 
 const activeTypeItem = computed(() => TYPE_ITEMS.value.find(i => i.tab === mainTab.value))
 

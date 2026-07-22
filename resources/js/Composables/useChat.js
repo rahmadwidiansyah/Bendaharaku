@@ -133,6 +133,81 @@ export function useChat(initialMessages = [], initialConversationId = null, init
         }
     }
 
+    // ── Send evidence (image upload) ──────────────────────────────────
+
+    async function sendEvidenceMessage(evidenceUuid, localPreviewUrl, text = '') {
+        if (isLoading.value) return
+
+        error.value = null
+
+        // Push user bubble dengan image preview secara optimistis
+        const userMsg = {
+            id:         null,
+            _localId:   `local_${Date.now()}_${Math.random()}`,
+            role:       'user',
+            content:    [
+                { type: 'image', localPreviewUrl, evidenceUuid, uploading: false },
+                ...(text.trim() ? [{ type: 'text', text: text.trim() }] : []),
+            ],
+            metadata:   { evidence_uuid: evidenceUuid },
+            created_at: new Date().toISOString(),
+        }
+        messages.value.push(userMsg)
+        await scrollToBottom(true, true)
+
+        isLoading.value = true
+        isTyping.value  = true
+
+        try {
+            const { data } = await axios.post(route('chat.message'), {
+                message:         text.trim() || '[Evidence]',
+                conversation_id: conversationId.value,
+                evidence_uuid:   evidenceUuid,
+            })
+
+            if (data.conversation_id) {
+                conversationId.value = data.conversation_id
+            }
+
+            // Replace optimistic user bubble dengan server data
+            if (data.user_message) {
+                const idx = messages.value.findIndex((m) => m._localId === userMsg._localId)
+                if (idx !== -1) {
+                    messages.value[idx] = normalizeMessage(data.user_message)
+                }
+            }
+
+            if (data.bot_message) {
+                messages.value.push(normalizeMessage(data.bot_message))
+            }
+
+            if (!isAtBottom.value) {
+                unreadCount.value += 1
+            }
+
+        } catch (err) {
+            const errData = err?.response?.data
+            if (errData?.conversation_id) {
+                conversationId.value = errData.conversation_id
+            }
+
+            if (errData?.bot_message) {
+                const idx = messages.value.findIndex((m) => m._localId === userMsg._localId)
+                if (idx !== -1) {
+                    messages.value[idx] = normalizeMessage(errData.user_message ?? userMsg)
+                }
+                messages.value.push(normalizeMessage(errData.bot_message))
+            } else {
+                error.value = 'Gagal mengirim bukti. Periksa koneksi internet.'
+                messages.value.push(buildErrorMessage(err))
+            }
+        } finally {
+            isLoading.value = false
+            isTyping.value  = false
+            await scrollToBottom(true)
+        }
+    }
+
     // ── Load history ──────────────────────────────────────────────
 
     async function loadMore() {
@@ -275,6 +350,34 @@ export function useChat(initialMessages = [], initialConversationId = null, init
         messages.value[msgIdx] = { ...msg, content: updated }
     }
 
+    /**
+     * Update status image/evidence bubble setelah commit.
+     * Mencari semua message user yang mengandung { type: 'image', evidenceUuid }
+     * dan mengubah evidenceStatus menjadi 'COMMITTED' + committed = true.
+     *
+     * @param {string} evidenceUuid  - UUID evidence yang sudah di-commit
+     */
+    function updateEvidenceInMessage(evidenceUuid) {
+        if (!evidenceUuid) return
+        messages.value = messages.value.map(msg => {
+            if (msg.role !== 'user') return msg
+            if (!Array.isArray(msg.content)) return msg
+            const hasTarget = msg.content.some(
+                c => c.type === 'image' && c.evidenceUuid === evidenceUuid
+            )
+            if (!hasTarget) return msg
+            return {
+                ...msg,
+                content: msg.content.map(c => {
+                    if (c.type === 'image' && c.evidenceUuid === evidenceUuid) {
+                        return { ...c, evidenceStatus: 'COMMITTED', committed: true }
+                    }
+                    return c
+                }),
+            }
+        })
+    }
+
     return {
         messages,
         conversationId,
@@ -288,6 +391,7 @@ export function useChat(initialMessages = [], initialConversationId = null, init
         showJumpBtn,
         unreadCount,
         sendMessage,
+        sendEvidenceMessage,
         retryLastMessage,
         regenerateMessage,
         loadMore,
@@ -295,5 +399,6 @@ export function useChat(initialMessages = [], initialConversationId = null, init
         jumpToLatest,
         onScrollUpdate,
         updateTransactionInMessage,
+        updateEvidenceInMessage,
     }
 }

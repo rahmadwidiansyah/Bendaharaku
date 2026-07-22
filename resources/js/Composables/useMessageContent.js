@@ -12,7 +12,7 @@
 import { computed, isRef } from 'vue'
 
 /** Tipe komponen yang masuk ke dalam bubble (inline) */
-const INLINE_TYPES = new Set(['text', 'divider', 'suggestion'])
+const INLINE_TYPES = new Set(['text', 'divider', 'suggestion', 'image'])
 
 /**
  * @param {Object | Ref<Object> | (() => Object)} messageSource - Pesan atau getter
