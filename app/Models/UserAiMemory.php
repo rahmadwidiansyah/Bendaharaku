@@ -12,6 +12,9 @@ class UserAiMemory extends Model
     protected $fillable = [
         'user_id',
         'keyword_pattern',
+        'raw_subject',
+        'normalized_subject',
+        'memory_keyword',
         'category_id',
         'wallet_id',
         'hit_count',

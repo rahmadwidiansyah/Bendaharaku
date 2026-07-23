@@ -10,6 +10,8 @@ use App\Http\Requests\SaveAiSettingsRequest;
 use App\Models\AiParseLog;
 use App\Models\AiUsageLog;
 use App\Models\UserAiCredential;
+use App\Models\UserAiMemory;
+use App\Models\UserAiMemoryLog;
 use App\Services\AI\AiCredentialManager;
 use App\Services\AI\AiPreferenceManager;
 use App\Services\AI\PlaceholderConnectionTester;
@@ -233,5 +235,102 @@ class AiSettingsController extends Controller
             AiProvider::OpenAI => ['gpt-4o-mini', 'gpt-4o'],
             AiProvider::DeepSeek => ['deepseek-chat'],
         };
+    }
+
+    public function memories(Request $request): Response
+    {
+        $user = $request->user();
+        $search = $request->input('search');
+        $filter = $request->input('filter', 'all');
+
+        $query = UserAiMemory::where('user_id', $user->id)
+            ->with(['category:id,category_name', 'wallet:id,name']);
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('keyword_pattern', 'like', "%{$search}%")
+                  ->orWhere('raw_subject', 'like', "%{$search}%")
+                  ->orWhere('normalized_subject', 'like', "%{$search}%")
+                  ->orWhere('memory_keyword', 'like', "%{$search}%");
+            });
+        }
+
+        if ($filter === 'active') {
+            $query->where('weight', '>', 0.0);
+        } elseif ($filter === 'low') {
+            $query->where('weight', '<', 1.0);
+        } elseif ($filter === 'high') {
+            $query->where('weight', '>=', 3.0);
+        }
+
+        $memories = $query->orderByDesc('weight')
+            ->orderByDesc('hit_count')
+            ->paginate(20)
+            ->through(fn (UserAiMemory $m) => [
+                'id' => $m->id,
+                'keyword' => $m->memory_keyword ?? $m->keyword_pattern,
+                'raw_subject' => $m->raw_subject,
+                'normalized_subject' => $m->normalized_subject,
+                'category' => $m->category?->category_name,
+                'wallet' => $m->wallet?->name,
+                'weight' => (float) $m->weight,
+                'hit_count' => $m->hit_count,
+                'last_applied_at' => $m->last_applied_at?->diffForHumans(),
+                'created_at' => $m->created_at?->toIso8601String(),
+            ]);
+
+        return Inertia::render('Settings/AI/MemoryManage', [
+            'memories' => $memories,
+            'filters' => ['search' => $search, 'filter' => $filter],
+        ]);
+    }
+
+    public function memoryLogs(int $memoryId, Request $request): Response
+    {
+        $user = $request->user();
+
+        $memory = UserAiMemory::where('user_id', $user->id)
+            ->with(['category:id,category_name', 'wallet:id,name'])
+            ->findOrFail($memoryId);
+
+        $logs = UserAiMemoryLog::where('memory_id', $memoryId)
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(fn (UserAiMemoryLog $log) => [
+                'id' => $log->id,
+                'action' => $log->action,
+                'source' => $log->source,
+                'raw_subject' => $log->raw_subject,
+                'normalized_subject' => $log->normalized_subject,
+                'memory_keyword' => $log->memory_keyword,
+                'old_weight' => $log->old_weight,
+                'new_weight' => $log->new_weight,
+                'old_hit_count' => $log->old_hit_count,
+                'new_hit_count' => $log->new_hit_count,
+                'reason' => $log->reason,
+                'metadata' => $log->metadata,
+                'algorithm_version' => $log->algorithm_version,
+                'created_at' => $log->created_at->toIso8601String(),
+                'created_at_diff' => $log->created_at->diffForHumans(),
+            ]);
+
+        return Inertia::render('Settings/AI/MemoryDetail', [
+            'memory' => [
+                'id' => $memory->id,
+                'keyword' => $memory->memory_keyword ?? $memory->keyword_pattern,
+                'raw_subject' => $memory->raw_subject,
+                'normalized_subject' => $memory->normalized_subject,
+                'category' => $memory->category?->category_name,
+                'wallet' => $memory->wallet?->name,
+                'weight' => (float) $memory->weight,
+                'hit_count' => $memory->hit_count,
+                'last_applied_at' => $memory->last_applied_at?->diffForHumans(),
+                'last_applied_at_raw' => $memory->last_applied_at?->toIso8601String(),
+                'created_at' => $memory->created_at?->diffForHumans(),
+                'created_at_raw' => $memory->created_at?->toIso8601String(),
+                'algorithm_version' => 'v1-keyword',
+            ],
+            'logs' => $logs,
+        ]);
     }
 }

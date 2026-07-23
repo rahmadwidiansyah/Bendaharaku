@@ -6,10 +6,12 @@ namespace App\Services\Evidence;
 
 use App\Actions\ProcessTransactionAction;
 use App\Enums\EvidenceStatus;
+use App\Enums\TransactionSource;
 use App\Evidence\DTO\TransactionDraft;
 use App\Models\Evidence;
 use App\Models\TransactionLog;
 use App\Models\Wallet;
+use App\Services\Wallet\WalletResolutionService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -30,6 +32,7 @@ class EvidenceCommitService
 {
     public function __construct(
         private readonly ProcessTransactionAction $transactionAction,
+        private readonly WalletResolutionService $walletResolution,
     ) {}
 
     /**
@@ -99,6 +102,7 @@ class EvidenceCommitService
                     data: $transactionData,
                     userId: $evidence->user_id,
                     sourcePrefix: 'OCR',
+                    source: TransactionSource::OCR,
                 );
 
                 // Hubungkan evidence dengan transaction
@@ -247,18 +251,12 @@ class EvidenceCommitService
         // EXPENSE: user wallet → Merchant System
         if ($draft->transactionType === 'EXPENSE') {
             $sourceWalletId = $draft->walletId;
-            $destinationWalletId = $this->getSystemWalletId(
-                $evidence->user_id,
-                config('bendaharaku.system_wallets.merchant', 'Merchant System')
-            );
+            $destinationWalletId = $this->walletResolution->resolveSystemWalletId($evidence->user_id, 'merchant');
         }
 
         // INCOME: External System → user wallet
         elseif ($draft->transactionType === 'INCOME') {
-            $sourceWalletId = $this->getSystemWalletId(
-                $evidence->user_id,
-                config('bendaharaku.system_wallets.external', 'External System')
-            );
+            $sourceWalletId = $this->walletResolution->resolveSystemWalletId($evidence->user_id, 'external');
             $destinationWalletId = $draft->walletId;
         }
 
@@ -270,13 +268,9 @@ class EvidenceCommitService
         }
 
         // DEBT & RECEIVABLE: handled by category system_key, but basic mapping:
-        // For now, use destination if provided, otherwise use system wallet
         else {
             if ($destinationWalletId === null) {
-                $destinationWalletId = $this->getSystemWalletId(
-                    $evidence->user_id,
-                    config('bendaharaku.system_wallets.external', 'External System')
-                );
+                $destinationWalletId = $this->walletResolution->resolveSystemWalletId($evidence->user_id, 'external');
             }
         }
 
@@ -295,19 +289,6 @@ class EvidenceCommitService
             'notes' => $this->buildNotes($draft, $evidence),
             'is_cleared' => true,
         ];
-    }
-
-    /**
-     * Get system wallet ID by name for the user.
-     */
-    private function getSystemWalletId(int $userId, string $systemWalletName): ?int
-    {
-        $systemWallet = Wallet::where('user_id', $userId)
-            ->where('group_type', 'System')
-            ->where('name', $systemWalletName)
-            ->first();
-
-        return $systemWallet?->id;
     }
 
     /**

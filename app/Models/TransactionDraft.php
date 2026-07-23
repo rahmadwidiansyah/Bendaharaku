@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\WalletSide;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -21,6 +22,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $ai_model
  * @property string $draft_type 'single' | 'multi'
  * @property array $payload Data hasil parsing AI
+ * @property string|null $missing_wallet_side SOURCE | DESTINATION | NONE | BOTH
  * @property string $status 'pending' | 'confirmed' | 'cancelled' | 'expired'
  * @property array|null $confirmed_transaction_ids
  * @property Carbon|null $expires_at
@@ -31,6 +33,11 @@ use Illuminate\Support\Carbon;
  */
 class TransactionDraft extends Model
 {
+    public const string STATUS_PENDING = 'pending';
+    public const string STATUS_CONFIRMED = 'confirmed';
+    public const string STATUS_CANCELLED = 'cancelled';
+    public const string STATUS_EXPIRED = 'expired';
+
     protected $fillable = [
         'user_id',
         'conversation_id',
@@ -38,6 +45,7 @@ class TransactionDraft extends Model
         'ai_model',
         'draft_type',
         'payload',
+        'missing_wallet_side',
         'status',
         'confirmed_transaction_ids',
         'expires_at',
@@ -47,6 +55,7 @@ class TransactionDraft extends Model
 
     protected $casts = [
         'payload' => 'array',
+        'missing_wallet_side' => 'string',
         'confirmed_transaction_ids' => 'array',
         'ai_confidence' => 'float',
         'expires_at' => 'datetime',
@@ -71,23 +80,29 @@ class TransactionDraft extends Model
      */
     public function isPending(): bool
     {
-        return $this->status === 'pending'
+        return $this->status === self::STATUS_PENDING
             && ($this->expires_at === null || $this->expires_at->isFuture());
     }
 
-    /**
-     * Apakah draft sudah dikonfirmasi.
-     */
     public function isConfirmed(): bool
     {
-        return $this->status === 'confirmed';
+        return $this->status === self::STATUS_CONFIRMED;
     }
 
-    /**
-     * Apakah draft sudah dibatalkan.
-     */
     public function isCancelled(): bool
     {
-        return $this->status === 'cancelled';
+        return $this->status === self::STATUS_CANCELLED;
+    }
+
+    public function isMissingSource(): bool
+    {
+        return $this->missing_wallet_side === WalletSide::Source->value
+            || $this->missing_wallet_side === WalletSide::Both->value;
+    }
+
+    public function isMissingDestination(): bool
+    {
+        return $this->missing_wallet_side === WalletSide::Destination->value
+            || $this->missing_wallet_side === WalletSide::Both->value;
     }
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import SettingsLayout from '../Layouts/SettingsLayout.vue';
 import SettingsCard from '@/Components/Settings/SettingsCard.vue';
@@ -16,7 +16,6 @@ const form = ref({
 const saving = ref(false);
 const successMessage = ref('');
 const errorMessage = ref('');
-
 
 onMounted(() => {
   try {
@@ -59,7 +58,6 @@ const handleSave = () => {
           <h2 class="text-2xl font-black text-white tracking-tight leading-none">{{ t('settings.ai.memory.title') }}</h2>
           <p class="text-sm text-gray-400 mt-1.5 font-medium">{{ t('settings.ai.memory.description') }}</p>
         </div>
-      
       </template>
 
       <!-- Messages -->
@@ -69,6 +67,22 @@ const handleSave = () => {
       <div v-if="errorMessage" class="mb-4 p-4 bg-red-500/20 border border-red-500/50 rounded-lg">
         <p class="text-sm text-red-400">✗ {{ errorMessage }}</p>
       </div>
+
+      <!-- Manage AI Memory -->
+      <SettingsCard
+        :title="t('settings.ai.memory.manage.title')"
+        :description="t('settings.ai.memory.manage.description')"
+      >
+        <Link
+          :href="route('settings.ai.memory.manage')"
+          class="inline-flex items-center gap-2 px-5 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+          </svg>
+          {{ t('settings.ai.memory.manage_button') }}
+        </Link>
+      </SettingsCard>
 
       <!-- Conversation History -->
       <SettingsCard

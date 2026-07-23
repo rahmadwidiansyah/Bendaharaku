@@ -7,7 +7,6 @@ WORKDIR /app
 
 COPY composer.json composer.lock ./
 RUN composer install \
-    --no-dev \
     --no-interaction \
     --no-scripts \
     --prefer-dist \
@@ -15,7 +14,6 @@ RUN composer install \
 
 COPY . .
 RUN composer install \
-    --no-dev \
     --no-interaction \
     --prefer-dist \
     --optimize-autoloader

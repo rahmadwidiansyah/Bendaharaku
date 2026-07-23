@@ -46,6 +46,7 @@ const typeConfig = computed(() => ({
     expense:  { label: t('types.expense'),     icon: '↓', color: 'text-red-400',     bg: 'bg-red-500/8',      border: 'border-red-500/15',     badge: 'bg-red-500/12 text-red-300 border-red-500/20' },
     transfer: { label: t('types.transfer'),    icon: '⇄', color: 'text-blue-400',    bg: 'bg-blue-500/8',     border: 'border-blue-500/15',    badge: 'bg-blue-500/12 text-blue-300 border-blue-500/20' },
     debt:     { label: t('types.debt'),        icon: '🤝', color: 'text-amber-400',  bg: 'bg-amber-500/8',    border: 'border-amber-500/15',   badge: 'bg-amber-500/12 text-amber-300 border-amber-500/20' },
+    receivable: { label: t('types.receivable'), icon: '🤝', color: 'text-purple-400', bg: 'bg-purple-500/8',   border: 'border-purple-500/15',  badge: 'bg-purple-500/12 text-purple-300 border-purple-500/20' },
     other:    { label: t('transaction.title'), icon: '•', color: 'text-gray-400',    bg: 'bg-gray-500/8',     border: 'border-gray-500/15',    badge: 'bg-gray-500/12 text-gray-400 border-gray-500/20' },
 }[localTrx.value.type_key ?? 'other'] ?? { label: t('transaction.title'), icon: '•', color: 'text-gray-400', bg: 'bg-gray-500/8', border: 'border-gray-500/15', badge: 'bg-gray-500/12 text-gray-400 border-gray-500/20' }))
 

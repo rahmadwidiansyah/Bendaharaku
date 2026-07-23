@@ -43,24 +43,10 @@ class MultiTransactionPromptBuilder
         }, $wallets);
         $walletList = array_values(array_filter($walletList, fn ($w) => ! empty($w['name'])));
 
+        $instruction = require resource_path('prompts/transaction-multi.php');
+
         $payload = [
-            'instruction' => implode(' ', [
-                'Extract ALL financial transactions from the text.',
-                'Return ONLY a JSON object: {"transactions":[...]}.',
-                'Each item schema: {amount:number, transactionType:"expense"|"income"|"transfer"|"debt"|"receivable",',
-                'category:string, sourceWallet:string|null, destinationWallet:string|null,',
-                'subject:string, notes:string, isCleared:boolean, confidence:number, use_all_balance:boolean}.',
-                'CRITICAL RULE: if the wallet/dompet is NOT explicitly mentioned by the user,',
-                'set sourceWallet=null and isCleared=false \u2014 do NOT default to cash or any wallet.',
-                'AMOUNT RULE: if user says "all balance", "semua saldo", "semua uang", "seluruh saldo",',
-                '"kosongkan", etc., set use_all_balance=true and amount=0.',
-                'The backend will fill in the actual balance amount.',
-                'Otherwise set use_all_balance=false.',
-                'Amount shorthand: 20k=20000, 50rb=50000, 2jt=2000000, 1.5jt=1500000.',
-                'Match category and wallet EXACTLY from available lists.',
-                'Use keyword_aliases and wallet balances as PRIMARY reference before guessing.',
-                'If only one transaction, still return array with one item.',
-            ]),
+            'instruction' => $instruction,
             'text' => $text,
             'available_wallets' => $walletList,
             'available_categories' => $categoryNames,

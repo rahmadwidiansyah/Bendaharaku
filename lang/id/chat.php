@@ -85,6 +85,8 @@ return [
         'source_empty' => 'Dompet asal tidak terdeteksi.',
         'destination_empty' => 'Dompet tujuan tidak terdeteksi.',
         'missing_choose' => 'Eh, wallet-nya belum ada nih. Pilih salah satu dompet yang sering kamu pakai di bawah ya.',
+        'missing_source' => 'Wallet asalnya belum ada nih. Pilih salah satu dompet yang sering kamu pakai di bawah ya.',
+        'missing_destination' => 'Wallet tujuannya belum ada nih. Pilih salah satu dompet yang sering kamu pakai di bawah ya.',
     ],
 
     // ──────────────────────────────────────────────────────────────

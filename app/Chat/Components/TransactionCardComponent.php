@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Chat\Components;
 
+use App\Enums\TransactionIntent;
 use App\Models\TransactionLog;
 use App\Support\MoneyFormatter;
 
@@ -44,18 +45,10 @@ readonly class TransactionCardComponent implements ChatComponentInterface
         $trx = $this->transaction;
 
         // Resolve type key
-        $typeName = strtolower($trx->type?->name ?? '');
-        $typeKey = match ($typeName) {
-            'income' => 'income',
-            'expense' => 'expense',
-            'transfer' => 'transfer',
-            'debt' => 'debt',
-            'receivable' => 'debt',
-            default => 'other',
-        };
+        $typeKey = TransactionIntent::typeKeyFromName($trx->type?->name);
 
         // Human-readable type label (Indonesian)
-        $typeLabel = match ($typeName) {
+        $typeLabel = match ($typeKey) {
             'income' => 'Pemasukan',
             'expense' => 'Pengeluaran',
             'transfer' => 'Transfer',

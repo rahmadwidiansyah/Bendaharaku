@@ -132,7 +132,19 @@ class WalletResolver
             }
         }
 
-        // Strategy 2: Account name match
+        // Strategy 2: Exact name match
+        $searchName = strtolower($destinationAccount ?? $destinationName ?? '');
+        if ($searchName) {
+            foreach ($wallets as $wallet) {
+                if (strtolower($wallet->name) === $searchName) {
+                    Log::info('Destination wallet matched by exact name', ['wallet_id' => $wallet->id, 'name' => $wallet->name]);
+
+                    return ['wallet_id' => $wallet->id, 'wallet_name' => $wallet->name, 'confidence' => 1.0, 'match_method' => 'exact_name'];
+                }
+            }
+        }
+
+        // Strategy 3: Account name match (Levenshtein)
         if ($destinationName) {
             $searchName = strtolower($destinationName);
             foreach ($wallets as $wallet) {
@@ -144,9 +156,10 @@ class WalletResolver
             }
         }
 
-        // Strategy 3: Name similarity
-        if ($destinationName) {
-            $searchName = strtolower($destinationName);
+        // Strategy 4: Name similarity
+        $similarityName = $destinationName ?? $destinationAccount;
+        if ($similarityName) {
+            $searchName = strtolower($similarityName);
             foreach ($wallets as $wallet) {
                 if (str_contains(strtolower($wallet->name), $searchName) || str_contains($searchName, strtolower($wallet->name))) {
                     Log::info('Destination wallet matched by name similarity', ['wallet_id' => $wallet->id]);

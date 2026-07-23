@@ -12,6 +12,9 @@ namespace App\DTO;
  *
  * Format JSON dari LLM yang diharapkan:
  * {
+ *   "is_transaction": boolean,
+ *   "out_of_scope": boolean,
+ *   "reply_message": string|null,
  *   "transactions": [
  *     { ...ParsedTransaction fields... },
  *     { ...ParsedTransaction fields... }
@@ -25,6 +28,8 @@ readonly class AIParseResultMulti
      * @param  ParsedTransaction[]  $transactions  Array hasil parsing (kosong jika gagal)
      * @param  float  $confidence  Rata-rata confidence seluruh transaksi
      * @param  string|null  $error  Pesan error jika gagal
+     * @param  bool  $isOutOfScope  Apakah query di luar scope (non-financial)
+     * @param  string|null  $replyMessage  Pesan reject jika out-of-scope
      * @param  array  $usage  Token usage { prompt, completion, total }
      * @param  string  $provider  Nama provider yang digunakan
      * @param  string  $model  Model yang digunakan
@@ -34,6 +39,8 @@ readonly class AIParseResultMulti
         public array $transactions,
         public float $confidence,
         public ?string $error,
+        public bool $isOutOfScope = false,
+        public ?string $replyMessage = null,
         public array $usage = [],
         public string $provider = 'system',
         public string $model = 'unknown',

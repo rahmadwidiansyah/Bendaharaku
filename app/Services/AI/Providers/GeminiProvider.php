@@ -101,6 +101,20 @@ class GeminiProvider implements AIProviderInterface
             $jsonString = $response->json('candidates.0.content.parts.0.text');
             $aiRaw = $this->decodeJson((string) $jsonString, 'Gemini');
 
+            if (isset($aiRaw['is_transaction']) && $aiRaw['is_transaction'] === false) {
+                return new AIParseResultMulti(
+                    success: false,
+                    transactions: [],
+                    confidence: 0.0,
+                    error: $aiRaw['reply_message'] ?? 'Maaf Bos, saya hanya bisa membantu mencatat keuangan di Bendaharaku.',
+                    isOutOfScope: true,
+                    replyMessage: $aiRaw['reply_message'] ?? null,
+                    usage: [],
+                    provider: 'gemini',
+                    model: $request->model,
+                );
+            }
+
             if (! isset($aiRaw['transactions']) || ! is_array($aiRaw['transactions'])) {
                 throw new AiProviderException('Gemini', 'Response multi-transaksi tidak mengandung array "transactions".');
             }

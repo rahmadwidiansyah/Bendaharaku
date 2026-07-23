@@ -18,6 +18,7 @@ readonly class ResolvedTransaction
         public ?int $destinationWalletId,
         public ?string $subject,
         public ?string $notes,
-        public bool $isCleared
+        public bool $isCleared,
+        public ?string $missingWalletSide = null,
     ) {}
 }
