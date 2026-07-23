@@ -33,7 +33,6 @@ use App\Services\AI\Memory\UserMemoryService;
 use App\Services\AI\Scoring\ConfidenceScoringEngine;
 use App\Services\AI\TransactionResolver;
 use App\Services\Wallet\WalletResolutionService;
-use App\Support\MoneyFormatter;
 use App\Support\StringUtils;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -54,6 +53,7 @@ class ChatTransactionOrchestrator
         private readonly MultiTransactionRouter $multiRouter,
         private readonly MultiTransactionProcessor $multiProcessor,
         private readonly WalletResolutionService $walletResolution,
+        private readonly DraftPayloadBuilder $draftBuilder,
     ) {}
 
     /**
@@ -157,7 +157,7 @@ class ChatTransactionOrchestrator
         $parsed = $aiResult->transaction;
         $isWebSource = strtoupper($source) === 'WEB';
 
-        $guardError = $this->validateDraftGuard($parsed);
+        $guardError = $this->draftBuilder->validateParsed($parsed);
         if ($guardError !== null) {
             $message = $guardError === 'INVALID_AMOUNT'
                 ? "🤔 *Nominalnya berapa Bos?*\nAku bingung nih, kamu belum nyebutin jumlah uangnya."
@@ -363,11 +363,11 @@ class ChatTransactionOrchestrator
             'ai_confidence' => $finalConfidence,
             'original_text' => $text,
             'expires_at' => now()->addHours(24),
-            'payload' => $this->buildDraftPayload(
+            'payload' => $this->draftBuilder->build(
                 resolved: $resolved,
                 categoryName: $categoryName,
                 sourceWalletName: $sourceWalletName,
-                    destinationWalletName: $destinationWalletName,
+                destinationWalletName: $destinationWalletName,
                 subject: $finalSubject,
                 notes: $text,
                 typeKey: $typeKey,
@@ -391,34 +391,6 @@ class ChatTransactionOrchestrator
             'model' => $aiResult->model,
             'confidence' => $finalConfidence,
             'usage' => $aiResult->usage,
-        ];
-    }
-
-    public function buildDraftPayload(
-        ResolvedTransaction $resolved,
-        string $categoryName,
-        ?string $sourceWalletName,
-        ?string $destinationWalletName,
-        ?string $subject,
-        string $notes,
-        string $typeKey,
-        bool $needsWallet,
-    ): array {
-        return [
-            'amount' => $resolved->amount,
-            'category_id' => $resolved->categoryId,
-            'category_name' => $categoryName,
-            'source_wallet_id' => $resolved->sourceWalletId,
-            'source_wallet_name' => $sourceWalletName,
-            'destination_wallet_id' => $resolved->destinationWalletId,
-            'destination_wallet_name' => $destinationWalletName,
-            'subject' => $subject,
-            'notes' => $notes,
-            'type_key' => $typeKey,
-            'needs_wallet' => $needsWallet,
-            'is_cleared' => false,
-            'date' => now()->format('Y-m-d'),
-            'amount_formatted' => MoneyFormatter::rupiah($resolved->amount),
         ];
     }
 
@@ -451,19 +423,6 @@ class ChatTransactionOrchestrator
             isCleared: false,
             missingWalletSide: $missingWalletSide,
         );
-    }
-
-    public function validateDraftGuard(ParsedTransaction $parsed): ?string
-    {
-        if (! $parsed->amount || $parsed->amount <= 0) {
-            return 'INVALID_AMOUNT';
-        }
-
-        if (! $parsed->category) {
-            return 'CATEGORY_NOT_FOUND';
-        }
-
-        return null;
     }
 
     private function processMulti(
