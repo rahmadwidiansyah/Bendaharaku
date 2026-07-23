@@ -7,6 +7,7 @@ namespace App\Evidence\Resolver;
 use App\Models\Category;
 use App\Models\TransactionType;
 use App\Models\User;
+use App\Support\StringUtils;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -130,7 +131,7 @@ class CategoryResolver
                 continue;
             }
 
-            $keywords = array_map('trim', explode(',', strtolower($category->keyword)));
+            $keywords = StringUtils::tokenizeKeywords($category->keyword);
             foreach ($keywords as $keyword) {
                 if (strlen($keyword) >= 2 && str_contains($descriptionLower, $keyword)) {
                     $score = strlen($keyword) / max(strlen($descriptionLower), 1);

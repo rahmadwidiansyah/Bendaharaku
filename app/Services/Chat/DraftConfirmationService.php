@@ -5,11 +5,15 @@ declare(strict_types=1);
 namespace App\Services\Chat;
 
 use App\Actions\ProcessTransactionAction;
+use App\Enums\TransactionIntent;
+use App\Enums\TransactionSource;
+use App\Enums\WalletSide;
 use App\Models\ChatMessage;
 use App\Models\TransactionDraft;
 use App\Models\TransactionLog;
 use App\Models\User;
 use App\Models\Wallet;
+use App\Services\Wallet\WalletResolutionService;
 use App\Support\MoneyFormatter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -29,6 +33,7 @@ class DraftConfirmationService
 {
     public function __construct(
         private readonly ProcessTransactionAction $transactionAction,
+        private readonly WalletResolutionService $walletResolution,
     ) {}
 
     /**
@@ -65,16 +70,21 @@ class DraftConfirmationService
         $transactionLog = DB::transaction(function () use ($draft, $user, $payload) {
             // Buat TransactionLog via ProcessTransactionAction
             // ProcessTransactionAction::create() menangani mutasi saldo, reference number, dll.
-            $log = $this->transactionAction->create([
-                'date' => $payload['date'] ?? now()->format('Y-m-d'),
-                'category_id' => $payload['category_id'],
-                'source_wallet_id' => $payload['source_wallet_id'],
-                'destination_wallet_id' => $payload['destination_wallet_id'],
-                'amount' => $payload['amount'],
-                'subject' => $payload['subject'] ?? $user->name,
-                'notes' => $payload['notes'] ?? null,
-                'is_cleared' => true, // Konfirmasi → langsung cleared
-            ], $user->id, 'WEB');
+            $log = $this->transactionAction->create(
+                data: [
+                    'date' => $payload['date'] ?? now()->format('Y-m-d'),
+                    'category_id' => $payload['category_id'],
+                    'source_wallet_id' => $payload['source_wallet_id'],
+                    'destination_wallet_id' => $payload['destination_wallet_id'],
+                    'amount' => $payload['amount'],
+                    'subject' => $payload['subject'] ?? $user->name,
+                    'notes' => $payload['notes'] ?? null,
+                    'is_cleared' => true,
+                ],
+                userId: $user->id,
+                sourcePrefix: 'WEB',
+                source: TransactionSource::DRAFT,
+            );
 
             // Tandai draft sebagai confirmed + simpan referensi ke transaction_log
             $draft->update([
@@ -121,29 +131,16 @@ class DraftConfirmationService
 
         $payload = $draft->payload;
 
-        // Resolve sisi wallet: apakah user mengisi source atau dest?
-        // Cek dari payload: apakah source_wallet_id merujuk ke System wallet bermakna
-        $sourceWalletId = $payload['source_wallet_id'] ?? null;
-        $sourceIsRealSystem = false;
-
-        if ($sourceWalletId) {
-            $sourceWallet = Wallet::find($sourceWalletId);
-            $sourceIsRealSystem = $sourceWallet
-                && $sourceWallet->group_type === 'System'
-                && ! str_contains(strtolower($sourceWallet->name ?? ''), 'external')
-                && ! str_contains(strtolower($sourceWallet->name ?? ''), 'merchant');
-        }
-
-        // Update payload dengan wallet yang dipilih user
-        if ($sourceIsRealSystem) {
-            // Source = System (Hutang/Piutang) → user mengisi dest (uang masuk ke wallet user)
-            $payload['destination_wallet_id'] = $wallet->id;
-            $payload['destination_wallet_name'] = $wallet->name;
-        } else {
-            // Dest = System/Merchant → user mengisi source (uang keluar dari wallet user)
-            $payload['source_wallet_id'] = $wallet->id;
-            $payload['source_wallet_name'] = $wallet->name;
-        }
+        // Resolve sisi wallet dari missing_wallet_side (SOURCE / DESTINATION / BOTH / NONE).
+        // Setelah migrasi PR-6a, semua draft baru memiliki missing_wallet_side.
+        // Fallback ke heuristic lama jika kolom null (draft lama).
+        match ($draft->missing_wallet_side ?? $this->resolveMissingSideFromPayload($payload)) {
+            WalletSide::Source->value, WalletSide::Both->value => $this->fillSource($payload, $wallet),
+            WalletSide::Destination->value => $this->fillDestination($payload, $wallet),
+            WalletSide::None->value => throw new InvalidArgumentException(
+                "Draft #{$draft->id} sudah memiliki wallet lengkap."
+            ),
+        };
 
         // Wallet sudah dipilih → needs_wallet = false
         $payload['needs_wallet'] = false;
@@ -211,6 +208,39 @@ class DraftConfirmationService
         ];
     }
 
+    // ── Helpers untuk assignWallet ──────────────────────────────
+
+    private function fillSource(array &$payload, Wallet $wallet): void
+    {
+        $payload['source_wallet_id'] = $wallet->id;
+        $payload['source_wallet_name'] = $wallet->name;
+    }
+
+    private function fillDestination(array &$payload, Wallet $wallet): void
+    {
+        $payload['destination_wallet_id'] = $wallet->id;
+        $payload['destination_wallet_name'] = $wallet->name;
+    }
+
+    private function resolveMissingSideFromPayload(array $payload): string
+    {
+        $typeKey = $payload['type_key'] ?? 'expense';
+        $sourceWalletId = $payload['source_wallet_id'] ?? null;
+
+        if ($typeKey === 'income') {
+            return WalletSide::Destination->value;
+        }
+
+        if ($sourceWalletId) {
+            $sourceWallet = Wallet::find($sourceWalletId);
+            if ($sourceWallet && $this->walletResolution->isMeaningfulSystemWallet($sourceWallet)) {
+                return WalletSide::Destination->value;
+            }
+        }
+
+        return WalletSide::Source->value;
+    }
+
     // ── Private helpers untuk sinkronisasi riwayat chat ──────────
 
     /**
@@ -220,13 +250,7 @@ class DraftConfirmationService
      */
     public function syncChatHistoryAfterConfirm(int $userId, int $draftId, TransactionLog $transaction): void
     {
-        $typeKey = match (strtolower($transaction->type?->name ?? '')) {
-            'income' => 'income',
-            'expense' => 'expense',
-            'transfer' => 'transfer',
-            'debt', 'receivable' => 'debt',
-            default => 'other',
-        };
+        $typeKey = TransactionIntent::typeKeyFromName($transaction->type?->name);
 
         ChatMessage::whereHas('conversation', fn ($q) => $q->where('user_id', $userId))
             ->where('role', 'assistant')

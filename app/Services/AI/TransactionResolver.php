@@ -9,14 +9,20 @@ use App\DTO\ResolvedTransaction;
 use App\Enums\TransactionIntent;
 use App\Exceptions\CategoryNotFoundException;
 use App\Exceptions\WalletNotFoundException;
-use App\Models\Category;
 use App\Models\User;
 use App\Models\Wallet;
+use App\Services\Category\CategoryResolutionService;
+use App\Services\Wallet\WalletResolutionService;
+use App\Support\StringUtils;
 use Illuminate\Database\Eloquent\Collection;
 use RuntimeException;
 
 class TransactionResolver
 {
+    public function __construct(
+        private readonly WalletResolutionService $walletResolution,
+        private readonly CategoryResolutionService $categoryResolution,
+    ) {}
     /**
      * Mentranslasikan ParsedTransaction menjadi entitas ID primitif database.
      *
@@ -49,70 +55,46 @@ class TransactionResolver
         // 4. Resolusi ID Kategori
         $category = $this->searchCategory($parsed->category, $categories);
 
-        // 5. Alokasi ID Dompet (Exhaustive Match berdasarkan Enum & Config SSOT)
-        //
-        // Untuk Debt dan Receivable, ada dua arah berbeda yang ditentukan oleh kategori:
-        //   Debt "Dapat Hutangan"   : System Hutang  → wallet user (uang masuk, hutang bertambah)
-        //   Debt "Bayar Hutang"     : wallet user    → System Hutang (uang keluar, hutang berkurang)
-        //   Receivable "Ngasih Piutang"     : wallet user    → System Piutang (uang keluar, piutang bertambah)
-        //   Receivable "Terima Bayar Piutang": System Piutang → wallet user (uang masuk, piutang berkurang)
-        //
-        // AI sudah memilih kategori yang tepat — kita cukup periksa nama kategori untuk arah.
+        // 5. Alokasi ID Dompet — delegasi ke WalletResolutionService (SSOT)
+        $userId = $user->id;
         $systemKey = $category->system_key;
-        $categoryName = mb_strtolower($category->category_name ?? '');
 
-        if ($systemKey !== null) {
-            $isReceivableReturn = $parsed->transactionType === TransactionIntent::Receivable
-                && $systemKey === 'RECEIVABLE_PAYMENT';
-            $isDebtReceive = $parsed->transactionType === TransactionIntent::Debt
-                && $systemKey === 'LOAN';
-            $isDebtPay = $parsed->transactionType === TransactionIntent::Debt
-                && $systemKey === 'DEBT_PAYMENT';
+        if ($parsed->transactionType === TransactionIntent::Transfer) {
+            if (blank($parsed->sourceWallet) || blank($parsed->destinationWallet)) {
+                throw new WalletNotFoundException("Validasi Gagal: Transaksi 'Transfer' mewajibkan parameter dompet asal dan tujuan.");
+            }
+            $sourceWalletId = $this->searchWalletToken($parsed->sourceWallet, $wallets, 'Asal');
+            $destinationWalletId = $this->searchWalletToken($parsed->destinationWallet, $wallets, 'Tujuan');
         } else {
-            $isReceivableReturn = $parsed->transactionType === TransactionIntent::Receivable
-                && (str_contains($categoryName, 'terima') || str_contains($categoryName, 'bayar') || str_contains($categoryName, 'kembali'));
-            $isDebtReceive = $parsed->transactionType === TransactionIntent::Debt
-                && (str_contains($categoryName, 'dapat') || str_contains($categoryName, 'terima') || str_contains($categoryName, 'pinjam'));
-            $isDebtPay = $parsed->transactionType === TransactionIntent::Debt
-                && ! $isDebtReceive;
-        }
+            [$systemSourceId, $systemDestId] = $this->walletResolution->resolveDraftWalletAllocation(
+                transactionType: $parsed->transactionType ?? TransactionIntent::Expense,
+                userId: $userId,
+                categoryName: $category->category_name,
+                systemKey: $systemKey,
+            );
 
-        [$sourceWalletId, $destinationWalletId] = match ($parsed->transactionType) {
-            TransactionIntent::Expense => [
-                $this->searchWalletToken($parsed->sourceWallet, $wallets, 'Asal'),
-                $this->resolveSystemWallet((string) config('bendaharaku.system_wallets.merchant'), $wallets),
-            ],
-            TransactionIntent::Income => [
-                $this->resolveSystemWallet((string) config('bendaharaku.system_wallets.external'), $wallets),
-                $this->searchWalletToken($parsed->destinationWallet ?? $parsed->sourceWallet, $wallets, 'Tujuan'),
-            ],
-            TransactionIntent::Transfer => [
-                $this->searchWalletToken($parsed->sourceWallet, $wallets, 'Asal'),
-                $this->searchWalletToken($parsed->destinationWallet, $wallets, 'Tujuan'),
-            ],
-            TransactionIntent::Debt => $isDebtReceive
-                // Terima hutang: System Hutang → wallet user
-                ? [
-                    $this->resolveSystemWallet((string) config('bendaharaku.system_wallets.debt'), $wallets),
-                    $this->searchWalletToken($parsed->destinationWallet ?? $parsed->sourceWallet, $wallets, 'Tujuan'),
-                ]
-                // Bayar hutang: wallet user → System Hutang
-                : [
-                    $this->searchWalletToken($parsed->sourceWallet, $wallets, 'Asal'),
-                    $this->resolveSystemWallet((string) config('bendaharaku.system_wallets.debt'), $wallets),
-                ],
-            TransactionIntent::Receivable => $isReceivableReturn
-                // Terima bayar piutang: System Piutang → wallet user
-                ? [
-                    $this->resolveSystemWallet((string) config('bendaharaku.system_wallets.receivable'), $wallets),
-                    $this->searchWalletToken($parsed->destinationWallet ?? $parsed->sourceWallet, $wallets, 'Tujuan'),
-                ]
-                // Ngasih piutang: wallet user → System Piutang
-                : [
-                    $this->searchWalletToken($parsed->sourceWallet, $wallets, 'Asal'),
-                    $this->resolveSystemWallet((string) config('bendaharaku.system_wallets.receivable'), $wallets),
-                ],
-        };
+            // Di mana user wallet disebutkan? System wallet dipasangkan dengan user wallet.
+            $sourceWalletId = $parsed->sourceWallet !== null
+                && $this->walletResolution->resolveUserWalletId($user, $parsed->sourceWallet) !== null
+                ? $this->searchWalletToken($parsed->sourceWallet, $wallets, 'Asal')
+                : $systemSourceId;
+
+            $destinationWalletId = $parsed->destinationWallet !== null
+                && $this->walletResolution->resolveUserWalletId($user, $parsed->destinationWallet) !== null
+                ? $this->searchWalletToken($parsed->destinationWallet, $wallets, 'Tujuan')
+                : $systemDestId;
+
+            // Fallback: jika kedua wallet tidak disebutkan user, gunakan system wallet untuk yang belum diisi
+            // Ini terjadi ketika AI hanya mendeteksi satu sisi wallet
+            if ($sourceWalletId === $systemSourceId && $destinationWalletId === $systemDestId) {
+                // Keduanya system → cek apakah user menyebut wallet di source atau dest
+                if ($parsed->sourceWallet !== null) {
+                    $sourceWalletId = $this->searchWalletToken($parsed->sourceWallet, $wallets, 'Asal');
+                } elseif ($parsed->destinationWallet !== null) {
+                    $destinationWalletId = $this->searchWalletToken($parsed->destinationWallet, $wallets, 'Tujuan');
+                }
+            }
+        }
 
         // 6. Resolusi Amount — Handle ALL_BALANCE intent
         //
@@ -171,50 +153,11 @@ class TransactionResolver
         return $balance;
     }
 
-    /**
-     * Resolusi System Wallet murni berdasarkan Config (SSOT).
-     * Tanpa fallback tebak-tebakan. Jika tidak ada, fail fast.
-     */
-    private function resolveSystemWallet(string $walletName, Collection $wallets): int
-    {
-        $match = $wallets->first(fn ($w) => strtolower($w->name) === strtolower(trim($walletName)));
-
-        if (! $match) {
-            throw new WalletNotFoundException(
-                "Dompet sistem untuk arus kas '{$walletName}' tidak terdeteksi. Pastikan konfigurasi system wallets sudah benar."
-            );
-        }
-
-        return $match->id;
-    }
-
-    /**
-     * Pencarian Regex Token multi-delimiter untuk Kategori.
-     */
     private function searchCategory(?string $text, Collection $categories): Category
     {
-        if (blank($text)) {
-            throw new CategoryNotFoundException('Input kategori kosong.');
-        }
-
-        $search = strtolower(trim($text));
-
-        $match = $categories->first(fn ($c) => strtolower($c->category_name) === $search);
-        if ($match) {
-            return $match;
-        }
-
-        $match = $categories->first(function ($c) use ($search) {
-            if (blank($c->keyword)) {
-                return false;
-            }
-            $tokens = preg_split('/[,|;]+/', strtolower($c->keyword), -1, PREG_SPLIT_NO_EMPTY);
-
-            return in_array($search, array_map('trim', $tokens), true);
-        });
-
-        if ($match) {
-            return $match;
+        $category = $this->categoryResolution->resolveByName($text, $categories);
+        if ($category !== null) {
+            return $category;
         }
 
         throw new CategoryNotFoundException("Kategori '{$text}' tidak terdaftar.");
@@ -229,23 +172,8 @@ class TransactionResolver
             throw new WalletNotFoundException("Input dompet {$context} kosong.");
         }
 
-        $search = strtolower(trim($text));
-
-        $match = $wallets->first(fn ($w) => strtolower($w->name) === $search);
-        if ($match) {
-            return $match->id;
-        }
-
-        $match = $wallets->first(function ($w) use ($search) {
-            if (blank($w->keyword)) {
-                return false;
-            }
-            $tokens = preg_split('/[,|;]+/', strtolower($w->keyword), -1, PREG_SPLIT_NO_EMPTY);
-
-            return in_array($search, array_map('trim', $tokens), true);
-        });
-
-        if ($match) {
+        $match = StringUtils::findByNameOrKeyword($wallets, $text);
+        if ($match !== null) {
             return $match->id;
         }
 

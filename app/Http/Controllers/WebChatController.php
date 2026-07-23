@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Actions\ProcessTransactionAction;
 use App\Chat\Adapters\WebAdapter;
 use App\Chat\ChatCommandRegistry;
+use App\Enums\TransactionIntent;
 use App\Models\ChatMessage;
 use App\Models\Conversation;
 use App\Models\TransactionDraft;
@@ -321,39 +322,54 @@ class WebChatController extends Controller
             ->where('group_type', '!=', 'System')
             ->findOrFail($validated['wallet_id']);
 
-        // Logika resolusi wallet (sama dengan sebelumnya):
-        // Jika source sudah merupakan System wallet yang "bermakna" (Hutang/Piutang),
-        // maka sisi user ada di dest. Sebaliknya user ada di source.
-        $sourceWallet = $transaction->sourceWallet;
-        $destWallet = $transaction->destinationWallet;
-        $sourceIsRealSystem = $sourceWallet && $sourceWallet->group_type === 'System'
-            && ! str_contains(strtolower($sourceWallet->name ?? ''), 'external')
-            && ! str_contains(strtolower($sourceWallet->name ?? ''), 'merchant');
+        // Resolve sisi wallet: apakah user mengisi source atau dest?
+        // Income → user selalu mengisi destination (uang MASUK ke wallet user)
+        // Non-Income → gunakan heuristic: jika source adalah System wallet bermakna,
+        // user mengisi dest; selain itu user mengisi source.
+        $typeName = strtolower($transaction->type?->name ?? '');
 
-        DB::transaction(function () use ($transaction, $wallet, $user, $sourceIsRealSystem) {
-            if ($sourceIsRealSystem) {
-                // Source sudah ditetapkan (System Hutang / System Piutang), user mengisi dest
-                // Artinya: uang MASUK ke wallet user (tambah saldo)
+        if ($typeName === 'income') {
+            DB::transaction(function () use ($transaction, $wallet, $user) {
                 $transaction->destination_wallet_id = $wallet->id;
                 $balanceBefore = $wallet->balance;
                 $wallet->increment('balance', $transaction->amount);
                 $transaction->balance_before = $balanceBefore;
                 $transaction->balance_after = $wallet->fresh()->balance;
-            } else {
-                // Dest sudah ditetapkan (Merchant / System Piutang / System Hutang), user mengisi source
-                // Artinya: uang KELUAR dari wallet user (kurangi saldo)
-                $transaction->source_wallet_id = $wallet->id;
-                $balanceBefore = $wallet->balance;
-                if (! $user->allow_negative_balance && $wallet->balance < $transaction->amount) {
-                    throw new \InvalidArgumentException('Saldo tidak mencukupi.');
+                $transaction->is_cleared = true;
+                $transaction->save();
+            });
+        } else {
+            $sourceWallet = $transaction->sourceWallet;
+            $destWallet = $transaction->destinationWallet;
+            $sourceIsRealSystem = $sourceWallet && $sourceWallet->group_type === 'System'
+                && ! str_contains(strtolower($sourceWallet->name ?? ''), 'external')
+                && ! str_contains(strtolower($sourceWallet->name ?? ''), 'merchant');
+
+            DB::transaction(function () use ($transaction, $wallet, $user, $sourceIsRealSystem) {
+                if ($sourceIsRealSystem) {
+                    // Source sudah ditetapkan (System Hutang / System Piutang), user mengisi dest
+                    // Artinya: uang MASUK ke wallet user (tambah saldo)
+                    $transaction->destination_wallet_id = $wallet->id;
+                    $balanceBefore = $wallet->balance;
+                    $wallet->increment('balance', $transaction->amount);
+                    $transaction->balance_before = $balanceBefore;
+                    $transaction->balance_after = $wallet->fresh()->balance;
+                } else {
+                    // Dest sudah ditetapkan (Merchant / System Piutang / System Hutang), user mengisi source
+                    // Artinya: uang KELUAR dari wallet user (kurangi saldo)
+                    $transaction->source_wallet_id = $wallet->id;
+                    $balanceBefore = $wallet->balance;
+                    if (! $user->allow_negative_balance && $wallet->balance < $transaction->amount) {
+                        throw new \InvalidArgumentException('Saldo tidak mencukupi.');
+                    }
+                    $wallet->decrement('balance', $transaction->amount);
+                    $transaction->balance_before = $balanceBefore;
+                    $transaction->balance_after = $wallet->fresh()->balance;
                 }
-                $wallet->decrement('balance', $transaction->amount);
-                $transaction->balance_before = $balanceBefore;
-                $transaction->balance_after = $wallet->fresh()->balance;
-            }
-            $transaction->is_cleared = true;
-            $transaction->save();
-        });
+                $transaction->is_cleared = true;
+                $transaction->save();
+            });
+        }
 
         $transaction->refresh()->load(['sourceWallet', 'destinationWallet', 'category', 'type']);
         $this->markTransactionUpdatedInChatHistory($user->id, $transaction);
@@ -556,13 +572,7 @@ class WebChatController extends Controller
 
     private function formatTransactionForChat(TransactionLog $transaction): array
     {
-        $typeKey = match (strtolower($transaction->type?->name ?? '')) {
-            'income' => 'income',
-            'expense' => 'expense',
-            'transfer' => 'transfer',
-            'debt', 'receivable' => 'debt',
-            default => 'other',
-        };
+        $typeKey = TransactionIntent::typeKeyFromName($transaction->type?->name);
 
         return [
             'id' => $transaction->id,
@@ -624,13 +634,7 @@ class WebChatController extends Controller
     {
         $transactionId = $transaction->id;
 
-        $typeKey = match (strtolower($transaction->type?->name ?? '')) {
-            'income' => 'income',
-            'expense' => 'expense',
-            'transfer' => 'transfer',
-            'debt', 'receivable' => 'debt',
-            default => 'other',
-        };
+        $typeKey = TransactionIntent::typeKeyFromName($transaction->type?->name);
 
         ChatMessage::whereHas('conversation', fn ($q) => $q->where('user_id', $userId))
             ->where('role', 'assistant')

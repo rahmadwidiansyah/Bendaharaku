@@ -10,10 +10,17 @@ use App\Enums\TransactionIntent;
 use App\Models\Category;
 use App\Models\User;
 use App\Models\Wallet;
+use App\Services\Category\CategoryResolutionService;
+use App\Services\Wallet\WalletResolutionService;
+use App\Support\StringUtils;
 use Illuminate\Support\Facades\Log;
 
 class LocalRuleEngine
 {
+    public function __construct(
+        private readonly CategoryResolutionService $categoryResolution,
+        private readonly WalletResolutionService $walletResolution,
+    ) {}
     /**
      * Try to parse transaction using regex and keyword rules.
      * Returns AIParseResult on success, or null on failure.
@@ -178,67 +185,8 @@ class LocalRuleEngine
             }
         }
 
-        // 2. Fallback to token matching for all other categories
-        $matchedCategories = [];
-
-        foreach ($categories as $category) {
-            $tokens = array_filter([
-                $category->category_name,
-                ...preg_split('/[,|;]+/', (string) $category->keyword, -1, PREG_SPLIT_NO_EMPTY),
-            ]);
-
-            foreach ($tokens as $token) {
-                $token = trim(mb_strtolower($token));
-                if ($token === '') {
-                    continue;
-                }
-
-                // Prevent matching 'utang', 'hutang', or 'ngutang' when the word is actually 'piutang'
-                if (in_array($token, ['utang', 'hutang', 'ngutang']) && str_contains($lowerText, 'piutang')) {
-                    $utangCount = substr_count($lowerText, $token);
-                    $piutangCount = substr_count($lowerText, 'piutang');
-                    if ($utangCount <= $piutangCount) {
-                        continue;
-                    }
-                }
-
-                // Flexible substring check
-                if (str_contains($lowerText, $token)) {
-                    $matchedCategories[] = [
-                        'category' => $category,
-                        'token' => $token,
-                        'length' => strlen($token),
-                    ];
-                }
-            }
-        }
-
-        if (empty($matchedCategories)) {
-            return null;
-        }
-
-        // Sort by matching token length descending (longest wins)
-        usort($matchedCategories, fn ($a, $b) => $b['length'] <=> $a['length']);
-
-        // Disambiguate if multiple matches have the same longest length
-        if (count($matchedCategories) >= 2 && $matchedCategories[0]['length'] === $matchedCategories[1]['length']) {
-            $bestCategory = $matchedCategories[0]['category'];
-            $secondCategory = $matchedCategories[1]['category'];
-            $bestKey = $bestCategory->system_key;
-            $secondKey = $secondCategory->system_key;
-
-            $keys = [$bestKey, $secondKey];
-            if (in_array('DEBT_PAYMENT', $keys) && in_array('RECEIVABLE_PAYMENT', $keys)) {
-                if (str_contains($lowerText, 'balikin uang')) {
-                    return $bestKey === 'RECEIVABLE_PAYMENT' ? $bestCategory : $secondCategory;
-                }
-                if (str_contains($lowerText, 'balikin pinjaman')) {
-                    return $bestKey === 'DEBT_PAYMENT' ? $bestCategory : $secondCategory;
-                }
-            }
-        }
-
-        return $matchedCategories[0]['category'];
+        // 2. Fallback to token matching via CategoryResolutionService
+        return $this->categoryResolution->resolveFromText($text, $categories, $subject);
     }
 
     /**
@@ -375,84 +323,9 @@ class LocalRuleEngine
         };
     }
 
-    /**
-     * Match Wallets using substring check.
-     */
     private function matchWallets(string $text, $wallets, TransactionIntent $intent): array
     {
-        $matchedWallets = [];
-        $lowerText = mb_strtolower($text);
-
-        foreach ($wallets as $wallet) {
-            // Ignore system wallets for explicit matching
-            if ($wallet->group_type === 'System') {
-                continue;
-            }
-
-            $tokens = array_filter([
-                $wallet->name,
-                ...preg_split('/[,|;]+/', (string) $wallet->keyword, -1, PREG_SPLIT_NO_EMPTY),
-            ]);
-
-            foreach ($tokens as $token) {
-                $token = trim(mb_strtolower($token));
-                if ($token === '') {
-                    continue;
-                }
-
-                $pos = mb_strpos($lowerText, $token);
-                if ($pos !== false) {
-                    $matchedWallets[] = [
-                        'wallet' => $wallet,
-                        'token' => $token,
-                        'offset' => $pos,
-                    ];
-                }
-            }
-        }
-
-        // De-duplicate wallet matches (keep first occurrence)
-        $uniqueMatches = [];
-        foreach ($matchedWallets as $match) {
-            $walletId = $match['wallet']->id;
-            if (! isset($uniqueMatches[$walletId])) {
-                $uniqueMatches[$walletId] = $match;
-            }
-        }
-        $matchedWallets = array_values($uniqueMatches);
-
-        // Sort by offset position in the text
-        usort($matchedWallets, fn ($a, $b) => $a['offset'] <=> $b['offset']);
-
-        $sourceWallet = null;
-        $destinationWallet = null;
-
-        if ($intent === TransactionIntent::Transfer) {
-            if (count($matchedWallets) >= 2) {
-                $sourceWallet = $matchedWallets[0]['wallet']->name;
-                $destinationWallet = $matchedWallets[1]['wallet']->name;
-            } elseif (count($matchedWallets) === 1) {
-                // If only one wallet is matched, check if it's preceded by "ke" or "to"
-                $walletName = $matchedWallets[0]['wallet']->name;
-                $offset = $matchedWallets[0]['offset'];
-                $prefix = substr($text, max(0, $offset - 10), 10);
-                if (preg_match('/\b(ke|to)\b/i', $prefix)) {
-                    $destinationWallet = $walletName;
-                } else {
-                    $sourceWallet = $walletName;
-                }
-            }
-        } else {
-            // Single wallet matching
-            if (count($matchedWallets) >= 1) {
-                $sourceWallet = $matchedWallets[0]['wallet']->name;
-            }
-        }
-
-        return [
-            'sourceWallet' => $sourceWallet,
-            'destinationWallet' => $destinationWallet,
-        ];
+        return $this->walletResolution->matchWalletsFromText($text, $wallets, $intent);
     }
 
     /**

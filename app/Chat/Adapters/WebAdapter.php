@@ -10,6 +10,7 @@ use App\Chat\DTOs\ChatRequest;
 use App\Chat\DTOs\ChatResponse;
 use App\Chat\Formatters\WebFormatter;
 use App\Enums\ChatPlatform;
+use App\Enums\TransactionIntent;
 use App\Models\ChatMessage;
 use App\Models\Conversation;
 use App\Models\TransactionDraft;
@@ -103,7 +104,7 @@ class WebAdapter
                 'conversation_id' => $conversation->id,
                 'role' => 'assistant',
                 'content' => $formatted['components'],
-                'raw_text' => null,
+                'raw_text' => $this->extractTextFromComponents($formatted['components']),
                 'metadata' => array_merge($response->metadata, [
                     'intent' => $response->intent->value,
                     'success' => $response->success,
@@ -171,7 +172,7 @@ class WebAdapter
                     'message' => $errorMsg,
                     'severity' => 'error',
                 ]],
-                'raw_text' => null,
+                'raw_text' => $errorMsg,
                 'metadata' => [
                     'trace_id' => $context->traceId,
                     'error' => true,
@@ -346,13 +347,7 @@ class WebAdapter
                             $transaction = $confirmedLogId ? TransactionLog::with(['category', 'sourceWallet', 'destinationWallet', 'type'])->find($confirmedLogId) : null;
 
                             if ($transaction) {
-                                $typeKey = match (strtolower($transaction->type?->name ?? '')) {
-                                    'income' => 'income',
-                                    'expense' => 'expense',
-                                    'transfer' => 'transfer',
-                                    'debt', 'receivable' => 'debt',
-                                    default => 'other',
-                                };
+                                $typeKey = TransactionIntent::typeKeyFromName($transaction->type?->name);
 
                                 // Ubah komponen draft menjadi confirmed transaction card
                                 $component['needs_wallet'] = false;
@@ -393,6 +388,23 @@ class WebAdapter
                         $component['transaction']['is_cancelled'] = true;
                         $component['transaction']['is_cleared'] = false;
                         $changed = true;
+                    } else {
+                        // Update data transaksi dari DB (balance, wallet name, dll)
+                        $typeKey = TransactionIntent::typeKeyFromName($trx->type?->name);
+                        $component['transaction']['id'] = $trx->id;
+                        $component['transaction']['is_cleared'] = $trx->is_cleared;
+                        $component['transaction']['is_cancelled'] = false;
+                        $component['transaction']['reference_number'] = $trx->reference_number;
+                        $component['transaction']['amount'] = $trx->amount;
+                        $component['transaction']['amount_formatted'] = MoneyFormatter::rupiah($trx->amount);
+                        $component['transaction']['type_key'] = $typeKey;
+                        $component['transaction']['source_wallet'] = $trx->sourceWallet?->name;
+                        $component['transaction']['dest_wallet'] = $trx->destinationWallet?->name;
+                        $component['transaction']['notes'] = $trx->notes;
+                        $component['transaction']['subject'] = $trx->subject;
+                        $component['transaction']['category'] = $trx->category?->category_name;
+                        $component['needs_wallet'] = false;
+                        $changed = true;
                     }
                 }
             }
@@ -412,6 +424,29 @@ class WebAdapter
      * Phase awal: satu active conversation per user.
      * Phase future: user bisa membuat conversation baru, memilih conversation.
      */
+    private function extractTextFromComponents(array $components): string
+    {
+        $texts = [];
+        foreach ($components as $component) {
+            $type = $component['type'] ?? '';
+            if ($type === 'text') {
+                $texts[] = $component['text'] ?? '';
+            } elseif ($type === 'transaction_card') {
+                $parts = array_filter([
+                    $component['transaction']['category'] ?? null,
+                    $component['transaction']['amount_formatted'] ?? null,
+                    $component['transaction']['subject'] ?? null,
+                ]);
+                $texts[] = implode(' — ', $parts);
+            } elseif ($type === 'summary_card') {
+                $texts[] = $component['label'] ?? '';
+            } elseif ($type === 'error') {
+                $texts[] = $component['message'] ?? '';
+            }
+        }
+        return implode(' | ', array_filter($texts));
+    }
+
     private function resolveConversation(User $user, ?int $conversationId): Conversation
     {
         // Jika ID spesifik diberikan, gunakan itu (validasi ownership)

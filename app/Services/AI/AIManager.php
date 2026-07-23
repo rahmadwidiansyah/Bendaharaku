@@ -21,7 +21,6 @@ class AIManager
         private AiPreferenceManager $preferenceManager,
         private AiCredentialManager $credentialManager,
         private AiProviderFactory $providerFactory,
-        private TransactionValidationService $validator,
         private PythonNLPProvider $pythonNlp,
         private LocalRuleEngine $ruleEngine
     ) {}
@@ -52,9 +51,8 @@ class AIManager
         $pythonResult = null; // Initialise supaya undefined variable tidak berlaku jika Python down
         try {
             $pythonResult = $this->pythonNlp->parseTransaction($pythonRequest);
-            // Hanya terima hasil Python jika AI "Sangat Yakin" (Skor > 0.85)
             if ($pythonResult->success && $pythonResult->confidence >= 0.85) {
-                return $this->validator->validateAndGuard($pythonResult);
+                return $pythonResult;
             }
         } catch (\Throwable $e) {
             Log::warning('Python NLP Service Down/Timeout: '.$e->getMessage());
@@ -69,7 +67,7 @@ class AIManager
             if ($pythonResult !== null && $pythonResult->success) {
                 Log::info("AIManager: Tiada LLM setup, guna hasil Python (confidence rendah) untuk user #{$user->id}");
 
-                return $this->validator->validateAndGuard($pythonResult);
+                return $pythonResult;
             }
             throw new AiConfigurationException('Sistem AI gagal memproses transaksi. Python service offline dan LLM (Gemini/OpenAI) belum dikonfigurasi. Sila setup AI di tetapan akaun.');
         }
@@ -109,7 +107,7 @@ class AIManager
                 ]);
             }
 
-            return $this->validator->validateAndGuard($llmResult);
+            return $llmResult;
 
         } catch (AiRateLimitException|AiTimeoutException|AiProviderException $e) {
             // Re-throw langsung — biar Orchestrator yang handle pesan Telegram-nya

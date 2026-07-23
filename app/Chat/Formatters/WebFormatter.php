@@ -18,6 +18,7 @@ use App\Chat\DTOs\ChatContext;
 use App\Chat\DTOs\ChatResponse;
 use App\Chat\Errors\ErrorDetail;
 use App\Enums\ChatIntent;
+use App\Enums\TransactionIntent;
 use App\Support\MoneyFormatter;
 
 /**
@@ -126,13 +127,7 @@ class WebFormatter implements ChatFormatterInterface
     {
         $trx = $c->transaction;
 
-        $typeKey = match (strtolower($trx->type?->name ?? '')) {
-            'income' => 'income',
-            'expense' => 'expense',
-            'transfer' => 'transfer',
-            'debt', 'receivable' => 'debt',
-            default => 'other',
-        };
+        $typeKey = TransactionIntent::typeKeyFromName($trx->type?->name);
 
         // Jika komponen memiliki draftId, gunakan itu sebagai 'id' di output JSON.
         // Frontend membaca 'is_draft' => true untuk mengetahui bahwa ini adalah draft ID,

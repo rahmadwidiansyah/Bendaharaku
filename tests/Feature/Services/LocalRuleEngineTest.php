@@ -9,6 +9,8 @@ use App\Models\TransactionType;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Services\AI\LocalRuleEngine;
+use App\Services\Category\CategoryResolutionService;
+use App\Services\Wallet\WalletResolutionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -24,7 +26,10 @@ class LocalRuleEngineTest extends TestCase
     {
         parent::setUp();
 
-        $this->ruleEngine = new LocalRuleEngine;
+        $this->ruleEngine = new LocalRuleEngine(
+            new CategoryResolutionService,
+            new WalletResolutionService,
+        );
 
         // 1. Create Transaction Types
         $incomeType = TransactionType::create(['name' => 'Income']);

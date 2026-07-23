@@ -6,6 +6,7 @@ namespace App\Services\AI;
 
 use App\Models\TransactionLog;
 use App\Models\User;
+use App\Support\StringUtils;
 
 /**
  * UserContextBuilder
@@ -125,12 +126,6 @@ class UserContextBuilder
      */
     private function parseKeywords(string $raw): array
     {
-        if (empty(trim($raw))) {
-            return [];
-        }
-
-        return array_values(array_filter(
-            array_map('trim', preg_split('/[,|;]+/', $raw))
-        ));
+        return StringUtils::splitKeywords($raw);
     }
 }

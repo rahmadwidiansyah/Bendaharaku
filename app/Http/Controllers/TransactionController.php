@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use App\Enums\TransactionSource;
 use Inertia\Response;
 
 class TransactionController extends Controller
@@ -154,7 +155,11 @@ class TransactionController extends Controller
         $validated = $this->validateTransaction($request);
 
         try {
-            $action->create($validated, Auth::id());
+            $action->create(
+                data: $validated,
+                userId: Auth::id(),
+                source: TransactionSource::WEB,
+            );
 
             return redirect()->route('dashboard')->with('success', 'Transaksi Berhasil!');
         } catch (\Exception $e) {
@@ -264,21 +269,26 @@ class TransactionController extends Controller
                 $transactionLog = DB::transaction(function () use ($draft, $user, $validated, $action) {
                     // a. Insert ke transactions (buat TransactionLog via ProcessTransactionAction)
                     // b. Update saldo wallet (otomatis dilakukan di ProcessTransactionAction::create)
-                    $log = $action->create([
-                        'date' => $validated['date'],
-                        'category_id' => $validated['category_id'],
-                        'source_wallet_id' => $validated['source_wallet_id'],
-                        'destination_wallet_id' => $validated['destination_wallet_id'],
-                        'amount' => $validated['amount'],
-                        'subject' => $validated['subject'] ?? $user->name,
-                        'notes' => $validated['notes'] ?? null,
-                        'transaction_type' => $validated['transaction_type'] ?? null,
-                        'debt_sub_type' => $validated['debt_sub_type'] ?? null,
-                        'due_date' => $validated['due_date'] ?? null,
-                        'due_date_type' => $validated['due_date_type'] ?? null,
-                        'due_date_interval' => $validated['due_date_interval'] ?? null,
-                        'is_cleared' => true, // langsung cleared / final
-                    ], $user->id, 'WEB');
+                    $log = $action->create(
+                        data: [
+                            'date' => $validated['date'],
+                            'category_id' => $validated['category_id'],
+                            'source_wallet_id' => $validated['source_wallet_id'],
+                            'destination_wallet_id' => $validated['destination_wallet_id'],
+                            'amount' => $validated['amount'],
+                            'subject' => $validated['subject'] ?? $user->name,
+                            'notes' => $validated['notes'] ?? null,
+                            'transaction_type' => $validated['transaction_type'] ?? null,
+                            'debt_sub_type' => $validated['debt_sub_type'] ?? null,
+                            'due_date' => $validated['due_date'] ?? null,
+                            'due_date_type' => $validated['due_date_type'] ?? null,
+                            'due_date_interval' => $validated['due_date_interval'] ?? null,
+                            'is_cleared' => true,
+                        ],
+                        userId: $user->id,
+                        sourcePrefix: 'WEB',
+                        source: TransactionSource::WEB,
+                    );
 
                     // c. Hapus/Tandai Draft selesai (confirmed)
                     $draft->update([

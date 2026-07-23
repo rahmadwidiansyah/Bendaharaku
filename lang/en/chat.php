@@ -79,6 +79,8 @@ return [
         'source_empty' => 'Source wallet not detected.',
         'destination_empty' => 'Destination wallet not detected.',
         'missing_choose' => 'The wallet is missing. Pick one of your frequently used wallets below.',
+        'missing_source' => 'The source wallet is missing. Pick one of your frequently used wallets below.',
+        'missing_destination' => 'The destination wallet is missing. Pick one of your frequently used wallets below.',
     ],
 
     // ──────────────────────────────────────────────────────────────
