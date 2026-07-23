@@ -407,7 +407,7 @@ Route::middleware(['auth'])->group(function () {
 
         // Legacy endpoints (for backward compatibility)
         Route::get('/', fn () => redirect()->route('settings.ai.models'))->name('index');
-        Route::patch('/', [AiSettingsController::class, 'store'])->name('store');
+        Route::patch('/models', [AiSettingsController::class, 'store'])->name('store');
         Route::post('/test', [AiSettingsController::class, 'testConnection'])->name('test');
         Route::get('/integration', fn () => Inertia::render('Settings/AI/Integration'))->name('integration');
 

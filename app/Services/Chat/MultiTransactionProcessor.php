@@ -12,6 +12,7 @@ use App\DTO\MultiTransactionResult;
 use App\DTO\ParsedTransaction;
 use App\DTO\ResolvedTransaction;
 use App\Enums\MultiTransactionErrorCode;
+use App\Enums\TransactionIntent;
 use App\Enums\TransactionSource;
 use App\Enums\WalletSide;
 use App\Exceptions\AiConfigurationException;
@@ -33,11 +34,6 @@ use Throwable;
 
 class MultiTransactionProcessor
 {
-    /**
-     * @param  \Closure(ParsedTransaction): ?string  $validateDraftGuard
-     * @param  \Closure(ResolvedTransaction, string, string|null, string|null, string, string, string, bool): array  $buildDraftPayload
-     * @param  \Closure(?\App\Enums\TransactionIntent): string  $resolveTypeKey
-     */
     public function __construct(
         private readonly AiPreferenceManager $preferenceManager,
         private readonly AiCredentialManager $credentialManager,
@@ -46,9 +42,7 @@ class MultiTransactionProcessor
         private readonly AiParseLogService $parseLogService,
         private readonly WalletResolutionService $walletResolution,
         private readonly ProcessTransactionAction $transactionAction,
-        private readonly \Closure $validateDraftGuard,
-        private readonly \Closure $buildDraftPayload,
-        private readonly \Closure $resolveTypeKey,
+        private readonly DraftPayloadBuilder $draftBuilder,
     ) {}
 
     public function process(
@@ -223,7 +217,7 @@ class MultiTransactionProcessor
 
     private function validateItem(ParsedTransaction $parsed, int $num, string $rawText, User $user): ?MultiTransactionItem
     {
-        $guardError = ($this->validateDraftGuard)($parsed);
+        $guardError = $this->draftBuilder->validateParsed($parsed);
         if ($guardError !== null) {
             $errorCode = MultiTransactionErrorCode::from($guardError);
             $reason = $guardError === 'INVALID_AMOUNT'
@@ -297,7 +291,7 @@ class MultiTransactionProcessor
             : ($sourceWalletName !== null && $this->walletResolution->isExternalByName($sourceWalletName))
                 || ($destWalletName !== null && $this->walletResolution->isExternalByName($destWalletName));
 
-        $typeKey = ($this->resolveTypeKey)($parsed->transactionType);
+        $typeKey = $parsed->transactionType?->toTypeKey() ?? 'expense';
 
         $activeConversationId = $user->conversations()
             ->where('is_active', true)
@@ -317,7 +311,7 @@ class MultiTransactionProcessor
             'ai_confidence' => $multiResult->confidence,
             'original_text' => $rawText,
             'expires_at' => now()->addHours(24),
-            'payload' => ($this->buildDraftPayload)(
+            'payload' => $this->draftBuilder->build(
                 resolved: $resolved,
                 categoryName: $categoryName,
                 sourceWalletName: $sourceWalletName,
