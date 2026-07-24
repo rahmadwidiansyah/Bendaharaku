@@ -149,6 +149,59 @@ class LLMAdapterTest extends TestCase
         $this->assertSame(100, $result->usage['total']);
     }
 
+    public function test_gemini_parses_successful_response_without_usage_metadata(): void
+    {
+        $rawText = json_encode([
+            'amount' => 120000,
+            'category' => 'Belanja',
+            'sourceWallet' => 'Cash',
+            'transactionType' => 'expense',
+        ]);
+
+        Http::fake([
+            'generativelanguage.googleapis.com/*' => Http::response([
+                'candidates' => [
+                    ['content' => ['parts' => [['text' => $rawText]]]],
+                ],
+            ]),
+        ]);
+
+        $result = $this->gemini->parseTransaction('test prompt', 'fake-key', 'gemini-2.0-flash', 'belanja 120rb');
+
+        $this->assertTrue($result->success);
+        $this->assertSame(120000.0, $result->transaction?->amount);
+        $this->assertSame(['prompt' => 0, 'completion' => 0, 'total' => 0], $result->usage);
+    }
+
+    public function test_gemini_parses_usage_metadata_without_total_token_count(): void
+    {
+        $rawText = json_encode([
+            'amount' => 45000,
+            'category' => 'Makanan',
+            'sourceWallet' => 'Cash',
+            'transactionType' => 'expense',
+        ]);
+
+        Http::fake([
+            'generativelanguage.googleapis.com/*' => Http::response([
+                'candidates' => [
+                    ['content' => ['parts' => [['text' => $rawText]]]],
+                ],
+                'usageMetadata' => [
+                    'promptTokenCount' => 25,
+                    'candidatesTokenCount' => 15,
+                ],
+            ]),
+        ]);
+
+        $result = $this->gemini->parseTransaction('test prompt', 'fake-key', 'gemini-2.0-flash', 'makan 45rb');
+
+        $this->assertTrue($result->success);
+        $this->assertSame(25, $result->usage['prompt']);
+        $this->assertSame(15, $result->usage['completion']);
+        $this->assertSame(40, $result->usage['total']);
+    }
+
     public function test_gemini_parses_multi_transaction(): void
     {
         $rawText = json_encode([
@@ -175,6 +228,24 @@ class LLMAdapterTest extends TestCase
         $this->assertTrue($result->success);
         $this->assertCount(1, $result->transactions);
         $this->assertSame(50000.0, $result->transactions[0]->amount);
+    }
+
+    public function test_gemini_error_response_throws_provider_exception(): void
+    {
+        Http::fake([
+            'generativelanguage.googleapis.com/*' => Http::response([
+                'error' => [
+                    'code' => 400,
+                    'message' => 'Invalid request',
+                    'status' => 'INVALID_ARGUMENT',
+                ],
+            ], 400),
+        ]);
+
+        $this->expectException(\App\Exceptions\AiProviderException::class);
+        $this->expectExceptionMessage('HTTP 400');
+
+        $this->gemini->parseTransaction('test prompt', 'fake-key', 'gemini-2.0-flash');
     }
 
     public function test_openai_rejects_invalid_response(): void

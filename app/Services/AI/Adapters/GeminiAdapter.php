@@ -54,7 +54,8 @@ class GeminiAdapter extends BaseAdapter
                     },
                     function (Throwable $exception) {
                         return $exception instanceof ConnectionException;
-                    }
+                    },
+                    false
                 )
                 ->post($url.'?key='.$apiKey, $body);
 
@@ -79,10 +80,14 @@ class GeminiAdapter extends BaseAdapter
 
     protected function extractUsage(array $responseData): array
     {
+        $usage = $responseData['usageMetadata'] ?? [];
+        $prompt = (int) ($usage['promptTokenCount'] ?? 0);
+        $completion = (int) ($usage['candidatesTokenCount'] ?? 0);
+
         return [
-            'prompt' => $responseData['usageMetadata']['promptTokenCount'] ?? 0,
-            'completion' => $responseData['usageMetadata']['candidatesTokenCount'] ?? 0,
-            'total' => $responseData['usageMetadata']['totalTokenCount'] ?? 0,
+            'prompt' => $prompt,
+            'completion' => $completion,
+            'total' => $usage['totalTokenCount'] ?? ($prompt + $completion),
         ];
     }
 }

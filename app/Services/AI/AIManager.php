@@ -73,14 +73,17 @@ class AIManager
                 fallbackText: $text,
             );
 
-            if ($llmResult->usage['total'] > 0) {
+            $usage = $llmResult->usage;
+            $totalTokens = (int) ($usage['total'] ?? 0);
+
+            if ($totalTokens > 0) {
                 AiUsageLog::create([
                     'user_id' => $user->id,
                     'provider' => $preference->provider->value,
                     'model' => $model,
-                    'prompt_tokens' => $llmResult->usage['prompt'],
-                    'completion_tokens' => $llmResult->usage['completion'],
-                    'total_tokens' => $llmResult->usage['total'],
+                    'prompt_tokens' => $usage['prompt'] ?? 0,
+                    'completion_tokens' => $usage['completion'] ?? 0,
+                    'total_tokens' => $totalTokens,
                 ]);
             }
 
@@ -89,7 +92,14 @@ class AIManager
         } catch (AiRateLimitException|AiTimeoutException|AiProviderException $e) {
             throw $e;
         } catch (\Throwable $e) {
-            Log::error("LLM Provider {$preference->provider->value} Crash: ".$e->getMessage());
+            Log::error('LLM Provider Crash', [
+                'provider' => $preference->provider->value,
+                'model' => $model,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             throw new AiProviderException($preference->provider->value, $e->getMessage());
         }
     }

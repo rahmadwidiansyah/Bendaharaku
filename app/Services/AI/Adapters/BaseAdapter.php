@@ -53,6 +53,8 @@ abstract class BaseAdapter implements LLMAdapterInterface
         string $model,
         string $fallbackText = '',
     ): AIParseResult {
+        $responseData = [];
+
         try {
             $url = $this->getBaseUrl($model);
             $body = $this->buildRequestBody($model, $prompt);
@@ -82,7 +84,7 @@ abstract class BaseAdapter implements LLMAdapterInterface
                 confidence: (float) ($aiRaw['confidence'] ?? 0.85),
                 error: null,
                 transaction: $this->buildParsedTransaction($aiRaw, $fallbackText),
-                usage: $this->extractUsage($responseData),
+                usage: $this->normalizeUsage($this->extractUsage($responseData)),
                 provider: $this->getProviderName(),
                 model: $model,
             );
@@ -93,7 +95,7 @@ abstract class BaseAdapter implements LLMAdapterInterface
             Log::warning($this->getProviderName().' Connection Timeout', ['message' => $e->getMessage()]);
             throw new AiTimeoutException($this->getProviderName());
         } catch (Throwable $e) {
-            Log::error($this->getProviderName().' Provider Error', ['message' => $e->getMessage()]);
+            $this->logProviderCrash($e, $model, $responseData);
             throw new AiProviderException($this->getProviderName(), $e->getMessage());
         }
     }
@@ -104,6 +106,8 @@ abstract class BaseAdapter implements LLMAdapterInterface
         string $model,
         string $fallbackText = '',
     ): AIParseResultMulti {
+        $responseData = [];
+
         try {
             $url = $this->getBaseUrl($model);
             $body = $this->buildRequestBody($model, $prompt);
@@ -140,7 +144,7 @@ abstract class BaseAdapter implements LLMAdapterInterface
                 transactions: $this->buildParsedTransactions($aiRaw['transactions'], $fallbackText),
                 confidence: $this->averageConfidence($aiRaw['transactions']),
                 error: null,
-                usage: $this->extractUsage($responseData),
+                usage: $this->normalizeUsage($this->extractUsage($responseData)),
                 provider: $this->getProviderName(),
                 model: $model,
             );
@@ -151,7 +155,7 @@ abstract class BaseAdapter implements LLMAdapterInterface
             Log::warning($this->getProviderName().' Multi Connection Timeout', ['message' => $e->getMessage()]);
             throw new AiTimeoutException($this->getProviderName());
         } catch (Throwable $e) {
-            Log::error($this->getProviderName().' Multi Provider Error', ['message' => $e->getMessage()]);
+            $this->logProviderCrash($e, $model, $responseData);
             throw new AiProviderException($this->getProviderName(), $e->getMessage());
         }
     }
@@ -227,5 +231,60 @@ abstract class BaseAdapter implements LLMAdapterInterface
         $total = array_sum(array_map(fn ($i) => (float) ($i['confidence'] ?? 0.85), $items));
 
         return round($total / count($items), 4);
+    }
+
+    /** @return array{prompt: int, completion: int, total: int} */
+    protected function normalizeUsage(array $usage): array
+    {
+        $prompt = (int) ($usage['prompt'] ?? 0);
+        $completion = (int) ($usage['completion'] ?? 0);
+        $total = (int) ($usage['total'] ?? ($prompt + $completion));
+
+        return [
+            'prompt' => max(0, $prompt),
+            'completion' => max(0, $completion),
+            'total' => max(0, $total),
+        ];
+    }
+
+    protected function logProviderCrash(Throwable $e, string $model, array $responseData = []): void
+    {
+        Log::error('LLM Provider Crash', [
+            'provider' => $this->getProviderName(),
+            'model' => $model,
+            'message' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => $e->getTraceAsString(),
+            'usageMetadata' => $responseData['usageMetadata'] ?? null,
+            'raw_response' => $this->sanitizeProviderResponse($responseData),
+        ]);
+    }
+
+    protected function sanitizeProviderResponse(array $data): array
+    {
+        $sensitiveKeys = ['api_key', 'apikey', 'key', 'token', 'authorization', 'access_token'];
+        $sanitized = [];
+
+        foreach ($data as $key => $value) {
+            if (in_array(strtolower((string) $key), $sensitiveKeys, true)) {
+                $sanitized[$key] = '[redacted]';
+                continue;
+            }
+
+            if (is_array($value)) {
+                $sanitized[$key] = $this->sanitizeProviderResponse($value);
+                continue;
+            }
+
+            if (is_string($value) && strlen($value) > 2000) {
+                $sanitized[$key] = substr($value, 0, 2000).'... [truncated]';
+                continue;
+            }
+
+            $sanitized[$key] = $value;
+        }
+
+        return $sanitized;
     }
 }
