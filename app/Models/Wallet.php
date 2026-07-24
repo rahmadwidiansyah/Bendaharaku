@@ -63,6 +63,25 @@ class Wallet extends Model
         'is_pinned' => 'boolean',
     ];
 
+    protected $appends = ['icon_url'];
+
+    public function getIconUrlAttribute(): string
+    {
+        if ($this->icon === null) {
+            return '💳';
+        }
+
+        if (str_starts_with($this->icon, 'http')) {
+            return $this->icon;
+        }
+
+        if (str_contains($this->icon, '.')) {
+            return '/storage/' . $this->icon;
+        }
+
+        return $this->icon;
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

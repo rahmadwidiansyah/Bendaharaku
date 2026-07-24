@@ -38,7 +38,7 @@ class WalletReportService
             $items[] = [
                 'name' => $w->name,
                 'group_type' => $w->group_type,
-                'icon' => $w->icon ?? '💳',
+                'icon' => $w->icon_url,
                 'amount' => MoneyFormatter::rupiah((float) $w->balance),
             ];
         }
