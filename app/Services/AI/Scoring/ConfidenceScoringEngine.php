@@ -37,8 +37,8 @@ readonly class ConfidenceScoringEngine
         $memoryScore = $this->memoryMatch->calculateScore($inputText, $activeMemories);
         $finalScore += $memoryScore * $weights['memory_match'];
 
-        $categories = ! empty($context->categories)
-            ? collect($context->categories)
+        $categories = $context->categories !== null
+            ? $context->categories
             : $user->categories()->get(['category_name', 'keyword']);
 
         if ($this->categoryMatch->isMatch($categories, $parseResult->transaction?->category)) {
@@ -58,8 +58,8 @@ readonly class ConfidenceScoringEngine
             return 0.0;
         }
 
-        $wallets = ! empty($context->wallets)
-            ? collect($context->wallets)
+        $wallets = $context->wallets !== null
+            ? $context->wallets
             : $context->user->wallets()->get(['name', 'keyword', 'balance', 'group_type']);
 
         $sourceMatch = $this->walletMatch->isMatch($wallets, $t->sourceWallet);
