@@ -36,13 +36,19 @@ class AiPreferenceManager
     {
         DB::transaction(function () use ($user, $provider): void {
             $user->aiPreferences()->update(['is_active_provider' => false]);
+
+            $existing = UserAiPreference::where([
+                'user_id' => $user->id,
+                'provider' => $provider->value,
+            ])->first();
+
             UserAiPreference::updateOrCreate(
                 [
                     'user_id' => $user->id,
                     'provider' => $provider->value,
                 ],
                 [
-                    'selected_model' => $provider->defaultModel(),
+                    'selected_model' => $existing?->selected_model ?? $provider->defaultModel(),
                     'is_active_provider' => true,
                 ],
             );

@@ -228,6 +228,7 @@ return [
             'test_success' => 'Connection successful!',
             'test_failed' => 'Connection failed',
             'select_model' => 'Select a model',
+            'active' => 'Model is active',
             'help_text' => 'Configure your AI provider and model settings here. Test the connection to ensure everything is working properly.',
         ],
 

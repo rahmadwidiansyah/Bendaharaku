@@ -228,6 +228,7 @@ return [
             'test_success' => 'Koneksi berhasil!',
             'test_failed' => 'Koneksi gagal',
             'select_model' => 'Pilih model',
+            'active' => 'Model sudah aktif',
             'help_text' => 'Konfigurasi pengaturan penyedia dan model AI Anda di sini. Uji koneksi untuk memastikan semuanya berfungsi dengan baik.',
         ],
 

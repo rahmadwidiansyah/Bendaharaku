@@ -9,6 +9,7 @@ use App\DTO\ResolvedTransaction;
 use App\Enums\TransactionIntent;
 use App\Exceptions\CategoryNotFoundException;
 use App\Exceptions\WalletNotFoundException;
+use App\Models\Category;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Services\Category\CategoryResolutionService;

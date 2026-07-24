@@ -4,7 +4,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import SettingsLayout from '../Layouts/SettingsLayout.vue';
 import SettingsCard from '@/Components/Settings/SettingsCard.vue';
 import { useI18n } from 'vue-i18n';
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, reactive } from 'vue';
 import axios from 'axios';
 
 const { t } = useI18n();
@@ -25,7 +25,13 @@ const selectedProvider = ref(props.availableProviders?.[0] || 'gemini');
 const isTesting = ref(false);
 const testResult = ref<string | null>(null);
 const testResultType = ref<'success' | 'error'>('success');
-const statusOverrides = ref<Record<string, string>>({});
+
+// Track active provider and selected model locally — syncs with backend after save
+const initialActive = Object.entries(props.providerStatuses).find(
+  ([, s]) => s?.is_active_provider,
+);
+const localActiveProvider = ref(initialActive?.[0] ?? '');
+const localStatuses = reactive<Record<string, any>>({});
 
 // Form state per provider yang sedang aktif
 const form = ref({
@@ -42,27 +48,39 @@ const saveMessageType = ref<'success' | 'error'>('success');
 
 // ── Helpers ───────────────────────────────────────────────────────
 
+// Provider status: local override > props from server
+function getProviderStatus(provider: string) {
+  return localStatuses[provider] ?? props.providerStatuses?.[provider];
+}
+
 const currentStatus = computed(() => {
-  return statusOverrides.value[selectedProvider.value]
-    || props.providerStatuses?.[selectedProvider.value]?.status
-    || 'Not Configured';
+  return getProviderStatus(selectedProvider.value)?.status || 'Not Configured';
 });
 
 const currentModels = computed(() => props.modelsByProvider?.[selectedProvider.value] || []);
 
+// Apakah form berbeda dari keadaan saat ini (server)?
+const hasChanges = computed(() => {
+  const status = getProviderStatus(form.value.provider);
+  if (!status) return true;
+  return form.value.selected_model !== (status.selected_model ?? '')
+    || form.value.is_active_provider !== (status.is_active_provider ?? false);
+});
+
 const syncFormWithProvider = (provider: string) => {
-  const config = props.providerStatuses?.[provider];
+  const config = getProviderStatus(provider);
   const models = props.modelsByProvider?.[provider] || [];
 
-  form.value.provider        = provider;
-  form.value.api_key         = '';
-  form.value.selected_model  = config?.selected_model || models[0] || '';
-  form.value.is_active_provider = config?.is_active_provider || false;
-  testResult.value           = null;
-  saveMessage.value          = '';
+  form.value.provider           = provider;
+  form.value.api_key            = '';
+  form.value.selected_model     = config?.selected_model || models[0] || '';
+  form.value.is_active_provider = provider === localActiveProvider.value;
+  testResult.value              = null;
+  saveMessage.value             = '';
 };
 
 const handleProviderChange = (provider: string) => {
+  if (saving.value) return;
   selectedProvider.value = provider;
 };
 
@@ -82,21 +100,31 @@ const testConnection = async () => {
     });
     testResult.value = response.data.message || t('settings.ai.models.test_success');
     testResultType.value = 'success';
-    statusOverrides.value[selectedProvider.value] = 'Connected';
+    localStatuses[selectedProvider.value] = {
+      ...getProviderStatus(selectedProvider.value),
+      status: 'Connected',
+    };
   } catch (error: any) {
     testResult.value = error.response?.data?.message || t('settings.ai.models.test_failed');
     testResultType.value = 'error';
-    statusOverrides.value[selectedProvider.value] = 'Failed';
+    localStatuses[selectedProvider.value] = {
+      ...getProviderStatus(selectedProvider.value),
+      status: 'Failed',
+    };
   } finally {
     isTesting.value = false;
   }
 };
 
 const saveSettings = async () => {
+  if (saving.value || !hasChanges.value) return;
+
+  const prevStatus = { ...getProviderStatus(form.value.provider) };
+
   saving.value = true;
   saveMessage.value = '';
   try {
-    await axios.patch(route('settings.ai.store'), {
+    const { data } = await axios.patch(route('settings.ai.store'), {
       provider:             form.value.provider,
       api_key:              form.value.api_key || null,
       selected_model:       form.value.selected_model,
@@ -104,13 +132,32 @@ const saveSettings = async () => {
     });
 
     saveMessageType.value = 'success';
-    saveMessage.value     = t('toast.updated');
+    saveMessage.value     = data.message || t('toast.updated');
+
+    // Sync local state with server response
+    localStatuses[form.value.provider] = {
+      ...getProviderStatus(form.value.provider),
+      selected_model: data.selected_model,
+      is_active_provider: data.is_active_provider,
+    };
+
+    if (data.is_active_provider) {
+      // Deactivate all other providers in local state
+      for (const key in localStatuses) {
+        if (key !== form.value.provider) {
+          localStatuses[key] = { ...localStatuses[key], is_active_provider: false };
+        }
+      }
+      localActiveProvider.value = form.value.provider;
+    }
 
     // Reset API key field setelah simpan (keamanan — jangan tampilkan key)
     form.value.api_key = '';
 
     setTimeout(() => { saveMessage.value = ''; }, 4000);
   } catch (err: any) {
+    // Rollback — restore to previous state
+    localStatuses[form.value.provider] = prevStatus;
     saveMessageType.value = 'error';
     saveMessage.value     = err.response?.data?.message || t('errors.generic');
   } finally {
@@ -160,6 +207,10 @@ const saveSettings = async () => {
                     : 'bg-gray-800 text-gray-300 hover:bg-gray-700',
                 ]"
               >
+                <span
+                  v-if="getProviderStatus(provider)?.is_active_provider"
+                  class="w-2 h-2 rounded-full bg-emerald-400 shrink-0 mr-2"
+                />
                 {{ provider.toUpperCase() }}
               </button>
             </div>
@@ -271,15 +322,28 @@ const saveSettings = async () => {
         </p>
       </div>
 
-      <!-- Save Button — selalu tampil, di bawah semua card -->
+      <!-- Save Button — di bawah semua card -->
       <div class="flex items-center gap-3 pt-2">
         <button
           @click="saveSettings"
-          :disabled="saving"
-          class="px-5 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors"
+          :disabled="saving || !hasChanges"
+          class="px-5 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors inline-flex items-center gap-2"
         >
+          <svg
+            v-if="saving"
+            class="animate-spin h-4 w-4"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+          </svg>
           {{ saving ? t('common.saving') : t('common.save') }}
         </button>
+        <span v-if="!hasChanges && !saving" class="text-xs text-emerald-400">
+          ✓ {{ t('settings.ai.models.active') }}
+        </span>
       </div>
     </SettingsLayout>
   </AuthenticatedLayout>

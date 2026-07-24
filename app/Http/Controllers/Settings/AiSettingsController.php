@@ -17,7 +17,6 @@ use App\Services\AI\AiPreferenceManager;
 use App\Services\AI\PlaceholderConnectionTester;
 use App\Support\SettingsChangeLogger;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -102,13 +101,14 @@ class AiSettingsController extends Controller
         ]);
     }
 
-    public function store(SaveAiSettingsRequest $request): RedirectResponse
+    public function store(SaveAiSettingsRequest $request): JsonResponse
     {
         $user = Auth::user();
         $provider = AiProvider::from($request->validated('provider'));
         $selectedModel = $request->validated('selected_model');
+        $wantsActive = $request->boolean('is_active_provider');
 
-        // snapshot old values
+        // snapshot old values for logging
         $oldPreference = $user->aiPreferences()->where('provider', $provider->value)->first();
         $oldModel = $oldPreference?->selected_model ?? null;
         $oldActive = $oldPreference?->is_active_provider ?? false;
@@ -118,7 +118,6 @@ class AiSettingsController extends Controller
         if ($request->filled('api_key')) {
             $this->credentialManager->setCredential($user, $provider, $request->validated('api_key'));
 
-            // log that api key/credential was updated (do not store the key itself)
             SettingsChangeLogger::logChange(
                 $user,
                 'ai_credentials',
@@ -130,10 +129,11 @@ class AiSettingsController extends Controller
 
         // Jadikan aktif jika: user centang checkbox ATAU belum ada provider aktif sama sekali
         $hasNoActiveProvider = ! $user->aiPreferences()->where('is_active_provider', true)->exists();
-        if ($request->boolean('is_active_provider') || $hasNoActiveProvider) {
+        $isNowActive = $wantsActive || $hasNoActiveProvider;
+
+        if ($isNowActive) {
             $this->preferenceManager->switchActiveProvider($user, $provider);
 
-            // log active provider switch
             SettingsChangeLogger::logChange(
                 $user,
                 'is_active_provider',
@@ -145,7 +145,6 @@ class AiSettingsController extends Controller
 
         $this->preferenceManager->setModelPreference($user, $provider, $selectedModel);
 
-        // log model change if differs
         if ($oldModel !== $selectedModel) {
             SettingsChangeLogger::logChange(
                 $user,
@@ -156,9 +155,13 @@ class AiSettingsController extends Controller
             );
         }
 
-        return redirect()
-            ->route('settings.ai.models')
-            ->with('success', 'Pengaturan AI untuk '.strtoupper($provider->value).' berhasil diperbarui.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Pengaturan AI untuk '.strtoupper($provider->value).' berhasil diperbarui.',
+            'provider' => $provider->value,
+            'selected_model' => $selectedModel,
+            'is_active_provider' => $isNowActive,
+        ]);
     }
 
     public function testConnection(Request $request, PlaceholderConnectionTester $tester): JsonResponse
