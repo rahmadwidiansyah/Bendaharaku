@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Services\Chat;
 
 use App\Actions\ProcessTransactionAction;
-use App\DTO\AiProviderRequest;
 use App\DTO\AIParseResultMulti;
 use App\DTO\MultiTransactionItem;
 use App\DTO\MultiTransactionResult;
@@ -25,6 +24,7 @@ use App\Services\AI\AiCredentialManager;
 use App\Services\AI\AiParseLogService;
 use App\Services\AI\AiPreferenceManager;
 use App\Services\AI\AiProviderFactory;
+use App\Services\AI\Prompt\MultiTransactionPromptBuilder;
 use App\Services\AI\TransactionResolver;
 use App\Services\Wallet\WalletResolutionService;
 use Illuminate\Support\Facades\Log;
@@ -38,6 +38,7 @@ class MultiTransactionProcessor
         private readonly AiPreferenceManager $preferenceManager,
         private readonly AiCredentialManager $credentialManager,
         private readonly AiProviderFactory $providerFactory,
+        private readonly MultiTransactionPromptBuilder $multiPromptBuilder,
         private readonly TransactionResolver $resolver,
         private readonly AiParseLogService $parseLogService,
         private readonly WalletResolutionService $walletResolution,
@@ -55,9 +56,14 @@ class MultiTransactionProcessor
         if ($context === null) {
             return ['__fallback_to_single' => true];
         }
-        [$preference, $provider, $model, $llmRequest] = $context;
+        [$preference, $adapter, $credential, $model, $resolvedPrompt] = $context;
 
-        $multiResult = $provider->parseMultiTransaction($llmRequest);
+        $multiResult = $adapter->parseMultiTransaction(
+            prompt: $resolvedPrompt,
+            apiKey: $credential->api_key,
+            model: $model,
+            fallbackText: $text,
+        );
 
         if (! $multiResult->success || empty($multiResult->transactions)) {
             if ($multiResult->isOutOfScope) {
@@ -137,7 +143,6 @@ class MultiTransactionProcessor
         $preference = $this->preferenceManager->getActivePreference($user);
         if (! $preference) {
             Log::info("MultiTx: No LLM configured for user #{$user->id}, fallback to single parse.");
-
             return null;
         }
 
@@ -146,18 +151,13 @@ class MultiTransactionProcessor
             throw new AiConfigurationException("API Key untuk '{$preference->provider->value}' bermasalah.");
         }
 
-        $provider = $this->providerFactory->make($preference->provider);
+        $adapter = $this->providerFactory->make($preference->provider);
         $model = $preference->selected_model ?? $preference->provider->defaultModel();
+        $resolvedPrompt = $prompt ?? $this->multiPromptBuilder->build(
+            $text, $wallets, $categories, $activeMemories
+        );
 
-        return [$preference, $provider, $model, new AiProviderRequest(
-            text: $text,
-            apiKey: $credential->api_key,
-            model: $model,
-            wallets: $wallets,
-            categories: $categories,
-            activeMemories: $activeMemories,
-            prompt: $prompt,
-        )];
+        return [$preference, $adapter, $credential, $model, $resolvedPrompt];
     }
 
     private function processItem(User $user, ParsedTransaction $parsed, int $idx, bool $autoClear, AIParseResultMulti $multiResult, string $source): MultiTransactionItem
