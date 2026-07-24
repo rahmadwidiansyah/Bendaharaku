@@ -200,10 +200,11 @@ $finalSubject = $extractedSubject ?? $user->name;
           $finalConfidence = 0.0;
           $resolved = null;
           $walletExplicitlyMentioned = $this->hasExplicitWalletMention($text, $user);
+          $traceId = uniqid('TRC-');
 
           // Log resolution attempt
           Log::debug('[PIPELINE:CRC] Resolving transaction', [
-              'trace_id' => $context->traceId,
+              'trace_id' => $traceId,
               'user_id'      => $user->id,
               'text'         => $text,
               'parsed'       => json_encode($parsed),
@@ -215,7 +216,7 @@ $finalSubject = $extractedSubject ?? $user->name;
           try {
 $resolved = $this->resolver->resolve($user, $parsed);
               Log::debug('[PIPELINE:CRC] Resolver returned', [
-                  'trace_id'     => $context->traceId,
+                  'trace_id'     => $traceId,
                   'amount'      => $resolved->amount,
                   'category_id' => $resolved->categoryId,
                   'source_wallet' => $resolved->sourceWalletId,
@@ -231,7 +232,7 @@ $resolved = $this->resolver->resolve($user, $parsed);
               $finalConfidence = $this->scoringEngine->calculateFinalScore($scoreContext);
 
 Log::debug('[PIPELINE:CRC] Score calculation', [
-            'trace_id' => $context->traceId,
+            'trace_id' => $traceId,
             'final_confidence' => $finalConfidence,
             'threshold' => $threshold,
             'is_web_source' => $isWebSource,
@@ -239,14 +240,14 @@ Log::debug('[PIPELINE:CRC] Score calculation', [
         ]);
 
         Log::debug('[PIPELINE:CRC] Before calling resolveWebDraftWithoutWallet', [
-            'trace_id' => $context->traceId,
+            'trace_id' => $traceId,
             'source' => $source,
             'wallet_explicitly_mentioned' => $walletExplicitlyMentioned,
             'user_id' => $user->id,
         ]);
 
         $resolved = ($isWebSource && ! $walletExplicitlyMentioned && $parsed->transactionType !== TransactionIntent::Transfer)
-            ? $this->resolveWebDraftWithoutWallet($user, $parsed, $finalSubject, $context->traceId)
+            ? $this->resolveWebDraftWithoutWallet($user, $parsed, $finalSubject, $traceId)
             : new ResolvedTransaction(
                 amount: $resolved->amount,
                 categoryId: $resolved->categoryId,
@@ -258,7 +259,7 @@ Log::debug('[PIPELINE:CRC] Score calculation', [
             );
 
         Log::debug('[PIPELINE:CRC] After calling resolveWebDraftWithoutWallet', [
-            'trace_id' => $context->traceId,
+            'trace_id' => $traceId,
             'source_wallet_id' => $resolved->sourceWalletId,
             'destination_wallet_id' => $resolved->destinationWalletId,
             'category_id' => $resolved->categoryId,
@@ -266,7 +267,7 @@ Log::debug('[PIPELINE:CRC] Score calculation', [
         ]);
 
               Log::debug('[PIPELINE:CRC] Final resolved transaction', [
-                  'trace_id' => $context->traceId,
+                  'trace_id' => $traceId,
                   'amount' => $resolved->amount,
                   'category_id' => $resolved->categoryId,
                   'source_wallet' => $resolved->sourceWalletId,
@@ -279,7 +280,7 @@ Log::debug('[PIPELINE:CRC] Score calculation', [
 
         } catch (CategoryNotFoundException|WalletNotFoundException $e) {
             Log::debug('[PIPELINE:CRC] Exception caught in resolver', [
-                'trace_id' => $context->traceId,
+                'trace_id' => $traceId,
                 'exception_class' => get_class($e),
                 'exception_message' => $e->getMessage(),
                 'is_web_source' => $isWebSource,
@@ -289,16 +290,16 @@ Log::debug('[PIPELINE:CRC] Score calculation', [
             ]);
             if ($isWebSource && ! $walletExplicitlyMentioned && $parsed->category && $parsed->transactionType !== TransactionIntent::Transfer) {
                 Log::debug('[PIPELINE:CRC] Before calling resolveWebDraftWithoutWallet in catch block', [
-                    'trace_id' => $context->traceId,
+                    'trace_id' => $traceId,
                     'source' => $source,
                     'wallet_explicitly_mentioned' => $walletExplicitlyMentioned,
                     'user_id' => $user->id,
                 ]);
-                $resolved = $this->resolveWebDraftWithoutWallet($user, $parsed, $finalSubject, $context->traceId);
+                $resolved = $this->resolveWebDraftWithoutWallet($user, $parsed, $finalSubject, $traceId);
                 $finalConfidence = 0.0;
 
                 Log::debug('[PIPELINE:CRC] After calling resolveWebDraftWithoutWallet in catch block', [
-                    'trace_id' => $context->traceId,
+                    'trace_id' => $traceId,
                     'source_wallet_id' => $resolved->sourceWalletId,
                     'destination_wallet_id' => $resolved->destinationWalletId,
                     'category_id' => $resolved->categoryId,
@@ -317,7 +318,7 @@ Log::debug('[PIPELINE:CRC] Score calculation', [
         }
         // Log before DRAFT_SAVED check
         Log::debug('[PIPELINE:CRC] Before DRAFT_SAVED check', [
-            'trace_id' => $context->traceId,
+            'trace_id' => $traceId,
             'is_cleared' => $resolved->isCleared,
             'category_id' => $resolved->categoryId,
             'source_wallet_id' => $resolved->sourceWalletId,
@@ -330,7 +331,7 @@ Log::debug('[PIPELINE:CRC] Score calculation', [
 
         // Temporary trace log to capture exact moment before draft decision
         Log::debug('[PIPELINE:CRC] TraceBeforeDraftDecision', [
-            'trace_id' => $context->traceId,
+            'trace_id' => $traceId,
             'class' => self::class,
             'method' => 'processSingle::BeforeDraftDecision',
             'sourceWalletId' => $resolved->sourceWalletId,
@@ -340,7 +341,7 @@ Log::debug('[PIPELINE:CRC] Score calculation', [
         ]);
 
         Log::debug('[PIPELINE:CRC] Before DRAFT_SAVED check', [
-            'trace_id' => $context->traceId,
+            'trace_id' => $traceId,
             'is_cleared' => $resolved->isCleared,
             'category_id' => $resolved->categoryId,
             'source_wallet_id' => $resolved->sourceWalletId,
