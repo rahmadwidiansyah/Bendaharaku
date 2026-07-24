@@ -31,7 +31,7 @@ class GeminiProvider implements AIProviderInterface
     public function parseTransaction(AiProviderRequest $request): AIParseResult
     {
         try {
-            $prompt = $this->promptBuilder->build(
+            $prompt = $request->prompt ?? $this->promptBuilder->build(
                 $request->text,
                 $request->wallets,
                 $request->categories,
@@ -87,7 +87,7 @@ class GeminiProvider implements AIProviderInterface
     public function parseMultiTransaction(AiProviderRequest $request): AIParseResultMulti
     {
         try {
-            $prompt = $this->multiPromptBuilder->build(
+            $prompt = $request->prompt ?? $this->multiPromptBuilder->build(
                 $request->text,
                 $request->wallets,
                 $request->categories,

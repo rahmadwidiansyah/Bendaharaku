@@ -32,7 +32,7 @@ class DeepSeekProvider implements AIProviderInterface
     {
         try {
             $url = 'https://api.deepseek.com/chat/completions';
-            $prompt = $this->promptBuilder->build(
+            $prompt = $request->prompt ?? $this->promptBuilder->build(
                 $request->text,
                 $request->wallets,
                 $request->categories,
@@ -94,7 +94,7 @@ class DeepSeekProvider implements AIProviderInterface
     {
         try {
             $url = 'https://api.deepseek.com/chat/completions';
-            $prompt = $this->multiPromptBuilder->build(
+            $prompt = $request->prompt ?? $this->multiPromptBuilder->build(
                 $request->text,
                 $request->wallets,
                 $request->categories,

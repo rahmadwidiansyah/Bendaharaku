@@ -25,7 +25,7 @@ class AIManager
         private LocalRuleEngine $ruleEngine
     ) {}
 
-    public function parseTransaction(User $user, string $text, array $wallets = [], array $categories = [], array $activeMemories = []): AIParseResult
+    public function parseTransaction(User $user, string $text, array $wallets = [], array $categories = [], array $activeMemories = [], ?string $prompt = null): AIParseResult
     {
         // 0. LOCAL RULE ENGINE (ZERO-LATENCY REGEX & KEYWORDS)
         $ruleEngineResult = $this->ruleEngine->parse($user, $text);
@@ -89,7 +89,8 @@ class AIManager
             model: $model,
             wallets: $wallets,
             categories: $categories,
-            activeMemories: $activeMemories
+            activeMemories: $activeMemories,
+            prompt: $prompt,
         );
 
         try {

@@ -29,7 +29,11 @@ use App\Models\TransactionLog;
 use App\Models\User;
 use App\Services\AI\AIManager;
 use App\Services\AI\AiParseLogService;
+use App\Services\AI\Context\AIContext;
+use App\Services\AI\Context\AIContextBuilder;
+use App\Services\AI\Context\ContextSnapshot;
 use App\Services\AI\Memory\UserMemoryService;
+use App\Services\AI\Prompt\PromptRenderer;
 use App\Services\AI\Scoring\ConfidenceScoringEngine;
 use App\Services\AI\TransactionResolver;
 use App\Services\Wallet\WalletResolutionService;
@@ -74,12 +78,30 @@ class ChatTransactionOrchestrator
             $categories = $user->categories()->get(['id', 'category_name', 'type_id', 'keyword'])->toArray();
             $activeMemories = $this->memoryService->getTopRelevantMemories($user->id, $text);
 
-            // ── ROUTING: single vs multi ──────────────────────────────
-            if ($this->multiRouter->isMultiTransaction($text)) {
-                return $this->processMulti($user, $text, $wallets, $categories, $activeMemories, $source);
+            // ── Sprint C: optional AIContext → PromptRenderer path ────
+            $prompt = null;
+            if (config('bendaharaku.ai_context_v2_enabled')) {
+                $snapshot = new ContextSnapshot(
+                    user: $user,
+                    userInput: $text,
+                    wallets: collect($wallets),
+                    categories: collect($categories),
+                    activeMemories: $activeMemories,
+                );
+                $aiContext = (new AIContextBuilder)->build($snapshot);
+                if ($this->multiRouter->isMultiTransaction($text)) {
+                    $prompt = (new PromptRenderer)->renderMulti($aiContext);
+                } else {
+                    $prompt = (new PromptRenderer)->renderSingle($aiContext);
+                }
             }
 
-            return $this->processSingle($user, $text, $wallets, $categories, $activeMemories, $source);
+            // ── ROUTING: single vs multi ──────────────────────────────
+            if ($this->multiRouter->isMultiTransaction($text)) {
+                return $this->processMulti($user, $text, $wallets, $categories, $activeMemories, $source, $prompt);
+            }
+
+            return $this->processSingle($user, $text, $wallets, $categories, $activeMemories, $source, $prompt);
 
         } catch (CategoryNotFoundException|WalletNotFoundException $e) {
             $errorCode = $e instanceof CategoryNotFoundException ? 'CATEGORY_NOT_FOUND' : 'WALLET_NOT_FOUND';
@@ -146,9 +168,10 @@ class ChatTransactionOrchestrator
     private function processSingle(
         User $user, string $text,
         array $wallets, array $categories, array $activeMemories,
-        string $source
+        string $source,
+        ?string $prompt = null,
     ): array {
-        $aiResult = $this->aiManager->parseTransaction($user, $text, $wallets, $categories, $activeMemories);
+        $aiResult = $this->aiManager->parseTransaction($user, $text, $wallets, $categories, $activeMemories, $prompt);
 
         if (! $aiResult->success || ! $aiResult->transaction) {
             return ['success' => false, 'error_code' => 'AI_PARSE_FAILED', 'message' => '❌ AI Gagal memproses: '.($aiResult->error ?? 'Format tidak dikenali.')];
@@ -428,9 +451,10 @@ class ChatTransactionOrchestrator
     private function processMulti(
         User $user, string $text,
         array $wallets, array $categories, array $activeMemories,
-        string $source
+        string $source,
+        ?string $prompt = null,
     ): array {
-        $result = $this->multiProcessor->process($user, $text, $wallets, $categories, $activeMemories, $source);
+        $result = $this->multiProcessor->process($user, $text, $wallets, $categories, $activeMemories, $source, $prompt);
 
         if (isset($result['__fallback_to_single']) && $result['__fallback_to_single']) {
             return $this->processSingle($user, $text, $wallets, $categories, $activeMemories, $source);

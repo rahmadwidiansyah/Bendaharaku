@@ -20,6 +20,8 @@ return [
     | AI Engine Configuration
     |--------------------------------------------------------------------------
     */
+    'ai_context_v2_enabled' => env('AI_CONTEXT_V2', false),
+
     'ai' => [
         'feedback_weights' => [
             'transaction_type' => 0.40,

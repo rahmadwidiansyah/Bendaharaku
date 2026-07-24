@@ -48,9 +48,10 @@ class MultiTransactionProcessor
     public function process(
         User $user, string $text,
         array $wallets, array $categories, array $activeMemories,
-        string $source
+        string $source,
+        ?string $prompt = null,
     ): array {
-        $context = $this->resolveMultiContext($user, $text, $wallets, $categories, $activeMemories, $source);
+        $context = $this->resolveMultiContext($user, $text, $wallets, $categories, $activeMemories, $source, $prompt);
         if ($context === null) {
             return ['__fallback_to_single' => true];
         }
@@ -131,7 +132,7 @@ class MultiTransactionProcessor
         ];
     }
 
-    private function resolveMultiContext(User $user, string $text, array $wallets, array $categories, array $activeMemories, string $source): ?array
+    private function resolveMultiContext(User $user, string $text, array $wallets, array $categories, array $activeMemories, string $source, ?string $prompt = null): ?array
     {
         $preference = $this->preferenceManager->getActivePreference($user);
         if (! $preference) {
@@ -155,6 +156,7 @@ class MultiTransactionProcessor
             wallets: $wallets,
             categories: $categories,
             activeMemories: $activeMemories,
+            prompt: $prompt,
         )];
     }
 
