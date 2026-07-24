@@ -79,14 +79,17 @@ class MultiTransactionProcessor
             ];
         }
 
-        if (! empty($multiResult->usage['total'])) {
+        $usage = $multiResult->usage;
+        $totalTokens = (int) ($usage['total'] ?? 0);
+
+        if ($totalTokens > 0) {
             AiUsageLog::create([
                 'user_id' => $user->id,
                 'provider' => $preference->provider->value,
                 'model' => $model,
-                'prompt_tokens' => $multiResult->usage['prompt'],
-                'completion_tokens' => $multiResult->usage['completion'],
-                'total_tokens' => $multiResult->usage['total'],
+                'prompt_tokens' => $usage['prompt'] ?? 0,
+                'completion_tokens' => $usage['completion'] ?? 0,
+                'total_tokens' => $totalTokens,
             ]);
         }
 
