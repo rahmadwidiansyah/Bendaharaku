@@ -71,6 +71,27 @@ function getWalletTypeLabel(groupType) {
   }
   return labels[groupType] || groupType
 }
+
+// Detect if icon value is a file path/URL (needs <img>) or emoji (needs <span>)
+function isIconUrl(icon) {
+  return icon && (icon.includes('.') || icon.startsWith('http') || icon.includes('/'))
+}
+
+function defaultIcon(value) {
+  return value || '💳'
+}
+
+function onImgError(e, fallback) {
+  e.target.style.display = 'none'
+  if (!e.target.nextElementSibling) {
+    const span = document.createElement('span')
+    span.className = 'text-lg leading-none shrink-0'
+    span.textContent = fallback
+    e.target.after(span)
+  } else {
+    e.target.nextElementSibling.style.display = ''
+  }
+}
 </script>
 
 <template>
@@ -101,7 +122,12 @@ function getWalletTypeLabel(groupType) {
       <div v-for="(item, idx) in component.items" :key="idx"
         class="flex items-center justify-between px-3.5 py-2.5 hover:bg-white/[0.02] transition-colors group">
         <div class="flex items-center gap-2.5 min-w-0 flex-1">
-          <span class="text-lg leading-none shrink-0">{{ item.icon || '💳' }}</span>
+          <img v-if="isIconUrl(item.icon)"
+            :src="item.icon"
+            class="w-5 h-5 rounded-full object-cover shrink-0"
+            @error="(e) => onImgError(e, defaultIcon(item.icon))"
+          />
+          <span v-else class="text-lg leading-none shrink-0">{{ defaultIcon(item.icon) }}</span>
           <div class="min-w-0">
             <span class="text-xs font-medium text-white truncate block">{{ item.name }}</span>
             <span v-if="item.group_type" class="text-2xs text-gray-500">

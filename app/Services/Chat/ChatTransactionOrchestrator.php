@@ -75,17 +75,16 @@ class ChatTransactionOrchestrator
             // Wallet sistem dikelola internal oleh resolver — AI tidak perlu tahu.
             $wallets = $user->wallets()
                 ->where('group_type', '!=', 'System')
-                ->get(['id', 'name', 'group_type', 'keyword', 'balance'])
-                ->toArray();
-            $categories = $user->categories()->get(['id', 'category_name', 'type_id', 'keyword'])->toArray();
+                ->get(['id', 'name', 'group_type', 'keyword', 'balance', 'is_pinned']);
+            $categories = $user->categories()->get(['id', 'category_name', 'type_id', 'keyword']);
             $activeMemories = $this->memoryService->getTopRelevantMemories($user->id, $text);
 
             // ── Build prompt via ContextSnapshot → AIContext → PromptRenderer ──
             $snapshot = new ContextSnapshot(
                 user: $user,
                 userInput: $text,
-                wallets: collect($wallets),
-                categories: collect($categories),
+                wallets: $wallets,
+                categories: $categories,
                 activeMemories: $activeMemories,
             );
             $needsBalance = (new BalanceIntentDetector)->needsBalance($text);
@@ -98,10 +97,10 @@ class ChatTransactionOrchestrator
 
             // ── ROUTING: single vs multi ──────────────────────────────
             if ($this->multiRouter->isMultiTransaction($text)) {
-                return $this->processMulti($user, $text, $wallets, $categories, $activeMemories, $source, $prompt);
+                return $this->processMulti($user, $text, $wallets->toArray(), $categories->toArray(), $activeMemories, $source, $prompt);
             }
 
-            return $this->processSingle($user, $text, $wallets, $categories, $activeMemories, $source, $prompt);
+            return $this->processSingle($user, $text, $wallets->toArray(), $categories->toArray(), $activeMemories, $source, $prompt);
 
         } catch (CategoryNotFoundException|WalletNotFoundException $e) {
             $errorCode = $e instanceof CategoryNotFoundException ? 'CATEGORY_NOT_FOUND' : 'WALLET_NOT_FOUND';
