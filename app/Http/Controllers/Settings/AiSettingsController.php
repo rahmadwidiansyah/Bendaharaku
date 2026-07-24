@@ -157,7 +157,7 @@ class AiSettingsController extends Controller
         }
 
         return redirect()
-            ->back()
+            ->route('settings.ai.models')
             ->with('success', 'Pengaturan AI untuk '.strtoupper($provider->value).' berhasil diperbarui.');
     }
 

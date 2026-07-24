@@ -31,6 +31,8 @@ use App\Services\AI\AIManager;
 use App\Services\AI\AiParseLogService;
 use App\Services\AI\Context\AIContext;
 use App\Services\AI\Context\AIContextBuilder;
+use App\Services\AI\Context\BalanceIntentDetector;
+use App\Services\AI\Context\ContextOptions;
 use App\Services\AI\Context\ContextSnapshot;
 use App\Services\AI\Memory\UserMemoryService;
 use App\Services\AI\Prompt\PromptRenderer;
@@ -86,7 +88,10 @@ class ChatTransactionOrchestrator
                 categories: collect($categories),
                 activeMemories: $activeMemories,
             );
-            $aiContext = (new AIContextBuilder)->build($snapshot);
+            $needsBalance = (new BalanceIntentDetector)->needsBalance($text);
+            $aiContext = (new AIContextBuilder)->build($snapshot, new ContextOptions(
+                includeWalletBalance: $needsBalance,
+            ));
             $prompt = $this->multiRouter->isMultiTransaction($text)
                 ? (new PromptRenderer)->renderMulti($aiContext)
                 : (new PromptRenderer)->renderSingle($aiContext);
