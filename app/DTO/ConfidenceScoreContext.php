@@ -18,5 +18,7 @@ readonly class ConfidenceScoreContext
         public AIParseResult $parseResult,
         public ?ResolvedTransaction $resolvedTransaction,
         public array $activeMemories = [],
+        public array $wallets = [],
+        public array $categories = [],
     ) {}
 }

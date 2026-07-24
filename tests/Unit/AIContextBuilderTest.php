@@ -6,6 +6,7 @@ namespace Tests\Unit;
 
 use App\Models\User;
 use App\Services\AI\Context\AIContextBuilder;
+use App\Services\AI\Context\ContextOptions;
 use App\Services\AI\Context\ContextSnapshot;
 use App\Services\AI\Context\RuleContextBuilder;
 use Illuminate\Database\Eloquent\Collection;
@@ -107,6 +108,44 @@ class AIContextBuilderTest extends TestCase
 
         $this->assertCount(1, $context->wallets);
         $this->assertSame('Cash', $context->wallets[0]['name']);
+    }
+
+    public function test_ai_context_includes_balance_when_option_set(): void
+    {
+        $snapshot = $this->makeSnapshot([
+            'wallets' => [
+                ['id' => 1, 'name' => 'Cash', 'keyword' => 'cash', 'group_type' => 'Personal', 'is_pinned' => false, 'balance' => 50000],
+                ['id' => 2, 'name' => 'BCA', 'keyword' => 'bca', 'group_type' => 'Personal', 'is_pinned' => true, 'balance' => 100000],
+            ],
+            'categories' => [
+                ['id' => 1, 'category_name' => 'Makanan', 'keyword' => 'makan'],
+            ],
+        ]);
+
+        $context = $this->aiBuilder->build($snapshot, new ContextOptions(includeWalletBalance: true));
+
+        $this->assertCount(2, $context->wallets);
+        $this->assertArrayHasKey('balance', $context->wallets[0]);
+        $this->assertArrayHasKey('balance', $context->wallets[1]);
+        $this->assertSame(100000, $context->wallets[0]['balance']);
+        $this->assertSame(50000, $context->wallets[1]['balance']);
+    }
+
+    public function test_ai_context_omits_balance_by_default(): void
+    {
+        $snapshot = $this->makeSnapshot([
+            'wallets' => [
+                ['id' => 1, 'name' => 'Cash', 'keyword' => 'cash', 'group_type' => 'Personal', 'is_pinned' => false, 'balance' => 50000],
+            ],
+            'categories' => [
+                ['id' => 1, 'category_name' => 'Makanan', 'keyword' => 'makan'],
+            ],
+        ]);
+
+        $context = $this->aiBuilder->build($snapshot);
+
+        $this->assertCount(1, $context->wallets);
+        $this->assertArrayNotHasKey('balance', $context->wallets[0]);
     }
 
     private function makeSnapshot(array $overrides = []): ContextSnapshot

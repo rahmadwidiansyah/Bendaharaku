@@ -474,7 +474,6 @@ Route::middleware(['auth'])->group(function () {
 
     // ── Redirects for backward compatibility ───────────────────────
     Route::get('/settings/chat/bot-profile', fn () => redirect('/settings/ai/bot', 301));
-    Route::redirect('/settings/ai', '/settings/ai/models', 301);
 
     // Resources CRUD
     Route::patch('wallets/{wallet}/set-pin', [WalletController::class, 'setPin'])->name('wallets.set-pin');

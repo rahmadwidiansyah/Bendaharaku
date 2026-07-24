@@ -9,13 +9,12 @@ use App\DTO\AIParseResultMulti;
 use App\DTO\AiProviderRequest;
 use App\DTO\ParsedTransaction;
 use App\Enums\TransactionIntent;
-use App\Services\AI\Contracts\AIProviderInterface;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
-class PythonNLPProvider implements AIProviderInterface
+class PythonNLPProvider
 {
     private string $baseUrl;
 

@@ -9,12 +9,12 @@ class AIContextBuilder
     private const MAX_WALLETS = 10;
     private const MAX_CATEGORIES = 20;
 
-    public function build(ContextSnapshot $snapshot): AIContext
+    public function build(ContextSnapshot $snapshot, ContextOptions $options = new ContextOptions): AIContext
     {
         return new AIContext(
             userInput: $snapshot->userInput,
             conversationId: null,
-            wallets: $this->buildWallets($snapshot),
+            wallets: $this->buildWallets($snapshot, $options),
             categories: $this->buildCategories($snapshot),
             keywordAliases: $this->buildKeywordAliases($snapshot),
             activeMemories: $snapshot->activeMemories,
@@ -24,7 +24,7 @@ class AIContextBuilder
         );
     }
 
-    private function buildWallets(ContextSnapshot $snapshot): array
+    private function buildWallets(ContextSnapshot $snapshot, ContextOptions $options): array
     {
         $wallets = $snapshot->wallets
             ->where('group_type', '!=', 'System')
@@ -34,10 +34,10 @@ class AIContextBuilder
             ->values()
             ->toArray();
 
-        return array_map(fn (array $w) => [
-            'id' => $w['id'],
-            'name' => $w['name'],
-        ], $wallets);
+        return array_map(fn (array $w) => $options->includeWalletBalance
+            ? ['id' => $w['id'], 'name' => $w['name'], 'balance' => $w['balance']]
+            : ['id' => $w['id'], 'name' => $w['name']],
+        $wallets);
     }
 
     private function buildCategories(ContextSnapshot $snapshot): array

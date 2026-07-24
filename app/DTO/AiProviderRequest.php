@@ -12,6 +12,7 @@ readonly class AiProviderRequest
         public string $model,
         public array $wallets = [],
         public array $categories = [],
-        public array $activeMemories = [] // Ditambahkan untuk menyambung pipeline
+        public array $activeMemories = [], // Ditambahkan untuk menyambung pipeline
+        public ?string $prompt = null, // Pre-built prompt (Sprint C, flag ai_context_v2_enabled)
     ) {}
 }

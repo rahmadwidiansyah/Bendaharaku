@@ -29,7 +29,13 @@ use App\Models\TransactionLog;
 use App\Models\User;
 use App\Services\AI\AIManager;
 use App\Services\AI\AiParseLogService;
+use App\Services\AI\Context\AIContext;
+use App\Services\AI\Context\AIContextBuilder;
+use App\Services\AI\Context\BalanceIntentDetector;
+use App\Services\AI\Context\ContextOptions;
+use App\Services\AI\Context\ContextSnapshot;
 use App\Services\AI\Memory\UserMemoryService;
+use App\Services\AI\Prompt\PromptRenderer;
 use App\Services\AI\Scoring\ConfidenceScoringEngine;
 use App\Services\AI\TransactionResolver;
 use App\Services\Wallet\WalletResolutionService;
@@ -74,12 +80,28 @@ class ChatTransactionOrchestrator
             $categories = $user->categories()->get(['id', 'category_name', 'type_id', 'keyword'])->toArray();
             $activeMemories = $this->memoryService->getTopRelevantMemories($user->id, $text);
 
+            // ── Build prompt via ContextSnapshot → AIContext → PromptRenderer ──
+            $snapshot = new ContextSnapshot(
+                user: $user,
+                userInput: $text,
+                wallets: collect($wallets),
+                categories: collect($categories),
+                activeMemories: $activeMemories,
+            );
+            $needsBalance = (new BalanceIntentDetector)->needsBalance($text);
+            $aiContext = (new AIContextBuilder)->build($snapshot, new ContextOptions(
+                includeWalletBalance: $needsBalance,
+            ));
+            $prompt = $this->multiRouter->isMultiTransaction($text)
+                ? (new PromptRenderer)->renderMulti($aiContext)
+                : (new PromptRenderer)->renderSingle($aiContext);
+
             // ── ROUTING: single vs multi ──────────────────────────────
             if ($this->multiRouter->isMultiTransaction($text)) {
-                return $this->processMulti($user, $text, $wallets, $categories, $activeMemories, $source);
+                return $this->processMulti($user, $text, $wallets, $categories, $activeMemories, $source, $prompt);
             }
 
-            return $this->processSingle($user, $text, $wallets, $categories, $activeMemories, $source);
+            return $this->processSingle($user, $text, $wallets, $categories, $activeMemories, $source, $prompt);
 
         } catch (CategoryNotFoundException|WalletNotFoundException $e) {
             $errorCode = $e instanceof CategoryNotFoundException ? 'CATEGORY_NOT_FOUND' : 'WALLET_NOT_FOUND';
@@ -146,9 +168,10 @@ class ChatTransactionOrchestrator
     private function processSingle(
         User $user, string $text,
         array $wallets, array $categories, array $activeMemories,
-        string $source
+        string $source,
+        string $prompt = '',
     ): array {
-        $aiResult = $this->aiManager->parseTransaction($user, $text, $wallets, $categories, $activeMemories);
+        $aiResult = $this->aiManager->parseTransaction($user, $text, $wallets, $categories, $activeMemories, $prompt);
 
         if (! $aiResult->success || ! $aiResult->transaction) {
             return ['success' => false, 'error_code' => 'AI_PARSE_FAILED', 'message' => '❌ AI Gagal memproses: '.($aiResult->error ?? 'Format tidak dikenali.')];
@@ -184,7 +207,8 @@ class ChatTransactionOrchestrator
 
             $scoreContext = new ConfidenceScoreContext(
                 user: $user, inputText: $text, parseResult: $aiResult,
-                resolvedTransaction: $resolved, activeMemories: $activeMemories
+                resolvedTransaction: $resolved, activeMemories: $activeMemories,
+                wallets: $wallets, categories: $categories,
             );
             $finalConfidence = $this->scoringEngine->calculateFinalScore($scoreContext);
 
@@ -428,9 +452,10 @@ class ChatTransactionOrchestrator
     private function processMulti(
         User $user, string $text,
         array $wallets, array $categories, array $activeMemories,
-        string $source
+        string $source,
+        string $prompt = '',
     ): array {
-        $result = $this->multiProcessor->process($user, $text, $wallets, $categories, $activeMemories, $source);
+        $result = $this->multiProcessor->process($user, $text, $wallets, $categories, $activeMemories, $source, $prompt);
 
         if (isset($result['__fallback_to_single']) && $result['__fallback_to_single']) {
             return $this->processSingle($user, $text, $wallets, $categories, $activeMemories, $source);
