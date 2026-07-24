@@ -202,7 +202,8 @@ class ChatTransactionOrchestrator
 
             $scoreContext = new ConfidenceScoreContext(
                 user: $user, inputText: $text, parseResult: $aiResult,
-                resolvedTransaction: $resolved, activeMemories: $activeMemories
+                resolvedTransaction: $resolved, activeMemories: $activeMemories,
+                wallets: $wallets, categories: $categories,
             );
             $finalConfidence = $this->scoringEngine->calculateFinalScore($scoreContext);
 
