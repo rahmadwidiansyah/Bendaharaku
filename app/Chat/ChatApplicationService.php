@@ -49,12 +49,31 @@ class ChatApplicationService
         ]);
 
         $commandResponse = $this->commandRouter->route($text, $user, $context, $startTime);
+        // Log inference path before orchestrator
+        Log::debug('[PIPELINE:ASP] handleMessage inference path', [
+            'trace_id'          => $context->traceId,
+            'current_class'     => __CLASS__,
+            'current_method'    => '__invoke',
+            'source'            => $source,
+            'platform'          => $context->platform->value,
+            'is_command'        => $commandResponse !== null,
+        ]);
+
         if ($commandResponse !== null) {
             return $commandResponse;
         }
 
         try {
             $result = $this->orchestrator->process($user, $text, $source);
+
+            Log::debug('[PIPELINE:CAS] orchestrator->process result', [
+                'trace_id'   => $context->traceId,
+                'success'    => $result['success'] ?? null,
+                'is_web_draft' => $result['is_web_draft'] ?? false,
+                'error_code' => $result['error_code'] ?? null,
+                'has_draft'  => isset($result['draft']),
+                'has_trx'    => isset($result['transaction']),
+            ]);
 
             $latency = (int) round((microtime(true) - $startTime) * 1000);
             $metadata = $this->responseConverter->buildMetadata($result, $context, $latency);
@@ -64,9 +83,15 @@ class ChatApplicationService
             }
 
             if (! $result['success']) {
+                Log::debug('[PIPELINE:CAS] convertSingleFailure', [
+                    'trace_id'   => $context->traceId,
+                    'error_code' => $result['error_code'] ?? null,
+                    'message'    => $result['message'] ?? null,
+                ]);
                 return $this->responseConverter->convertSingleFailure($result, $metadata);
             }
 
+            Log::debug('[PIPELINE:CAS] convertSingleSuccess', ['trace_id' => $context->traceId]);
             return $this->responseConverter->convertSingleSuccess($result, $context, $metadata, $text);
 
         } catch (AiConfigurationException $e) {

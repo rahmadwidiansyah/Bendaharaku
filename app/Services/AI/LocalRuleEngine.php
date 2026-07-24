@@ -28,7 +28,19 @@ class LocalRuleEngine
     public function parse(User $user, string $text): ?AIParseResult
     {
         $normalizedText = trim($text);
+        $traceId = uniqid('LRE-'); // Temporary trace ID
+
+        Log::debug('LocalRuleEngine: [TRACE_ID: {trace_id}] Start parsing', [
+            'trace_id' => $traceId,
+            'user_id' => $user->id,
+            'text' => $text,
+        ]);
+
         if ($normalizedText === '') {
+            Log::debug('LocalRuleEngine: [TRACE_ID: {trace_id}] Empty text, returning null', [
+                'trace_id' => $traceId,
+                'user_id' => $user->id,
+            ]);
             return null;
         }
 
@@ -98,27 +110,31 @@ class LocalRuleEngine
             useAllBalance: $useAllBalance
         );
 
-        Log::info('LocalRuleEngine: successfully parsed intent locally', [
-            'user_id' => $user->id,
-            'text' => $text,
-            'intent' => $intent->value,
-            'category' => $categoryMatch->category_name,
-            'amount' => $amount,
-            'source' => $walletData['sourceWallet'],
-            'dest' => $walletData['destinationWallet'],
-            'subject' => $subject,
-            'use_all_balance' => $useAllBalance,
-        ]);
+            $parseResult = new AIParseResult(
+                success: true,
+                confidence: 1.0, // Rule engine matches are 100% confident
+                error: null,
+                transaction: $parsedTransaction,
+                usage: ['prompt' => 0, 'completion' => 0, 'total' => 0],
+                provider: 'local-rules',
+                model: 'regex'
+            );
 
-        return new AIParseResult(
-            success: true,
-            confidence: 1.0, // Rule engine matches are 100% confident
-            error: null,
-            transaction: $parsedTransaction,
-            usage: ['prompt' => 0, 'completion' => 0, 'total' => 0],
-            provider: 'local-rules',
-            model: 'regex'
-        );
+            Log::debug('LocalRuleEngine: [TRACE_ID: {trace_id}] Successfully parsed locally', [
+                'trace_id' => $traceId,
+                'user_id' => $user->id,
+                'text' => $text,
+                'intent' => $intent->value,
+                'category' => $categoryMatch->category_name,
+                'amount' => $amount,
+                'source_wallet' => $walletData['sourceWallet'],
+                'destination_wallet' => $walletData['destinationWallet'],
+                'subject' => $subject,
+                'is_cleared' => $isCleared,
+                'use_all_balance' => $useAllBalance,
+            ]);
+
+            return $parseResult;
     }
 
     /**

@@ -11,6 +11,7 @@ use App\Chat\Components\TextComponent;
 use App\Chat\DTOs\ChatContext;
 use App\Chat\DTOs\ChatResponse;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
 
 class CommandRouter
 {
@@ -28,11 +29,22 @@ class CommandRouter
         float $startTime,
     ): ?ChatResponse {
         $lower = strtolower(trim($text));
+        $traceId = $context->traceId;
+        $startTimeReal = microtime(true);
+        $latencyMs = (int) round((microtime(true) - $startTimeReal) * 1000);
+        $normalizedText = $lower;
         $command = $this->normalizeCommand($lower);
 
-        if ($command === null && ! in_array($lower, ['hai', 'halo', 'hello', 'hi', 'ping', 'p', 'tes', 'test', 'help', 'tolong'])) {
-            return null;
-        }
+        Log::debug('[PIPELINE:ROUTE] commandRouter invoked', [
+            'trace_id'         => $traceId,
+            'normalized_text'  => $normalizedText,
+            'command'          => $command,
+            'source'           => $context->sourcePrefix(),
+            'platform'         => $context->platform->value,
+        ]);
+
+        $lane = $context->lane ?? 'default';
+        $locale = $context->locale;
 
         $locale = $context->locale;
         $latency = (int) round((microtime(true) - $startTime) * 1000);
