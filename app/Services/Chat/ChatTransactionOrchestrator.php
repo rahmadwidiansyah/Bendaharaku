@@ -97,10 +97,10 @@ class ChatTransactionOrchestrator
 
             // ── ROUTING: single vs multi ──────────────────────────────
             if ($this->multiRouter->isMultiTransaction($text)) {
-                return $this->processMulti($user, $text, $wallets->toArray(), $categories->toArray(), $activeMemories, $source, $prompt);
+                return $this->processMulti($user, $text, $wallets, $categories, $activeMemories, $source, $prompt);
             }
 
-            return $this->processSingle($user, $text, $wallets->toArray(), $categories->toArray(), $activeMemories, $source, $prompt);
+            return $this->processSingle($user, $text, $wallets, $categories, $activeMemories, $source, $prompt);
 
         } catch (CategoryNotFoundException|WalletNotFoundException $e) {
             $errorCode = $e instanceof CategoryNotFoundException ? 'CATEGORY_NOT_FOUND' : 'WALLET_NOT_FOUND';
@@ -166,11 +166,11 @@ class ChatTransactionOrchestrator
 
     private function processSingle(
         User $user, string $text,
-        array $wallets, array $categories, array $activeMemories,
+        Collection $wallets, Collection $categories, array $activeMemories,
         string $source,
         string $prompt = '',
     ): array {
-        $aiResult = $this->aiManager->parseTransaction($user, $text, $wallets, $categories, $activeMemories, $prompt);
+        $aiResult = $this->aiManager->parseTransaction($user, $text, $wallets->toArray(), $categories->toArray(), $activeMemories, $prompt);
 
         if (! $aiResult->success || ! $aiResult->transaction) {
             return ['success' => false, 'error_code' => 'AI_PARSE_FAILED', 'message' => '❌ AI Gagal memproses: '.($aiResult->error ?? 'Format tidak dikenali.')];
@@ -317,8 +317,8 @@ class ChatTransactionOrchestrator
         object $aiResult,
         float $finalConfidence,
         string $finalSubject,
-        array $wallets,
-        array $categories,
+        Collection $wallets,
+        Collection $categories,
     ): array {
         // ── Resolusi nama kategori ───────────────────────────────────
         $categoryName = null;
@@ -450,11 +450,11 @@ class ChatTransactionOrchestrator
 
     private function processMulti(
         User $user, string $text,
-        array $wallets, array $categories, array $activeMemories,
+        Collection $wallets, Collection $categories, array $activeMemories,
         string $source,
         string $prompt = '',
     ): array {
-        $result = $this->multiProcessor->process($user, $text, $wallets, $categories, $activeMemories, $source, $prompt);
+        $result = $this->multiProcessor->process($user, $text, $wallets->toArray(), $categories->toArray(), $activeMemories, $source, $prompt);
 
         if (isset($result['__fallback_to_single']) && $result['__fallback_to_single']) {
             return $this->processSingle($user, $text, $wallets, $categories, $activeMemories, $source);
