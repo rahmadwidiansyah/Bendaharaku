@@ -29,8 +29,23 @@ class AIManager
         // 0. LOCAL RULE ENGINE (ZERO-LATENCY REGEX & KEYWORDS)
         $ruleEngineResult = $this->ruleEngine->parse($user, $text);
         if ($ruleEngineResult !== null && $ruleEngineResult->success) {
+            Log::debug('AIManager: [LRE] Circuit breaker returning rule engine result', [
+                'user_id' => $user->id,
+                'text' => $text,
+                'success' => $ruleEngineResult->success,
+                'intent' => $ruleEngineResult->transaction?->transactionType?->value,
+                'source_wallet' => $ruleEngineResult->transaction?->sourceWallet,
+                'is_cleared' => $ruleEngineResult->transaction?->isCleared,
+                'category' => $ruleEngineResult->transaction?->category,
+            ]);
             return $ruleEngineResult;
         }
+
+        Log::debug('AIManager: [LRE] Rule engine returned null or failed, proceeding to fallbacks', [
+            'user_id' => $user->id,
+            'text' => $text,
+            'rule_engine_result' => $ruleEngineResult !== null ? 'exists' : 'null',
+        ]);
 
         // 1. CIRCUIT BREAKER 1: PYTHON NLP LOKAL (TANPA BIAYA)
         $pythonCategories = $categories;

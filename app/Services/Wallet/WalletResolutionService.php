@@ -13,6 +13,7 @@ use App\Models\Wallet;
 use App\Support\StringUtils;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
 
 class WalletResolutionService
 {
@@ -20,6 +21,8 @@ class WalletResolutionService
 
     public function resolveSystemWallet(int $userId, string $configKey): Wallet
     {
+        $traceId = uniqid('trace_');
+        Log::debug("{$traceId} WalletResolutionService::resolveSystemWallet - Entry: userId={$userId}, configKey={$configKey}");
         $walletName = $this->getSystemWalletName($configKey);
 
         $wallet = Wallet::where('user_id', $userId)
@@ -32,7 +35,7 @@ class WalletResolutionService
                 "Dompet sistem untuk arus kas '{$walletName}' tidak terdeteksi. Pastikan konfigurasi system wallets sudah benar."
             );
         }
-
+        Log::debug("{$traceId} WalletResolutionService::resolveSystemWallet - Exit: walletId={$wallet->id}");
         return $wallet;
     }
 
@@ -251,7 +254,7 @@ class WalletResolutionService
             $isDebtPay = false;
         }
 
-        return match (true) {
+        $result = match (true) {
             $isReceivableReturn => [$receivableId, $externalId, WalletSide::Destination->value],
             $transactionType === TransactionIntent::Receivable => [$externalId, $receivableId, WalletSide::Source->value],
             $isDebtPay => [$externalId, $debtId, WalletSide::Source->value],
@@ -260,5 +263,18 @@ class WalletResolutionService
             $transactionType === TransactionIntent::Income => [$externalId, $merchantId, WalletSide::Destination->value],
             default => [$externalId, $merchantId, WalletSide::Source->value],
         };
+
+        $traceId = uniqid('trace_');
+        Log::debug('[PIPELINE:CRC] WalletResolutionService::resolveDraftWalletAllocation', [
+            'trace_id' => $traceId,
+            'class' => self::class,
+            'method' => 'resolveDraftWalletAllocation',
+            'sourceWalletId' => $result[0] ?? null,
+            'destinationWalletId' => $result[1] ?? null,
+            'transactionType' => $transactionType?->value ?? null,
+            'missingWalletSide' => $result[2] ?? null,
+        ]);
+
+        return $result;
     }
 }
