@@ -78,23 +78,18 @@ class ChatTransactionOrchestrator
             $categories = $user->categories()->get(['id', 'category_name', 'type_id', 'keyword'])->toArray();
             $activeMemories = $this->memoryService->getTopRelevantMemories($user->id, $text);
 
-            // ── Sprint C: optional AIContext → PromptRenderer path ────
-            $prompt = null;
-            if (config('bendaharaku.ai_context_v2_enabled')) {
-                $snapshot = new ContextSnapshot(
-                    user: $user,
-                    userInput: $text,
-                    wallets: collect($wallets),
-                    categories: collect($categories),
-                    activeMemories: $activeMemories,
-                );
-                $aiContext = (new AIContextBuilder)->build($snapshot);
-                if ($this->multiRouter->isMultiTransaction($text)) {
-                    $prompt = (new PromptRenderer)->renderMulti($aiContext);
-                } else {
-                    $prompt = (new PromptRenderer)->renderSingle($aiContext);
-                }
-            }
+            // ── Build prompt via ContextSnapshot → AIContext → PromptRenderer ──
+            $snapshot = new ContextSnapshot(
+                user: $user,
+                userInput: $text,
+                wallets: collect($wallets),
+                categories: collect($categories),
+                activeMemories: $activeMemories,
+            );
+            $aiContext = (new AIContextBuilder)->build($snapshot);
+            $prompt = $this->multiRouter->isMultiTransaction($text)
+                ? (new PromptRenderer)->renderMulti($aiContext)
+                : (new PromptRenderer)->renderSingle($aiContext);
 
             // ── ROUTING: single vs multi ──────────────────────────────
             if ($this->multiRouter->isMultiTransaction($text)) {
@@ -169,7 +164,7 @@ class ChatTransactionOrchestrator
         User $user, string $text,
         array $wallets, array $categories, array $activeMemories,
         string $source,
-        ?string $prompt = null,
+        string $prompt = '',
     ): array {
         $aiResult = $this->aiManager->parseTransaction($user, $text, $wallets, $categories, $activeMemories, $prompt);
 
@@ -452,7 +447,7 @@ class ChatTransactionOrchestrator
         User $user, string $text,
         array $wallets, array $categories, array $activeMemories,
         string $source,
-        ?string $prompt = null,
+        string $prompt = '',
     ): array {
         $result = $this->multiProcessor->process($user, $text, $wallets, $categories, $activeMemories, $source, $prompt);
 

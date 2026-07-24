@@ -24,7 +24,6 @@ use App\Services\AI\AiCredentialManager;
 use App\Services\AI\AiParseLogService;
 use App\Services\AI\AiPreferenceManager;
 use App\Services\AI\AiProviderFactory;
-use App\Services\AI\Prompt\MultiTransactionPromptBuilder;
 use App\Services\AI\TransactionResolver;
 use App\Services\Wallet\WalletResolutionService;
 use Illuminate\Support\Facades\Log;
@@ -38,7 +37,6 @@ class MultiTransactionProcessor
         private readonly AiPreferenceManager $preferenceManager,
         private readonly AiCredentialManager $credentialManager,
         private readonly AiProviderFactory $providerFactory,
-        private readonly MultiTransactionPromptBuilder $multiPromptBuilder,
         private readonly TransactionResolver $resolver,
         private readonly AiParseLogService $parseLogService,
         private readonly WalletResolutionService $walletResolution,
@@ -50,7 +48,7 @@ class MultiTransactionProcessor
         User $user, string $text,
         array $wallets, array $categories, array $activeMemories,
         string $source,
-        ?string $prompt = null,
+        string $prompt = '',
     ): array {
         $context = $this->resolveMultiContext($user, $text, $wallets, $categories, $activeMemories, $source, $prompt);
         if ($context === null) {
@@ -138,7 +136,7 @@ class MultiTransactionProcessor
         ];
     }
 
-    private function resolveMultiContext(User $user, string $text, array $wallets, array $categories, array $activeMemories, string $source, ?string $prompt = null): ?array
+    private function resolveMultiContext(User $user, string $text, array $wallets, array $categories, array $activeMemories, string $source, string $prompt = ''): ?array
     {
         $preference = $this->preferenceManager->getActivePreference($user);
         if (! $preference) {
@@ -153,11 +151,8 @@ class MultiTransactionProcessor
 
         $adapter = $this->providerFactory->make($preference->provider);
         $model = $preference->selected_model ?? $preference->provider->defaultModel();
-        $resolvedPrompt = $prompt ?? $this->multiPromptBuilder->build(
-            $text, $wallets, $categories, $activeMemories
-        );
 
-        return [$preference, $adapter, $credential, $model, $resolvedPrompt];
+        return [$preference, $adapter, $credential, $model, $prompt];
     }
 
     private function processItem(User $user, ParsedTransaction $parsed, int $idx, bool $autoClear, AIParseResultMulti $multiResult, string $source): MultiTransactionItem

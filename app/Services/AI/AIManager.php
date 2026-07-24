@@ -11,7 +11,6 @@ use App\Exceptions\AiRateLimitException;
 use App\Exceptions\AiTimeoutException;
 use App\Models\AiUsageLog;
 use App\Models\User;
-use App\Services\AI\Prompt\TransactionPromptBuilder;
 use App\Services\AI\Providers\PythonNLPProvider;
 use Illuminate\Support\Facades\Log;
 
@@ -21,12 +20,11 @@ class AIManager
         private AiPreferenceManager $preferenceManager,
         private AiCredentialManager $credentialManager,
         private AiProviderFactory $providerFactory,
-        private TransactionPromptBuilder $promptBuilder,
         private PythonNLPProvider $pythonNlp,
         private LocalRuleEngine $ruleEngine,
     ) {}
 
-    public function parseTransaction(User $user, string $text, array $wallets = [], array $categories = [], array $activeMemories = [], ?string $prompt = null): AIParseResult
+    public function parseTransaction(User $user, string $text, array $wallets = [], array $categories = [], array $activeMemories = [], string $prompt = ''): AIParseResult
     {
         // 0. LOCAL RULE ENGINE (ZERO-LATENCY REGEX & KEYWORDS)
         $ruleEngineResult = $this->ruleEngine->parse($user, $text);
@@ -66,9 +64,6 @@ class AIManager
 
         $adapter = $this->providerFactory->make($preference->provider);
         $model = $preference->selected_model ?? $preference->provider->defaultModel();
-        $prompt = $prompt ?? $this->promptBuilder->build(
-            $text, $wallets, $categories, $activeMemories
-        );
 
         try {
             $llmResult = $adapter->parseTransaction(
