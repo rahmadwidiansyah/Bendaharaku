@@ -582,7 +582,10 @@ class WebChatController extends Controller
             'amount_formatted' => MoneyFormatter::rupiah($transaction->amount),
             'is_cleared' => (bool) $transaction->is_cleared,
             'is_cancelled' => false,
-            'needs_wallet' => ! $transaction->is_cleared && $transaction->sourceWallet?->group_type === 'System',
+            'needs_wallet' => ! $transaction->is_cleared && (
+                $transaction->sourceWallet?->group_type === 'System'
+                || $transaction->destinationWallet?->group_type === 'System'
+            ),
             'type_key' => $typeKey,
             'category' => $transaction->category?->category_name,
             'source_wallet' => $transaction->sourceWallet?->name,

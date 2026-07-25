@@ -7,6 +7,7 @@ namespace Tests\Feature\Regression;
 use App\DTO\AIParseResult;
 use App\DTO\ParsedTransaction;
 use App\Enums\TransactionIntent;
+use App\Models\TransactionType;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Services\Chat\ChatTransactionOrchestrator;
@@ -36,6 +37,11 @@ class TransactionRegressionTests extends TestCase
             ['name' => 'Receivable System', 'group_type' => 'System'],
         ]);
 
+        // create default transaction types so categories can reference them
+        TransactionType::firstOrCreate(['name' => 'Expense'], ['keyword' => 'expense']);
+        TransactionType::firstOrCreate(['name' => 'Income'], ['keyword' => 'income']);
+        TransactionType::firstOrCreate(['name' => 'Transfer'], ['keyword' => 'transfer']);
+
         config([
             'bendaharaku.system_wallets.external' => 'External System',
             'bendaharaku.system_wallets.merchant' => 'Merchant System',
@@ -46,6 +52,12 @@ class TransactionRegressionTests extends TestCase
 
     public function test_case_1_beli_makan_20k()
     {
+        $this->user->categories()->create([
+            'category_name' => 'Makan & Minum',
+            'keyword' => 'makan',
+            'type_id' => TransactionType::where('name', 'Expense')->first()->id,
+        ]);
+
         $parsed = new ParsedTransaction(amount: 20000, transactionType: TransactionIntent::Expense, category: 'Makan & Minum', sourceWallet: null, isCleared: false);
         $mock = new AIParseResult(true, 0.0, null, $parsed);
 
@@ -56,14 +68,23 @@ class TransactionRegressionTests extends TestCase
         $orchestrator = $this->app->make(ChatTransactionOrchestrator::class);
         $res = $orchestrator->process($this->user, 'Beli makan 20k', 'WEB');
 
-        $this->assertFalse($res['success']);
-        $this->assertEquals('DRAFT_SAVED', $res['error_code']);
+        $this->assertTrue($res['success']);
+        $this->assertTrue($res['is_web_draft']);
+        $this->assertNotNull($res['draft']);
+        $this->assertEquals('SOURCE', $res['draft']->missing_wallet_side);
+        $this->assertTrue($res['draft']->payload['needs_wallet']);
     }
 
     public function test_case_2_beli_makan_dari_bca()
     {
         // create user wallet named BCA
         $bca = $this->user->wallets()->create(['name' => 'BCA', 'keyword' => 'bca', 'group_type' => 'Liquid', 'balance' => 500000]);
+
+        $this->user->categories()->create([
+            'category_name' => 'Makan & Minum',
+            'keyword' => 'makan',
+            'type_id' => TransactionType::where('name', 'Expense')->first()->id,
+        ]);
 
         $parsed = new ParsedTransaction(amount: 20000, transactionType: TransactionIntent::Expense, category: 'Makan & Minum', sourceWallet: 'BCA', isCleared: false);
         $mock = new AIParseResult(true, 0.0, null, $parsed);
