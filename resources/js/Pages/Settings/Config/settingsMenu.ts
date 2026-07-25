@@ -127,6 +127,25 @@ const settingsMenuTree: SettingsCategory[] = [
   },
 
   // ═══════════════════════════════════════════════════════════
+  // Keuangan (💰)
+  // ═══════════════════════════════════════════════════════════
+  {
+    id: 'keuangan',
+    label: 'Keuangan',
+    icon: 'Wallet',
+    description: 'Allow negative balance',
+    submenu: [
+      {
+        id: 'allow-negative-balance',
+        label: 'Allow Negative Balance',
+        icon: 'ToggleLeft',
+        description: 'Allow wallet balance to go negative',
+        route: 'settings.keuangan.index',
+      },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════════
   // Artificial Intelligence (🤖)
   // ═══════════════════════════════════════════════════════════
   {

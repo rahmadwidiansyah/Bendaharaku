@@ -91,17 +91,6 @@ const handleSave = async () => {
         </div>
       </SettingsCard>
 
-      <!-- Transaction Logic (Allow Negative Balance) -->
-      <SettingsCard :title="t('settings.finance.defaults.transaction_logic.title')" :description="t('settings.finance.defaults.transaction_logic.description')">
-        <div class="flex items-center justify-between">
-          <span class="text-sm text-gray-400">{{ t('settings.finance.defaults.transaction_logic.label') }}</span>
-          <label class="relative inline-flex items-center cursor-pointer">
-            <input v-model="allowNegativeBalance" type="checkbox" class="sr-only peer" />
-            <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600 animate-transition"></div>
-          </label>
-        </div>
-      </SettingsCard>
-
       <!-- Save Button -->
       <div class="flex gap-3 pt-4">
         <button
