@@ -48,17 +48,6 @@ class DraftPayloadBuilder
         string $typeKey,
         bool $needsWallet,
     ): array {
-        // Temporary trace log (removed after RCA)
-        \Illuminate\Support\Facades\Log::debug('[PIPELINE:CRC] DraftPayloadBuilder::build', [
-            'trace_id' => uniqid('trace_'),
-            'class' => self::class,
-            'method' => 'build',
-            'sourceWalletId' => $resolved->sourceWalletId,
-            'destinationWalletId' => $resolved->destinationWalletId,
-            'transactionType' => $typeKey,
-            'missingWalletSide' => $resolved->missingWalletSide,
-        ]);
-
         return [
             'amount'                  => $resolved->amount,
             'category_id'             => $resolved->categoryId,

@@ -264,17 +264,6 @@ class WalletResolutionService
             default => [$externalId, $merchantId, WalletSide::Source->value],
         };
 
-        $traceId = uniqid('trace_');
-        Log::debug('[PIPELINE:CRC] WalletResolutionService::resolveDraftWalletAllocation', [
-            'trace_id' => $traceId,
-            'class' => self::class,
-            'method' => 'resolveDraftWalletAllocation',
-            'sourceWalletId' => $result[0] ?? null,
-            'destinationWalletId' => $result[1] ?? null,
-            'transactionType' => $transactionType?->value ?? null,
-            'missingWalletSide' => $result[2] ?? null,
-        ]);
-
         return $result;
     }
 }

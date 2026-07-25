@@ -57,12 +57,12 @@ readonly class TransactionCardComponent implements ChatComponentInterface
             default => 'Transaksi',
         };
 
-        // Transaksi needs_wallet = true jika:
-        // - belum di-clear (is_cleared = false), DAN
-        // - tidak ada source wallet (dan bukan income ke dest wallet)
         $sourceWallet = $trx->sourceWallet?->name;
         $destWallet = $trx->destinationWallet?->name;
-        $needsWallet = ! $trx->is_cleared && $sourceWallet === null && $destWallet === null;
+        $needsWallet = ! $trx->is_cleared && (
+            $trx->sourceWallet?->group_type === 'System'
+            || $trx->destinationWallet?->group_type === 'System'
+        );
 
         $result = [
             'type' => $this->type(),

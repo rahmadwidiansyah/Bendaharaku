@@ -200,29 +200,9 @@ $finalSubject = $extractedSubject ?? $user->name;
           $finalConfidence = 0.0;
           $resolved = null;
           $walletExplicitlyMentioned = $this->hasExplicitWalletMention($text, $user);
-          $traceId = uniqid('TRC-');
-
-          // Log resolution attempt
-          Log::debug('[PIPELINE:CRC] Resolving transaction', [
-              'trace_id' => $traceId,
-              'user_id'      => $user->id,
-              'text'         => $text,
-              'parsed'       => json_encode($parsed),
-              'is_web_source' => $isWebSource,
-              'has_wallet'   => $walletExplicitlyMentioned,
-              'intent'       => $parsed->transactionType,
-          ]);
 
           try {
 $resolved = $this->resolver->resolve($user, $parsed);
-              Log::debug('[PIPELINE:CRC] Resolver returned', [
-                  'trace_id'     => $traceId,
-                  'amount'      => $resolved->amount,
-                  'category_id' => $resolved->categoryId,
-                  'source_wallet' => $resolved->sourceWalletId,
-                  'destination_wallet' => $resolved->destinationWalletId,
-                  'is_cleared'    => $resolved->isCleared,
-              ]);
 
               $scoreContext = new ConfidenceScoreContext(
                   user: $user, inputText: $text, parseResult: $aiResult,
@@ -231,23 +211,8 @@ $resolved = $this->resolver->resolve($user, $parsed);
               );
               $finalConfidence = $this->scoringEngine->calculateFinalScore($scoreContext);
 
-Log::debug('[PIPELINE:CRC] Score calculation', [
-            'trace_id' => $traceId,
-            'final_confidence' => $finalConfidence,
-            'threshold' => $threshold,
-            'is_web_source' => $isWebSource,
-            'wallet_explicitly_mentioned' => $walletExplicitlyMentioned,
-        ]);
-
-        Log::debug('[PIPELINE:CRC] Before calling resolveWebDraftWithoutWallet', [
-            'trace_id' => $traceId,
-            'source' => $source,
-            'wallet_explicitly_mentioned' => $walletExplicitlyMentioned,
-            'user_id' => $user->id,
-        ]);
-
         $resolved = ($isWebSource && ! $walletExplicitlyMentioned && $parsed->transactionType !== TransactionIntent::Transfer)
-            ? $this->resolveWebDraftWithoutWallet($user, $parsed, $finalSubject, $traceId)
+            ? $this->resolveWebDraftWithoutWallet($user, $parsed, $finalSubject)
             : new ResolvedTransaction(
                 amount: $resolved->amount,
                 categoryId: $resolved->categoryId,
@@ -258,53 +223,10 @@ Log::debug('[PIPELINE:CRC] Score calculation', [
                 isCleared: ($finalConfidence >= $threshold && (! $isWebSource || $walletExplicitlyMentioned)),
             );
 
-        Log::debug('[PIPELINE:CRC] After calling resolveWebDraftWithoutWallet', [
-            'trace_id' => $traceId,
-            'source_wallet_id' => $resolved->sourceWalletId,
-            'destination_wallet_id' => $resolved->destinationWalletId,
-            'category_id' => $resolved->categoryId,
-            'is_cleared' => $resolved->isCleared,
-        ]);
-
-              Log::debug('[PIPELINE:CRC] Final resolved transaction', [
-                  'trace_id' => $traceId,
-                  'amount' => $resolved->amount,
-                  'category_id' => $resolved->categoryId,
-                  'source_wallet' => $resolved->sourceWalletId,
-                  'destination_wallet' => $resolved->destinationWalletId,
-                  'subject' => $resolved->subject,
-                  'notes' => $resolved->notes,
-                  'is_cleared' => $resolved->isCleared,
-                  'missing_wallet_side' => $resolved->missingWalletSide ?? null,
-              ]);
-
         } catch (CategoryNotFoundException|WalletNotFoundException $e) {
-            Log::debug('[PIPELINE:CRC] Exception caught in resolver', [
-                'trace_id' => $traceId,
-                'exception_class' => get_class($e),
-                'exception_message' => $e->getMessage(),
-                'is_web_source' => $isWebSource,
-                'wallet_explicitly_mentioned' => $walletExplicitlyMentioned,
-                'parsed_category' => $parsed->category,
-                'transaction_type' => $parsed->transactionType,
-            ]);
             if ($isWebSource && ! $walletExplicitlyMentioned && $parsed->category && $parsed->transactionType !== TransactionIntent::Transfer) {
-                Log::debug('[PIPELINE:CRC] Before calling resolveWebDraftWithoutWallet in catch block', [
-                    'trace_id' => $traceId,
-                    'source' => $source,
-                    'wallet_explicitly_mentioned' => $walletExplicitlyMentioned,
-                    'user_id' => $user->id,
-                ]);
-                $resolved = $this->resolveWebDraftWithoutWallet($user, $parsed, $finalSubject, $traceId);
+                $resolved = $this->resolveWebDraftWithoutWallet($user, $parsed, $finalSubject);
                 $finalConfidence = 0.0;
-
-                Log::debug('[PIPELINE:CRC] After calling resolveWebDraftWithoutWallet in catch block', [
-                    'trace_id' => $traceId,
-                    'source_wallet_id' => $resolved->sourceWalletId,
-                    'destination_wallet_id' => $resolved->destinationWalletId,
-                    'category_id' => $resolved->categoryId,
-                    'is_cleared' => $resolved->isCleared,
-                ]);
             } else {
                 $resolved = new ResolvedTransaction(
                     amount: $parsed->amount, categoryId: null,
@@ -316,39 +238,13 @@ Log::debug('[PIPELINE:CRC] Score calculation', [
                 $finalConfidence = 0.0;
             }
         }
-        // Log before DRAFT_SAVED check
-        Log::debug('[PIPELINE:CRC] Before DRAFT_SAVED check', [
-            'trace_id' => $traceId,
-            'is_cleared' => $resolved->isCleared,
-            'category_id' => $resolved->categoryId,
-            'source_wallet_id' => $resolved->sourceWalletId,
-            'destination_wallet_id' => $resolved->destinationWalletId,
-        ]);
 
         if ($resolved === null) {
             return ['success' => false, 'error_code' => 'SETUP_FAILED', 'message' => '❌ Gagal menyiapkan data transaksi.'];
         }
 
-        // Temporary trace log to capture exact moment before draft decision
-        Log::debug('[PIPELINE:CRC] TraceBeforeDraftDecision', [
-            'trace_id' => $traceId,
-            'class' => self::class,
-            'method' => 'processSingle::BeforeDraftDecision',
-            'sourceWalletId' => $resolved->sourceWalletId,
-            'destinationWalletId' => $resolved->destinationWalletId,
-            'transactionType' => $parsed->transactionType?->value ?? null,
-            'missingWalletSide' => $resolved->missingWalletSide,
-        ]);
-
-        Log::debug('[PIPELINE:CRC] Before DRAFT_SAVED check', [
-            'trace_id' => $traceId,
-            'is_cleared' => $resolved->isCleared,
-            'category_id' => $resolved->categoryId,
-            'source_wallet_id' => $resolved->sourceWalletId,
-            'destination_wallet_id' => $resolved->destinationWalletId,
-        ]);
-
         if ($resolved->isCleared === false && ($resolved->categoryId === null || $resolved->sourceWalletId === null)) {
+
             $this->parseLogService->createLog(user: $user, inputText: $text, result: $aiResult, finalConfidence: $finalConfidence);
 
             return ['success' => false, 'error_code' => 'DRAFT_SAVED', 'message' => implode("\n", [
@@ -527,16 +423,10 @@ Log::debug('[PIPELINE:CRC] Score calculation', [
         return $this->walletResolution->userWalletMentionedInText($text, $user);
     }
 
-    private function resolveWebDraftWithoutWallet(User $user, ParsedTransaction $parsed, string $subject, string $traceId): ResolvedTransaction
+    private function resolveWebDraftWithoutWallet(User $user, ParsedTransaction $parsed, string $subject): ResolvedTransaction
     {
-        Log::debug('[PIPELINE:CRC] resolveWebDraftWithoutWallet START', [
-            'trace_id' => $traceId,
-            'user_id' => $user->id,
-            'text' => $parsed->notes,
-            'transaction_type' => $parsed->transactionType,
-        ]);
         $categories = $user->categories()->get();
-        $category = StringUtils::findByNameOrKeyword($categories, $parsed->category);
+        $category = StringUtils::findByNameOrKeyword($categories, $parsed->category, 'category_name');
         if ($category === null) {
             throw new CategoryNotFoundException("Kategori '{$parsed->category}' tidak terdaftar.");
         }
@@ -547,36 +437,7 @@ Log::debug('[PIPELINE:CRC] Score calculation', [
             categoryName: $category->category_name,
         );
 
-        Log::debug('[PIPELINE:CRC] After resolveDraftWalletAllocation', [
-            'trace_id' => $traceId,
-            'source_wallet_id' => $sourceWalletId,
-            'destination_wallet_id' => $destinationWalletId,
-            'missing_wallet_side' => $missingWalletSide,
-        ]);
-
-        Log::debug('[PIPELINE:CRC] After resolveDraftWalletAllocation', [
-            'trace_id' => $traceId,
-            'source_wallet_id' => $sourceWalletId,
-            'destination_wallet_id' => $destinationWalletId,
-            'missing_wallet_side' => $missingWalletSide,
-        ]);
-
-        Log::debug('[PIPELINE:CRC] resolveWebDraftWithoutWallet resolveDraftWalletAllocation result', [
-            'trace_id' => $traceId,
-            'source_wallet_id' => $sourceWalletId,
-            'destination_wallet_id' => $destinationWalletId,
-            'missing_wallet_side' => $missingWalletSide,
-        ]);
-
-        Log::debug('[PIPELINE:CRC] Before creating ResolvedTransaction', [
-            'trace_id' => $traceId,
-            'source_wallet_id' => $sourceWalletId,
-            'destination_wallet_id' => $destinationWalletId,
-            'category_id' => $category->id,
-            'amount' => $parsed->amount,
-        ]);
-
-        return new ResolvedTransaction(
+        $resolvedTrx = new ResolvedTransaction(
             amount: $parsed->amount,
             categoryId: $category->id,
             sourceWalletId: $sourceWalletId,
@@ -587,13 +448,7 @@ Log::debug('[PIPELINE:CRC] Score calculation', [
             missingWalletSide: $missingWalletSide,
         );
 
-        Log::debug('[PIPELINE:CRC] After creating ResolvedTransaction', [
-            'trace_id' => $traceId,
-            'source_wallet_id' => $resolved->sourceWalletId,
-            'destination_wallet_id' => $resolved->destinationWalletId,
-            'category_id' => $resolved->categoryId,
-            'is_cleared' => $resolved->isCleared,
-        ]);
+        return $resolvedTrx;
     }
 
     private function processMulti(
