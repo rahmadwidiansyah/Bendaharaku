@@ -106,6 +106,24 @@ const sections: Section[] = [
     ],
   },
 
+  // ── Keuangan ─────────────────────────────────────────────────────
+  {
+    id: 'keuangan',
+    label: 'Keuangan',
+    icon: '💰',
+    gradientFrom: '#059669',
+    gradientTo: '#047857',
+    items: [
+      {
+        labelKey: 'settings.finance.defaults.transaction_logic.title',
+        descKey:  'settings.finance.defaults.transaction_logic.description',
+        route:    'settings.keuangan.index',
+        accent:   'emerald',
+        iconPath: 'M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+      },
+    ],
+  },
+
   // ── AI ────────────────────────────────────────────────────────────
   {
     id: 'ai',

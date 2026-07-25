@@ -287,6 +287,11 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/budget', fn () => Inertia::render('Settings/Finance/Budget'))->name('budget');
     });
 
+    // Keuangan (Allow Negative Balance)
+    Route::prefix('settings/keuangan')->name('settings.keuangan.')->group(function () {
+        Route::get('/', fn () => Inertia::render('Settings/Keuangan/Index'))->name('index');
+    });
+
     // Privacy & Data
     Route::prefix('settings/privacy')->name('settings.privacy.')->group(function () {
         Route::get('/settings', fn () => Inertia::render('Settings/Privacy/Settings'))->name('settings');
