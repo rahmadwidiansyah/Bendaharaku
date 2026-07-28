@@ -238,7 +238,7 @@ function onKeydown(e) {
         >
             <div
                 v-if="isOpen"
-                class="fixed inset-0 z-[100] flex items-end sm:items-center justify-center"
+                class="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center"
                 @keydown="onKeydown"
             >
                 <!-- Backdrop -->

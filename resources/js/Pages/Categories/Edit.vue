@@ -1,8 +1,8 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import EmojiPicker from '@/Components/EmojiPicker.vue';
+import IconPicker from '@/Components/IconPicker.vue';
 import ConfirmationDialog from '@/Components/ConfirmationDialog.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -28,7 +28,6 @@ const handleFileSelected = (file) => {
 };
 
 const submit = () => {
-    // Laravel won't handle file uploads with PUT, so we use POST with _method=PUT
     form.transform((data) => ({
         ...data,
         _method: 'PUT',
@@ -48,79 +47,79 @@ const confirmDelete = () => {
 </script>
 
 <template>
-    <AuthenticatedLayout :fullWidth="true" :hideNav="true">
+    <AuthenticatedLayout :fullWidth="true">
 
         <Head :title="t('category.titleEdit')" />
 
-        <div class="p-5 w-full lg:max-w-4xl mx-auto lg:px-8 relative animate-fade-in-up">
+        <div class="p-4 sm:p-5 w-full lg:max-w-4xl mx-auto lg:px-8 relative animate-fade-in-up">
 
-            <header class="flex justify-between items-center mb-8 pt-4">
-                <div class="hidden lg:block">
-                    <p class="text-2xs text-gray-300 font-semibold mb-1 uppercase tracking-wider">Vault</p>
-                    <h1 class="text-2xl font-bold text-white tracking-tight">{{ t('category.titleEdit') }}</h1>
-                </div>
-                <Link :href="route('categories.index')"
-                    class="w-10 h-10 rounded-full bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 flex items-center justify-center text-gray-400 active:scale-90 transition-all shadow-md hover:text-white">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </Link>
+            <header class="hidden lg:block mb-8 pt-4">
+                <p class="text-2xs text-gray-300 font-semibold mb-1 uppercase tracking-wider">Vault</p>
+                <h1 class="text-2xl font-bold text-white tracking-tight">{{ t('category.titleEdit') }}</h1>
             </header>
 
-            <form @submit.prevent="submit" class="space-y-6">
+            <form @submit.prevent="submit" class="space-y-5 lg:space-y-6">
 
                 <div v-if="!isSystem">
-                    <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">{{ t('category.type') }}</label>
-                    <div
-                        class="grid grid-cols-2 gap-2 p-1.5 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl shadow-inner">
-                        <label v-for="type in types" :key="type.id" class="cursor-pointer">
-                            <input type="radio" v-model="form.type_id" :value="type.id" class="hidden peer">
-                            <div
-                                class="text-xs font-semibold py-3 text-center rounded-xl transition-all border border-transparent text-gray-500 peer-checked:bg-white/5 peer-checked:text-purple-500 peer-checked:border-white/10">
-                                {{ type.name === 'Income' ? t('types.income') : t('types.expense') }}
-                            </div>
-                        </label>
+                    <label class="block text-2xs lg:text-sm font-medium text-gray-300 mb-1.5 lg:mb-2 ml-1">{{ t('category.type') }}</label>
+                    <div class="p-1 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl shadow-inner flex gap-1">
+                        <button
+                            v-for="type in types"
+                            :key="type.id"
+                            type="button"
+                            @click="form.type_id = type.id"
+                            class="flex-1 flex items-center justify-center gap-1.5 py-2.5 lg:py-3 rounded-lg text-2xs lg:text-xs font-bold uppercase tracking-widest transition-all"
+                            :class="form.type_id === type.id
+                                ? (type.name === 'Income' ? 'bg-green-500/20 text-green-400 border border-green-500/40' : 'bg-red-500/20 text-red-400 border border-red-500/40')
+                                : 'text-gray-500 border border-transparent hover:text-gray-300'"
+                        >
+                            <svg v-if="type.name === 'Income'" class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 5v14m0 0l-7-7m7 7l7-7" />
+                            </svg>
+                            <svg v-else class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 19V5m0 0l-7 7m7-7l7 7" />
+                            </svg>
+                            {{ type.name === 'Income' ? t('types.income') : t('types.expense') }}
+                        </button>
                     </div>
                 </div>
                 <div v-else>
-                    <label class="block text-sm font-medium text-gray-400 mb-2 ml-1">{{ t('category.type') }}</label>
-                    <div class="h-[50px] bg-gray-900/30 border border-white/5 rounded-xl px-5 flex items-center text-gray-500 text-sm font-medium select-none">
+                    <label class="block text-2xs lg:text-sm font-medium text-gray-400 mb-1.5 lg:mb-2 ml-1">{{ t('category.type') }}</label>
+                    <div class="h-[44px] lg:h-[50px] bg-gray-900/30 border border-white/5 rounded-xl px-4 lg:px-5 flex items-center text-gray-500 text-xs lg:text-sm font-medium select-none">
                         {{ category.type?.name }} (System Kategori)
                     </div>
                 </div>
 
                 <div class="flex gap-3 items-end">
-                    <EmojiPicker v-model="form.icon" @file-selected="handleFileSelected" />
+                    <IconPicker v-model="form.icon" @file-selected="handleFileSelected" :defaultIcon="category.icon || 'folder'" />
 
                     <div class="flex-1 flex flex-col justify-end">
-                        <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">{{ t('category.name') }}</label>
-                        <div
-                            class="h-[60px] bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl px-5 flex items-center group focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all shadow-inner">
+                        <label class="block text-2xs lg:text-sm font-medium text-gray-300 mb-1.5 lg:mb-2 ml-1">{{ t('category.name') }}</label>
+                        <div class="h-[52px] lg:h-[60px] bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl px-4 lg:px-5 flex items-center group focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all shadow-inner">
                             <input type="text" v-model="form.category_name" required
                                 :placeholder="t('category.namePlaceholder')"
-                                class="w-full bg-transparent border-none text-white p-0 text-base font-medium placeholder-gray-600 focus:ring-0 focus:outline-none">
+                                class="w-full bg-transparent border-none text-white p-0 text-sm lg:text-base font-medium placeholder-gray-600 focus:ring-0 focus:outline-none">
                         </div>
                     </div>
                 </div>
 
                 <div class="flex flex-col">
-                    <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">{{ t('category.keyword') }}</label>
-                    <div
-                        class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-4 group focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all shadow-inner">
+                    <label class="block text-2xs lg:text-sm font-medium text-gray-300 mb-1.5 lg:mb-2 ml-1">{{ t('category.keyword') }}</label>
+                    <div class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-3 lg:p-4 group focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all shadow-inner">
                         <input type="text" v-model="form.keyword" :placeholder="t('category.keywordHint')"
                             class="w-full bg-transparent border-none text-white p-0 text-sm placeholder-gray-600 focus:ring-0 focus:outline-none">
                     </div>
-                    <p class="text-2xs text-gray-500 mt-2 ml-1 italic">{{ t('category.keywordHint') }}</p>
+                    <p class="text-2xs text-gray-500 mt-1.5 lg:mt-2 ml-1 italic">{{ t('category.keywordHint') }}</p>
                 </div>
 
-                <div class="flex gap-3 pt-4">
+                <div class="flex gap-3 pt-3 lg:pt-4">
                     <button v-if="!isSystem" type="button" @click="destroy"
-                        class="flex-1 bg-red-950/30 border border-red-900/50 text-red-500 font-bold text-sm tracking-wide py-4 rounded-xl active:scale-95 transition-all">
+                        class="flex-1 bg-red-950/30 border border-red-900/50 text-red-500 font-bold text-sm tracking-wide py-3.5 lg:py-4 rounded-xl active:scale-95 transition-all">
                         {{ t('btn.delete') }}
                     </button>
                     <button type="submit" :disabled="form.processing"
                         :class="isSystem ? 'w-full' : 'flex-2'"
-                        class="bg-linear-to-br from-purple-800 to-purple-700 text-white font-bold text-sm tracking-wide py-4 rounded-xl shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all">
+                        class="bg-linear-to-br from-purple-800 to-purple-700 text-white font-bold text-sm tracking-wide py-3.5 lg:py-4 rounded-xl shadow-lg active:scale-95 transition-all hover:-translate-y-0.5">
                         {{ form.processing ? t('btn.saving') : t('btn.update') }}
                     </button>
                 </div>

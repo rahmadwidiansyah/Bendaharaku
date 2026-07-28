@@ -47,47 +47,14 @@ const settingsMenuTree: SettingsCategory[] = [
         id: 'preferences',
         label: 'Preferences',
         icon: 'Settings',
-        description: 'Timezone & date format',
+        description: 'Language, timezone & date format',
         route: 'settings.account.preferences',
       },
     ],
   },
 
   // ═══════════════════════════════════════════════════════════
-  // Application (⚙️)
-  // ═══════════════════════════════════════════════════════════
-  {
-    id: 'application',
-    label: 'Application',
-    icon: 'Cog',
-    description: 'App appearance & behavior',
-    submenu: [
-      {
-        id: 'appearance',
-        label: 'Appearance',
-        icon: 'Palette',
-        description: 'Theme, colors, density',
-        route: 'settings.application.appearance',
-      },
-      {
-        id: 'language',
-        label: 'Language & Region',
-        icon: 'Globe',
-        description: 'Language, date format, currency',
-        route: 'settings.application.language',
-      },
-      {
-        id: 'notifications',
-        label: 'Notifications',
-        icon: 'Bell',
-        description: 'Email, push, quiet hours',
-        route: 'settings.application.notifications',
-      },
-    ],
-  },
-
-  // ═══════════════════════════════════════════════════════════
-  // Finance (💰)
+  // Appearance (🎨)
   // ═══════════════════════════════════════════════════════════
   {
     id: 'finance',
@@ -96,25 +63,11 @@ const settingsMenuTree: SettingsCategory[] = [
     description: 'Wallets, categories, budget',
     submenu: [
       {
-        id: 'defaults',
-        label: 'Defaults',
-        icon: 'Zap',
-        description: 'Default wallet & currency',
-        route: 'settings.finance.defaults',
-      },
-      {
-        id: 'categories',
-        label: 'Categories',
-        icon: 'Tag',
-        description: 'Manage transaction categories',
-        route: 'settings.finance.categories',
-      },
-      {
-        id: 'wallets',
-        label: 'Wallets',
-        icon: 'CreditCard',
-        description: 'Manage wallets',
-        route: 'settings.finance.wallets',
+        id: 'transaction-logic',
+        label: 'Transaction Logic',
+        icon: 'ToggleLeft',
+        description: 'Allow negative balance',
+        route: 'settings.finance.logic',
       },
       {
         id: 'budget',
@@ -122,25 +75,6 @@ const settingsMenuTree: SettingsCategory[] = [
         icon: 'TrendingUp',
         description: 'Budget limits & alerts',
         route: 'settings.finance.budget',
-      },
-    ],
-  },
-
-  // ═══════════════════════════════════════════════════════════
-  // Keuangan (💰)
-  // ═══════════════════════════════════════════════════════════
-  {
-    id: 'keuangan',
-    label: 'Keuangan',
-    icon: 'Wallet',
-    description: 'Allow negative balance',
-    submenu: [
-      {
-        id: 'allow-negative-balance',
-        label: 'Allow Negative Balance',
-        icon: 'ToggleLeft',
-        description: 'Allow wallet balance to go negative',
-        route: 'settings.keuangan.index',
       },
     ],
   },

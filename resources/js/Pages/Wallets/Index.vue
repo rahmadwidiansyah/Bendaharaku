@@ -4,11 +4,10 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useBalanceVisibility } from '@/Composables/useBalanceVisibility';
-import { useLayoutPreference } from '@/Composables/useLayoutPreference';
 import { formatNumber } from '@/utils/format.js';
+import AppIcon from '@/Components/AppIcon.vue';
 
 const { t } = useI18n();
-const { isDesktopLayout } = useLayoutPreference();
 const { isBalanceVisible, toggleVisibility } = useBalanceVisibility();
 
 const togglePin = (wallet) => {
@@ -32,16 +31,16 @@ const totalBalance = computed(() => {
     return props.wallets.reduce((sum, w) => sum + parseFloat(w.balance), 0);
 });
 
-const handleImageError = (e, fallback) => {
-    e.target.style.display = 'none';
-    const parent = e.target.parentElement;
-    if (parent) {
-        const span = document.createElement('span');
-        span.innerText = fallback;
-        span.className = 'text-xl animate-pulse';
-        parent.appendChild(span);
-    }
-};
+const totalLiquidBalance = computed(() => {
+    return liquidWallets.value.reduce((sum, w) => sum + parseFloat(w.balance), 0);
+});
+
+const totalAssetBalance = computed(() => {
+    return assetWallets.value.reduce((sum, w) => sum + parseFloat(w.balance), 0);
+});
+
+const displayAmount = (n) => isBalanceVisible.value ? formatNumber(n) : '••••••••';
+const displayShort = (n) => isBalanceVisible.value ? formatNumber(n) : '••••';
 </script>
 
 <template>
@@ -50,78 +49,106 @@ const handleImageError = (e, fallback) => {
         <Head :title="t('wallet.title')" />
 
         <div class="p-5 w-full lg:max-w-4xl mx-auto lg:px-8">
-            <header class="mb-8 pt-4 animate-fade-in-up">
+            <header class="mb-6 pt-4 animate-fade-in-up">
                 <div class="hidden lg:block mb-4">
                     <p class="text-2xs text-purple-500 font-black uppercase tracking-[0.3em] mb-1 opacity-80">Portfolio</p>
                     <h1 class="text-2xl font-black text-white tracking-tight leading-none">{{ $t('wallet.title') }}</h1>
                 </div>
 
-                <div
-                    class="bg-linear-to-br from-gray-900 to-gray-800 rounded-2xl border border-white/10 relative overflow-hidden group">
-                    <div
-                        class="absolute inset-0 bg-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                <div class="relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl border border-white/10 overflow-hidden group">
+                    <div class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+
+                    <div class="absolute inset-x-0 bottom-0 opacity-20 pointer-events-none h-24">
+                        <svg viewBox="0 0 400 150" preserveAspectRatio="none" class="w-full h-full">
+                            <defs>
+                                <linearGradient id="wealthChartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#fca5ff; stop-opacity:0.4" />
+                                    <stop offset="100%" style="stop-color:#fca5ff; stop-opacity:0" />
+                                </linearGradient>
+                            </defs>
+                            <path d="M0,100 C50,120 100,60 150,90 C200,120 250,40 300,70 C350,100 400,50 400,50 L400,150 L0,150 Z" fill="url(#wealthChartGradient)" />
+                            <path d="M0,100 C50,120 100,60 150,90 C200,120 250,40 300,70 C350,100 400,50 400,50" stroke="#FCA5FF" stroke-width="3" fill="none" />
+                        </svg>
                     </div>
-                    <div class="relative z-10 p-6">
-                        <div class="flex justify-between items-center mb-1">
-                            <p class="text-2xs text-gray-400 font-bold uppercase tracking-widest">{{ $t('wallet.totalWealth') }}</p>
+
+                    <div class="relative z-10 p-6 pb-5">
+                        <div class="flex justify-between items-center mb-4">
+                            <div class="flex items-center gap-2">
+                                <div class="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                                <p class="text-2xs text-gray-400 font-bold uppercase tracking-[0.2em]">{{ $t('portfolio.title') }}</p>
+                            </div>
                             <button @click="toggleVisibility"
                                 class="text-gray-500 hover:text-white transition-colors p-1 -m-1">
-                                <svg v-if="isBalanceVisible" class="w-6 h-6" fill="none" viewBox="0 0 24 24"
-                                    stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                <svg v-if="isBalanceVisible" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                 </svg>
-                                <svg v-else class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                                    stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                                <svg v-else class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
                                 </svg>
                             </button>
                         </div>
-                        <h2 class="text-3xl font-black text-white tracking-tight">
-                            <span class="text-lg text-gray-500 font-medium mr-1">Rp</span>{{ isBalanceVisible ?
-                                formatNumber(totalBalance) : '••••••••' }}
-                        </h2>
+
+                        <div class="flex items-baseline gap-1.5 mb-4">
+                            <span class="text-lg font-medium text-gray-500">Rp</span>
+                            <h2 class="text-3xl font-black text-white tracking-tight">{{ displayAmount(totalBalance) }}</h2>
+                        </div>
+
+                        <div class="flex items-center gap-4 pt-3 border-t border-white/10">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-1.5 mb-1">
+                                    <div class="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                                    <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{{ $t('portfolio.liquid') }}</p>
+                                </div>
+                                <p class="text-sm font-bold text-white tracking-tight">
+                                    <span class="text-2xs text-gray-500 mr-0.5">Rp</span>{{ displayShort(totalLiquidBalance) }}
+                                </p>
+                            </div>
+                            <div class="w-px h-8 bg-gradient-to-b from-transparent via-white/10 to-transparent" />
+                            <div class="flex-1">
+                                <div class="flex items-center gap-1.5 mb-1">
+                                    <div class="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                                    <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{{ $t('portfolio.investment') }}</p>
+                                </div>
+                                <p class="text-sm font-bold text-white tracking-tight">
+                                    <span class="text-2xs text-gray-500 mr-0.5">Rp</span>{{ displayShort(totalAssetBalance) }}
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </header>
 
             <!-- LIQUID WALLETS -->
-            <section class="mb-8 animate-fade-in-up delay-100">
-                <div class="flex justify-between items-center mb-4 px-1 gap-3">
+            <section class="mb-6 animate-fade-in-up delay-100">
+                <div class="flex justify-between items-center mb-3 px-1 gap-3">
                     <h2 class="text-2xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
                         <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span> {{ $t('wallet.groupTypes.liquid') }}
                     </h2>
                     <div class="flex-1 h-px bg-linear-to-r from-blue-500/30 to-transparent"></div>
                 </div>
 
-                <div :class="['grid grid-cols-1 gap-3', isDesktopLayout ? 'lg:grid-cols-2 lg:gap-5' : '']">
+                <div class="grid grid-cols-2 gap-2">
                     <Link v-for="wallet in liquidWallets" :key="wallet.id" :href="route('wallets.show', wallet.id)"
-                        class="flex items-center justify-between p-4 bg-linear-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 active:scale-[0.98] transition-all group">
-                        <div class="flex items-center gap-5 flex-1 min-w-0">
-                            <div class="w-12 h-12 rounded-xl bg-gray-900 border border-white/10 flex items-center justify-center text-xl shrink-0"
-                                :class="wallet.icon?.includes('.') ? 'p-2' : ''">
-                                <img v-if="wallet.icon?.includes('.')"
-                                    :src="wallet.icon.startsWith('http') ? wallet.icon : '/storage/' + wallet.icon"
-                                    class="w-full h-full object-contain"
-                                    @error="(e) => handleImageError(e, wallet.keyword?.substring(0, 1) || '💳')">
-                                <span v-else>{{ wallet.icon || '💳' }}</span>
-                            </div>
+                        class="flex flex-col justify-between p-3 bg-linear-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 active:scale-[0.98] transition-all group">
+                        <div class="flex items-center gap-2.5">
+                            <AppIcon :icon="wallet.icon" :fallback="wallet.keyword?.substring(0, 1) || 'wallet'"
+                                     class="w-6 h-6 text-purple-400 shrink-0" />
                             <div class="min-w-0 flex-1">
-                                <h3 class="text-sm font-bold text-white mb-2 leading-tight whitespace-nowrap truncate">{{ wallet.name }}</h3>
-                                <p class="text-2xs text-gray-500 tracking-wider font-bold whitespace-nowrap truncate mt-0.5">{{
+                                <h3 class="text-xs font-bold text-white leading-tight whitespace-nowrap truncate">{{ wallet.name }}</h3>
+                                <p class="text-[9px] text-gray-500 tracking-wider font-bold whitespace-nowrap truncate">{{
                                     wallet.keyword || $t('wallet.name') }}</p>
                             </div>
                         </div>
-                        <div class="text-right flex items-center justify-end gap-3 shrink-0 ml-4">
-                            <p class="text-sm font-bold text-white tracking-tight">Rp{{ isBalanceVisible ?
+                        <div class="flex items-center justify-between mt-2.5">
+                            <p class="text-xs font-bold tracking-tight"
+                                :class="parseFloat(wallet.balance) < 0 ? 'text-red-400' : 'text-white'">
+                                <span class="text-[9px] text-gray-500 mr-0.5">Rp</span>{{ isBalanceVisible ?
                                 formatNumber(wallet.balance) : '••••' }}</p>
                             <button @click.stop.prevent="togglePin(wallet)"
-                                class="p-1 rounded-full z-10 transition-colors"
+                                class="p-0.5 rounded-full z-10 transition-colors"
                                 :class="wallet.is_pinned ? 'text-purple-500' : 'text-gray-500 hover:text-white'">
-                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5v6l1 2 1-2v-6h5v-2l-2-2z" />
                                 </svg>
                             </button>
@@ -130,46 +157,42 @@ const handleImageError = (e, fallback) => {
 
                     <!-- Empty state liquid -->
                     <div v-if="liquidWallets.length === 0"
-                        class="col-span-full text-center py-8 bg-linear-to-br from-gray-900 to-gray-800 border border-dashed border-white/10 rounded-xl">
+                        class="col-span-full text-center py-6 bg-linear-to-br from-gray-900 to-gray-800 border border-dashed border-white/10 rounded-xl">
                         <p class="text-2xs font-bold text-gray-500 uppercase tracking-widest">{{ $t('wallet.emptyLiquid') }}</p>
                     </div>
                 </div>
             </section>
 
             <!-- ASSET WALLETS -->
-            <section class="mb-8 animate-fade-in-up delay-200">
-                <div class="flex justify-between items-center mb-4 px-1 gap-3">
+            <section class="mb-6 animate-fade-in-up delay-200">
+                <div class="flex justify-between items-center mb-3 px-1 gap-3">
                     <h2 class="text-2xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
                         <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span> {{ $t('wallet.groupTypes.asset') }}
                     </h2>
                     <div class="flex-1 h-px bg-linear-to-r from-purple-500/30 to-transparent"></div>
                 </div>
 
-                <div :class="['grid grid-cols-1 gap-3', isDesktopLayout ? 'lg:grid-cols-2 lg:gap-5' : '']">
+                <div class="grid grid-cols-2 gap-2">
                     <Link v-for="wallet in assetWallets" :key="wallet.id" :href="route('wallets.show', wallet.id)"
-                        class="flex items-center justify-between p-4 bg-linear-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 active:scale-[0.98] transition-all group">
-                        <div class="flex items-center gap-4 flex-1 min-w-0">
-                            <div class="w-12 h-12 rounded-xl bg-gray-900 border border-white/10 flex items-center justify-center text-xl shrink-0"
-                                :class="wallet.icon?.includes('.') ? 'p-2' : ''">
-                                <img v-if="wallet.icon?.includes('.')"
-                                    :src="wallet.icon.startsWith('http') ? wallet.icon : '/storage/' + wallet.icon"
-                                    class="w-full h-full object-contain"
-                                    @error="(e) => handleImageError(e, wallet.keyword?.substring(0, 1) || '💰')">
-                                <span v-else>{{ wallet.icon || '💰' }}</span>
-                            </div>
+                        class="flex flex-col justify-between p-3 bg-linear-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 active:scale-[0.98] transition-all group">
+                        <div class="flex items-center gap-2.5">
+                            <AppIcon :icon="wallet.icon" :fallback="wallet.keyword?.substring(0, 1) || 'wallet'"
+                                     class="w-6 h-6 text-purple-400 shrink-0" />
                             <div class="min-w-0 flex-1">
-                                <h3 class="text-sm font-bold text-white mb-2 leading-tight whitespace-nowrap truncate">{{ wallet.name }}</h3>
-                                <p class="text-2xs text-gray-500 tracking-wider font-bold whitespace-nowrap truncate mt-0.5">{{
+                                <h3 class="text-xs font-bold text-white leading-tight whitespace-nowrap truncate">{{ wallet.name }}</h3>
+                                <p class="text-[9px] text-gray-500 tracking-wider font-bold whitespace-nowrap truncate">{{
                                     wallet.keyword || $t('wallet.name') }}</p>
                             </div>
                         </div>
-                        <div class="text-right flex items-center justify-end gap-3 shrink-0 ml-4">
-                            <p class="text-sm font-bold text-white tracking-tight">Rp{{ isBalanceVisible ?
+                        <div class="flex items-center justify-between mt-2.5">
+                            <p class="text-xs font-bold tracking-tight"
+                                :class="parseFloat(wallet.balance) < 0 ? 'text-red-400' : 'text-white'">
+                                <span class="text-[9px] text-gray-500 mr-0.5">Rp</span>{{ isBalanceVisible ?
                                 formatNumber(wallet.balance) : '••••' }}</p>
                             <button @click.stop.prevent="togglePin(wallet)"
-                                class="p-1 rounded-full z-10 transition-colors"
+                                class="p-0.5 rounded-full z-10 transition-colors"
                                 :class="wallet.is_pinned ? 'text-purple-500 bg-white/5' : 'text-gray-500 hover:text-white'">
-                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5v6l1 2 1-2v-6h5v-2l-2-2z" />
                                 </svg>
                             </button>
@@ -178,15 +201,15 @@ const handleImageError = (e, fallback) => {
 
                     <!-- Empty state asset -->
                     <div v-if="assetWallets.length === 0"
-                        class="col-span-full text-center py-8 bg-linear-to-br from-gray-900 to-gray-800 border border-dashed border-white/10 rounded-xl">
-                        <p class="text-2xs font-bold text-gray-500 uppercase tracking-widest">{{ $t('wallet.emptyAsset') }}</p>
+                        class="col-span-full text-center py-6 bg-linear-to-br from-gray-900 to-gray-800 border border-dashed border-white/10 rounded-xl">
+                        <p class="text-2xs font-bold text-gray-500 uppercase tracking-widest">{{ t('wallet.emptyAsset') }}</p>
                     </div>
                 </div>
             </section>
 
             <!-- KEWAJIBAN -->
-            <section class="mb-10 animate-fade-in-up delay-400">
-                <div class="flex justify-between items-center mb-5 px-1 gap-3">
+            <section class="mb-8 animate-fade-in-up delay-300">
+                <div class="flex justify-between items-center mb-3 px-1 gap-3">
                     <h2 class="text-2xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
                         <span class="w-1.5 h-1.5 rounded-full bg-yellow-400"></span> {{ $t('common.total') }}
                     </h2>

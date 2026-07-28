@@ -23,7 +23,7 @@ class SettingsChangeLoggingTest extends TestCase
         $this->assertDatabaseHas('user_settings_changes', [
             'user_id' => $user->id,
             'setting_key' => 'locale',
-            'setting_page' => 'settings.application.language',
+            'setting_page' => 'settings.account.preferences',
             'new_value' => 'en',
         ]);
 

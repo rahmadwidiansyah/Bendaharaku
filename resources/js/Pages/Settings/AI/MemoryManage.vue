@@ -74,7 +74,7 @@ const links = ref(props.memories?.links || []);
           </Link>
           <div class="flex-1 min-w-0">
             <h2 class="text-2xl font-black text-white tracking-tight leading-none">{{ t('settings.ai.memory.manage.title') }}</h2>
-            <p class="text-sm text-gray-400 mt-1.5 font-medium">{{ t('settings.ai.memory.manage.description') }}</p>
+            <p class="text-2xs sm:text-sm text-gray-400 mt-1.5 font-medium">{{ t('settings.ai.memory.manage.description') }}</p>
           </div>
         </div>
       </template>
@@ -118,7 +118,7 @@ const links = ref(props.memories?.links || []);
         >
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0 flex-1">
-              <h3 class="text-sm font-semibold text-white truncate">{{ item.keyword }}</h3>
+              <h3 class="text-xs sm:text-sm font-semibold text-white truncate">{{ item.keyword }}</h3>
               <p v-if="item.normalized_subject && item.normalized_subject !== item.keyword" class="text-xs text-gray-500 truncate mt-0.5">{{ item.raw_subject }}</p>
               <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs text-gray-400">
                 <span v-if="item.category">

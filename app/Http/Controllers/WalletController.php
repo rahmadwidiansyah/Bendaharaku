@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Wallet;
 use App\Support\SettingsChangeLogger;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -96,7 +97,7 @@ class WalletController extends Controller
     }
 
     // DETAIL WALLET
-    public function show(Wallet $wallet)
+    public function show(Request $request, Wallet $wallet)
     {
         if ($wallet->user_id !== Auth::id()) {
             abort(403);
@@ -107,17 +108,30 @@ class WalletController extends Controller
             abort(403, 'Akses ke Dompet Sistem tidak diizinkan.');
         }
 
+        $defaultStartDate = Carbon::now()->startOfMonth()->format('Y-m-d');
+        $defaultEndDate = Carbon::now()->endOfMonth()->format('Y-m-d');
+        $validated = $request->validate([
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+        ]);
+
+        $startDate = $validated['start_date'] ?? $defaultStartDate;
+        $endDate = $validated['end_date'] ?? $defaultEndDate;
+
         $transactions = Auth::user()->transactionLogs()
             ->with(['type', 'category', 'sourceWallet', 'destinationWallet'])
             ->where(function ($q) use ($wallet) {
                 $q->where('source_wallet_id', $wallet->id)
                     ->orWhere('destination_wallet_id', $wallet->id);
             })
+            ->whereBetween('date', [$startDate, $endDate])
             ->orderBy('date', 'desc')->orderBy('created_at', 'desc')->paginate(20);
 
         return Inertia::render('Wallets/Show', [
             'wallet' => $wallet,
             'transactions' => $transactions,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
         ]);
     }
 

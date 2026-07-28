@@ -34,7 +34,7 @@ const isTelegramActive = computed(() => !!telegramId.value);
         <div class="space-y-4">
           <!-- Status Badge -->
           <div :class="[
-            'flex items-center gap-3 p-4 rounded-lg border',
+            'flex items-center gap-2 sm:gap-3 p-4 rounded-lg border',
             isTelegramActive 
               ? 'bg-emerald-500/10 border-emerald-500/20' 
               : 'bg-gray-800/50 border-gray-700'

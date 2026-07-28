@@ -20,12 +20,12 @@ useScrollRestore();
 </script>
 
 <template>
-  <div class="w-full max-w-4xl mx-auto px-4 sm:px-6 py-6">
+  <div class="w-full max-w-4xl mx-auto px-3 sm:px-6 py-4 sm:py-6">
 
     <!-- Page title -->
-    <div v-if="title" class="mb-6">
-      <h1 class="text-2xl font-black text-white tracking-tight leading-none">{{ title }}</h1>
-      <p v-if="description" class="text-sm text-gray-400 mt-1.5 font-medium">{{ description }}</p>
+    <div v-if="title" class="mb-4 sm:mb-6">
+      <h1 class="text-lg sm:text-2xl font-black text-white tracking-tight leading-none">{{ title }}</h1>
+      <p v-if="description" class="text-xs sm:text-sm text-gray-400 mt-1 sm:mt-1.5 font-medium">{{ description }}</p>
     </div>
 
     <!-- Page content -->

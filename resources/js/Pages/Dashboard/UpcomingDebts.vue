@@ -102,10 +102,10 @@ const typeLabel = (type) => {
 <template>
     <div
         v-if="activeDebts.length > 0"
-        class="mb-8 animate-fade-in-up delay-300"
+        class="mb-4 sm:mb-8 animate-fade-in-up delay-300"
     >
         <!-- Section header -->
-        <div class="flex items-center mb-3 px-1 gap-3">
+        <div class="flex items-center mb-2 sm:mb-3 px-1 gap-2 sm:gap-3">
             <h2 class="text-2xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 shrink-0">
                 <svg class="w-3 h-3 text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -116,14 +116,14 @@ const typeLabel = (type) => {
         </div>
 
         <!-- Subtitle -->
-        <p class="text-2xs text-gray-500 px-1 mb-3">{{ $t('upcomingDebts.subtitle') }}</p>
+        <p class="text-2xs text-gray-500 px-1 mb-2 sm:mb-3">{{ $t('upcomingDebts.subtitle') }}</p>
 
         <!-- Debt items -->
-        <div class="flex flex-col gap-3" role="list" :aria-label="$t('upcomingDebts.title')">
+        <div class="flex flex-col gap-2 sm:gap-3" role="list" :aria-label="$t('upcomingDebts.title')">
             <div
                 v-for="debt in activeDebts"
                 :key="debt.subject + debt.type"
-                :class="['p-3.5 rounded-xl border relative overflow-hidden', cardClasses[urgencyKey(debt.days_until)]]"
+                :class="['p-2.5 sm:p-3.5 rounded-lg sm:rounded-xl border relative overflow-hidden', cardClasses[urgencyKey(debt.days_until)]]"
                 role="listitem"
             >
                 <!-- Row atas: nama + badge + dismiss -->
@@ -152,7 +152,7 @@ const typeLabel = (type) => {
                 </div>
 
                 <!-- Row bawah: nominal + tanggal -->
-                <div class="flex justify-between items-center mt-2">
+                <div class="flex justify-between items-center mt-1.5 sm:mt-2">
                     <p :class="['text-sm font-bold tracking-tight', amountClasses[urgencyKey(debt.days_until)]]" aria-live="polite">
                         <span class="text-2xs mr-1 opacity-70">Rp</span>
                         {{ isVisible ? formatNumber(debt.remaining) : '••••' }}

@@ -18,6 +18,12 @@ const avatarSrc = computed(() => {
   return null;
 });
 
+const initials = computed(() => {
+  const name: string = (user.value as any)?.name ?? '';
+  if (!name) return '?';
+  return name.split(' ').map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
+});
+
 // ── Section definitions ───────────────────────────────────────────
 
 interface SectionItem {
@@ -30,8 +36,8 @@ interface SectionItem {
 
 interface Section {
   id: string;
-  label: string;
-  icon: string;            // emoji atau karakter untuk identitas visual section
+  labelKey: string;
+  svgPath: string;
   gradientFrom: string;
   gradientTo: string;
   items: SectionItem[];
@@ -41,8 +47,8 @@ const sections: Section[] = [
   // ── Account ──────────────────────────────────────────────────────
   {
     id: 'account',
-    label: 'Account',
-    icon: '👤',
+    labelKey: 'settings.index.section.account',
+    svgPath: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z',
     gradientFrom: '#7C3AED',
     gradientTo: '#4F46E5',
     items: [
@@ -70,29 +76,11 @@ const sections: Section[] = [
     ],
   },
 
-  // ── Application ───────────────────────────────────────────────────
-  {
-    id: 'application',
-    label: 'Application',
-    icon: '⚙️',
-    gradientFrom: '#0891B2',
-    gradientTo: '#0284C7',
-    items: [
-      {
-        labelKey: 'settings.application.language.title',
-        descKey:  'settings.application.language.description',
-        route:    'settings.application.language',
-        accent:   'sky',
-        iconPath: 'M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129',
-      },
-    ],
-  },
-
   // ── Appearance ────────────────────────────────────────────────────
   {
     id: 'appearance',
-    label: 'Appearance',
-    icon: '🎨',
+    labelKey: 'settings.index.section.appearance',
+    svgPath: 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z',
     gradientFrom: '#7C3AED',
     gradientTo: '#DB2777',
     items: [
@@ -106,20 +94,27 @@ const sections: Section[] = [
     ],
   },
 
-  // ── Keuangan ─────────────────────────────────────────────────────
+  // ── Finance ─────────────────────────────────────────────────────
   {
-    id: 'keuangan',
-    label: 'Keuangan',
-    icon: '💰',
+    id: 'finance',
+    labelKey: 'settings.index.section.finance',
+    svgPath: 'M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3',
     gradientFrom: '#059669',
     gradientTo: '#047857',
     items: [
       {
         labelKey: 'settings.finance.defaults.transaction_logic.title',
         descKey:  'settings.finance.defaults.transaction_logic.description',
-        route:    'settings.keuangan.index',
+        route:    'settings.finance.logic',
         accent:   'emerald',
-        iconPath: 'M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+        iconPath: 'M13 10V3L4 14h7v7l9-11h-7z',
+      },
+      {
+        labelKey: 'settings.finance.budget.title',
+        descKey:  'settings.finance.budget.description',
+        route:    'settings.finance.budget',
+        accent:   'amber',
+        iconPath: 'M23 6l-9.5 9.5-5-5L1 18',
       },
     ],
   },
@@ -127,8 +122,8 @@ const sections: Section[] = [
   // ── AI ────────────────────────────────────────────────────────────
   {
     id: 'ai',
-    label: 'Artificial Intelligence',
-    icon: '🤖',
+    labelKey: 'settings.index.section.ai',
+    svgPath: 'M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM8 11l-1 1 1 1m8-2l-1-1-1 1m-4 2l2-4',
     gradientFrom: '#6D28D9',
     gradientTo: '#BE185D',
     items: [
@@ -166,8 +161,8 @@ const sections: Section[] = [
   // ── Notifications ─────────────────────────────────────────────────
   {
     id: 'notifications',
-    label: 'Notifications',
-    icon: '🔔',
+    labelKey: 'settings.index.section.notifications',
+    svgPath: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9',
     gradientFrom: '#D97706',
     gradientTo: '#B45309',
     items: [
@@ -184,8 +179,8 @@ const sections: Section[] = [
   // ── Privacy ───────────────────────────────────────────────────────
   {
     id: 'privacy',
-    label: 'Privacy',
-    icon: '🔒',
+    labelKey: 'settings.index.section.privacy',
+    svgPath: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z',
     gradientFrom: '#065F46',
     gradientTo: '#047857',
     items: [
@@ -209,8 +204,8 @@ const sections: Section[] = [
   // ── Danger Zone ───────────────────────────────────────────────────
   {
     id: 'danger',
-    label: 'Danger Zone',
-    icon: '⚠️',
+    labelKey: 'settings.index.section.danger',
+    svgPath: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z',
     gradientFrom: '#991B1B',
     gradientTo: '#7F1D1D',
     items: [
@@ -261,10 +256,7 @@ function toggle(id: string) {
   <AuthenticatedLayout :fullWidth="true">
     <Head :title="t('settings.title')" />
 
-    <SettingsLayout
-      :title="t('settings.title')"
-      :description="t('settings.subtitle')"
-    >
+    <SettingsLayout>
       <div class="space-y-2">
 
         <!-- ── USER HERO CARD ─────────────────────────────────────── -->
@@ -276,16 +268,14 @@ function toggle(id: string) {
             <div class="relative shrink-0">
               <div class="w-14 h-14 rounded-xl overflow-hidden border border-purple-500/30 bg-gradient-to-br from-purple-600 to-indigo-900 flex items-center justify-center">
                 <img v-if="avatarSrc" :src="avatarSrc" :alt="user.name" class="w-full h-full object-cover" />
-                <svg v-else class="w-7 h-7 text-white/60" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
-                </svg>
+                <span v-else class="text-lg font-black text-white/80 select-none">{{ initials }}</span>
               </div>
               <span class="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-emerald-500 rounded-full border-2 border-gray-900" />
             </div>
 
             <!-- Info -->
             <div class="flex-1 min-w-0">
-              <p class="text-sm font-bold text-white truncate">{{ user.name || '—' }}</p>
+              <p class="text-2xs sm:text-sm font-bold text-white truncate">{{ user.name || '—' }}</p>
               <p class="text-xs text-gray-400 truncate">{{ user.email || '—' }}</p>
               <div class="mt-1.5 flex flex-wrap gap-1.5">
                 <span v-if="user.whatsapp_number" class="px-2 py-0.5 bg-green-500/10 border border-green-500/20 text-green-400 text-2xs font-bold rounded-md">WhatsApp</span>
@@ -312,40 +302,41 @@ function toggle(id: string) {
           v-for="sec in sections"
           :key="sec.id"
           :class="[
-            'rounded-xl border overflow-hidden transition-colors',
+            'rounded-lg border overflow-hidden transition-colors',
             sec.id === 'danger'
-              ? 'border-red-500/20 bg-red-950/10'
-              : 'border-white/[0.07] bg-gray-900/40',
+              ? 'border-red-500/15 bg-red-950/10'
+              : 'border-white/5 bg-gray-900/40',
           ]"
         >
           <!-- Section Header -->
           <button
             type="button"
-            class="w-full flex items-center gap-3 px-4 py-3.5 group"
+            class="w-full flex items-center gap-3 px-3 sm:px-4 py-3 group"
             @click="toggle(sec.id)"
           >
-            <!-- Color bar -->
+            <!-- Icon with gradient -->
             <div
-              class="w-1 h-6 rounded-full shrink-0"
-              :style="`background: linear-gradient(to bottom, ${sec.gradientFrom}, ${sec.gradientTo})`"
-            />
-
-            <!-- Icon -->
-            <span class="text-base leading-none select-none" aria-hidden="true">{{ sec.icon }}</span>
+              class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center shrink-0"
+              :style="{ background: `linear-gradient(135deg, ${sec.gradientFrom}, ${sec.gradientTo})` }"
+            >
+              <svg class="w-4 h-4 sm:w-4.5 sm:h-4.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" :d="sec.svgPath" />
+              </svg>
+            </div>
 
             <!-- Label -->
             <span
               :class="[
-                'flex-1 text-left text-sm font-bold tracking-tight transition-colors',
+                'flex-1 text-left text-xs sm:text-sm font-bold tracking-tight transition-colors',
                 sec.id === 'danger' ? 'text-red-400' : 'text-white group-hover:text-white',
               ]"
             >
-              {{ sec.label }}
+              {{ t(sec.labelKey) }}
             </span>
 
             <!-- Item count -->
             <span class="text-2xs text-gray-600 font-semibold tabular-nums">
-              {{ sec.items.length }} {{ sec.items.length === 1 ? 'item' : 'items' }}
+              {{ sec.items.length }} {{ t(sec.items.length === 1 ? 'settings.index.item' : 'settings.index.items') }}
             </span>
           </button>
 
@@ -358,14 +349,14 @@ function toggle(id: string) {
             leave-from-class="opacity-100 scale-y-100"
             leave-to-class="opacity-0 scale-y-95"
           >
-            <div v-if="!collapsed.has(sec.id)" class="border-t border-white/[0.06]">
-              <div class="p-3 space-y-1.5">
+            <div v-if="!collapsed.has(sec.id)" class="border-t border-white/5">
+              <div class="p-2 sm:p-3 space-y-1">
                 <Link
                   v-for="item in sec.items"
                   :key="item.route"
                   :href="route(item.route)"
                   :class="[
-                    'group flex items-center gap-3.5 px-3 py-3 rounded-lg',
+                    'group flex items-center gap-3 px-2.5 sm:px-3 py-2.5 sm:py-3 rounded-lg',
                     'border border-transparent',
                     'hover:bg-gray-800/60 active:scale-[0.99]',
                     'transition-all duration-150',
@@ -373,20 +364,20 @@ function toggle(id: string) {
                   ]"
                 >
                   <!-- Icon badge -->
-                  <div :class="['w-9 h-9 rounded-lg flex items-center justify-center shrink-0 border', a(item.accent).bg, a(item.accent).border]">
-                    <svg :class="['w-4.5 h-4.5', a(item.accent).text]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                  <div :class="['w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center shrink-0 border', a(item.accent).bg, a(item.accent).border]">
+                    <svg :class="['w-3.5 h-3.5 sm:w-4.5 sm:h-4.5', a(item.accent).text]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                       <path stroke-linecap="round" stroke-linejoin="round" :d="item.iconPath" />
                     </svg>
                   </div>
 
                   <!-- Text -->
                   <div class="flex-1 min-w-0">
-                    <p class="text-sm font-semibold text-white leading-tight">{{ t(item.labelKey) }}</p>
-                    <p class="text-2xs text-gray-500 mt-0.5 truncate">{{ t(item.descKey) }}</p>
+                    <p class="text-xs sm:text-sm font-semibold text-white leading-tight">{{ t(item.labelKey) }}</p>
+                    <p class="text-2xs text-gray-500 mt-0.5 truncate hidden sm:block">{{ t(item.descKey) }}</p>
                   </div>
 
                   <!-- Arrow -->
-                  <svg class="w-3.5 h-3.5 text-gray-600 group-hover:text-gray-400 shrink-0 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                  <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-600 group-hover:text-gray-400 shrink-0 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
                   </svg>
                 </Link>

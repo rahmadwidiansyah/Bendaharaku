@@ -45,28 +45,8 @@ Route::middleware(['auth'])->group(function () {
 
     // Settings
     Route::get('/settings', function (Request $request) {
-        return Inertia::render('Settings/Index', [
-            'allowNegativeBalance' => $request->user()->allow_negative_balance,
-        ]);
+        return Inertia::render('Settings/Index');
     })->name('settings.index');
-    Route::patch('/settings/transaction-logic', function (Request $request) {
-        $validated = $request->validate(['allow_negative_balance' => ['required', 'boolean']]);
-
-        $user = $request->user();
-        $old = $user->allow_negative_balance;
-        $user->update($validated);
-
-        // Log change
-        SettingsChangeLogger::logChange(
-            $user,
-            'allow_negative_balance',
-            'settings.transaction',
-            $old,
-            $validated['allow_negative_balance']
-        );
-
-        return back()->with('success', 'Logika transaksi diperbarui.');
-    })->name('settings.transaction-logic.update');
 
     // Simpan preferensi locale user ke DB agar chat (Telegram & Web) bisa baca
     Route::patch('/settings/locale', function (Request $request) {
@@ -81,7 +61,7 @@ Route::middleware(['auth'])->group(function () {
         SettingsChangeLogger::logChange(
             $user,
             'locale',
-            'settings.application.language',
+            'settings.account.preferences',
             $oldLocale,
             $newLocale
         );
@@ -150,25 +130,28 @@ Route::middleware(['auth'])->group(function () {
             return Inertia::render('Settings/Account/Preferences', [
                 'userTimezone' => $user->timezone ?? 'Asia/Jakarta',
                 'userDateFormat' => $user->date_format ?? 'DD/MM/YYYY',
+                'userLanguage' => $user->locale ?? 'id',
             ]);
         })->name('preferences');
         Route::patch('/preferences', function (Request $request) {
             $validated = $request->validate([
                 'timezone' => ['required', 'string', 'timezone'],
                 'date_format' => ['required', 'string', 'in:DD/MM/YYYY,MM/DD/YYYY,YYYY-MM-DD'],
+                'language' => ['required', 'string', 'in:id,en'],
             ]);
 
             $user = $request->user();
             $user->update([
                 'timezone' => $validated['timezone'],
                 'date_format' => $validated['date_format'],
+                'locale' => $validated['language'],
             ]);
 
             SettingsChangeLogger::logChange(
                 $user,
                 'preferences',
                 'settings.account.preferences',
-                ['timezone' => $user->getOriginal('timezone'), 'date_format' => $user->getOriginal('date_format')],
+                ['timezone' => $user->getOriginal('timezone'), 'date_format' => $user->getOriginal('date_format'), 'locale' => $user->getOriginal('locale')],
                 $validated
             );
 
@@ -205,32 +188,6 @@ Route::middleware(['auth'])->group(function () {
             return response()->json(['success' => true, 'message' => 'Tampilan berhasil diperbarui.']);
         })->name('appearance.update');
 
-        Route::get('/language', function (Request $request) {
-            $user = $request->user();
-
-            return Inertia::render('Settings/Application/Language', [
-                'userLanguage' => $user->locale ?? 'id',
-            ]);
-        })->name('language');
-        Route::patch('/language', function (Request $request) {
-            $validated = $request->validate([
-                'language' => ['required', 'string', 'in:id,en'],
-            ]);
-
-            $user = $request->user();
-            $user->update(['locale' => $validated['language']]);
-
-            SettingsChangeLogger::logChange(
-                $user,
-                'language',
-                'settings.application.language',
-                ['language' => $user->getOriginal('locale')],
-                $validated
-            );
-
-            return response()->json(['success' => true, 'message' => 'Bahasa berhasil diperbarui.']);
-        })->name('language.update');
-
         Route::get('/notifications', fn () => Inertia::render('Settings/Application/Notifications'))->name('notifications');
         Route::patch('/notifications', function (Request $request) {
             $validated = $request->validate([
@@ -255,41 +212,30 @@ Route::middleware(['auth'])->group(function () {
 
     // Finance
     Route::prefix('settings/finance')->name('settings.finance.')->group(function () {
-        Route::get('/defaults', function (Request $request) {
-            return Inertia::render('Settings/Finance/Defaults', [
-                'wallets' => Wallet::where('user_id', $request->user()->id)->get(),
-            ]);
-        })->name('defaults');
-        Route::patch('/defaults', function (Request $request) {
+        Route::get('/logic', function () {
+            return Inertia::render('Settings/Finance/Defaults');
+        })->name('logic');
+        Route::patch('/logic', function (Request $request) {
             $validated = $request->validate([
-                'default_wallet' => ['required', 'exists:wallets,id'],
-                'default_currency' => ['required', 'string'],
                 'allow_negative_balance' => ['required', 'boolean'],
             ]);
 
             $user = $request->user();
-            $old = ['allow_negative_balance' => $user->allow_negative_balance];
-            $user->update(['allow_negative_balance' => $validated['allow_negative_balance']]);
+            $old = $user->allow_negative_balance;
+            $user->update($validated);
 
             SettingsChangeLogger::logChange(
                 $user,
                 'finance_defaults',
-                'settings.finance.defaults',
-                $old,
+                'settings.finance.logic',
+                ['allow_negative_balance' => $old],
                 $validated
             );
 
-            return response()->json(['success' => true, 'message' => 'Default berhasil diperbarui.']);
-        })->name('defaults.update');
+            return response()->json(['success' => true, 'message' => 'Logika transaksi diperbarui.']);
+        })->name('logic.update');
 
-        Route::get('/categories', fn () => Inertia::render('Settings/Finance/Categories'))->name('categories');
-        Route::get('/wallets', fn () => Inertia::render('Settings/Finance/Wallets'))->name('wallets');
         Route::get('/budget', fn () => Inertia::render('Settings/Finance/Budget'))->name('budget');
-    });
-
-    // Keuangan (Allow Negative Balance)
-    Route::prefix('settings/keuangan')->name('settings.keuangan.')->group(function () {
-        Route::get('/', fn () => Inertia::render('Settings/Keuangan/Index'))->name('index');
     });
 
     // Privacy & Data

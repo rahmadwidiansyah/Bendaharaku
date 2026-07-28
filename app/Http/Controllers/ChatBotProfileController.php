@@ -126,7 +126,7 @@ class ChatBotProfileController extends Controller
             }
         }
 
-        return back()->with('success', __('settings.botProfile.saved'));
+        return back();
     }
 
     /**
@@ -146,6 +146,6 @@ class ChatBotProfileController extends Controller
             SettingsChangeLogger::logChange($user, 'bot_avatar', 'settings.chat.bot-profile', $old, null);
         }
 
-        return back()->with('success', __('settings.botProfile.avatarRemoved'));
+        return back();
     }
 }

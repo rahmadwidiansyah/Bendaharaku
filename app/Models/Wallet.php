@@ -68,7 +68,7 @@ class Wallet extends Model
     public function getIconUrlAttribute(): string
     {
         if ($this->icon === null) {
-            return '💳';
+            return 'wallet';
         }
 
         if (str_starts_with($this->icon, 'http')) {

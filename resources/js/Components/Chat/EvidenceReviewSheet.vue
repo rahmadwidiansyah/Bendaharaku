@@ -7,8 +7,10 @@
 import { ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import axios from 'axios'
+import { useToast } from '@/Composables/useToast'
 
 const { t } = useI18n()
+const { showToast } = useToast()
 
 const props = defineProps({
     modelValue:   { type: Boolean, required: true },
@@ -115,9 +117,11 @@ async function saveDraft() {
                 destination_account: res.data.draft.destination_account || '',
             }
             isDirty.value = false
+            showToast(t('toast.saved'), 'success')
         }
     } catch (err) {
         error.value = err.response?.data?.message || 'Gagal menyimpan'
+        showToast(err.response?.data?.message || t('toast.error'), 'error')
     } finally {
         isSaving.value = false
     }
@@ -143,14 +147,17 @@ async function commitTransaction() {
                 transaction: res.data.transaction,
                 warnings: res.data.warnings,
             })
+            showToast(t('toast.saved'), 'success')
             close()
         } else {
             error.value = res.data.message || 'Gagal membuat transaksi'
             emit('commitError', { uuid: props.evidenceUuid, error: error.value })
+            showToast(error.value, 'error')
         }
     } catch (err) {
         error.value = err.response?.data?.message || 'Gagal membuat transaksi'
         emit('commitError', { uuid: props.evidenceUuid, error: error.value })
+        showToast(error.value, 'error')
     } finally {
         isCommitting.value = false
     }

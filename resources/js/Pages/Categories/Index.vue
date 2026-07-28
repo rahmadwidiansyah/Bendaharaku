@@ -4,6 +4,7 @@ import { Head, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useLayoutPreference } from '@/Composables/useLayoutPreference';
+import AppIcon from '@/Components/AppIcon.vue';
 
 const { t } = useI18n();
 const { isDesktopLayout } = useLayoutPreference();
@@ -43,9 +44,9 @@ const getHeaderText = (typeName) => {
 
         <Head :title="$t('category.title')" />
 
-        <div class="p-5 w-full lg:max-w-4xl mx-auto lg:px-8 relative z-10 min-h-screen">
+        <div class="p-4 sm:p-5 w-full lg:max-w-4xl mx-auto lg:px-8 relative z-10 min-h-screen">
 
-            <header class="mb-10 pt-4 animate-fade-in-up">
+            <header class="mb-6 lg:mb-10 pt-3 lg:pt-4 animate-fade-in-up">
                 <div class="hidden lg:flex justify-between items-end mb-8 px-1">
                     <div>
                         <p class="text-2xs text-gray-300 font-bold uppercase tracking-[0.3em] mb-1 opacity-80">✨
@@ -105,7 +106,7 @@ const getHeaderText = (typeName) => {
             </header>
 
             <div v-for="([typeName, categories], index) in sortedGroups" :key="typeName"
-                class="mb-10 animate-fade-in-up" :style="{ animationDelay: (index * 100) + 'ms' }">
+                class="mb-6 lg:mb-10 animate-fade-in-up" :style="{ animationDelay: (index * 100) + 'ms' }">
                 <div class="flex items-center gap-3 mb-5 px-1">
                     <div class="w-1.5 h-1.5 rounded-full" :class="getTheme(typeName).bg"></div>
                     <h2 class="text-[11px] font-bold uppercase tracking-[0.2em]" :class="getTheme(typeName).text">
@@ -114,30 +115,25 @@ const getHeaderText = (typeName) => {
                     <div class="flex-1 h-px bg-linear-to-r from-purple-500 to-transparent"></div>
                 </div>
 
-                <div :class="['grid grid-cols-3 gap-3', isDesktopLayout ? 'lg:grid-cols-4 xl:grid-cols-6 lg:gap-5' : '']">
+                <div :class="['grid grid-cols-4 gap-2', isDesktopLayout ? 'lg:grid-cols-4 xl:grid-cols-6 lg:gap-5' : '']">
                 <Link v-for="category in categories" :key="category.id"
                     :href="route('categories.show', category.id)"
                     :title="category.category_name"
-                    class="relative group bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center active:scale-95 transition-all duration-300"
+                    class="relative group bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-2.5 lg:p-4 flex flex-col items-center justify-center text-center active:scale-95 transition-all duration-300"
                     :class="[getTheme(typeName).glow, getTheme(typeName).border]">
 
                         <!-- System category lock badge -->
                         <div v-if="category.system_key"
-                            class="absolute top-2 right-2 w-4 h-4 flex items-center justify-center opacity-40 group-hover:opacity-70 transition-opacity">
-                            <svg class="w-3 h-3 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                            class="absolute top-1 right-1 lg:top-2 lg:right-2 w-3 h-3 lg:w-4 lg:h-4 flex items-center justify-center opacity-40 group-hover:opacity-70 transition-opacity">
+                            <svg class="w-2 h-2 lg:w-3 lg:h-3 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
                             </svg>
                         </div>
 
-                        <div
-                            class="w-12 h-12 rounded-xl bg-linear-to-br from-gray-900 to-gray-800 flex items-center justify-center text-2xl border border-white/10 shrink-0 shadow-inner overflow-hidden p-0.5 mb-2.5 transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-1">
-                            <img v-if="category.icon?.includes('.')" :src="'/storage/' + category.icon"
-                                class="w-full h-full object-contain p-1">
-                            <span v-else class="drop-shadow-md">{{ category.icon || '📁' }}</span>
-                        </div>
+                        <AppIcon :icon="category.icon" fallback="folder" class="w-8 h-8 lg:w-10 lg:h-10 text-purple-400 mb-1 lg:mb-2.5 transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-1" />
 
                         <p
-                            class="text-xs font-bold text-gray-300 tracking-wide line-clamp-2 leading-tight group-hover:text-white transition-colors">
+                            class="text-2xs lg:text-xs font-bold text-gray-300 tracking-wide line-clamp-2 leading-tight group-hover:text-white transition-colors">
                             {{ category.category_name }}
                         </p>
                     </Link>

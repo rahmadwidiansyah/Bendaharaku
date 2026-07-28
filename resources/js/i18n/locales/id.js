@@ -83,6 +83,15 @@ export default {
         today:          'Hari Ini',
         saveAndAddMore: 'Simpan & tambah lagi',
         open:           'Buka',
+        dateRange:      'Rentang Waktu',
+        from:           'Dari',
+        to:             'Sampai',
+        dateInvalidRange: 'Tanggal akhir harus sama atau setelah tanggal mulai.',
+        thisYear:       'Tahun Ini',
+        thisMonth:      'Bulan Ini',
+        lastMonth:      'Bulan Lalu',
+        applyFilter:    'Terapkan Filter',
+        applying:       'Menerapkan...',
         // Generic error messages
         errors: {
             generic: 'Terjadi kesalahan. Silakan coba lagi nanti.'
@@ -225,6 +234,21 @@ export default {
         chooseDestWallet: 'Pilih dompet tujuan...',
         chooseDate:     'Pilih Tanggal',
         nextNominal:    'Lanjut → Isi Nominal',
+        today:          'Hari Ini',
+        yesterday:      'Kemarin',
+        wallet:         'Dompet',
+        transferFunds:  'Pindah Dana',
+        relatedParty:   'Pihak Terkait',
+        namePlaceholder:'Nama...',
+        hasDueDate:     'Ada Jatuh Tempo?',
+        fixedDate:      'Tgl Pasti',
+        everyMonth:     'Tiap Bulan',
+        everyDay:       'Per Hari',
+        dayPlaceholder: 'Tgl (1-31)',
+        cyclePlaceholder:'Siklus (hari)',
+        saveAndStay:    'Simpan & tambah lagi',
+        addCategory:    'Tambah Kategori',
+        noCategory:     'Belum ada kategori',
         created:        'Dibuat',
         updated:        'Diperbarui',
 
@@ -347,6 +371,9 @@ export default {
         recentMutation: 'Mutasi Terakhir',
         emptyMutation:  'Belum ada mutasi',
 
+        pinDashboard:       'Pin ke Dashboard',
+        pinDashboardDesc:   'Tampilkan dompet ini di halaman utama',
+
         // Empty states
         empty:          'Belum ada dompet.',
         emptyLiquid:    'Belum ada dompet liquid.',
@@ -464,6 +491,19 @@ export default {
         title:          'Pengaturan',
         subtitle:       'Preferensi',
         save_button:     'Simpan',
+        index: {
+            section: {
+                account:        'Akun',
+                appearance:     'Tampilan',
+                finance:        'Keuangan',
+                ai:             'Kecerdasan Buatan',
+                notifications:  'Notifikasi',
+                privacy:        'Privasi',
+                danger:         'Zona Berbahaya',
+            },
+            item:           'item',
+            items:          'item',
+        },
         notifications: {
             title:          'Notifikasi',
             description:    'Preferensi notifikasi email & push',
@@ -517,6 +557,7 @@ export default {
                 login_activity: {
                     title:          'Riwayat Login',
                     description:    'Pantau aktivitas masuk ke akun kamu',
+                    current:        'Sesi ini',
                     tracking_soon:  'Fitur pelacakan akan segera tersedia',
                 },
             },
@@ -534,7 +575,13 @@ export default {
             
             preferences: {
                 title:          'Preferensi',
-                description:    'Zona waktu & format tanggal',
+                description:    'Bahasa, zona waktu & format tanggal',
+                language: {
+                    title:          'Bahasa',
+                    description:    'Pilih bahasa aplikasi',
+                    id:             'Bahasa Indonesia',
+                    en:             'English',
+                },
                 timezone: {
                     title:          'Zona Waktu',
                     description:    'Pilih zona waktu kamu',
@@ -677,6 +724,7 @@ export default {
                 api_key: {
                     label:          'API Key',
                     description:    'API key Anda untuk provider ini',
+                    placeholder:    'Kosongkan jika tidak ingin mengubah key',
                     warning:        'API key dienkripsi dan disimpan secara aman di server',
                 },
                 select_model:   'Pilih model...',
@@ -685,6 +733,10 @@ export default {
                 testing: 'Mengujicoba...',
                 test_success: 'Koneksi berhasil.',
                 test_failed: 'Koneksi gagal.',
+                set_active: 'Jadikan Provider Aktif',
+                set_active_desc: 'Provider ini akan digunakan untuk semua percakapan AI',
+                provider_toggle: 'Jadikan provider aktif untuk semua percakapan',
+                active: 'Aktif',
                 help_text: 'Konfigurasi provider dan model AI yang akan digunakan. Tekan Simpan untuk menyimpan perubahan.',
             },
             
@@ -701,6 +753,7 @@ export default {
                     label:          'Nama Bot',
                     description:    'Nama yang akan tampil pada percakapan',
                     placeholder:    'Nama bot',
+                    suggestions:    'Nama Saran',
                     hint:           'Contoh: Bendahara Bot',
                 },
                 personality: {
@@ -968,23 +1021,6 @@ export default {
                 },
             },
             
-            diagnostics: {
-                title:          'Diagnostik',
-                description:    'Status sistem, log',
-                system_status: {
-                    title:          'Status Sistem',
-                    description:    'Periksa status layanan backend',
-                    api:            'API Server',
-                    database:       'Database',
-                    healthy:        'Sehat',
-                    connected:      'Terhubung',
-                },
-                logs: {
-                    title:          'Log Sistem',
-                    description:    'Riwayat aktivitas sistem',
-                    no_logs:        'Tidak ada log sistem saat ini',
-                },
-            },
         },
 
         // ═══ LEGACY KEYS (compatibility) ═══
@@ -1040,10 +1076,8 @@ export default {
         socialConnectionsDesc: 'Hubungkan aplikasi perpesanan untuk integrasi AI',
         whatsapp: 'WhatsApp',
         telegram: 'Telegram',
-        google: 'Google',
-
-        // Google OAuth
         google: {
+            label:          'Google',
             connect:        'Hubungkan Akun Google',
             connected:      'Terkoneksi dengan Google',
         },
@@ -1302,6 +1336,25 @@ export default {
             select: 'Pilih',
             close: 'Tutup',
         }
+    },
+
+    // ────────────────────────────────────────────────────────────────
+    // ICON PICKER
+    // ────────────────────────────────────────────────────────────────
+    iconPicker: {
+        title:          'Pilih Icon',
+        search:         'Cari icon...',
+        upload:         'Upload',
+        cropTitle:      'Potong Icon',
+        notFound:       'Icon tidak ditemukan',
+        tabs: {
+            Finance:    'Keuangan',
+            Lifestyle:  'Gaya Hidup',
+            Places:     'Tempat',
+            Tech:       'Teknologi',
+            Animals:    'Hewan',
+            Misc:       'Lainnya',
+        },
     },
 
     // ────────────────────────────────────────────────────────────────

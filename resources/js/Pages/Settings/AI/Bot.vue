@@ -7,9 +7,11 @@ import ImageCropModal from '@/Components/ImageCropModal.vue';
 
 import { useI18n } from 'vue-i18n';
 import ConfirmationDialog from '@/Components/ConfirmationDialog.vue';
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useToast } from '@/Composables/useToast';
 
 const { t } = useI18n();
+const { showToast } = useToast();
 
 interface Props {
   botName?: string;
@@ -21,6 +23,8 @@ const props = withDefaults(defineProps<Props>(), {
   botAvatar: null,
 });
 
+const botAvatarUrl = computed(() => previewFile.value || props.botAvatar);
+
 const form = useForm({
   bot_name: props.botName,
   bot_avatar: null as any,
@@ -29,12 +33,13 @@ const form = useForm({
 
 const previewFile = ref<string | null>(null);
 const showCropModal = ref(false);
-const saveStatus = ref('');
+const showPhotoMenu = ref(false);
+const photoMenuRef = ref<HTMLElement | null>(null);
 
-const suggestedNames = ['Ken-Chan', 'Kira', 'Nova', 'Aria', 'Zara', 'Luna', 'Rex', 'Byte', 'Sage', 'Echo'];
-
+const suggestedNames = ['Ken-Chan', 'Ken-Dana', 'Assistant', 'Bendaharaku'];
 
 const openCropModal = () => {
+  showPhotoMenu.value = false;
   showCropModal.value = true;
 };
 
@@ -46,6 +51,17 @@ const handleCropped = (blob: Blob) => {
     previewFile.value = e.target?.result as string;
   };
   reader.readAsDataURL(blob);
+  form.post(route('settings.chat.bot-profile.update'), {
+    preserveScroll: true,
+    forceFormData: true,
+    onSuccess: () => {
+      showToast(t('toast.updated'), 'success');
+      form.bot_avatar = null;
+    },
+    onError: () => {
+      showToast(t('errors.generic'), 'error');
+    },
+  });
 };
 
 const saveBotSettings = () => {
@@ -53,13 +69,11 @@ const saveBotSettings = () => {
     preserveScroll: true,
     forceFormData: true,
     onSuccess: () => {
-      saveStatus.value = 'saved';
+      showToast(t('toast.updated'), 'success');
       form.bot_avatar = null;
-      setTimeout(() => (saveStatus.value = ''), 3000);
     },
     onError: () => {
-      saveStatus.value = 'error';
-      setTimeout(() => (saveStatus.value = ''), 3000);
+      showToast(t('errors.generic'), 'error');
     }
   });
 };
@@ -67,6 +81,7 @@ const saveBotSettings = () => {
 const showDeleteAvatarConfirm = ref(false);
 
 const deleteBotAvatar = () => {
+  showPhotoMenu.value = false;
   showDeleteAvatarConfirm.value = true;
 };
 
@@ -77,131 +92,123 @@ const confirmDeleteBotAvatar = () => {
       showDeleteAvatarConfirm.value = false;
       previewFile.value = null;
       form.bot_avatar = null;
-      saveStatus.value = 'saved';
-      setTimeout(() => (saveStatus.value = ''), 3000);
+      showToast(t('toast.updated'), 'success');
     }
   });
 };
+
+const togglePhotoMenu = () => {
+  showPhotoMenu.value = !showPhotoMenu.value;
+};
+
+const closePhotoMenu = (e: MouseEvent) => {
+  if (photoMenuRef.value && !photoMenuRef.value.contains(e.target as Node)) {
+    showPhotoMenu.value = false;
+  }
+};
+
+onMounted(() => document.addEventListener('click', closePhotoMenu));
+onUnmounted(() => document.removeEventListener('click', closePhotoMenu));
 </script>
 
 <template>
   <AuthenticatedLayout :fullWidth="true">
     <Head :title="t('settings.ai.bot.title')" />
-    
-    <SettingsLayout>
-      <template #header>
-        <div class="flex-1 min-w-0">
-          <h2 class="text-2xl font-black text-white tracking-tight leading-none">{{ t('settings.ai.bot.title') }}</h2>
-          <p class="text-sm text-gray-400 mt-1.5 font-medium">{{ t('settings.ai.bot.description') }}</p>
-        </div>
-      
-      </template>
 
-      <!-- Messages -->
-      <div v-if="saveStatus === 'saved'" class="mb-4 p-4 bg-green-500/20 border border-green-500/50 rounded-lg">
-        <p class="text-sm text-green-400">✓ {{ t('toast.updated') }}</p>
-      </div>
-      <div v-if="saveStatus === 'error'" class="mb-4 p-4 bg-red-500/20 border border-red-500/50 rounded-lg">
-        <p class="text-sm text-red-400">✗ {{ t('errors.generic') }}</p>
-      </div>
+    <SettingsLayout
+      :title="t('settings.ai.bot.title')"
+      :description="t('settings.ai.bot.description')"
+    >
+      <form @submit.prevent="saveBotSettings" class="space-y-3 sm:space-y-5">
 
-      <!-- Bot Avatar -->
-      <SettingsCard
-        :title="t('settings.ai.bot.avatar.label')"
-        :description="t('settings.ai.bot.avatar.description')"
-      >
-        <div class="space-y-4">
-          <!-- Avatar Preview -->
-          <div class="flex justify-center gap-4 items-center flex-col sm:flex-row">
-            <div class="w-24 h-24 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center overflow-hidden border-4 border-purple-500/30 shrink-0">
-              <img
-                v-if="previewFile || botAvatar"
-                :src="previewFile || botAvatar"
-                :alt="botName"
-                class="w-full h-full object-cover"
-              />
-              <span v-else class="text-3xl">🤖</span>
-            </div>
-            
-            <div class="flex flex-col gap-2">
-              <!-- Upload Button → buka crop modal -->
-              <button
-                type="button"
-                @click="openCropModal"
-                class="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors"
-              >
+        <!-- Bot Avatar -->
+        <div class="flex flex-col items-center py-2 sm:py-4">
+          <div ref="photoMenuRef" class="relative">
+            <button type="button" @click="togglePhotoMenu" class="outline-none">
+              <div class="w-28 h-28 sm:w-36 sm:h-36 rounded-full ring-2 ring-purple-500/30 shadow-lg shadow-purple-900/20 overflow-hidden transition-all hover:ring-purple-500/70 active:scale-95 bg-gray-800 flex items-center justify-center">
+                <img
+                  v-if="botAvatarUrl"
+                  :src="botAvatarUrl"
+                  :alt="botName"
+                  class="w-full h-full object-cover"
+                />
+                <span v-else class="text-4xl sm:text-5xl">🤖</span>
+              </div>
+            </button>
+            <div
+              v-if="showPhotoMenu"
+              class="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-44 bg-gray-800 border border-white/10 rounded-xl shadow-xl shadow-black/50 overflow-hidden z-10"
+            >
+              <button type="button" @click="openCropModal" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-white hover:bg-white/10 transition-colors">
+                <svg class="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
                 {{ t('settings.ai.bot.avatar.upload_button') }}
               </button>
-
-              <!-- Remove Button -->
-              <button
-                v-if="botAvatar || previewFile"
-                @click="deleteBotAvatar"
-                class="px-5 py-2 bg-red-900/40 border border-red-900/50 text-red-200 hover:bg-red-600 hover:text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all"
-              >
+              <button v-if="botAvatarUrl" type="button" @click="deleteBotAvatar" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-red-400 hover:bg-white/10 transition-colors border-t border-white/5">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
                 {{ t('chatBot.removePhoto') }}
               </button>
             </div>
           </div>
-
-          <p class="text-xs text-gray-400 text-center">
-            {{ t('settings.ai.bot.avatar.hint') }}
-          </p>
         </div>
-      </SettingsCard>
 
-      <!-- Bot Name -->
-      <SettingsCard
-        :title="t('settings.ai.bot.name.label')"
-        :description="t('settings.ai.bot.name.description')"
-      >
-        <div class="space-y-3">
-          <input
-            v-model="form.bot_name"
-            type="text"
-            :placeholder="t('settings.ai.bot.name.placeholder')"
-            class="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
-          />
-
-          <!-- Name Suggestion Chips -->
-          <div class="space-y-2">
-            <p class="text-xs text-gray-500 font-medium">Nama Saran:</p>
-            <div class="flex flex-wrap gap-2">
-              <button
-                v-for="name in suggestedNames"
-                :key="name"
-                type="button"
-                @click="form.bot_name = name"
-                class="px-3 py-1 rounded-full bg-gray-800 border border-white/8 text-xs text-gray-300 hover:text-white hover:border-purple-500/50 hover:bg-purple-500/10 transition-all cursor-pointer"
-              >
-                {{ name }}
-              </button>
-            </div>
-          </div>
-
-          <p class="text-xs text-gray-400">
-            {{ t('settings.ai.bot.name.hint') }}
-          </p>
-        </div>
-      </SettingsCard>
-
-      <!-- Save Button -->
-      <div class="mt-6 flex justify-end gap-2">
-        <button
-          @click="saveBotSettings"
-          :disabled="form.processing"
-          class="px-6 py-2.5 bg-purple-600 text-white rounded-xl hover:bg-purple-700 disabled:bg-gray-700 disabled:cursor-not-allowed transition-colors font-bold text-xs uppercase tracking-wider"
+        <!-- Bot Name -->
+        <SettingsCard
+          :title="t('settings.ai.bot.name.label')"
+          :description="t('settings.ai.bot.name.description')"
         >
-          {{ form.processing ? t('common.saving') : t('settings.save_button') }}
-        </button>
-      </div>
+          <div class="space-y-3">
+            <input
+              v-model="form.bot_name"
+              type="text"
+              :placeholder="t('settings.ai.bot.name.placeholder')"
+              class="w-full px-3 py-1.5 sm:px-4 sm:py-2.5 bg-gray-800 border border-gray-700 rounded-lg sm:rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-all text-sm"
+            />
 
-      <!-- Help Text -->
-      <div class="mt-6 p-4 bg-blue-900/20 border border-blue-500/20 rounded-lg">
-        <p class="text-sm text-blue-400">
-          💡 {{ t('settings.ai.bot.help_text') }}
-        </p>
-      </div>
+            <!-- Name Suggestion Chips -->
+            <div class="space-y-2">
+              <p class="text-2xs text-gray-500 font-medium">{{ t('settings.ai.bot.name.suggestions') }}</p>
+              <div class="flex flex-wrap gap-1.5">
+                <button
+                  v-for="name in suggestedNames"
+                  :key="name"
+                  type="button"
+                  @click="form.bot_name = name"
+                  class="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-gray-800 border border-white/8 text-2xs sm:text-xs text-gray-300 hover:text-white hover:border-purple-500/50 hover:bg-purple-500/10 transition-all cursor-pointer"
+                >
+                  {{ name }}
+                </button>
+              </div>
+            </div>
+
+            <p class="text-2xs text-gray-400">
+              {{ t('settings.ai.bot.name.hint') }}
+            </p>
+          </div>
+        </SettingsCard>
+
+        <!-- Save -->
+        <div class="flex items-center gap-3 pt-1 sm:pt-2">
+          <button
+            type="submit"
+            :disabled="form.processing"
+            class="px-4 py-2 sm:px-6 sm:py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-lg sm:rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-purple-900/20"
+          >
+            <span v-if="form.processing" class="flex items-center gap-2">
+              <svg class="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+              </svg>
+              {{ t('common.saving') }}
+            </span>
+            <span v-else>{{ t('common.save') }}</span>
+          </button>
+        </div>
+      </form>
+
     </SettingsLayout>
 
     <!-- Confirm Delete Avatar -->
