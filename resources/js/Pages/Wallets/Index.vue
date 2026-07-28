@@ -27,10 +27,6 @@ const props = defineProps({
 const liquidWallets = computed(() => props.wallets.filter(w => w.group_type === 'Liquid'));
 const assetWallets = computed(() => props.wallets.filter(w => w.group_type === 'Asset'));
 
-const totalBalance = computed(() => {
-    return props.wallets.reduce((sum, w) => sum + parseFloat(w.balance), 0);
-});
-
 const totalLiquidBalance = computed(() => {
     return liquidWallets.value.reduce((sum, w) => sum + parseFloat(w.balance), 0);
 });
@@ -38,6 +34,11 @@ const totalLiquidBalance = computed(() => {
 const totalAssetBalance = computed(() => {
     return assetWallets.value.reduce((sum, w) => sum + parseFloat(w.balance), 0);
 });
+
+// Karena backend sudah memfilter hanya group_type Liquid/Asset (System diblokir),
+// totalBalance selalu sama dengan liquid + asset — tidak perlu loop ulang seluruh
+// array wallets untuk ketiga kalinya.
+const totalBalance = computed(() => totalLiquidBalance.value + totalAssetBalance.value);
 
 const displayAmount = (n) => isBalanceVisible.value ? formatNumber(n) : '••••••••';
 const displayShort = (n) => isBalanceVisible.value ? formatNumber(n) : '••••';
@@ -132,12 +133,10 @@ const displayShort = (n) => isBalanceVisible.value ? formatNumber(n) : '••�
                     <Link v-for="wallet in liquidWallets" :key="wallet.id" :href="route('wallets.show', wallet.id)"
                         class="flex flex-col justify-between p-3 bg-linear-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 active:scale-[0.98] transition-all group">
                         <div class="flex items-center gap-2.5">
-                            <AppIcon :icon="wallet.icon" :fallback="wallet.keyword?.substring(0, 1) || 'wallet'"
+                            <AppIcon :icon="wallet.icon" fallback="wallet"
                                      class="w-6 h-6 text-purple-400 shrink-0" />
                             <div class="min-w-0 flex-1">
                                 <h3 class="text-xs font-bold text-white leading-tight whitespace-nowrap truncate">{{ wallet.name }}</h3>
-                                <p class="text-[9px] text-gray-500 tracking-wider font-bold whitespace-nowrap truncate">{{
-                                    wallet.keyword || $t('wallet.name') }}</p>
                             </div>
                         </div>
                         <div class="flex items-center justify-between mt-2.5">
@@ -176,12 +175,10 @@ const displayShort = (n) => isBalanceVisible.value ? formatNumber(n) : '••�
                     <Link v-for="wallet in assetWallets" :key="wallet.id" :href="route('wallets.show', wallet.id)"
                         class="flex flex-col justify-between p-3 bg-linear-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 active:scale-[0.98] transition-all group">
                         <div class="flex items-center gap-2.5">
-                            <AppIcon :icon="wallet.icon" :fallback="wallet.keyword?.substring(0, 1) || 'wallet'"
+                            <AppIcon :icon="wallet.icon" fallback="wallet"
                                      class="w-6 h-6 text-purple-400 shrink-0" />
                             <div class="min-w-0 flex-1">
                                 <h3 class="text-xs font-bold text-white leading-tight whitespace-nowrap truncate">{{ wallet.name }}</h3>
-                                <p class="text-[9px] text-gray-500 tracking-wider font-bold whitespace-nowrap truncate">{{
-                                    wallet.keyword || $t('wallet.name') }}</p>
                             </div>
                         </div>
                         <div class="flex items-center justify-between mt-2.5">

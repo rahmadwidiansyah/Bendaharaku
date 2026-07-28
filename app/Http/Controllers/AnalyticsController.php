@@ -8,59 +8,69 @@ use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class AnalyticsController extends Controller
 {
+    // Transaction Type Constants mapping untuk menghindari magic numbers
+    private const TYPE_INCOME = 1;
+    private const TYPE_EXPENSE = 2;
+    private const TYPE_DEBT = 4;
+    private const TYPE_RECEIVABLE = 5;
+
     public function index(Request $request): Response
     {
-        $user = Auth::user();
-
-        // DEFAULT START: Awal bulan
+        $userId = Auth::id();
+        
         $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->format('Y-m-d'));
-
-        // DEFAULT END: Ganti ke Today
         $endDate = $request->input('end_date', Carbon::now()->format('Y-m-d'));
 
-        $transactions = $user->transactionLogs()
-            ->with(['type', 'category'])
+        // 1. Ambil Summary Totals dalam 1 Query (Hindari memuat ribuan row)
+        $totalsRaw = DB::table('transaction_logs')
+            ->selectRaw('type_id, SUM(amount) as total')
+            ->where('user_id', $userId)
             ->where('is_cleared', true)
             ->whereBetween('date', [$startDate, $endDate])
-            ->orderBy('date', 'asc')
-            ->orderBy('created_at', 'asc')
-            ->get();
+            ->whereIn('type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE, self::TYPE_DEBT, self::TYPE_RECEIVABLE])
+            ->groupBy('type_id')
+            ->pluck('total', 'type_id');
 
-        // Use safe collection filters (avoid dot-notation) and only cleared transactions
-        $totalIncome = (float) $transactions->filter(fn ($t) => $t->type?->name === 'Income')->sum('amount');
-        $totalExpense = (float) $transactions->filter(fn ($t) => $t->type?->name === 'Expense')->sum('amount');
-        $totalDebt = (float) $transactions->filter(fn ($t) => $t->type?->name === 'Debt')->sum('amount');
-        $totalReceivable = (float) $transactions->filter(fn ($t) => $t->type?->name === 'Receivable')->sum('amount');
+        $totalIncome = (float) ($totalsRaw[self::TYPE_INCOME] ?? 0);
+        $totalExpense = (float) ($totalsRaw[self::TYPE_EXPENSE] ?? 0);
+        $totalDebt = (float) ($totalsRaw[self::TYPE_DEBT] ?? 0);
+        $totalReceivable = (float) ($totalsRaw[self::TYPE_RECEIVABLE] ?? 0);
 
-        // Saldo Kumulatif - hitung semua transaksi sebelum startDate (cleared only)
-        $initialTransactions = $user->transactionLogs()
-            ->with('type')
+        // 2. Hitung Saldo Kumulatif Awal (Satu query agregasi tanpa meload row history)
+        $runningBalance = (float) DB::table('transaction_logs')
+            ->where('user_id', $userId)
             ->where('is_cleared', true)
             ->where('date', '<', $startDate)
-            ->orderBy('date', 'asc')
-            ->orderBy('created_at', 'asc')
-            ->get();
+            ->whereIn('type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE, self::TYPE_DEBT, self::TYPE_RECEIVABLE])
+            ->sum(DB::raw('CASE 
+                WHEN type_id IN (1, 5) THEN amount 
+                WHEN type_id IN (2, 4) THEN -amount 
+                ELSE 0 
+            END'));
 
-        $runningBalance = 0;
-        $runningBalance += (float) $initialTransactions->filter(fn ($t) => $t->type?->name === 'Income')->sum('amount');
-        $runningBalance += (float) $initialTransactions->filter(fn ($t) => $t->type?->name === 'Receivable')->sum('amount');
-        $runningBalance -= (float) $initialTransactions->filter(fn ($t) => $t->type?->name === 'Expense')->sum('amount');
-        $runningBalance -= (float) $initialTransactions->filter(fn ($t) => $t->type?->name === 'Debt')->sum('amount');
+        // 3. Ambil data Harian (Grouping di level DB)
+        $dailyDataRaw = DB::table('transaction_logs')
+            ->selectRaw('date, type_id, SUM(amount) as total')
+            ->where('user_id', $userId)
+            ->where('is_cleared', true)
+            ->whereBetween('date', [$startDate, $endDate])
+            ->whereIn('type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE, self::TYPE_DEBT, self::TYPE_RECEIVABLE])
+            ->groupBy('date', 'type_id')
+            ->get()
+            ->groupBy('date');
 
         $dailyLabels = [];
         $dailyIncome = [];
         $dailyExpense = [];
         $cumulativeData = [];
 
-        // Group by date string to avoid Carbon object issues
-        $txByDate = $transactions->groupBy(fn ($t) => $t->date->toDateString());
         $period = CarbonPeriod::create($startDate, $endDate);
-
         $todayStr = Carbon::now()->format('Y-m-d');
         $todayIndex = -1;
         $currentIndex = 0;
@@ -74,78 +84,54 @@ class AnalyticsController extends Controller
 
             $dailyLabels[] = $dateObj->format('d M');
 
-            $dayTx = $txByDate->get($dateStr, collect());
-            $dInc = (float) $dayTx->filter(fn ($t) => $t->type?->name === 'Income')->sum('amount');
-            $dExp = (float) $dayTx->filter(fn ($t) => $t->type?->name === 'Expense')->sum('amount');
-            $dDebt = (float) $dayTx->filter(fn ($t) => $t->type?->name === 'Debt')->sum('amount');
-            $dReceivable = (float) $dayTx->filter(fn ($t) => $t->type?->name === 'Receivable')->sum('amount');
+            $dayTx = $dailyDataRaw->get($dateStr, collect());
+            
+            // Perbaikan Null-safe operator (?->)
+            $dInc = (float) ($dayTx->firstWhere('type_id', self::TYPE_INCOME)?->total ?? 0);
+            $dExp = (float) ($dayTx->firstWhere('type_id', self::TYPE_EXPENSE)?->total ?? 0);
+            $dDebt = (float) ($dayTx->firstWhere('type_id', self::TYPE_DEBT)?->total ?? 0);
+            $dRec = (float) ($dayTx->firstWhere('type_id', self::TYPE_RECEIVABLE)?->total ?? 0);
 
             $dailyIncome[] = $dInc;
             $dailyExpense[] = $dExp;
 
-            // Kumulatif: +income +receivable -expense -debt
-            $runningBalance += ($dInc + $dReceivable - $dExp - $dDebt);
-            $cumulativeData[] = (float) $runningBalance;
+            $runningBalance += ($dInc + $dRec - $dExp - $dDebt);
+            $cumulativeData[] = $runningBalance;
 
             $currentIndex++;
         }
 
         $cumulativeBalance = $runningBalance;
 
-        $expensesByCategory = $transactions->where('type.name', 'Expense')
-            ->groupBy('category_id')
-            ->map(function ($rows) {
-                $category = $rows->first()->category;
+        // 4. Ringkasan per Kategori (Query tunggal dengan JOIN)
+        $categoriesRaw = DB::table('transaction_logs')
+            ->join('categories', 'transaction_logs.category_id', '=', 'categories.id')
+            ->selectRaw('categories.id, categories.category_name as name, categories.icon, transaction_logs.type_id, SUM(transaction_logs.amount) as total')
+            ->where('transaction_logs.user_id', $userId)
+            ->where('transaction_logs.is_cleared', true)
+            ->whereBetween('transaction_logs.date', [$startDate, $endDate])
+            ->whereIn('transaction_logs.type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE, self::TYPE_DEBT, self::TYPE_RECEIVABLE])
+            ->groupBy('categories.id', 'categories.category_name', 'categories.icon', 'transaction_logs.type_id')
+            ->orderByDesc('total')
+            ->get();
 
-                return [
-                    'id' => $category->id,
-                    'name' => $category->category_name,
-                    'icon' => $category->icon,
-                    'total' => (float) $rows->sum('amount'),
-                ];
-            })->sortByDesc('total')->values();
+        $formatCategory = fn($c) => ['id' => $c->id, 'name' => $c->name, 'icon' => $c->icon, 'total' => (float) $c->total];
 
-        $incomesByCategory = $transactions->where('type.name', 'Income')
-            ->groupBy('category_id')
-            ->map(function ($rows) {
-                $category = $rows->first()->category;
+        $expensesByCategory = $categoriesRaw->where('type_id', self::TYPE_EXPENSE)->map($formatCategory)->values()->toArray();
+        $incomesByCategory = $categoriesRaw->where('type_id', self::TYPE_INCOME)->map($formatCategory)->values()->toArray();
+        $debtsByCategory = $categoriesRaw->where('type_id', self::TYPE_DEBT)->map($formatCategory)->values()->toArray();
+        $receivablesByCategory = $categoriesRaw->where('type_id', self::TYPE_RECEIVABLE)->map($formatCategory)->values()->toArray();
 
-                return [
-                    'id' => $category->id,
-                    'name' => $category->category_name,
-                    'icon' => $category->icon,
-                    'total' => (float) $rows->sum('amount'),
-                ];
-            })->sortByDesc('total')->values();
-
-        $debtsByCategory = $transactions->where('type.name', 'Debt')
-            ->groupBy('category_id')
-            ->map(function ($rows) {
-                $category = $rows->first()->category;
-
-                return [
-                    'id' => $category->id,
-                    'name' => $category->category_name,
-                    'icon' => $category->icon,
-                    'total' => (float) $rows->sum('amount'),
-                ];
-            })->sortByDesc('total')->values();
-
-        $receivablesByCategory = $transactions->where('type.name', 'Receivable')
-            ->groupBy('category_id')
-            ->map(function ($rows) {
-                $category = $rows->first()->category;
-
-                return [
-                    'id' => $category->id,
-                    'name' => $category->category_name,
-                    'icon' => $category->icon,
-                    'total' => (float) $rows->sum('amount'),
-                ];
-            })->sortByDesc('total')->values();
-
-        $allTransactions = $user->transactionLogs()->where('is_cleared', true)->orderBy('date', 'asc')->orderBy('created_at', 'asc')->get();
-        $allKasGrouped = $allTransactions->groupBy(fn ($t) => $t->date?->toDateString() ?? (string) $t->date);
+        // 5. Histori Keseluruhan (Agregasi di DB, output hanya tanggal yang ada transaksinya)
+        $allHistoryRaw = DB::table('transaction_logs')
+            ->selectRaw('date, type_id, SUM(amount) as total')
+            ->where('user_id', $userId)
+            ->where('is_cleared', true)
+            ->whereIn('type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE, self::TYPE_DEBT, self::TYPE_RECEIVABLE])
+            ->groupBy('date', 'type_id')
+            ->orderBy('date', 'asc')
+            ->get()
+            ->groupBy('date');
 
         $allDailyLabels = [];
         $allDailyIncome = [];
@@ -153,27 +139,28 @@ class AnalyticsController extends Controller
         $allDailyDebt = [];
         $allDailyReceivable = [];
 
-        foreach ($allKasGrouped as $date => $trxs) {
+        foreach ($allHistoryRaw as $date => $trxs) {
             $allDailyLabels[] = Carbon::parse($date)->format('d M Y');
-            $allDailyIncome[] = (float) $trxs->filter(fn ($t) => $t->type?->name === 'Income')->sum('amount');
-            $allDailyExpense[] = (float) $trxs->filter(fn ($t) => $t->type?->name === 'Expense')->sum('amount');
-            $allDailyDebt[] = (float) $trxs->filter(fn ($t) => $t->type?->name === 'Debt')->sum('amount');
-            $allDailyReceivable[] = (float) $trxs->filter(fn ($t) => $t->type?->name === 'Receivable')->sum('amount');
+            
+            // Perbaikan Null-safe operator (?->)
+            $allDailyIncome[] = (float) ($trxs->firstWhere('type_id', self::TYPE_INCOME)?->total ?? 0);
+            $allDailyExpense[] = (float) ($trxs->firstWhere('type_id', self::TYPE_EXPENSE)?->total ?? 0);
+            $allDailyDebt[] = (float) ($trxs->firstWhere('type_id', self::TYPE_DEBT)?->total ?? 0);
+            $allDailyReceivable[] = (float) ($trxs->firstWhere('type_id', self::TYPE_RECEIVABLE)?->total ?? 0);
         }
 
-        // If snapshots exist for full period, prefer snapshots for performance/accuracy
+        // 6. Snapshot Logic (Optimasi kolom fetch)
         $periodDays = iterator_count($period);
-        $snapshots = NetWorthSnapshot::where('user_id', $user->id)
+        $snapshots = NetWorthSnapshot::where('user_id', $userId)
             ->whereBetween('snapshot_date', [$startDate, $endDate])
             ->orderBy('snapshot_date', 'asc')
-            ->get();
+            ->get(['snapshot_date', 'net_worth']); 
 
         if ($snapshots->count() === $periodDays) {
             $cumulativeData = $snapshots->pluck('net_worth')->map(fn ($v) => (float) $v)->toArray();
             $cumulativeBalance = (float) $snapshots->last()->net_worth;
         } else {
-            // dispatch job to build snapshots in background (non-blocking)
-            BuildNetWorthSnapshotsJob::dispatch($user->id, $startDate, $endDate);
+            BuildNetWorthSnapshotsJob::dispatch($userId, $startDate, $endDate);
         }
 
         return Inertia::render('Analytics/Index', [
@@ -183,7 +170,7 @@ class AnalyticsController extends Controller
             'totalExpense' => $totalExpense,
             'totalDebt' => $totalDebt,
             'totalReceivable' => $totalReceivable,
-            'cumulativeBalance' => (float) $cumulativeBalance,
+            'cumulativeBalance' => $cumulativeBalance,
             'expensesByCategory' => $expensesByCategory,
             'incomesByCategory' => $incomesByCategory,
             'debtsByCategory' => $debtsByCategory,

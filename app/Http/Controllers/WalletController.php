@@ -7,6 +7,7 @@ use App\Support\SettingsChangeLogger;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
@@ -15,39 +16,48 @@ class WalletController extends Controller
     // Menampilkan daftar Wallet (opsional jika dibutuhkan)
     public function index()
     {
+        $userId = Auth::id();
         $user = Auth::user();
 
+        // Hanya ambil kolom yang benar-benar dipakai di kartu wallet frontend
         // FIX: Blokir dompet 'System' agar tidak tampil di list UI frontend
         $wallets = $user->wallets()
+            ->select(['id', 'name', 'balance', 'icon', 'keyword', 'group_type', 'is_pinned'])
             ->where('group_type', '!=', 'System')
             ->orderBy('id')
             ->get();
 
         // LOGIKA HITUNG HUTANG DAN PIUTANG BERDASARKAN SUBJEK
+        // Dihitung lewat 1 query agregasi SQL (GROUP BY subject), bukan menarik
+        // seluruh baris transaksi + relasi kategori ke PHP lalu di-groupBy di memory.
         $totalHutang = 0;
         $totalPiutang = 0;
 
-        $subjectGroups = $user->transactionLogs()->with('category')
-            ->where('is_cleared', true)
-            ->whereHas('category', function ($q) {
-                $q->whereIn('category_name', ['Dapat Hutangan', 'Bayar Cicilan Hutang', 'Ngasih Piutang', 'Terima Bayar Piutang']);
-            })
-            ->whereNotNull('subject')
-            ->where('subject', '!=', '-')
-            ->get()
-            ->groupBy('subject');
+        $balancesRaw = DB::table('transaction_logs')
+            ->join('categories', 'transaction_logs.category_id', '=', 'categories.id')
+            ->where('transaction_logs.user_id', $userId)
+            ->where('transaction_logs.is_cleared', true)
+            ->whereNotNull('transaction_logs.subject')
+            ->where('transaction_logs.subject', '!=', '-')
+            ->whereIn('categories.category_name', [
+                'Dapat Hutangan', 'Bayar Cicilan Hutang', 'Ngasih Piutang', 'Terima Bayar Piutang',
+            ])
+            ->select('transaction_logs.subject')
+            ->selectRaw("
+                SUM(CASE WHEN categories.category_name = 'Dapat Hutangan' THEN amount ELSE 0 END) as debt_borrowed,
+                SUM(CASE WHEN categories.category_name = 'Bayar Cicilan Hutang' THEN amount ELSE 0 END) as debt_paid,
+                SUM(CASE WHEN categories.category_name = 'Ngasih Piutang' THEN amount ELSE 0 END) as rec_borrowed,
+                SUM(CASE WHEN categories.category_name = 'Terima Bayar Piutang' THEN amount ELSE 0 END) as rec_paid
+            ")
+            ->groupBy('transaction_logs.subject')
+            ->get();
 
-        foreach ($subjectGroups as $subject => $group) {
-            $totalDebtBorrowed = $group->where('category.category_name', 'Dapat Hutangan')->sum('amount');
-            $totalDebtPaid = $group->where('category.category_name', 'Bayar Cicilan Hutang')->sum('amount');
-            if ($totalDebtBorrowed > 0) {
-                $totalHutang += max(0, $totalDebtBorrowed - $totalDebtPaid);
+        foreach ($balancesRaw as $row) {
+            if ($row->debt_borrowed > 0) {
+                $totalHutang += max(0, $row->debt_borrowed - $row->debt_paid);
             }
-
-            $totalRecBorrowed = $group->where('category.category_name', 'Ngasih Piutang')->sum('amount');
-            $totalRecPaid = $group->where('category.category_name', 'Terima Bayar Piutang')->sum('amount');
-            if ($totalRecBorrowed > 0) {
-                $totalPiutang += max(0, $totalRecBorrowed - $totalRecPaid);
+            if ($row->rec_borrowed > 0) {
+                $totalPiutang += max(0, $row->rec_borrowed - $row->rec_paid);
             }
         }
 

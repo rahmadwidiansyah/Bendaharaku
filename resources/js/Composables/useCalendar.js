@@ -8,7 +8,7 @@ import { ref, computed, watch } from 'vue'
  *
  * @param {Object} options
  * @param {Function} options.onNavigate  — callback(startDate, endDate) dipanggil saat bulan berubah
- * @param {string}   options.initialDate — ISO date string untuk inisialisasi bulan (dari props.startDate)
+ * @param {string}   options.initialDate — string tanggal "YYYY-MM-DD" untuk inisialisasi bulan (dari props.startDate)
  * @param {import('vue').ComputedRef}    options.groupedTransactions — computed dari Dashboard
  */
 export function useCalendar({ onNavigate, initialDate, groupedTransactions }) {
@@ -16,15 +16,25 @@ export function useCalendar({ onNavigate, initialDate, groupedTransactions }) {
     const getLocalYMD = (d) =>
         `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
+    // Parse "YYYY-MM-DD" sebagai tanggal LOKAL, bukan UTC.
+    // `new Date('YYYY-MM-DD')` di spec JS selalu di-parse sebagai UTC midnight —
+    // di timezone tertentu ini bisa mundur satu hari saat dikonversi balik ke waktu
+    // lokal, jadi kalau startDate = tanggal 1 bulan ini, bisa ke-parse jadi
+    // tanggal terakhir bulan sebelumnya (nama bulan di header jadi salah).
+    const parseLocalYMD = (dateStr) => {
+        const [y, m, d] = dateStr.split('-').map(Number)
+        return new Date(y, m - 1, d)
+    }
+
     // ─── State ────────────────────────────────────────────────────
     const selectedCalendarDate = ref(getLocalYMD(new Date()))
-    const currentCalendarMonth = ref(new Date(initialDate))
+    const currentCalendarMonth = ref(parseLocalYMD(initialDate))
     const calendarFilter       = ref('total')
 
     // Sinkronkan kalender saat startDate prop berubah dari luar (navigasi URL / DateModal)
     watch(
         () => initialDate,
-        (v) => { currentCalendarMonth.value = new Date(v) },
+        (v) => { currentCalendarMonth.value = parseLocalYMD(v) },
     )
 
     // ─── Computed ─────────────────────────────────────────────────
@@ -42,16 +52,22 @@ export function useCalendar({ onNavigate, initialDate, groupedTransactions }) {
 
     const selectedDateFormatted = computed(() => {
         if (!selectedCalendarDate.value) return ''
-        return new Date(selectedCalendarDate.value).toLocaleDateString('id-ID', {
+        return parseLocalYMD(selectedCalendarDate.value).toLocaleDateString('id-ID', {
             weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
         })
     })
 
+    // Badge angka per tanggal, mengikuti calendarFilter:
+    // - 'income'  → total income hari itu saja (hijau)
+    // - 'expense' → total expense hari itu saja (merah)
+    // - 'total'   → net = income - expense (hijau kalau surplus, merah kalau defisit,
+    //                tidak muncul kalau pas 0 atau hari itu tidak ada transaksi)
     const calendarDays = computed(() => {
         const year              = currentCalendarMonth.value.getFullYear()
         const month             = currentCalendarMonth.value.getMonth()
         const startingDayOfWeek = new Date(year, month, 1).getDay()
         const daysInMonth       = new Date(year, month + 1, 0).getDate()
+        const filter            = calendarFilter.value
         const days              = []
 
         for (let i = 0; i < startingDayOfWeek; i++) days.push({ empty: true })
@@ -59,23 +75,29 @@ export function useCalendar({ onNavigate, initialDate, groupedTransactions }) {
         for (let i = 1; i <= daysInMonth; i++) {
             const dateStr = getLocalYMD(new Date(year, month, i))
             const dayData = groupedTransactions.value[dateStr]
-            let largestType = null, largestAmount = 0
+            let largestType   = null
+            let largestAmount = 0
 
             if (dayData) {
-                if (calendarFilter.value === 'income' && dayData.income > 0) {
-                    largestType   = 'income'
-                    largestAmount = dayData.income
-                } else if (calendarFilter.value === 'expense' && dayData.expense > 0) {
-                    largestType   = 'expense'
-                    largestAmount = dayData.expense
-                } else if (calendarFilter.value === 'total') {
-                    if (dayData.income > dayData.expense) {
-                        largestType = 'income'; largestAmount = dayData.income
-                    } else if (dayData.expense > dayData.income) {
-                        largestType = 'expense'; largestAmount = dayData.expense
-                    } else if (dayData.income > 0 || dayData.expense > 0) {
-                        largestType   = dayData.expense > 0 ? 'expense' : 'income'
-                        largestAmount = dayData.expense > 0 ? dayData.expense : dayData.income
+                if (filter === 'income') {
+                    if (dayData.income > 0) {
+                        largestType   = 'income'
+                        largestAmount = dayData.income
+                    }
+                } else if (filter === 'expense') {
+                    if (dayData.expense > 0) {
+                        largestType   = 'expense'
+                        largestAmount = dayData.expense
+                    }
+                } else {
+                    // 'total' → net income - expense hari itu
+                    const net = dayData.income - dayData.expense
+                    if (net > 0) {
+                        largestType   = 'income'
+                        largestAmount = net
+                    } else if (net < 0) {
+                        largestType   = 'expense'
+                        largestAmount = Math.abs(net)
                     }
                 }
             }
