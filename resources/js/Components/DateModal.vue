@@ -16,6 +16,9 @@ import { ref, computed } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import BaseModal from '@/Components/BaseModal.vue'
 import { formatLocalYMD } from '@/utils/format.js'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
     startDate: String,
@@ -66,6 +69,28 @@ const submit = () => {
 
 const isInvalidRange = computed(() => form.start_date > form.end_date)
 
+const activeQuickDate = computed(() => {
+    const today = new Date()
+    const checks = {
+        thisYear: [
+            formatLocalYMD(new Date(today.getFullYear(), 0, 1)),
+            formatLocalYMD(new Date(today.getFullYear(), 11, 31)),
+        ],
+        thisMonth: [
+            formatLocalYMD(new Date(today.getFullYear(), today.getMonth(), 1)),
+            formatLocalYMD(new Date(today.getFullYear(), today.getMonth() + 1, 0)),
+        ],
+        lastMonth: [
+            formatLocalYMD(new Date(today.getFullYear(), today.getMonth() - 1, 1)),
+            formatLocalYMD(new Date(today.getFullYear(), today.getMonth(), 0)),
+        ],
+    }
+    for (const [key, [s, e]] of Object.entries(checks)) {
+        if (form.start_date === s && form.end_date === e) return key
+    }
+    return null
+})
+
 // Indikator: apakah filter sedang tidak default (bulan ini)?
 const isFiltered = computed(() => {
     const today = new Date()
@@ -78,18 +103,18 @@ const isFiltered = computed(() => {
     <!-- Trigger button — tampil di halaman sebagai pemicu -->
     <button
         type="button"
-        class="bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 text-gray-400 hover:text-white rounded-xl px-4 flex items-center justify-center active:scale-95 transition-all relative h-[48px] z-30"
+        class="text-gray-400 hover:text-white bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-lg sm:rounded-xl px-3 py-1.5 sm:px-4 sm:py-2.5 active:scale-90 transition-all shrink-0 flex items-center justify-center"
         aria-label="Pilih rentang waktu"
         @click="toggleModal"
     >
-        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round"
                 d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
         </svg>
         <!-- Dot indikator filter aktif -->
         <span
             v-if="isFiltered"
-            class="absolute top-2 right-2 w-2 h-2 bg-purple-500 rounded-full"
+            class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-purple-500 rounded-full ring-2 ring-[#121212]"
             aria-label="Filter aktif"
         />
     </button>
@@ -97,7 +122,7 @@ const isFiltered = computed(() => {
     <!-- Modal via BaseModal -->
     <BaseModal
         :show="showModal"
-        title="Rentang Waktu"
+        :title="t('common.dateRange')"
         max-width="sm"
         @close="showModal = false"
     >
@@ -109,7 +134,7 @@ const isFiltered = computed(() => {
                         for="date-start"
                         class="text-2xs font-bold text-purple-500 uppercase tracking-widest pl-1"
                     >
-                        Dari
+                        {{ t('common.from') }}
                     </label>
                     <input
                         id="date-start"
@@ -123,7 +148,7 @@ const isFiltered = computed(() => {
                         for="date-end"
                         class="text-2xs font-bold text-purple-500 uppercase tracking-widest pl-1"
                     >
-                        Sampai
+                        {{ t('common.to') }}
                     </label>
                     <input
                         id="date-end"
@@ -146,31 +171,46 @@ const isFiltered = computed(() => {
                 role="alert"
                 class="text-2xs text-red-400 font-bold -mt-2"
             >
-                ⚠ Tanggal akhir harus sama atau setelah tanggal mulai.
+                ⚠ {{ t('common.dateInvalidRange') }}
             </p>
 
             <!-- Quick-date shortcuts -->
             <div class="grid grid-cols-3 gap-2 pt-1">
                 <button
                     type="button"
-                    class="bg-gradient-to-br from-gray-900 to-gray-800 text-2xs font-bold text-gray-400 py-3 rounded-xl border border-white/10 uppercase hover:text-white hover:border-white/20 transition-colors"
+                    :class="[
+                        'text-2xs font-bold py-3 rounded-xl uppercase transition-all duration-150 active:scale-95',
+                        activeQuickDate === 'thisYear'
+                            ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
+                            : 'bg-gradient-to-br from-gray-900 to-gray-800 text-gray-400 border border-white/10 hover:text-white hover:border-white/20',
+                    ]"
                     @click="setQuickDate('thisYear')"
                 >
-                    Tahun Ini
+                    {{ t('common.thisYear') }}
                 </button>
                 <button
                     type="button"
-                    class="bg-gradient-to-br from-gray-900 to-gray-800 text-2xs font-bold text-gray-400 py-3 rounded-xl border border-white/10 uppercase hover:text-white hover:border-white/20 transition-colors"
+                    :class="[
+                        'text-2xs font-bold py-3 rounded-xl uppercase transition-all duration-150 active:scale-95',
+                        activeQuickDate === 'thisMonth'
+                            ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
+                            : 'bg-gradient-to-br from-gray-900 to-gray-800 text-gray-400 border border-white/10 hover:text-white hover:border-white/20',
+                    ]"
                     @click="setQuickDate('thisMonth')"
                 >
-                    Bulan Ini
+                    {{ t('common.thisMonth') }}
                 </button>
                 <button
                     type="button"
-                    class="bg-gradient-to-br from-gray-900 to-gray-800 text-2xs font-bold text-gray-400 py-3 rounded-xl border border-white/10 uppercase hover:text-white hover:border-white/20 transition-colors"
+                    :class="[
+                        'text-2xs font-bold py-3 rounded-xl uppercase transition-all duration-150 active:scale-95',
+                        activeQuickDate === 'lastMonth'
+                            ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
+                            : 'bg-gradient-to-br from-gray-900 to-gray-800 text-gray-400 border border-white/10 hover:text-white hover:border-white/20',
+                    ]"
                     @click="setQuickDate('lastMonth')"
                 >
-                    Bulan Lalu
+                    {{ t('common.lastMonth') }}
                 </button>
             </div>
 
@@ -190,7 +230,7 @@ const isFiltered = computed(() => {
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-                {{ form.processing ? 'Menerapkan...' : 'Terapkan Filter' }}
+                {{ form.processing ? t('common.applying') : t('common.applyFilter') }}
             </button>
         </form>
     </BaseModal>

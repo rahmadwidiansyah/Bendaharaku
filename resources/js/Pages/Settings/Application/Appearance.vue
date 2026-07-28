@@ -7,8 +7,10 @@ import { ref, watch, onMounted, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import axios from 'axios';
 import { applyAccentColor, saveAccentColor, ACCENT_PALETTES, isCustomColor, isValidHex, getColorValue } from '@/Composables/useAccentColor.js';
+import { useToast } from '@/Composables/useToast';
 
 const { t } = useI18n();
+const { showToast } = useToast();
 
 const props = defineProps<{
   userAccentColor: string;
@@ -19,8 +21,7 @@ const accentColor = ref(props.userAccentColor);
 const customHex = ref('');
 const showCustomPicker = ref(false);
 const saving = ref(false);
-const successMessage = ref('');
-const errorMessage = ref('');
+
 
 const isCustom = computed(() => isCustomColor(accentColor.value));
 
@@ -49,6 +50,11 @@ watch(customHex, (hex) => {
 
 watch(accentColor, (color) => {
   applyAccentColor(color);
+  saveAppearance();
+});
+
+watch(theme, () => {
+  saveAppearance();
 });
 
 onMounted(() => {
@@ -58,24 +64,24 @@ onMounted(() => {
   }
 });
 
-const handleSave = async () => {
-  saving.value = true;
-  errorMessage.value = '';
-  successMessage.value = '';
-
-  try {
-    await axios.patch(route('settings.application.appearance.update'), {
-      theme: theme.value,
-      accent_color: accentColor.value,
-    });
-    saveAccentColor(accentColor.value);
-    successMessage.value = t('toast.updated');
-    setTimeout(() => { successMessage.value = ''; }, 3000);
-  } catch (error: any) {
-    errorMessage.value = error.response?.data?.message || t('errors.generic');
-  } finally {
-    saving.value = false;
-  }
+let saveTimer = null;
+const saveAppearance = () => {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    saving.value = true;
+    try {
+      await axios.patch(route('settings.application.appearance.update'), {
+        theme: theme.value,
+        accent_color: accentColor.value,
+      });
+      saveAccentColor(accentColor.value);
+      showToast(t('toast.updated'), 'success');
+    } catch (error: any) {
+      showToast(error.response?.data?.message || t('errors.generic'), 'error');
+    } finally {
+      saving.value = false;
+    }
+  }, 500);
 };
 </script>
 
@@ -87,14 +93,6 @@ const handleSave = async () => {
       :title="t('settings.application.appearance.title')"
       :description="t('settings.application.appearance.description')"
     >
-      <!-- Messages -->
-      <div v-if="successMessage" class="mb-4 p-4 bg-green-500/20 border border-green-500/50 rounded-lg">
-        <p class="text-sm text-green-400">✓ {{ successMessage }}</p>
-      </div>
-      <div v-if="errorMessage" class="mb-4 p-4 bg-red-500/20 border border-red-500/50 rounded-lg">
-        <p class="text-sm text-red-400">✗ {{ errorMessage }}</p>
-      </div>
-
       <!-- Theme -->
       <SettingsCard
         :title="t('settings.application.appearance.theme.title')"
@@ -203,16 +201,7 @@ const handleSave = async () => {
         </p>
       </SettingsCard>
 
-      <!-- Save Button -->
-      <div class="flex gap-3 pt-4">
-        <button
-          @click="handleSave"
-          :disabled="saving"
-          class="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors"
-        >
-          {{ saving ? t('common.saving') : t('common.save') }}
-        </button>
-      </div>
+
     </SettingsLayout>
   </AuthenticatedLayout>
 </template>

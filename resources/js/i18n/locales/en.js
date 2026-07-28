@@ -83,6 +83,15 @@ export default {
         today:          'Today',
         saveAndAddMore: 'Save & add another',
         open:           'Open',
+        dateRange:      'Date Range',
+        from:           'From',
+        to:             'To',
+        dateInvalidRange: 'End date must be the same or after the start date.',
+        thisYear:       'This Year',
+        thisMonth:      'This Month',
+        lastMonth:      'Last Month',
+        applyFilter:    'Apply Filter',
+        applying:       'Applying...',
         // Generic error messages
         errors: {
             generic: 'Something went wrong. Please try again later.'
@@ -223,6 +232,21 @@ export default {
         chooseDestWallet: 'Select destination wallet...',
         chooseDate:     'Select Date',
         nextNominal:    'Next → Enter Amount',
+        today:          'Today',
+        yesterday:      'Yesterday',
+        wallet:         'Wallet',
+        transferFunds:  'Transfer Funds',
+        relatedParty:   'Related Party',
+        namePlaceholder:'Name...',
+        hasDueDate:     'Has Due Date?',
+        fixedDate:      'Fixed Date',
+        everyMonth:     'Every Month',
+        everyDay:       'Every Day',
+        dayPlaceholder: 'Date (1-31)',
+        cyclePlaceholder:'Cycle (days)',
+        saveAndStay:    'Save & Add Another',
+        addCategory:    'Add Category',
+        noCategory:     'No category yet',
         created:        'Created',
         updated:        'Updated',
 
@@ -341,6 +365,9 @@ export default {
         recentMutation: 'Recent Mutations',
         emptyMutation:  'No mutations yet',
 
+        pinDashboard:       'Pin to Dashboard',
+        pinDashboardDesc:   'Show this wallet on the home page',
+
         empty:          'No wallets yet.',
         emptyLiquid:    'No liquid wallets yet.',
         emptyAsset:     'No assets yet.',
@@ -450,6 +477,19 @@ export default {
         title:          'Settings',
         subtitle:       'Preferences',
         save_button:     'Save',
+        index: {
+            section: {
+                account:        'Account',
+                appearance:     'Appearance',
+                finance:        'Finance',
+                ai:             'Artificial Intelligence',
+                notifications:  'Notifications',
+                privacy:        'Privacy',
+                danger:         'Danger Zone',
+            },
+            item:           'item',
+            items:          'items',
+        },
         notifications: {
             title:          'Notifications',
             description:    'Email & push notification preferences',
@@ -503,6 +543,7 @@ export default {
                 login_activity: {
                     title:          'Login History',
                     description:    'Monitor login activity to your account',
+                    current:        'This session',
                     tracking_soon:  'Activity tracking will be available soon',
                 },
             },
@@ -520,7 +561,13 @@ export default {
             
             preferences: {
                 title:          'Preferences',
-                description:    'Timezone & date format',
+                description:    'Language, timezone & date format',
+                language: {
+                    title:          'Language',
+                    description:    'Choose app language',
+                    id:             'Bahasa Indonesia',
+                    en:             'English',
+                },
                 timezone: {
                     title:          'Timezone',
                     description:    'Choose your timezone',
@@ -663,6 +710,7 @@ export default {
                 api_key: {
                     label:          'API Key',
                     description:    'Your API key for this provider',
+                    placeholder:    'Leave empty to keep current key',
                     warning:        'API key is encrypted and stored securely on the server',
                 },
                 select_model:   'Select a model...',
@@ -671,6 +719,10 @@ export default {
                 testing: 'Testing...',
                 test_success: 'Connection succeeded.',
                 test_failed: 'Connection failed.',
+                set_active: 'Set as Active Provider',
+                set_active_desc: 'This provider will be used for all AI conversations',
+                provider_toggle: 'Make this the active provider for all conversations',
+                active: 'Active',
                 help_text: 'Configure the AI provider and model to use. Press Save to apply your changes.',
             },
             
@@ -687,6 +739,7 @@ export default {
                     label:          'Bot Name',
                     description:    'Name shown in conversations',
                     placeholder:    'Bot name',
+                    suggestions:    'Suggested Names',
                     hint:           'E.g.: Bendahara Bot',
                 },
                 personality: {
@@ -953,24 +1006,6 @@ export default {
                     tailwind:       'Tailwind CSS - Styling',
                 },
             },
-            
-            diagnostics: {
-                title:          'Diagnostics',
-                description:    'System status, logs',
-                system_status: {
-                    title:          'System Status',
-                    description:    'Check backend service status',
-                    api:            'API Server',
-                    database:       'Database',
-                    healthy:        'Healthy',
-                    connected:      'Connected',
-                },
-                logs: {
-                    title:          'System Logs',
-                    description:    'Activity history',
-                    no_logs:        'No system logs currently',
-                },
-            },
         },
 
         // ═══ LEGACY KEYS (compatibility) ═══
@@ -1026,10 +1061,8 @@ export default {
         socialConnectionsDesc: 'Connect messaging apps for AI integration',
         whatsapp: 'WhatsApp',
         telegram: 'Telegram',
-        google: 'Google',
-
-        // Google OAuth
         google: {
+            label:          'Google',
             connect:        'Connect Google Account',
             connected:      'Connected with Google',
         },
@@ -1286,6 +1319,25 @@ export default {
             select: 'select',
             close: 'close',
         }
+    },
+
+    // ────────────────────────────────────────────────────────────────
+    // ICON PICKER
+    // ────────────────────────────────────────────────────────────────
+    iconPicker: {
+        title:          'Choose Icon',
+        search:         'Search icons...',
+        upload:         'Upload',
+        cropTitle:      'Crop Icon',
+        notFound:       'Icon not found',
+        tabs: {
+            Finance:    'Finance',
+            Lifestyle:  'Lifestyle',
+            Places:     'Places',
+            Tech:       'Tech',
+            Animals:    'Animals',
+            Misc:       'Misc',
+        },
     },
 
     // ────────────────────────────────────────────────────────────────

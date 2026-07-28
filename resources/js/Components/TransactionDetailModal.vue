@@ -17,6 +17,7 @@ import { Link, router } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import BaseModal from '@/Components/BaseModal.vue'
 import Badge from '@/Components/Badge.vue'
+import AppIcon from '@/Components/AppIcon.vue'
 import { formatNumber, formatDate } from '@/utils/format.js'
 
 const { t } = useI18n()
@@ -116,13 +117,7 @@ const dueDateDetail = (trx) => {
         <div v-if="transaction" class="px-1">
             <!-- Category icon + name -->
             <div class="flex flex-col items-center mb-5 mt-1">
-                <div class="w-16 h-16 rounded-2xl bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 flex items-center justify-center text-3xl mb-3 overflow-hidden p-1 shadow-lg">
-                    <img
-                        v-if="transaction.category?.icon?.includes('.')"
-                        :src="transaction.category.icon.startsWith('http') ? transaction.category.icon : '/storage/' + transaction.category.icon"
-                        class="w-full h-full object-cover rounded-xl" />
-                    <span v-else>{{ transaction.category?.icon || '📝' }}</span>
-                </div>
+                <AppIcon :icon="transaction.category?.icon" fallback="file-text" class="w-14 h-14 text-purple-400 mb-3" />
                 <p class="text-lg font-black text-white text-center leading-tight">
                     {{ transaction.category?.category_name || 'Transfer' }}
                 </p>

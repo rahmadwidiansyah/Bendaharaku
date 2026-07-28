@@ -34,27 +34,27 @@ const props = defineProps({
 const insight = computed(() => {
     let type = 'info'
     let msg  = t('insight.neutral')
-    let icon = '💡'
+    let icon = 'info'
 
     if (props.thisMonthExpense > 0 && props.thisMonthIncome > 0) {
         const ratio = (props.thisMonthExpense / props.thisMonthIncome) * 100
         if (ratio >= 80) {
             type = 'danger'
             msg  = t('insight.bad')
-            icon = '⚠️'
+            icon = 'danger'
         } else if (ratio <= 40) {
             type = 'success'
             msg  = t('insight.good')
-            icon = '✨'
+            icon = 'success'
         } else {
             type = 'info'
             msg  = t('insight.warning')
-            icon = '📊'
+            icon = 'warning'
         }
     } else if (props.thisMonthExpense > 0 && props.thisMonthIncome === 0) {
         type = 'warning'
         msg  = t('insight.bad')
-        icon = '🚨'
+        icon = 'danger'
     }
 
     return { type, msg, icon }
@@ -98,7 +98,18 @@ const colorClasses = computed(() => ({
             :aria-label="insight.msg"
         >
             <div class="flex items-center gap-3">
-                <span class="text-base shrink-0" aria-hidden="true">{{ insight.icon }}</span>
+                <svg v-if="insight.icon === 'danger'" class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <svg v-else-if="insight.icon === 'success'" class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <svg v-else-if="insight.icon === 'warning'" class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <svg v-else class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
                 <p class="leading-relaxed">{{ insight.msg }}</p>
             </div>
 

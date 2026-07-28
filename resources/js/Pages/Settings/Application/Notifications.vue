@@ -6,33 +6,27 @@ import SettingsCard from '@/Components/Settings/SettingsCard.vue';
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import axios from 'axios';
+import { useToast } from '@/Composables/useToast';
 
 const { t } = useI18n();
+const { showToast } = useToast();
 
 
 const emailNotifications = ref(true);
 const pushNotifications = ref(false);
 const saving = ref(false);
-const successMessage = ref('');
-const errorMessage = ref('');
-
 const handleSave = async () => {
   saving.value = true;
-  errorMessage.value = '';
-  successMessage.value = '';
 
   try {
-    const response = await axios.patch(route('settings.application.notifications.update'), {
+    await axios.patch(route('settings.application.notifications.update'), {
       email_notifications: emailNotifications.value,
       push_notifications: pushNotifications.value,
     });
 
-    successMessage.value = t('toast.updated');
-    setTimeout(() => {
-      successMessage.value = '';
-    }, 3000);
+    showToast(t('toast.updated'), 'success');
   } catch (error: any) {
-    errorMessage.value = error.response?.data?.message || t('errors.generic');
+    showToast(error.response?.data?.message || t('errors.generic'), 'error');
   } finally {
     saving.value = false;
   }
@@ -47,17 +41,9 @@ const handleSave = async () => {
       :title="t('settings.application.notifications.title')"
       :description="t('settings.application.notifications.description')"
     >
-      <!-- Messages -->
-      <div v-if="successMessage" class="mb-4 p-4 bg-green-500/20 border border-green-500/50 rounded-lg">
-        <p class="text-sm text-green-400">✓ {{ successMessage }}</p>
-      </div>
-      <div v-if="errorMessage" class="mb-4 p-4 bg-red-500/20 border border-red-500/50 rounded-lg">
-        <p class="text-sm text-red-400">✗ {{ errorMessage }}</p>
-      </div>
-
       <SettingsCard :title="t('settings.application.notifications.email.title')" :description="t('settings.application.notifications.email.description')">
         <div class="flex items-center justify-between">
-          <span class="text-sm text-gray-400">{{ t('settings.application.notifications.email.label') }}</span>
+          <span class="text-2xs sm:text-sm text-gray-400">{{ t('settings.application.notifications.email.label') }}</span>
           <label class="relative inline-flex items-center cursor-pointer">
             <input v-model="emailNotifications" type="checkbox" class="sr-only peer" />
             <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
@@ -67,7 +53,7 @@ const handleSave = async () => {
 
       <SettingsCard :title="t('settings.application.notifications.push.title')" :description="t('settings.application.notifications.push.description')">
         <div class="flex items-center justify-between">
-          <span class="text-sm text-gray-400">{{ t('settings.application.notifications.push.label') }}</span>
+          <span class="text-2xs sm:text-sm text-gray-400">{{ t('settings.application.notifications.push.label') }}</span>
           <label class="relative inline-flex items-center cursor-pointer">
             <input v-model="pushNotifications" type="checkbox" class="sr-only peer" />
             <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>

@@ -1,10 +1,11 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
-import { Head, Link, usePage } from '@inertiajs/vue3'
-import BottomNav from '@/Components/BottomNav.vue'
+import { Head, Link } from '@inertiajs/vue3'
+import DateModal from '@/Components/DateModal.vue'
 import TransactionDetailModal from '@/Components/TransactionDetailModal.vue'
-import { ref } from 'vue'
-import { formatNumber, formatDate } from '@/utils/format.js'
+import AppIcon from '@/Components/AppIcon.vue'
+import { ref, computed } from 'vue'
+import { formatNumber, formatDate, formatLocalYMD } from '@/utils/format.js'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
@@ -12,14 +13,38 @@ const { t } = useI18n()
 const props = defineProps({
 	wallet: Object,
 	transactions: Object,
+	startDate: String,
+	endDate: String,
+})
+
+const formatDateRange = () => {
+	return `${formatDate(props.startDate)} – ${formatDate(props.endDate)}`
+}
+
+const activeDurationLabel = computed(() => {
+	const today = new Date()
+	const checks = {
+		thisYear: [
+			formatLocalYMD(new Date(today.getFullYear(), 0, 1)),
+			formatLocalYMD(new Date(today.getFullYear(), 11, 31)),
+		],
+		thisMonth: [
+			formatLocalYMD(new Date(today.getFullYear(), today.getMonth(), 1)),
+			formatLocalYMD(new Date(today.getFullYear(), today.getMonth() + 1, 0)),
+		],
+		lastMonth: [
+			formatLocalYMD(new Date(today.getFullYear(), today.getMonth() - 1, 1)),
+			formatLocalYMD(new Date(today.getFullYear(), today.getMonth(), 0)),
+		],
+	}
+	for (const [key, [s, e]] of Object.entries(checks)) {
+		if (props.startDate === s && props.endDate === e) return t('common.' + key)
+	}
+	return formatDateRange()
 })
 
 const isModalOpen = ref(false)
 const selectedTransaction = ref({})
-
-const getIcon = (icon) => {
-	return icon && (icon.includes('.') || icon.includes('/')) ? true : false
-}
 
 const formatTime = (timeString) => {
 	if (!timeString) return ''
@@ -61,41 +86,43 @@ const getTypeName = (name) => ({
 
 <template>
 	<AuthenticatedLayout :fullWidth="true">
-		<Head :title="$t('wallet.titleEdit')" />
+		<Head :title="wallet.name" />
 		<div class="p-5 w-full lg:max-w-4xl mx-auto lg:px-8 relative">
-			<header class="flex justify-between items-center mb-6 pt-2">
-				<h1 class="text-2xl font-bold text-white tracking-tight hidden lg:block">{{ $t('wallet.titleEdit') }}</h1>
-				<Link
-					:href="route('dashboard')"
-					class="w-10 h-10 rounded-full bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white active:scale-95 transition-all shadow-md">
-					<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-					</svg>
-				</Link>
+			<header class="hidden lg:block mb-6 pt-4">
+				<h1 class="text-2xl font-bold text-white tracking-tight">{{ wallet.name }}</h1>
 			</header>
 
-			<div class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-7 text-center mb-10 shadow-2xl relative overflow-hidden group">
+			<div class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-5 lg:p-7 text-center mb-8 shadow-2xl relative overflow-hidden group">
 				<div class="absolute -top-10 -right-10 w-32 h-32 bg-purple-500 opacity-5 rounded-full group-hover:scale-150 transition-transform duration-700"></div>
 
-				<div
-					class="w-20 h-20 bg-linear-to-br from-gray-800 to-gray-900 rounded-xl mx-auto flex items-center justify-center text-4xl border border-white/10 mb-4 shadow-inner overflow-hidden p-1">
-					<img v-if="getIcon(wallet.icon)" :src="'/storage/' + wallet.icon" class="w-full h-full object-cover rounded-xl" />
-					<span v-else>{{ wallet.icon || '💳' }}</span>
-				</div>
+				<AppIcon :icon="wallet.icon" fallback="wallet" class="w-12 h-12 lg:w-16 lg:h-16 text-purple-400 mx-auto mb-3 lg:mb-4" />
 
 				<p class="text-2xs font-bold text-gray-500 uppercase tracking-[0.2em] mb-1">{{ wallet.name }}</p>
-				<h2 class="text-3xl font-black text-white tracking-tight mb-6">Rp {{ formatNumber(wallet.balance) }}</h2>
+				<h2 class="text-2xl lg:text-3xl font-black tracking-tight mb-5 lg:mb-6"
+					:class="parseFloat(wallet.balance) < 0 ? 'text-red-400' : 'text-white'">
+					<span class="text-base lg:text-lg font-medium text-gray-500 mr-1">Rp</span>{{ formatNumber(wallet.balance) }}
+				</h2>
 
 				<Link
 					:href="route('wallets.edit', wallet.id)"
-					class="inline-block bg-linear-to-br from-gray-900 to gray-800 border border-white/10 text-purple-500 text-2xs font-bold px-6 py-2.5 rounded-xl uppercase tracking-widest active:scale-95 transition-all">
+					class="inline-block bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 text-purple-500 text-2xs font-bold px-5 lg:px-6 py-2 rounded-xl uppercase tracking-widest active:scale-95 transition-all hover:border-purple-500/30">
 					{{ $t('wallet.titleEdit') }}
 				</Link>
 			</div>
 
-			<h2 class="text-2xs font-bold text-gray-400 uppercase tracking-widest mb-4 ml-1 text-center">{{ $t('wallet.recentMutation') }}</h2>
+			<div class="flex items-center justify-between gap-3 mb-3 px-1">
+				<div class="min-w-0">
+					<h2 class="text-2xs font-bold text-gray-400 uppercase tracking-widest">{{ $t('wallet.recentMutation') }}</h2>
+				</div>
+				<DateModal :action="route('wallets.show', wallet.id)" :start-date="startDate" :end-date="endDate" />
+			</div>
 
-			<div class="space-y-4">
+			<div class="flex items-center gap-2 mb-4 lg:mb-5 px-1">
+				<span class="text-[9px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20 truncate">{{ activeDurationLabel }}</span>
+				<span class="text-[9px] text-gray-500 font-medium truncate">{{ formatDateRange() }}</span>
+			</div>
+
+			<div class="space-y-2 lg:space-y-3">
 				<template v-if="transactions.data && transactions.data.length > 0">
 					<button
 						v-for="trx in transactions.data"
@@ -103,19 +130,13 @@ const getTypeName = (name) => ({
 						type="button"
 						@click="openDetailModal(trx)"
 						class="w-full text-left bg-linear-to-br from-gray-800 to-gray-900 p-3 rounded-xl border border-white/10 hover:border-purple-400/30 active:scale-[0.98] transition-all relative overflow-hidden group">
-						<div class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+						<div class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
 
-						<div class="flex items-center gap-3 relative z-10">
-							<div class="w-10 h-10 rounded-xl bg-linear-to-br from-gray-900 to-gray-800 flex items-center justify-center text-lg border border-white/10 shrink-0 overflow-hidden p-0.5">
-								<img
-									v-if="trx.category?.icon?.includes('.')"
-									:src="trx.category.icon.startsWith('http') ? trx.category.icon : '/storage/' + trx.category.icon"
-									class="w-full h-full object-cover rounded-xl" />
-								<span v-else>{{ trx.category?.icon || '📄' }}</span>
-							</div>
+						<div class="flex items-center gap-2.5 lg:gap-3 relative z-10">
+							<AppIcon :icon="trx.category?.icon" fallback="file-text" class="w-5 h-5 lg:w-6 lg:h-6 text-purple-400 shrink-0" />
 
 							<div class="flex-1 min-w-0 pr-2">
-								<p class="text-xs font-bold text-white leading-tight mb-2">
+								<p class="text-xs font-bold text-white leading-tight mb-1 lg:mb-2">
 									{{ trx.category?.category_name || 'Transfer' }}
 								</p>
 								<div class="flex items-center gap-1.5 min-w-0">
@@ -134,7 +155,7 @@ const getTypeName = (name) => ({
 									{{ trx.destination_wallet_id === wallet.id ? '+' : '-' }}{{ formatNumber(trx.amount) }}
 								</p>
 								<div class="flex items-center justify-end gap-1.5 mt-1">
-									<span class="text-xs text-gray-600 font-medium italic">
+									<span class="text-2xs text-gray-600 font-medium italic">
 										{{ formatDate(trx.date) }} • {{ formatTime(trx.created_at) }}
 									</span>
 									<span class="text-2xs uppercase tracking-widest font-black px-1 py-0.5 rounded border" :class="getTypeColor(trx.type?.name)">
@@ -145,12 +166,12 @@ const getTypeName = (name) => ({
 						</div>
 					</button>
 				</template>
-				<div v-else class="text-center py-12 bg-linear-to-br from-gray-800 to-gray-900 rounded-xl border-2 border-dashed border-white/10">
-					<p class="text-xs font-bold text-gray-500 uppercase tracking-widest">{{ $t('wallet.emptyMutation') }}</p>
+				<div v-else class="text-center py-10 lg:py-12 bg-linear-to-br from-gray-800 to-gray-900 rounded-xl border-2 border-dashed border-white/10">
+					<p class="text-2xs font-bold text-gray-500 uppercase tracking-widest">{{ $t('wallet.emptyMutation') }}</p>
 				</div>
 			</div>
 
-			<div v-if="transactions.links && transactions.links.length > 3" class="mt-8 flex justify-center gap-1 flex-wrap">
+			<div v-if="transactions.links && transactions.links.length > 3" class="mt-6 lg:mt-8 flex justify-center gap-1 flex-wrap">
 				<template v-for="(link, k) in transactions.links" :key="k">
 					<Link
 						v-if="link.url"
@@ -163,7 +184,5 @@ const getTypeName = (name) => ({
 		</div>
 
 		<TransactionDetailModal :show="isModalOpen" :transaction="selectedTransaction" @close="closeDetailModal" />
-
-		<BottomNav />
 	</AuthenticatedLayout>
 </template>

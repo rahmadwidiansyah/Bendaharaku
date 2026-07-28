@@ -13,9 +13,11 @@ import { useClipboard }  from '@/Composables/useClipboard.js'
 import { Link } from '@inertiajs/vue3'
 import axios from 'axios'
 import { useI18n } from 'vue-i18n'
+import { useToast } from '@/Composables/useToast'
 import ConfirmationDialog from '@/Components/ConfirmationDialog.vue'
 
 const { t, locale } = useI18n()
+const { showToast } = useToast()
 
 const props = defineProps({
     modelValue:  { type: Boolean, default: false },
@@ -130,6 +132,7 @@ async function confirmDeleteTransaction() {
         if (data.success) {
             emit('deleted')
             showDeleteConfirm.value = false
+            showToast(t('toast.deleted'), 'success')
             close()
         }
     } catch (e) {
@@ -137,6 +140,7 @@ async function confirmDeleteTransaction() {
             emit('deleted')
             close()
         }
+        showToast(t('toast.error'), 'error')
         console.error('deleteTransaction error', e)
     } finally {
         isDeleting.value = false

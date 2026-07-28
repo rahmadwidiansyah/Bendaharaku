@@ -13,6 +13,7 @@ import { useBalanceVisibility } from '@/Composables/useBalanceVisibility'
 import { useLayoutPreference } from '@/Composables/useLayoutPreference'
 import { useCalendar } from '@/Composables/useCalendar'
 import { formatNumber, formatCompact } from '@/utils/format.js'
+import AppIcon from '@/Components/AppIcon.vue'
 
 const { t } = useI18n()
 
@@ -168,25 +169,13 @@ const calendarDayNames = computed(() => [
 ])
 
 // ─── Wallet pin toggle ────────────────────────────────────────────
-const togglePin = (wallet) => {
-	router.patch(route('wallets.set-pin', wallet.id), { state: false }, { preserveScroll: true, preserveState: true })
-}
-
-// ─── Wallet image error fallback ──────────────────────────────────
-const handleImageError = (e, fallback) => {
-	e.target.style.display = 'none'
-	const span = document.createElement('span')
-	span.innerText = fallback
-	span.className = 'text-xl animate-pulse'
-	e.target.parentElement?.appendChild(span)
-}
 </script>
 
 <template>
 	<AuthenticatedLayout :fullWidth="true">
 		<Head title="Dashboard" />
 
-		<div class="p-5 w-full mx-auto">
+		<div class="p-3 sm:p-5 w-full mx-auto">
 			<!-- INSIGHT BOX -->
 			<InsightBanner
 				:this-month-income="thisMonthIncome"
@@ -206,8 +195,8 @@ const handleImageError = (e, fallback) => {
 						@toggle-visibility="toggleVisibility"
 					/>
 					<!-- PINNED WALLETS -->
-					<div v-if="pinnedWallets && pinnedWallets.length > 0" class="mb-5 animate-fade-in-up delay-200">
-						<div class="flex justify-between items-center mb-3 px-1 gap-3">
+					<div v-if="pinnedWallets && pinnedWallets.length > 0" class="mb-3 sm:mb-5 animate-fade-in-up delay-200">
+						<div class="flex justify-between items-center mb-2 sm:mb-3 px-1 gap-2 sm:gap-3">
 							<h2 class="text-2xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
 								<svg class="w-3 h-3 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
 									<path
@@ -219,67 +208,54 @@ const handleImageError = (e, fallback) => {
 							</h2>
 							<div class="flex-1 h-px bg-linear-to-r from-purple-500/20 to-transparent"></div>
 						</div>
-						<div class="grid grid-cols-2 gap-3">
-							<Link
-								v-for="wallet in pinnedWallets"
-								:key="wallet.id"
-								:href="route('wallets.show', wallet.id)"
-								class="bg-linear-to-br from-gray-900 to-gray-800 p-3.5 rounded-xl border border-white/10 relative overflow-hidden active:scale-95 transition-transform group hover:border-purple-400/50">
-								<div class="flex justify-between items-start mb-2">
-									<div class="flex items-center gap-2 truncate">
-										<div
-											class="w-6 h-6 rounded-md bg-gray-900 border border-white/10 flex items-center justify-center text-2xs overflow-hidden shrink-0"
-											:class="wallet.icon?.includes('.') ? 'p-1' : ''">
-											<img
-												v-if="wallet.icon?.includes('.')"
-												:src="wallet.icon.startsWith('http') ? wallet.icon : '/storage/' + wallet.icon"
-												class="w-full h-full object-contain"
-												@error="(e) => handleImageError(e, wallet.keyword?.substring(0, 1) || '💳')" />
-											<span v-else>{{ wallet.icon || '💳' }}</span>
-										</div>
-										<h3 class="text-2xs font-bold text-gray-400 uppercase tracking-widest truncate">
-											{{ wallet.name }}
-										</h3>
-									</div>
-									<button
-										@click.stop.prevent="togglePin(wallet)"
-										class="text-purple-500 hover:text-white transition-colors p-1 bg-white/5 rounded-full z-10 shrink-0 -mt-1 -mr-1"
-										:title="$t('dashboard.unpinFromDashboard')">
-										<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-											<path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5v6l1 2 1-2v-6h5v-2l-2-2z" />
-										</svg>
-									</button>
-								</div>
-								<p class="text-sm font-bold text-white tracking-tight truncate">
-									<span class="text-2xs text-gray-500 mr-1">Rp</span>{{ isBalanceVisible ? formatNumber(wallet.balance) : '••••' }}
-								</p>
-							</Link>
-						</div>
+						<div class="grid grid-cols-2 gap-2 sm:gap-3">
+    <Link
+        v-for="wallet in pinnedWallets"
+        :key="wallet.id"
+        :href="route('wallets.show', wallet.id)"
+        class="bg-linear-to-br from-gray-900 to-gray-800 p-2.5 sm:p-3.5 rounded-lg sm:rounded-xl border border-white/10 relative overflow-hidden active:scale-95 transition-transform group hover:border-purple-400/50">
+        
+        <!-- BAGIAN HEADER (Icon & Nama) -->
+        <div class="flex justify-between items-start mb-1.5 sm:mb-2">
+            <div class="flex items-center gap-2 truncate">
+                <AppIcon :icon="wallet.icon" fallback="wallet" class="w-5 h-5 text-purple-400 shrink-0" />
+                <h3 class="text-2xs font-bold text-gray-400 uppercase tracking-widest truncate">
+                    {{ wallet.name }}
+                </h3>
+            </div>
+        </div> <!-- ✅ INI TAG PENUTUP YANG HILANG SEBELUMNYA -->
+        
+        <!-- BAGIAN BALANCE -->
+        <p class="text-sm font-bold text-white tracking-tight truncate">
+            <span class="text-2xs text-gray-500 mr-1">Rp</span>{{ isBalanceVisible ? formatNumber(wallet.balance) : '••••' }}
+        </p>
+    </Link>
+</div>
 					</div>
 					<!-- MINI CASHFLOW -->
-					<div class="grid grid-cols-2 gap-3 mb-10 animate-fade-in-up delay-200">
-						<div class="bg-linear-to-br from-green-950/20 to-gray-800 border border-green-900/30 rounded-xl p-4 flex items-center gap-3 relative overflow-hidden group">
-							<div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
-								<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+					<div class="grid grid-cols-2 gap-2 sm:gap-3 mb-5 sm:mb-10 animate-fade-in-up delay-200">
+						<div class="bg-linear-to-br from-green-950/20 to-gray-800 border border-green-900/30 rounded-lg sm:rounded-xl p-2.5 sm:p-4 flex items-center gap-2.5 sm:gap-3 relative overflow-hidden group">
+							<div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 shrink-0">
+								<svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
 									<path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
 								</svg>
 							</div>
-							<div>
+							<div class="min-w-0">
 								<p class="text-2xs text-gray-500 font-bold uppercase tracking-widest">{{ $t('dashboard.income') }}</p>
-								<p class="text-sm font-bold text-white tracking-tight mt-0.5">
+								<p class="text-xs sm:text-sm font-bold text-white tracking-tight mt-0.5 truncate">
 									<span class="text-2xs text-gray-500 mr-1">Rp</span><span class="text-green-400">{{ isBalanceVisible ? formatNumber(thisMonthIncome) : '••••' }}</span>
 								</p>
 							</div>
 						</div>
-						<div class="bg-linear-to-br from-red-950/20 to-gray-800 border border-red-900/30 rounded-xl p-4 flex items-center gap-3 relative overflow-hidden group">
-							<div class="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center text-red-400">
-								<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+						<div class="bg-linear-to-br from-red-950/20 to-gray-800 border border-red-900/30 rounded-lg sm:rounded-xl p-2.5 sm:p-4 flex items-center gap-2.5 sm:gap-3 relative overflow-hidden group">
+							<div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-red-500/20 flex items-center justify-center text-red-400 shrink-0">
+								<svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
 									<path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
 								</svg>
 							</div>
-							<div>
+							<div class="min-w-0">
 								<p class="text-2xs text-gray-500 font-bold uppercase tracking-widest">{{ $t('dashboard.expense') }}</p>
-								<p class="text-sm font-bold text-white tracking-tight mt-0.5">
+								<p class="text-xs sm:text-sm font-bold text-white tracking-tight mt-0.5 truncate">
 									<span class="text-2xs text-gray-500 mr-1">Rp</span><span class="text-red-400">{{ isBalanceVisible ? formatNumber(thisMonthExpense) : '••••' }}</span>
 								</p>
 							</div>
@@ -295,9 +271,9 @@ const handleImageError = (e, fallback) => {
 
 
 				<!-- RIGHT COLUMN (Desktop) -->
-				<div :class="isDesktopLayout ? 'lg:w-2/3 lg:bg-gray-900/30 lg:p-6 lg:rounded-2xl lg:border lg:border-white/5' : 'mt-8'">
+				<div :class="isDesktopLayout ? 'lg:w-2/3 lg:bg-gray-900/30 lg:p-6 lg:rounded-2xl lg:border lg:border-white/5' : 'mt-4 sm:mt-8'">
 					<!-- TRANSACTION HISTORY HEADER-->
-					<div class="flex justify-between items-center mb-4 px-1 gap-3 animate-fade-in-up delay-500">
+					<div class="flex justify-between items-center mb-2 sm:mb-4 px-1 gap-2 sm:gap-3 animate-fade-in-up delay-500">
 						<h2 class="text-2xs font-bold text-white uppercase tracking-widest flex items-center gap-2 shrink-0">
 							<span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
 							{{ $t('dashboard.transactionHistory') }}
@@ -319,14 +295,14 @@ const handleImageError = (e, fallback) => {
 						</div>
 					</div>
 					<!-- Search -->
-					<div class="flex gap-2 mb-6 animate-fade-in-up delay-500">
+					<div class="flex gap-2 mb-3 sm:mb-6 animate-fade-in-up delay-500">
 						<div class="relative flex-1">
 							<input
 								type="text"
 								v-model="search"
 								:placeholder="$t('dashboard.searchPlaceholder')"
-								class="w-full bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 text-white rounded-xl p-3.5 pl-11 text-2xs focus:ring-1 focus:ring-purple-500 transition-colors" />
-							<svg class="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+								class="w-full bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 text-white rounded-lg sm:rounded-xl p-2.5 sm:p-3.5 pl-10 sm:pl-11 text-2xs focus:ring-1 focus:ring-purple-500 transition-colors" />
+							<svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 								<path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
 							</svg>
 						</div>
@@ -335,7 +311,7 @@ const handleImageError = (e, fallback) => {
 					</div>
 
 					<!-- Month Navigation & Filter Type-->
-					<div class="flex justify-between items-center mb-4 animate-fade-in-up delay-500">
+					<div class="flex justify-between items-center mb-2 sm:mb-4 animate-fade-in-up delay-500">
 						<div class="flex items-center gap-2 sm:gap-3">
 							<button @click="prevMonth" class="p-1 sm:p-1.5 rounded-full bg-gray-900 border border-white/10 text-gray-400 hover:text-white transition-colors active:scale-95">
 								<svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -368,8 +344,8 @@ const handleImageError = (e, fallback) => {
 					</div>
 
 					<!-- Kalender Tab Active -->
-					<div v-if="activeHistoryTab === 'calendar'" class="animate-fade-in-up delay-500 mb-8">
-						<div class="bg-linear-to-br from-gray-900 to-gray-800 p-3 sm:p-4 rounded-xl border border-white/10 mb-5 shadow-lg w-full">
+					<div v-if="activeHistoryTab === 'calendar'" class="animate-fade-in-up delay-500 mb-4 sm:mb-8">
+						<div class="bg-linear-to-br from-gray-900 to-gray-800 p-3 sm:p-4 rounded-xl border border-white/10 mb-3 sm:mb-5 shadow-lg w-full">
 							<div class="flex justify-between items-center mb-3">
 								<button @click="prevMonth" class="p-1 rounded-lg bg-white/5 hover:bg-white/10 text-white transition-colors">
 									<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -390,7 +366,7 @@ const handleImageError = (e, fallback) => {
 								</button>
 							</div>
 							<!-- Pemasukan, Total, Pengeluaran filter -->
-							<div class="flex justify-center mb-3">
+							<div class="flex justify-center mb-2 sm:mb-3">
 								<div class="flex bg-gray-900 rounded-xl border border-white/10 p-0.5">
 									<button
 										@click="calendarFilter = 'income'"
@@ -442,9 +418,9 @@ const handleImageError = (e, fallback) => {
 					</div>
 
 					<!-- HISTORY LIST -->
-					<div class="space-y-4 animate-fade-in-up delay-500 mb-8">
+					<div class="space-y-2 sm:space-y-4 animate-fade-in-up delay-500 mb-4 sm:mb-8">
 						<!-- Calendar Tab: Grid Selection Group History-->
-						<div v-if="activeHistoryTab === 'calendar'" class="flex items-center gap-2 mb-3 px-1">
+						<div v-if="activeHistoryTab === 'calendar'" class="flex items-center gap-2 mb-2 sm:mb-3 px-1">
 							<svg class="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 								<path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
 							</svg>
@@ -457,7 +433,7 @@ const handleImageError = (e, fallback) => {
 						<div
 							v-for="(group, dateKey) in visibleTransactions"
 							:key="dateKey"
-							class="bg-linear-to-br from-gray-900 to-gray-800 p-3 rounded-xl border border-white/5 transition-all duration-300 shadow-lg">
+							class="bg-linear-to-br from-gray-900 to-gray-800 p-2.5 sm:p-3 rounded-lg sm:rounded-xl border border-white/5 transition-all duration-300 shadow-lg">
 							<div
 								@click="activeHistoryTab === 'detail' && toggleDate(dateKey)"
 								class="flex justify-between items-center px-1 border-b pb-2 transition-colors group/header"
@@ -491,22 +467,16 @@ const handleImageError = (e, fallback) => {
 									gridTemplateRows: activeHistoryTab === 'detail' && collapsedDates[dateKey] ? '0fr' : '1fr',
 								}">
 								<div class="overflow-hidden transition-all duration-300" :class="activeHistoryTab === 'detail' && collapsedDates[dateKey] ? 'opacity-0' : 'opacity-100'">
-									<div class="space-y-2.5 pt-3">
+									<div class="space-y-1.5 sm:space-y-2.5 pt-2 sm:pt-3">
 										<button
 											v-for="trx in group.transactions"
 											:key="trx.id"
 											@click="openModal(trx)"
-											class="w-full text-left bg-linear-to-br from-gray-800 to-gray-900 p-3 rounded-xl border border-white/10 hover:border-purple-400/30 active:scale-[0.98] transition-all relative overflow-hidden group">
+											class="w-full text-left bg-linear-to-br from-gray-800 to-gray-900 p-2.5 sm:p-3 rounded-lg sm:rounded-xl border border-white/10 hover:border-purple-400/30 active:scale-[0.98] transition-all relative overflow-hidden group">
 											<div class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
 
-											<div class="flex items-center gap-3 relative z-10">
-												<div class="w-10 h-10 rounded-xl bg-gradient flex items-center justify-center text-lg border border-white/10 shrink-0 overflow-hidden p-0.5">
-													<img
-														v-if="trx.category?.icon?.includes('.')"
-														:src="trx.category.icon.startsWith('http') ? trx.category.icon : '/storage/' + trx.category.icon"
-														class="w-full h-full object-cover rounded-xl" />
-													<span v-else>{{ trx.category?.icon || '📄' }}</span>
-												</div>
+											<div class="flex items-center gap-2 sm:gap-3 relative z-10">
+    <AppIcon :icon="trx.category?.icon" fallback="file-text" class="w-6 h-6 text-purple-400 shrink-0" />
 
 												<div class="flex-1 min-w-0 pr-2">
 													<div class="flex items-center gap-1.5 mb-1">
@@ -569,7 +539,7 @@ const handleImageError = (e, fallback) => {
 						<!-- Empty state -->
 						<div
 							v-if="Object.keys(visibleTransactions).length === 0"
-							class="text-center py-12 bg-linear-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 relative overflow-hidden group">
+							class="text-center py-8 sm:py-12 bg-linear-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 relative overflow-hidden group">
 							<p class="text-2xs font-bold text-gray-500 uppercase tracking-widest relative z-10">
 								{{ activeHistoryTab === 'calendar' ? $t('dashboard.noTransactions') : $t('common.dataEmpty') }}
 							</p>
@@ -581,18 +551,18 @@ const handleImageError = (e, fallback) => {
 
 			<!-- Pop Up Filter Type -->
 			<div v-if="showSortModal" class="fixed inset-0 z-60 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" @click.self="showSortModal = false">
-				<div class="w-full max-w-sm bg-linear-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 p-6 animate-pop-in relative">
-					<button type="button" @click="showSortModal = false" class="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors">
-						<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+				<div class="w-full max-w-sm bg-linear-to-br from-gray-900 to-gray-800 rounded-lg sm:rounded-xl border border-white/10 p-4 sm:p-6 animate-pop-in relative">
+					<button type="button" @click="showSortModal = false" class="absolute top-3 sm:top-4 right-3 sm:right-4 text-gray-500 hover:text-white transition-colors">
+						<svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
 							<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
 						</svg>
 					</button>
 
-					<h3 class="text-sm font-bold text-white mb-6 text-center uppercase tracking-widest">{{ $t('dashboard.filterType') }}</h3>
-					<div class="grid grid-cols-2 gap-3">
+					<h3 class="text-xs sm:text-sm font-bold text-white mb-4 sm:mb-6 text-center uppercase tracking-widest">{{ $t('dashboard.filterType') }}</h3>
+					<div class="grid grid-cols-2 gap-2 sm:gap-3">
 						<button
 							@click="setType('')"
-							class="col-span-2 py-3 rounded-xl border border-white/10 text-2xs font-bold uppercase tracking-widest transition-all"
+							class="col-span-2 py-2.5 sm:py-3 rounded-lg sm:rounded-xl border border-white/10 text-2xs font-bold uppercase tracking-widest transition-all"
 							:class="!type ? 'bg-purple-600 text-white' : 'bg-linear-to-br from-gray-900 to-gray-800 text-gray-300'">
 							{{ $t('types.all') }}
 						</button>
@@ -600,7 +570,7 @@ const handleImageError = (e, fallback) => {
 							v-for="key in ['Income', 'Expense', 'Transfer', 'Debt', 'Receivable']"
 							:key="key"
 							@click="setType(key)"
-							class="py-3 rounded-xl border border-white/10 text-2xs font-bold uppercase tracking-widest transition-all"
+							class="py-2.5 sm:py-3 rounded-lg sm:rounded-xl border border-white/10 text-2xs font-bold uppercase tracking-widest transition-all"
 							:class="type === key ? 'bg-linear-to-br from-purple-800 to-purple-500 text-white' : 'bg-linear-to-br from-gray-900 to-gray-800 text-gray-300'">
 							{{ getTypeName(key) }}
 						</button>

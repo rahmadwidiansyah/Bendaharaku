@@ -16,6 +16,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Database\Seeders\WalletSeeder;
 
 class TestDataSeeder extends Seeder
 {
@@ -73,13 +74,13 @@ class TestDataSeeder extends Seeder
 
         foreach ($systemWallets as $w) {
             if (! $existingWallets->has($w['name'])) {
-                Wallet::create(array_merge($w, ['user_id' => $user->id, 'icon' => '🏦', 'balance' => 0, 'is_active' => true]));
+                Wallet::create(array_merge($w, ['user_id' => $user->id, 'icon' => \Database\Seeders\WalletSeeder::iconFor($w['name']), 'balance' => 0, 'is_active' => true]));
             }
         }
 
         foreach ($userWallets as $w) {
             if (! $existingWallets->has($w['name'])) {
-                Wallet::create(array_merge($w, ['user_id' => $user->id, 'icon' => '💳', 'is_active' => true]));
+                Wallet::create(array_merge($w, ['user_id' => $user->id, 'icon' => \Database\Seeders\WalletSeeder::iconFor($w['name']), 'is_active' => true]));
             }
         }
     }
@@ -93,25 +94,25 @@ class TestDataSeeder extends Seeder
         $receivableTypeId = $types['Receivable'];
 
         $categories = [
-            ['category_name' => 'Makan & Minum',        'type_id' => $expenseTypeId,    'icon' => '🍔', 'keyword' => 'makan & minum, makan, beli makan, kuliner, restoran, warung, food, minum, gofood, kfc, warkop, warteg, resto, kantin, bekal'],
-            ['category_name' => 'Transportasi',         'type_id' => $expenseTypeId,    'icon' => '🚗', 'keyword' => 'transportasi, bensin, gojek, grab, parkir, tol, naik, kendaraan, ojek, taksi'],
-            ['category_name' => 'Belanja',              'type_id' => $expenseTypeId,    'icon' => '🛍️', 'keyword' => 'belanja, shopping, grosir, pasar, supermarket, mall, tokped, shopee, lazada, olshop'],
-            ['category_name' => 'Hiburan',              'type_id' => $expenseTypeId,    'icon' => '🎮', 'keyword' => 'hiburan, game, nonton, streaming, netflix, spotify, bioskop, konser, liburan'],
-            ['category_name' => 'Kesehatan',            'type_id' => $expenseTypeId,    'icon' => '💊', 'keyword' => 'kesehatan, obat, dokter, klinik, rumah sakit, berobat, periksa, lab, vaksin'],
-            ['category_name' => 'Listrik & Air',        'type_id' => $expenseTypeId,    'icon' => '💡', 'keyword' => 'listrik, air, pln, pdam, tagihan, utilitas'],
-            ['category_name' => 'Pulsa & Internet',     'type_id' => $expenseTypeId,    'icon' => '📱', 'keyword' => 'pulsa, internet, kuota, paket data, telkomsel, indosat, xl, axis, indihome, wifi'],
-            ['category_name' => 'Pendidikan',           'type_id' => $expenseTypeId,    'icon' => '📚', 'keyword' => 'pendidikan, kuliah, sekolah, kursus, buku, spp, ukt, seminar, workshop'],
-            ['category_name' => 'Pakaian',              'type_id' => $expenseTypeId,    'icon' => '👕', 'keyword' => 'pakaian, baju, celana, sepatu, aksesoris, fashion, pakaian'],
-            ['category_name' => 'Donasi',               'type_id' => $expenseTypeId,    'icon' => '🤲', 'keyword' => 'donasi, sedekah, zakat, infaq, amal, sumbangan, kotak amal'],
-            ['category_name' => 'Gaji',                 'type_id' => $incomeTypeId,     'icon' => '💵', 'keyword' => 'gaji, salary, penghasilan, pendapatan, upah, honor, thr'],
-            ['category_name' => 'Bonus',                'type_id' => $incomeTypeId,     'icon' => '🧧', 'keyword' => 'bonus, insentif, komisi, fee'],
-            ['category_name' => 'Freelance',            'type_id' => $incomeTypeId,     'icon' => '💻', 'keyword' => 'freelance, proyek, project, kerja lepas'],
-            ['category_name' => 'Pendapatan Lain',      'type_id' => $incomeTypeId,     'icon' => '💰', 'keyword' => 'pendapatan lain, pemasukan lain, uang masuk'],
-            ['category_name' => 'Transfer Saldo',       'type_id' => $transferTypeId,   'icon' => '🔄', 'keyword' => 'transfer, pindah saldo, pindah uang, mutasi', 'system_key' => 'TRANSFER'],
-            ['category_name' => 'Dapat Hutangan',       'type_id' => $debtTypeId,       'icon' => '📥', 'keyword' => 'hutang, utang, pinjam, hutangan, ngutang', 'system_key' => 'LOAN'],
-            ['category_name' => 'Bayar Cicilan Hutang',  'type_id' => $debtTypeId,      'icon' => '💸', 'keyword' => 'bayar hutang, bayar utang, cicilan, lunasin', 'system_key' => 'DEBT_PAYMENT'],
-            ['category_name' => 'Ngasih Piutang',        'type_id' => $receivableTypeId, 'icon' => '📤', 'keyword' => 'piutang, minjemin, ngutangin', 'system_key' => 'RECEIVABLE'],
-            ['category_name' => 'Terima Bayar Piutang',  'type_id' => $receivableTypeId, 'icon' => '🤑', 'keyword' => 'terima piutang, dibayar, ditagih', 'system_key' => 'RECEIVABLE_PAYMENT'],
+            ['category_name' => 'Makan & Minum',        'type_id' => $expenseTypeId,    'icon' => 'utensils', 'keyword' => 'makan & minum, makan, beli makan, kuliner, restoran, warung, food, minum, gofood, kfc, warkop, warteg, resto, kantin, bekal'],
+            ['category_name' => 'Transportasi',         'type_id' => $expenseTypeId,    'icon' => 'car', 'keyword' => 'transportasi, bensin, gojek, grab, parkir, tol, naik, kendaraan, ojek, taksi'],
+            ['category_name' => 'Belanja',              'type_id' => $expenseTypeId,    'icon' => 'shopping-bag', 'keyword' => 'belanja, shopping, grosir, pasar, supermarket, mall, tokped, shopee, lazada, olshop'],
+            ['category_name' => 'Hiburan',              'type_id' => $expenseTypeId,    'icon' => 'gamepad-2', 'keyword' => 'hiburan, game, nonton, streaming, netflix, spotify, bioskop, konser, liburan'],
+            ['category_name' => 'Kesehatan',            'type_id' => $expenseTypeId,    'icon' => 'pill', 'keyword' => 'kesehatan, obat, dokter, klinik, rumah sakit, berobat, periksa, lab, vaksin'],
+            ['category_name' => 'Listrik & Air',        'type_id' => $expenseTypeId,    'icon' => 'lightbulb', 'keyword' => 'listrik, air, pln, pdam, tagihan, utilitas'],
+            ['category_name' => 'Pulsa & Internet',     'type_id' => $expenseTypeId,    'icon' => 'smartphone', 'keyword' => 'pulsa, internet, kuota, paket data, telkomsel, indosat, xl, axis, indihome, wifi'],
+            ['category_name' => 'Pendidikan',           'type_id' => $expenseTypeId,    'icon' => 'book-open', 'keyword' => 'pendidikan, kuliah, sekolah, kursus, buku, spp, ukt, seminar, workshop'],
+            ['category_name' => 'Pakaian',              'type_id' => $expenseTypeId,    'icon' => 'shirt', 'keyword' => 'pakaian, baju, celana, sepatu, aksesoris, fashion, pakaian'],
+            ['category_name' => 'Donasi',               'type_id' => $expenseTypeId,    'icon' => 'handshake', 'keyword' => 'donasi, sedekah, zakat, infaq, amal, sumbangan, kotak amal'],
+            ['category_name' => 'Gaji',                 'type_id' => $incomeTypeId,     'icon' => 'banknote', 'keyword' => 'gaji, salary, penghasilan, pendapatan, upah, honor, thr'],
+            ['category_name' => 'Bonus',                'type_id' => $incomeTypeId,     'icon' => 'gift', 'keyword' => 'bonus, insentif, komisi, fee'],
+            ['category_name' => 'Freelance',            'type_id' => $incomeTypeId,     'icon' => 'laptop', 'keyword' => 'freelance, proyek, project, kerja lepas'],
+            ['category_name' => 'Pendapatan Lain',      'type_id' => $incomeTypeId,     'icon' => 'circle-dollar-sign', 'keyword' => 'pendapatan lain, pemasukan lain, uang masuk'],
+            ['category_name' => 'Transfer Saldo',       'type_id' => $transferTypeId,   'icon' => 'arrow-left-right', 'keyword' => 'transfer, pindah saldo, pindah uang, mutasi', 'system_key' => 'TRANSFER'],
+            ['category_name' => 'Dapat Hutangan',       'type_id' => $debtTypeId,       'icon' => 'hand-coins', 'keyword' => 'hutang, utang, pinjam, hutangan, ngutang', 'system_key' => 'LOAN'],
+            ['category_name' => 'Bayar Cicilan Hutang',  'type_id' => $debtTypeId,      'icon' => 'circle-dollar-sign', 'keyword' => 'bayar hutang, bayar utang, cicilan, lunasin', 'system_key' => 'DEBT_PAYMENT'],
+            ['category_name' => 'Ngasih Piutang',        'type_id' => $receivableTypeId, 'icon' => 'file-text', 'keyword' => 'piutang, minjemin, ngutangin', 'system_key' => 'RECEIVABLE'],
+            ['category_name' => 'Terima Bayar Piutang',  'type_id' => $receivableTypeId, 'icon' => 'banknote', 'keyword' => 'terima piutang, dibayar, ditagih', 'system_key' => 'RECEIVABLE_PAYMENT'],
         ];
 
         $existingCats = Category::where('user_id', $user->id)->get()->keyBy('category_name');

@@ -49,7 +49,7 @@ const displayShort  = (n) => props.isVisible ? formatNumber(n) : '••••'
 </script>
 
 <template>
-    <div class="relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 overflow-hidden mb-5 group animate-fade-in-up delay-200">
+    <div class="relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 overflow-hidden mb-3 sm:mb-5 group animate-fade-in-up delay-200">
         <!-- Hover overlay -->
         <div class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" aria-hidden="true" />
 
@@ -76,7 +76,7 @@ const displayShort  = (n) => props.isVisible ? formatNumber(n) : '••••'
         </div>
 
         <!-- Content -->
-        <div class="relative z-10 p-7 pb-6">
+        <div class="relative z-10 p-4 sm:p-7 sm:pb-6">
             <!-- Header row -->
             <div class="flex justify-between items-center mb-4">
                 <div class="flex items-center gap-2">
@@ -105,8 +105,8 @@ const displayShort  = (n) => props.isVisible ? formatNumber(n) : '••••'
 
             <!-- Total amount -->
             <div class="flex items-baseline gap-1.5 mb-4">
-                <span class="text-lg font-medium text-gray-500">Rp</span>
-                <h2 class="text-3xl font-black text-white tracking-tight" aria-live="polite">
+                <span class="text-base sm:text-lg font-medium text-gray-500">Rp</span>
+                <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight" aria-live="polite">
                     {{ displayAmount(totalPortfolio) }}
                 </h2>
             </div>

@@ -27,7 +27,7 @@ const props = withDefaults(defineProps<{
       <SettingsCard :title="t('settings.system.about.app_name')" :description="t('settings.system.about.app_description')">
         <div class="space-y-4">
           <div class="flex justify-between">
-            <span class="text-sm text-gray-400">{{ t('settings.system.about.version') }}</span>
+            <span class="text-2xs sm:text-sm text-gray-400">{{ t('settings.system.about.version') }}</span>
             <span class="text-sm text-white font-medium">{{ appVersion }}</span>
           </div>
           <div class="border-t border-gray-700 pt-4">
@@ -37,7 +37,7 @@ const props = withDefaults(defineProps<{
       </SettingsCard>
 
       <SettingsCard :title="t('settings.system.about.license.title')" :description="t('settings.system.about.license.description')">
-        <p class="text-sm text-gray-400">{{ t('settings.system.about.license.type') }}</p>
+        <p class="text-2xs sm:text-sm text-gray-400">{{ t('settings.system.about.license.type') }}</p>
       </SettingsCard>
 
       <SettingsCard :title="t('settings.system.about.credits.title')" :description="t('settings.system.about.credits.description')">

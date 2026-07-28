@@ -87,9 +87,27 @@ const isSettingsSubPage = computed(() => {
     }
 })
 
+const isCategorySubPage = computed(() => {
+    try {
+        const current = route().current()
+        return current && current.startsWith('categories.') && current !== 'categories.index'
+    } catch {
+        return false
+    }
+})
+
+const isWalletSubPage = computed(() => {
+    try {
+        const current = route().current()
+        return current && current.startsWith('wallets.') && current !== 'wallets.index'
+    } catch {
+        return false
+    }
+})
+
 // showBackButton: jika prop diset manual, ikuti prop; jika null, auto
 const effectiveShowBackButton = computed(() =>
-    props.showBackButton !== null ? props.showBackButton : isSettingsSubPage.value
+    props.showBackButton !== null ? props.showBackButton : isSettingsSubPage.value || isCategorySubPage.value || isWalletSubPage.value
 )
 
 // showGreeting: jika prop diset manual, ikuti prop; jika null, auto dari route
@@ -144,14 +162,34 @@ const routeTitleMap = computed(() => ({
     'categories.index':           t('category.title'),
     'categories.create':          t('category.titleCreate'),
     'categories.edit':            t('category.titleEdit'),
-    'categories.show':            t('category.titleEdit'),
+    'categories.show':            t('category.title'),
     'loans.index':                t('loan.title'),
     'settings.index':             t('settings.title'),
     'settings.ai.index':          t('ai.title'),
-    'settings.ai.bot':            t('chatBot.title'),
+    'settings.ai.bot':            t('settings.title'),
     'chat.index':                 'AI Chat',
-    'settings.account.profile':   t('profile.title'),
+    'settings.account.profile':   t('settings.title'),
 }))
+
+const subtitle = computed(() => {
+    try {
+        const current = route().current()
+        if (!current) return 'Bendaharaku'
+        // Settings sub-pages → section label
+        if (current !== 'settings.index' && current.startsWith('settings.')) {
+            const section = current.split('.').slice(0, 2).join('.')
+            const sectionMap = {
+                'settings.account':      t('account'),
+                'settings.finance':      t('finance'),
+                'settings.ai':           t('ai'),
+                'settings.notifications': t('notifications'),
+                'settings.privacy':      t('privacy'),
+            }
+            return sectionMap[section] || 'Bendaharaku'
+        }
+        return 'Bendaharaku'
+    } catch { return 'Bendaharaku' }
+})
 
 const routeLabel = computed(() => {
     if (props.title) return props.title
@@ -212,6 +250,26 @@ const handleBack = () => {
         return
     }
 
+    // Untuk halaman category sub-page, kembali ke categories index
+    if (isCategorySubPage.value) {
+        try {
+            router.visit(route('categories.index'))
+        } catch {
+            router.visit('/dashboard')
+        }
+        return
+    }
+
+    // Untuk halaman wallet sub-page, kembali ke wallets index
+    if (isWalletSubPage.value) {
+        try {
+            router.visit(route('wallets.index'))
+        } catch {
+            router.visit('/dashboard')
+        }
+        return
+    }
+
     // Fallback: gunakan Inertia router.back() yang aman
     // Jika tidak ada riwayat navigasi, arahkan ke dashboard
     try {
@@ -266,6 +324,7 @@ const handleOpenNotif = () => { /* TODO: notification center */ }
             <HeaderGreeting
                 :user-name="user?.name ?? ''"
                 :route-label="routeLabel"
+                :subtitle="subtitle"
                 :is-dashboard="shouldShowGreeting"
                 :is-collapsed="isCollapsed"
             />

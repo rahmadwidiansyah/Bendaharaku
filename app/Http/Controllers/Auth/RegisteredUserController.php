@@ -49,7 +49,7 @@ class RegisteredUserController extends Controller
             'name' => 'External System',
             'group_type' => 'System',
             'balance' => 0,
-            'icon' => '🌐',
+            'icon' => 'globe',
             'is_active' => true,
         ]);
 
@@ -59,7 +59,7 @@ class RegisteredUserController extends Controller
             'name' => 'Merchant System',
             'group_type' => 'System',
             'balance' => 0,
-            'icon' => '🛒',
+            'icon' => 'store',
             'is_active' => true,
         ]);
 

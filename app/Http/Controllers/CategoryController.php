@@ -77,7 +77,7 @@ class CategoryController extends Controller
             abort(403);
         }
 
-        $types = TransactionType::all(); // Provide all types, but UI can disable changes for system categories
+        $types = TransactionType::whereIn('name', ['Income', 'Expense'])->get();
 
         return Inertia::render('Categories/Edit', [
             'category' => $category,

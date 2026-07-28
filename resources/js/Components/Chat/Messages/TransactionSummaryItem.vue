@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import AppIcon from '@/Components/AppIcon.vue'
 
 const props = defineProps({
   type:         { type: String, default: 'expense' },
@@ -21,7 +22,7 @@ const accentClass = computed(() => {
 
 <template>
   <div class="flex items-center gap-2.5 px-3.5 py-1.5 hover:bg-white/[0.02] transition-colors min-h-[2.25rem]">
-    <span class="w-4.5 text-center shrink-0 text-sm leading-none">{{ categoryIcon }}</span>
+    <AppIcon :icon="categoryIcon" class="inline w-4 h-4 shrink-0 text-purple-400" />
     <div class="flex-1 min-w-0">
       <span class="text-xs font-medium text-gray-200 truncate leading-tight block">{{ category }}</span>
       <span v-if="groupType" class="text-2xs text-gray-600 leading-tight block mt-px">{{ groupType }}</span>

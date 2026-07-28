@@ -2,11 +2,13 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import axios from 'axios'
 import { useI18n } from 'vue-i18n'
+import { useToast } from '@/Composables/useToast'
 import TransactionDetailModal from './TransactionDetailModal.vue'
 import DraftActions from './DraftActions.vue'
 import QuickWalletPicker from './QuickWalletPicker.vue'
 
 const { t } = useI18n()
+const { showToast } = useToast()
 
 const props = defineProps({
     component: { type: Object, required: true },
@@ -123,9 +125,11 @@ async function assignWallet({ walletId }) {
         if (data.success) {
             applyTransactionPatch(data.transaction)
             isConfirmed.value = true
+            showToast(t('toast.updated'), 'success')
         }
     } catch (e) {
         if (e.response?.status === 404) markCancelled()
+        showToast(t('toast.error'), 'error')
         console.error('assignWallet error', e)
     } finally {
         isAssigning.value = false
@@ -136,18 +140,19 @@ async function confirmDraft() {
     try {
         const { data } = await axios.patch(route('chat.transaction.confirm', { id: apiId.value }))
         if (data.success && data.transaction) {
-            // Update localTrx: tandai sebagai confirmed dan ganti draft_id dengan transaction_log id
             applyTransactionPatch({
                 ...data.transaction,
-                id:        data.transaction.id,   // real transaction_log id dari server
-                draft_id:  undefined,             // hapus draft_id, sudah tidak relevan
+                id:        data.transaction.id,
+                draft_id:  undefined,
                 is_draft:  false,
                 is_cleared: true,
             })
             isConfirmed.value = true
+            showToast(t('toast.saved'), 'success')
         }
     } catch (e) {
         if (e.response?.status === 404) markCancelled()
+        showToast(t('toast.error'), 'error')
         console.error('confirmDraft error', e)
     }
 }
@@ -155,9 +160,13 @@ async function confirmDraft() {
 async function cancelDraft() {
     try {
         const { data } = await axios.delete(route('chat.transaction.cancel', { id: apiId.value }))
-        if (data.success) markCancelled()
+        if (data.success) {
+            markCancelled()
+            showToast(t('toast.deleted'), 'success')
+        }
     } catch (e) {
         if (e.response?.status === 404) markCancelled()
+        showToast(t('toast.error'), 'error')
         console.error('cancelDraft error', e)
     }
 }

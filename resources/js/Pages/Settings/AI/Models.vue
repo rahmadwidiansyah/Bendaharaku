@@ -6,8 +6,10 @@ import SettingsCard from '@/Components/Settings/SettingsCard.vue';
 import { useI18n } from 'vue-i18n';
 import { ref, computed, watch, reactive } from 'vue';
 import axios from 'axios';
+import { useToast } from '@/Composables/useToast';
 
 const { t } = useI18n();
+const { showToast } = useToast();
 
 interface Props {
   providerStatuses?: Record<string, any>;
@@ -30,7 +32,7 @@ const testResultType = ref<'success' | 'error'>('success');
 const initialActive = Object.entries(props.providerStatuses).find(
   ([, s]) => s?.is_active_provider,
 );
-const localActiveProvider = ref(initialActive?.[0] ?? '');
+const localActiveProvider = ref(initialActive?.[0] ?? (props.availableProviders?.[0] ?? ''));
 const localStatuses = reactive<Record<string, any>>({});
 
 // Form state per provider yang sedang aktif
@@ -42,8 +44,6 @@ const form = ref({
 });
 
 const saving = ref(false);
-const saveMessage = ref('');
-const saveMessageType = ref<'success' | 'error'>('success');
 
 
 // ── Helpers ───────────────────────────────────────────────────────
@@ -75,8 +75,7 @@ const syncFormWithProvider = (provider: string) => {
   form.value.api_key            = '';
   form.value.selected_model     = config?.selected_model || models[0] || '';
   form.value.is_active_provider = provider === localActiveProvider.value;
-  testResult.value              = null;
-  saveMessage.value             = '';
+testResult.value              = null;
 };
 
 const handleProviderChange = (provider: string) => {
@@ -122,7 +121,6 @@ const saveSettings = async () => {
   const prevStatus = { ...getProviderStatus(form.value.provider) };
 
   saving.value = true;
-  saveMessage.value = '';
   try {
     const { data } = await axios.patch(route('settings.ai.store'), {
       provider:             form.value.provider,
@@ -131,8 +129,7 @@ const saveSettings = async () => {
       is_active_provider:   form.value.is_active_provider,
     });
 
-    saveMessageType.value = 'success';
-    saveMessage.value     = data.message || t('toast.updated');
+    showToast(data.message || t('toast.updated'), 'success');
 
     // Sync local state with server response
     localStatuses[form.value.provider] = {
@@ -153,13 +150,10 @@ const saveSettings = async () => {
 
     // Reset API key field setelah simpan (keamanan — jangan tampilkan key)
     form.value.api_key = '';
-
-    setTimeout(() => { saveMessage.value = ''; }, 4000);
   } catch (err: any) {
     // Rollback — restore to previous state
     localStatuses[form.value.provider] = prevStatus;
-    saveMessageType.value = 'error';
-    saveMessage.value     = err.response?.data?.message || t('errors.generic');
+    showToast(err.response?.data?.message || t('errors.generic'), 'error');
   } finally {
     saving.value = false;
   }
@@ -174,25 +168,12 @@ const saveSettings = async () => {
       :title="t('settings.ai.models.title')"
       :description="t('settings.ai.models.description')"
     >
-      <!-- Save / Error feedback banner -->
-      <div
-        v-if="saveMessage"
-        :class="[
-          'mb-4 p-4 rounded-lg border text-sm',
-          saveMessageType === 'success'
-            ? 'bg-green-500/20 border-green-500/50 text-green-400'
-            : 'bg-red-500/20 border-red-500/50 text-red-400',
-        ]"
-      >
-        {{ saveMessageType === 'success' ? '✓' : '✗' }} {{ saveMessage }}
-      </div>
-
       <!-- Provider Selection -->
       <SettingsCard
         :title="t('settings.ai.models.provider.label')"
         :description="t('settings.ai.models.provider.description')"
       >
-        <div class="space-y-4">
+        <div class="space-y-3">
           <!-- Provider Tabs -->
           <div class="-mx-4 sm:mx-0 overflow-x-auto">
             <div class="flex gap-2 px-4 sm:px-0 whitespace-nowrap">
@@ -201,7 +182,7 @@ const saveSettings = async () => {
                 :key="provider"
                 @click="handleProviderChange(provider)"
                 :class="[
-                  'inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium text-sm transition-all select-none',
+                  'inline-flex items-center justify-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-semibold text-xs sm:text-sm transition-all select-none',
                   selectedProvider === provider
                     ? 'bg-purple-600 text-white shadow-md'
                     : 'bg-gray-800 text-gray-300 hover:bg-gray-700',
@@ -209,7 +190,7 @@ const saveSettings = async () => {
               >
                 <span
                   v-if="getProviderStatus(provider)?.is_active_provider"
-                  class="w-2 h-2 rounded-full bg-emerald-400 shrink-0 mr-2"
+                  class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-400 shrink-0 mr-1.5 sm:mr-2"
                 />
                 {{ provider.toUpperCase() }}
               </button>
@@ -217,25 +198,25 @@ const saveSettings = async () => {
           </div>
 
           <!-- Status Indicator -->
-          <div class="flex items-center gap-2 p-3 bg-gray-900 rounded-lg border border-gray-700">
+          <div class="flex items-center gap-2 p-2.5 sm:p-3 bg-gray-900 rounded-lg border border-white/5">
             <span
               :class="[
-                'w-3 h-3 rounded-full shrink-0',
+                'w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full shrink-0',
                 currentStatus === 'Connected' ? 'bg-emerald-500' : 'bg-gray-500',
               ]"
             />
-            <span class="text-sm text-gray-300">
+            <span class="text-xs sm:text-sm text-gray-300">
               {{ t('settings.ai.models.status') }}:
               <span :class="currentStatus === 'Connected' ? 'text-emerald-400' : 'text-gray-400'">
                 {{ currentStatus }}
               </span>
             </span>
 
-            <!-- Test Connection Button — di dalam status row -->
+            <!-- Test Connection -->
             <button
               @click="testConnection"
               :disabled="isTesting"
-              class="ml-auto px-3 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 text-white rounded-lg disabled:opacity-50 transition-colors"
+              class="ml-auto px-2.5 py-1 sm:px-3 sm:py-1.5 text-2xs sm:text-xs bg-gray-700 hover:bg-gray-600 text-white rounded-lg disabled:opacity-50 transition-colors font-semibold"
             >
               {{ isTesting ? t('settings.ai.models.testing') : t('settings.ai.models.test_button') }}
             </button>
@@ -245,7 +226,7 @@ const saveSettings = async () => {
           <div
             v-if="testResult"
             :class="[
-              'p-3 rounded-lg text-sm border',
+              'p-2.5 sm:p-3 rounded-lg text-xs sm:text-sm border',
               testResultType === 'success'
                 ? 'bg-emerald-900/30 text-emerald-300 border-emerald-500/30'
                 : 'bg-red-900/30 text-red-300 border-red-500/30',
@@ -261,18 +242,16 @@ const saveSettings = async () => {
         :title="t('settings.ai.models.model.label')"
         :description="t('settings.ai.models.model.description')"
       >
-        <div class="space-y-3">
-          <select
-            v-model="form.selected_model"
-            class="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-purple-500 transition-colors"
-          >
-            <option value="">{{ t('settings.ai.models.select_model') }}</option>
-            <option v-for="model in currentModels" :key="model" :value="model">
-              {{ model }}
-            </option>
-          </select>
-          <p class="text-xs text-gray-400">{{ t('settings.ai.models.model.hint') }}</p>
-        </div>
+        <select
+          v-model="form.selected_model"
+          class="w-full px-3 py-1.5 sm:px-4 sm:py-2.5 bg-gray-800 border border-gray-700 rounded-lg sm:rounded-xl text-white focus:outline-none focus:border-purple-500 transition-all text-sm"
+        >
+          <option value="">{{ t('settings.ai.models.select_model') }}</option>
+          <option v-for="model in currentModels" :key="model" :value="model">
+            {{ model }}
+          </option>
+        </select>
+        <p class="mt-2 text-2xs text-gray-400">{{ t('settings.ai.models.model.hint') }}</p>
       </SettingsCard>
 
       <!-- API Key -->
@@ -280,24 +259,22 @@ const saveSettings = async () => {
         :title="t('settings.ai.models.api_key.label')"
         :description="t('settings.ai.models.api_key.description')"
       >
-        <div class="space-y-3">
-          <input
-            v-model="form.api_key"
-            type="password"
-            placeholder="Kosongkan jika tidak ingin mengubah key"
-            autocomplete="new-password"
-            class="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
-          />
-          <p class="text-xs text-gray-400">
-            {{ t('settings.ai.models.api_key.warning') }}
-          </p>
-        </div>
+        <input
+          v-model="form.api_key"
+          type="password"
+          :placeholder="t('settings.ai.models.api_key.placeholder')"
+          autocomplete="new-password"
+          class="w-full px-3 py-1.5 sm:px-4 sm:py-2.5 bg-gray-800 border border-gray-700 rounded-lg sm:rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-all text-sm"
+        />
+        <p class="mt-2 text-2xs text-gray-400">
+          {{ t('settings.ai.models.api_key.warning') }}
+        </p>
       </SettingsCard>
 
       <!-- Set as Active Provider -->
       <SettingsCard
-        :title="t('settings.ai.models.provider.label')"
-        :description="t('settings.ai.models.provider.description')"
+        :title="t('settings.ai.models.set_active')"
+        :description="t('settings.ai.models.set_active_desc')"
       >
         <label class="flex items-center gap-3 cursor-pointer select-none">
           <div class="relative">
@@ -306,32 +283,32 @@ const saveSettings = async () => {
               type="checkbox"
               class="sr-only peer"
             />
-            <div class="w-10 h-6 bg-gray-700 rounded-full peer peer-checked:bg-purple-600 transition-colors" />
-            <div class="absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4" />
+            <div class="w-9 h-5 sm:w-10 sm:h-6 bg-gray-700 rounded-full peer peer-checked:bg-purple-600 transition-colors" />
+            <div class="absolute top-0.5 sm:top-1 left-0.5 sm:left-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4 sm:peer-checked:translate-x-4" />
           </div>
-          <span class="text-sm text-gray-300">
-            Jadikan provider aktif untuk semua percakapan
+          <span class="text-xs sm:text-sm text-gray-300">
+            {{ t('settings.ai.models.provider_toggle') }}
           </span>
         </label>
       </SettingsCard>
 
       <!-- Help Text -->
-      <div class="p-4 bg-blue-900/20 border border-blue-500/20 rounded-lg">
-        <p class="text-sm text-blue-400">
-          💡 {{ t('settings.ai.models.help_text') }}
+      <div class="p-3 sm:p-4 bg-blue-900/20 border border-blue-500/20 rounded-lg">
+        <p class="text-xs sm:text-sm text-blue-400">
+          {{ t('settings.ai.models.help_text') }}
         </p>
       </div>
 
-      <!-- Save Button — di bawah semua card -->
-      <div class="flex items-center gap-3 pt-2">
+      <!-- Save -->
+      <div class="flex items-center gap-3 pt-1 sm:pt-2">
         <button
           @click="saveSettings"
           :disabled="saving || !hasChanges"
-          class="px-5 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors inline-flex items-center gap-2"
+          class="px-4 py-2 sm:px-5 sm:py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-lg sm:rounded-xl text-xs font-bold uppercase tracking-wider transition-all inline-flex items-center gap-2 shadow-lg shadow-purple-900/20"
         >
           <svg
             v-if="saving"
-            class="animate-spin h-4 w-4"
+            class="animate-spin w-3.5 h-3.5"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
@@ -341,7 +318,7 @@ const saveSettings = async () => {
           </svg>
           {{ saving ? t('common.saving') : t('common.save') }}
         </button>
-        <span v-if="!hasChanges && !saving" class="text-xs text-emerald-400">
+        <span v-if="!hasChanges && !saving" class="text-2xs text-emerald-400 font-semibold">
           ✓ {{ t('settings.ai.models.active') }}
         </span>
       </div>

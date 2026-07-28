@@ -31,6 +31,10 @@ const props = defineProps({
         type: String,
         default: 'Bendaharaku',
     },
+    subtitle: {
+        type: String,
+        default: 'Bendaharaku',
+    },
     isDashboard: {
         type: Boolean,
         default: false,
@@ -97,13 +101,13 @@ const displayName = computed(() =>
                     {{ routeLabel }}
                 </h1>
                 <p class="text-2xs text-gray-500 font-semibold uppercase tracking-widest leading-tight truncate">
-                    Bendaharaku
+                    {{ subtitle }}
                 </p>
             </div>
 
             <!--
                 ── HALAMAN LAIN ──────────────────────────────────────
-                Langsung tampilkan judul halaman + "Bendaharaku"
+                Langsung tampilkan judul halaman + subtitle
                 Tidak ada greeting, tidak peduli collapsed atau tidak.
             -->
             <div v-else key="page-title">
@@ -111,7 +115,7 @@ const displayName = computed(() =>
                     {{ routeLabel }}
                 </h1>
                 <p class="text-2xs text-gray-500 font-semibold uppercase tracking-widest leading-tight truncate">
-                    Bendaharaku
+                    {{ subtitle }}
                 </p>
             </div>
         </Transition>

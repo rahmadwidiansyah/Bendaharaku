@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
-import EmojiPicker from '@/Components/EmojiPicker.vue';
+import { Head, useForm } from '@inertiajs/vue3';
+import IconPicker from '@/Components/IconPicker.vue';
 import ConfirmationDialog from '@/Components/ConfirmationDialog.vue';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -15,7 +15,7 @@ const props = defineProps({
 const form = useForm({
     name: props.wallet.name,
     balance: props.wallet.balance,
-    icon: props.wallet.icon || '💳',
+    icon: props.wallet.icon || 'wallet',
     icon_file: null,
     keyword: props.wallet.keyword || '',
     is_pinned: !!props.wallet.is_pinned,
@@ -47,71 +47,63 @@ const confirmDeleteWallet = () => {
 </script>
 
 <template>
-    <AuthenticatedLayout :fullWidth="true" :hideNav="true">
+    <AuthenticatedLayout :fullWidth="true">
 
         <Head :title="t('wallet.titleEdit')" />
         <div class="p-5 w-full lg:max-w-4xl mx-auto lg:px-8 relative animate-slide-up opacity-0"
             style="animation-delay: 50ms;">
 
-            <header class="flex justify-between items-center mb-8 pt-4">
-                <div class="hidden lg:block">
-                    <h1 class="text-2xl font-bold text-white tracking-tight">{{ t('wallet.titleEdit') }}</h1>
-                </div>
-                <Link :href="route('wallets.show', wallet.id)"
-                    class="w-10 h-10 rounded-full bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 flex items-center justify-center text-gray-400 active:scale-90 transition-all shadow-md hover:text-white hover:border-gray-500">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </Link>
+            <header class="hidden lg:block mb-8 pt-4">
+                <h1 class="text-2xl font-bold text-white tracking-tight">{{ t('wallet.titleEdit') }}</h1>
             </header>
 
-            <form @submit.prevent="submit" class="space-y-6">
+            <form @submit.prevent="submit" class="space-y-5 lg:space-y-6">
 
                 <div class="flex flex-col animate-slide-up opacity-0 relative z-10" style="animation-delay: 150ms;">
-                    <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">{{ t('wallet.balance') }}</label>
+                    <label class="block text-2xs lg:text-sm font-medium text-gray-300 mb-1.5 lg:mb-2 ml-1">{{ t('wallet.balance') }}</label>
                     <div
-                        class="h-[60px] bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl px-5 flex items-center group focus-within:border-purple-500/40 focus-within:ring-1 focus-within:ring-purple-500/20 transition-all shadow-inner">
+                        class="h-[52px] lg:h-[60px] bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl px-4 lg:px-5 flex items-center group focus-within:border-purple-500/40 focus-within:ring-1 focus-within:ring-purple-500/20 transition-all shadow-inner">
                         <span class="text-base font-bold text-purple-500 mr-3 opacity-80">Rp</span>
                         <input type="text" inputmode="numeric" required v-model="displayAmount"
-                            class="w-full bg-transparent border-none text-white p-0 text-xl font-bold placeholder-gray-600 focus:ring-0 focus:outline-none caret-purple-500">
+                            class="w-full bg-transparent border-none text-white p-0 text-lg lg:text-xl font-bold placeholder-gray-600 focus:ring-0 focus:outline-none caret-purple-500">
                     </div>
                     <div v-if="form.errors.balance" class="text-red-500 text-2xs mt-1">{{ form.errors.balance }}</div>
-                    <p class="text-2xs text-gray-500 mt-2 ml-1 italic">{{ t('wallet.balancePlaceholder') }}</p>
+                    <p class="text-2xs text-gray-500 mt-1.5 lg:mt-2 ml-1 italic">{{ t('wallet.balancePlaceholder') }}</p>
                 </div>
 
                 <div class="flex gap-3 items-end animate-slide-up opacity-0 relative z-50"
                     style="animation-delay: 200ms;">
                     <div class="flex-none">
-                        <EmojiPicker v-model="form.icon" @file-selected="(file) => form.icon_file = file"
-                            :defaultEmoji="wallet.icon || '💳'" />
+                        <IconPicker v-model="form.icon" @file-selected="(file) => form.icon_file = file"
+                            :defaultIcon="wallet.icon || 'wallet'" />
                     </div>
 
                     <div class="flex-1 flex flex-col justify-end">
-                        <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">{{ t('wallet.name') }}</label>
+                        <label class="block text-2xs lg:text-sm font-medium text-gray-300 mb-1.5 lg:mb-2 ml-1">{{ t('wallet.name') }}</label>
                         <div
-                            class="h-[60px] bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 rounded-xl px-5 flex items-center group focus-within:border-purple-500/40 focus-within:ring-1 focus-within:ring-purple-500/20 transition-all shadow-inner">
+                            class="h-[52px] lg:h-[60px] bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 rounded-xl px-4 lg:px-5 flex items-center group focus-within:border-purple-500/40 focus-within:ring-1 focus-within:ring-purple-500/20 transition-all shadow-inner">
                             <input type="text" v-model="form.name" required :placeholder="t('wallet.namePlaceholder')"
-                                class="w-full bg-transparent border-none text-white p-0 text-base font-medium focus:ring-0 focus:outline-none">
+                                class="w-full bg-transparent border-none text-white p-0 text-sm lg:text-base font-medium focus:ring-0 focus:outline-none">
                         </div>
                         <div v-if="form.errors.name" class="text-red-500 text-2xs mt-1">{{ form.errors.name }}</div>
                     </div>
                 </div>
 
                 <div class="flex flex-col animate-slide-up opacity-0 relative z-40" style="animation-delay: 250ms;">
-                    <label class="block text-sm font-medium text-gray-300 mb-2 ml-1">{{ t('wallet.keyword') }}</label>
+                    <label class="block text-2xs lg:text-sm font-medium text-gray-300 mb-1.5 lg:mb-2 ml-1">{{ t('wallet.keyword') }}</label>
                     <div
-                        class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-4 group focus-within:border-purple-500/40 focus-within:ring-1 focus-within:ring-purple-500/20 transition-all">
+                        class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-3 lg:p-4 group focus-within:border-purple-500/40 focus-within:ring-1 focus-within:ring-purple-500/20 transition-all">
                         <input type="text" v-model="form.keyword" :placeholder="t('wallet.keywordHint')"
                             class="w-full bg-transparent border-none text-white p-0 text-sm placeholder-gray-600 focus:ring-0 focus:outline-none">
                     </div>
                     <div v-if="form.errors.keyword" class="text-red-500 text-2xs mt-1">{{ form.errors.keyword }}</div>
                 </div>
 
-                <div class="flex items-center justify-between bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 rounded-xl p-4 animate-slide-up opacity-0 relative z-35"
+                <div class="flex items-center justify-between bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 rounded-xl p-3 lg:p-4 animate-slide-up opacity-0 relative z-35"
                     style="animation-delay: 275ms;">
                     <div>
-                        <label class="block text-sm font-medium text-gray-300">Pin ke Dashboard</label>
-                        <p class="text-2xs text-gray-500 mt-0.5">Tampilkan dompet ini di halaman utama</p>
+                        <label class="block text-2xs lg:text-sm font-medium text-gray-300">{{ t('wallet.pinDashboard') }}</label>
+                        <p class="text-2xs text-gray-500 mt-0.5">{{ t('wallet.pinDashboardDesc') }}</p>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" v-model="form.is_pinned" class="sr-only peer">
@@ -121,18 +113,18 @@ const confirmDeleteWallet = () => {
                     </label>
                 </div>
 
-                <div class="pt-4 space-y-3 animate-slide-up opacity-0 relative z-30" style="animation-delay: 300ms;">
+                <div class="pt-3 lg:pt-4 space-y-3 animate-slide-up opacity-0 relative z-30" style="animation-delay: 300ms;">
                     <button type="submit" :disabled="form.processing"
-                        class="w-full bg-linear-to-br from-purple-800 to-purple-600 text-white font-bold text-sm tracking-wide py-4 rounded-xl hover:-translate-y-0.5 active:scale-95 transition-all duration-200">
+                        class="w-full bg-linear-to-br from-purple-800 to-purple-600 text-white font-bold text-sm tracking-wide py-3.5 lg:py-4 rounded-xl hover:-translate-y-0.5 active:scale-95 transition-all duration-200">
                         {{ form.processing ? t('btn.saving') : t('btn.update') }}
                     </button>
                 </div>
             </form>
 
-            <div class="mt-4 animate-slide-up opacity-0 relative z-20"
+            <div class="mt-3 lg:mt-4 animate-slide-up opacity-0 relative z-20"
                 style="animation-delay: 350ms;">
                 <button type="button" :disabled="deleteForm.processing" @click="deleteWallet"
-                    class="w-full bg-linear-to-br from-red-800 to-red-900 text-white font-bold text-sm py-4 rounded-xl hover:translate-y-0.5 active:scale-95 transition-all">
+                    class="w-full bg-linear-to-br from-red-800 to-red-900 text-white font-bold text-sm py-3.5 lg:py-4 rounded-xl hover:translate-y-0.5 active:scale-95 transition-all">
                     {{ deleteForm.processing ? t('btn.deleting') : t('btn.delete') }}
                 </button>
             </div>

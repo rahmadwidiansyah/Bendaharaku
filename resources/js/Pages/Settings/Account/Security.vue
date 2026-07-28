@@ -3,11 +3,13 @@ import { Head, useForm, usePage } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import SettingsLayout from '../Layouts/SettingsLayout.vue';
 import SettingsCard from '@/Components/Settings/SettingsCard.vue';
+import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { ref } from 'vue';
+import { useToast } from '@/Composables/useToast';
 
 const { t } = useI18n();
 const page = usePage();
+const { showToast } = useToast();
 
 
 interface SessionInfo {
@@ -28,13 +30,36 @@ const props = withDefaults(
   }
 );
 
+const sessions = computed(() => {
+  const all = [...(props.otherSessions ?? [])];
+  if (props.currentSession) {
+    const idx = all.findIndex(s => s.ip === props.currentSession!.ip);
+    if (idx >= 0) {
+      if (new Date(props.currentSession.last_activity) >= new Date(all[idx].last_activity)) {
+        all[idx] = { ...props.currentSession, is_current: true };
+      }
+    } else {
+      all.push({ ...props.currentSession, is_current: true });
+    }
+  }
+  const map = new Map<string, SessionInfo>();
+  for (const s of all) {
+    const existing = map.get(s.ip);
+    if (!existing || new Date(s.last_activity) >= new Date(existing.last_activity)) {
+      map.set(s.ip, s);
+    }
+  }
+  return Array.from(map.values()).sort(
+    (a, b) => new Date(b.last_activity).getTime() - new Date(a.last_activity).getTime()
+  );
+});
+
 const form = useForm({
   current_password: '',
   password: '',
   password_confirmation: '',
 });
 
-const successMessage = ref('');
 const errorMessage = ref('');
 
 function parseBrowser(ua: string): string {
@@ -55,10 +80,9 @@ function formatActivity(ts: string): string {
 
 const handleUpdatePassword = () => {
   errorMessage.value = '';
-  successMessage.value = '';
 
   if (form.password !== form.password_confirmation) {
-    errorMessage.value = 'Passwords do not match.';
+    showToast('Passwords do not match.', 'error');
     return;
   }
 
@@ -66,14 +90,13 @@ const handleUpdatePassword = () => {
     preserveScroll: true,
     onSuccess: () => {
       form.reset();
-      successMessage.value = t('profile.passwordUpdated');
-      setTimeout(() => { successMessage.value = ''; }, 4000);
+      showToast(t('profile.passwordUpdated'), 'success');
     },
     onError: () => {
-      errorMessage.value = form.errors.current_password
+      showToast(form.errors.current_password
         || form.errors.password
         || form.errors.password_confirmation
-        || t('errors.generic');
+        || t('errors.generic'), 'error');
     },
   });
 };
@@ -87,68 +110,60 @@ const handleUpdatePassword = () => {
       :title="t('settings.account.security.title')"
       :description="t('settings.account.security.description')"
     >
-      <!-- Success/Error Banners -->
-      <div v-if="successMessage" class="mb-4 p-4 bg-green-500/20 border border-green-500/50 rounded-lg">
-        <p class="text-sm text-green-400">✓ {{ successMessage }}</p>
-      </div>
-      <div v-if="errorMessage" class="mb-4 p-4 bg-red-500/20 border border-red-500/50 rounded-lg">
-        <p class="text-sm text-red-400">✗ {{ errorMessage }}</p>
-      </div>
-
       <!-- Change Password Form -->
       <SettingsCard :title="t('settings.account.security.password.title')" :description="t('settings.account.security.password.description')">
-        <form @submit.prevent="handleUpdatePassword" class="space-y-4">
+        <form @submit.prevent="handleUpdatePassword" class="space-y-3">
           <!-- Current Password -->
           <div>
-            <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">
+            <label class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1 ml-1">
               {{ t('profile.currentPassword') }}
             </label>
             <input
               v-model="form.current_password"
               type="password"
               required
-              class="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
+              class="w-full px-3 py-1.5 sm:px-4 sm:py-2.5 bg-gray-800 border border-gray-700 rounded-lg sm:rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-all text-sm"
               :placeholder="t('profile.currentPassword')"
             />
-            <p v-if="form.errors.current_password" class="mt-1 text-xs text-red-500 font-semibold">{{ form.errors.current_password }}</p>
+            <p v-if="form.errors.current_password" class="mt-1 text-2xs text-red-500 font-semibold ml-1">{{ form.errors.current_password }}</p>
           </div>
 
           <!-- New Password -->
           <div>
-            <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">
+            <label class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1 ml-1">
               {{ t('profile.newPassword') }}
             </label>
             <input
               v-model="form.password"
               type="password"
               required
-              class="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
+              class="w-full px-3 py-1.5 sm:px-4 sm:py-2.5 bg-gray-800 border border-gray-700 rounded-lg sm:rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-all text-sm"
               :placeholder="t('profile.newPassword')"
             />
-            <p v-if="form.errors.password" class="mt-1 text-xs text-red-500 font-semibold">{{ form.errors.password }}</p>
+            <p v-if="form.errors.password" class="mt-1 text-2xs text-red-500 font-semibold ml-1">{{ form.errors.password }}</p>
           </div>
 
           <!-- Confirm New Password -->
           <div>
-            <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">
+            <label class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1 ml-1">
               {{ t('profile.confirmPassword') }}
             </label>
             <input
               v-model="form.password_confirmation"
               type="password"
               required
-              class="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
+              class="w-full px-3 py-1.5 sm:px-4 sm:py-2.5 bg-gray-800 border border-gray-700 rounded-lg sm:rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-all text-sm"
               :placeholder="t('profile.confirmPassword')"
             />
-            <p v-if="form.errors.password_confirmation" class="mt-1 text-xs text-red-500 font-semibold">{{ form.errors.password_confirmation }}</p>
+            <p v-if="form.errors.password_confirmation" class="mt-1 text-2xs text-red-500 font-semibold ml-1">{{ form.errors.password_confirmation }}</p>
           </div>
 
           <!-- Save Button -->
-          <div class="flex gap-3 pt-2">
+          <div class="flex gap-2 pt-1 sm:pt-2">
             <button
               type="submit"
               :disabled="form.processing"
-              class="w-full sm:w-auto px-5 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors"
+              class="w-full sm:w-auto px-4 py-2 sm:px-5 sm:py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-lg sm:rounded-xl text-xs font-bold uppercase tracking-wider transition-all"
             >
               {{ form.processing ? t('common.saving') : t('settings.account.security.password.change_button') }}
             </button>
@@ -156,52 +171,39 @@ const handleUpdatePassword = () => {
         </form>
       </SettingsCard>
 
-      <!-- Active Sessions and History Section -->
+      <!-- Active Sessions -->
       <SettingsCard :title="t('settings.account.security.login_activity.title')" :description="t('settings.account.security.login_activity.description')">
-        <div class="space-y-3">
+        <div class="space-y-2">
+          <div v-if="sessions.length === 0" class="text-2xs sm:text-sm text-gray-400 py-2 text-center">{{ t('common.noData') }}</div>
 
-          <!-- No session data -->
-          <template v-if="!currentSession">
-            <p class="text-sm text-gray-400">⏳ Riwayat login sedang dikembangkan.</p>
-          </template>
-
-          <template v-else>
-            <!-- Current Session -->
-            <div class="flex items-start gap-3 p-3 bg-green-500/5 border border-green-500/20 rounded-xl">
-              <span class="text-xl mt-0.5 shrink-0">🖥️</span>
-              <div class="flex-1 min-w-0">
-                <div class="flex flex-wrap items-center gap-2">
-                  <p class="text-sm font-semibold text-white">{{ parseBrowser(currentSession.user_agent) }}</p>
-                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-bold bg-green-500/20 text-green-400 border border-green-500/30">
-                    Sesi ini
-                  </span>
-                </div>
-                <p class="text-xs text-gray-400 mt-0.5">{{ currentSession.ip }}</p>
-                <p v-if="currentSession.last_activity" class="text-xs text-gray-500 mt-0.5">
-                  {{ formatActivity(currentSession.last_activity) }}
-                </p>
-              </div>
+          <div
+            v-for="(session, index) in sessions"
+            :key="session.ip + index"
+            :class="[
+              'flex items-start gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-lg sm:rounded-xl border transition-colors',
+              session.is_current
+                ? 'bg-green-500/5 border-green-500/20'
+                : 'bg-gray-800/50 border-white/5',
+            ]"
+          >
+            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center shrink-0 bg-gray-800 border border-white/5">
+              <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
             </div>
-
-            <!-- Other Sessions -->
-            <template v-if="otherSessions && otherSessions.length > 0">
-              <div
-                v-for="(session, index) in otherSessions"
-                :key="index"
-                class="flex items-start gap-3 p-3 bg-gray-800/50 border border-white/[0.07] rounded-xl"
-              >
-                <span class="text-xl mt-0.5 shrink-0">🖥️</span>
-                <div class="flex-1 min-w-0">
-                  <p class="text-sm font-semibold text-white">{{ parseBrowser(session.user_agent) }}</p>
-                  <p class="text-xs text-gray-400 mt-0.5">{{ session.ip }}</p>
-                  <p v-if="session.last_activity" class="text-xs text-gray-500 mt-0.5">
-                    {{ formatActivity(session.last_activity) }}
-                  </p>
-                </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex flex-wrap items-center gap-1.5">
+                <p class="text-xs sm:text-sm font-semibold text-white">{{ parseBrowser(session.user_agent) }}</p>
+                <span v-if="session.is_current" class="px-1.5 py-0.5 rounded-full text-2xs font-bold bg-green-500/20 text-green-400 border border-green-500/30">
+                  {{ t('settings.account.security.login_activity.current') }}
+                </span>
               </div>
-            </template>
-          </template>
-
+              <p class="text-2xs text-gray-400 mt-0.5">{{ session.ip }}</p>
+              <p v-if="session.last_activity" class="text-2xs text-gray-500 mt-0.5">
+                {{ formatActivity(session.last_activity) }}
+              </p>
+            </div>
+          </div>
         </div>
       </SettingsCard>
     </SettingsLayout>

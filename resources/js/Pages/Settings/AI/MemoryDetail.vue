@@ -55,7 +55,7 @@ const actionBadge = (action: string) => {
       </template>
 
       <!-- Memory Info Card -->
-      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 mb-6">
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 mb-4 sm:mb-6">
         <h3 class="text-sm font-semibold text-gray-300 mb-4">{{ t('settings.ai.memory.detail.info') }}</h3>
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
           <div>
