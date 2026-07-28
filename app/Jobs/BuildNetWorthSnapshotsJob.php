@@ -4,84 +4,165 @@ namespace App\Jobs;
 
 use App\Models\NetWorthSnapshot;
 use App\Models\User;
-use App\Models\Wallet;
+use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\DB;
 
 class BuildNetWorthSnapshotsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public function __construct(private int $userId, private string $startDate, private string $endDate) {}
+    private const TYPE_INCOME = 1;
+    private const TYPE_EXPENSE = 2;
+    private const TYPE_DEBT = 4;
+    private const TYPE_RECEIVABLE = 5;
+
+    public int $tries = 3;
+    public int $timeout = 300;
+
+    public function __construct(
+        public int $userId,
+        public string $startDate,
+        public string $endDate,
+    ) {}
+
+    /**
+     * Arah kas WALLET (masuk = +, keluar = -).
+     * HARUS identik dengan signedCashCase() di AnalyticsController.
+     * Kalau dua tempat ini pernah divergen lagi, itu yang bikin bug lama muncul balik.
+     */
+    private function walletCashCase(): string
+    {
+        return "
+            CASE
+                WHEN transaction_logs.type_id = 1 THEN transaction_logs.amount
+                WHEN transaction_logs.type_id = 2 THEN -transaction_logs.amount
+                WHEN categories.category_name = 'Dapat Hutangan' THEN transaction_logs.amount
+                WHEN categories.category_name = 'Bayar Cicilan Hutang' THEN -transaction_logs.amount
+                WHEN categories.category_name = 'Terima Bayar Piutang' THEN transaction_logs.amount
+                WHEN categories.category_name = 'Ngasih Piutang' THEN -transaction_logs.amount
+                ELSE 0
+            END
+        ";
+    }
+
+    /**
+     * Perubahan saldo HUTANG outstanding (liability):
+     * - Dapat Hutangan        -> hutang bertambah (+)
+     * - Bayar Cicilan Hutang  -> hutang berkurang (-)
+     */
+    private function debtDeltaCase(): string
+    {
+        return "
+            CASE
+                WHEN categories.category_name = 'Dapat Hutangan' THEN transaction_logs.amount
+                WHEN categories.category_name = 'Bayar Cicilan Hutang' THEN -transaction_logs.amount
+                ELSE 0
+            END
+        ";
+    }
+
+    /**
+     * Perubahan saldo PIUTANG outstanding (asset):
+     * - Ngasih Piutang         -> piutang bertambah (+)
+     * - Terima Bayar Piutang   -> piutang berkurang (-)
+     */
+    private function receivableDeltaCase(): string
+    {
+        return "
+            CASE
+                WHEN categories.category_name = 'Ngasih Piutang' THEN transaction_logs.amount
+                WHEN categories.category_name = 'Terima Bayar Piutang' THEN -transaction_logs.amount
+                ELSE 0
+            END
+        ";
+    }
 
     public function handle(): void
     {
-        $user = User::find($this->userId);
-        if (! $user) {
+        if (! User::whereKey($this->userId)->exists()) {
             return;
         }
 
-        $period = CarbonPeriod::create($this->startDate, $this->endDate);
-
-        // current wallet total (as of now)
-        $wallets = Wallet::where('user_id', $user->id)->get();
-        $currentWalletTotal = (float) $wallets->sum('balance');
-
-        // current outstanding receivables / debts (is_cleared = false)
-        $currentReceivables = (float) $user->transactionLogs()->where('type_id', function ($q) { /* placeholder */
-        })->count();
-        // Simpler: sum from type name via relation
-        $currentReceivables = (float) $user->transactionLogs()->whereHas('type', fn ($q) => $q->where('name', 'Receivable'))->where('is_cleared', false)->sum('amount');
-        $currentDebts = (float) $user->transactionLogs()->whereHas('type', fn ($q) => $q->where('name', 'Debt'))->where('is_cleared', false)->sum('amount');
-
-        // Build per-date net effect (only cleared transactions affect historical wallet balances)
-        $allCleared = $user->transactionLogs()->with('type')
+        $firstTxDate = DB::table('transaction_logs')
+            ->where('user_id', $this->userId)
             ->where('is_cleared', true)
-            ->whereDate('date', '<=', $this->endDate)
-            ->orderBy('date', 'asc')
-            ->orderBy('created_at', 'asc')
-            ->get();
+            ->whereIn('type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE, self::TYPE_DEBT, self::TYPE_RECEIVABLE])
+            ->min('date');
 
-        // Group effects by date (net effect on net worth): +Income +Receivable -Expense -Debt
-        $effectsByDate = [];
-        foreach ($allCleared as $t) {
-            $d = $t->date?->toDateString() ?? (string) $t->date;
-            $name = $t->type?->name ?? '';
-            $sign = match ($name) {
-                'Income','Receivable' => 1,
-                'Expense','Debt' => -1,
-                default => 0,
-            };
-            $effectsByDate[$d] = ($effectsByDate[$d] ?? 0) + $sign * (float) $t->amount;
+        if (! $firstTxDate) {
+            return; // belum ada transaksi sama sekali
         }
 
-        // end net worth = current wallets + outstanding receivables - outstanding debts
-        $endNetWorth = $currentWalletTotal + $currentReceivables - $currentDebts;
+        // Mulai akumulasi dari transaksi PERTAMA user (bukan dari $startDate),
+        // supaya saldo kumulatif di hari $startDate akurat — bukan mulai dari nol.
+        $rangeStart = Carbon::parse($firstTxDate)->lt(Carbon::parse($this->startDate))
+            ? Carbon::parse($firstTxDate)
+            : Carbon::parse($this->startDate);
 
-        // Walk dates backwards from endDate to startDate, subtracting effects on each day
-        $running = $endNetWorth;
-        $dates = iterator_to_array($period);
-        $dates = array_map(fn ($d) => $d->toDateString(), $dates);
-        // iterate reverse so that snapshot for endDate equals current state
-        for ($i = count($dates) - 1; $i >= 0; $i--) {
-            $date = $dates[$i];
-            $effect = $effectsByDate[$date] ?? 0;
-            // snapshot for this date = running
-            NetWorthSnapshot::updateOrCreate(
-                ['user_id' => $user->id, 'snapshot_date' => $date],
-                [
-                    'total_wallet_balance' => 0, // leaving as zero; computing per-wallet historical requires more work
-                    'total_receivables' => 0,
-                    'total_debts' => 0,
-                    'net_worth' => $running,
-                ]
+        $dailyDeltas = DB::table('transaction_logs')
+            ->join('categories', 'transaction_logs.category_id', '=', 'categories.id')
+            ->selectRaw(
+                'transaction_logs.date as tx_date,
+                 SUM('.$this->walletCashCase().') as wallet_delta,
+                 SUM('.$this->debtDeltaCase().') as debt_delta,
+                 SUM('.$this->receivableDeltaCase().') as receivable_delta'
+            )
+            ->where('transaction_logs.user_id', $this->userId)
+            ->where('transaction_logs.is_cleared', true)
+            ->where('transaction_logs.date', '<=', $this->endDate)
+            ->whereIn('transaction_logs.type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE, self::TYPE_DEBT, self::TYPE_RECEIVABLE])
+            ->groupBy('transaction_logs.date')
+            ->get()
+            ->keyBy('tx_date');
+
+        $walletBalance = 0.0;
+        $debtBalance = 0.0;
+        $receivableBalance = 0.0;
+        $now = Carbon::now();
+        $rows = [];
+
+        foreach (CarbonPeriod::create($rangeStart, $this->endDate) as $dateObj) {
+            $dateStr = $dateObj->format('Y-m-d');
+            $delta = $dailyDeltas->get($dateStr);
+
+            $walletBalance += (float) ($delta->wallet_delta ?? 0);
+            $debtBalance += (float) ($delta->debt_delta ?? 0);
+            $receivableBalance += (float) ($delta->receivable_delta ?? 0);
+
+            // Simpan snapshot hanya untuk hari di rentang yang diminta.
+            // rangeStart yang lebih awal dari startDate cuma dipakai buat akumulasi.
+            if ($dateStr >= $this->startDate) {
+                $rows[] = [
+                    'user_id' => $this->userId,
+                    'snapshot_date' => $dateStr,
+                    'total_wallet_balance' => $walletBalance,
+                    'total_receivables' => $receivableBalance,
+                    'total_debts' => $debtBalance,
+                    'net_worth' => $walletBalance + $receivableBalance - $debtBalance,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+        }
+
+        if (empty($rows)) {
+            return;
+        }
+
+        // Upsert per batch — otomatis MENIMPA snapshot lama (termasuk yang masih
+        // pakai formula sign lama) dengan angka yang sudah dihitung ulang dengan benar.
+        collect($rows)->chunk(500)->each(function ($chunk) {
+            NetWorthSnapshot::upsert(
+                $chunk->toArray(),
+                ['user_id', 'snapshot_date'],
+                ['total_wallet_balance', 'total_receivables', 'total_debts', 'net_worth', 'updated_at']
             );
-            // reverse-apply today's effects to get prior day's running
-            $running -= $effect;
-        }
+        });
     }
 }
