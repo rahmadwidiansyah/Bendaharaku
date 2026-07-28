@@ -5,62 +5,81 @@ namespace App\Http\Controllers;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DashboardController extends Controller
 {
+    // Constant mapping untuk menghindari query `whereHas` berulang kali
+    private const TYPE_INCOME = 1;
+    private const TYPE_EXPENSE = 2;
+    private const TYPE_TRANSFER = 3;
+    private const TYPE_DEBT = 4;
+    private const TYPE_RECEIVABLE = 5;
+
+    private const TYPE_MAP = [
+        'income' => self::TYPE_INCOME,
+        'expense' => self::TYPE_EXPENSE,
+        'transfer' => self::TYPE_TRANSFER,
+        'debt' => self::TYPE_DEBT,
+        'receivable' => self::TYPE_RECEIVABLE,
+    ];
+
     public function index(Request $request): Response
     {
+        $userId = Auth::id();
         $user = Auth::user();
 
-        // 1. DATA ANALISIS ARUS KAS BULAN INI (Hanya untuk ringkasan di Dashboard)
-        $totalPortfolio = $user->wallets()
-            ->whereIn('group_type', ['Asset', 'Liquid'])
-            ->sum('balance');
-
-        $totalLiquid = $user->wallets()->where('group_type', 'Liquid')->sum('balance');
-        $totalInvest = $user->wallets()->where('group_type', 'Asset')->sum('balance');
-
-        // 5. DATA ANALISIS ARUS KAS BULAN INI
         $now = Carbon::now();
-        $thisMonthIncome = $user->transactionLogs()
-            ->where('is_cleared', true)
-            ->whereHas('type', function ($q) {
-                $q->where('name', 'Income');
-            })
-            ->whereMonth('date', $now->month)
-            ->whereYear('date', $now->year)
-            ->sum('amount');
 
-        $thisMonthExpense = $user->transactionLogs()
-            ->where('is_cleared', true)
-            ->whereHas('type', function ($q) {
-                $q->where('name', 'Expense');
-            })
-            ->whereMonth('date', $now->month)
-            ->whereYear('date', $now->year)
-            ->sum('amount');
+        // 1. DATA ANALISIS PORTFOLIO (1 Query agregasi database)
+        $walletStats = DB::table('wallets')
+            ->where('user_id', $userId)
+            ->whereIn('group_type', ['Asset', 'Liquid'])
+            ->selectRaw("
+                COALESCE(SUM(balance), 0) as total_portfolio,
+                COALESCE(SUM(CASE WHEN group_type = 'Liquid' THEN balance ELSE 0 END), 0) as total_liquid,
+                COALESCE(SUM(CASE WHEN group_type = 'Asset' THEN balance ELSE 0 END), 0) as total_invest
+            ")
+            ->first();
 
-        // Pinned Wallets (Atau default dompet paling sering digunakan hingga maksimal 4)
-        $pinnedWallets = $user->wallets()->where('is_pinned', true)->get();
+        // 2. DATA ARUS KAS BULAN INI (1 Query agregasi database menggunakan whereBetween)
+        $startOfMonth = $now->copy()->startOfMonth()->toDateString();
+        $endOfMonth = $now->copy()->endOfMonth()->toDateString();
+
+        $cashflowStats = DB::table('transaction_logs')
+            ->where('user_id', $userId)
+            ->where('is_cleared', true)
+            ->whereBetween('date', [$startOfMonth, $endOfMonth])
+            ->whereIn('type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE])
+            ->selectRaw("
+                COALESCE(SUM(CASE WHEN type_id = " . self::TYPE_INCOME . " THEN amount ELSE 0 END), 0) as total_income,
+                COALESCE(SUM(CASE WHEN type_id = " . self::TYPE_EXPENSE . " THEN amount ELSE 0 END), 0) as total_expense
+            ")
+            ->first();
+
+        // 3. PINNED WALLETS
+        // Kolom dibatasi hanya yang benar-benar dipakai di frontend (id, name, icon, balance, group_type, is_pinned)
+        $pinnedWallets = $user->wallets()
+            ->select(['id', 'name', 'icon', 'balance', 'group_type', 'is_pinned'])
+            ->where('is_pinned', true)
+            ->get();
 
         if ($pinnedWallets->count() < 4) {
             $pinnedIds = $pinnedWallets->pluck('id')->toArray();
 
             $fallbackWallets = $user->wallets()
+                ->select(['id', 'name', 'icon', 'balance', 'group_type', 'is_pinned'])
                 ->whereNotIn('id', $pinnedIds)
-                ->whereNull('is_pinned') // Hanya ambil dompet yang belum pernah di-pin atau di-unpin secara manual
+                ->whereNull('is_pinned')
                 ->where('group_type', '!=', 'System')
                 ->withCount(['sourceTransactions', 'destinationTransactions'])
                 ->get()
-                ->sortByDesc(function ($wallet) {
-                    return $wallet->source_transactions_count + $wallet->destination_transactions_count;
-                })
+                ->sortByDesc(fn($w) => $w->source_transactions_count + $w->destination_transactions_count)
                 ->take(4 - $pinnedWallets->count())
                 ->values();
 
-            // Tandai dompet fallback agar frontend tahu bahwa ini adalah "virtual pin"
             $fallbackWallets->each(function ($w) {
                 $w->is_virtual_pin = true;
             });
@@ -68,36 +87,63 @@ class DashboardController extends Controller
             $pinnedWallets = $pinnedWallets->concat($fallbackWallets)->values();
         }
 
-        // Pastikan maksimal hanya 4 yang ditampilkan
         $pinnedWallets = $pinnedWallets->take(4);
 
-        // 6. LOGIKA HISTORI TRANSAKSI (Pindahan dari TransactionController)
-        $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->format('Y-m-d'));
-        $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->format('Y-m-d'));
+        // 4. HISTORI TRANSAKSI
+        $startDate = $request->input('start_date', $startOfMonth);
+        $endDate = $request->input('end_date', $endOfMonth);
 
-        $query = $user->transactionLogs()->with(['type', 'category', 'sourceWallet', 'destinationWallet']);
-        $query->where('is_cleared', true);
-        $query->whereBetween('date', [$startDate, $endDate]);
+        $query = $user->transactionLogs()
+            // Batasi kolom tabel utama sesuai yang dipakai di ->map() di bawah,
+            // supaya Eloquent tidak menghidrasi kolom yang tidak perlu.
+            ->select([
+                'id',
+                'user_id',
+                'amount',
+                'notes',
+                'subject',
+                'is_cleared',
+                'reference_number',
+                'date',
+                'created_at',
+                'type_id',
+                'category_id',
+                'source_wallet_id',
+                'destination_wallet_id',
+                'due_date',
+                'due_date_type',
+                'due_date_interval',
+            ])
+            ->with([
+                'type:id,name',
+                'category:id,category_name,icon',
+                'sourceWallet:id,name,group_type',
+                'destinationWallet:id,name',
+            ])
+            ->where('is_cleared', true)
+            ->whereBetween('date', [$startDate, $endDate]);
 
+        // Filter by Type (Menggunakan ID, bukan Relasi/whereHas)
         if ($request->has('type') && $request->type != '') {
-            $query->whereHas('type', function ($q) use ($request) {
-                $q->where('name', $request->type);
-            });
+            $reqType = strtolower($request->type);
+            if (isset(self::TYPE_MAP[$reqType])) {
+                $query->where('type_id', self::TYPE_MAP[$reqType]);
+            }
         }
 
+        // Search Filter (Menggunakan ILIKE bawaan PostgreSQL yang jauh lebih cepat)
         if ($request->has('search') && $request->search != '') {
-            $search = strtolower(trim($request->search));
+            $search = trim($request->search);
             $query->where(function ($q) use ($search) {
-                // Search by numeric ID jika input adalah angka murni
                 if (ctype_digit($search)) {
                     $q->where('id', (int) $search)
-                        ->orWhereRaw('LOWER(reference_number) LIKE ?', ["%{$search}%"]);
+                        ->orWhere('reference_number', 'ILIKE', "%{$search}%");
                 } else {
-                    $q->whereRaw('LOWER(notes) LIKE ?', ["%{$search}%"])
-                        ->orWhereRaw('LOWER(subject) LIKE ?', ["%{$search}%"])
-                        ->orWhereRaw('LOWER(reference_number) LIKE ?', ["%{$search}%"])
+                    $q->where('notes', 'ILIKE', "%{$search}%")
+                        ->orWhere('subject', 'ILIKE', "%{$search}%")
+                        ->orWhere('reference_number', 'ILIKE', "%{$search}%")
                         ->orWhereHas('category', function ($qCat) use ($search) {
-                            $qCat->whereRaw('LOWER(category_name) LIKE ?', ["%{$search}%"]);
+                            $qCat->where('category_name', 'ILIKE', "%{$search}%");
                         });
                 }
             });
@@ -115,7 +161,7 @@ class DashboardController extends Controller
                     'is_cleared' => (bool) $trx->is_cleared,
                     'reference_number' => $trx->reference_number,
                     'date' => Carbon::parse($trx->date)->translatedFormat('d M Y'),
-                    'raw_date' => $trx->date,
+                    'raw_date' => Carbon::parse($trx->date)->format('Y-m-d'),
                     'time' => Carbon::parse($trx->created_at)->format('H:i'),
                     'type' => $trx->type,
                     'category' => $trx->category,
@@ -127,33 +173,31 @@ class DashboardController extends Controller
                 ];
             });
 
-        // ── Query Pending Drafts ──
-        $pendingDraftsQuery = $user->transactionDrafts()->where('status', 'pending');
-        $pendingDraftsQuery->whereBetween('created_at', [
-            Carbon::parse($startDate)->startOfDay(),
-            Carbon::parse($endDate)->endOfDay(),
-        ]);
+        // 5. TRANSAKSI DRAFTS
+        $pendingDraftsQuery = $user->transactionDrafts()->where('status', 'pending')
+            ->whereBetween('created_at', [
+                Carbon::parse($startDate)->startOfDay(),
+                Carbon::parse($endDate)->endOfDay(),
+            ]);
 
+        // Optimasi: PostgreSQL native JSON ILIKE
         if ($request->filled('type')) {
             $type = strtolower($request->type);
-            $pendingDraftsQuery->whereRaw('LOWER(payload->>\'type_key\') = ?', [$type]);
+            $pendingDraftsQuery->whereRaw("payload->>'type_key' ILIKE ?", [$type]);
         }
 
         if ($request->filled('search')) {
-            $search = strtolower(trim($request->search));
+            $search = trim($request->search);
             $pendingDraftsQuery->where(function ($q) use ($search) {
-                $q->whereRaw('LOWER(original_text) LIKE ?', ["%{$search}%"])
-                    ->orWhereRaw('LOWER(payload->>\'notes\') LIKE ?', ["%{$search}%"])
-                    ->orWhereRaw('LOWER(payload->>\'subject\') LIKE ?', ["%{$search}%"])
-                    ->orWhereRaw('LOWER(payload->>\'category_name\') LIKE ?', ["%{$search}%"]);
+                $q->where('original_text', 'ILIKE', "%{$search}%")
+                    ->orWhereRaw("payload->>'notes' ILIKE ?", ["%{$search}%"])
+                    ->orWhereRaw("payload->>'subject' ILIKE ?", ["%{$search}%"])
+                    ->orWhereRaw("payload->>'category_name' ILIKE ?", ["%{$search}%"]);
             });
         }
 
-        $drafts = $pendingDraftsQuery->orderBy('created_at', 'desc')->get();
-
-        $draftData = $drafts->map(function ($draft) {
+        $draftData = $pendingDraftsQuery->orderBy('created_at', 'desc')->get()->map(function ($draft) {
             $payload = $draft->payload ?? [];
-
             return [
                 'id' => $draft->id,
                 'is_draft' => true,
@@ -164,7 +208,7 @@ class DashboardController extends Controller
                 'is_cleared' => false,
                 'reference_number' => null,
                 'date' => Carbon::parse($payload['date'] ?? $draft->created_at)->translatedFormat('d M Y'),
-                'raw_date' => $payload['date'] ?? $draft->created_at->toDateString(),
+                'raw_date' => Carbon::parse($payload['date'] ?? $draft->created_at)->format('Y-m-d'),
                 'time' => Carbon::parse($draft->created_at)->format('H:i'),
                 'type' => [
                     'id' => null,
@@ -190,42 +234,44 @@ class DashboardController extends Controller
 
         $transactions = $transactions->concat($draftData)->sort(function ($a, $b) {
             $dateCompare = strcmp($b['raw_date'], $a['raw_date']);
-            if ($dateCompare !== 0) {
-                return $dateCompare;
-            }
+            if ($dateCompare !== 0) return $dateCompare;
+
             $timeCompare = strcmp($b['time'], $a['time']);
-            if ($timeCompare !== 0) {
-                return $timeCompare;
-            }
+            if ($timeCompare !== 0) return $timeCompare;
 
             return $b['id'] <=> $a['id'];
         })->values();
 
-        // 7. NOTIFIKASI JATUH TEMPO HUTANG/PIUTANG
+        // 6. NOTIFIKASI UPCOMING DEBT (Penghapusan Loop N+1 Query)
         $upcomingDebts = [];
-        $debtsWithDueDate = $user->transactionLogs()->with('category')
+
+        // Optimasi: Hanya ambil kolom yang benar-benar dibutuhkan
+        $debtsWithDueDate = $user->transactionLogs()
+            ->with('category:id,category_name')
             ->where('is_cleared', true)
             ->whereNotNull('due_date_type')
+            ->select(['id', 'subject', 'category_id', 'date', 'due_date', 'due_date_type', 'due_date_interval'])
             ->get();
 
-        $processedSubjects = []; // Track to avoid duplicate checks per subject/type
+        $processedSubjects = [];
+        $subjectsToQuery = [];
+        $subjectDetails = [];
+        $nowStart = Carbon::now()->startOfDay();
 
+        // 6a. Menentukan Subject mana saja yang jatuh tempo <= 7 hari (Murni komputasi CPU, 0 Query)
         foreach ($debtsWithDueDate as $trx) {
+            if (!$trx->category || !$trx->subject) continue;
+
             $catName = strtolower($trx->category->category_name);
             $isDebt = str_contains($catName, 'dapat hutang');
             $isReceivable = str_contains($catName, 'ngasih piutang');
 
-            if (! $isDebt && ! $isReceivable) {
-                continue;
-            }
+            if (!$isDebt && !$isReceivable) continue;
 
             $cacheKey = $trx->subject.'_'.($isDebt ? 'debt' : 'receivable');
-            if (isset($processedSubjects[$cacheKey])) {
-                continue;
-            }
+            if (isset($processedSubjects[$cacheKey])) continue;
             $processedSubjects[$cacheKey] = true;
 
-            $now = Carbon::now()->startOfDay();
             $nextDueDate = null;
 
             if ($trx->due_date_type === 'fixed' && $trx->due_date) {
@@ -233,15 +279,15 @@ class DashboardController extends Controller
             } elseif ($trx->due_date_type === 'monthly' && $trx->due_date_interval) {
                 $day = min(31, max(1, $trx->due_date_interval));
                 $nextDueDate = Carbon::now()->setDay($day)->startOfDay();
-                if ($nextDueDate->isBefore($now)) {
+                if ($nextDueDate->isBefore($nowStart)) {
                     $nextDueDate->addMonth();
                 }
             } elseif ($trx->due_date_type === 'daily' && $trx->due_date_interval) {
                 $start = Carbon::parse($trx->date)->startOfDay();
                 $interval = $trx->due_date_interval;
-                $diff = $now->diffInDays($start);
+                $diff = $nowStart->diffInDays($start);
 
-                if ($start->isAfter($now)) {
+                if ($start->isAfter($nowStart)) {
                     $nextDueDate = $start;
                 } else {
                     $cyclesPassed = floor($diff / $interval);
@@ -250,52 +296,76 @@ class DashboardController extends Controller
             }
 
             if ($nextDueDate) {
-                $daysUntilDue = (int) $now->diffInDays($nextDueDate, false);
+                $daysUntilDue = (int) $nowStart->diffInDays($nextDueDate, false);
 
-                // Show if it's due within 7 days, or overdue (negative)
                 if ($daysUntilDue <= 7) {
-                    $allSubjectTrxs = $user->transactionLogs()->with('category')
-                        ->where('is_cleared', true)
-                        ->where('subject', $trx->subject)
-                        ->get();
+                    $subjectsToQuery[] = $trx->subject;
+                    $subjectDetails[$trx->subject][$isDebt ? 'Hutang' : 'Piutang'] = [
+                        'days_until' => $daysUntilDue,
+                        'next_due_date' => $nextDueDate->format('d M Y'),
+                    ];
+                }
+            }
+        }
 
-                    $totalBorrowed = 0;
-                    $totalPaid = 0;
+        // 6b. ONE Single Query untuk menghitung semua sisa hutang/piutang sekaligus
+        if (!empty($subjectsToQuery)) {
+            $balancesRaw = DB::table('transaction_logs')
+                ->join('categories', 'transaction_logs.category_id', '=', 'categories.id')
+                ->where('transaction_logs.user_id', $userId)
+                ->where('transaction_logs.is_cleared', true)
+                ->whereIn('transaction_logs.subject', array_unique($subjectsToQuery))
+                ->select('transaction_logs.subject')
+                ->selectRaw("
+                    SUM(CASE WHEN categories.category_name = 'Dapat Hutangan' THEN amount ELSE 0 END) as debt_borrowed,
+                    SUM(CASE WHEN categories.category_name = 'Bayar Cicilan Hutang' THEN amount ELSE 0 END) as debt_paid,
+                    SUM(CASE WHEN categories.category_name = 'Ngasih Piutang' THEN amount ELSE 0 END) as rec_borrowed,
+                    SUM(CASE WHEN categories.category_name = 'Terima Bayar Piutang' THEN amount ELSE 0 END) as rec_paid
+                ")
+                ->groupBy('transaction_logs.subject')
+                ->get();
 
-                    if ($isDebt) {
-                        $totalBorrowed = $allSubjectTrxs->where('category.category_name', 'Dapat Hutangan')->sum('amount');
-                        $totalPaid = $allSubjectTrxs->where('category.category_name', 'Bayar Cicilan Hutang')->sum('amount');
-                    } else {
-                        $totalBorrowed = $allSubjectTrxs->where('category.category_name', 'Ngasih Piutang')->sum('amount');
-                        $totalPaid = $allSubjectTrxs->where('category.category_name', 'Terima Bayar Piutang')->sum('amount');
-                    }
+            foreach ($balancesRaw as $row) {
+                $subject = $row->subject;
 
-                    $remaining = $totalBorrowed - $totalPaid;
-
-                    if ($remaining > 0) {
+                if (isset($subjectDetails[$subject]['Hutang'])) {
+                    $remainingDebt = $row->debt_borrowed - $row->debt_paid;
+                    if ($remainingDebt > 0) {
                         $upcomingDebts[] = [
-                            'subject' => $trx->subject,
-                            'type' => $isDebt ? 'Hutang' : 'Piutang',
-                            'remaining' => $remaining,
-                            'days_until' => $daysUntilDue,
-                            'next_due_date' => $nextDueDate->format('d M Y'),
+                            'subject' => $subject,
+                            'type' => 'Hutang',
+                            'remaining' => $remainingDebt,
+                            'days_until' => $subjectDetails[$subject]['Hutang']['days_until'],
+                            'next_due_date' => $subjectDetails[$subject]['Hutang']['next_due_date'],
+                        ];
+                    }
+                }
+
+                if (isset($subjectDetails[$subject]['Piutang'])) {
+                    $remainingRec = $row->rec_borrowed - $row->rec_paid;
+                    if ($remainingRec > 0) {
+                        $upcomingDebts[] = [
+                            'subject' => $subject,
+                            'type' => 'Piutang',
+                            'remaining' => $remainingRec,
+                            'days_until' => $subjectDetails[$subject]['Piutang']['days_until'],
+                            'next_due_date' => $subjectDetails[$subject]['Piutang']['next_due_date'],
                         ];
                     }
                 }
             }
         }
 
-        // Sort upcoming debts by closest due date
         usort($upcomingDebts, function ($a, $b) {
             return $a['days_until'] <=> $b['days_until'];
         });
 
         return Inertia::render('Dashboard', [
-            'totalPortfolio' => (int) $totalPortfolio,
-            'totalLiquid' => (int) $totalLiquid,
-            'totalInvest' => (int) $totalInvest,
-            'thisMonthIncome' => (int) $thisMonthIncome,
-            'thisMonthExpense' => (int) $thisMonthExpense,
+            'totalPortfolio' => (int) $walletStats->total_portfolio,
+            'totalLiquid' => (int) $walletStats->total_liquid,
+            'totalInvest' => (int) $walletStats->total_invest,
+            'thisMonthIncome' => (int) $cashflowStats->total_income,
+            'thisMonthExpense' => (int) $cashflowStats->total_expense,
             'pinnedWallets' => $pinnedWallets,
             'transactions' => [
                 'data' => $transactions,
