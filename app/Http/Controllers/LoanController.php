@@ -24,37 +24,47 @@ class LoanController extends Controller
             })
             ->whereNotNull('subject')
             ->where('subject', '!=', '-')
+            ->orderBy('date')
+            ->orderBy('created_at')
             ->get();
 
-        // Grouping per orang (Subject)
-        $loanDetails = $transactions->groupBy('subject')->map(function ($txs) use ($isDebt) {
+        $increaseCategory = $isDebt ? 'Dapat Hutangan' : 'Ngasih Piutang';
+        $decreaseCategory = $isDebt ? 'Bayar Cicilan Hutang' : 'Terima Bayar Piutang';
+
+        // Grouping per orang (Subject), lalu diproses KRONOLOGIS (bukan cuma sum),
+        // supaya "since" (tanggal mulai siklus aktif) reset setiap kali saldo
+        // sempat balik ke 0 dan orang itu berhutang/piutang lagi.
+        $loanDetails = $transactions->groupBy('subject')->map(function ($txs) use ($increaseCategory, $decreaseCategory) {
+            $txs = $txs->sortBy(fn ($tx) => [$tx->date, $tx->created_at])->values();
+
             $balance = 0;
+            $since = null;
+            $latestDate = null;
 
             foreach ($txs as $tx) {
                 $catName = $tx->category->category_name;
-                if ($isDebt) {
-                    if ($catName === 'Dapat Hutangan') {
-                        $balance += $tx->amount;
-                    } elseif ($catName === 'Bayar Cicilan Hutang') {
-                        $balance -= $tx->amount;
+
+                if ($catName === $increaseCategory) {
+                    // Kalau saldo sebelumnya 0 (lunas / belum pernah), ini siklus baru
+                    if ($balance <= 0) {
+                        $since = $tx->date;
                     }
-                } else {
-                    if ($catName === 'Ngasih Piutang') {
-                        $balance += $tx->amount;
-                    } elseif ($catName === 'Terima Bayar Piutang') {
-                        $balance -= $tx->amount;
+                    $balance += $tx->amount;
+                } elseif ($catName === $decreaseCategory) {
+                    $balance -= $tx->amount;
+                    if ($balance < 0) {
+                        $balance = 0; // jaga-jaga kalau ada overpay
                     }
                 }
-            }
 
-            $sorted = $txs->sortBy('date');
-            $firstDate = $sorted->first()->date;
-            $latestDate = $sorted->last()->date;
+                $latestDate = $tx->date;
+            }
 
             return (object) [
                 'subject' => $txs->first()->subject,
                 'balance' => $balance,
-                'age' => $firstDate ? intval(Carbon::parse($firstDate)->diffInDays(now())) : 0,
+                'age' => $since ? intval(Carbon::parse($since)->diffInDays(now())) : 0,
+                'since' => $since,
                 'latest_date' => $latestDate,
             ];
         })

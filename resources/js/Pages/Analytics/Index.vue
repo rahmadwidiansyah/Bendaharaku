@@ -30,6 +30,7 @@ const props = defineProps({
     cumulativeData: Array,
     todayIndex: Number,
     allDailyLabels: Array,
+    allDailyDates: Array,
     allDailyIncome: Array,
     allDailyExpense: Array,
     allDailyDebt: Array,
@@ -39,12 +40,31 @@ const props = defineProps({
 const charts = shallowRef({});
 const barView = ref('harian');
 const categoryView = ref('expense');
-const barScrollBox = ref(null);
 const barChartRef = ref(null);
-const barChartContainerRef = ref(null);
 const barChartKey = ref(0);
 const cumulativeChartKey = ref(0);
 const doughnutChartKey = ref(0);
+
+// Warna arus kas — TETAP: masuk hijau, keluar merah, hutang kuning, piutang ungu
+const FLOW_COLORS = {
+    income: '#34D399',
+    expense: '#F87171',
+    debt: '#FBBF24',
+    receivable: '#C084FC',
+};
+
+const barViews = [
+    { key: 'harian', label: () => t('analytics.view.daily') },
+    { key: 'mingguan', label: () => t('analytics.view.weekly') },
+    { key: 'bulanan', label: () => t('analytics.view.monthly') },
+];
+
+const categoryViews = [
+    { key: 'expense', label: () => t('analytics.categoryTab.expense') },
+    { key: 'income', label: () => t('analytics.categoryTab.income') },
+    { key: 'debt', label: () => t('analytics.categoryTab.debt') },
+    { key: 'receivable', label: () => t('analytics.categoryTab.receivable') },
+];
 
 const destroyChart = (id) => {
     if (charts.value[id]) {
@@ -98,72 +118,96 @@ function formatCompact(n) {
     return n.toString();
 }
 
-const renderBarChart = async (view) => {
-    barView.value = view;
-    let labels = [], incomes = [], expenses = [], debts = [], receivables = [];
-
-    function takeLast5(arr) {
-        return arr ? arr.slice(-5) : [];
-    }
+/**
+ * Bangun dataset untuk chart arus kas, DIBATASI supaya balok enak dilihat:
+ * - harian   : 5 hari terakhir yang ada transaksinya
+ * - mingguan : hanya minggu-minggu dalam BULAN BERJALAN (bukan seluruh histori)
+ * - bulanan  : hanya 3 bulan terakhir
+ */
+function buildBarData(view) {
+    const dates = props.allDailyDates || [];
+    const labels = [], incomes = [], expenses = [], debts = [], receivables = [];
 
     if (view === 'harian') {
-        labels = takeLast5(props.allDailyLabels);
-        incomes = takeLast5(props.allDailyIncome);
-        expenses = takeLast5(props.allDailyExpense);
-        debts = takeLast5(props.allDailyDebt);
-        receivables = takeLast5(props.allDailyReceivable);
-    } else if (view === 'mingguan') {
-        if (props.allDailyLabels && props.allDailyLabels.length > 0) {
-            let tempInc = 0, tempExp = 0, tempDebt = 0, tempRecv = 0;
-            let startLabel = props.allDailyLabels[0];
-            for (let i = 0; i < props.allDailyLabels.length; i++) {
-                tempInc += (props.allDailyIncome[i] || 0);
-                tempExp += (props.allDailyExpense[i] || 0);
-                tempDebt += (props.allDailyDebt[i] || 0);
-                tempRecv += (props.allDailyReceivable[i] || 0);
-                if ((i + 1) % 7 === 0 || i === props.allDailyLabels.length - 1) {
-                    let endLabel = props.allDailyLabels[i];
-                    labels.push(startLabel.split(' ')[0] + '-' + endLabel);
-                    incomes.push(tempInc);
-                    expenses.push(tempExp);
-                    debts.push(tempDebt);
-                    receivables.push(tempRecv);
-                    tempInc = 0; tempExp = 0; tempDebt = 0; tempRecv = 0;
-                    if (i + 1 < props.allDailyLabels.length) startLabel = props.allDailyLabels[i + 1];
-                }
-            }
+        const n = 5;
+        const start = Math.max(0, dates.length - n);
+        for (let i = start; i < dates.length; i++) {
+            const d = new Date(dates[i]);
+            labels.push(d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }));
+            incomes.push(props.allDailyIncome[i] || 0);
+            expenses.push(props.allDailyExpense[i] || 0);
+            debts.push(props.allDailyDebt[i] || 0);
+            receivables.push(props.allDailyReceivable[i] || 0);
         }
-    } else if (view === 'bulanan') {
-        if (props.allDailyLabels && props.allDailyLabels.length > 0) {
-            let currentMonth = '';
-            let tempInc = 0, tempExp = 0, tempDebt = 0, tempRecv = 0;
-            props.allDailyLabels.forEach((lbl, i) => {
-                let parts = lbl.split(' ');
-                let month = parts.length >= 2 ? parts[1] + ' ' + (parts[2] || '') : lbl;
-                if (i === 0) currentMonth = month;
-                if (month !== currentMonth) {
-                    labels.push(currentMonth);
-                    incomes.push(tempInc);
-                    expenses.push(tempExp);
-                    debts.push(tempDebt);
-                    receivables.push(tempRecv);
-                    currentMonth = month;
-                    tempInc = 0; tempExp = 0; tempDebt = 0; tempRecv = 0;
-                }
-                tempInc += (props.allDailyIncome[i] || 0);
-                tempExp += (props.allDailyExpense[i] || 0);
-                tempDebt += (props.allDailyDebt[i] || 0);
-                tempRecv += (props.allDailyReceivable[i] || 0);
-            });
-            if (currentMonth) {
-                labels.push(currentMonth);
-                incomes.push(tempInc);
-                expenses.push(tempExp);
-                debts.push(tempDebt);
-                receivables.push(tempRecv);
-            }
-        }
+        return { labels, incomes, expenses, debts, receivables };
     }
+
+    if (view === 'mingguan') {
+        const now = new Date();
+        const curY = now.getFullYear();
+        const curM = now.getMonth();
+        const idxs = dates
+            .map((d, i) => i)
+            .filter((i) => {
+                const d = new Date(dates[i]);
+                return d.getFullYear() === curY && d.getMonth() === curM;
+            });
+
+        let bucket = null;
+        idxs.forEach((i, pos) => {
+            const d = new Date(dates[i]);
+            if (!bucket) bucket = { start: d.getDate(), end: d.getDate(), inc: 0, exp: 0, debt: 0, rec: 0 };
+            bucket.end = d.getDate();
+            bucket.inc += props.allDailyIncome[i] || 0;
+            bucket.exp += props.allDailyExpense[i] || 0;
+            bucket.debt += props.allDailyDebt[i] || 0;
+            bucket.rec += props.allDailyReceivable[i] || 0;
+
+            const isLast = pos === idxs.length - 1;
+            if ((pos + 1) % 7 === 0 || isLast) {
+                labels.push(`${bucket.start}-${bucket.end}`);
+                incomes.push(bucket.inc);
+                expenses.push(bucket.exp);
+                debts.push(bucket.debt);
+                receivables.push(bucket.rec);
+                bucket = null;
+            }
+        });
+        return { labels, incomes, expenses, debts, receivables };
+    }
+
+    // bulanan — 3 bulan terakhir
+    const monthMap = new Map();
+    dates.forEach((dateStr, i) => {
+        const d = new Date(dateStr);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        if (!monthMap.has(key)) {
+            monthMap.set(key, {
+                label: d.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' }),
+                inc: 0, exp: 0, debt: 0, rec: 0,
+            });
+        }
+        const m = monthMap.get(key);
+        m.inc += props.allDailyIncome[i] || 0;
+        m.exp += props.allDailyExpense[i] || 0;
+        m.debt += props.allDailyDebt[i] || 0;
+        m.rec += props.allDailyReceivable[i] || 0;
+    });
+
+    Array.from(monthMap.values()).slice(-3).forEach((m) => {
+        labels.push(m.label);
+        incomes.push(m.inc);
+        expenses.push(m.exp);
+        debts.push(m.debt);
+        receivables.push(m.rec);
+    });
+
+    return { labels, incomes, expenses, debts, receivables };
+}
+
+const renderBarChart = async (view) => {
+    barView.value = view;
+    const { labels, incomes, expenses, debts, receivables } = buildBarData(view);
 
     destroyChart('bar');
     barChartKey.value++;
@@ -171,24 +215,18 @@ const renderBarChart = async (view) => {
 
     const canvas = barChartRef.value;
     if (!canvas) return;
-
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-
-    if (barChartContainerRef.value) {
-        let calculatedWidth = view === 'harian' ? labels.length * 45 : labels.length * 80;
-        barChartContainerRef.value.style.minWidth = `max(100%, ${calculatedWidth}px)`;
-    }
 
     charts.value['bar'] = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: labels,
+            labels,
             datasets: [
-                { label: t('analytics.chartLabels.income'), data: incomes, backgroundColor: '#34D399', borderRadius: 4, barPercentage: 0.85, categoryPercentage: 0.8 },
-                { label: t('analytics.chartLabels.expense'), data: expenses, backgroundColor: '#F87171', borderRadius: 4, barPercentage: 0.85, categoryPercentage: 0.8 },
-                { label: t('analytics.chartLabels.debt'), data: debts, backgroundColor: '#FBBF24', borderRadius: 4, barPercentage: 0.85, categoryPercentage: 0.8 },
-                { label: t('analytics.chartLabels.receivable'), data: receivables, backgroundColor: '#C084FC', borderRadius: 4, barPercentage: 0.85, categoryPercentage: 0.8 }
+                { label: t('analytics.chartLabels.income'), data: incomes, backgroundColor: FLOW_COLORS.income, borderRadius: 5, barPercentage: 0.9, categoryPercentage: 0.85 },
+                { label: t('analytics.chartLabels.expense'), data: expenses, backgroundColor: FLOW_COLORS.expense, borderRadius: 5, barPercentage: 0.9, categoryPercentage: 0.85 },
+                { label: t('analytics.chartLabels.debt'), data: debts, backgroundColor: FLOW_COLORS.debt, borderRadius: 5, barPercentage: 0.9, categoryPercentage: 0.85 },
+                { label: t('analytics.chartLabels.receivable'), data: receivables, backgroundColor: FLOW_COLORS.receivable, borderRadius: 5, barPercentage: 0.9, categoryPercentage: 0.85 }
             ]
         },
         options: {
@@ -199,7 +237,7 @@ const renderBarChart = async (view) => {
             scales: {
                 x: {
                     grid: { display: false },
-                    ticks: { color: '#9CA3AF', font: { size: 10, weight: 'bold' }, maxRotation: 45 }
+                    ticks: { color: '#9CA3AF', font: { size: 11, weight: 'bold' }, maxRotation: 0 }
                 },
                 y: { display: false }
             }
@@ -208,29 +246,21 @@ const renderBarChart = async (view) => {
             id: 'barLabels',
             afterDraw(chart) {
                 const ctx2 = chart.ctx;
-                chart.data.datasets.forEach((ds) => {
-                    const meta = chart.getDatasetMeta(chart.data.datasets.indexOf(ds));
+                chart.data.datasets.forEach((ds, dsIndex) => {
+                    const meta = chart.getDatasetMeta(dsIndex);
                     meta.data.forEach((el, i) => {
                         const val = Number(ds.data[i]);
                         if (!val || val <= 0) return;
-                        const y = el.y;
-                        const x = el.x;
-                        ctx2.fillStyle = '#9CA3AF';
-                        ctx2.font = 'bold 9px sans-serif';
+                        ctx2.fillStyle = '#D1D5DB';
+                        ctx2.font = 'bold 10px sans-serif';
                         ctx2.textAlign = 'center';
                         ctx2.textBaseline = 'bottom';
-                        ctx2.fillText(formatCompact(val), x, y - 3);
+                        ctx2.fillText(formatCompact(val), el.x, el.y - 4);
                     });
                 });
             }
         }]
     });
-
-    setTimeout(() => {
-        if (barScrollBox.value) {
-            barScrollBox.value.scrollLeft = barScrollBox.value.scrollWidth;
-        }
-    }, 100);
 };
 
 const activeCategoryData = computed(() => {
@@ -371,7 +401,7 @@ onMounted(() => {
 
         <div class="px-4 sm:px-5 pb-40 w-full lg:max-w-4xl mx-auto lg:px-8 relative z-10 overflow-x-hidden">
 
-            <!-- Date bar — top-left, minimal margin -->
+            <!-- Date bar -->
             <div class="flex items-center gap-2 pt-3 pb-1 -mx-1">
                 <DateModal :action="route('analytics.index')" :start-date="startDate" :end-date="endDate" />
                 <span class="text-2xs text-gray-500 font-medium">
@@ -392,8 +422,7 @@ onMounted(() => {
             </header>
 
             <div class="grid grid-cols-2 gap-3 mb-5 lg:mb-6 animate-fade-in-up delay-100">
-                <div
-                    class="bg-linear-to-br from-green-900 to-green-800/50 p-3 lg:p-4 rounded-xl border border-white/10 relative overflow-hidden group">
+                <div class="bg-linear-to-br from-green-900 to-green-800/50 p-3 lg:p-4 rounded-xl border border-white/10 relative overflow-hidden group">
                     <div class="flex items-center gap-1.5 mb-1 lg:mb-2">
                         <div class="w-1 h-1.5 lg:w-1.5 lg:h-1.5 rounded-full bg-green-400"></div>
                         <p class="text-2xs font-bold text-gray-400 uppercase tracking-widest">{{ $t('types.income') }}</p>
@@ -402,8 +431,7 @@ onMounted(() => {
                         <span class="text-2xs mr-0.5 opacity-70">+Rp</span>{{ formatNumber(totalIncome) }}
                     </p>
                 </div>
-                <div
-                    class="bg-linear-to-br from-red-900 to-red-800/50 p-3 lg:p-4 rounded-xl border border-white/10 relative overflow-hidden group">
+                <div class="bg-linear-to-br from-red-900 to-red-800/50 p-3 lg:p-4 rounded-xl border border-white/10 relative overflow-hidden group">
                     <div class="flex items-center gap-1.5 mb-1 lg:mb-2">
                         <div class="w-1 h-1.5 lg:w-1.5 lg:h-1.5 rounded-full bg-red-400"></div>
                         <p class="text-2xs font-bold text-gray-400 uppercase tracking-widest">{{ $t('types.expense') }}</p>
@@ -415,8 +443,7 @@ onMounted(() => {
             </div>
 
             <!-- CUMULATIVE CHART -->
-            <div
-                class="bg-linear-to-br from-gray-900 to-gray-800 border border-gray-500/10 p-4 lg:p-6 rounded-xl mb-5 lg:mb-8 animate-fade-in-up delay-200 relative overflow-hidden group">
+            <div class="bg-linear-to-br from-gray-900 to-gray-800 border border-gray-500/10 p-4 lg:p-6 rounded-xl mb-5 lg:mb-8 animate-fade-in-up delay-200 relative overflow-hidden group">
                 <div class="flex justify-between items-start mb-4 lg:mb-6 relative z-10">
                     <div>
                         <p class="text-2xs lg:text-xs font-bold text-white uppercase tracking-[0.2em] mb-1">{{ $t('analytics.cumulativeBalance') }}</p>
@@ -432,27 +459,46 @@ onMounted(() => {
             </div>
 
             <!-- BAR CHART -->
-            <div
-                class="bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 p-4 lg:p-6 rounded-xl mb-5 lg:mb-8 animate-fade-in-up delay-300 relative overflow-hidden group">
-                <div class="flex items-center justify-between gap-2 mb-4 lg:mb-6 relative z-10">
+            <div class="bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 p-4 lg:p-6 rounded-xl mb-5 lg:mb-8 animate-fade-in-up delay-300 relative overflow-hidden group">
+                <div class="flex items-center justify-between gap-2 mb-3 relative z-10">
                     <h2 class="text-2xs lg:text-sm font-bold text-white uppercase tracking-widest shrink-0">{{ $t('analytics.cashflow') }}</h2>
-                    <div class="flex bg-gray-900 border border-white/10 rounded-lg p-0.5 lg:p-1 relative overflow-hidden">
-                        <div class="absolute top-0.5 bottom-0.5 left-0.5 w-[calc(33.33%-0.25rem)] bg-linear-to-br from-purple-500 to-purple-800 rounded-md transition-all duration-300 ease-out z-0"
-                            :style="{ transform: barView === 'harian' ? 'translateX(0)' : (barView === 'mingguan' ? 'translateX(100%)' : 'translateX(200%)') }">
-                        </div>
-                        <button @click="renderBarChart('harian')"
-                            :class="['relative z-10 text-2xs font-bold uppercase tracking-widest px-2 lg:px-3 py-1.5 rounded-md transition-all duration-300', barView === 'harian' ? 'text-white' : 'text-gray-500 hover:text-white']">{{ $t('analytics.view.daily') }}</button>
-                        <button @click="renderBarChart('mingguan')"
-                            :class="['relative z-10 text-2xs font-bold uppercase tracking-widest px-2 lg:px-3 py-1.5 rounded-md transition-all duration-300', barView === 'mingguan' ? 'text-white' : 'text-gray-500 hover:text-white']">{{ $t('analytics.view.weekly') }}</button>
-                        <button @click="renderBarChart('bulanan')"
-                            :class="['relative z-10 text-2xs font-bold uppercase tracking-widest px-2 lg:px-3 py-1.5 rounded-md transition-all duration-300', barView === 'bulanan' ? 'text-white' : 'text-gray-500 hover:text-white']">{{ $t('analytics.view.monthly') }}</button>
+
+                    <!-- Toggle tanpa sliding-indicator: styling langsung di tombol aktif -->
+                    <div class="flex bg-gray-900 border border-white/10 rounded-lg p-1 gap-1">
+                        <button v-for="v in barViews" :key="v.key" @click="renderBarChart(v.key)"
+                            :class="[
+                                'text-2xs font-bold uppercase tracking-widest px-2 lg:px-3 py-1.5 rounded-md transition-colors duration-200',
+                                barView === v.key
+                                    ? 'bg-linear-to-br from-purple-500 to-purple-700 text-white shadow-sm'
+                                    : 'text-gray-500 hover:text-white'
+                            ]">{{ v.label() }}</button>
                     </div>
                 </div>
 
-                <div ref="barScrollBox" class="overflow-x-auto no-scrollbar pb-1">
-                    <div ref="barChartContainerRef" style="min-width: 100%; height: 160px; lg:height: 180px;">
-                        <canvas ref="barChartRef" :key="barChartKey"></canvas>
+                <!-- Legend manual, karena legend chart.js dimatikan -->
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mb-4 relative z-10">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full" :style="{ backgroundColor: FLOW_COLORS.income }"></span>
+                        <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wide">{{ $t('analytics.chartLabels.income') }}</span>
                     </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full" :style="{ backgroundColor: FLOW_COLORS.expense }"></span>
+                        <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wide">{{ $t('analytics.chartLabels.expense') }}</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full" :style="{ backgroundColor: FLOW_COLORS.debt }"></span>
+                        <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wide">{{ $t('analytics.chartLabels.debt') }}</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full" :style="{ backgroundColor: FLOW_COLORS.receivable }"></span>
+                        <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wide">{{ $t('analytics.chartLabels.receivable') }}</span>
+                    </div>
+                </div>
+
+                <!-- Karena view sudah dibatasi (5 hari / minggu bulan ini / 3 bulan), -->
+                <!-- gak perlu scroll horizontal lagi — balok otomatis lebih lebar & jelas -->
+                <div class="w-full" style="height: 220px;">
+                    <canvas ref="barChartRef" :key="barChartKey"></canvas>
                 </div>
             </div>
 
@@ -461,40 +507,31 @@ onMounted(() => {
                 <h2 class="text-2xs font-bold text-white uppercase tracking-widest">{{ $t('analytics.categoryBreakdown') }}</h2>
                 <div class="flex-1 h-px bg-linear-to-r from-purple-500 to-transparent"></div>
             </div>
-            <div
-                class="flex bg-gray-900 border border-white/10 rounded-xl p-1 mb-4 lg:mb-5 animate-fade-in-up delay-400 relative">
-                <div class="absolute top-1 bottom-1 left-1 w-[calc(25%-0.25rem)] bg-linear-to-br from-purple-500 to-purple-800 border border-white/10 rounded-lg transition-all duration-300 ease-out z-0"
-                    :style="{ transform: categoryView === 'expense' ? 'translateX(0)' : categoryView === 'income' ? 'translateX(100%)' : categoryView === 'debt' ? 'translateX(200%)' : 'translateX(300%)' }">
-                </div>
-                <button @click="switchCategory('expense')"
-                    :class="['relative z-10 flex-1 text-2xs font-bold uppercase tracking-widest py-2 lg:py-3 transition-colors duration-300', categoryView === 'expense' ? 'text-white' : 'text-gray-500 hover:text-white']">{{ $t('analytics.categoryTab.expense') }}</button>
-                <button @click="switchCategory('income')"
-                    :class="['relative z-10 flex-1 text-2xs font-bold uppercase tracking-widest py-2 lg:py-3 transition-colors duration-300', categoryView === 'income' ? 'text-white' : 'text-gray-500 hover:text-white']">{{ $t('analytics.categoryTab.income') }}</button>
-                <button @click="switchCategory('debt')"
-                    :class="['relative z-10 flex-1 text-2xs font-bold uppercase tracking-widest py-2 lg:py-3 transition-colors duration-300', categoryView === 'debt' ? 'text-white' : 'text-gray-500 hover:text-white']">{{ $t('analytics.categoryTab.debt') }}</button>
-                <button @click="switchCategory('receivable')"
-                    :class="['relative z-10 flex-1 text-2xs font-bold uppercase tracking-widest py-2 lg:py-3 transition-colors duration-300', categoryView === 'receivable' ? 'text-white' : 'text-gray-500 hover:text-white']">{{ $t('analytics.categoryTab.receivable') }}</button>
+
+            <!-- Toggle tanpa sliding-indicator -->
+            <div class="grid grid-cols-4 gap-1 bg-gray-900 border border-white/10 rounded-xl p-1 mb-4 lg:mb-5 animate-fade-in-up delay-400">
+                <button v-for="c in categoryViews" :key="c.key" @click="switchCategory(c.key)"
+                    :class="[
+                        'text-2xs font-bold uppercase tracking-widest py-2 lg:py-3 rounded-lg transition-colors duration-200',
+                        categoryView === c.key
+                            ? 'bg-linear-to-br from-purple-500 to-purple-700 text-white shadow-sm'
+                            : 'text-gray-500 hover:text-white'
+                    ]">{{ c.label() }}</button>
             </div>
 
             <!-- DOUGHNUT CHART -->
-            <div
-                class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 p-4 lg:p-6 rounded-xl mb-5 lg:mb-8 animate-fade-in-up delay-500 relative overflow-hidden group">
+            <div class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 p-4 lg:p-6 rounded-xl mb-5 lg:mb-8 animate-fade-in-up delay-500 relative overflow-hidden group">
                 <div v-if="!activeCategoryData.labels.length" class="flex flex-col items-center justify-center py-8 lg:py-10">
-                    <span
-                        class="w-10 h-10 lg:w-12 lg:h-12 bg-gray-800 rounded-xl flex items-center justify-center text-base lg:text-xl mb-3 border border-white/10">📭</span>
+                    <span class="w-10 h-10 lg:w-12 lg:h-12 bg-gray-800 rounded-xl flex items-center justify-center text-base lg:text-xl mb-3 border border-white/10">📭</span>
                     <p class="text-2xs font-bold text-white uppercase tracking-widest">{{ $t('analytics.noData') }}</p>
                 </div>
                 <template v-else>
                     <div class="relative w-full h-48 lg:h-56 mb-5 lg:mb-6">
                         <canvas id="mainChart" :key="doughnutChartKey" class="relative z-10 w-full h-full"></canvas>
-                        <div
-                            class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center pointer-events-none z-0">
-                            <div
-                                class="w-[100px] lg:w-[110px] h-[100px] lg:h-[110px] rounded-full bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 flex flex-col items-center justify-center text-center px-1">
-                                <span class="text-[10px] lg:text-2xs text-gray-500 font-bold uppercase tracking-widest mb-1">{{
-                                    activeCategoryData.labelName }}</span> <span
-                                    class="text-2xs lg:text-2xs font-black text-white tracking-tighter leading-tight w-full wrap-break-word">Rp
-                                    {{ formatNumber(activeCategoryData.total) }}</span>
+                        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center pointer-events-none z-0">
+                            <div class="w-[100px] lg:w-[110px] h-[100px] lg:h-[110px] rounded-full bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 flex flex-col items-center justify-center text-center px-1">
+                                <span class="text-[10px] lg:text-2xs text-gray-500 font-bold uppercase tracking-widest mb-1">{{ activeCategoryData.labelName }}</span>
+                                <span class="text-2xs lg:text-2xs font-black text-white tracking-tighter leading-tight w-full wrap-break-word">Rp {{ formatNumber(activeCategoryData.total) }}</span>
                             </div>
                         </div>
                     </div>
@@ -507,19 +544,14 @@ onMounted(() => {
                             })"
                             class="relative flex items-center justify-between bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 p-2.5 lg:p-3 rounded-xl overflow-hidden group hover:border-purple-500/30 transition-all duration-300">
                             <div class="flex items-center gap-2.5 lg:gap-3 relative z-10 w-full">
-                                <div class="w-1 lg:w-1.5 h-5 lg:h-6 rounded-full"
-                                    :style="{ backgroundColor: categoryColors[i] }">
-                                </div>
+                                <div class="w-1 lg:w-1.5 h-5 lg:h-6 rounded-full" :style="{ backgroundColor: categoryColors[i] }"></div>
                                 <AppIcon :icon="activeCategoryData.icons[i]" class="w-5 h-5 lg:w-6 lg:h-6 text-purple-400 shrink-0" />
                                 <div class="flex-1 min-w-0 pr-1 lg:pr-2">
                                     <p class="text-xs font-bold text-gray-200 truncate">{{ label }}</p>
-                                    <p class="text-2xs text-gray-500 font-bold">{{ activeCategoryData.total > 0 ?
-                                        ((activeCategoryData.values[i] / activeCategoryData.total) * 100).toFixed(1) : 0
-                                    }}%</p>
+                                    <p class="text-2xs text-gray-500 font-bold">{{ activeCategoryData.total > 0 ? ((activeCategoryData.values[i] / activeCategoryData.total) * 100).toFixed(1) : 0 }}%</p>
                                 </div>
                                 <div class="text-right shrink-0">
-                                    <span class="text-2xs lg:text-xs font-black text-white block">Rp {{
-                                        formatNumber(activeCategoryData.values[i]) }}</span>
+                                    <span class="text-2xs lg:text-xs font-black text-white block">Rp {{ formatNumber(activeCategoryData.values[i]) }}</span>
                                 </div>
                             </div>
                         </Link>
@@ -533,39 +565,13 @@ onMounted(() => {
 
 <style scoped>
 @keyframes fade-in-up {
-    0% {
-        opacity: 0;
-        transform: translateY(15px);
-    }
-
-    100% {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    0% { opacity: 0; transform: translateY(15px); }
+    100% { opacity: 1; transform: translateY(0); }
 }
-
-.animate-fade-in-up {
-    animation: fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    opacity: 0;
-}
-
-.delay-100 {
-    animation-delay: 100ms;
-}
-
-.delay-200 {
-    animation-delay: 200ms;
-}
-
-.delay-300 {
-    animation-delay: 300ms;
-}
-
-.delay-400 {
-    animation-delay: 400ms;
-}
-
-.delay-500 {
-    animation-delay: 500ms;
-}
+.animate-fade-in-up { animation: fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-400 { animation-delay: 400ms; }
+.delay-500 { animation-delay: 500ms; }
 </style>

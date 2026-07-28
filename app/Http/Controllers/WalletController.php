@@ -14,60 +14,145 @@ use Inertia\Inertia;
 class WalletController extends Controller
 {
     // Menampilkan daftar Wallet (opsional jika dibutuhkan)
-    public function index()
-    {
-        $userId = Auth::id();
-        $user = Auth::user();
+    // Ganti isi method index() dan tambahkan private method baru di WalletController
 
-        // Hanya ambil kolom yang benar-benar dipakai di kartu wallet frontend
-        // FIX: Blokir dompet 'System' agar tidak tampil di list UI frontend
-        $wallets = $user->wallets()
-            ->select(['id', 'name', 'balance', 'icon', 'keyword', 'group_type', 'is_pinned'])
-            ->where('group_type', '!=', 'System')
-            ->orderBy('id')
-            ->get();
+// Menampilkan daftar Wallet (opsional jika dibutuhkan)
+public function index()
+{
+    $userId = Auth::id();
+    $user = Auth::user();
 
-        // LOGIKA HITUNG HUTANG DAN PIUTANG BERDASARKAN SUBJEK
-        // Dihitung lewat 1 query agregasi SQL (GROUP BY subject), bukan menarik
-        // seluruh baris transaksi + relasi kategori ke PHP lalu di-groupBy di memory.
-        $totalHutang = 0;
-        $totalPiutang = 0;
+    // Hanya ambil kolom yang benar-benar dipakai di kartu wallet frontend
+    // FIX: Blokir dompet 'System' agar tidak tampil di list UI frontend
+    $wallets = $user->wallets()
+        ->select(['id', 'name', 'balance', 'icon', 'keyword', 'group_type', 'is_pinned'])
+        ->where('group_type', '!=', 'System')
+        ->orderBy('id')
+        ->get();
 
-        $balancesRaw = DB::table('transaction_logs')
-            ->join('categories', 'transaction_logs.category_id', '=', 'categories.id')
-            ->where('transaction_logs.user_id', $userId)
-            ->where('transaction_logs.is_cleared', true)
-            ->whereNotNull('transaction_logs.subject')
-            ->where('transaction_logs.subject', '!=', '-')
-            ->whereIn('categories.category_name', [
-                'Dapat Hutangan', 'Bayar Cicilan Hutang', 'Ngasih Piutang', 'Terima Bayar Piutang',
-            ])
-            ->select('transaction_logs.subject')
-            ->selectRaw("
-                SUM(CASE WHEN categories.category_name = 'Dapat Hutangan' THEN amount ELSE 0 END) as debt_borrowed,
-                SUM(CASE WHEN categories.category_name = 'Bayar Cicilan Hutang' THEN amount ELSE 0 END) as debt_paid,
-                SUM(CASE WHEN categories.category_name = 'Ngasih Piutang' THEN amount ELSE 0 END) as rec_borrowed,
-                SUM(CASE WHEN categories.category_name = 'Terima Bayar Piutang' THEN amount ELSE 0 END) as rec_paid
-            ")
-            ->groupBy('transaction_logs.subject')
-            ->get();
+    $debt = $this->calculateDebtReceivable($userId);
 
-        foreach ($balancesRaw as $row) {
-            if ($row->debt_borrowed > 0) {
-                $totalHutang += max(0, $row->debt_borrowed - $row->debt_paid);
-            }
-            if ($row->rec_borrowed > 0) {
-                $totalPiutang += max(0, $row->rec_borrowed - $row->rec_paid);
-            }
+    return Inertia::render('Wallets/Index', [
+        'wallets' => $wallets,
+        'totalHutang' => $debt['totalHutang'],
+        'totalPiutang' => $debt['totalPiutang'],
+    ]);
+}
+
+/**
+ * Hitung total hutang & piutang per subject secara kronologis.
+ *
+ * Logika:
+ * - Diproses per subject, urut berdasarkan tanggal transaksi (bukan agregat SUM biasa),
+ *   supaya bisa mendeteksi kapan saldo hutang/piutang untuk subject tsb kembali ke 0.
+ * - Saat saldo menyentuh 0 lalu subject tsb berhutang/piutang lagi, "since" (tanggal mulai
+ *   siklus aktif saat ini) di-reset ke tanggal transaksi baru tsb — bukan tanggal transaksi
+ *   pertama yang lama.
+ * - Kelebihan bayar (overpay) tidak membuat saldo negatif; langsung dianggap 0.
+ *
+ * @return array{totalHutang: int, totalPiutang: int, hutangDetail: array, piutangDetail: array}
+ */
+private function calculateDebtReceivable(int $userId): array
+{
+    $rows = DB::table('transaction_logs')
+        ->join('categories', 'transaction_logs.category_id', '=', 'categories.id')
+        ->where('transaction_logs.user_id', $userId)
+        ->where('transaction_logs.is_cleared', true)
+        ->whereNotNull('transaction_logs.subject')
+        ->where('transaction_logs.subject', '!=', '-')
+        ->whereIn('categories.category_name', [
+            'Dapat Hutangan', 'Bayar Cicilan Hutang', 'Ngasih Piutang', 'Terima Bayar Piutang',
+        ])
+        ->select(
+            'transaction_logs.subject',
+            'transaction_logs.date',
+            'transaction_logs.created_at',
+            'transaction_logs.amount',
+            'categories.category_name'
+        )
+        // Urut per subject, lalu kronologis. Wajib, karena reset "since" bergantung urutan.
+        ->orderBy('transaction_logs.subject')
+        ->orderBy('transaction_logs.date')
+        ->orderBy('transaction_logs.created_at')
+        ->get();
+
+    $hutangLedger = [];  // subject => ['balance' => float, 'since' => date]
+    $piutangLedger = [];
+
+    foreach ($rows as $row) {
+        $subject = $row->subject;
+        $amount = (float) $row->amount;
+
+        switch ($row->category_name) {
+            case 'Dapat Hutangan':
+                // Kalau belum ada catatan, atau siklus sebelumnya sudah lunas (0),
+                // maka ini siklus baru -> reset tanggal "since" ke transaksi ini.
+                if (! isset($hutangLedger[$subject]) || $hutangLedger[$subject]['balance'] <= 0) {
+                    $hutangLedger[$subject] = ['balance' => 0.0, 'since' => $row->date];
+                }
+                $hutangLedger[$subject]['balance'] += $amount;
+                break;
+
+            case 'Bayar Cicilan Hutang':
+                if (isset($hutangLedger[$subject])) {
+                    $hutangLedger[$subject]['balance'] -= $amount;
+                    if ($hutangLedger[$subject]['balance'] < 0) {
+                        $hutangLedger[$subject]['balance'] = 0.0;
+                    }
+                }
+                break;
+
+            case 'Ngasih Piutang':
+                if (! isset($piutangLedger[$subject]) || $piutangLedger[$subject]['balance'] <= 0) {
+                    $piutangLedger[$subject] = ['balance' => 0.0, 'since' => $row->date];
+                }
+                $piutangLedger[$subject]['balance'] += $amount;
+                break;
+
+            case 'Terima Bayar Piutang':
+                if (isset($piutangLedger[$subject])) {
+                    $piutangLedger[$subject]['balance'] -= $amount;
+                    if ($piutangLedger[$subject]['balance'] < 0) {
+                        $piutangLedger[$subject]['balance'] = 0.0;
+                    }
+                }
+                break;
         }
-
-        return Inertia::render('Wallets/Index', [
-            'wallets' => $wallets,
-            'totalHutang' => (int) $totalHutang,
-            'totalPiutang' => (int) $totalPiutang,
-        ]);
     }
 
+    $totalHutang = 0;
+    $hutangDetail = [];
+    foreach ($hutangLedger as $subject => $data) {
+        if ($data['balance'] > 0) {
+            $totalHutang += $data['balance'];
+            $hutangDetail[] = [
+                'subject' => $subject,
+                'balance' => (int) $data['balance'],
+                'since' => $data['since'],
+            ];
+        }
+    }
+
+    $totalPiutang = 0;
+    $piutangDetail = [];
+    foreach ($piutangLedger as $subject => $data) {
+        if ($data['balance'] > 0) {
+            $totalPiutang += $data['balance'];
+            $piutangDetail[] = [
+                'subject' => $subject,
+                'balance' => (int) $data['balance'],
+                'since' => $data['since'],
+            ];
+        }
+    }
+
+    return [
+        'totalHutang' => (int) $totalHutang,
+        'totalPiutang' => (int) $totalPiutang,
+        'hutangDetail' => $hutangDetail,
+        'piutangDetail' => $piutangDetail,
+    ];
+}
     // Tampilkan Form Tambah Wallet
     public function create()
     {
