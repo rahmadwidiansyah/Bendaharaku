@@ -27,6 +27,7 @@ class User extends Authenticatable
         'bot_avatar',
         'date_format',
         'accent_color',
+        'category_icon_colored',
     ];
 
     protected $hidden = [
@@ -135,6 +136,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'allow_negative_balance' => 'boolean',
+            'category_icon_colored' => 'boolean',
         ];
     }
 

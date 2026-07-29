@@ -34,7 +34,6 @@ class BuildNetWorthSnapshotsJob implements ShouldQueue
     /**
      * Arah kas WALLET (masuk = +, keluar = -).
      * HARUS identik dengan signedCashCase() di AnalyticsController.
-     * Kalau dua tempat ini pernah divergen lagi, itu yang bikin bug lama muncul balik.
      */
     private function walletCashCase(): string
     {
@@ -42,10 +41,10 @@ class BuildNetWorthSnapshotsJob implements ShouldQueue
             CASE
                 WHEN transaction_logs.type_id = 1 THEN transaction_logs.amount
                 WHEN transaction_logs.type_id = 2 THEN -transaction_logs.amount
-                WHEN categories.category_name = 'Dapat Hutangan' THEN transaction_logs.amount
-                WHEN categories.category_name = 'Bayar Cicilan Hutang' THEN -transaction_logs.amount
-                WHEN categories.category_name = 'Terima Bayar Piutang' THEN transaction_logs.amount
-                WHEN categories.category_name = 'Ngasih Piutang' THEN -transaction_logs.amount
+                WHEN categories.system_key = 'LOAN' THEN transaction_logs.amount
+                WHEN categories.system_key = 'DEBT_PAYMENT' THEN -transaction_logs.amount
+                WHEN categories.system_key = 'RECEIVABLE_PAYMENT' THEN transaction_logs.amount
+                WHEN categories.system_key = 'RECEIVABLE' THEN -transaction_logs.amount
                 ELSE 0
             END
         ";
@@ -53,15 +52,15 @@ class BuildNetWorthSnapshotsJob implements ShouldQueue
 
     /**
      * Perubahan saldo HUTANG outstanding (liability):
-     * - Dapat Hutangan        -> hutang bertambah (+)
-     * - Bayar Cicilan Hutang  -> hutang berkurang (-)
+     * - LOAN           -> hutang bertambah (+)
+     * - DEBT_PAYMENT   -> hutang berkurang (-)
      */
     private function debtDeltaCase(): string
     {
         return "
             CASE
-                WHEN categories.category_name = 'Dapat Hutangan' THEN transaction_logs.amount
-                WHEN categories.category_name = 'Bayar Cicilan Hutang' THEN -transaction_logs.amount
+                WHEN categories.system_key = 'LOAN' THEN transaction_logs.amount
+                WHEN categories.system_key = 'DEBT_PAYMENT' THEN -transaction_logs.amount
                 ELSE 0
             END
         ";
@@ -69,15 +68,15 @@ class BuildNetWorthSnapshotsJob implements ShouldQueue
 
     /**
      * Perubahan saldo PIUTANG outstanding (asset):
-     * - Ngasih Piutang         -> piutang bertambah (+)
-     * - Terima Bayar Piutang   -> piutang berkurang (-)
+     * - RECEIVABLE           -> piutang bertambah (+)
+     * - RECEIVABLE_PAYMENT   -> piutang berkurang (-)
      */
     private function receivableDeltaCase(): string
     {
         return "
             CASE
-                WHEN categories.category_name = 'Ngasih Piutang' THEN transaction_logs.amount
-                WHEN categories.category_name = 'Terima Bayar Piutang' THEN -transaction_logs.amount
+                WHEN categories.system_key = 'RECEIVABLE' THEN transaction_logs.amount
+                WHEN categories.system_key = 'RECEIVABLE_PAYMENT' THEN -transaction_logs.amount
                 ELSE 0
             END
         ";
@@ -92,6 +91,7 @@ class BuildNetWorthSnapshotsJob implements ShouldQueue
         $firstTxDate = DB::table('transaction_logs')
             ->where('user_id', $this->userId)
             ->where('is_cleared', true)
+            ->whereNull('deleted_at')
             ->whereIn('type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE, self::TYPE_DEBT, self::TYPE_RECEIVABLE])
             ->min('date');
 
@@ -115,6 +115,7 @@ class BuildNetWorthSnapshotsJob implements ShouldQueue
             )
             ->where('transaction_logs.user_id', $this->userId)
             ->where('transaction_logs.is_cleared', true)
+            ->whereNull('transaction_logs.deleted_at')
             ->where('transaction_logs.date', '<=', $this->endDate)
             ->whereIn('transaction_logs.type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE, self::TYPE_DEBT, self::TYPE_RECEIVABLE])
             ->groupBy('transaction_logs.date')

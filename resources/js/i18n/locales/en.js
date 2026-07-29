@@ -359,6 +359,8 @@ export default {
         deleteConfirm:  'Are you sure you want to delete this wallet?',
         totalDebt:      'Total Debt',
         totalReceivable:'Total Receivable',
+        viewDebtDetail: 'View Debt Details',
+        viewReceivableDetail: 'View Receivable Details',
 
         groupTypes: {
             liquid:     'Liquid (Cash/Digital)',
@@ -600,6 +602,13 @@ export default {
                     light:          'Light',
                     dark:           'Dark',
                     system:         'Follow System',
+                },
+                category_icon_color: {
+                    title:          'Category Icon Color',
+                    description:    'Icon color by transaction type',
+                    label:          'Colored Category Icons',
+                    on:             'Icons match transaction type',
+                    off:            'All icons white',
                 },
                 accent_color: {
                     title:          'Accent Color',

@@ -4,7 +4,7 @@ import { Head, Link } from '@inertiajs/vue3'
 import DateModal from '@/Components/DateModal.vue'
 import TransactionDetailModal from '@/Components/TransactionDetailModal.vue'
 import AppIcon from '@/Components/AppIcon.vue'
-import { getCategoryIconColor } from '@/Composables/useIcon.js'
+import { getCategoryIconColor, getWalletIconColor } from '@/Composables/useIcon.js'
 import { ref, computed } from 'vue'
 import { formatNumber, formatDate, formatLocalYMD } from '@/utils/format.js'
 import { useI18n } from 'vue-i18n'
@@ -96,7 +96,7 @@ const getTypeName = (name) => ({
 			<div class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-5 lg:p-7 text-center mb-8 shadow-2xl relative overflow-hidden group">
 				<div class="absolute -top-10 -right-10 w-32 h-32 bg-purple-500 opacity-5 rounded-full group-hover:scale-150 transition-transform duration-700"></div>
 
-				<AppIcon :icon="wallet.icon" fallback="wallet" class="w-12 h-12 lg:w-16 lg:h-16 text-purple-400 mx-auto mb-3 lg:mb-4" />
+				<AppIcon :icon="wallet.icon" fallback="wallet" :class="['w-12 h-12 lg:w-16 lg:h-16 mx-auto mb-3 lg:mb-4', getWalletIconColor()]" />
 
 				<p class="text-2xs font-bold text-gray-500 uppercase tracking-[0.2em] mb-1">{{ wallet.name }}</p>
 				<h2 class="text-2xl lg:text-3xl font-black tracking-tight mb-5 lg:mb-6"

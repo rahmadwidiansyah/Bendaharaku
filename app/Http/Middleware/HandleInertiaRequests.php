@@ -43,6 +43,7 @@ class HandleInertiaRequests extends Middleware
                     'name' => $request->user()->name,
                     'email' => $request->user()->email,
                     'avatar_url' => $request->user()->avatar_url,
+                    'category_icon_colored' => $request->user()->category_icon_colored,
                 ] : null,
             ],
             'flash' => [

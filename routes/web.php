@@ -166,16 +166,21 @@ Route::middleware(['auth'])->group(function () {
 
             return Inertia::render('Settings/Application/Appearance', [
                 'userAccentColor' => $user->accent_color ?? 'teal',
+                'categoryIconColored' => $user->category_icon_colored ?? true,
             ]);
         })->name('appearance');
         Route::patch('/appearance', function (Request $request) {
             $validated = $request->validate([
                 'theme' => ['required', 'string', 'in:light,dark,system'],
                 'accent_color' => ['required', 'string', 'regex:/^(teal|blue|indigo|pink|cyan|rose|custom:#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3}))$/'],
+                'category_icon_colored' => ['boolean'],
             ]);
 
             $user = $request->user();
-            $user->update(['accent_color' => $validated['accent_color']]);
+            $user->update([
+                'accent_color' => $validated['accent_color'],
+                'category_icon_colored' => $validated['category_icon_colored'] ?? $user->category_icon_colored,
+            ]);
 
             SettingsChangeLogger::logChange(
                 $user,
@@ -422,6 +427,10 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/bot-profile', [ChatBotProfileController::class, 'update'])->name('bot-profile.update');
         Route::delete('/bot-avatar', [ChatBotProfileController::class, 'destroyAvatar'])->name('bot-avatar.destroy');
     });
+
+    // ── Global search ─────────────────────────────────────────────
+    Route::get('/search', [App\Http\Controllers\SearchController::class, 'index'])->name('search.page');
+    Route::get('/api/search', [App\Http\Controllers\SearchController::class, 'search'])->name('search.global');
 
     // ── Redirects for backward compatibility ───────────────────────
     Route::get('/settings/chat/bot-profile', fn () => redirect('/settings/ai/bot', 301));

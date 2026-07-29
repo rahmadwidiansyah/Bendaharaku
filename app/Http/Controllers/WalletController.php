@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Traits\CalculatesDebtAndReceivable;
 use App\Models\Wallet;
 use App\Support\SettingsChangeLogger;
 use Carbon\Carbon;
@@ -13,13 +14,13 @@ use Inertia\Inertia;
 
 class WalletController extends Controller
 {
+    use CalculatesDebtAndReceivable;
     // Menampilkan daftar Wallet (opsional jika dibutuhkan)
     // Ganti isi method index() dan tambahkan private method baru di WalletController
 
 // Menampilkan daftar Wallet (opsional jika dibutuhkan)
 public function index()
 {
-    $userId = Auth::id();
     $user = Auth::user();
 
     // Hanya ambil kolom yang benar-benar dipakai di kartu wallet frontend
@@ -30,114 +31,13 @@ public function index()
         ->orderBy('id')
         ->get();
 
-    $debt = $this->calculateDebtReceivable($userId);
+    $balances = $this->calculateAllBalances();
 
     return Inertia::render('Wallets/Index', [
         'wallets' => $wallets,
-        'totalHutang' => $debt['totalHutang'],
-        'totalPiutang' => $debt['totalPiutang'],
+        'totalHutang' => $balances['total_debt'],
+        'totalPiutang' => $balances['total_receivable'],
     ]);
-}
-
-/**
- * Hitung total hutang & piutang per subject secara kronologis.
- *
- * Logika:
- * - Diproses per subject, urut berdasarkan tanggal transaksi (bukan agregat SUM biasa),
- *   supaya bisa mendeteksi kapan saldo hutang/piutang untuk subject tsb kembali ke 0.
- * - Saat saldo menyentuh 0 lalu subject tsb berhutang/piutang lagi, "since" (tanggal mulai
- *   siklus aktif saat ini) di-reset ke tanggal transaksi baru tsb — bukan tanggal transaksi
- *   pertama yang lama.
- * - Kelebihan bayar (overpay) tidak membuat saldo negatif; langsung dianggap 0.
- *
- * @return array{totalHutang: int, totalPiutang: int, hutangDetail: array, piutangDetail: array}
- */
-private function calculateDebtReceivable(int $userId): array
-{
-    $rows = DB::table('transaction_logs')
-        ->join('categories', 'transaction_logs.category_id', '=', 'categories.id')
-        ->where('transaction_logs.user_id', $userId)
-        ->where('transaction_logs.is_cleared', true)
-        ->whereNotNull('transaction_logs.subject')
-        ->where('transaction_logs.subject', '!=', '-')
-        ->whereNull('transaction_logs.deleted_at')
-        ->whereIn('categories.category_name', [
-            'Dapat Hutangan', 'Bayar Cicilan Hutang', 'Ngasih Piutang', 'Terima Bayar Piutang',
-        ])
-        ->select(
-            'transaction_logs.subject',
-            'transaction_logs.date',
-            'transaction_logs.created_at',
-            'transaction_logs.amount',
-            'categories.category_name'
-        )
-        // Urut per subject, lalu kronologis. Wajib, karena reset "since" bergantung urutan.
-        ->orderBy('transaction_logs.date')
-        ->orderBy('transaction_logs.created_at')
-        ->get();
-
-    // Group by subject (case-insensitive), proses kronologis per subject
-    // biar konsisten dengan LoanController::index()
-    $grouped = collect($rows)->groupBy(fn ($r) => strtoupper($r->subject));
-
-    $processLedger = function ($grouped, string $increaseName, string $decreaseName): array {
-        $ledger = [];
-        foreach ($grouped as $subject => $txs) {
-            $txs = $txs->sortBy(fn ($r) => [$r->date, $r->created_at])->values();
-            $balance = 0.0;
-            $since = null;
-            foreach ($txs as $tx) {
-                $amount = (float) $tx->amount;
-                if ($tx->category_name === $increaseName) {
-                    if ($balance <= 0) {
-                        $since = $tx->date;
-                    }
-                    $balance += $amount;
-                } elseif ($tx->category_name === $decreaseName) {
-                    $balance -= $amount;
-                    if ($balance < 0) {
-                        $balance = 0.0;
-                    }
-                }
-            }
-            if ($balance > 0) {
-                $ledger[$subject] = ['balance' => $balance, 'since' => $since];
-            }
-        }
-        return $ledger;
-    };
-
-    $hutangLedger = $processLedger($grouped, 'Dapat Hutangan', 'Bayar Cicilan Hutang');
-    $piutangLedger = $processLedger($grouped, 'Ngasih Piutang', 'Terima Bayar Piutang');
-
-    $totalHutang = 0;
-    $hutangDetail = [];
-    foreach ($hutangLedger as $subject => $data) {
-        $totalHutang += $data['balance'];
-        $hutangDetail[] = [
-            'subject' => $subject,
-            'balance' => (int) $data['balance'],
-            'since' => $data['since'],
-        ];
-    }
-
-    $totalPiutang = 0;
-    $piutangDetail = [];
-    foreach ($piutangLedger as $subject => $data) {
-        $totalPiutang += $data['balance'];
-        $piutangDetail[] = [
-            'subject' => $subject,
-            'balance' => (int) $data['balance'],
-            'since' => $data['since'],
-        ];
-    }
-
-    return [
-        'totalHutang' => (int) $totalHutang,
-        'totalPiutang' => (int) $totalPiutang,
-        'hutangDetail' => $hutangDetail,
-        'piutangDetail' => $piutangDetail,
-    ];
 }
     // Tampilkan Form Tambah Wallet
     public function create()

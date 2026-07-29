@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\TransactionDraft;
 use App\Models\TransactionLog;
 use App\Services\Chat\DraftConfirmationService;
+use App\Traits\CalculatesDebtAndReceivable;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,6 +18,7 @@ use Inertia\Response;
 
 class TransactionController extends Controller
 {
+    use CalculatesDebtAndReceivable;
     /**
      * Menampilkan daftar transaksi.
      */
@@ -482,67 +484,21 @@ class TransactionController extends Controller
             ->sortByDesc(fn ($cat) => $categoryCounts->get($cat->id, 0))
             ->values();
 
-        // 3. Kalkulasi data subjek Hutang/Piutang aktif menggunakan system_key
-        // Diproses KRONOLOGIS per subject (bukan SUM biasa) agar "since" reset
-        // saat saldo mencapai 0 — overpay tidak mengurangi siklus baru.
-        $transactions = $user->transactionLogs()->with('category')
-            ->where('is_cleared', true)
-            ->whereHas('category', fn ($q) => $q->whereIn('system_key', [
-                'LOAN', 'DEBT_PAYMENT', 'RECEIVABLE', 'RECEIVABLE_PAYMENT',
-            ]))
-            ->whereNotNull('subject')
-            ->where('subject', '!=', '-')
-            ->orderBy('date')
-            ->orderBy('created_at')
-            ->get();
-
-        $debtLedger = [];
-        $receivableLedger = [];
-
-        foreach ($transactions as $tx) {
-            $subject = strtoupper(trim($tx->subject));
-            $amount = (float) $tx->amount;
-
-            switch ($tx->category->system_key) {
-                case 'LOAN':
-                    if (! isset($debtLedger[$subject]) || $debtLedger[$subject]['balance'] <= 0) {
-                        $debtLedger[$subject] = ['name' => $subject, 'balance' => 0.0];
-                    }
-                    $debtLedger[$subject]['balance'] += $amount;
-                    break;
-                case 'DEBT_PAYMENT':
-                    if (! isset($debtLedger[$subject])) {
-                        $debtLedger[$subject] = ['name' => $subject, 'balance' => 0.0];
-                    }
-                    $debtLedger[$subject]['balance'] -= $amount;
-                    if ($debtLedger[$subject]['balance'] < 0) {
-                        $debtLedger[$subject]['balance'] = 0.0;
-                    }
-                    break;
-                case 'RECEIVABLE':
-                    if (! isset($receivableLedger[$subject]) || $receivableLedger[$subject]['balance'] <= 0) {
-                        $receivableLedger[$subject] = ['name' => $subject, 'balance' => 0.0];
-                    }
-                    $receivableLedger[$subject]['balance'] += $amount;
-                    break;
-                case 'RECEIVABLE_PAYMENT':
-                    if (! isset($receivableLedger[$subject])) {
-                        $receivableLedger[$subject] = ['name' => $subject, 'balance' => 0.0];
-                    }
-                    $receivableLedger[$subject]['balance'] -= $amount;
-                    if ($receivableLedger[$subject]['balance'] < 0) {
-                        $receivableLedger[$subject]['balance'] = 0.0;
-                    }
-                    break;
-            }
-        }
+        // 3. Kalkulasi data subjek Hutang/Piutang aktif — pakai trait terpusat
+        $balances = $this->calculateAllBalances();
 
         return [
             'wallets' => $wallets,
             'systemWallets' => $systemWallets,
             'categories' => $categories,
-            'debtSubjects' => collect($debtLedger)->filter(fn ($i) => $i['balance'] > 0)->values()->all(),
-            'receivableSubjects' => collect($receivableLedger)->filter(fn ($i) => $i['balance'] > 0)->values()->all(),
+            'debtSubjects' => collect($balances['debts'])->map(fn ($d) => [
+                'name' => $d['subject'],
+                'balance' => $d['balance'],
+            ])->values()->all(),
+            'receivableSubjects' => collect($balances['receivables'])->map(fn ($r) => [
+                'name' => $r['subject'],
+                'balance' => $r['balance'],
+            ])->values()->all(),
         ];
     }
 }

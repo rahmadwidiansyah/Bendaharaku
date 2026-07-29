@@ -6,9 +6,11 @@ import { createInertiaApp } from '@inertiajs/vue3';
 import { ZiggyVue } from 'ziggy-js';
 import i18n from '@/i18n/index.js';
 import { initAccentColor } from '@/Composables/useAccentColor.js';
+import { initCategoryIconColored } from '@/Composables/useIcon.js';
 
-// Terapkan accent color sebelum app mount agar tidak ada flash warna default
+// Terapkan accent color & icon preference sebelum app mount
 initAccentColor();
+initCategoryIconColored();
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
