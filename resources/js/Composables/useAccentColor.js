@@ -1,12 +1,12 @@
 const STYLE_TAG_ID = 'accent-color-override'
 
 const ACCENT_PALETTES = {
-    purple: {
-        300: '#d8b4fe',
-        400: '#c084fc',
-        500: '#a855f7',
-        600: '#9333ea',
-        700: '#7e22ce',
+    teal: {
+        300: '#6BE5D0',
+        400: '#3DDFC0',
+        500: '#0BD5B0',
+        600: '#09AA8D',
+        700: '#07806A',
     },
     blue: {
         300: '#93c5fd',
@@ -15,26 +15,12 @@ const ACCENT_PALETTES = {
         600: '#2563eb',
         700: '#1d4ed8',
     },
-    green: {
-        300: '#6ee7b7',
-        400: '#34d399',
-        500: '#10b981',
-        600: '#059669',
-        700: '#047857',
-    },
-    orange: {
-        300: '#fdba74',
-        400: '#fb923c',
-        500: '#f97316',
-        600: '#ea580c',
-        700: '#c2410c',
-    },
-    red: {
-        300: '#fca5a5',
-        400: '#f87171',
-        500: '#ef4444',
-        600: '#dc2626',
-        700: '#b91c1c',
+    indigo: {
+        300: '#a5b4fc',
+        400: '#818cf8',
+        500: '#6366f1',
+        600: '#4f46e5',
+        700: '#4338ca',
     },
     pink: {
         300: '#f9a8d4',
@@ -43,9 +29,23 @@ const ACCENT_PALETTES = {
         600: '#db2777',
         700: '#be185d',
     },
+    cyan: {
+        300: '#67e8f9',
+        400: '#22d3ee',
+        500: '#06b6d4',
+        600: '#0891b2',
+        700: '#0e7490',
+    },
+    rose: {
+        300: '#fda4af',
+        400: '#fb7185',
+        500: '#f43f5e',
+        600: '#e11d48',
+        700: '#be123c',
+    },
 }
 
-export const DEFAULT_ACCENT = 'purple'
+export const DEFAULT_ACCENT = 'teal'
 
 const LS_KEY = 'ls_accent_color'
 const IS_CUSTOM_PREFIX = 'custom:'

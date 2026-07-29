@@ -483,7 +483,8 @@ class TransactionController extends Controller
             ->values();
 
         // 3. Kalkulasi data subjek Hutang/Piutang aktif menggunakan system_key
-        // Tidak hardcoded nama kategori — kompatibel dengan custom_name personalisasi
+        // Diproses KRONOLOGIS per subject (bukan SUM biasa) agar "since" reset
+        // saat saldo mencapai 0 — overpay tidak mengurangi siklus baru.
         $transactions = $user->transactionLogs()->with('category')
             ->where('is_cleared', true)
             ->whereHas('category', fn ($q) => $q->whereIn('system_key', [
@@ -491,34 +492,57 @@ class TransactionController extends Controller
             ]))
             ->whereNotNull('subject')
             ->where('subject', '!=', '-')
+            ->orderBy('date')
+            ->orderBy('created_at')
             ->get();
 
-        $debtBalances = [];
-        $receivableBalances = [];
+        $debtLedger = [];
+        $receivableLedger = [];
 
         foreach ($transactions as $tx) {
-            $subject = trim($tx->subject);
-            $subjectKey = strtolower($subject);
-            $systemKey = $tx->category->system_key;
+            $subject = strtoupper(trim($tx->subject));
+            $amount = (float) $tx->amount;
 
-            $debtBalances[$subjectKey] ??= ['name' => $subject, 'balance' => 0];
-            $receivableBalances[$subjectKey] ??= ['name' => $subject, 'balance' => 0];
-
-            match ($systemKey) {
-                'LOAN' => $debtBalances[$subjectKey]['balance'] += $tx->amount,
-                'DEBT_PAYMENT' => $debtBalances[$subjectKey]['balance'] -= $tx->amount,
-                'RECEIVABLE' => $receivableBalances[$subjectKey]['balance'] += $tx->amount,
-                'RECEIVABLE_PAYMENT' => $receivableBalances[$subjectKey]['balance'] -= $tx->amount,
-                default => null,
-            };
+            switch ($tx->category->system_key) {
+                case 'LOAN':
+                    if (! isset($debtLedger[$subject]) || $debtLedger[$subject]['balance'] <= 0) {
+                        $debtLedger[$subject] = ['name' => $subject, 'balance' => 0.0];
+                    }
+                    $debtLedger[$subject]['balance'] += $amount;
+                    break;
+                case 'DEBT_PAYMENT':
+                    if (! isset($debtLedger[$subject])) {
+                        $debtLedger[$subject] = ['name' => $subject, 'balance' => 0.0];
+                    }
+                    $debtLedger[$subject]['balance'] -= $amount;
+                    if ($debtLedger[$subject]['balance'] < 0) {
+                        $debtLedger[$subject]['balance'] = 0.0;
+                    }
+                    break;
+                case 'RECEIVABLE':
+                    if (! isset($receivableLedger[$subject]) || $receivableLedger[$subject]['balance'] <= 0) {
+                        $receivableLedger[$subject] = ['name' => $subject, 'balance' => 0.0];
+                    }
+                    $receivableLedger[$subject]['balance'] += $amount;
+                    break;
+                case 'RECEIVABLE_PAYMENT':
+                    if (! isset($receivableLedger[$subject])) {
+                        $receivableLedger[$subject] = ['name' => $subject, 'balance' => 0.0];
+                    }
+                    $receivableLedger[$subject]['balance'] -= $amount;
+                    if ($receivableLedger[$subject]['balance'] < 0) {
+                        $receivableLedger[$subject]['balance'] = 0.0;
+                    }
+                    break;
+            }
         }
 
         return [
             'wallets' => $wallets,
             'systemWallets' => $systemWallets,
             'categories' => $categories,
-            'debtSubjects' => collect($debtBalances)->filter(fn ($i) => $i['balance'] > 0)->pluck('name')->values()->all(),
-            'receivableSubjects' => collect($receivableBalances)->filter(fn ($i) => $i['balance'] > 0)->pluck('name')->values()->all(),
+            'debtSubjects' => collect($debtLedger)->filter(fn ($i) => $i['balance'] > 0)->values()->all(),
+            'receivableSubjects' => collect($receivableLedger)->filter(fn ($i) => $i['balance'] > 0)->values()->all(),
         ];
     }
 }

@@ -8,6 +8,7 @@ import { useLayoutPreference } from '@/Composables/useLayoutPreference'
 import { useTransactionForm } from '@/Composables/useTransactionForm.js'
 import { useWizardNavigation } from '@/Composables/useWizardNavigation.js'
 import AppIcon from '@/Components/AppIcon.vue'
+import { getCategoryIconColor } from '@/Composables/useIcon.js'
 
 const { t } = useI18n()
 const { isDesktopLayout } = useLayoutPreference()
@@ -82,14 +83,123 @@ onMounted(() => {
 
 // Transfer: animasi swap
 const isSwapping = ref(false)
+const transferAll = ref(false)
+
+watch(transferAll, () => {
+    if (transferAll.value && selectedSourceWallet.value) {
+        rawAmount.value = String(Math.abs(parseInt(selectedSourceWallet.value.balance)))
+    } else {
+        rawAmount.value = '0'
+    }
+})
+
+watch(selectedSourceWallet, () => {
+    if (transferAll.value && selectedSourceWallet.value) {
+        rawAmount.value = String(Math.abs(parseInt(selectedSourceWallet.value.balance)))
+    }
+})
 
 const TYPE_ITEMS = computed(() => [
     { tab: 'Expense',    label: t('types.expense'),    desc: t('types.expenseDesc'),    icon: 'arrow-up-from-line', color: 'from-red-500/20 to-red-900/10',     border: 'border-red-500/40',    text: 'text-red-400'    },
     { tab: 'Income',     label: t('types.income'),     desc: t('types.incomeDesc'),     icon: 'arrow-down-to-line', color: 'from-green-500/20 to-green-900/10',  border: 'border-green-500/40',  text: 'text-green-400'  },
     { tab: 'Transfer',   label: t('types.transfer'),   desc: t('types.transferDesc'),   icon: 'arrow-left-right',   color: 'from-blue-500/20 to-blue-900/10',    border: 'border-blue-500/40',   text: 'text-blue-400'   },
-    { tab: 'Debt',       label: t('types.debt'),       desc: t('types.debtDesc'),       icon: 'circle-dollar-sign', color: 'from-orange-500/20 to-orange-900/10', border: 'border-orange-500/40', text: 'text-orange-400' },
-    { tab: 'Receivable', label: t('types.receivable'), desc: t('types.receivableDesc'), icon: 'hand-coins',         color: 'from-yellow-500/20 to-yellow-900/10', border: 'border-yellow-500/40', text: 'text-yellow-400' },
+    { tab: 'Debt',       label: t('types.debt'),       desc: t('types.debtDesc'),       icon: 'circle-dollar-sign', color: 'from-amber-500/20 to-amber-900/10', border: 'border-amber-500/40', text: 'text-amber-400' },
+    { tab: 'Receivable', label: t('types.receivable'), desc: t('types.receivableDesc'), icon: 'hand-coins',         color: 'from-fuchsia-500/20 to-fuchsia-900/10', border: 'border-fuchsia-500/40', text: 'text-fuchsia-400' },
 ])
+
+const typeTheme = computed(() => {
+    const type = mainTab.value
+    const isExpense = type === 'Expense'
+    const isIncome  = type === 'Income'
+    const isTransfer = type === 'Transfer'
+    const isDebt    = type === 'Debt'
+    const isReceivable = type === 'Receivable'
+
+    if (isIncome) return {
+        stepLabel: 'text-green-500', btnActive: 'bg-green-600 text-white shadow',
+        btnSolid: 'bg-green-600', accentText: 'text-green-400',
+        accentBorder: 'border-green-500/40', focusBorder: 'focus:border-green-500',
+        focusRing: 'focus:ring-green-600', bgActive: 'bg-green-600 text-white',
+        activePill: 'bg-green-600/20 text-green-400 border-green-500/50',
+        keypadToggle: 'text-green-400 border-green-500/30',
+        walletHover: 'hover:border-green-500/30', dateSelected: 'bg-green-600 text-white',
+        chipStep: 'bg-green-500/20 text-green-300 border-green-500/40',
+        selected: 'bg-green-500/15 border-green-500 shadow-lg shadow-green-500/10',
+        hover: 'hover:border-green-500/40', check: 'bg-green-500',
+        add: 'border-green-500/40 bg-green-500/5 text-green-400',
+        categoryLink: 'text-green-400',
+    }
+    if (isExpense) return {
+        stepLabel: 'text-red-500', btnActive: 'bg-red-600 text-white shadow',
+        btnSolid: 'bg-red-600', accentText: 'text-red-400',
+        accentBorder: 'border-red-500/40', focusBorder: 'focus:border-red-500',
+        focusRing: 'focus:ring-red-600', bgActive: 'bg-red-600 text-white',
+        activePill: 'bg-red-600/20 text-red-400 border-red-500/50',
+        keypadToggle: 'text-red-400 border-red-500/30',
+        walletHover: 'hover:border-red-500/30', dateSelected: 'bg-red-600 text-white',
+        chipStep: 'bg-red-500/20 text-red-300 border-red-500/40',
+        selected: 'bg-red-500/15 border-red-500 shadow-lg shadow-red-500/10',
+        hover: 'hover:border-red-500/40', check: 'bg-red-500',
+        add: 'border-red-500/40 bg-red-500/5 text-red-400',
+        categoryLink: 'text-red-400',
+    }
+    if (isTransfer) return {
+        stepLabel: 'text-blue-500', btnActive: 'bg-blue-600 text-white shadow',
+        btnSolid: 'bg-blue-600', accentText: 'text-blue-400',
+        accentBorder: 'border-blue-500/40', focusBorder: 'focus:border-blue-500',
+        focusRing: 'focus:ring-blue-600', bgActive: 'bg-blue-600 text-white',
+        activePill: 'bg-blue-600/20 text-blue-400 border-blue-500/50',
+        keypadToggle: 'text-blue-400 border-blue-500/30',
+        walletHover: 'hover:border-blue-500/30', dateSelected: 'bg-blue-600 text-white',
+        chipStep: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
+        selected: 'bg-blue-500/15 border-blue-500 shadow-lg shadow-blue-500/10',
+        hover: 'hover:border-blue-500/40', check: 'bg-blue-500',
+        add: 'border-blue-500/40 bg-blue-500/5 text-blue-400',
+        categoryLink: 'text-blue-400',
+    }
+    if (isDebt) return {
+        stepLabel: 'text-amber-500', btnActive: 'bg-amber-600 text-white shadow',
+        btnSolid: 'bg-amber-600', accentText: 'text-amber-400',
+        accentBorder: 'border-amber-500/40', focusBorder: 'focus:border-amber-500',
+        focusRing: 'focus:ring-amber-600', bgActive: 'bg-amber-600 text-white',
+        activePill: 'bg-amber-600/20 text-amber-400 border-amber-500/50',
+        keypadToggle: 'text-amber-400 border-amber-500/30',
+        walletHover: 'hover:border-amber-500/30', dateSelected: 'bg-amber-600 text-white',
+        chipStep: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+        selected: 'bg-amber-500/15 border-amber-500 shadow-lg shadow-amber-500/10',
+        hover: 'hover:border-amber-500/40', check: 'bg-amber-500',
+        add: 'border-amber-500/40 bg-amber-500/5 text-amber-400',
+        categoryLink: 'text-amber-400',
+    }
+    if (isReceivable) return {
+        stepLabel: 'text-fuchsia-500', btnActive: 'bg-fuchsia-600 text-white shadow',
+        btnSolid: 'bg-fuchsia-600', accentText: 'text-fuchsia-400',
+        accentBorder: 'border-fuchsia-500/40', focusBorder: 'focus:border-fuchsia-500',
+        focusRing: 'focus:ring-fuchsia-600', bgActive: 'bg-fuchsia-600 text-white',
+        activePill: 'bg-fuchsia-600/20 text-fuchsia-400 border-fuchsia-500/50',
+        keypadToggle: 'text-fuchsia-400 border-fuchsia-500/30',
+        walletHover: 'hover:border-fuchsia-500/30', dateSelected: 'bg-fuchsia-600 text-white',
+        chipStep: 'bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/40',
+        selected: 'bg-fuchsia-500/15 border-fuchsia-500 shadow-lg shadow-fuchsia-500/10',
+        hover: 'hover:border-fuchsia-500/40', check: 'bg-fuchsia-500',
+        add: 'border-fuchsia-500/40 bg-fuchsia-500/5 text-fuchsia-400',
+        categoryLink: 'text-fuchsia-400',
+    }
+    return {
+        stepLabel: 'text-purple-500', btnActive: 'bg-purple-600 text-white shadow',
+        btnSolid: 'bg-purple-600', accentText: 'text-purple-400',
+        accentBorder: 'border-purple-500/40', focusBorder: 'focus:border-purple-500',
+        focusRing: 'focus:ring-purple-600', bgActive: 'bg-purple-600 text-white',
+        activePill: 'bg-purple-600/20 text-purple-400 border-purple-500/50',
+        keypadToggle: 'text-purple-400 border-purple-500/30',
+        walletHover: 'hover:border-purple-500/30', dateSelected: 'bg-purple-600 text-white',
+        chipStep: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
+        selected: 'bg-purple-500/15 border-purple-500 shadow-lg shadow-purple-500/10',
+        hover: 'hover:border-purple-500/40', check: 'bg-purple-500',
+        add: 'border-purple-500/40 bg-purple-500/5 text-purple-400',
+        categoryLink: 'text-purple-400',
+    }
+})
 
 const confirmType = (tab) => {
     setMainTab(tab)
@@ -153,6 +263,31 @@ const swapWallets = () => {
 }
 
 // ─── Submit ───────────────────────────────────────────────────────
+const lunasi = ref(false)
+
+const debtBalance = computed(() => {
+    if (!['Debt', 'Receivable'].includes(mainTab.value)) return 0
+    const sub = activeSubjects.value.find(s => s.name === form.subject)
+    return sub?.balance || 0
+})
+
+watch(lunasi, () => {
+    if (lunasi.value && debtBalance.value > 0) {
+        rawAmount.value = String(Math.abs(debtBalance.value))
+    } else {
+        rawAmount.value = '0'
+    }
+})
+
+watch(() => form.subject, () => {
+    if (lunasi.value && debtBalance.value > 0) {
+        rawAmount.value = String(Math.abs(debtBalance.value))
+    } else if (lunasi.value) {
+        lunasi.value = false
+        rawAmount.value = '0'
+    }
+})
+
 const submitTransfer = (closeAfter = true) => {
     if (!validateTransfer()) return
     form.post(route('transactions.store'), {
@@ -259,14 +394,14 @@ const handleBack = () => router.visit(route('dashboard'))
                         type="button"
                         @click="resetToStep(2)"
                         class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-2xs font-black uppercase tracking-widest transition-all active:scale-95 shrink-0"
-                        :class="formStep === 2
-                            ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
-                            : formStep > 2
-                                ? 'bg-gray-800 text-gray-300 border border-white/10 hover:border-purple-500/30'
+                                :class="formStep === 2
+                                    ? typeTheme.chipStep
+                                    : formStep > 2
+                                ? 'bg-gray-800 text-gray-300 border border-white/10 ' + typeTheme.hover
                                 : 'bg-gray-800/50 text-gray-600 border border-white/5 cursor-default'"
                     >
                         <span v-if="formStep > 2 && selectedCategory">
-                            <AppIcon :icon="selectedCategory.icon" class="inline w-3.5 h-3.5 mr-1.5 text-purple-300" />
+                            <AppIcon :icon="selectedCategory.icon" :class="['inline w-3.5 h-3.5 mr-1.5', getCategoryIconColor(selectedCategory?.type?.name)]" />
                             {{ selectedCategory.category_name }}
                         </span>
                         <span v-else>2 · {{ t('transaction.category') }}</span>
@@ -277,7 +412,8 @@ const handleBack = () => router.visit(route('dashboard'))
                     <!-- Step 3 chip — hanya untuk tipe non-Transfer -->
                     <div
                         v-if="formStep >= 3 && mainTab !== 'Transfer'"
-                        class="px-3 py-1.5 rounded-full text-2xs font-black uppercase tracking-widest bg-purple-500/20 text-purple-300 border border-purple-500/40 shrink-0"
+                        class="px-3 py-1.5 rounded-full text-2xs font-black uppercase tracking-widest shrink-0"
+                        :class="typeTheme.chipStep"
                     >3 · {{ t('transaction.amount') }}</div>
                 </div>
             </div>
@@ -335,12 +471,12 @@ const handleBack = () => router.visit(route('dashboard'))
                             <button type="button"
                                 @click="setDebtSubTab(mainTab === 'Debt' ? 'income' : 'expense')"
                                 class="flex-1 py-2 rounded-lg text-2xs font-black uppercase tracking-widest transition-all"
-                                :class="debtSubTab === (mainTab === 'Debt' ? 'income' : 'expense') ? 'bg-purple-600 text-white shadow' : 'text-gray-500'"
+                                :class="debtSubTab === (mainTab === 'Debt' ? 'income' : 'expense') ? typeTheme.btnActive : 'text-gray-500'"
                             >{{ mainTab === 'Debt' ? t('transaction.debt.receive') : t('transaction.receivable.give') }}</button>
                             <button type="button"
                                 @click="setDebtSubTab(mainTab === 'Debt' ? 'expense' : 'income')"
                                 class="flex-1 py-2 rounded-lg text-2xs font-black uppercase tracking-widest transition-all"
-                                :class="debtSubTab === (mainTab === 'Debt' ? 'expense' : 'income') ? 'bg-purple-600 text-white shadow' : 'text-gray-500'"
+                                :class="debtSubTab === (mainTab === 'Debt' ? 'expense' : 'income') ? typeTheme.btnActive : 'text-gray-500'"
                             >{{ mainTab === 'Debt' ? t('transaction.debt.pay') : t('transaction.receivable.collect') }}</button>
                         </div>
                     </div>
@@ -366,7 +502,7 @@ const handleBack = () => router.visit(route('dashboard'))
                                 <button type="button" @click="openWalletModal('source')"
                                     class="w-full flex items-center gap-3 bg-gray-900/80 border rounded-xl px-4 py-3 active:scale-[0.98] transition-transform text-left"
                                     :class="transferErrors.source ? 'border-red-500/60' : selectedSourceWallet ? 'border-blue-500/40' : 'border-white/10 border-dashed'">
-                                    <AppIcon :icon="selectedSourceWallet?.icon" :fallback="selectedSourceWallet ? 'wallet' : 'circle-plus'" class="w-7 h-7 shrink-0" :class="selectedSourceWallet ? 'text-purple-400' : 'text-gray-600'" />
+                                    <AppIcon :icon="selectedSourceWallet?.icon" :fallback="selectedSourceWallet ? 'wallet' : 'circle-plus'" class="w-7 h-7 shrink-0" :class="selectedSourceWallet ? typeTheme.accentText : 'text-gray-600'" />
                                     <div class="flex-1 min-w-0">
                                         <p class="text-2xs font-black text-blue-400 uppercase tracking-widest">{{ t('transaction.detail.from') }}</p>
                                         <p class="text-sm font-bold truncate" :class="selectedSourceWallet ? 'text-white' : 'text-gray-600'">
@@ -378,6 +514,14 @@ const handleBack = () => router.visit(route('dashboard'))
                                     </div>
                                     <svg class="w-4 h-4 text-gray-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
                                 </button>
+
+                                <!-- All-in checkbox -->
+                                <label v-if="selectedSourceWallet"
+                                    class="flex items-center gap-2 mt-2 px-1 cursor-pointer select-none">
+                                    <input type="checkbox" v-model="transferAll"
+                                        class="rounded bg-gray-700 border-white/10 text-blue-500 focus:ring-blue-500" />
+                                    <span class="text-2xs font-bold text-gray-400 uppercase tracking-widest">{{ t('transaction.allBalance') }}</span>
+                                </label>
 
                                 <!-- Swap button -->
                                 <div class="flex items-center justify-center my-2">
@@ -395,10 +539,10 @@ const handleBack = () => router.visit(route('dashboard'))
                                 <!-- Destination wallet -->
                                 <button type="button" @click="openWalletModal('dest')"
                                     class="w-full flex items-center gap-3 bg-gray-900/80 border rounded-xl px-4 py-3 active:scale-[0.98] transition-transform text-left"
-                                    :class="transferErrors.dest ? 'border-red-500/60' : selectedDestWallet ? 'border-purple-500/40' : 'border-white/10 border-dashed'">
-                                    <AppIcon :icon="selectedDestWallet?.icon" :fallback="selectedDestWallet ? 'wallet' : 'circle-plus'" class="w-7 h-7 shrink-0" :class="selectedDestWallet ? 'text-purple-400' : 'text-gray-600'" />
+                                    :class="transferErrors.dest ? 'border-red-500/60' : selectedDestWallet ? typeTheme.accentBorder : 'border-white/10 border-dashed'">
+                                    <AppIcon :icon="selectedDestWallet?.icon" :fallback="selectedDestWallet ? 'wallet' : 'circle-plus'" class="w-7 h-7 shrink-0" :class="selectedDestWallet ? typeTheme.accentText : 'text-gray-600'" />
                                     <div class="flex-1 min-w-0">
-                                        <p class="text-2xs font-black text-purple-400 uppercase tracking-widest">{{ t('transaction.detail.to') }}</p>
+                                        <p class="text-2xs font-black uppercase tracking-widest" :class="typeTheme.accentText">{{ t('transaction.detail.to') }}</p>
                                         <p class="text-sm font-bold truncate" :class="selectedDestWallet ? 'text-white' : 'text-gray-600'">
                                             {{ selectedDestWallet?.name || t('transaction.chooseDestWallet') }}
                                         </p>
@@ -441,7 +585,7 @@ const handleBack = () => router.visit(route('dashboard'))
                                 <!-- Toggle keypad -->
                                 <button type="button" @click="showKeypad = !showKeypad"
                                     class="w-12 h-12 bg-gray-800 border border-white/8 rounded-xl flex items-center justify-center shrink-0 active:scale-95 transition-all"
-                                    :class="showKeypad ? 'text-purple-400 border-purple-500/30' : 'text-gray-500'">
+                                    :class="showKeypad ? typeTheme.keypadToggle : 'text-gray-500'">
                                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                                 </button>
                                 <!-- Simpan & tambah lagi -->
@@ -468,17 +612,17 @@ const handleBack = () => router.visit(route('dashboard'))
                     <!-- Debt / Receivable: input nama -->
                     <div v-else-if="['Debt', 'Receivable'].includes(mainTab)" class="flex-1 overflow-y-auto no-scrollbar px-4 pt-3 pb-4 space-y-4">
                         <div class="text-center mb-2">
-                            <p class="text-2xs font-black text-purple-500 uppercase tracking-[0.25em] mb-1">{{ t('transaction.stepOf', { step: 2, total: 3 }) }}</p>
+                            <p class="text-2xs font-black uppercase tracking-[0.25em] mb-1" :class="typeTheme.stepLabel">{{ t('transaction.stepOf', { step: 2, total: 3 }) }}</p>
                             <h2 class="text-lg font-black text-white">{{ t('transaction.relatedParty') }}</h2>
                         </div>
                         <input type="text" v-model="form.subject" :placeholder="t('transaction.namePlaceholder')"
                             @input="form.subject = $event.target.value.toUpperCase()"
-                            class="w-full bg-gray-800 border border-white/10 focus:border-purple-500 rounded-xl px-4 py-3 text-center text-lg font-bold text-white focus:ring-0 placeholder-gray-700 outline-none uppercase" />
+                            class="w-full bg-gray-800 border border-white/10 rounded-xl px-4 py-3 text-center text-lg font-bold text-white focus:ring-0 placeholder-gray-700 outline-none uppercase" :class="typeTheme.focusBorder" />
                         <div v-if="activeSubjects?.length" class="flex flex-wrap gap-2 justify-center">
-                            <button v-for="sub in activeSubjects" :key="sub" type="button" @click="form.subject = sub"
+                            <button v-for="sub in activeSubjects" :key="sub.name" type="button" @click="form.subject = sub.name"
                                 class="px-3 py-1.5 rounded-full text-2xs font-bold border transition-all active:scale-95 uppercase"
-                                :class="form.subject === sub ? 'bg-purple-600/20 text-purple-400 border-purple-500/50' : 'bg-gray-800 text-gray-400 border-white/5'">
-                                {{ sub }}
+                                :class="form.subject === sub.name ? typeTheme.activePill : 'bg-gray-800 text-gray-400 border-white/5'">
+                                {{ sub.name }} <span v-if="sub.balance" class="text-2xs text-gray-500 ml-1">Rp{{ parseInt(sub.balance).toLocaleString('id-ID') }}</span>
                             </button>
                         </div>
                         <!-- Jatuh tempo hanya untuk Dapat/Ngasih -->
@@ -487,20 +631,20 @@ const handleBack = () => router.visit(route('dashboard'))
                             <div class="flex items-center gap-2">
                                 <input type="checkbox" id="has_due" :checked="form.due_date_type !== null"
                                     @change="form.due_date_type = $event.target.checked ? 'fixed' : null"
-                                    class="rounded bg-gray-700 border-white/10 text-purple-600 focus:ring-purple-600" />
-                                <label for="has_due" class="text-2xs font-bold text-purple-400 uppercase tracking-widest cursor-pointer">{{ t('transaction.hasDueDate') }}</label>
+                                    class="rounded bg-gray-700 border-white/10" :class="typeTheme.focusRing" />
+                                <label for="has_due" class="text-2xs font-bold uppercase tracking-widest cursor-pointer" :class="typeTheme.accentText">{{ t('transaction.hasDueDate') }}</label>
                             </div>
                             <template v-if="form.due_date_type !== null">
                                 <div class="flex gap-2">
                                     <button type="button" @click="form.due_date_type = 'fixed'"
                                         class="flex-1 py-2 text-2xs font-bold uppercase rounded-lg transition-all"
-                                        :class="form.due_date_type === 'fixed' ? 'bg-purple-600 text-white' : 'bg-gray-900 text-gray-500'">{{ t('transaction.fixedDate') }}</button>
+                                        :class="form.due_date_type === 'fixed' ? typeTheme.bgActive : 'bg-gray-900 text-gray-500'">{{ t('transaction.fixedDate') }}</button>
                                     <button type="button" @click="form.due_date_type = 'monthly'"
                                         class="flex-1 py-2 text-2xs font-bold uppercase rounded-lg transition-all"
-                                        :class="form.due_date_type === 'monthly' ? 'bg-purple-600 text-white' : 'bg-gray-900 text-gray-500'">{{ t('transaction.everyMonth') }}</button>
+                                        :class="form.due_date_type === 'monthly' ? typeTheme.bgActive : 'bg-gray-900 text-gray-500'">{{ t('transaction.everyMonth') }}</button>
                                     <button type="button" @click="form.due_date_type = 'daily'"
                                         class="flex-1 py-2 text-2xs font-bold uppercase rounded-lg transition-all"
-                                        :class="form.due_date_type === 'daily' ? 'bg-purple-600 text-white' : 'bg-gray-900 text-gray-500'">{{ t('transaction.everyDay') }}</button>
+                                        :class="form.due_date_type === 'daily' ? typeTheme.bgActive : 'bg-gray-900 text-gray-500'">{{ t('transaction.everyDay') }}</button>
                                 </div>
                                 <button v-if="form.due_date_type === 'fixed'" type="button"
                                     @click="dateModalTarget = 'due_date'; showDateModal = true"
@@ -509,13 +653,13 @@ const handleBack = () => router.visit(route('dashboard'))
                                     {{ form.due_date ? new Date(form.due_date).toLocaleDateString('id-ID', {day:'numeric',month:'short',year:'numeric'}) : t('transaction.chooseDate') }}
                                 </button>
                                 <input v-if="form.due_date_type === 'monthly'" type="number" min="1" max="31" v-model="form.due_date_interval" :placeholder="t('transaction.dayPlaceholder')"
-                                    class="w-full bg-gray-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:ring-0 focus:border-purple-500 text-center" />
+                                    class="w-full bg-gray-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:ring-0 text-center" :class="typeTheme.focusBorder" />
                                 <input v-if="form.due_date_type === 'daily'" type="number" min="1" v-model="form.due_date_interval" :placeholder="t('transaction.cyclePlaceholder')"
-                                    class="w-full bg-gray-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:ring-0 focus:border-purple-500 text-center" />
+                                    class="w-full bg-gray-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:ring-0 text-center" :class="typeTheme.focusBorder" />
                             </template>
                         </div>
                         <button type="button" @click="confirmCategory"
-                            class="w-full py-4 rounded-2xl bg-purple-600 text-white text-sm font-black uppercase tracking-widest transition-all active:scale-95">
+                            class="w-full py-4 rounded-2xl text-white text-sm font-black uppercase tracking-widest transition-all active:scale-95" :class="typeTheme.btnSolid">
                             {{ t('transaction.nextNominal') }}
                         </button>
                     </div>
@@ -523,7 +667,7 @@ const handleBack = () => router.visit(route('dashboard'))
                     <!-- Income / Expense: grid kategori -->
                     <div v-else class="flex-1 flex flex-col min-h-0 overflow-hidden">
                         <div class="shrink-0 px-4 pt-3 pb-2 text-center">
-                            <p class="text-2xs font-black text-purple-500 uppercase tracking-[0.25em] mb-0.5">{{ t('transaction.stepOf', { step: 2, total: 3 }) }}</p>
+                            <p class="text-2xs font-black uppercase tracking-[0.25em] mb-0.5" :class="typeTheme.stepLabel">{{ t('transaction.stepOf', { step: 2, total: 3 }) }}</p>
                             <h2 class="text-base font-black text-white">{{ t('transaction.chooseCategory') }}</h2>
                         </div>
                         <div class="flex-1 overflow-y-auto no-scrollbar px-4 pb-4">
@@ -531,21 +675,23 @@ const handleBack = () => router.visit(route('dashboard'))
                                 <button v-for="cat in activeCategories" :key="cat.id" type="button"
                                     @click="selectCategory(cat); confirmCategory()"
                                     class="relative flex flex-col items-center justify-center p-3 rounded-2xl border transition-all active:scale-95 min-h-[90px]"
-                                    :class="form.category_id === cat.id ? 'bg-purple-500/15 border-purple-500 shadow-lg shadow-purple-500/10' : 'bg-gray-800 border-white/8 hover:border-purple-500/40'">
-                                    <AppIcon :icon="cat.icon" fallback="folder" class="w-8 h-8 mb-2 text-purple-400 transition-colors" :class="{'!text-purple-300': form.category_id === cat.id}" />
+                                    :class="form.category_id === cat.id ? typeTheme.selected : `bg-gray-800 border-white/8 ${typeTheme.hover}`">
+                                    <AppIcon :icon="cat.icon" fallback="folder" :class="['w-8 h-8 mb-2 transition-colors', getCategoryIconColor(cat.type?.name)]" />
                                     <span class="text-2xs font-bold text-center leading-tight w-full line-clamp-2"
                                         :class="form.category_id === cat.id ? 'text-white' : 'text-gray-400'">{{ cat.category_name }}</span>
-                                    <span v-if="form.category_id === cat.id" class="absolute top-2 right-2 w-4 h-4 rounded-full bg-purple-500 text-white text-[9px] flex items-center justify-center">✓</span>
+                                    <span v-if="form.category_id === cat.id" class="absolute top-2 right-2 w-4 h-4 rounded-full text-white text-[9px] flex items-center justify-center"
+                                        :class="typeTheme.check">✓</span>
                                 </button>
                                 <Link v-if="['Expense','Income'].includes(mainTab)" :href="route('categories.create', { type: mainTab })"
-                                    class="flex flex-col items-center justify-center gap-2 p-3 rounded-2xl border border-dashed border-purple-500/40 bg-purple-500/5 text-purple-400 active:scale-95 min-h-[90px]">
-                                    <span class="w-8 h-8 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-lg">+</span>
+                                    class="flex flex-col items-center justify-center gap-2 p-3 rounded-2xl border border-dashed active:scale-95 min-h-[90px]"
+                                    :class="typeTheme.add">
+                                    <span class="w-8 h-8 rounded-xl border border-white/10 flex items-center justify-center text-lg">+</span>
                                     <span class="text-2xs font-black text-center leading-tight">{{ t('transaction.addCategory') }}</span>
                                 </Link>
                             </div>
                             <div v-else class="rounded-2xl border border-dashed border-white/10 bg-gray-800/50 p-8 text-center">
                                 <p class="text-sm font-bold text-gray-400 mb-2">{{ t('transaction.noCategory') }}</p>
-                                <Link :href="route('categories.create', { type: mainTab })" class="text-2xs font-black text-purple-400 uppercase tracking-wider">+ {{ t('transaction.addCategory') }}</Link>
+                                <Link :href="route('categories.create', { type: mainTab })" class="text-2xs font-black uppercase tracking-wider" :class="typeTheme.categoryLink">+ {{ t('transaction.addCategory') }}</Link>
                             </div>
                         </div>
                     </div>
@@ -583,13 +729,24 @@ const handleBack = () => router.visit(route('dashboard'))
                         <!-- Pilih Dompet -->
                         <button type="button" @click="openWalletModal(isMoneyIn ? 'dest' : 'source')"
                             class="w-full flex items-center gap-3 bg-gray-800 border border-white/8 rounded-xl px-4 py-3 active:scale-95 transition-transform text-left">
-                            <AppIcon :icon="(isMoneyIn ? selectedDestWallet : selectedSourceWallet)?.icon" :fallback="(isMoneyIn ? selectedDestWallet : selectedSourceWallet) ? 'wallet' : 'circle-plus'" class="w-7 h-7 shrink-0" :class="(isMoneyIn ? selectedDestWallet : selectedSourceWallet) ? 'text-purple-400' : 'text-gray-600'" />
+                            <AppIcon :icon="(isMoneyIn ? selectedDestWallet : selectedSourceWallet)?.icon" :fallback="(isMoneyIn ? selectedDestWallet : selectedSourceWallet) ? 'wallet' : 'circle-plus'" class="w-7 h-7 shrink-0" :class="(isMoneyIn ? selectedDestWallet : selectedSourceWallet) ? typeTheme.accentText : 'text-gray-600'" />
                             <div class="flex-1 min-w-0">
                                 <p class="text-2xs font-black text-gray-500 uppercase tracking-widest">{{ t('transaction.wallet') }}</p>
                                 <p class="text-sm font-bold text-white truncate">{{ (isMoneyIn ? selectedDestWallet : selectedSourceWallet)?.name || t('transaction.chooseWallet') }}</p>
                             </div>
                             <svg class="w-4 h-4 text-gray-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
                         </button>
+
+                        <!-- Lunasi checkbox untuk Debt/Receivable -->
+                        <label v-if="['Debt', 'Receivable'].includes(mainTab) && debtBalance > 0"
+                            class="flex items-center gap-2 px-1 py-2 cursor-pointer select-none">
+                            <input type="checkbox" v-model="lunasi"
+                                class="rounded bg-gray-700 border-white/10 text-amber-500 focus:ring-amber-500" />
+                            <span class="text-2xs font-bold text-gray-400 uppercase tracking-widest">
+                                {{ mainTab === 'Debt' ? t('transaction.settle') : t('transaction.collectAll') }}
+                            </span>
+                            <span class="text-2xs font-bold text-amber-400 ml-auto">Rp {{ parseInt(debtBalance).toLocaleString('id-ID') }}</span>
+                        </label>
                     </div>
 
                     <!-- Nominal display + action bar — shrink-0 agar tidak kepush keypad -->
@@ -613,7 +770,7 @@ const handleBack = () => router.visit(route('dashboard'))
                             <!-- Toggle keypad -->
                             <button type="button" @click="showKeypad = !showKeypad"
                                 class="w-12 h-12 bg-gray-800 border border-white/8 rounded-xl flex items-center justify-center shrink-0 active:scale-95 transition-all"
-                                :class="showKeypad ? 'text-purple-400 border-purple-500/30' : 'text-gray-500'">
+                                :class="showKeypad ? typeTheme.keypadToggle : 'text-gray-500'">
                                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                             </button>
                             <!-- Simpan & tambah lagi -->
@@ -668,7 +825,7 @@ const handleBack = () => router.visit(route('dashboard'))
                                 <button v-for="day in daysInMonth" :key="day" type="button" @click="selectSpecificDate(day)"
                                     class="h-8 w-full flex items-center justify-center text-sm font-bold rounded-lg transition-all active:scale-90"
                                     :class="(dateModalTarget === 'due_date' ? form.due_date : form.date) === [currentYear, String(currentMonth+1).padStart(2,'0'), String(day).padStart(2,'0')].join('-')
-                                        ? 'bg-purple-600 text-white'
+                                        ? typeTheme.dateSelected
                                         : 'text-gray-300 hover:bg-gray-700'">{{ day }}</button>
                             </div>
                         </div>
@@ -684,11 +841,11 @@ const handleBack = () => router.visit(route('dashboard'))
                         <h3 class="text-sm font-black text-gray-400 mb-4 text-center tracking-widest uppercase">{{ t('transaction.chooseWallet') }}</h3>
                         <div class="overflow-y-auto no-scrollbar space-y-2 max-h-[55vh]">
                             <div v-for="w in availableWallets" :key="w.id" @click="selectWallet(w)"
-                                class="bg-gray-800 border border-white/8 p-4 rounded-xl flex items-center gap-4 cursor-pointer active:scale-95 transition-all hover:border-purple-500/30">
-                                <AppIcon :icon="w.icon" fallback="wallet" class="w-8 h-8 text-purple-400 shrink-0" />
+                                class="bg-gray-800 border border-white/8 p-4 rounded-xl flex items-center gap-4 cursor-pointer active:scale-95 transition-all" :class="typeTheme.walletHover">
+                                <AppIcon :icon="w.icon" fallback="wallet" class="w-8 h-8 shrink-0" :class="typeTheme.accentText" />
                                 <div class="flex-1 min-w-0">
                                     <p class="text-sm font-bold text-white truncate">{{ w.name }}</p>
-                                    <p class="text-2xs text-purple-400 font-bold mt-0.5">Rp {{ new Intl.NumberFormat('id-ID').format(w.balance) }}</p>
+                                    <p class="text-2xs font-bold mt-0.5" :class="typeTheme.accentText">Rp {{ new Intl.NumberFormat('id-ID').format(w.balance) }}</p>
                                 </div>
                             </div>
                         </div>

@@ -308,7 +308,7 @@ class DashboardController extends Controller
             }
         }
 
-        // 6b. ONE Single Query untuk menghitung semua sisa hutang/piutang sekaligus
+        // 6b. ONE Single Query untuk menghitung sisa hutang/piutang (agregat SQL)
         if (!empty($subjectsToQuery)) {
             $balancesRaw = DB::table('transaction_logs')
                 ->join('categories', 'transaction_logs.category_id', '=', 'categories.id')

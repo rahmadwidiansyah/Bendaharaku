@@ -14,6 +14,7 @@ import { useLayoutPreference } from '@/Composables/useLayoutPreference'
 import { useCalendar } from '@/Composables/useCalendar'
 import { formatNumber, formatCompact } from '@/utils/format.js'
 import AppIcon from '@/Components/AppIcon.vue'
+import { getCategoryIconColor } from '@/Composables/useIcon.js'
 
 const { t } = useI18n()
 
@@ -240,7 +241,8 @@ const calendarDayNames = computed(() => [
 								</div>
 
 								<!-- BAGIAN BALANCE -->
-								<p class="text-sm font-bold text-white tracking-tight truncate">
+								<p class="text-sm font-bold tracking-tight truncate"
+                                    :class="parseFloat(wallet.balance) < 0 ? 'text-red-400' : 'text-white'">
 									<span class="text-2xs text-gray-500 mr-1">Rp</span>{{ isBalanceVisible ?
 										formatNumber(wallet.balance) : '••••' }}
 								</p>
@@ -502,7 +504,7 @@ const calendarDayNames = computed(() => [
 
 											<div class="flex items-center gap-2 sm:gap-3 relative z-10">
 												<AppIcon :icon="trx.category?.icon" fallback="file-text"
-													class="w-6 h-6 text-purple-400 shrink-0" />
+													:class="['w-6 h-6 shrink-0', getCategoryIconColor(trx.type?.name)]" />
 
 												<div class="flex-1 min-w-0 pr-2">
 													<div class="flex items-center gap-1.5 mb-1">

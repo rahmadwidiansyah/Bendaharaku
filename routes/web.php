@@ -165,13 +165,13 @@ Route::middleware(['auth'])->group(function () {
             $user = $request->user();
 
             return Inertia::render('Settings/Application/Appearance', [
-                'userAccentColor' => $user->accent_color ?? 'purple',
+                'userAccentColor' => $user->accent_color ?? 'teal',
             ]);
         })->name('appearance');
         Route::patch('/appearance', function (Request $request) {
             $validated = $request->validate([
                 'theme' => ['required', 'string', 'in:light,dark,system'],
-                'accent_color' => ['required', 'string', 'regex:/^(purple|blue|green|orange|red|pink|custom:#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3}))$/'],
+                'accent_color' => ['required', 'string', 'regex:/^(teal|blue|indigo|pink|cyan|rose|custom:#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3}))$/'],
             ]);
 
             $user = $request->user();

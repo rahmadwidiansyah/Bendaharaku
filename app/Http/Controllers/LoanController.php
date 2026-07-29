@@ -31,10 +31,10 @@ class LoanController extends Controller
         $increaseCategory = $isDebt ? 'Dapat Hutangan' : 'Ngasih Piutang';
         $decreaseCategory = $isDebt ? 'Bayar Cicilan Hutang' : 'Terima Bayar Piutang';
 
-        // Grouping per orang (Subject), lalu diproses KRONOLOGIS (bukan cuma sum),
+        // Grouping per orang (Subject, case-insensitive), kronologis per subject
         // supaya "since" (tanggal mulai siklus aktif) reset setiap kali saldo
         // sempat balik ke 0 dan orang itu berhutang/piutang lagi.
-        $loanDetails = $transactions->groupBy('subject')->map(function ($txs) use ($increaseCategory, $decreaseCategory) {
+        $loanDetails = $transactions->groupBy(fn ($tx) => strtoupper($tx->subject))->map(function ($txs) use ($increaseCategory, $decreaseCategory) {
             $txs = $txs->sortBy(fn ($tx) => [$tx->date, $tx->created_at])->values();
 
             $balance = 0;

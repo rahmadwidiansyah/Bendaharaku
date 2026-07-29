@@ -14,22 +14,13 @@ use Inertia\Response;
 
 class AnalyticsController extends Controller
 {
-    // Transaction Type Constants mapping untuk menghindari magic numbers
     private const TYPE_INCOME = 1;
     private const TYPE_EXPENSE = 2;
     private const TYPE_DEBT = 4;
     private const TYPE_RECEIVABLE = 5;
 
     /**
-     * SQL CASE untuk menentukan arah kas REAL (masuk = +, keluar = -).
-     *
-     * PENTING: type_id=4 (Debt) dan type_id=5 (Receivable) masing-masing berisi
-     * DUA kategori dengan arah kas berlawanan:
-     * - 'Dapat Hutangan'        -> uang MASUK  (+)
-     * - 'Bayar Cicilan Hutang'  -> uang KELUAR (-)
-     * - 'Terima Bayar Piutang'  -> uang MASUK  (+)
-     * - 'Ngasih Piutang'        -> uang KELUAR (-)
-     * Jadi arah TIDAK BOLEH ditentukan cuma dari type_id, harus join ke categories.
+     * Arah kas REAL (masuk = +, keluar = -) untuk cumulative balance chart.
      */
     private function signedCashCase(): string
     {
@@ -37,10 +28,38 @@ class AnalyticsController extends Controller
             CASE
                 WHEN transaction_logs.type_id = 1 THEN transaction_logs.amount
                 WHEN transaction_logs.type_id = 2 THEN -transaction_logs.amount
-                WHEN categories.category_name = 'Dapat Hutangan' THEN transaction_logs.amount
-                WHEN categories.category_name = 'Bayar Cicilan Hutang' THEN -transaction_logs.amount
-                WHEN categories.category_name = 'Terima Bayar Piutang' THEN transaction_logs.amount
-                WHEN categories.category_name = 'Ngasih Piutang' THEN -transaction_logs.amount
+                WHEN categories.system_key = 'LOAN' THEN transaction_logs.amount
+                WHEN categories.system_key = 'DEBT_PAYMENT' THEN -transaction_logs.amount
+                WHEN categories.system_key = 'RECEIVABLE_PAYMENT' THEN transaction_logs.amount
+                WHEN categories.system_key = 'RECEIVABLE' THEN -transaction_logs.amount
+                ELSE 0
+            END
+        ";
+    }
+
+    /**
+     * Net perubahan outstanding hutang: LOAN (+), DEBT_PAYMENT (-).
+     */
+    private function debtNetCase(): string
+    {
+        return "
+            CASE
+                WHEN categories.system_key = 'LOAN' THEN transaction_logs.amount
+                WHEN categories.system_key = 'DEBT_PAYMENT' THEN -transaction_logs.amount
+                ELSE 0
+            END
+        ";
+    }
+
+    /**
+     * Net perubahan outstanding piutang: RECEIVABLE (+), RECEIVABLE_PAYMENT (-).
+     */
+    private function receivableNetCase(): string
+    {
+        return "
+            CASE
+                WHEN categories.system_key = 'RECEIVABLE' THEN transaction_logs.amount
+                WHEN categories.system_key = 'RECEIVABLE_PAYMENT' THEN -transaction_logs.amount
                 ELSE 0
             END
         ";
@@ -53,25 +72,38 @@ class AnalyticsController extends Controller
         $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->format('Y-m-d'));
         $endDate = $request->input('end_date', Carbon::now()->format('Y-m-d'));
 
-        // 1. Ambil Summary Totals dalam 1 Query (Hindari memuat ribuan row)
-        // NOTE: ini tetap gross sum per type_id (dipakai buat card Income/Expense &
-        // breakdown kategori di doughnut), BUKAN dipakai untuk saldo real — aman.
+        // 1. Summary Totals — Income/Expense gross by type_id, Debt/Receivable NET
         $totalsRaw = DB::table('transaction_logs')
             ->selectRaw('type_id, SUM(amount) as total')
             ->where('user_id', $userId)
             ->where('is_cleared', true)
             ->whereBetween('date', [$startDate, $endDate])
-            ->whereIn('type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE, self::TYPE_DEBT, self::TYPE_RECEIVABLE])
+            ->whereIn('type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE])
             ->groupBy('type_id')
             ->pluck('total', 'type_id');
 
         $totalIncome = (float) ($totalsRaw[self::TYPE_INCOME] ?? 0);
         $totalExpense = (float) ($totalsRaw[self::TYPE_EXPENSE] ?? 0);
-        $totalDebt = (float) ($totalsRaw[self::TYPE_DEBT] ?? 0);
-        $totalReceivable = (float) ($totalsRaw[self::TYPE_RECEIVABLE] ?? 0);
 
-        // 2. Saldo Kumulatif Awal — FIX: sign ditentukan per KATEGORI (join),
-        // bukan per type_id, supaya arah kas hutang/piutang benar.
+        // Debt period — gross sum of debt transactions in the period (LOAN + DEBT_PAYMENT)
+        $totalDebt = (float) DB::table('transaction_logs')
+            ->join('categories', 'transaction_logs.category_id', '=', 'categories.id')
+            ->where('transaction_logs.user_id', $userId)
+            ->where('transaction_logs.is_cleared', true)
+            ->whereBetween('transaction_logs.date', [$startDate, $endDate])
+            ->whereIn('categories.system_key', ['LOAN', 'DEBT_PAYMENT'])
+            ->sum('transaction_logs.amount');
+
+        // Receivable period — gross sum of receivable transactions in the period (RECEIVABLE + RECEIVABLE_PAYMENT)
+        $totalReceivable = (float) DB::table('transaction_logs')
+            ->join('categories', 'transaction_logs.category_id', '=', 'categories.id')
+            ->where('transaction_logs.user_id', $userId)
+            ->where('transaction_logs.is_cleared', true)
+            ->whereBetween('transaction_logs.date', [$startDate, $endDate])
+            ->whereIn('categories.system_key', ['RECEIVABLE', 'RECEIVABLE_PAYMENT'])
+            ->sum('transaction_logs.amount');
+
+        // 2. Running balance awal (sebelum startDate)
         $runningBalance = (float) DB::table('transaction_logs')
             ->join('categories', 'transaction_logs.category_id', '=', 'categories.id')
             ->where('transaction_logs.user_id', $userId)
@@ -80,8 +112,7 @@ class AnalyticsController extends Controller
             ->whereIn('transaction_logs.type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE, self::TYPE_DEBT, self::TYPE_RECEIVABLE])
             ->sum(DB::raw($this->signedCashCase()));
 
-        // 2b. Net cash change PER HARI untuk periode yang dipilih — dihitung langsung
-        // dengan sign yang benar per kategori, jadi tidak perlu digabung manual di PHP.
+        // 2b. Net cash change per hari
         $dailyNetRaw = DB::table('transaction_logs')
             ->join('categories', 'transaction_logs.category_id', '=', 'categories.id')
             ->selectRaw('transaction_logs.date as tx_date, SUM('.$this->signedCashCase().') as net_change')
@@ -92,14 +123,13 @@ class AnalyticsController extends Controller
             ->groupBy('transaction_logs.date')
             ->pluck('net_change', 'tx_date');
 
-        // 3. Ambil data Harian (Grouping di level DB) — tetap gross per type_id,
-        // dipakai untuk bar "arus kas" (income/expense/debt/receivable terpisah warnanya).
+        // 3. Daily income/expense (gross) & debt/receivable NET per hari
         $dailyDataRaw = DB::table('transaction_logs')
             ->selectRaw('date, type_id, SUM(amount) as total')
             ->where('user_id', $userId)
             ->where('is_cleared', true)
             ->whereBetween('date', [$startDate, $endDate])
-            ->whereIn('type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE, self::TYPE_DEBT, self::TYPE_RECEIVABLE])
+            ->whereIn('type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE])
             ->groupBy('date', 'type_id')
             ->get()
             ->groupBy('date');
@@ -131,8 +161,6 @@ class AnalyticsController extends Controller
             $dailyIncome[] = $dInc;
             $dailyExpense[] = $dExp;
 
-            // FIX: pakai net change yang sudah benar sign-nya per kategori,
-            // bukan (income + receivable - expense - debt) yang salah arah.
             $runningBalance += (float) ($dailyNetRaw[$dateStr] ?? 0);
             $cumulativeData[] = $runningBalance;
 
@@ -141,7 +169,7 @@ class AnalyticsController extends Controller
 
         $cumulativeBalance = $runningBalance;
 
-        // 4. Ringkasan per Kategori (Query tunggal dengan JOIN)
+        // 4. Kategori breakdown — Income/Expense gross, Debt/Receivable per kategori
         $categoriesRaw = DB::table('transaction_logs')
             ->join('categories', 'transaction_logs.category_id', '=', 'categories.id')
             ->selectRaw('categories.id, categories.category_name as name, categories.icon, transaction_logs.type_id, SUM(transaction_logs.amount) as total')
@@ -160,42 +188,66 @@ class AnalyticsController extends Controller
         $debtsByCategory = $categoriesRaw->where('type_id', self::TYPE_DEBT)->map($formatCategory)->values()->toArray();
         $receivablesByCategory = $categoriesRaw->where('type_id', self::TYPE_RECEIVABLE)->map($formatCategory)->values()->toArray();
 
-        // 5. Histori Keseluruhan (Agregasi di DB, output hanya tanggal yang ada transaksinya)
-        // FIX: tambah $allDailyDates (raw ISO date) supaya frontend bisa grouping
-        // minggu/bulan dengan akurat, bukan parsing string label "d M Y".
+        // 5. Full history — Income/Expense gross, Debt/Receivable NET per hari
+        $allLabels = [];
+        $allDates = [];
+        $allIncome = [];
+        $allExpense = [];
+        $allDebt = [];
+        $allReceivable = [];
+
+        // Income & Expense per day (gross by type_id)
         $allHistoryRaw = DB::table('transaction_logs')
             ->selectRaw('date, type_id, SUM(amount) as total')
             ->where('user_id', $userId)
             ->where('is_cleared', true)
-            ->whereIn('type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE, self::TYPE_DEBT, self::TYPE_RECEIVABLE])
+            ->whereIn('type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE])
             ->groupBy('date', 'type_id')
             ->orderBy('date', 'asc')
             ->get()
             ->groupBy('date');
 
-        $allDailyLabels = [];
-        $allDailyDates = [];
-        $allDailyIncome = [];
-        $allDailyExpense = [];
-        $allDailyDebt = [];
-        $allDailyReceivable = [];
+        // Debt & Receivable NET per day
+        $allDebtRaw = DB::table('transaction_logs')
+            ->join('categories', 'transaction_logs.category_id', '=', 'categories.id')
+            ->selectRaw('transaction_logs.date, SUM('.$this->debtNetCase().') as net')
+            ->where('transaction_logs.user_id', $userId)
+            ->where('transaction_logs.is_cleared', true)
+            ->whereIn('categories.system_key', ['LOAN', 'DEBT_PAYMENT'])
+            ->groupBy('transaction_logs.date')
+            ->orderBy('transaction_logs.date', 'asc')
+            ->pluck('net', 'date');
 
-        foreach ($allHistoryRaw as $date => $trxs) {
-            $allDailyLabels[] = Carbon::parse($date)->format('d M Y');
-            $allDailyDates[] = Carbon::parse($date)->format('Y-m-d');
+        $allReceivableRaw = DB::table('transaction_logs')
+            ->join('categories', 'transaction_logs.category_id', '=', 'categories.id')
+            ->selectRaw('transaction_logs.date, SUM('.$this->receivableNetCase().') as net')
+            ->where('transaction_logs.user_id', $userId)
+            ->where('transaction_logs.is_cleared', true)
+            ->whereIn('categories.system_key', ['RECEIVABLE', 'RECEIVABLE_PAYMENT'])
+            ->groupBy('transaction_logs.date')
+            ->orderBy('transaction_logs.date', 'asc')
+            ->pluck('net', 'date');
 
-            $allDailyIncome[] = (float) ($trxs->firstWhere('type_id', self::TYPE_INCOME)?->total ?? 0);
-            $allDailyExpense[] = (float) ($trxs->firstWhere('type_id', self::TYPE_EXPENSE)?->total ?? 0);
-            $allDailyDebt[] = (float) ($trxs->firstWhere('type_id', self::TYPE_DEBT)?->total ?? 0);
-            $allDailyReceivable[] = (float) ($trxs->firstWhere('type_id', self::TYPE_RECEIVABLE)?->total ?? 0);
+        // Gabung semua tanggal yang muncul di salah satu query
+        $allDateKeys = collect(array_keys($allHistoryRaw->toArray()))
+            ->merge(array_keys($allDebtRaw->toArray()))
+            ->merge(array_keys($allReceivableRaw->toArray()))
+            ->unique()
+            ->sort()
+            ->values();
+
+        foreach ($allDateKeys as $date) {
+            $allLabels[] = Carbon::parse($date)->format('d M Y');
+            $allDates[] = Carbon::parse($date)->format('Y-m-d');
+
+            $dayTx = $allHistoryRaw->get($date, collect());
+            $allIncome[] = (float) ($dayTx->firstWhere('type_id', self::TYPE_INCOME)?->total ?? 0);
+            $allExpense[] = (float) ($dayTx->firstWhere('type_id', self::TYPE_EXPENSE)?->total ?? 0);
+            $allDebt[] = (float) ($allDebtRaw[$date] ?? 0);
+            $allReceivable[] = (float) ($allReceivableRaw[$date] ?? 0);
         }
 
-        // 6. Snapshot Logic (Optimasi kolom fetch)
-        // PERHATIAN: kalau snapshot untuk periode ini sudah lengkap, hasil di bawah
-        // ini MENIMPA $cumulativeData/$cumulativeBalance yang baru saja diperbaiki.
-        // Kalau BuildNetWorthSnapshotsJob masih pakai formula sign yang lama, saldo
-        // akan tetap salah walau controller ini sudah benar. Snapshot lama perlu
-        // di-rebuild setelah job tsb diperbaiki juga.
+        // 6. Snapshot Logic
         $periodDays = iterator_count($period);
         $snapshots = NetWorthSnapshot::where('user_id', $userId)
             ->whereBetween('snapshot_date', [$startDate, $endDate])
@@ -214,8 +266,8 @@ class AnalyticsController extends Controller
             'endDate' => $endDate,
             'totalIncome' => $totalIncome,
             'totalExpense' => $totalExpense,
-            'totalDebt' => $totalDebt,
-            'totalReceivable' => $totalReceivable,
+            'totalDebt' => max(0, $totalDebt),
+            'totalReceivable' => max(0, $totalReceivable),
             'cumulativeBalance' => $cumulativeBalance,
             'expensesByCategory' => $expensesByCategory,
             'incomesByCategory' => $incomesByCategory,
@@ -226,12 +278,12 @@ class AnalyticsController extends Controller
             'dailyExpense' => $dailyExpense,
             'cumulativeData' => $cumulativeData,
             'todayIndex' => $todayIndex,
-            'allDailyLabels' => $allDailyLabels,
-            'allDailyDates' => $allDailyDates,
-            'allDailyIncome' => $allDailyIncome,
-            'allDailyExpense' => $allDailyExpense,
-            'allDailyDebt' => $allDailyDebt,
-            'allDailyReceivable' => $allDailyReceivable,
+            'allDailyLabels' => $allLabels,
+            'allDailyDates' => $allDates,
+            'allDailyIncome' => $allIncome,
+            'allDailyExpense' => $allExpense,
+            'allDailyDebt' => $allDebt,
+            'allDailyReceivable' => $allReceivable,
         ]);
     }
 }

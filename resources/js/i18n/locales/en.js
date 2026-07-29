@@ -236,6 +236,9 @@ export default {
         yesterday:      'Yesterday',
         wallet:         'Wallet',
         transferFunds:  'Transfer Funds',
+        allBalance:     'All Balance',
+        settle:         'Settle',
+        collectAll:     'Collect All',
         relatedParty:   'Related Party',
         namePlaceholder:'Name...',
         hasDueDate:     'Has Due Date?',
@@ -446,8 +449,10 @@ export default {
         noData:         'No Data',
         totalIncome:    'Total Income',
         totalExpense:   'Total Expense',
-        totalDebt:      'Total Debt',
-        totalReceivable:'Total Receivable',
+        totalDebt:      'Outstanding Debt',
+        totalReceivable:'Outstanding Receivable',
+        outstandingDebt:'Outstanding Debt',
+        outstandingReceivable:'Outstanding Receivable',
 
         view: {
             daily:   'Day',
@@ -463,8 +468,8 @@ export default {
         },
 
         chartLabels: {
-            income:     'In',
-            expense:    'Out',
+            income:     'Income',
+            expense:    'Expense',
             debt:       'Debt',
             receivable: 'Receivable',
         },

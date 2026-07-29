@@ -60,6 +60,7 @@ private function calculateDebtReceivable(int $userId): array
         ->where('transaction_logs.is_cleared', true)
         ->whereNotNull('transaction_logs.subject')
         ->where('transaction_logs.subject', '!=', '-')
+        ->whereNull('transaction_logs.deleted_at')
         ->whereIn('categories.category_name', [
             'Dapat Hutangan', 'Bayar Cicilan Hutang', 'Ngasih Piutang', 'Terima Bayar Piutang',
         ])
@@ -71,79 +72,64 @@ private function calculateDebtReceivable(int $userId): array
             'categories.category_name'
         )
         // Urut per subject, lalu kronologis. Wajib, karena reset "since" bergantung urutan.
-        ->orderBy('transaction_logs.subject')
         ->orderBy('transaction_logs.date')
         ->orderBy('transaction_logs.created_at')
         ->get();
 
-    $hutangLedger = [];  // subject => ['balance' => float, 'since' => date]
-    $piutangLedger = [];
+    // Group by subject (case-insensitive), proses kronologis per subject
+    // biar konsisten dengan LoanController::index()
+    $grouped = collect($rows)->groupBy(fn ($r) => strtoupper($r->subject));
 
-    foreach ($rows as $row) {
-        $subject = $row->subject;
-        $amount = (float) $row->amount;
-
-        switch ($row->category_name) {
-            case 'Dapat Hutangan':
-                // Kalau belum ada catatan, atau siklus sebelumnya sudah lunas (0),
-                // maka ini siklus baru -> reset tanggal "since" ke transaksi ini.
-                if (! isset($hutangLedger[$subject]) || $hutangLedger[$subject]['balance'] <= 0) {
-                    $hutangLedger[$subject] = ['balance' => 0.0, 'since' => $row->date];
-                }
-                $hutangLedger[$subject]['balance'] += $amount;
-                break;
-
-            case 'Bayar Cicilan Hutang':
-                if (isset($hutangLedger[$subject])) {
-                    $hutangLedger[$subject]['balance'] -= $amount;
-                    if ($hutangLedger[$subject]['balance'] < 0) {
-                        $hutangLedger[$subject]['balance'] = 0.0;
+    $processLedger = function ($grouped, string $increaseName, string $decreaseName): array {
+        $ledger = [];
+        foreach ($grouped as $subject => $txs) {
+            $txs = $txs->sortBy(fn ($r) => [$r->date, $r->created_at])->values();
+            $balance = 0.0;
+            $since = null;
+            foreach ($txs as $tx) {
+                $amount = (float) $tx->amount;
+                if ($tx->category_name === $increaseName) {
+                    if ($balance <= 0) {
+                        $since = $tx->date;
+                    }
+                    $balance += $amount;
+                } elseif ($tx->category_name === $decreaseName) {
+                    $balance -= $amount;
+                    if ($balance < 0) {
+                        $balance = 0.0;
                     }
                 }
-                break;
-
-            case 'Ngasih Piutang':
-                if (! isset($piutangLedger[$subject]) || $piutangLedger[$subject]['balance'] <= 0) {
-                    $piutangLedger[$subject] = ['balance' => 0.0, 'since' => $row->date];
-                }
-                $piutangLedger[$subject]['balance'] += $amount;
-                break;
-
-            case 'Terima Bayar Piutang':
-                if (isset($piutangLedger[$subject])) {
-                    $piutangLedger[$subject]['balance'] -= $amount;
-                    if ($piutangLedger[$subject]['balance'] < 0) {
-                        $piutangLedger[$subject]['balance'] = 0.0;
-                    }
-                }
-                break;
+            }
+            if ($balance > 0) {
+                $ledger[$subject] = ['balance' => $balance, 'since' => $since];
+            }
         }
-    }
+        return $ledger;
+    };
+
+    $hutangLedger = $processLedger($grouped, 'Dapat Hutangan', 'Bayar Cicilan Hutang');
+    $piutangLedger = $processLedger($grouped, 'Ngasih Piutang', 'Terima Bayar Piutang');
 
     $totalHutang = 0;
     $hutangDetail = [];
     foreach ($hutangLedger as $subject => $data) {
-        if ($data['balance'] > 0) {
-            $totalHutang += $data['balance'];
-            $hutangDetail[] = [
-                'subject' => $subject,
-                'balance' => (int) $data['balance'],
-                'since' => $data['since'],
-            ];
-        }
+        $totalHutang += $data['balance'];
+        $hutangDetail[] = [
+            'subject' => $subject,
+            'balance' => (int) $data['balance'],
+            'since' => $data['since'],
+        ];
     }
 
     $totalPiutang = 0;
     $piutangDetail = [];
     foreach ($piutangLedger as $subject => $data) {
-        if ($data['balance'] > 0) {
-            $totalPiutang += $data['balance'];
-            $piutangDetail[] = [
-                'subject' => $subject,
-                'balance' => (int) $data['balance'],
-                'since' => $data['since'],
-            ];
-        }
+        $totalPiutang += $data['balance'];
+        $piutangDetail[] = [
+            'subject' => $subject,
+            'balance' => (int) $data['balance'],
+            'since' => $data['since'],
+        ];
     }
 
     return [

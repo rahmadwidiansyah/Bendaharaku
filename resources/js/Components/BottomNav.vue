@@ -61,7 +61,7 @@ defineEmits(['toggle'])
             'fixed z-50 transition-all duration-300',
             isDesktopLayout
                 ? 'lg:bottom-auto lg:top-0 lg:left-0 lg:translate-x-0 lg:h-screen lg:border-t-0 lg:border-r lg:rounded-none lg:bg-gray-800 lg:flex lg:flex-col lg:justify-start'
-                : 'bottom-[calc(1.25rem+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm bg-gray-800/95 backdrop-blur-2xl border border-white/10 rounded-[28px] shadow-[0_20px_50px_rgba(0,0,0,0.85)]',
+                : 'bottom-[calc(0.75rem+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm bg-gray-800/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.85)]',
             isDesktopLayout && isSidebarOpen ? 'lg:w-64' : (isDesktopLayout ? 'lg:w-20' : ''),
         ]"
         style="overflow: visible;"
@@ -134,7 +134,7 @@ defineEmits(['toggle'])
 
         <!-- ── Nav Items ── -->
         <div :class="[
-            'flex pt-2 pb-2 px-2',
+            'flex pt-1.5 pb-1.5 px-2',
             isDesktopLayout ? 'lg:flex-col lg:justify-start lg:gap-0.5 lg:px-3 lg:pt-0 lg:items-stretch' : 'items-center justify-around gap-1',
         ]" style="overflow: visible;">
 
@@ -192,19 +192,19 @@ defineEmits(['toggle'])
                     :aria-current="isActive(['transactions.*']) ? 'page' : undefined"
                     class="flex items-center justify-center rounded-full border-[4px] border-gray-900 active:scale-95 hover:scale-105 active:translate-y-0.5 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 cursor-pointer"
                     :class="[
-                        'w-16 h-16 -mt-9 mb-1.5',
+                        'w-14 h-14 -mt-7 mb-1',
                         isActive(['transactions.*'])
-                            ? 'bg-gradient-to-tr from-purple-500 via-fuchsia-500 to-pink-500 shadow-[0_0_30px_6px_rgba(168,85,247,0.65)]'
-                            : 'bg-gradient-to-tr from-purple-600 via-fuchsia-600 to-pink-600 shadow-[0_8px_25px_0px_rgba(168,85,247,0.55)]',
+                            ? 'bg-purple-500 shadow-lg shadow-purple-500/65'
+                            : 'bg-purple-600 shadow-md shadow-purple-500/55',
                     ]"
                 >
-                    <svg class="w-8 h-8 text-white transition-transform duration-300 group-hover:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" aria-hidden="true">
+                    <svg class="w-7 h-7 text-white transition-transform duration-300 group-hover:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                     </svg>
                 </Link>
                 <span
                     class="text-[9px] font-black tracking-wider uppercase leading-none transition-all duration-300"
-                    :class="isActive(['transactions.*']) ? 'text-purple-400 scale-105' : 'text-gray-400'"
+                    :class="isActive(['transactions.*']) ? 'text-purple-400' : 'text-gray-400'"
                 >{{ $t('nav.record') }}</span>
             </div>
 
