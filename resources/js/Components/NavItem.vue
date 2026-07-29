@@ -59,7 +59,7 @@ const linkClasses = computed(() => {
     }
 
     // Mobile: centered and full-height link
-    return `${base} flex-col items-center justify-center flex-1 h-14 relative`
+    return `${base} flex-col items-center justify-center flex-1 h-12 relative`
 })
 
 const iconWrapperClasses = computed(() => {

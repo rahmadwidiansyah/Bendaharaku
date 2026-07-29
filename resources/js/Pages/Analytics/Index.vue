@@ -7,6 +7,7 @@ import { Chart, registerables } from 'chart.js';
 import { formatNumber } from '@/utils/format.js';
 import { useI18n } from 'vue-i18n';
 import AppIcon from '@/Components/AppIcon.vue';
+import { getCategoryIconColor } from '@/Composables/useIcon.js';
 
 const { t } = useI18n();
 
@@ -98,14 +99,42 @@ const initCumulativeChart = async () => {
                 backgroundColor: grad,
                 fill: true,
                 tension: 0.4,
-                pointRadius: 0
+                pointRadius: 2,
+                pointHoverRadius: 7,
+                pointBackgroundColor: brand,
+                pointBorderColor: '#121212',
+                pointBorderWidth: 1.5,
+                pointHoverBackgroundColor: brand,
+                pointHoverBorderColor: '#fff',
+                pointHoverBorderWidth: 2,
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             animation: { duration: 400 },
-            plugins: { legend: { display: false } },
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    enabled: true,
+                    backgroundColor: 'rgba(18,18,18,0.95)',
+                    titleColor: '#9CA3AF',
+                    titleFont: { size: 11, weight: 'bold' },
+                    bodyColor: '#fff',
+                    bodyFont: { size: 13, weight: 'bold' },
+                    padding: { x: 12, y: 8 },
+                    cornerRadius: 8,
+                    displayColors: false,
+                    callbacks: {
+                        title: (items) => {
+                            const d = new Date(items[0].label + 'T00:00:00');
+                            return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+                        },
+                        label: (item) => 'Rp ' + Number(item.raw).toLocaleString('id-ID'),
+                    }
+                },
+            },
             scales: { x: { display: false }, y: { display: false } }
         }
     });
@@ -128,16 +157,24 @@ function buildBarData(view) {
     const dates = props.allDailyDates || [];
     const labels = [], incomes = [], expenses = [], debts = [], receivables = [];
 
+    function pushNonEmpty(l, i, e, d, r) {
+        if (i || e || d || r) {
+            labels.push(l); incomes.push(i); expenses.push(e); debts.push(d); receivables.push(r);
+        }
+    }
+
     if (view === 'harian') {
         const n = 5;
         const start = Math.max(0, dates.length - n);
         for (let i = start; i < dates.length; i++) {
             const d = new Date(dates[i]);
-            labels.push(d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }));
-            incomes.push(props.allDailyIncome[i] || 0);
-            expenses.push(props.allDailyExpense[i] || 0);
-            debts.push(props.allDailyDebt[i] || 0);
-            receivables.push(props.allDailyReceivable[i] || 0);
+            pushNonEmpty(
+                d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }),
+                Math.abs(props.allDailyIncome[i] || 0),
+                Math.abs(props.allDailyExpense[i] || 0),
+                Math.abs(props.allDailyDebt[i] || 0),
+                Math.abs(props.allDailyReceivable[i] || 0)
+            );
         }
         return { labels, incomes, expenses, debts, receivables };
     }
@@ -158,18 +195,14 @@ function buildBarData(view) {
             const d = new Date(dates[i]);
             if (!bucket) bucket = { start: d.getDate(), end: d.getDate(), inc: 0, exp: 0, debt: 0, rec: 0 };
             bucket.end = d.getDate();
-            bucket.inc += props.allDailyIncome[i] || 0;
-            bucket.exp += props.allDailyExpense[i] || 0;
-            bucket.debt += props.allDailyDebt[i] || 0;
-            bucket.rec += props.allDailyReceivable[i] || 0;
+            bucket.inc += Math.abs(props.allDailyIncome[i] || 0);
+            bucket.exp += Math.abs(props.allDailyExpense[i] || 0);
+            bucket.debt += Math.abs(props.allDailyDebt[i] || 0);
+            bucket.rec += Math.abs(props.allDailyReceivable[i] || 0);
 
             const isLast = pos === idxs.length - 1;
             if ((pos + 1) % 7 === 0 || isLast) {
-                labels.push(`${bucket.start}-${bucket.end}`);
-                incomes.push(bucket.inc);
-                expenses.push(bucket.exp);
-                debts.push(bucket.debt);
-                receivables.push(bucket.rec);
+                pushNonEmpty(`${bucket.start}-${bucket.end}`, bucket.inc, bucket.exp, bucket.debt, bucket.rec);
                 bucket = null;
             }
         });
@@ -188,18 +221,14 @@ function buildBarData(view) {
             });
         }
         const m = monthMap.get(key);
-        m.inc += props.allDailyIncome[i] || 0;
-        m.exp += props.allDailyExpense[i] || 0;
-        m.debt += props.allDailyDebt[i] || 0;
-        m.rec += props.allDailyReceivable[i] || 0;
+        m.inc += Math.abs(props.allDailyIncome[i] || 0);
+        m.exp += Math.abs(props.allDailyExpense[i] || 0);
+        m.debt += Math.abs(props.allDailyDebt[i] || 0);
+        m.rec += Math.abs(props.allDailyReceivable[i] || 0);
     });
 
     Array.from(monthMap.values()).slice(-3).forEach((m) => {
-        labels.push(m.label);
-        incomes.push(m.inc);
-        expenses.push(m.exp);
-        debts.push(m.debt);
-        receivables.push(m.rec);
+        pushNonEmpty(m.label, m.inc, m.exp, m.debt, m.rec);
     });
 
     return { labels, incomes, expenses, debts, receivables };
@@ -239,7 +268,12 @@ const renderBarChart = async (view) => {
                     grid: { display: false },
                     ticks: { color: '#9CA3AF', font: { size: 11, weight: 'bold' }, maxRotation: 0 }
                 },
-                y: { display: false }
+                y: {
+                    display: true,
+                    grid: { color: 'rgba(255,255,255,0.06)', drawBorder: false },
+                    border: { display: false },
+                    ticks: { display: false }
+                }
             }
         },
         plugins: [{
@@ -275,10 +309,10 @@ const activeCategoryData = computed(() => {
         return { labels: s.map(x => x.name), values: s.map(x => x.total), ids: s.map(x => x.id), icons: s.map(x => x.icon), total: props.totalIncome, labelName: t('analytics.totalIncome') };
     } else if (categoryView.value === 'debt') {
         const s = sortDesc(props.debtsByCategory);
-        return { labels: s.map(x => x.name), values: s.map(x => x.total), ids: s.map(x => x.id), icons: s.map(x => x.icon), total: props.totalDebt, labelName: t('analytics.totalDebt') };
+        return { labels: s.map(x => x.name), values: s.map(x => x.total), ids: s.map(x => x.id), icons: s.map(x => x.icon), total: s.reduce((a, b) => a + b.total, 0), labelName: t('analytics.totalDebt') };
     } else {
         const s = sortDesc(props.receivablesByCategory);
-        return { labels: s.map(x => x.name), values: s.map(x => x.total), ids: s.map(x => x.id), icons: s.map(x => x.icon), total: props.totalReceivable, labelName: t('analytics.totalReceivable') };
+        return { labels: s.map(x => x.name), values: s.map(x => x.total), ids: s.map(x => x.id), icons: s.map(x => x.icon), total: s.reduce((a, b) => a + b.total, 0), labelName: t('analytics.totalReceivable') };
     }
 });
 
@@ -290,6 +324,11 @@ const activeColors = computed(() => {
             : categoryView.value === 'debt'
                 ? ['#FBBF24', '#FCD34D', '#FDE68A', '#D97706', '#F59E0B', '#B45309']
                 : ['#C084FC', '#D8B4FE', '#E9D5FF', '#7C3AED', '#A855F7', '#6D28D9'];
+});
+
+const iconColorClass = computed(() => {
+    const map = { income: 'Income', expense: 'Expense', debt: 'Debt', receivable: 'Receivable' };
+    return getCategoryIconColor(map[categoryView.value]);
 });
 
 const categoryColors = computed(() => {
@@ -402,13 +441,12 @@ onMounted(() => {
         <div class="px-4 sm:px-5 pb-40 w-full lg:max-w-4xl mx-auto lg:px-8 relative z-10 overflow-x-hidden">
 
             <!-- Date bar -->
-            <div class="flex items-center gap-2 pt-3 pb-1 -mx-1">
+            <div class="flex items-center justify-between pt-3 pb-1">
+                <p class="text-xs text-white font-medium">
+                    {{ $t('analytics.showingData') }}
+                    <span class="text-gray-300">{{ new Date(startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long' }) }} – {{ new Date(endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long' }) }}</span>
+                </p>
                 <DateModal :action="route('analytics.index')" :start-date="startDate" :end-date="endDate" />
-                <span class="text-2xs text-gray-500 font-medium">
-                    {{ new Date(startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long' }) }}
-                    <span class="text-gray-600 mx-0.5">–</span>
-                    {{ new Date(endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long' }) }}
-                </span>
             </div>
 
             <header class="flex items-center justify-between mb-4 lg:mb-6 animate-fade-in-up">
@@ -536,25 +574,41 @@ onMounted(() => {
                         </div>
                     </div>
                     <div class="space-y-3 lg:space-y-4">
-                        <Link v-for="(label, i) in activeCategoryData.labels" :key="activeCategoryData.ids[i]"
-                            :href="route('categories.show', {
-                                category: activeCategoryData.ids[i],
-                                start_date: startDate,
-                                end_date: endDate,
-                            })"
-                            class="relative flex items-center justify-between bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 p-2.5 lg:p-3 rounded-xl overflow-hidden group hover:border-purple-500/30 transition-all duration-300">
-                            <div class="flex items-center gap-2.5 lg:gap-3 relative z-10 w-full">
-                                <div class="w-1 lg:w-1.5 h-5 lg:h-6 rounded-full" :style="{ backgroundColor: categoryColors[i] }"></div>
-                                <AppIcon :icon="activeCategoryData.icons[i]" class="w-5 h-5 lg:w-6 lg:h-6 text-purple-400 shrink-0" />
-                                <div class="flex-1 min-w-0 pr-1 lg:pr-2">
-                                    <p class="text-xs font-bold text-gray-200 truncate">{{ label }}</p>
-                                    <p class="text-2xs text-gray-500 font-bold">{{ activeCategoryData.total > 0 ? ((activeCategoryData.values[i] / activeCategoryData.total) * 100).toFixed(1) : 0 }}%</p>
+                        <template v-for="(label, i) in activeCategoryData.labels" :key="i">
+                            <Link v-if="activeCategoryData.ids[i] != null"
+                                :href="route('categories.show', {
+                                    category: activeCategoryData.ids[i],
+                                    start_date: startDate,
+                                    end_date: endDate,
+                                })"
+                                class="relative flex items-center justify-between bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 p-2.5 lg:p-3 rounded-xl overflow-hidden group hover:border-purple-500/30 transition-all duration-300">
+                                <div class="flex items-center gap-2.5 lg:gap-3 relative z-10 w-full">
+                                    <div class="w-1 lg:w-1.5 h-5 lg:h-6 rounded-full" :style="{ backgroundColor: categoryColors[i] }"></div>
+                                    <AppIcon :icon="activeCategoryData.icons[i]" :class="['w-5 h-5 lg:w-6 lg:h-6 shrink-0', iconColorClass]" />
+                                    <div class="flex-1 min-w-0 pr-1 lg:pr-2">
+                                        <p class="text-xs font-bold text-gray-200 truncate">{{ label }}</p>
+                                        <p class="text-2xs text-gray-500 font-bold">{{ activeCategoryData.total > 0 ? ((activeCategoryData.values[i] / activeCategoryData.total) * 100).toFixed(1) : 0 }}%</p>
+                                    </div>
+                                    <div class="text-right shrink-0">
+                                        <span class="text-2xs lg:text-xs font-black text-white block">Rp {{ formatNumber(activeCategoryData.values[i]) }}</span>
+                                    </div>
                                 </div>
-                                <div class="text-right shrink-0">
-                                    <span class="text-2xs lg:text-xs font-black text-white block">Rp {{ formatNumber(activeCategoryData.values[i]) }}</span>
+                            </Link>
+                            <div v-else
+                                class="relative flex items-center justify-between bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 p-2.5 lg:p-3 rounded-xl overflow-hidden">
+                                <div class="flex items-center gap-2.5 lg:gap-3 relative z-10 w-full">
+                                    <div class="w-1 lg:w-1.5 h-5 lg:h-6 rounded-full" :style="{ backgroundColor: categoryColors[i] }"></div>
+                                    <AppIcon :icon="activeCategoryData.icons[i]" :class="['w-5 h-5 lg:w-6 lg:h-6 shrink-0', iconColorClass]" />
+                                    <div class="flex-1 min-w-0 pr-1 lg:pr-2">
+                                        <p class="text-xs font-bold text-gray-200 truncate">{{ label }}</p>
+                                        <p class="text-2xs text-gray-500 font-bold">{{ activeCategoryData.total > 0 ? ((activeCategoryData.values[i] / activeCategoryData.total) * 100).toFixed(1) : 0 }}%</p>
+                                    </div>
+                                    <div class="text-right shrink-0">
+                                        <span class="text-2xs lg:text-xs font-black text-white block">Rp {{ formatNumber(activeCategoryData.values[i]) }}</span>
+                                    </div>
                                 </div>
                             </div>
-                        </Link>
+                        </template>
                     </div>
                 </template>
             </div>

@@ -18,6 +18,7 @@ import { useI18n } from 'vue-i18n'
 import BaseModal from '@/Components/BaseModal.vue'
 import Badge from '@/Components/Badge.vue'
 import AppIcon from '@/Components/AppIcon.vue'
+import { getCategoryIconColor } from '@/Composables/useIcon.js'
 import { formatNumber, formatDate } from '@/utils/format.js'
 
 const { t } = useI18n()
@@ -117,7 +118,7 @@ const dueDateDetail = (trx) => {
         <div v-if="transaction" class="px-1">
             <!-- Category icon + name -->
             <div class="flex flex-col items-center mb-5 mt-1">
-                <AppIcon :icon="transaction.category?.icon" fallback="file-text" class="w-14 h-14 text-purple-400 mb-3" />
+                <AppIcon :icon="transaction.category?.icon" fallback="file-text" :class="['w-14 h-14 mb-3', getCategoryIconColor(transaction.type?.name)]" />
                 <p class="text-lg font-black text-white text-center leading-tight">
                     {{ transaction.category?.category_name || 'Transfer' }}
                 </p>

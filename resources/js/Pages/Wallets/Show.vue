@@ -4,6 +4,7 @@ import { Head, Link } from '@inertiajs/vue3'
 import DateModal from '@/Components/DateModal.vue'
 import TransactionDetailModal from '@/Components/TransactionDetailModal.vue'
 import AppIcon from '@/Components/AppIcon.vue'
+import { getCategoryIconColor } from '@/Composables/useIcon.js'
 import { ref, computed } from 'vue'
 import { formatNumber, formatDate, formatLocalYMD } from '@/utils/format.js'
 import { useI18n } from 'vue-i18n'
@@ -72,7 +73,7 @@ const getTypeColor = (typeName) => {
 			Expense: 'text-red-400 bg-red-400/10 border-red-400/20',
 			Transfer: 'text-blue-400 bg-blue-400/10 border-blue-400/20',
 			Debt: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20',
-			Receivable: 'text-purple-400 bg-purple-400/10 border-purple-400/20',
+			Receivable: 'text-fuchsia-400 bg-fuchsia-400/10 border-fuchsia-400/20',
 		}[typeName] || 'text-gray-500'
 	)
 }
@@ -133,7 +134,7 @@ const getTypeName = (name) => ({
 						<div class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
 
 						<div class="flex items-center gap-2.5 lg:gap-3 relative z-10">
-							<AppIcon :icon="trx.category?.icon" fallback="file-text" class="w-5 h-5 lg:w-6 lg:h-6 text-purple-400 shrink-0" />
+							<AppIcon :icon="trx.category?.icon" fallback="file-text" :class="['w-5 h-5 lg:w-6 lg:h-6 shrink-0', getCategoryIconColor(trx.type?.name)]" />
 
 							<div class="flex-1 min-w-0 pr-2">
 								<p class="text-xs font-bold text-white leading-tight mb-1 lg:mb-2">

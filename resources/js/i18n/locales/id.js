@@ -238,6 +238,9 @@ export default {
         yesterday:      'Kemarin',
         wallet:         'Dompet',
         transferFunds:  'Pindah Dana',
+        allBalance:     'Semua Saldo',
+        settle:         'Lunasi',
+        collectAll:     'Tagih Semua',
         relatedParty:   'Pihak Terkait',
         namePlaceholder:'Nama...',
         hasDueDate:     'Ada Jatuh Tempo?',
@@ -457,8 +460,10 @@ export default {
         noData:         'Tidak Ada Data',
         totalIncome:    'Total Pemasukan',
         totalExpense:   'Total Pengeluaran',
-        totalDebt:      'Total Hutang',
-        totalReceivable:'Total Piutang',
+        totalDebt:      'Sisa Hutang',
+        totalReceivable:'Sisa Piutang',
+        outstandingDebt:'Sisa Hutang',
+        outstandingReceivable:'Sisa Piutang',
 
         // Tampilan bar chart
         view: {
@@ -469,16 +474,16 @@ export default {
 
         // Tab kategori
         categoryTab: {
-            expense:    'Keluar',
-            income:     'Masuk',
+            expense:    'Pengeluaran',
+            income:     'Pemasukan',
             debt:       'Hutang',
             receivable: 'Piutang',
         },
 
         // Chart.js dataset labels
         chartLabels: {
-            income:     'Masuk',
-            expense:    'Keluar',
+            income:     'Pemasukan',
+            expense:    'Pengeluaran',
             debt:       'Hutang',
             receivable: 'Piutang',
         },

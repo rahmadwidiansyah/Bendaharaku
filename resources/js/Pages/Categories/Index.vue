@@ -5,6 +5,7 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useLayoutPreference } from '@/Composables/useLayoutPreference';
 import AppIcon from '@/Components/AppIcon.vue';
+import { getCategoryIconColor } from '@/Composables/useIcon.js';
 
 const { t } = useI18n();
 const { isDesktopLayout } = useLayoutPreference();
@@ -27,10 +28,10 @@ const sortedGroups = computed(() => {
 const getTheme = (typeName) => {
     return {
         'Income': { text: 'text-green-400', bg: 'bg-green-500', border: 'hover:border-green-500/50' },
-        'Expense': { text: 'text-gray-300', bg: 'bg-gray-400', border: 'hover:border-gray-500/50' },
+        'Expense': { text: 'text-red-400', bg: 'bg-red-500', border: 'hover:border-red-500/50' },
         'Transfer': { text: 'text-blue-400', bg: 'bg-blue-500', border: 'hover:border-blue-500/50' },
-        'Debt': { text: 'text-yellow-400', bg: 'bg-yellow-500', border: 'hover:border-yellow-500/50' },
-        'Receivable': { text: 'text-pink-400', bg: 'bg-pink-500', border: 'hover:border-purple-500/50' },
+        'Debt': { text: 'text-amber-400', bg: 'bg-amber-500', border: 'hover:border-amber-500/50' },
+        'Receivable': { text: 'text-fuchsia-400', bg: 'bg-fuchsia-500', border: 'hover:border-fuchsia-500/50' },
     }[typeName] || { text: 'text-white', bg: 'bg-white', border: 'hover:border-white/100' };
 };
 
@@ -130,7 +131,7 @@ const getHeaderText = (typeName) => {
                             </svg>
                         </div>
 
-                        <AppIcon :icon="category.icon" fallback="folder" class="w-8 h-8 lg:w-10 lg:h-10 text-purple-400 mb-1 lg:mb-2.5 transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-1" />
+                        <AppIcon :icon="category.icon" fallback="folder" :class="['w-8 h-8 lg:w-10 lg:h-10 mb-1 lg:mb-2.5 transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-1', getCategoryIconColor(category.type?.name)]" />
 
                         <p
                             class="text-2xs lg:text-xs font-bold text-gray-300 tracking-wide line-clamp-2 leading-tight group-hover:text-white transition-colors">

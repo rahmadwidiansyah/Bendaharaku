@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import AppIcon from '@/Components/AppIcon.vue'
+import { getCategoryIconColor } from '@/Composables/useIcon.js'
 
 const props = defineProps({
   type:         { type: String, default: 'expense' },
@@ -18,11 +19,21 @@ const accentClass = computed(() => {
   if (isWallet.value) return 'text-white font-bold'
   return isExpense.value ? 'text-rose-400/90' : 'text-emerald-400/90'
 })
+
+const typeName = computed(() => {
+  const map = { income: 'Income', expense: 'Expense', debt: 'Debt', receivable: 'Receivable' }
+  return map[props.type] || 'Income'
+})
+
+const iconColor = computed(() => {
+  if (isWallet.value) return 'text-purple-400'
+  return getCategoryIconColor(typeName.value)
+})
 </script>
 
 <template>
   <div class="flex items-center gap-2.5 px-3.5 py-1.5 hover:bg-white/[0.02] transition-colors min-h-[2.25rem]">
-    <AppIcon :icon="categoryIcon" class="inline w-4 h-4 shrink-0 text-purple-400" />
+    <AppIcon :icon="categoryIcon" :class="['inline w-4 h-4 shrink-0', iconColor]" />
     <div class="flex-1 min-w-0">
       <span class="text-xs font-medium text-gray-200 truncate leading-tight block">{{ category }}</span>
       <span v-if="groupType" class="text-2xs text-gray-600 leading-tight block mt-px">{{ groupType }}</span>

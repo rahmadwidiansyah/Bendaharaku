@@ -233,10 +233,10 @@ const displayShort = (n) => isBalanceVisible.value ? formatNumber(n) : '••�
                     <Link :href="route('loans.index', { type: 'piutang' })"
                         class="active:scale-95 transition-transform group">
                         <div
-                            class="bg-linear-to-br from-gray-900 to-gray-800 p-4 rounded-xl border border-white/10 relative overflow-hidden min-h-[110px] hover:border-purple-400">
+                            class="bg-linear-to-br from-gray-900 to-gray-800 p-4 rounded-xl border border-white/10 relative overflow-hidden min-h-[110px] hover:border-violet-400">
                             <div class="relative z-10 flex flex-col justify-between h-full">
                                 <div class="flex items-center gap-2">
-                                    <div class="w-1.5 h-1.5 rounded-full bg-purple-500"></div>
+                                    <div class="w-1.5 h-1.5 rounded-full bg-violet-500"></div>
                                     <h3 class="text-2xs font-bold uppercase tracking-widest text-gray-500">{{ $t('wallet.totalReceivable') }}</h3>
                                 </div>
                                 <p class="text-base font-bold text-white tracking-tight truncate">

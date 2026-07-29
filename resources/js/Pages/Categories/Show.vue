@@ -7,6 +7,7 @@ import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { formatNumber, formatDate } from '@/utils/format.js';
 import AppIcon from '@/Components/AppIcon.vue';
+import { getCategoryIconColor } from '@/Composables/useIcon.js';
 
 const { t } = useI18n();
 
@@ -46,10 +47,10 @@ const getTypeName = (name) => ({
 const getTypeColor = (typeName) => {
     return {
         'Income': 'text-green-400 bg-green-400/10 border-green-400/20',
-        'Expense': 'text-gray-400 bg-gray-400/10 border-gray-400/20',
+        'Expense': 'text-red-400 bg-red-400/10 border-red-400/20',
         'Transfer': 'text-blue-400 bg-blue-400/10 border-blue-400/20',
-        'Debt': 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20',
-        'Receivable': 'text-purple-400 bg-purple-400/10 border-purple-400/20'
+        'Debt': 'text-amber-400 bg-amber-400/10 border-amber-400/20',
+        'Receivable': 'text-fuchsia-400 bg-fuchsia-400/10 border-fuchsia-400/20'
     }[typeName] || 'text-gray-500';
 };
 
@@ -81,14 +82,14 @@ const formatDateRange = () => {
             </header>
 
             <div class="flex flex-col items-center mb-8 lg:mb-10 relative z-10">
-                <AppIcon :icon="category.icon" fallback="folder" class="w-16 h-16 lg:w-20 lg:h-20 text-purple-400 mb-4 lg:mb-5" />
+                <AppIcon :icon="category.icon" fallback="folder" :class="['w-16 h-16 lg:w-20 lg:h-20 mb-4 lg:mb-5', getCategoryIconColor(category.type?.name)]" />
 
                 <div class="text-center">
                     <h1 class="text-2xl lg:text-3xl font-black text-white tracking-tight leading-none mb-2">{{ category.category_name }}</h1>
                     <div class="flex flex-col items-center gap-2">
                         <div class="inline-flex items-center gap-2 px-3 lg:px-4 py-1 rounded-full bg-linear-to-br from-gray-900 to-gray-800 border border-white/10">
                             <span class="w-1.5 h-1.5 rounded-full"
-                                :class="category.type.name === 'Income' ? 'bg-green-400' : 'bg-purple-500'"></span>
+                                :class="getCategoryIconColor(category.type?.name)?.replace('text', 'bg')"></span>
                             <p class="text-2xs font-bold text-gray-400 uppercase tracking-[0.2em]">{{ getTypeName(category.type.name) }}</p>
                         </div>
                         <div v-if="isSystem"
