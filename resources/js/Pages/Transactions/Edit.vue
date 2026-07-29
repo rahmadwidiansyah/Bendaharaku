@@ -281,6 +281,7 @@ watch(lunasi, () => {
     } else {
         rawAmount.value = '0'
     }
+    form.amount = parseInt(rawAmount.value, 10) || 0
 })
 
 watch(() => form.subject, () => {
@@ -290,6 +291,7 @@ watch(() => form.subject, () => {
         lunasi.value = false
         rawAmount.value = '0'
     }
+    form.amount = parseInt(rawAmount.value, 10) || 0
 })
 
 const submitTransfer = () => {

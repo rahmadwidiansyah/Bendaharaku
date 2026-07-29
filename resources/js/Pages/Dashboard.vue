@@ -399,14 +399,12 @@ const calendarDayNames = computed(() => [
 							</h3>
 						</div>
 
-						<!-- Group Transaction Cards per Date -->
-						<div v-for="(group, dateKey) in visibleTransactions" :key="dateKey"
-							class="bg-linear-to-br from-gray-900 to-gray-800 p-2.5 sm:p-3 rounded-lg sm:rounded-xl border border-white/5 transition-all duration-300 shadow-lg">
+						<!-- Group Transaction per Date -->
+						<div v-for="(group, dateKey) in visibleTransactions" :key="dateKey" class="border-b border-white/[0.06] last:border-b-0 pb-1 sm:pb-2">
 							<div @click="activeHistoryTab === 'detail' && toggleDate(dateKey)"
-								class="flex justify-between items-center px-1 border-b pb-2 transition-colors group/header"
+								class="flex justify-between items-center py-2.5 px-1 transition-colors group/header"
 								:class="[
 									activeHistoryTab === 'detail' ? 'cursor-pointer' : '',
-									activeHistoryTab === 'detail' && collapsedDates[dateKey] ? 'border-transparent' : 'border-purple-500/30',
 								]">
 								<h3
 									class="text-2xs font-bold text-purple-500 uppercase tracking-widest flex items-center gap-1.5 group-hover/header:text-purple-400 transition-colors">
@@ -419,77 +417,55 @@ const calendarDayNames = computed(() => [
 									{{ group.date }}
 								</h3>
 								<div class="text-2xs font-bold flex gap-2.5 tracking-wide">
-									<span v-if="group.income > 0" class="text-green-400/90">+{{
-										masked(group.income) }}</span>
-									<span v-if="group.expense > 0" class="text-red-400/90">-{{
-										masked(group.expense) }}</span>
+									<span v-if="group.income > 0" class="text-green-400/90">+{{ masked(group.income) }}</span>
+									<span v-if="group.expense > 0" class="text-red-400/90">-{{ masked(group.expense) }}</span>
 								</div>
 							</div>
 
-							<!-- Main History List -->
+							<!-- Transaction rows -->
 							<div class="grid transition-all duration-300 ease-in-out" :style="{
 								gridTemplateRows: activeHistoryTab === 'detail' && collapsedDates[dateKey] ? '0fr' : '1fr',
 							}">
 								<div class="overflow-hidden transition-all duration-300"
 									:class="activeHistoryTab === 'detail' && collapsedDates[dateKey] ? 'opacity-0' : 'opacity-100'">
-									<div class="space-y-1.5 sm:space-y-2.5 pt-2 sm:pt-3">
-										<button v-for="trx in group.transactions" :key="trx.id" @click="openModal(trx)"
-											class="w-full text-left bg-linear-to-br from-gray-800 to-gray-900 p-2.5 sm:p-3 rounded-lg sm:rounded-xl border border-white/10 hover:border-purple-400/30 active:scale-[0.98] transition-all relative overflow-hidden group">
-											<div
-												class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
+									<div>
+										<button v-for="(trx, trxIdx) in group.transactions" :key="trx.id" @click="openModal(trx)"
+											class="w-full text-left flex items-center gap-2.5 sm:gap-3 py-2.5 sm:py-3 px-1 transition-colors hover:bg-white/[0.03] active:bg-white/[0.06] border-b border-white/[0.04] last:border-b-0">
+											<div class="relative shrink-0">
+												<AppIcon :icon="trx.category?.icon" fallback="file-text"
+													:class="['w-5 h-5', getCategoryIconColor(trx.type?.name)]" />
+												<span v-if="!trx.is_cleared"
+													class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-gray-900" />
 											</div>
 
-											<div class="flex items-center gap-2 sm:gap-3 relative z-10">
-												<AppIcon :icon="trx.category?.icon" fallback="file-text"
-													:class="['w-6 h-6 shrink-0', getCategoryIconColor(trx.type?.name)]" />
+											<div class="flex-1 min-w-0 leading-tight">
+												<p class="text-xs font-bold text-white truncate">
+													{{ trx.category?.category_name || t('types.transfer') }}
+												</p>
+												<p class="text-2xs text-gray-500 truncate mt-[1px]">
+													{{ getWalletName(trx) }}
+												</p>
+											</div>
 
-												<div class="flex-1 min-w-0 pr-2">
-													<div class="flex items-center gap-1.5 mb-1">
-														<p class="text-xs font-bold text-white leading-tight">
-															{{ trx.category?.category_name || t('types.transfer') }}
-														</p>
-														<!-- Indikator DRAFT -->
-														<span v-if="!trx.is_cleared"
-															class="shrink-0 inline-flex items-center gap-0.5 text-2xs font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/30">
-															<svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24"
-																stroke="currentColor" stroke-width="2.5">
-																<path stroke-linecap="round" stroke-linejoin="round"
-																	d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
-															</svg>
-															{{ t('transaction.draft') }}
-														</span>
-													</div>
-													<div class="min-w-0">
-														<span
-															class="text-gray-400 text-2xs tracking-wide font-bold whitespace-nowrap truncate">{{
-																getWalletName(trx) }}</span>
-													</div>
-												</div>
-
-												<div class="text-right shrink-0">
-													<p class="text-2xs font-black" :class="trx.type.name === 'Income' || (['Debt', 'Receivable'].includes(trx.type.name) && trx.source_wallet?.group_type === 'System')
-															? 'text-green-400'
-															: trx.type.name === 'Transfer' && !['Debt', 'Receivable'].includes(trx.type.name)
-																? 'text-blue-400'
-																: 'text-red-400'
-														">
-														{{
-															trx.type.name === 'Income' || (['Debt',
-																'Receivable'].includes(trx.type.name) &&
-																trx.source_wallet?.group_type === 'System')
-																? '+'
-																: trx.type.name === 'Transfer' && !['Debt',
-																	'Receivable'].includes(trx.type.name)
-																	? ''
+											<div class="text-right shrink-0 flex flex-col items-end">
+												<p class="text-2xs font-black" :class="trx.type.name === 'Income' || (['Debt', 'Receivable'].includes(trx.type.name) && trx.source_wallet?.group_type === 'System')
+														? 'text-green-400'
+														: trx.type.name === 'Transfer' && !['Debt', 'Receivable'].includes(trx.type.name)
+															? 'text-blue-400'
+															: 'text-red-400'
+													">
+													{{
+														trx.type.name === 'Income' || (['Debt',
+															'Receivable'].includes(trx.type.name) &&
+															trx.source_wallet?.group_type === 'System')
+															? '+'
+															: trx.type.name === 'Transfer' && !['Debt',
+																'Receivable'].includes(trx.type.name)
+																? ''
 														: '-'
-														}}{{ isBalanceVisible ? formatNumber(trx.amount) : '••••' }}
-													</p>
-													<div class="flex items-center justify-end gap-1.5 mt-1">
-														<span class="text-xs text-gray-600 font-medium italic">
-															{{ trx.time }}
-														</span>
-													</div>
-												</div>
+													}}{{ isBalanceVisible ? formatNumber(trx.amount) : '••••' }}
+												</p>
+												<span class="text-2xs text-gray-600 mt-[2px]">{{ trx.time }}</span>
 											</div>
 										</button>
 									</div>

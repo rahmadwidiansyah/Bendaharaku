@@ -7,7 +7,7 @@ import { useI18n } from 'vue-i18n'
 import axios from 'axios'
 import AppIcon from '@/Components/AppIcon.vue'
 import { formatNumber } from '@/utils/format.js'
-import { getCategoryIconColor, getWalletIconColor } from '@/Composables/useIcon.js'
+
 
 const { t } = useI18n()
 
@@ -180,7 +180,7 @@ const amountPrefix = (item) => {
 
                             <div class="flex items-center gap-3 relative z-10">
                                 <AppIcon :icon="item.category?.icon" fallback="file-text"
-                                    :class="['w-6 h-6 shrink-0', getCategoryIconColor(item.transaction_type?.name)]" />
+                                    class="w-6 h-6 shrink-0 text-purple-400" />
 
                                 <div class="flex-1 min-w-0 pr-2">
                                     <p class="text-xs font-bold text-white leading-tight truncate">

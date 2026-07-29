@@ -28,6 +28,7 @@ trait CalculatesDebtAndReceivable
         $transactions = TransactionLog::where('user_id', $userId)
             ->where('is_cleared', true)
             ->whereNotNull('subject')
+            ->where('date', '>=', now()->subYears(3))
             ->whereHas('category', function ($query) {
                 $query->whereIn('system_key', [
                     'LOAN', 'DEBT_PAYMENT', 'RECEIVABLE', 'RECEIVABLE_PAYMENT'
