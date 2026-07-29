@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Link } from '@inertiajs/vue3'
 import { formatNumber } from '@/utils/format.js'
@@ -26,8 +26,16 @@ const collapsedSections = ref({
     hutang: true,
     piutang: true,
 })
-const hutangVisible = ref(true)
-const piutangVisible = ref(true)
+const hutangVisible = ref(localStorage.getItem('dashboard_hutang_visible') !== 'false')
+const piutangVisible = ref(localStorage.getItem('dashboard_piutang_visible') !== 'false')
+
+watch(hutangVisible, (val) => {
+    localStorage.setItem('dashboard_hutang_visible', String(val))
+})
+
+watch(piutangVisible, (val) => {
+    localStorage.setItem('dashboard_piutang_visible', String(val))
+})
 
 const toggleSection = (key) => {
     collapsedSections.value[key] = !collapsedSections.value[key]
@@ -36,7 +44,7 @@ const displayLocal = (n, visible) => visible ? formatNumber(n) : '••••�
 </script>
 
 <template>
-    <div class="relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 overflow-hidden mb-3 sm:mb-5 group animate-fade-in-up delay-200">
+    <div class="relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 overflow-hidden mb-3 sm:mb-5 group animate-fade-in-up delay-200 shadow-lg shadow-black/20">
         <div class="absolute inset-0 bg-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" aria-hidden="true" />
 
         <div class="absolute inset-x-0 bottom-0 opacity-20 pointer-events-none h-24" aria-hidden="true">
@@ -52,12 +60,12 @@ const displayLocal = (n, visible) => visible ? formatNumber(n) : '••••�
             </svg>
         </div>
 
-        <div class="relative z-10 p-4 sm:p-7 sm:pb-6">
+        <div class="relative z-10 p-3.5 sm:p-7 sm:pb-6">
             <div class="flex justify-between items-center mb-4">
-                <div class="flex items-center gap-2">
-                    <div class="w-1.5 h-1.5 rounded-full bg-purple-500" aria-hidden="true" />
-                    <p class="text-2xs text-gray-400 font-bold uppercase tracking-[0.2em]">{{ $t('portfolio.title') }}</p>
-                </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-1.5 h-1.5 rounded-full bg-[var(--color-brand)]" aria-hidden="true" />
+                        <p class="text-2xs text-gray-400 font-bold uppercase tracking-[0.18em]">{{ $t('portfolio.title') }}</p>
+                    </div>
                 <button type="button" @click="$emit('toggle-visibility')"
                     class="text-gray-500 hover:text-white transition-colors p-1 -m-1 focus:outline-none focus-visible:ring-1 focus-visible:ring-purple-400 rounded"
                     :aria-label="$t('header.toggleBalance')">
@@ -71,15 +79,15 @@ const displayLocal = (n, visible) => visible ? formatNumber(n) : '••••�
                 </button>
             </div>
 
-            <div class="flex items-baseline gap-1.5 mb-4">
-                <span class="text-base sm:text-lg font-medium text-gray-500">Rp</span>
-                <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight" aria-live="polite">
+            <div class="flex items-baseline gap-1.5 mb-3.5">
+                <span class="text-sm sm:text-lg font-medium text-gray-500">Rp</span>
+                <h2 class="text-[1.7rem] sm:text-3xl font-black text-white tracking-tight leading-none" aria-live="polite">
                     {{ displayAmount(totalPortfolio) }}
                 </h2>
             </div>
 
             <!-- Wallet List Section -->
-            <div v-if="wallets && wallets.length > 0" class="pt-3 border-t border-white/10">
+            <div v-if="wallets && wallets.length > 0" class="pt-2.5 border-t border-white/10">
                 <button @click="toggleSection('wallets')"
                     class="w-full flex items-center justify-between py-2 text-left group/section">
                     <div class="flex items-center gap-2">
@@ -137,7 +145,6 @@ const displayLocal = (n, visible) => visible ? formatNumber(n) : '••••�
                             fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
                         </svg>
-                        <div class="w-1.5 h-1.5 rounded-full bg-yellow-500" />
                         <span class="text-2xs font-bold text-gray-400 uppercase tracking-widest">
                             {{ $t('wallet.totalDebt') }}
                         </span>
@@ -188,7 +195,6 @@ const displayLocal = (n, visible) => visible ? formatNumber(n) : '••••�
                             fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
                         </svg>
-                        <div class="w-1.5 h-1.5 rounded-full bg-violet-500" />
                         <span class="text-2xs font-bold text-gray-400 uppercase tracking-widest">
                             {{ $t('wallet.totalReceivable') }}
                         </span>

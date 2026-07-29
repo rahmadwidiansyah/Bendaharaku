@@ -12,6 +12,7 @@ import { ref, computed, watch } from 'vue'
  * @param {import('vue').ComputedRef}    options.groupedTransactions — computed dari Dashboard
  */
 export function useCalendar({ onNavigate, initialDate, groupedTransactions }) {
+    const getInitialDateValue = () => typeof initialDate === 'object' && initialDate?.value ? initialDate.value : initialDate
     // ─── Helper ──────────────────────────────────────────────────
     const getLocalYMD = (d) =>
         `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -28,13 +29,19 @@ export function useCalendar({ onNavigate, initialDate, groupedTransactions }) {
 
     // ─── State ────────────────────────────────────────────────────
     const selectedCalendarDate = ref(getLocalYMD(new Date()))
-    const currentCalendarMonth = ref(parseLocalYMD(initialDate))
+    const currentCalendarMonth = ref(parseLocalYMD(getInitialDateValue()))
     const calendarFilter       = ref('total')
 
     // Sinkronkan kalender saat startDate prop berubah dari luar (navigasi URL / DateModal)
     watch(
-        () => initialDate,
-        (v) => { currentCalendarMonth.value = parseLocalYMD(v) },
+        () => getInitialDateValue(),
+        (v) => {
+            currentCalendarMonth.value = parseLocalYMD(v)
+            if (!selectedCalendarDate.value?.startsWith(v.slice(0, 7))) {
+                selectedCalendarDate.value = v
+            }
+        },
+        { immediate: true },
     )
 
     // ─── Computed ─────────────────────────────────────────────────

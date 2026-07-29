@@ -1,6 +1,5 @@
 <script setup>
 import TransactionDetailModal from '@/Components/TransactionDetailModal.vue'
-import InsightBanner from '@/Pages/Dashboard/InsightBanner.vue'
 import PortfolioCard from '@/Pages/Dashboard/PortfolioCard.vue'
 import UpcomingDebts from '@/Pages/Dashboard/UpcomingDebts.vue'
 import { Head, router } from '@inertiajs/vue3'
@@ -120,7 +119,7 @@ const {
 	nextMonth,
 	selectDate,
 } = useCalendar({
-	initialDate: props.startDate,
+	initialDate: computed(() => props.startDate),
 	groupedTransactions,
 	onNavigate: (startDate, endDate) => {
 		router.get(
@@ -189,10 +188,7 @@ const calendarDayNames = computed(() => [
 
 		<Head title="Dashboard" />
 
-		<div class="p-3 sm:p-5 w-full mx-auto">
-			<!-- INSIGHT BOX -->
-			<InsightBanner :this-month-income="thisMonthIncome" :this-month-expense="thisMonthExpense" />
-
+		<div class="p-3 sm:p-5 w-full mx-auto max-w-screen-sm sm:max-w-none">
 			<!-- dual grid desktop view. (left: asset cards, right: transactions list) -->
 			<div :class="isDesktopLayout ? 'lg:flex lg:gap-8 lg:items-start' : ''">
 				<!-- left asset cards -->
@@ -252,44 +248,45 @@ const calendarDayNames = computed(() => [
 				<div
 					:class="isDesktopLayout ? 'lg:w-2/3 lg:bg-gray-900/30 lg:p-6 lg:rounded-2xl lg:border lg:border-white/5' : 'mt-4 sm:mt-8'">
 					<!-- TRANSACTION HISTORY HEADER-->
-					<div
-						class="flex justify-between items-center mb-2 sm:mb-4 px-1 gap-2 sm:gap-3 animate-fade-in-up delay-500">
-						<h2
-							class="text-2xs font-bold text-white uppercase tracking-widest flex items-center gap-2 shrink-0">
-							<span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
-							{{ $t('dashboard.transactionHistory') }}
-						</h2>
-						<div class="flex-1 h-px bg-linear-to-r from-purple-500/50 to-transparent"></div>
-						<div class="flex bg-gray-900 rounded-lg border border-white/10 p-0.5 shrink-0">
+					<div class="mb-3 sm:mb-4 px-1 animate-fade-in-up delay-500">
+						<div class="flex items-center gap-2 mb-2">
+							<h2
+								class="text-2xs font-bold text-white uppercase tracking-widest flex items-center gap-2 shrink-0">
+								<span class="w-1.5 h-1.5 rounded-full bg-[var(--color-brand)]"></span>
+								{{ $t('dashboard.transactionHistory') }}
+							</h2>
+							<div class="flex-1 h-px bg-linear-to-r from-[var(--color-brand-border)] to-transparent"></div>
+						</div>
+						<div class="grid grid-cols-2 gap-1 p-1 rounded-xl border border-white/10 bg-gray-900/70 shadow-sm shadow-black/20">
 							<button @click="activeHistoryTab = 'detail'"
-								:class="activeHistoryTab === 'detail' ? 'bg-purple-500 text-white' : 'text-gray-400 hover:text-white'"
-								class="px-2 py-1 rounded-lg text-2xs font-bold uppercase tracking-widest transition-colors">
+								:class="activeHistoryTab === 'detail' ? 'text-white bg-[var(--color-brand)] shadow-sm' : 'text-gray-400 hover:text-white hover:bg-white/5'"
+								class="px-3 py-2 rounded-lg text-2xs font-bold uppercase tracking-widest transition-all text-center">
 								{{ $t('dashboard.detailTab') }}
 							</button>
 							<button @click="activeHistoryTab = 'calendar'"
-								:class="activeHistoryTab === 'calendar' ? 'bg-purple-500 text-white' : 'text-gray-400 hover:text-white'"
-								class="px-2 py-1 rounded-lg text-2xs font-bold uppercase tracking-widest transition-colors">
+								:class="activeHistoryTab === 'calendar' ? 'text-white bg-[var(--color-brand)] shadow-sm' : 'text-gray-400 hover:text-white hover:bg-white/5'"
+								class="px-3 py-2 rounded-lg text-2xs font-bold uppercase tracking-widest transition-all text-center">
 								{{ $t('dashboard.calendarTab') }}
 							</button>
 						</div>
 					</div>
 					<!-- Month Navigation & Filter Type-->
-					<div class="flex justify-between items-center mb-2 sm:mb-4 animate-fade-in-up delay-500">
-						<div class="flex items-center gap-2 sm:gap-3">
+					<div class="grid grid-cols-[1fr_auto] gap-2 mb-3 sm:mb-4 animate-fade-in-up delay-500 px-1 items-center">
+						<div class="flex items-center justify-between gap-2 min-w-0 rounded-xl border border-white/10 bg-gray-900/70 px-2 py-1.5 shadow-sm shadow-black/20">
 							<button @click="prevMonth"
-								class="p-1 sm:p-1.5 rounded-full bg-gray-900 border border-white/10 text-gray-400 hover:text-white transition-colors active:scale-95">
+								class="p-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-colors active:scale-95 shrink-0">
 								<svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" viewBox="0 0 24 24"
 									stroke="currentColor" stroke-width="2.5">
 									<path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
 								</svg>
 							</button>
-							<p
-								class="text-2xs font-bold text-purple-500 uppercase tracking-widest flex flex-col items-center">
-								<span class="text-white text-sm tracking-tight">{{ formattedPeriod }}</span>
+							<p class="min-w-0 flex-1 text-center">
+								<span class="block text-[10px] font-bold text-[var(--color-brand)] uppercase tracking-[0.18em]">Periode</span>
+								<span class="block text-sm font-bold text-white tracking-tight leading-tight truncate">{{ formattedPeriod }}</span>
 							</p>
 							<button @click="nextMonth" :disabled="!canGoNextMonth"
-								class="p-1 sm:p-1.5 rounded-full border transition-colors active:scale-95"
-								:class="canGoNextMonth ? 'bg-gray-900 border-white/10 text-gray-400 hover:text-white' : 'bg-gray-900/50 border-white/5 text-gray-600 cursor-not-allowed'">
+								class="p-1.5 rounded-lg border transition-colors active:scale-95 shrink-0"
+								:class="canGoNextMonth ? 'bg-white/5 border-white/10 text-gray-400 hover:text-white' : 'bg-white/[0.03] border-white/5 text-gray-600 cursor-not-allowed'">
 								<svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" viewBox="0 0 24 24"
 									stroke="currentColor" stroke-width="2.5">
 									<path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
@@ -297,8 +294,8 @@ const calendarDayNames = computed(() => [
 							</button>
 						</div>
 						<button type="button" @click="showSortModal = true"
-							class="flex items-center gap-1.5 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 px-3 py-1.5 rounded-full text-2xs font-bold uppercase tracking-widest active:scale-95 transition-all"
-							:class="type ? 'text-purple-500 border-purple-500/50' : 'text-gray-500'">
+							class="flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-gray-900/70 px-3 py-2 text-2xs font-bold uppercase tracking-widest active:scale-95 transition-all shadow-sm shadow-black/20"
+							:class="type ? 'text-[var(--color-brand)] border-[var(--color-brand-border)]' : 'text-gray-400 hover:text-white'">
 							<svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"
 								stroke-width="2.5">
 								<path stroke-linecap="round" stroke-linejoin="round"
@@ -309,45 +306,25 @@ const calendarDayNames = computed(() => [
 					</div>
 
 					<!-- Kalender Tab Active -->
-					<div v-if="activeHistoryTab === 'calendar'" class="animate-fade-in-up delay-500 mb-4 sm:mb-8">
+					<div v-if="activeHistoryTab === 'calendar'" class="animate-fade-in-up delay-500 mb-4 sm:mb-8 px-1">
 						<div
-							class="bg-linear-to-br from-gray-900 to-gray-800 p-3 sm:p-4 rounded-xl border border-white/10 mb-3 sm:mb-5 shadow-lg w-full">
-							<div class="flex justify-between items-center mb-3">
-								<button @click="prevMonth"
-									class="p-1 rounded-lg bg-white/5 hover:bg-white/10 text-white transition-colors">
-									<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-										stroke-width="2">
-										<path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-									</svg>
-								</button>
-								<h3 class="text-2xs font-bold text-white uppercase tracking-widest">
-									{{ calendarMonthName }}
-								</h3>
-								<button @click="nextMonth" :disabled="!canGoNextMonth"
-									class="p-1 rounded-lg transition-colors"
-									:class="canGoNextMonth ? 'bg-white/5 hover:bg-white/10 text-white' : 'text-gray-600 cursor-not-allowed'">
-									<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-										stroke-width="2">
-										<path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-									</svg>
-								</button>
-							</div>
+							class="bg-linear-to-br from-gray-900 to-gray-800 p-2.5 sm:p-4 rounded-xl border border-white/10 mb-3 sm:mb-5 shadow-lg shadow-black/20 w-full">
 							<!-- Pemasukan, Total, Pengeluaran filter -->
-							<div class="flex justify-center mb-2 sm:mb-3">
-								<div class="flex bg-gray-900 rounded-xl border border-white/10 p-0.5">
+							<div class="flex justify-center mb-2.5 sm:mb-3">
+								<div class="flex w-full bg-gray-900 rounded-xl border border-white/10 p-0.5">
 									<button @click="calendarFilter = 'income'"
 										:class="calendarFilter === 'income' ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'text-gray-400 hover:text-white border border-transparent'"
-										class="px-2.5 py-1 rounded-lg text-2xs font-bold uppercase tracking-widest transition-all">
+										class="flex-1 px-2 py-1.5 rounded-lg text-2xs font-bold uppercase tracking-widest transition-all text-center">
 										{{ $t('dashboard.calendarFilter.income') }}
 									</button>
 									<button @click="calendarFilter = 'total'"
-										:class="calendarFilter === 'total' ? 'bg-purple-500 text-white border border-purple-500' : 'text-gray-400 hover:text-white border border-transparent'"
-										class="px-2.5 py-1 rounded-lg text-2xs font-bold uppercase tracking-widest transition-all">
+										:class="calendarFilter === 'total' ? 'text-white border bg-[var(--color-brand)] border-[var(--color-brand)]' : 'text-gray-400 hover:text-white border border-transparent'"
+										class="flex-1 px-2 py-1.5 rounded-lg text-2xs font-bold uppercase tracking-widest transition-all text-center">
 										{{ $t('dashboard.calendarFilter.total') }}
 									</button>
 									<button @click="calendarFilter = 'expense'"
 										:class="calendarFilter === 'expense' ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'text-gray-400 hover:text-white border border-transparent'"
-										class="px-2.5 py-1 rounded-lg text-2xs font-bold uppercase tracking-widest transition-all">
+										class="flex-1 px-2 py-1.5 rounded-lg text-2xs font-bold uppercase tracking-widest transition-all text-center">
 										{{ $t('dashboard.calendarFilter.expense') }}
 									</button>
 								</div>
@@ -360,16 +337,16 @@ const calendarDayNames = computed(() => [
 								</div>
 							</div>
 							<!-- Calendar Grid -->
-							<div class="grid grid-cols-7 gap-1 sm:gap-1.5">
-								<div v-for="(day, index) in calendarDays" :key="index" class="h-12 sm:h-14">
+							<div class="grid grid-cols-7 gap-1">
+								<div v-for="(day, index) in calendarDays" :key="index" class="h-[2.875rem] sm:h-14">
 									<button v-if="!day.empty" @click="selectDate(day.dateStr)"
 										class="w-full h-full rounded-md flex flex-col items-center justify-center p-0.5 border transition-all relative overflow-visible"
 										:class="[
-											selectedCalendarDate === day.dateStr ? 'bg-purple-500/20 border-purple-500 z-10' : 'bg-white/5 border-transparent hover:bg-white/10 z-0 hover:z-10',
+											selectedCalendarDate === day.dateStr ? 'bg-[var(--color-brand-subtle)] border-[var(--color-brand)] z-10' : 'bg-white/5 border-transparent hover:bg-white/10 z-0 hover:z-10',
 											day.dateStr === todayYMD && selectedCalendarDate !== day.dateStr ? 'border-white/20' : '',
 										]">
 										<span class="text-2xs font-bold leading-none mb-0.5"
-											:class="selectedCalendarDate === day.dateStr ? 'text-purple-400' : 'text-gray-300'">{{
+											:class="selectedCalendarDate === day.dateStr ? 'text-[var(--color-brand)]' : 'text-gray-300'">{{
 												day.day }}</span>
 										<div v-if="day.largestType" class="flex flex-col items-center overflow-visible">
 											<span
@@ -407,7 +384,7 @@ const calendarDayNames = computed(() => [
 									activeHistoryTab === 'detail' ? 'cursor-pointer' : '',
 								]">
 								<h3
-									class="text-2xs font-bold text-purple-500 uppercase tracking-widest flex items-center gap-1.5 group-hover/header:text-purple-400 transition-colors">
+									class="text-2xs font-bold text-[var(--color-brand)] uppercase tracking-widest flex items-center gap-1.5 transition-colors group-hover/header:opacity-90">
 									<svg v-if="activeHistoryTab === 'detail'"
 										class="w-3.5 h-3.5 transition-transform duration-300"
 										:class="!collapsedDates[dateKey] ? 'rotate-90' : ''" fill="none"
