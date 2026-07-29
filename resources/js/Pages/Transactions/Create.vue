@@ -271,20 +271,21 @@ const debtBalance = computed(() => {
     return sub?.balance || 0
 })
 
+const setLunasiAmount = (val) => {
+    rawAmount.value = val
+    form.amount = parseInt(val, 10) || 0
+}
+
 watch(lunasi, () => {
-    if (lunasi.value && debtBalance.value > 0) {
-        rawAmount.value = String(Math.abs(debtBalance.value))
-    } else {
-        rawAmount.value = '0'
-    }
+    setLunasiAmount(lunasi.value && debtBalance.value > 0 ? String(Math.abs(debtBalance.value)) : '0')
 })
 
 watch(() => form.subject, () => {
     if (lunasi.value && debtBalance.value > 0) {
-        rawAmount.value = String(Math.abs(debtBalance.value))
+        setLunasiAmount(String(Math.abs(debtBalance.value)))
     } else if (lunasi.value) {
         lunasi.value = false
-        rawAmount.value = '0'
+        setLunasiAmount('0')
     }
 })
 
