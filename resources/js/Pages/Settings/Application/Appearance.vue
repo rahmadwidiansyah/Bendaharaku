@@ -7,6 +7,7 @@ import { ref, watch, onMounted, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import axios from 'axios';
 import { applyAccentColor, saveAccentColor, ACCENT_PALETTES, isCustomColor, isValidHex, getColorValue } from '@/Composables/useAccentColor.js';
+import { setCategoryIconColored } from '@/Composables/useIcon.js';
 import { useToast } from '@/Composables/useToast';
 
 const { t } = useI18n();
@@ -14,6 +15,7 @@ const { showToast } = useToast();
 
 const props = defineProps<{
   userAccentColor: string;
+  categoryIconColored: boolean;
 }>();
 
 const theme = ref('dark');
@@ -21,6 +23,7 @@ const accentColor = ref(props.userAccentColor);
 const customHex = ref('');
 const showCustomPicker = ref(false);
 const saving = ref(false);
+const iconColored = ref(props.categoryIconColored);
 
 
 const isCustom = computed(() => isCustomColor(accentColor.value));
@@ -57,6 +60,10 @@ watch(theme, () => {
   saveAppearance();
 });
 
+watch(iconColored, () => {
+  saveAppearance();
+});
+
 onMounted(() => {
   applyAccentColor(accentColor.value);
   if (isCustom.value) {
@@ -73,8 +80,10 @@ const saveAppearance = () => {
       await axios.patch(route('settings.application.appearance.update'), {
         theme: theme.value,
         accent_color: accentColor.value,
+        category_icon_colored: iconColored.value,
       });
       saveAccentColor(accentColor.value);
+      setCategoryIconColored(iconColored.value);
       showToast(t('toast.updated'), 'success');
     } catch (error: any) {
       showToast(error.response?.data?.message || t('errors.generic'), 'error');
@@ -111,6 +120,29 @@ const saveAppearance = () => {
             </span>
           </label>
         </div>
+      </SettingsCard>
+
+      <!-- Category Icon Color -->
+      <SettingsCard
+        :title="t('settings.application.appearance.category_icon_color.title')"
+        :description="t('settings.application.appearance.category_icon_color.description')"
+      >
+        <label class="flex items-center justify-between p-3 border border-gray-700 rounded-lg cursor-pointer hover:bg-gray-800 transition-colors">
+          <div>
+            <p class="text-sm text-white font-medium">{{ t('settings.application.appearance.category_icon_color.label') }}</p>
+            <p class="text-2xs text-gray-500 mt-0.5">{{ iconColored ? t('settings.application.appearance.category_icon_color.on') : t('settings.application.appearance.category_icon_color.off') }}</p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            :aria-checked="iconColored"
+            @click="iconColored = !iconColored"
+            class="relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+            :class="iconColored ? 'bg-purple-600' : 'bg-gray-700'"
+          >
+            <span class="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out" :class="iconColored ? 'translate-x-5' : 'translate-x-0'" />
+          </button>
+        </label>
       </SettingsCard>
 
       <!-- Accent Color -->

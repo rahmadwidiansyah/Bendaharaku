@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import AppIcon from '@/Components/AppIcon.vue'
-import { getCategoryIconColor } from '@/Composables/useIcon.js'
+import { getCategoryIconColor, getWalletIconColor } from '@/Composables/useIcon.js'
 
 const props = defineProps({
   type:         { type: String, default: 'expense' },
@@ -26,7 +26,7 @@ const typeName = computed(() => {
 })
 
 const iconColor = computed(() => {
-  if (isWallet.value) return 'text-purple-400'
+  if (isWallet.value) return getWalletIconColor()
   return getCategoryIconColor(typeName.value)
 })
 </script>

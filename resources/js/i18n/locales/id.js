@@ -363,6 +363,8 @@ export default {
         deleteConfirm:  'Yakin ingin menghapus dompet ini?',
         totalDebt:      'Total Hutang',
         totalReceivable:'Total Piutang',
+        viewDebtDetail: 'Lihat Detail Hutang',
+        viewReceivableDetail: 'Lihat Detail Piutang',
 
         // Group types
         groupTypes: {
@@ -614,6 +616,13 @@ export default {
                     light:          'Terang',
                     dark:           'Gelap',
                     system:         'Mengikuti Sistem',
+                },
+                category_icon_color: {
+                    title:          'Warna Ikon Kategori',
+                    description:    'Warna ikon berdasarkan tipe transaksi',
+                    label:          'Ikon Kategori Berwarna',
+                    on:             'Ikon sesuai tipe transaksi',
+                    off:            'Semua ikon putih',
                 },
                 accent_color: {
                     title:          'Warna Aksen',

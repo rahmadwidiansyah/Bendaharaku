@@ -1,3 +1,20 @@
+import { ref } from 'vue'
+
+const LS_KEY = 'ls_category_icon_colored'
+
+export const categoryIconColored = ref(true)
+
+export function setCategoryIconColored(val) {
+    categoryIconColored.value = val
+    localStorage.setItem(LS_KEY, JSON.stringify(val))
+}
+
+export function initCategoryIconColored() {
+    const saved = localStorage.getItem(LS_KEY)
+    if (saved !== null) {
+        categoryIconColored.value = JSON.parse(saved)
+    }
+}
 
 export const detectIconType = (icon) => {
     if (!icon) {
@@ -45,5 +62,11 @@ export const CATEGORY_ICON_COLORS = {
 };
 
 export const getCategoryIconColor = (typeName) => {
+    if (!categoryIconColored.value) return 'text-white'
     return CATEGORY_ICON_COLORS[typeName] || 'text-gray-500';
+};
+
+export const getWalletIconColor = () => {
+    if (!categoryIconColored.value) return 'text-white'
+    return 'text-purple-400'
 };

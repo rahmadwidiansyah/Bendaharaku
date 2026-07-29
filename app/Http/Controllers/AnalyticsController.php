@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\BuildNetWorthSnapshotsJob;
-use App\Models\NetWorthSnapshot;
+use App\Traits\CalculatesDebtAndReceivable;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
@@ -14,6 +14,8 @@ use Inertia\Response;
 
 class AnalyticsController extends Controller
 {
+    use CalculatesDebtAndReceivable;
+
     private const TYPE_INCOME = 1;
     private const TYPE_EXPENSE = 2;
     private const TYPE_DEBT = 4;
@@ -72,11 +74,17 @@ class AnalyticsController extends Controller
         $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->format('Y-m-d'));
         $endDate = $request->input('end_date', Carbon::now()->format('Y-m-d'));
 
-        // 1. Summary Totals — Income/Expense gross by type_id, Debt/Receivable NET
+        // Get consistent, subject-based net balances for summary cards
+        $allBalances = $this->calculateAllBalances();
+        $totalDebt = $allBalances['total_debt'];
+        $totalReceivable = $allBalances['total_receivable'];
+
+        // 1. Summary Totals — Income/Expense gross by type_id for the period
         $totalsRaw = DB::table('transaction_logs')
             ->selectRaw('type_id, SUM(amount) as total')
             ->where('user_id', $userId)
             ->where('is_cleared', true)
+            ->whereNull('deleted_at')
             ->whereBetween('date', [$startDate, $endDate])
             ->whereIn('type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE])
             ->groupBy('type_id')
@@ -85,29 +93,12 @@ class AnalyticsController extends Controller
         $totalIncome = (float) ($totalsRaw[self::TYPE_INCOME] ?? 0);
         $totalExpense = (float) ($totalsRaw[self::TYPE_EXPENSE] ?? 0);
 
-        // Debt period — gross sum of debt transactions in the period (LOAN + DEBT_PAYMENT)
-        $totalDebt = (float) DB::table('transaction_logs')
-            ->join('categories', 'transaction_logs.category_id', '=', 'categories.id')
-            ->where('transaction_logs.user_id', $userId)
-            ->where('transaction_logs.is_cleared', true)
-            ->whereBetween('transaction_logs.date', [$startDate, $endDate])
-            ->whereIn('categories.system_key', ['LOAN', 'DEBT_PAYMENT'])
-            ->sum('transaction_logs.amount');
-
-        // Receivable period — gross sum of receivable transactions in the period (RECEIVABLE + RECEIVABLE_PAYMENT)
-        $totalReceivable = (float) DB::table('transaction_logs')
-            ->join('categories', 'transaction_logs.category_id', '=', 'categories.id')
-            ->where('transaction_logs.user_id', $userId)
-            ->where('transaction_logs.is_cleared', true)
-            ->whereBetween('transaction_logs.date', [$startDate, $endDate])
-            ->whereIn('categories.system_key', ['RECEIVABLE', 'RECEIVABLE_PAYMENT'])
-            ->sum('transaction_logs.amount');
-
         // 2. Running balance awal (sebelum startDate)
         $runningBalance = (float) DB::table('transaction_logs')
             ->join('categories', 'transaction_logs.category_id', '=', 'categories.id')
             ->where('transaction_logs.user_id', $userId)
             ->where('transaction_logs.is_cleared', true)
+            ->whereNull('transaction_logs.deleted_at')
             ->where('transaction_logs.date', '<', $startDate)
             ->whereIn('transaction_logs.type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE, self::TYPE_DEBT, self::TYPE_RECEIVABLE])
             ->sum(DB::raw($this->signedCashCase()));
@@ -118,6 +109,7 @@ class AnalyticsController extends Controller
             ->selectRaw('transaction_logs.date as tx_date, SUM('.$this->signedCashCase().') as net_change')
             ->where('transaction_logs.user_id', $userId)
             ->where('transaction_logs.is_cleared', true)
+            ->whereNull('transaction_logs.deleted_at')
             ->whereBetween('transaction_logs.date', [$startDate, $endDate])
             ->whereIn('transaction_logs.type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE, self::TYPE_DEBT, self::TYPE_RECEIVABLE])
             ->groupBy('transaction_logs.date')
@@ -128,6 +120,7 @@ class AnalyticsController extends Controller
             ->selectRaw('date, type_id, SUM(amount) as total')
             ->where('user_id', $userId)
             ->where('is_cleared', true)
+            ->whereNull('deleted_at')
             ->whereBetween('date', [$startDate, $endDate])
             ->whereIn('type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE])
             ->groupBy('date', 'type_id')
@@ -175,6 +168,7 @@ class AnalyticsController extends Controller
             ->selectRaw('categories.id, categories.category_name as name, categories.icon, transaction_logs.type_id, SUM(transaction_logs.amount) as total')
             ->where('transaction_logs.user_id', $userId)
             ->where('transaction_logs.is_cleared', true)
+            ->whereNull('transaction_logs.deleted_at')
             ->whereBetween('transaction_logs.date', [$startDate, $endDate])
             ->whereIn('transaction_logs.type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE, self::TYPE_DEBT, self::TYPE_RECEIVABLE])
             ->groupBy('categories.id', 'categories.category_name', 'categories.icon', 'transaction_logs.type_id')
@@ -201,6 +195,7 @@ class AnalyticsController extends Controller
             ->selectRaw('date, type_id, SUM(amount) as total')
             ->where('user_id', $userId)
             ->where('is_cleared', true)
+            ->whereNull('deleted_at')
             ->whereIn('type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE])
             ->groupBy('date', 'type_id')
             ->orderBy('date', 'asc')
@@ -213,6 +208,7 @@ class AnalyticsController extends Controller
             ->selectRaw('transaction_logs.date, SUM('.$this->debtNetCase().') as net')
             ->where('transaction_logs.user_id', $userId)
             ->where('transaction_logs.is_cleared', true)
+            ->whereNull('transaction_logs.deleted_at')
             ->whereIn('categories.system_key', ['LOAN', 'DEBT_PAYMENT'])
             ->groupBy('transaction_logs.date')
             ->orderBy('transaction_logs.date', 'asc')
@@ -223,6 +219,7 @@ class AnalyticsController extends Controller
             ->selectRaw('transaction_logs.date, SUM('.$this->receivableNetCase().') as net')
             ->where('transaction_logs.user_id', $userId)
             ->where('transaction_logs.is_cleared', true)
+            ->whereNull('transaction_logs.deleted_at')
             ->whereIn('categories.system_key', ['RECEIVABLE', 'RECEIVABLE_PAYMENT'])
             ->groupBy('transaction_logs.date')
             ->orderBy('transaction_logs.date', 'asc')
@@ -247,19 +244,8 @@ class AnalyticsController extends Controller
             $allReceivable[] = (float) ($allReceivableRaw[$date] ?? 0);
         }
 
-        // 6. Snapshot Logic
-        $periodDays = iterator_count($period);
-        $snapshots = NetWorthSnapshot::where('user_id', $userId)
-            ->whereBetween('snapshot_date', [$startDate, $endDate])
-            ->orderBy('snapshot_date', 'asc')
-            ->get(['snapshot_date', 'net_worth']);
-
-        if ($snapshots->count() === $periodDays) {
-            $cumulativeData = $snapshots->pluck('net_worth')->map(fn ($v) => (float) $v)->toArray();
-            $cumulativeBalance = (float) $snapshots->last()->net_worth;
-        } else {
-            BuildNetWorthSnapshotsJob::dispatch($userId, $startDate, $endDate);
-        }
+        // 6. Rebuild snapshot di background untuk dipakai kunjungan berikutnya
+        BuildNetWorthSnapshotsJob::dispatch($userId, $startDate, $endDate);
 
         return Inertia::render('Analytics/Index', [
             'startDate' => $startDate,

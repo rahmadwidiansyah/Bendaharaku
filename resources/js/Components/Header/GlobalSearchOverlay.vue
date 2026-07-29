@@ -15,7 +15,7 @@
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { router } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
-import settingsMenuTree from '@/Pages/Settings/Config/settingsMenu'
+import axios from 'axios'
 
 const { t } = useI18n()
 
@@ -28,30 +28,18 @@ const props = defineProps({
 
 const emit = defineEmits(['close'])
 
+const goToSearchPage = () => {
+    const q = query.value.trim()
+    close()
+    if (q) router.visit(route('search.page', { q }))
+    else router.visit(route('search.page'))
+}
+
 const searchInput = ref(null)
 const query = ref('')
 const selectedIndex = ref(-1)
-
-// ── Flatten settings menu ─────────────────────────────────────────
-const flatMenu = computed(() => {
-    const out = []
-    const walk = (node, catId = null) => {
-        if (!node) return
-        if (node.route) {
-            out.push({
-                id: node.id,
-                catId: catId,
-                label: node.label,
-                description: node.description || '',
-                route: node.route,
-                icon: node.icon || null,
-            })
-        }
-        if (node.submenu?.length) node.submenu.forEach((c) => walk(c, catId || node.id))
-    }
-    settingsMenuTree.forEach((c) => walk(c, c.id))
-    return out
-})
+const searchResults = ref([])
+const loading = ref(false)
 
 // ── Static quick links ────────────────────────────────────────────
 const quickLinks = [
@@ -63,62 +51,32 @@ const quickLinks = [
     { label: 'Pengaturan', route: 'settings.index', icon: 'settings', description: 'Semua pengaturan' },
 ]
 
-const getTransLabel = (item) => {
-    if (item.category === 'Navigasi') {
-        const map = {
-            'dashboard': 'nav.home',
-            'wallets.index': 'nav.asset',
-            'transactions.index': 'nav.record',
-            'analytics.index': 'nav.analytics',
-            'chat.index': 'nav.telegram',
-            'settings.index': 'nav.settings',
-        }
-        return map[item.route] ? t(map[item.route]) : item.label
-    } else {
-        const key = `settings.${item.catId}.${item.id}.title`
-        const val = t(key)
-        return val !== key ? val : item.label
-    }
-}
-
-const getTransDesc = (item) => {
-    if (item.category === 'Navigasi') {
-        const map = {
-            'dashboard': 'nav.homeDesc',
-            'wallets.index': 'nav.assetDesc',
-            'transactions.index': 'nav.recordDesc',
-            'analytics.index': 'nav.analyticsDesc',
-            'chat.index': 'nav.chatDesc',
-            'settings.index': 'nav.settingsDesc',
-        }
-        return map[item.route] && t(map[item.route]) !== map[item.route] ? t(map[item.route]) : item.description
-    } else {
-        const key = `settings.${item.catId}.${item.id}.description`
-        const val = t(key)
-        return val !== key ? val : item.description
-    }
-}
-
-// ── Search results ────────────────────────────────────────────────
-const searchResults = computed(() => {
-    const q = query.value.trim().toLowerCase()
-    if (!q) return []
-
-    const allItems = [
-        ...quickLinks.map((l) => ({ ...l, category: 'Navigasi' })),
-        ...flatMenu.value.map((m) => ({ ...m, category: 'Pengaturan' })),
-    ]
-
-    return allItems.filter(
-        (item) =>
-            getTransLabel(item).toLowerCase().includes(q) ||
-            getTransDesc(item).toLowerCase().includes(q)
-    ).slice(0, 10)
+const suggestions = computed(() => {
+    return query.value.trim() ? (searchResults.value.length ? searchResults.value : []) : quickLinks
 })
 
-// Suggestions when no query
-const suggestions = computed(() => {
-    return query.value.trim() ? searchResults.value : quickLinks
+// ── Debounced API search ───────────────────────────────────────────
+let searchTimer = null
+
+watch(query, (val) => {
+    selectedIndex.value = -1
+    if (!val.trim()) {
+        searchResults.value = []
+        loading.value = false
+        return
+    }
+    loading.value = true
+    clearTimeout(searchTimer)
+    searchTimer = setTimeout(async () => {
+        try {
+            const res = await axios.get(route('search.global'), { params: { q: val.trim() } })
+            searchResults.value = res.data.results || []
+        } catch {
+            searchResults.value = []
+        } finally {
+            loading.value = false
+        }
+    }, 250)
 })
 
 // ── Keyboard navigation ───────────────────────────────────────────
@@ -145,8 +103,13 @@ const handleKeydown = (e) => {
 // ── Navigate ──────────────────────────────────────────────────────
 const navigate = (item) => {
     if (!item?.route) return
+    close()
+    // For transactions, go to search page instead of edit
+    if (item.type === 'Transaksi' && query.value.trim()) {
+        router.visit(route('search.page', { q: query.value.trim() }))
+        return
+    }
     try {
-        close()
         router.visit(route(item.route))
     } catch {
         window.location.href = '/dashboard'
@@ -186,9 +149,21 @@ const iconMap = {
     chat: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z',
     settings: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z',
     search: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0',
+    folder: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z',
 }
 
 const getIconPath = (icon) => iconMap[icon] || iconMap.search
+
+const typeColors = {
+    Wallet: 'text-blue-400 bg-blue-500/10',
+    Kategori: 'text-emerald-400 bg-emerald-500/10',
+    Transaksi: 'text-purple-400 bg-purple-500/10',
+}
+const typeBadgeColors = {
+    Wallet: 'text-blue-500',
+    Kategori: 'text-emerald-500',
+    Transaksi: 'text-purple-500',
+}
 </script>
 
 <template>
@@ -270,13 +245,13 @@ const getIconPath = (icon) => iconMap[icon] || iconMap.search
                         enter-to-class="opacity-100 translate-y-0"
                     >
                         <div
-                            v-if="suggestions.length"
+                            v-if="suggestions.length || query.trim()"
                             class="mt-2 bg-gray-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl shadow-black/60"
                         >
                             <!-- Section label -->
                             <div class="px-4 pt-3 pb-1">
                                 <p class="text-2xs font-bold text-gray-500 uppercase tracking-widest">
-                                    {{ query.trim() ? t('search.results') : t('search.shortcuts') }}
+                                    {{ query.trim() ? (loading ? 'Mencari...' : searchResults.length + ' hasil') : t('search.shortcuts') }}
                                 </p>
                             </div>
 
@@ -299,11 +274,11 @@ const getIconPath = (icon) => iconMap[icon] || iconMap.search
                                         <!-- Icon -->
                                         <span
                                             class="shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-colors"
-                                            :class="selectedIndex === idx ? 'bg-purple-600/30' : 'bg-white/5'"
+                                            :class="selectedIndex === idx ? 'bg-purple-600/30' : (typeColors[item.type] || 'bg-white/5')"
                                         >
                                             <svg
-                                                class="w-4 h-4 text-gray-400"
-                                                :class="selectedIndex === idx ? 'text-purple-400' : ''"
+                                                class="w-4 h-4"
+                                                :class="selectedIndex === idx ? 'text-purple-400' : (item.type ? (typeColors[item.type]?.split(' ')[0] || 'text-gray-400') : 'text-gray-400')"
                                                 fill="none"
                                                 viewBox="0 0 24 24"
                                                 stroke="currentColor"
@@ -318,19 +293,20 @@ const getIconPath = (icon) => iconMap[icon] || iconMap.search
                                         <div class="flex-1 min-w-0">
                                             <p class="text-sm font-semibold text-gray-200 truncate group-hover:text-white transition-colors"
                                                :class="selectedIndex === idx ? 'text-white' : ''">
-                                                {{ getTransLabel(item) }}
+                                                {{ item.label }}
                                             </p>
                                             <p v-if="item.description" class="text-2xs text-gray-500 truncate mt-0.5">
-                                                {{ getTransDesc(item) }}
+                                                {{ item.description }}
                                             </p>
                                         </div>
 
-                                        <!-- Category badge (only when searching) -->
+                                        <!-- Type badge (only when searching) -->
                                         <span
-                                            v-if="query.trim() && item.category"
-                                            class="shrink-0 text-2xs text-gray-600 font-semibold"
+                                            v-if="query.trim() && item.type"
+                                            class="shrink-0 text-2xs font-semibold"
+                                            :class="typeBadgeColors[item.type] || 'text-gray-600'"
                                         >
-                                            {{ item.category === 'Navigasi' ? t('search.navigation') : t('search.settings') }}
+                                            {{ item.type }}
                                         </span>
 
                                         <!-- Arrow -->
@@ -349,25 +325,28 @@ const getIconPath = (icon) => iconMap[icon] || iconMap.search
                                 </li>
                             </ul>
 
+                            <!-- Loading -->
+                            <div v-if="query.trim() && loading" class="px-4 py-6 text-center">
+                                <svg class="w-5 h-5 text-purple-400 animate-spin mx-auto" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                </svg>
+                            </div>
+
                             <!-- No results -->
-                            <div v-if="query.trim() && searchResults.length === 0" class="px-4 py-6 text-center">
+                            <div v-if="query.trim() && !loading && searchResults.length === 0" class="px-4 py-6 text-center">
                                 <p class="text-sm text-gray-500">{{ t('search.noResults') }} "<span class="text-gray-300">{{ query }}</span>"</p>
                             </div>
 
-                            <!-- Footer hint -->
-                            <div class="px-4 py-2 border-t border-white/5 flex items-center gap-4">
-                                <div class="flex items-center gap-1.5 text-gray-600 text-2xs">
-                                    <kbd class="px-1.5 py-0.5 rounded bg-gray-800 border border-white/10 font-mono">↑↓</kbd>
-                                    <span>{{ t('search.hints.navigate') }}</span>
-                                </div>
-                                <div class="flex items-center gap-1.5 text-gray-600 text-2xs">
-                                    <kbd class="px-1.5 py-0.5 rounded bg-gray-800 border border-white/10 font-mono">↵</kbd>
-                                    <span>{{ t('search.hints.select') }}</span>
-                                </div>
-                                <div class="flex items-center gap-1.5 text-gray-600 text-2xs ml-auto">
-                                    <kbd class="px-1.5 py-0.5 rounded bg-gray-800 border border-white/10 font-mono">ESC</kbd>
-                                    <span>{{ t('search.hints.close') }}</span>
-                                </div>
+                            <!-- Footer -->
+                            <div v-if="query.trim()" class="px-4 py-3 border-t border-white/5 flex justify-center">
+                                <button @click="goToSearchPage"
+                                    class="flex items-center gap-1.5 text-2xs text-purple-400 hover:text-purple-300 font-bold uppercase tracking-widest transition-colors">
+                                    Lihat semua hasil
+                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </button>
                             </div>
                         </div>
                     </Transition>

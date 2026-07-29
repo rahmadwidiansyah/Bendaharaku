@@ -1,12 +1,10 @@
 <script setup>
-import DateModal from '@/Components/DateModal.vue'
 import TransactionDetailModal from '@/Components/TransactionDetailModal.vue'
-import Badge from '@/Components/Badge.vue'
 import InsightBanner from '@/Pages/Dashboard/InsightBanner.vue'
 import PortfolioCard from '@/Pages/Dashboard/PortfolioCard.vue'
 import UpcomingDebts from '@/Pages/Dashboard/UpcomingDebts.vue'
-import { Head, Link, router } from '@inertiajs/vue3'
-import { ref, computed, watch, onUnmounted } from 'vue'
+import { Head, router } from '@inertiajs/vue3'
+import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { useBalanceVisibility } from '@/Composables/useBalanceVisibility'
@@ -31,22 +29,17 @@ const TYPE_NAME_KEYS = {
 	Receivable: 'types.receivable',
 }
 
-const TYPE_VARIANT_MAP = {
-	Income: 'income',
-	Expense: 'expense',
-	Transfer: 'transfer',
-	Debt: 'debt',
-	Receivable: 'receivable',
-}
-
 const props = defineProps({
 	totalPortfolio: Number,
 	totalLiquid: Number,
 	totalInvest: Number,
+	totalHutang: Number,
+	totalPiutang: Number,
 	thisMonthIncome: Number,
 	thisMonthExpense: Number,
 	transactions: Object,
 	pinnedWallets: Array,
+	wallets: Array,
 	startDate: String,
 	endDate: String,
 	filters: Object,
@@ -62,8 +55,7 @@ const openModal = (trx) => {
 	showModal.value = true
 }
 
-// ─── Search + filter ──────────────────────────────────────────────
-const search = ref(props.filters?.search || '')
+// ─── Filter type ──────────────────────────────────────────────────
 const type = ref(props.filters?.type || '')
 const showSortModal = ref(false)
 
@@ -72,21 +64,12 @@ const setType = (newType) => {
 	showSortModal.value = false
 }
 
-let searchTimeout = null
-watch([search, type], () => {
-	clearTimeout(searchTimeout)
-	searchTimeout = setTimeout(() => {
-		router.get(
-			route('dashboard'),
-			{ search: search.value, type: type.value, start_date: props.startDate, end_date: props.endDate },
-			{ preserveState: true, replace: true },
-		)
-	}, 300)
-})
-
-// Bersihkan timer kalau komponen di-unmount sebelum debounce selesai
-onUnmounted(() => {
-	clearTimeout(searchTimeout)
+watch(type, () => {
+	router.get(
+		route('dashboard'),
+		{ type: type.value, start_date: props.startDate, end_date: props.endDate },
+		{ preserveState: true, replace: true },
+	)
 })
 
 // ─── History tabs ─────────────────────────────────────────────────
@@ -142,7 +125,7 @@ const {
 	onNavigate: (startDate, endDate) => {
 		router.get(
 			route('dashboard'),
-			{ search: search.value, type: type.value, start_date: startDate, end_date: endDate },
+			{ type: type.value, start_date: startDate, end_date: endDate },
 			{ preserveState: true, replace: true },
 		)
 	},
@@ -175,8 +158,17 @@ const formattedPeriod = computed(() => {
 // ─── Type helpers ─────────────────────────────────────────────────
 const getTypeName = (typeName) => t(TYPE_NAME_KEYS[typeName] ?? 'types.other')
 
-// Badge variant map
-const typeVariant = (typeName) => TYPE_VARIANT_MAP[typeName] ?? 'neutral'
+const masked = (v) => isBalanceVisible.value ? formatNumber(v) : '••••••••'
+
+const getWalletName = (trx) => {
+	const typeName = trx.type?.name
+	if (typeName === 'Transfer') {
+		return [trx.source_wallet?.name, trx.destination_wallet?.name].filter(Boolean).join(' → ')
+	}
+	const isIncomeLike = typeName === 'Income'
+		|| (['Debt', 'Receivable'].includes(typeName) && trx.source_wallet?.group_type === 'System')
+	return isIncomeLike ? (trx.destination_wallet?.name || '') : (trx.source_wallet?.name || '')
+}
 
 // ─── Calendar day names (reactive to locale) ──────────────────────
 const calendarDayNames = computed(() => [
@@ -206,55 +198,15 @@ const calendarDayNames = computed(() => [
 				<!-- left asset cards -->
 				<div :class="isDesktopLayout ? 'lg:w-1/3 lg:sticky lg:top-5' : ''">
 					<!-- Total Kekayaan Card -->
-					<PortfolioCard :total-portfolio="totalPortfolio" :total-liquid="totalLiquid"
-						:total-invest="totalInvest" :is-visible="isBalanceVisible"
+					<PortfolioCard :total-portfolio="totalPortfolio" :is-visible="isBalanceVisible"
+						:wallets="wallets" :total-hutang="totalHutang" :total-piutang="totalPiutang"
 						@toggle-visibility="toggleVisibility" />
-					<!-- PINNED WALLETS -->
-					<div v-if="pinnedWallets && pinnedWallets.length > 0"
-						class="mb-3 sm:mb-5 animate-fade-in-up delay-200">
-						<div class="flex justify-between items-center mb-2 sm:mb-3 px-1 gap-2 sm:gap-3">
-							<h2
-								class="text-2xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-								<svg class="w-3 h-3 text-purple-400" fill="none" viewBox="0 0 24 24"
-									stroke="currentColor" stroke-width="2.5">
-									<path stroke-linecap="round" stroke-linejoin="round"
-										d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-								</svg>
-								{{ $t('dashboard.mainWallets') }}
-							</h2>
-							<div class="flex-1 h-px bg-linear-to-r from-purple-500/20 to-transparent"></div>
-						</div>
-						<div class="grid grid-cols-2 gap-2 sm:gap-3">
-							<Link v-for="wallet in pinnedWallets" :key="wallet.id"
-								:href="route('wallets.show', wallet.id)"
-								class="bg-linear-to-br from-gray-900 to-gray-800 p-2.5 sm:p-3.5 rounded-lg sm:rounded-xl border border-white/10 relative overflow-hidden active:scale-95 transition-transform group hover:border-purple-400/50">
-
-								<!-- BAGIAN HEADER (Icon & Nama) -->
-								<div class="flex justify-between items-start mb-1.5 sm:mb-2">
-									<div class="flex items-center gap-2 truncate">
-										<AppIcon :icon="wallet.icon" fallback="wallet"
-											class="w-5 h-5 text-purple-400 shrink-0" />
-										<h3 class="text-2xs font-bold text-gray-400 uppercase tracking-widest truncate">
-											{{ wallet.name }}
-										</h3>
-									</div>
-								</div>
-
-								<!-- BAGIAN BALANCE -->
-								<p class="text-sm font-bold tracking-tight truncate"
-                                    :class="parseFloat(wallet.balance) < 0 ? 'text-red-400' : 'text-white'">
-									<span class="text-2xs text-gray-500 mr-1">Rp</span>{{ isBalanceVisible ?
-										formatNumber(wallet.balance) : '••••' }}
-								</p>
-							</Link>
-						</div>
-					</div>
 					<!-- MINI CASHFLOW -->
 					<div class="grid grid-cols-2 gap-2 sm:gap-3 mb-5 sm:mb-10 animate-fade-in-up delay-200">
 						<div
-							class="bg-linear-to-br from-green-950/20 to-gray-800 border border-green-900/30 rounded-lg sm:rounded-xl p-2.5 sm:p-4 flex items-center gap-2.5 sm:gap-3 relative overflow-hidden group">
+							class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-lg sm:rounded-xl p-2.5 sm:p-4 flex items-center gap-2.5 sm:gap-3 relative overflow-hidden group">
 							<div
-								class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 shrink-0">
+								class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/5 flex items-center justify-center text-green-400/70 shrink-0">
 								<svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24"
 									stroke="currentColor" stroke-width="2.5">
 									<path stroke-linecap="round" stroke-linejoin="round"
@@ -265,15 +217,15 @@ const calendarDayNames = computed(() => [
 								<p class="text-2xs text-gray-500 font-bold uppercase tracking-widest">{{
 									$t('dashboard.income') }}</p>
 								<p class="text-xs sm:text-sm font-bold text-white tracking-tight mt-0.5 truncate">
-									<span class="text-2xs text-gray-500 mr-1">Rp</span><span class="text-green-400">{{
+									<span class="text-2xs text-gray-500 mr-1">Rp</span><span class="text-green-400/80">{{
 										isBalanceVisible ? formatNumber(thisMonthIncome) : '••••' }}</span>
 								</p>
 							</div>
 						</div>
 						<div
-							class="bg-linear-to-br from-red-950/20 to-gray-800 border border-red-900/30 rounded-lg sm:rounded-xl p-2.5 sm:p-4 flex items-center gap-2.5 sm:gap-3 relative overflow-hidden group">
+							class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-lg sm:rounded-xl p-2.5 sm:p-4 flex items-center gap-2.5 sm:gap-3 relative overflow-hidden group">
 							<div
-								class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-red-500/20 flex items-center justify-center text-red-400 shrink-0">
+								class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/5 flex items-center justify-center text-red-400/70 shrink-0">
 								<svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24"
 									stroke="currentColor" stroke-width="2.5">
 									<path stroke-linecap="round" stroke-linejoin="round"
@@ -284,7 +236,7 @@ const calendarDayNames = computed(() => [
 								<p class="text-2xs text-gray-500 font-bold uppercase tracking-widest">{{
 									$t('dashboard.expense') }}</p>
 								<p class="text-xs sm:text-sm font-bold text-white tracking-tight mt-0.5 truncate">
-									<span class="text-2xs text-gray-500 mr-1">Rp</span><span class="text-red-400">{{
+									<span class="text-2xs text-gray-500 mr-1">Rp</span><span class="text-red-400/80">{{
 										isBalanceVisible ? formatNumber(thisMonthExpense) : '••••' }}</span>
 								</p>
 							</div>
@@ -321,21 +273,6 @@ const calendarDayNames = computed(() => [
 							</button>
 						</div>
 					</div>
-					<!-- Search -->
-					<div class="flex gap-2 mb-3 sm:mb-6 animate-fade-in-up delay-500">
-						<div class="relative flex-1">
-							<input type="text" v-model="search" :placeholder="$t('dashboard.searchPlaceholder')"
-								class="w-full bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 text-white rounded-lg sm:rounded-xl p-2.5 sm:p-3.5 pl-10 sm:pl-11 text-2xs focus:ring-1 focus:ring-purple-500 transition-colors" />
-							<svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2"
-								fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-								<path stroke-linecap="round" stroke-linejoin="round"
-									d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-							</svg>
-						</div>
-						<!-- Date Filter -->
-						<DateModal :action="route('dashboard')" :start-date="startDate" :end-date="endDate" />
-					</div>
-
 					<!-- Month Navigation & Filter Type-->
 					<div class="flex justify-between items-center mb-2 sm:mb-4 animate-fade-in-up delay-500">
 						<div class="flex items-center gap-2 sm:gap-3">
@@ -483,9 +420,9 @@ const calendarDayNames = computed(() => [
 								</h3>
 								<div class="text-2xs font-bold flex gap-2.5 tracking-wide">
 									<span v-if="group.income > 0" class="text-green-400/90">+{{
-										formatNumber(group.income) }}</span>
+										masked(group.income) }}</span>
 									<span v-if="group.expense > 0" class="text-red-400/90">-{{
-										formatNumber(group.expense) }}</span>
+										masked(group.expense) }}</span>
 								</div>
 							</div>
 
@@ -522,17 +459,10 @@ const calendarDayNames = computed(() => [
 															{{ t('transaction.draft') }}
 														</span>
 													</div>
-													<div class="flex items-center gap-1.5 min-w-0">
+													<div class="min-w-0">
 														<span
 															class="text-gray-400 text-2xs tracking-wide font-bold whitespace-nowrap truncate">{{
-																trx.source_wallet?.name }}</span>
-														<svg class="w-2.5 h-2.5 text-purple-500 shrink-0" fill="none"
-															viewBox="0 0 24 24" stroke="currentColor" stroke-width="4">
-															<path d="M13 7l5 5m0 0l-5 5m5-5H6" />
-														</svg>
-														<span
-															class="text-gray-400 text-2xs tracking-wide font-bold whitespace-nowrap truncate">{{
-																trx.destination_wallet?.name }}</span>
+																getWalletName(trx) }}</span>
 													</div>
 												</div>
 
@@ -552,15 +482,12 @@ const calendarDayNames = computed(() => [
 																	'Receivable'].includes(trx.type.name)
 																	? ''
 														: '-'
-														}}{{ formatNumber(trx.amount) }}
+														}}{{ isBalanceVisible ? formatNumber(trx.amount) : '••••' }}
 													</p>
 													<div class="flex items-center justify-end gap-1.5 mt-1">
 														<span class="text-xs text-gray-600 font-medium italic">
 															{{ trx.time }}
 														</span>
-														<Badge :variant="typeVariant(trx.type.name)" size="sm">
-															{{ getTypeName(trx.type.name) }}
-														</Badge>
 													</div>
 												</div>
 											</div>

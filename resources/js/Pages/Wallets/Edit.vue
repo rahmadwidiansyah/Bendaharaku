@@ -18,7 +18,7 @@ const form = useForm({
     icon: props.wallet.icon || 'wallet',
     icon_file: null,
     keyword: props.wallet.keyword || '',
-    is_pinned: !!props.wallet.is_pinned,
+
     _method: 'PUT'
 });
 
@@ -99,21 +99,7 @@ const confirmDeleteWallet = () => {
                     <div v-if="form.errors.keyword" class="text-red-500 text-2xs mt-1">{{ form.errors.keyword }}</div>
                 </div>
 
-                <div class="flex items-center justify-between bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 rounded-xl p-3 lg:p-4 animate-slide-up opacity-0 relative z-35"
-                    style="animation-delay: 275ms;">
-                    <div>
-                        <label class="block text-2xs lg:text-sm font-medium text-gray-300">{{ t('wallet.pinDashboard') }}</label>
-                        <p class="text-2xs text-gray-500 mt-0.5">{{ t('wallet.pinDashboardDesc') }}</p>
-                    </div>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" v-model="form.is_pinned" class="sr-only peer">
-                        <div
-                            class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500">
-                        </div>
-                    </label>
-                </div>
-
-                <div class="pt-3 lg:pt-4 space-y-3 animate-slide-up opacity-0 relative z-30" style="animation-delay: 300ms;">
+                <div class="pt-3 lg:pt-4 space-y-3 animate-slide-up opacity-0 relative z-30" style="animation-delay: 275ms;">
                     <button type="submit" :disabled="form.processing"
                         class="w-full bg-linear-to-br from-purple-800 to-purple-600 text-white font-bold text-sm tracking-wide py-3.5 lg:py-4 rounded-xl hover:-translate-y-0.5 active:scale-95 transition-all duration-200">
                         {{ form.processing ? t('btn.saving') : t('btn.update') }}

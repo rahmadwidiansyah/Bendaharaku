@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Traits\CalculatesDebtAndReceivable;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -11,6 +12,7 @@ use Inertia\Response;
 
 class DashboardController extends Controller
 {
+    use CalculatesDebtAndReceivable;
     // Constant mapping untuk menghindari query `whereHas` berulang kali
     private const TYPE_INCOME = 1;
     private const TYPE_EXPENSE = 2;
@@ -51,6 +53,7 @@ class DashboardController extends Controller
         $cashflowStats = DB::table('transaction_logs')
             ->where('user_id', $userId)
             ->where('is_cleared', true)
+            ->whereNull('deleted_at')
             ->whereBetween('date', [$startOfMonth, $endOfMonth])
             ->whereIn('type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE])
             ->selectRaw("
@@ -88,6 +91,13 @@ class DashboardController extends Controller
         }
 
         $pinnedWallets = $pinnedWallets->take(4);
+
+        // Semua wallets untuk dropdown di PortfolioCard
+        $wallets = $user->wallets()
+            ->select(['id', 'name', 'icon', 'balance', 'group_type', 'is_pinned'])
+            ->where('group_type', '!=', 'System')
+            ->orderBy('id')
+            ->get();
 
         // 4. HISTORI TRANSAKSI
         $startDate = $request->input('start_date', $startOfMonth);
@@ -314,13 +324,14 @@ class DashboardController extends Controller
                 ->join('categories', 'transaction_logs.category_id', '=', 'categories.id')
                 ->where('transaction_logs.user_id', $userId)
                 ->where('transaction_logs.is_cleared', true)
+                ->whereNull('transaction_logs.deleted_at')
                 ->whereIn('transaction_logs.subject', array_unique($subjectsToQuery))
                 ->select('transaction_logs.subject')
                 ->selectRaw("
-                    SUM(CASE WHEN categories.category_name = 'Dapat Hutangan' THEN amount ELSE 0 END) as debt_borrowed,
-                    SUM(CASE WHEN categories.category_name = 'Bayar Cicilan Hutang' THEN amount ELSE 0 END) as debt_paid,
-                    SUM(CASE WHEN categories.category_name = 'Ngasih Piutang' THEN amount ELSE 0 END) as rec_borrowed,
-                    SUM(CASE WHEN categories.category_name = 'Terima Bayar Piutang' THEN amount ELSE 0 END) as rec_paid
+                    SUM(CASE WHEN categories.system_key = 'LOAN' THEN amount ELSE 0 END) as debt_borrowed,
+                    SUM(CASE WHEN categories.system_key = 'DEBT_PAYMENT' THEN amount ELSE 0 END) as debt_paid,
+                    SUM(CASE WHEN categories.system_key = 'RECEIVABLE' THEN amount ELSE 0 END) as rec_borrowed,
+                    SUM(CASE WHEN categories.system_key = 'RECEIVABLE_PAYMENT' THEN amount ELSE 0 END) as rec_paid
                 ")
                 ->groupBy('transaction_logs.subject')
                 ->get();
@@ -360,19 +371,24 @@ class DashboardController extends Controller
             return $a['days_until'] <=> $b['days_until'];
         });
 
+        $balances = $this->calculateAllBalances();
+
         return Inertia::render('Dashboard', [
             'totalPortfolio' => (int) $walletStats->total_portfolio,
             'totalLiquid' => (int) $walletStats->total_liquid,
             'totalInvest' => (int) $walletStats->total_invest,
+            'totalHutang' => $balances['total_debt'],
+            'totalPiutang' => $balances['total_receivable'],
             'thisMonthIncome' => (int) $cashflowStats->total_income,
             'thisMonthExpense' => (int) $cashflowStats->total_expense,
             'pinnedWallets' => $pinnedWallets,
+            'wallets' => $wallets,
             'transactions' => [
                 'data' => $transactions,
             ],
             'startDate' => $startDate,
             'endDate' => $endDate,
-            'filters' => $request->only(['search', 'type']),
+            'filters' => $request->only(['type']),
             'upcomingDebts' => $upcomingDebts,
         ]);
     }
