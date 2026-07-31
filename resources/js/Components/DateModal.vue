@@ -123,7 +123,7 @@ const isFiltered = computed(() => {
     <BaseModal
         :show="showModal"
         :title="t('common.dateRange')"
-        max-width="sm"
+        max-width="adaptive"
         @close="showModal = false"
     >
         <form @submit.prevent="submit" class="space-y-5">
@@ -218,7 +218,7 @@ const isFiltered = computed(() => {
             <button
                 type="submit"
                 :disabled="form.processing || isInvalidRange"
-                class="w-full bg-gradient-to-br from-purple-800 to-purple-500 text-white font-black text-2xs uppercase py-3.5 rounded-xl active:scale-95 transition-all shadow-lg shadow-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 flex items-center justify-center gap-2"
+                class="w-full bg-gradient-to-br from-brand-deep to-brand-soft text-white font-black text-2xs uppercase py-3.5 rounded-xl active:scale-95 transition-all shadow-lg shadow-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 flex items-center justify-center gap-2"
             >
                 <svg
                     v-if="form.processing"

@@ -44,11 +44,11 @@ const apiId = computed(() => {
 })
 
 const typeConfig = computed(() => ({
-    income:   { label: t('types.income'),      icon: '↑', color: 'text-emerald-400', bg: 'bg-emerald-500/8',  border: 'border-emerald-500/15', badge: 'bg-emerald-500/12 text-emerald-300 border-emerald-500/20' },
-    expense:  { label: t('types.expense'),     icon: '↓', color: 'text-red-400',     bg: 'bg-red-500/8',      border: 'border-red-500/15',     badge: 'bg-red-500/12 text-red-300 border-red-500/20' },
-    transfer: { label: t('types.transfer'),    icon: '⇄', color: 'text-blue-400',    bg: 'bg-blue-500/8',     border: 'border-blue-500/15',    badge: 'bg-blue-500/12 text-blue-300 border-blue-500/20' },
-    debt:     { label: t('types.debt'),        icon: '🤝', color: 'text-amber-400',  bg: 'bg-amber-500/8',    border: 'border-amber-500/15',   badge: 'bg-amber-500/12 text-amber-300 border-amber-500/20' },
-    receivable: { label: t('types.receivable'), icon: '🤝', color: 'text-purple-400', bg: 'bg-purple-500/8',   border: 'border-purple-500/15',  badge: 'bg-purple-500/12 text-purple-300 border-purple-500/20' },
+    income:   { label: t('types.income'),      icon: '↑', color: 'text-income-text', bg: 'bg-income-bg',      border: 'border-income-border',    badge: 'bg-income-bg text-income-text border-income-border' },
+    expense:  { label: t('types.expense'),     icon: '↓', color: 'text-expense-text', bg: 'bg-expense-bg',    border: 'border-expense-border',   badge: 'bg-expense-bg text-expense-text border-expense-border' },
+    transfer: { label: t('types.transfer'),    icon: '⇄', color: 'text-transfer-text', bg: 'bg-transfer-bg',  border: 'border-transfer-border',  badge: 'bg-transfer-bg text-transfer-text border-transfer-border' },
+    debt:     { label: t('types.debt'),        icon: '🤝', color: 'text-debt-text',   bg: 'bg-debt-bg',        border: 'border-debt-border',      badge: 'bg-debt-bg text-debt-text border-debt-border' },
+    receivable: { label: t('types.receivable'), icon: '🤝', color: 'text-receivable-text', bg: 'bg-receivable-bg', border: 'border-receivable-border', badge: 'bg-receivable-bg text-receivable-text border-receivable-border' },
     other:    { label: t('transaction.title'), icon: '•', color: 'text-gray-400',    bg: 'bg-gray-500/8',     border: 'border-gray-500/15',    badge: 'bg-gray-500/12 text-gray-400 border-gray-500/20' },
 }[localTrx.value.type_key ?? 'other'] ?? { label: t('transaction.title'), icon: '•', color: 'text-gray-400', bg: 'bg-gray-500/8', border: 'border-gray-500/15', badge: 'bg-gray-500/12 text-gray-400 border-gray-500/20' }))
 
@@ -190,8 +190,8 @@ onMounted(checkStatus)
                 localTrx.is_cancelled
                     ? 'text-gray-400 bg-gray-500/10 border-gray-500/20'
                     : localTrx.is_cleared
-                    ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
-                    : 'text-amber-400 bg-amber-500/10 border-amber-500/20'
+                    ? 'text-income-text bg-income-bg border-income-border'
+                    : 'text-debt-text bg-debt-bg border-debt-border'
             ]">{{ localTrx.is_cancelled ? `× ${t('transaction.cancelled')}` : (localTrx.is_cleared ? `● ${t('common.success')}` : `◐ ${t('transaction.draft')}`) }}</span>
         </div>
 

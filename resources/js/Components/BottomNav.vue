@@ -61,7 +61,7 @@ defineEmits(['toggle'])
             'fixed z-50 transition-all duration-300',
             isDesktopLayout
                 ? 'lg:bottom-auto lg:top-0 lg:left-0 lg:translate-x-0 lg:h-screen lg:border-t-0 lg:border-r lg:rounded-none lg:bg-gray-800 lg:flex lg:flex-col lg:justify-start'
-                : 'bottom-[calc(0.75rem+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm bg-gray-800/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.85)]',
+                : 'bottom-[calc(0.75rem+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] sm:max-w-lg md:max-w-2xl bg-gray-800/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.85)]',
             isDesktopLayout && isSidebarOpen ? 'lg:w-64' : (isDesktopLayout ? 'lg:w-20' : ''),
         ]"
         style="overflow: visible;"
@@ -72,7 +72,7 @@ defineEmits(['toggle'])
         <!-- ── Brand Area (Desktop Sidebar Only) ── -->
         <div :class="['items-center mb-6 pt-5 px-4', isDesktopLayout ? 'hidden lg:flex' : 'hidden']">
             <!-- Logo icon — selalu tampil -->
-            <div class="w-9 h-9 shrink-0 bg-gradient-to-br from-purple-800 to-purple-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/30">
+            <div class="w-9 h-9 shrink-0 bg-gradient-to-br from-brand-deep to-brand-soft rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/30">
                 <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -105,7 +105,7 @@ defineEmits(['toggle'])
         <div :class="['w-full mb-4 flex-col gap-2 px-4', isDesktopLayout ? 'hidden lg:flex' : 'hidden']">
             <Link
                 :href="route('transactions.create')"
-                class="flex items-center justify-center lg:justify-start gap-2 w-full px-3 py-3 rounded-xl text-white bg-gradient-to-br from-purple-800 to-purple-500 shadow-lg shadow-purple-500/20 active:scale-95 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300"
+                class="flex items-center justify-center lg:justify-start gap-2 w-full px-3 py-3 rounded-xl text-white bg-gradient-to-br from-brand-deep to-brand-soft shadow-lg shadow-purple-500/20 active:scale-95 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300"
                 :aria-label="$t('nav.record')"
             >
                 <svg class="w-6 h-6 shrink-0 transition-transform group-hover:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3" aria-hidden="true">

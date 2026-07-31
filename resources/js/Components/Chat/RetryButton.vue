@@ -15,7 +15,7 @@ const emit = defineEmits(['retry', 'delete'])
         <button
             type="button"
             @click="emit('retry')"
-            class="flex items-center gap-1 px-2 py-1 rounded-lg text-2xs font-semibold text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 transition-colors"
+            class="flex items-center gap-1 px-2 py-1 rounded-lg text-2xs font-semibold text-debt-text hover:text-debt-text hover:bg-debt-bg-hover transition-colors"
             :aria-label="t('chat.retryEvidence')"
         >
             <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -26,7 +26,7 @@ const emit = defineEmits(['retry', 'delete'])
         <button
             type="button"
             @click="emit('delete')"
-            class="flex items-center gap-1 px-2 py-1 rounded-lg text-2xs font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+            class="flex items-center gap-1 px-2 py-1 rounded-lg text-2xs font-semibold text-expense-text hover:text-expense-text hover:bg-expense-bg-hover transition-colors"
             :aria-label="t('chat.removeEvidence')"
         >
             <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">

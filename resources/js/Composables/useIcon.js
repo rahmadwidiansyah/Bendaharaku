@@ -54,11 +54,11 @@ export const kebabToPascal = (str) => {
 };
 
 export const CATEGORY_ICON_COLORS = {
-    Income: 'text-emerald-400',
-    Expense: 'text-red-400',
-    Transfer: 'text-blue-400',
-    Debt: 'text-amber-400',
-    Receivable: 'text-fuchsia-400',
+    Income: 'text-income-text',
+    Expense: 'text-expense-text',
+    Transfer: 'text-transfer-text',
+    Debt: 'text-debt-text',
+    Receivable: 'text-receivable-text',
 };
 
 export const getCategoryIconColor = (typeName) => {

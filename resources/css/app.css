@@ -2,14 +2,25 @@
 @plugin "@tailwindcss/forms";
 
 /* ═══════════════════════════════════════════════════════════════════
-   BENDAHARAKU DESIGN TOKENS
+   BENDAHARAKU DESIGN TOKENS v2
    Single Source of Truth untuk seluruh visual aplikasi.
    Jangan hardcode nilai warna, spacing, radius, atau shadow di
    komponen manapun. Selalu gunakan token ini.
-═══════════════════════════════════════════════════════════════════ */
+
+   Default = Dark Mode.
+   Light Mode override via `.light` class pada <html>.
+   System preference: useTheme.js resolves 'system' → 'dark'|'light'.
+   ═══════════════════════════════════════════════════════════════════ */
 @theme {
-    /* ── Typography ─────────────────────────────────── */
-    --font-sans: "MesloLGL Nerd Font", sans-serif;
+    /* ── Typography ───────────────────────────────────
+       Font: Inter (premium, professional, money-management grade).
+       Stack: Inter → system-ui → sans-serif.
+       design.md §6.1 specifies MesloLGL Nerd Font but that's a
+       monospace dev font — not suitable for a consumer finance app.
+       Inter is the industry standard for fintech dashboards.
+       ponytail: if user wants monospace aesthetic, swap to JetBrains Mono.
+    ─────────────────────────────────────────────────── */
+    --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
     --text-3xs: 0.5rem;
     --text-3xs--line-height: 0.625rem;
@@ -17,91 +28,477 @@
     --text-2xs: 0.625rem;
     --text-2xs--line-height: 0.75rem;
 
-    /* ── Color: Surface ──────────────────────────────── */
+    /* ── Color: Surface (Dark defaults) ───────────────
+       design.md §3.1: Surface hierarchy
+       Base (deepest) → Raised → Overlay → Muted → Subtle
+    ─────────────────────────────────────────────────── */
     --color-surface-base:    #000000;
     --color-surface-raised:  #111827;
     --color-surface-overlay: #1f2937;
     --color-surface-muted:   #374151;
     --color-surface-subtle:  #1e1e1e;
 
-    /* ── Color: Brand ────────────────────────────────── */
-    --color-brand:        #a855f7;
-    --color-brand-muted:  #7e22ce;
-    --color-brand-subtle: rgba(168, 85, 247, 0.1);
-    --color-brand-border: rgba(168, 85, 247, 0.3);
+    /* ── Color: Brand (Purple — default accent) ──────
+       design.md §3.2: Brand color system
+       Overridden at runtime by useAccentColor.js via <style> injection.
+       These are the fallback defaults.
 
-    /* ── Color: Semantic ─────────────────────────────── */
-    --color-income:          #4ade80;
-    --color-income-muted:    rgba(74, 222, 128, 0.1);
-    --color-income-border:   rgba(74, 222, 128, 0.2);
+       IMPORTANT: --color-purple-{shade} tokens make Tailwind's
+       purple-* utility classes (bg-purple-500, text-purple-400, etc.)
+       reference these CSS variables. useAccentColor.js overrides them
+       at runtime so ALL purple-* utilities across the app respond to
+       accent color changes. 292 usages of purple-* found in codebase.
+    ─────────────────────────────────────────────────── */
+    --color-purple-300: #d8b4fe;
+    --color-purple-400: #c084fc;
+    --color-purple-500: #a855f7;
+    --color-purple-600: #9333ea;
+    --color-purple-700: #7e22ce;
+    --color-purple-800: #6b21a8;
+    --color-purple-900: #581c87;
 
-    --color-expense:         #f87171;
-    --color-expense-muted:   rgba(248, 113, 113, 0.1);
-    --color-expense-border:  rgba(248, 113, 113, 0.2);
+    --color-brand:         #a855f7;
+    --color-brand-hover:   #9333ea;
+    --color-brand-pressed: #7e22ce;
+    --color-brand-muted:   #7e22ce;
+    --color-brand-subtle:  rgba(168, 85, 247, 0.1);
+    --color-brand-border:  rgba(168, 85, 247, 0.3);
 
-    --color-transfer:        #60a5fa;
-    --color-transfer-muted:  rgba(96, 165, 250, 0.1);
-    --color-transfer-border: rgba(96, 165, 250, 0.2);
+    /* ── Color: Gradient stops (dual-mode) ────────────
+       Semantic gradient endpoints used by bg-gradient-* utilities.
+       Dark defaults reference accent (purple-*) so they follow
+       useAccentColor.js overrides; .light remaps them to pale
+       washes of the same hue so gradients fit light surfaces.
+    ─────────────────────────────────────────────────── */
+    --color-brand-deep:     var(--color-purple-800);
+    --color-brand-mid:      var(--color-purple-600);
+    --color-brand-soft:     var(--color-purple-500);
+    --color-brand-tint:     var(--color-purple-400);
+    --color-danger-deep:    var(--color-red-900);
+    --color-danger-mid:     var(--color-red-700);
+    --color-danger-soft:    var(--color-red-500);
+    --color-danger-tint:    var(--color-red-400);
+    --color-success-deep:   var(--color-green-900);
+    --color-success-mid:    var(--color-green-700);
+    --color-success-soft:   var(--color-green-500);
+    --color-success-tint:   var(--color-green-400);
+    --color-warning-deep:   var(--color-amber-700);
+    --color-warning-mid:    var(--color-amber-600);
+    --color-warning-soft:   var(--color-amber-500);
+    --color-warning-tint:   var(--color-amber-400);
+    --color-transfer-deep:  var(--color-blue-800);
+    --color-transfer-mid:   var(--color-blue-700);
+    --color-transfer-soft:  var(--color-blue-600);
+    --color-transfer-tint:  var(--color-blue-400);
 
-    --color-debt:            #facc15;
-    --color-debt-muted:      rgba(250, 204, 21, 0.1);
-    --color-debt-border:     rgba(250, 204, 21, 0.2);
+    /* ── Color: Semantic Financial ────────────────────
+       design.md §3.3: Financial semantic colors
+       Naming: --color-{type}-{element}
+       Types: income, expense, debt, receivable, transfer
+       Elements: text, bg, border, chart, bg-hover
+
+       Custom convention (user requirement):
+         Income    → Green   (pemasukan)
+         Expense   → Red     (pengeluaran)
+         Debt      → Amber   (hutang)
+         Receivable→ Purple  (piutang)
+         Transfer  → Blue    (transfer)
+    ─────────────────────────────────────────────────── */
+
+    /* Income (Green) */
+    --color-income-text:      #4ade80;
+    --color-income-bg:        rgba(74, 222, 128, 0.1);
+    --color-income-border:    rgba(74, 222, 128, 0.2);
+    --color-income-chart:     #4ade80;
+    --color-income-bg-hover:  rgba(74, 222, 128, 0.18);
+
+    /* Expense (Red) */
+    --color-expense-text:     #f87171;
+    --color-expense-bg:       rgba(248, 113, 113, 0.1);
+    --color-expense-border:   rgba(248, 113, 113, 0.2);
+    --color-expense-chart:    #f87171;
+    --color-expense-bg-hover: rgba(248, 113, 113, 0.18);
+
+    /* Transfer (Blue) */
+    --color-transfer-text:     #60a5fa;
+    --color-transfer-bg:       rgba(96, 165, 250, 0.1);
+    --color-transfer-border:   rgba(96, 165, 250, 0.2);
+    --color-transfer-chart:    #60a5fa;
+    --color-transfer-bg-hover: rgba(96, 165, 250, 0.18);
+
+    /* Debt (Amber/Yellow) */
+    --color-debt-text:      #facc15;
+    --color-debt-bg:        rgba(250, 204, 21, 0.1);
+    --color-debt-border:    rgba(250, 204, 21, 0.2);
+    --color-debt-chart:     #facc15;
+    --color-debt-bg-hover:  rgba(250, 204, 21, 0.18);
+
+    /* Receivable (Purple) */
+    --color-receivable-text:      #c084fc;
+    --color-receivable-bg:        rgba(192, 132, 252, 0.1);
+    --color-receivable-border:    rgba(192, 132, 252, 0.2);
+    --color-receivable-chart:     #c084fc;
+    --color-receivable-bg-hover:  rgba(192, 132, 252, 0.18);
+
+    /* ── Legacy aliases (backward-compat) ────────────
+       Existing components may use these shorter names.
+       Keep them as aliases to the new granular tokens.
+    ─────────────────────────────────────────────────── */
+    --color-income:       #4ade80;
+    --color-income-muted: rgba(74, 222, 128, 0.1);
+
+    --color-expense:       #f87171;
+    --color-expense-muted: rgba(248, 113, 113, 0.1);
+
+    --color-transfer:       #60a5fa;
+    --color-transfer-muted: rgba(96, 165, 250, 0.1);
+
+    --color-debt:       #facc15;
+    --color-debt-muted: rgba(250, 204, 21, 0.1);
 
     --color-receivable:       #c084fc;
     --color-receivable-muted: rgba(192, 132, 252, 0.1);
-    --color-receivable-border:rgba(192, 132, 252, 0.2);
 
-    /* ── Color: Text ─────────────────────────────────── */
-    --color-text-primary:  #ffffff;
-    --color-text-secondary:#9ca3af;
-    --color-text-muted:    #6b7280;
-    --color-text-disabled: #4b5563;
+    /* ── Color: Text ───────────────────────────────────
+       design.md §3.4: Text hierarchy
+    ─────────────────────────────────────────────────── */
+    --color-text-primary:   #ffffff;
+    --color-text-secondary: #9ca3af;
+    --color-text-muted:     #6b7280;
+    --color-text-disabled:  #4b5563;
 
-    /* ── Color: Border ───────────────────────────────── */
-    --color-border-default: rgba(255, 255, 255, 0.1);
-    --color-border-subtle:  rgba(255, 255, 255, 0.05);
-    --color-border-strong:  rgba(255, 255, 255, 0.2);
+    /* ── Color: Border ─────────────────────────────────
+       design.md §3.5: Border tokens
+    ─────────────────────────────────────────────────── */
+    --color-border-default:     rgba(255, 255, 255, 0.1);
+    --color-border-subtle:      rgba(255, 255, 255, 0.05);
+    --color-border-strong:      rgba(255, 255, 255, 0.2);
+    --color-border-interactive: var(--color-brand);
 
-    /* ── Radius ──────────────────────────────────────── */
+    /* ── Color: Gray Scale (theme-adaptive) ────────────
+       Dark values = Tailwind v3 gray (what components were
+       designed against). Light values are re-mapped in `.light`.
+       Remapping the palette adapts all gray utilities (194+ usages,
+       e.g. bg-gray-800 and text-gray-400) in both themes
+       without touching components.
+    ─────────────────────────────────────────────────── */
+    --color-gray-50:  #f9fafb;
+    --color-gray-100: #f3f4f6;
+    --color-gray-200: #e5e7eb;
+    --color-gray-300: #d1d5db;
+    --color-gray-400: #9ca3af;
+    --color-gray-500: #6b7280;
+    --color-gray-600: #4b5563;
+    --color-gray-700: #374151;
+    --color-gray-800: #1f2937;
+    --color-gray-900: #111827;
+    --color-gray-950: #030712;
+
+    /* ── Color: Glass (Glassmorphism) ──────────────────
+       design.md §3.6: Glass surfaces
+       Dark: frosted dark glass
+       Light: frosted white glass (NOT transparent — optimized)
+    ─────────────────────────────────────────────────── */
+    --color-glass-bg:     rgba(31, 41, 55, 0.8);
+    --color-glass-border: rgba(255, 255, 255, 0.15);
+
+    /* ── Radius ────────────────────────────────────────
+       design.md §5.2: Border radius scale
+    ─────────────────────────────────────────────────── */
     --radius-sm:   0.375rem;
     --radius-md:   0.5rem;
     --radius-lg:   0.75rem;
     --radius-xl:   1rem;
+    --radius-2xl:  1.5rem;
     --radius-pill: 9999px;
 
-    /* ── Shadow ──────────────────────────────────────── */
-    --shadow-card:  0 4px 24px -4px rgba(0, 0, 0, 0.5);
-    --shadow-modal: 0 8px 40px -8px rgba(0, 0, 0, 0.7);
-    --shadow-nav:   0 -4px 24px -4px rgba(0, 0, 0, 0.4);
-    --shadow-brand: 0 4px 24px -4px rgba(168, 85, 247, 0.25);
+    /* ── Shadow (Dark defaults) ────────────────────────
+       design.md §5.3: Shadow tokens
+       Complete set: sm, card, card-hover, glass, fab, modal, nav, brand
+    ─────────────────────────────────────────────────── */
+    --shadow-sm:         0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow-md:         0 2px 8px -1px rgba(0, 0, 0, 0.35), 0 1px 3px 0 rgba(0, 0, 0, 0.25);
+    --shadow-lg:         0 8px 24px -4px rgba(0, 0, 0, 0.45), 0 2px 8px -2px rgba(0, 0, 0, 0.3);
+    --shadow-card:       0 4px 24px -4px rgba(0, 0, 0, 0.5);
+    --shadow-card-hover: 0 6px 28px -4px rgba(0, 0, 0, 0.6);
+    --shadow-glass:      0 4px 12px 0 rgba(0, 0, 0, 0.4);
+    --shadow-fab:        0 6px 20px -4px rgba(0, 0, 0, 0.5);
+    --shadow-modal:      0 8px 40px -8px rgba(0, 0, 0, 0.7);
+    --shadow-nav:        0 -4px 24px -4px rgba(0, 0, 0, 0.4);
+    --shadow-dropdown:   0 4px 16px -4px rgba(0, 0, 0, 0.5);
+    --shadow-brand:      0 4px 24px -4px rgba(168, 85, 247, 0.25);
 
-    /* ── Motion ──────────────────────────────────────── */
+    /* ── Motion: Duration ──────────────────────────────
+       design.md §9.2: Duration tokens
+       Semantic names (preferred) + numeric names (for animation specs)
+    ─────────────────────────────────────────────────── */
     --duration-fast:   150ms;
     --duration-normal: 250ms;
     --duration-slow:   400ms;
-    --ease-spring:     cubic-bezier(0.34, 1.56, 0.64, 1);
-    --ease-smooth:     cubic-bezier(0.16, 1, 0.3, 1);
-    --ease-standard:   cubic-bezier(0.4, 0, 0.2, 1);
+    --duration-100: 100ms;
+    --duration-150: 150ms;
+    --duration-200: 200ms;
+    --duration-300: 300ms;
+    --duration-400: 400ms;
+    --duration-500: 500ms;
+
+    /* ── Motion: Easing ────────────────────────────────
+       design.md §9.2: Easing tokens
+       All easing curves defined as tokens for cross-reference.
+    ─────────────────────────────────────────────────── */
+    --ease-spring:   cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease-smooth:   cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-in-out:   cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-out:      cubic-bezier(0, 0, 0.2, 1);
+    --ease-in:       cubic-bezier(0.4, 0, 1, 1);
+
+    /* ── Spacing (Semantic Scale) ─────────────────────
+       design.md §6.2: Spacing tokens
+       Consistent naming: --spacing-{size}
+       Maps to Tailwind spacing scale for consistency.
+    ─────────────────────────────────────────────────── */
+    --spacing-xs:  4px;   /* 1   — tight inline gaps */
+    --spacing-sm:  8px;   /* 2   — small padding */
+    --spacing-md:  12px;  /* 3   — default component padding */
+    --spacing-lg:  16px;  /* 4   — card padding */
+    --spacing-xl:  24px;  /* 6   — section gaps */
+    --spacing-2xl: 32px;  /* 8   — major section spacing */
+    --spacing-3xl: 48px;  /* 12  — page-level spacing */
+
+    /* ── Container (Modal & Sheet Widths) ────────────────
+       WAJIB: skala --container-* agar utility max-w-{xs..7xl}
+       memakai nilai standar Tailwind, BUKAN fallback ke
+       --spacing-* (tanpa ini max-w-sm = 8px → modal kolaps
+       jadi garis tipis).
+    ─────────────────────────────────────────────────── */
+    --container-xs:  20rem;  /* 320px */
+    --container-sm:  24rem;  /* 384px */
+    --container-md:  28rem;  /* 448px */
+    --container-lg:  32rem;  /* 512px */
+    --container-xl:  36rem;  /* 576px */
+    --container-2xl: 42rem;  /* 672px */
+    --container-3xl: 48rem;  /* 768px */
+    --container-4xl: 56rem;  /* 896px */
+    --container-5xl: 64rem;  /* 1024px */
+    --container-6xl: 72rem;  /* 1152px */
+    --container-7xl: 80rem;  /* 1280px */
+
+    /* Tailwind v4.3: max-w-{xs..3xl} fallback ke skala spacing,
+       jadi --max-width-* WAJIB didefinisikan agar nilainya
+       tidak tertimpa token --spacing-* (mis. --spacing-sm: 8px). */
+    --max-width-xs:  20rem;
+    --max-width-sm:  24rem;
+    --max-width-md:  28rem;
+    --max-width-lg:  32rem;
+    --max-width-xl:  36rem;
+    --max-width-2xl: 42rem;
+    --max-width-3xl: 48rem;
+
+    /* ── Blur (Glassmorphism) ────────────────────────── */
+    --blur-glass: 24px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   LIGHT MODE OVERRIDES
+   Intentionally designed — bukan sekadar "dark → white swap".
+   Hirarki visual: depth via shadows & borders, bukan brightness.
+   Surface hierarchy: Base (cool gray) → Raised (pure white) → Overlay
+
+   design.md §4: Light mode specification
+   ═══════════════════════════════════════════════════════════════════ */
+.light {
+    /* ── Surface: Deliberate depth hierarchy ──────────
+       Base is a cool off-white so raised white cards POP.
+       Overlay stays white for modals/panels above cards.
+    ─────────────────────────────────────────────────── */
+    --color-surface-base:    #F5F7FB;
+    --color-surface-raised:  #FFFFFF;
+    --color-surface-overlay: #FFFFFF;
+    --color-surface-muted:   #EEF2F7;
+    --color-surface-subtle:  #F8FAFC;
+
+    /* ── Text: Near-black for premium feel ───────────
+       Not pure #000 (too harsh). Slate-900 → Slate-500 scale.
+    ─────────────────────────────────────────────────── */
+    --color-text-primary:   #0F172A;
+    --color-text-secondary: #475569;
+    --color-text-muted:     #64748B;
+    --color-text-disabled:  #94A3B8;
+
+    /* ── Border: Defined edges, not faint lines ──────
+       Light mode needs stronger borders for structure.
+    ─────────────────────────────────────────────────── */
+    --color-border-default: #E2E8F0;
+    --color-border-subtle:  #F1F5F9;
+    --color-border-strong:  #CBD5E1;
+
+    /* ── Glass: Frosted white (optimized, NOT transparent) ──
+       Light mode glass uses opaque frosted white with
+       visible border for depth. Not transparent.
+    ─────────────────────────────────────────────────── */
+    --color-glass-bg:     rgba(248, 250, 252, 0.92);
+    --color-glass-border: rgba(203, 213, 225, 0.6);
+
+    /* ── Gray Scale re-map for light mode ──────────────
+       Surfaces: gray-900/800/700 → light surfaces (white hierarchy).
+       Text:     gray-100..600 → slate text scale (dark on white).
+       white     → near-black (so text-white/border-white adapt).
+       black     → cool slate (so shadow-black/scrims stay subtle).
+       Utility classes (bg-gray-*, text-white, etc.) now work in
+       BOTH themes with zero component changes.
+    ─────────────────────────────────────────────────── */
+    --color-gray-50:  #0F172A;
+    --color-gray-100: #0F172A;
+    --color-gray-200: #1E293B;
+    --color-gray-300: #334155;
+    --color-gray-400: #475569;
+    --color-gray-500: #64748B;
+    --color-gray-600: #94A3B8;
+    --color-gray-700: #CBD5E1;
+    --color-gray-800: #FFFFFF;
+    --color-gray-900: #EEF2F7;
+    --color-gray-950: #E2E8F0;
+    --color-white:    #0F172A;
+    --color-black:    #141D2B;
+
+    /* ── Brand & Purple: Slightly deeper for contrast on white ──
+       Override --color-purple-* so Tailwind purple-* utilities
+       also adapt for light mode.
+    ─────────────────────────────────────────────────── */
+    --color-purple-300: #c4b5fd;
+    --color-purple-400: #a78bfa;
+    --color-purple-500: #9333ea;
+    --color-purple-600: #7e22ce;
+    --color-purple-700: #6b21a8;
+    --color-purple-800: #5b21b6;
+    --color-purple-900: #4c1d95;
+
+    --color-brand:         #9333ea;
+    --color-brand-hover:   #7e22ce;
+    --color-brand-pressed: #6b21a8;
+    --color-brand-muted:   #7e22ce;
+    --color-brand-subtle:  rgba(147, 51, 234, 0.08);
+    --color-brand-border:  rgba(147, 51, 234, 0.25);
+
+    /* ── Gradient stops (Light Mode) ─────────────────
+       Pale washes of the accent/semantic hue on white so
+       bg-gradient-* panels fit light surfaces. Text inside
+       these panels inverts via --color-white: #0F172A.
+    ─────────────────────────────────────────────────── */
+    --color-brand-deep:    color-mix(in srgb, var(--color-purple-600) 14%, #FFFFFF);
+    --color-brand-mid:     color-mix(in srgb, var(--color-purple-500) 10%, #FFFFFF);
+    --color-brand-soft:    color-mix(in srgb, var(--color-purple-400) 8%, #FFFFFF);
+    --color-brand-tint:    var(--color-purple-300);
+    --color-danger-deep:   color-mix(in srgb, var(--color-red-500) 12%, #FFFFFF);
+    --color-danger-mid:    color-mix(in srgb, var(--color-red-500) 10%, #FFFFFF);
+    --color-danger-soft:   color-mix(in srgb, var(--color-red-400) 8%, #FFFFFF);
+    --color-danger-tint:   color-mix(in srgb, var(--color-red-400) 6%, #FFFFFF);
+    --color-success-deep:  color-mix(in srgb, var(--color-green-500) 12%, #FFFFFF);
+    --color-success-mid:   color-mix(in srgb, var(--color-green-500) 10%, #FFFFFF);
+    --color-success-soft:  color-mix(in srgb, var(--color-green-400) 8%, #FFFFFF);
+    --color-success-tint:  color-mix(in srgb, var(--color-green-400) 6%, #FFFFFF);
+    --color-warning-deep:  color-mix(in srgb, var(--color-amber-500) 14%, #FFFFFF);
+    --color-warning-mid:   color-mix(in srgb, var(--color-amber-500) 12%, #FFFFFF);
+    --color-warning-soft:  color-mix(in srgb, var(--color-amber-400) 10%, #FFFFFF);
+    --color-warning-tint:  color-mix(in srgb, var(--color-amber-400) 8%, #FFFFFF);
+    --color-transfer-deep: color-mix(in srgb, var(--color-blue-500) 14%, #FFFFFF);
+    --color-transfer-mid:  color-mix(in srgb, var(--color-blue-500) 10%, #FFFFFF);
+    --color-transfer-soft: color-mix(in srgb, var(--color-blue-400) 8%, #FFFFFF);
+    --color-transfer-tint: color-mix(in srgb, var(--color-blue-400) 6%, #FFFFFF);
+
+    /* ── Semantic Financial (Light Mode) ─────────────
+       INTENTIONAL redesign for light backgrounds:
+       - Text/Icon: darker, saturated for AA contrast on white
+       - Background: very subtle tint (not washed out)
+       - Border: medium saturation for visible definition
+       - Chart: vibrant, mid-range for visual pop
+    ─────────────────────────────────────────────────── */
+
+    /* Income (Green) — Dark emerald text on mint bg */
+    --color-income-text:      #15803D;
+    --color-income-bg:        #F0FDF4;
+    --color-income-border:    #BBF7D0;
+    --color-income-chart:     #22C55E;
+    --color-income-bg-hover:  #DCFCE7;
+    --color-income:           #15803D;
+    --color-income-muted:     #F0FDF4;
+
+    /* Expense (Red) — Deep red text on blush bg */
+    --color-expense-text:     #B91C1C;
+    --color-expense-bg:       #FEF2F2;
+    --color-expense-border:   #FECACA;
+    --color-expense-chart:    #EF4444;
+    --color-expense-bg-hover: #FEE2E2;
+    --color-expense:          #B91C1C;
+    --color-expense-muted:    #FEF2F2;
+
+    /* Transfer (Blue) — Navy text on ice-blue bg */
+    --color-transfer-text:     #1D4ED8;
+    --color-transfer-bg:       #EFF6FF;
+    --color-transfer-border:   #BFDBFE;
+    --color-transfer-chart:    #3B82F6;
+    --color-transfer-bg-hover: #DBEAFE;
+    --color-transfer:          #1D4ED8;
+    --color-transfer-muted:    #EFF6FF;
+
+    /* Debt (Amber) — Deep amber text on cream bg */
+    --color-debt-text:      #A16207;
+    --color-debt-bg:        #FFFBEB;
+    --color-debt-border:    #FDE68A;
+    --color-debt-chart:     #F59E0B;
+    --color-debt-bg-hover:  #FEF3C7;
+    --color-debt:           #A16207;
+    --color-debt-muted:     #FFFBEB;
+
+    /* Receivable (Purple) — Deep violet text on lavender bg */
+    --color-receivable-text:      #7E22CE;
+    --color-receivable-bg:        #FAF5FF;
+    --color-receivable-border:    #E9D5FF;
+    --color-receivable-chart:     #A855F7;
+    --color-receivable-bg-hover:  #F3E8FF;
+    --color-receivable:           #7E22CE;
+    --color-receivable-muted:     #FAF5FF;
+
+    /* ── Shadows: Multi-layered, soft, diffuse ───────
+       Light mode relies HEAVILY on shadows for depth.
+       Shadows use cool-gray base, not pure black.
+       All shadow tokens present for both themes.
+    ─────────────────────────────────────────────────── */
+    --shadow-sm:         0 1px 2px 0 rgb(20 29 43 / 0.05);
+    --shadow-md:         0 2px 8px -1px rgb(20 29 43 / 0.08), 0 1px 3px 0 rgb(20 29 43 / 0.04);
+    --shadow-lg:         0 8px 24px -4px rgb(20 29 43 / 0.1), 0 2px 8px -2px rgb(20 29 43 / 0.05);
+    --shadow-card:       0 1px 2px 0 rgb(20 29 43 / 0.03), 0 2px 8px 0 rgb(20 29 43 / 0.06);
+    --shadow-card-hover: 0 1px 2px 0 rgb(20 29 43 / 0.04), 0 4px 12px 0 rgb(20 29 43 / 0.08);
+    --shadow-glass:      0 4px 12px 0 rgb(20 29 43 / 0.08);
+    --shadow-fab:        0 6px 20px -4px rgb(0 0 0 / 0.15);
+    --shadow-modal:      0 8px 32px -4px rgb(20 29 43 / 0.1), 0 4px 12px -2px rgb(20 29 43 / 0.05);
+    --shadow-nav:        0 -2px 12px -2px rgb(20 29 43 / 0.06);
+    --shadow-dropdown:   0 4px 12px -2px rgb(20 29 43 / 0.08);
+    --shadow-brand:      0 4px 24px -4px rgba(147, 51, 234, 0.2);
+
+    /* ── Blur: Slightly less blur in light (already high contrast) ── */
+    --blur-glass: 20px;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
    BASE STYLES
-═══════════════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════════════ */
 @layer base {
-    /* Prevent overscroll bounce showing wrong background color on iOS/Android */
+    /* Use token for background instead of hardcoded value */
     html {
-        background-color: #1f2937; /* gray-800 — matches AuthenticatedLayout panel */
+        background-color: var(--color-surface-overlay);
         overscroll-behavior: none;
     }
 
-    /* Autofill WebKit — paksa warna gelap agar konsisten */
+    /* Autofill WebKit — adapt to current theme */
     input:-webkit-autofill,
     input:-webkit-autofill:hover,
     input:-webkit-autofill:focus,
     input:-webkit-autofill:active {
-        -webkit-box-shadow: 0 0 0px 1000px #1f2937 inset !important;
-        -webkit-text-fill-color: white !important;
-        caret-color: white !important;
+        -webkit-box-shadow: 0 0 0px 1000px var(--color-surface-raised) inset !important;
+        -webkit-text-fill-color: var(--color-text-primary) !important;
+        caret-color: var(--color-text-primary) !important;
         transition: background-color 0s, box-shadow 0s, color 0s !important;
     }
 
@@ -114,7 +511,7 @@
    SHARED ANIMATIONS
    Satu definisi untuk seluruh aplikasi.
    JANGAN duplikasi @keyframes di komponen individual.
-═══════════════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════════════ */
 @layer utilities {
     @keyframes slide-up {
         from { transform: translateY(15px); opacity: 0; }
@@ -149,11 +546,14 @@
         100% { background-position:  200% 0; }
     }
 
-    /* ── Animation utility classes ── */
-    .animate-slide-up    { animation: slide-up    0.4s  cubic-bezier(0.4, 0, 0.2, 1)        forwards; }
-    .animate-fade-in-up  { animation: fade-in-up  0.5s  cubic-bezier(0.16, 1, 0.3, 1)       forwards; opacity: 0; }
-    .animate-pop-in      { animation: pop-in      0.25s cubic-bezier(0.34, 1.56, 0.64, 1)   forwards; }
-    .animate-fade-in     { animation: fade-in     0.3s  ease                                 forwards; }
+    /* ── Animation utility classes ──
+       All use design tokens for duration and easing.
+       Cross-reference: design.md §9.3 Animation Specifications.
+    ─────────────────────────────────────────────────── */
+    .animate-slide-up    { animation: slide-up    var(--duration-400) var(--ease-standard) forwards; }
+    .animate-fade-in-up  { animation: fade-in-up  var(--duration-500) var(--ease-smooth)   forwards; opacity: 0; }
+    .animate-pop-in      { animation: pop-in      var(--duration-normal) var(--ease-spring) forwards; }
+    .animate-fade-in     { animation: fade-in     var(--duration-300) var(--ease-standard)  forwards; }
     /*
      * animate-page-enter:
      * Hanya digunakan untuk konten internal di dalam halaman (bukan di layout wrapper).
@@ -161,20 +561,21 @@
      * Dengan `forwards`, animasi tidak looping dan tidak akan conflict dengan
      * opacity transition yang dikendalikan oleh skeleton loading system.
      */
-    .animate-page-enter  { animation: page-enter  0.35s cubic-bezier(0.16, 1, 0.3, 1)       forwards; will-change: opacity, transform; }
+    .animate-page-enter  { animation: page-enter  0.35s var(--ease-smooth) forwards; will-change: opacity, transform; }
     .animate-shimmer     {
         background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.04) 50%, transparent 100%);
         background-size: 200% 100%;
         animation: shimmer 1.5s infinite;
     }
 
-    /* ── Delay utilities ── */
+    /* ── Delay utilities (global — jangan duplikasi di komponen) ── */
     .delay-50  { animation-delay: 50ms;  }
     .delay-100 { animation-delay: 100ms; }
     .delay-150 { animation-delay: 150ms; }
     .delay-200 { animation-delay: 200ms; }
     .delay-300 { animation-delay: 300ms; }
     .delay-400 { animation-delay: 400ms; }
+    .delay-500 { animation-delay: 500ms; }
 
     /* ── Reduced-motion: hormati preferensi sistem ── */
     @media (prefers-reduced-motion: reduce) {

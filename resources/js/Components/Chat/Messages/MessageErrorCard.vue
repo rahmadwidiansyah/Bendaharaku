@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import MarkdownRenderer from './MarkdownRenderer.vue'
 
 const { t } = useI18n()
 
@@ -11,7 +12,7 @@ const props = defineProps({
 const isWarning = computed(() => props.component.severity === 'warning')
 
 // Hapus properti 'icon' dari config karena sudah dari backend
-const config = computed(() => isWarning.value ? { text: 'text-amber-300', raw: 'text-amber-500/80' } : { text: 'text-red-300', raw: 'text-red-500/80' })
+const config = computed(() => isWarning.value ? { text: 'text-debt-text', raw: 'text-debt-text/80' } : { text: 'text-expense-text', raw: 'text-expense-text/80' })
 </script>
 
 <template>
@@ -28,8 +29,10 @@ const config = computed(() => isWarning.value ? { text: 'text-amber-300', raw: '
                 "{{ component.raw }}"
             </p>
 
-            <!-- Message (Emoji silang atau warning dari backend akan menyatu langsung di sini) -->
-            <p :class="['text-sm leading-relaxed', config.text]">{{ component.message }}</p>
+            <!-- Message: render markdown (*bold*, \n, dll) dengan warna mengikuti config -->
+            <div :class="config.text">
+                <MarkdownRenderer :content="component.message" :style="{ color: 'currentColor' }" />
+            </div>
         </div>
     </div>
 </template>

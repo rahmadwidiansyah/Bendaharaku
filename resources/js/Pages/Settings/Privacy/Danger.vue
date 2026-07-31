@@ -52,7 +52,7 @@ const handleDeleteAccount = async () => {
 
           <!-- Delete Confirmation Modal -->
           <div v-if="showDeleteConfirm" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div class="bg-gray-900 rounded-lg sm:rounded-xl p-4 sm:p-6 max-w-sm mx-4 border border-gray-700 w-full" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title" aria-describedby="delete-modal-desc">
+            <div class="bg-gray-900 rounded-lg sm:rounded-xl p-4 sm:p-6 sm:max-w-md mx-4 border border-gray-700 w-full" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title" aria-describedby="delete-modal-desc">
               <h3 id="delete-modal-title" class="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4">{{ t('settings.privacy.danger.delete_account.confirm_title') }}</h3>
               <p id="delete-modal-desc" class="text-2xs sm:text-sm text-gray-400 mb-4 sm:mb-6">{{ t('settings.privacy.danger.delete_account.confirm_description') }}</p>
               <div class="flex gap-2 sm:gap-3">

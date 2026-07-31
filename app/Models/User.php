@@ -27,6 +27,7 @@ class User extends Authenticatable
         'bot_avatar',
         'date_format',
         'accent_color',
+        'theme',
         'category_icon_colored',
     ];
 

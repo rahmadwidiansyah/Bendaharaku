@@ -27,13 +27,13 @@ const html = computed(() =>
     <!-- Block: untuk multi-line, paragraph, heading, list, dll -->
     <div
         v-if="!inline"
-        class="markdown-body text-sm leading-relaxed text-gray-200 break-words"
+        class="markdown-body text-sm leading-relaxed text-text-secondary break-words"
         v-html="html"
     />
     <!-- Inline: untuk teks pendek dalam konteks lain -->
     <span
         v-else
-        class="markdown-inline text-sm text-gray-200 break-words"
+        class="markdown-inline text-sm text-text-secondary break-words"
         v-html="html"
     />
 </template>
@@ -52,34 +52,34 @@ const html = computed(() =>
 .markdown-body :deep(strong),
 .markdown-body :deep(b) {
     font-weight: 700;
-    color: #fff;
+    color: var(--color-text-primary);
 }
 .markdown-body :deep(em),
 .markdown-body :deep(i) {
     font-style: italic;
-    color: #d1d5db;
+    color: var(--color-text-secondary);
 }
 .markdown-body :deep(del),
 .markdown-body :deep(s) {
     text-decoration: line-through;
-    color: #6b7280;
+    color: var(--color-text-muted);
 }
 
 /* Inline code */
 .markdown-body :deep(code) {
     font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
     font-size: 0.82em;
-    background: rgba(168, 85, 247, 0.12);
-    color: #c084fc;
+    background: var(--color-brand-subtle);
+    color: var(--color-brand);
     padding: 0.1em 0.35em;
     border-radius: 4px;
-    border: 1px solid rgba(168, 85, 247, 0.2);
+    border: 1px solid var(--color-brand-border);
 }
 
 /* Code block */
 .markdown-body :deep(pre) {
-    background: rgba(0, 0, 0, 0.45);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--color-surface-muted);
+    border: 1px solid var(--color-border-default);
     border-radius: 8px;
     padding: 0.7em 1em;
     overflow-x: auto;
@@ -89,7 +89,7 @@ const html = computed(() =>
     background: transparent;
     border: none;
     padding: 0;
-    color: #e2e8f0;
+    color: var(--color-text-primary);
     font-size: 0.85em;
 }
 
@@ -99,14 +99,14 @@ const html = computed(() =>
 .markdown-body :deep(h3),
 .markdown-body :deep(h4) {
     font-weight: 700;
-    color: #fff;
+    color: var(--color-text-primary);
     line-height: 1.3;
     margin: 0.5em 0 0.25em;
 }
 .markdown-body :deep(h1) { font-size: 1.1em; }
 .markdown-body :deep(h2) { font-size: 1.0em; }
 .markdown-body :deep(h3) { font-size: 0.95em; }
-.markdown-body :deep(h4) { font-size: 0.9em; color: #d1d5db; }
+.markdown-body :deep(h4) { font-size: 0.9em; color: var(--color-text-secondary); }
 
 /* Lists */
 .markdown-body :deep(ul),
@@ -116,18 +116,18 @@ const html = computed(() =>
 }
 .markdown-body :deep(li) {
     margin-bottom: 0.2em;
-    color: #d1d5db;
+    color: var(--color-text-secondary);
     line-height: 1.5;
 }
 .markdown-body :deep(li > p) { margin-bottom: 0; }
 
 /* Blockquote */
 .markdown-body :deep(blockquote) {
-    border-left: 3px solid rgba(168, 85, 247, 0.5);
+    border-left: 3px solid var(--color-brand-border);
     margin: 0.5em 0;
     padding: 0.3em 0.8em;
-    color: #9ca3af;
-    background: rgba(168, 85, 247, 0.06);
+    color: var(--color-text-secondary);
+    background: var(--color-brand-subtle);
     border-radius: 0 6px 6px 0;
 }
 .markdown-body :deep(blockquote p) { margin-bottom: 0; color: inherit; }
@@ -135,17 +135,17 @@ const html = computed(() =>
 /* Horizontal rule */
 .markdown-body :deep(hr) {
     border: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid var(--color-border-default);
     margin: 0.6em 0;
 }
 
 /* Links */
 .markdown-body :deep(a) {
-    color: #a78bfa;
+    color: var(--color-brand);
     text-decoration: underline;
     text-underline-offset: 2px;
 }
-.markdown-body :deep(a:hover) { color: #c4b5fd; }
+.markdown-body :deep(a:hover) { color: var(--color-brand-hover); }
 
 /* Tables */
 .markdown-body :deep(table) {
@@ -156,13 +156,13 @@ const html = computed(() =>
 }
 .markdown-body :deep(th),
 .markdown-body :deep(td) {
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--color-border-default);
     padding: 0.3em 0.6em;
     text-align: left;
 }
 .markdown-body :deep(th) {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--color-border-subtle);
     font-weight: 600;
-    color: #e2e8f0;
+    color: var(--color-text-secondary);
 }
 </style>

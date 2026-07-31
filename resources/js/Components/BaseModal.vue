@@ -14,20 +14,40 @@
  *   - Animasi masuk/keluar konsisten
  *   - Accessible: focus trap sederhana, aria-modal, aria-labelledby
  *   - Tombol close bawaan (optional, bisa diganti via slot)
+ *   - Sistem ukuran scalable: xs → 7xl, full, adaptive
+ *   - Mode bottom-sheet (mobile) / centered (desktop)
+ *   - Opsi fullscreen di mobile untuk form kompleks
  *
  * Props:
  *   show          — Tampilkan/sembunyikan modal (wajib, pakai v-model atau :show)
  *   title         — Judul modal, ditampilkan di header default (opsional)
  *   maxWidth      — Lebar maksimum panel modal:
- *                   'sm'   → max-w-sm  (default, cocok untuk konfirmasi)
- *                   'md'   → max-w-md
- *                   'lg'   → max-w-lg
- *                   'xl'   → max-w-xl
- *   closeable     — Apakah modal bisa ditutup via klik overlay atau tombol close
- *                   (default: true)
+ *                   'xs'       → max-w-xs (320px, konfirmasi kecil)
+ *                   'sm'       → max-w-sm (384px, konfirmasi sederhana) [DEFAULT]
+ *                   'md'       → max-w-md (448px, form kecil)
+ *                   'lg'       → max-w-lg (512px, form sedang)
+ *                   'xl'       → max-w-xl (576px, form besar)
+ *                   '2xl'      → max-w-2xl (672px, detail)
+ *                   '3xl'      → max-w-3xl (768px, detail besar)
+ *                   '4xl'      → max-w-4xl (896px, editor)
+ *                   '5xl'      → max-w-5xl (1024px, editor besar)
+ *                   '6xl'      → max-w-6xl (1152px, dashboard widget)
+ *                   '7xl'      → max-w-7xl (1280px, layar penuh)
+ *                   'full'     → max-w-none w-full (mobile) + sm:max-w-[calc(100%-2rem)]
+ *                   'adaptive' → w-full, tumbuh mengikuti breakpoint:
+ *                                max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl
+ *   closeable     — Apakah modal bisa ditutup via klik overlay atau tombol close (default: true)
  *   showCloseBtn  — Tampilkan tombol X di sudut kanan atas (default: true)
  *   padding       — Padding konten panel: 'none' | 'sm' | 'md' | 'lg' (default: 'lg')
  *   zIndex        — Kelas z-index Tailwind (default: 'z-[9999]')
+ *   align         — Posisi modal:
+ *                   'center'      → centered (default)
+ *                   'bottom-sheet'→ menempel bawah di mobile, centered di sm+
+ *   mobileOnly    — Paksa layout mobile di semua ukuran layar. Efektif saat
+ *                   align="bottom-sheet": sheet selalu menempel bawah,
+ *                   tidak berubah menjadi centered di desktop.
+ *   fullScreenOnMobile — Saat true, modal mengisi layar di mobile dan menjadi
+ *                        modal normal di sm+. Cocok untuk form kompleks.
  *
  * Slots:
  *   default       — Konten utama modal
@@ -47,8 +67,13 @@
  *     </template>
  *   </BaseModal>
  *
+ *   <!-- Form besar: adaptive + fullscreen di mobile -->
+ *   <BaseModal :show="showForm" max-width="adaptive" :full-screen-on-mobile="true" @close="close">
+ *     <TransactionForm />
+ *   </BaseModal>
+ *
  *   <!-- Tanpa close (blocking) -->
- *   <BaseModal :show="isLoading" :closeable="false" :showCloseBtn="false">
+ *   <BaseModal :show="isLoading" :closeable="false" :show-close-btn="false">
  *     <LoadingSpinner />
  *   </BaseModal>
  *
@@ -61,7 +86,7 @@
  *   </BaseModal>
  */
 
-import { onMounted, onBeforeUnmount, watch } from 'vue'
+import { computed, onMounted, onBeforeUnmount, watch } from 'vue'
 
 const props = defineProps({
     show: {
@@ -74,8 +99,22 @@ const props = defineProps({
     },
     maxWidth: {
         type: String,
-        default: 'sm',
-        validator: (v) => ['sm', 'md', 'lg', 'xl'].includes(v),
+        default: 'adaptive',
+        validator: (v) =>
+            ['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', '6xl', '7xl', 'full', 'adaptive'].includes(v),
+    },
+    align: {
+        type: String,
+        default: 'center',
+        validator: (v) => ['center', 'bottom-sheet'].includes(v),
+    },
+    fullScreenOnMobile: {
+        type: Boolean,
+        default: false,
+    },
+    mobileOnly: {
+        type: Boolean,
+        default: false,
     },
     closeable: {
         type: Boolean,
@@ -119,9 +158,13 @@ const unlockScroll = () => {
     document.body.style.overflow = ''
 }
 
-watch(() => props.show, (val) => {
-    val ? lockScroll() : unlockScroll()
-}, { immediate: true })
+watch(
+    () => props.show,
+    (val) => {
+        val ? lockScroll() : unlockScroll()
+    },
+    { immediate: true },
+)
 
 onMounted(() => {
     window.addEventListener('keydown', handleKeydown)
@@ -133,18 +176,49 @@ onBeforeUnmount(() => {
 })
 
 const maxWidthClasses = {
+    xs: 'max-w-xs',
     sm: 'max-w-sm',
     md: 'max-w-md',
     lg: 'max-w-lg',
     xl: 'max-w-xl',
+    '2xl': 'max-w-2xl',
+    '3xl': 'max-w-3xl',
+    '4xl': 'max-w-4xl',
+    '5xl': 'max-w-5xl',
+    '6xl': 'max-w-6xl',
+    '7xl': 'max-w-7xl',
+    full: 'max-w-none w-full sm:max-w-[calc(100%-2rem)]',
+    adaptive:
+        'w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl',
+}
+
+const alignClasses = {
+    center: 'flex items-center justify-center p-4',
+    'bottom-sheet': props.mobileOnly
+        ? 'flex items-end justify-center p-4'
+        : 'flex items-end sm:items-center justify-center p-4',
 }
 
 const paddingClasses = {
     none: '',
-    sm:   'p-4',
-    md:   'p-5',
-    lg:   'p-6',
+    sm: 'p-4',
+    md: 'p-5',
+    lg: 'p-6',
 }
+
+const panelClasses = computed(() => {
+    const base = [
+        'w-full shrink-0 relative',
+        'bg-gradient-to-b from-gray-900 to-gray-800',
+        'rounded-2xl border border-white/10',
+        'shadow-2xl shadow-black/50',
+        maxWidthClasses[props.maxWidth],
+    ]
+    if (props.fullScreenOnMobile) {
+        base.push('h-full sm:h-auto rounded-none sm:rounded-2xl')
+    }
+    return base
+})
 </script>
 
 <template>
@@ -160,9 +234,10 @@ const paddingClasses = {
             <div
                 v-if="show"
                 :class="[
-                    'fixed inset-0 flex items-center justify-center p-4',
+                    'fixed inset-0',
                     'bg-black/80 backdrop-blur-sm',
                     zIndex,
+                    alignClasses[props.align],
                 ]"
                 role="dialog"
                 aria-modal="true"
@@ -177,16 +252,7 @@ const paddingClasses = {
                     leave-from-class="opacity-100 scale-100 translate-y-0"
                     leave-to-class="opacity-0 scale-95 translate-y-2"
                 >
-                    <div
-                        v-if="show"
-                        :class="[
-                            'w-full relative',
-                            'bg-gradient-to-b from-gray-900 to-gray-800',
-                            'rounded-2xl border border-white/10',
-                            'shadow-2xl shadow-black/50',
-                            maxWidthClasses[maxWidth],
-                        ]"
-                    >
+                    <div v-if="show" :class="panelClasses">
                         <!-- ── Header ──────────────────────────────────── -->
                         <div
                             v-if="$slots.header || title || showCloseBtn"
@@ -228,7 +294,7 @@ const paddingClasses = {
                             v-if="$slots.default"
                             :class="[
                                 paddingClasses[padding],
-                                ($slots.header || title || showCloseBtn) ? 'pt-4' : '',
+                                $slots.header || title || showCloseBtn ? 'pt-4' : '',
                                 $slots.footer ? 'pb-0' : '',
                             ]"
                         >

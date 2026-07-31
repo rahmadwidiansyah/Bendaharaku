@@ -60,7 +60,7 @@ async function handleCancel() {
             type="button"
             :disabled="isConfirming"
             class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 focus:outline-none focus-visible:ring-1 focus-visible:ring-emerald-400 disabled:opacity-50"
-            :class="isConfirming ? 'bg-emerald-600/30 text-emerald-400 border border-emerald-500/30' : 'bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 border border-emerald-500/20 hover:border-emerald-500/40'"
+            :class="isConfirming ? 'bg-income-bg text-income-text border border-income-border' : 'bg-income-bg text-income-text hover:bg-income-bg-hover border border-income-border hover:border-income-border'"
             @click="handleConfirm"
         >
             <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -74,7 +74,7 @@ async function handleCancel() {
             type="button"
             :disabled="isCancelling"
             class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 focus:outline-none focus-visible:ring-1 focus-visible:ring-red-400 disabled:opacity-50"
-            :class="isCancelling ? 'bg-red-600/20 text-red-400 border border-red-500/20' : 'bg-transparent text-gray-500 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20'"
+            :class="isCancelling ? 'bg-expense-bg text-expense-text border border-expense-border' : 'bg-transparent text-gray-500 hover:text-expense-text hover:bg-expense-bg-hover border border-transparent hover:border-expense-border'"
             @click="handleCancel"
         >
             <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">

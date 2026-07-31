@@ -29,9 +29,9 @@ const submit = () => {
         </div>
 
         <div
-            class="w-full max-w-md relative z-10 flex flex-col justify-center min-h-screen border-x border-[#262626]/50 bg-[#121212]/80 backdrop-blur-xl px-6 py-10">
+            class="w-full min-w-0 flex-1 relative z-10 flex flex-col justify-center min-h-screen border-x border-[#262626]/50 bg-[#121212]/80 backdrop-blur-xl px-4 sm:px-6 lg:px-8 py-10">
 
-            <div class="animate-slide-up w-full">
+            <div class="animate-slide-up w-full max-w-md mx-auto">
                 <div class="text-center mb-8">
                     <ApplicationLogo class="w-20 h-20 rounded-xl mx-auto mb-5" />
                     <h1 class="text-3xl font-bold text-white tracking-tight">Lupa Password?</h1>

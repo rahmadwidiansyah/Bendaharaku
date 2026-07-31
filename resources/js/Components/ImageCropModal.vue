@@ -36,6 +36,7 @@
 import { ref, computed, watch } from 'vue'
 import { Cropper, CircleStencil, RectangleStencil } from 'vue-advanced-cropper'
 import 'vue-advanced-cropper/dist/style.css'
+import BaseModal from '@/Components/BaseModal.vue'
 
 const props = defineProps({
     modelValue: {
@@ -227,63 +228,13 @@ function onKeydown(e) {
 </script>
 
 <template>
-    <Teleport to="body">
-        <Transition
-            enter-active-class="transition-opacity duration-200 ease-out"
-            enter-from-class="opacity-0"
-            enter-to-class="opacity-100"
-            leave-active-class="transition-opacity duration-150 ease-in"
-            leave-from-class="opacity-100"
-            leave-to-class="opacity-0"
-        >
-            <div
-                v-if="isOpen"
-                class="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center"
-                @keydown="onKeydown"
-            >
-                <!-- Backdrop -->
-                <div
-                    class="absolute inset-0 bg-black/80 backdrop-blur-sm"
-                    @click="close"
-                    aria-hidden="true"
-                />
-
-                <!-- Modal panel -->
-                <Transition
-                    enter-active-class="transition-all duration-250 ease-out"
-                    enter-from-class="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                    enter-to-class="opacity-100 translate-y-0 sm:scale-100"
-                    leave-active-class="transition-all duration-150 ease-in"
-                    leave-from-class="opacity-100 translate-y-0 sm:scale-100"
-                    leave-to-class="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                    appear
-                >
-                    <div
-                        role="dialog"
-                        aria-modal="true"
-                        :aria-label="title"
-                        class="relative z-10 w-full sm:max-w-lg bg-gray-900 border border-white/10 rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden"
-                    >
-                        <!-- Handle (mobile) -->
-                        <div class="sm:hidden flex justify-center pt-3 pb-1">
-                            <div class="w-10 h-1 rounded-full bg-white/20" aria-hidden="true" />
-                        </div>
-
-                        <!-- Header -->
-                        <div class="flex items-center justify-between px-5 pt-4 pb-3 border-b border-white/5">
-                            <h2 class="text-sm font-bold text-white">{{ title }}</h2>
-                            <button
-                                type="button"
-                                @click="close"
-                                class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
-                                aria-label="Tutup"
-                            >
-                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-
+    <BaseModal
+        :show="isOpen"
+        :title="title"
+        max-width="adaptive"
+        @close="close"
+        @keydown="onKeydown"
+    >
                         <!-- Body -->
                         <div class="p-5">
 
@@ -351,37 +302,39 @@ function onKeydown(e) {
                         </div>
 
                         <!-- Footer actions -->
-                        <div class="flex items-center gap-3 px-5 pb-5">
-                            <button
-                                type="button"
-                                @click="close"
-                                class="flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-widest bg-gray-800 border border-white/10 text-gray-400 hover:text-white hover:border-white/20 transition-all"
-                            >
-                                Batal
-                            </button>
-                            <button
-                                type="button"
-                                @click="confirmCrop"
-                                :disabled="!imageSrc || isProcessing"
-                                :class="[
-                                    'flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2',
-                                    imageSrc && !isProcessing
-                                        ? 'bg-gradient-to-br from-purple-800 to-purple-500 text-white shadow-lg shadow-purple-500/20 hover:from-purple-700 hover:to-purple-400'
-                                        : 'bg-gray-800 text-gray-600 border border-white/5 cursor-not-allowed'
-                                ]"
-                            >
-                                <svg
-                                    v-if="isProcessing"
-                                    class="animate-spin w-4 h-4 shrink-0"
-                                    fill="none" viewBox="0 0 24 24"
-                                    aria-hidden="true"
+                        <template #footer>
+                            <div class="flex items-center gap-3 w-full">
+                                <button
+                                    type="button"
+                                    @click="close"
+                                    class="flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-widest bg-gray-800 border border-white/10 text-gray-400 hover:text-white hover:border-white/20 transition-all"
                                 >
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                                </svg>
-                                {{ isProcessing ? 'Memproses...' : 'Gunakan Foto' }}
-                            </button>
-                        </div>
+                                    Batal
+                                </button>
+                                <button
+                                    type="button"
+                                    @click="confirmCrop"
+                                    :disabled="!imageSrc || isProcessing"
+                                    :class="[
+                                        'flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2',
+                                        imageSrc && !isProcessing
+                                            ? 'bg-gradient-to-br from-brand-deep to-brand-soft text-white shadow-lg shadow-purple-500/20 hover:from-brand-mid hover:to-brand-tint'
+                                            : 'bg-gray-800 text-gray-600 border border-white/5 cursor-not-allowed'
+                                    ]"
+                                >
+                                    <svg
+                                        v-if="isProcessing"
+                                        class="animate-spin w-4 h-4 shrink-0"
+                                        fill="none" viewBox="0 0 24 24"
+                                        aria-hidden="true"
+                                    >
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                                    </svg>
+                                    {{ isProcessing ? 'Memproses...' : 'Gunakan Foto' }}
+                                </button>
+                            </div>
+                        </template>
 
                         <!-- Hidden file input -->
                         <input
@@ -392,9 +345,5 @@ function onKeydown(e) {
                             @change="onFileChange"
                             aria-hidden="true"
                         />
-                    </div>
-                </Transition>
-            </div>
-        </Transition>
-    </Teleport>
+    </BaseModal>
 </template>

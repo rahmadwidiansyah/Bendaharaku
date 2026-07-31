@@ -146,7 +146,7 @@ const onlineDotSize = {
         <span
             v-if="online"
             :class="[
-                'absolute -bottom-0.5 -right-0.5 rounded-full bg-emerald-500 border-gray-950',
+                'absolute -bottom-0.5 -right-0.5 rounded-full bg-income-text border-gray-950',
                 onlineDotSize[size] ?? onlineDotSize.sm,
             ]"
             aria-hidden="true"

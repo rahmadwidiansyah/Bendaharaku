@@ -7,6 +7,7 @@ const ACCENT_PALETTES = {
         500: '#0BD5B0',
         600: '#09AA8D',
         700: '#07806A',
+        800: '#045546',
     },
     blue: {
         300: '#93c5fd',
@@ -14,6 +15,7 @@ const ACCENT_PALETTES = {
         500: '#3b82f6',
         600: '#2563eb',
         700: '#1d4ed8',
+        800: '#183462',
     },
     indigo: {
         300: '#a5b4fc',
@@ -21,6 +23,7 @@ const ACCENT_PALETTES = {
         500: '#6366f1',
         600: '#4f46e5',
         700: '#4338ca',
+        800: '#282960',
     },
     pink: {
         300: '#f9a8d4',
@@ -28,6 +31,7 @@ const ACCENT_PALETTES = {
         500: '#ec4899',
         600: '#db2777',
         700: '#be185d',
+        800: '#5e1d3d',
     },
     cyan: {
         300: '#67e8f9',
@@ -35,6 +39,7 @@ const ACCENT_PALETTES = {
         500: '#06b6d4',
         600: '#0891b2',
         700: '#0e7490',
+        800: '#024955',
     },
     rose: {
         300: '#fda4af',
@@ -42,6 +47,7 @@ const ACCENT_PALETTES = {
         500: '#f43f5e',
         600: '#e11d48',
         700: '#be123c',
+        800: '#621926',
     },
 }
 
@@ -110,6 +116,7 @@ function generatePalette(baseHex) {
         500: baseHex,
         600: mixColor(baseHex, -0.20),
         700: mixColor(baseHex, -0.40),
+        800: mixColor(baseHex, -0.60),
     }
 }
 
@@ -133,22 +140,47 @@ function hexToRgba(hex, alpha) {
 }
 
 function buildOverrideCSS(palette) {
-    const vars = Object.entries(palette)
+    const darkVars = Object.entries(palette)
         .map(([shade, hex]) => `  --color-purple-${shade}: ${hex};`)
         .join('\n')
 
+    // Light mode: darken each shade ~18% so purple-* utilities (bg-purple-500,
+    // text-purple-400, ...) keep AA contrast on white surfaces. Dark values
+    // are tuned for dark backgrounds — reusing them on white is too bright.
+    const lightVars = Object.entries(palette)
+        .map(([shade, hex]) => `  --color-purple-${shade}: ${mixColor(hex, -0.18)};`)
+        .join('\n')
+
     const brand = getBrandColor(palette)
+    const lightBrand = mixColor(brand, -0.18)
+    const hover = palette[600] || mixColor(brand, -0.20)
+    const pressed = palette[700] || mixColor(brand, -0.40)
+    const lightHover = mixColor(lightBrand, -0.10)
+    const lightPressed = mixColor(lightBrand, -0.25)
     const muted = palette[700] || '#7e22ce'
     const border = hexToRgba(brand, 0.3)
     const subtle = hexToRgba(brand, 0.1)
 
     return `:root {
-${vars}
+${darkVars}
   --color-brand: ${brand};
+  --color-brand-hover: ${hover};
+  --color-brand-pressed: ${pressed};
   --color-brand-muted: ${muted};
   --color-brand-subtle: ${subtle};
   --color-brand-border: ${border};
   --shadow-brand: 0 4px 24px -4px ${hexToRgba(brand, 0.25)};
+}
+
+/* Light mode: darker shade scale + darker brand for AA contrast on white.
+   Overrides ALL --color-purple-*, not just alpha-brand vars. */
+.light {
+${lightVars}
+  --color-brand: ${lightBrand};
+  --color-brand-hover: ${lightHover};
+  --color-brand-pressed: ${lightPressed};
+  --color-brand-subtle: ${hexToRgba(brand, 0.08)};
+  --color-brand-border: ${hexToRgba(brand, 0.25)};
 }`
 }
 

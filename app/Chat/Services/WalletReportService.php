@@ -133,12 +133,8 @@ class WalletReportService
                 emoji: '📈',
                 items: $lines,
                 translationKey: 'chat.command.asset_title',
-            ),
-            new DividerComponent,
-            new TextComponent(
-                translationKey: 'chat.command.balance_total',
-                params: ['total' => MoneyFormatter::rupiah($total)],
-                bold: true,
+                total: MoneyFormatter::rupiah($total),
+                count: $assets->count(),
             ),
         ];
 

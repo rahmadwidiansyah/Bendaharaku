@@ -50,7 +50,7 @@ const confirmDeleteWallet = () => {
     <AuthenticatedLayout :fullWidth="true">
 
         <Head :title="t('wallet.titleEdit')" />
-        <div class="p-5 w-full lg:max-w-4xl mx-auto lg:px-8 relative animate-slide-up opacity-0"
+        <div class="p-5 w-full lg:max-w-7xl mx-auto lg:px-8 relative animate-slide-up opacity-0"
             style="animation-delay: 50ms;">
 
             <header class="hidden lg:block mb-8 pt-4">
@@ -101,7 +101,7 @@ const confirmDeleteWallet = () => {
 
                 <div class="pt-3 lg:pt-4 space-y-3 animate-slide-up opacity-0 relative z-30" style="animation-delay: 275ms;">
                     <button type="submit" :disabled="form.processing"
-                        class="w-full bg-linear-to-br from-purple-800 to-purple-600 text-white font-bold text-sm tracking-wide py-3.5 lg:py-4 rounded-xl hover:-translate-y-0.5 active:scale-95 transition-all duration-200">
+                        class="w-full bg-linear-to-br from-brand-deep to-brand-mid text-white font-bold text-sm tracking-wide py-3.5 lg:py-4 rounded-xl hover:-translate-y-0.5 active:scale-95 transition-all duration-200">
                         {{ form.processing ? t('btn.saving') : t('btn.update') }}
                     </button>
                 </div>
@@ -110,7 +110,7 @@ const confirmDeleteWallet = () => {
             <div class="mt-3 lg:mt-4 animate-slide-up opacity-0 relative z-20"
                 style="animation-delay: 350ms;">
                 <button type="button" :disabled="deleteForm.processing" @click="deleteWallet"
-                    class="w-full bg-linear-to-br from-red-800 to-red-900 text-white font-bold text-sm py-3.5 lg:py-4 rounded-xl hover:translate-y-0.5 active:scale-95 transition-all">
+                    class="w-full bg-linear-to-br from-danger-mid to-danger-deep text-white font-bold text-sm py-3.5 lg:py-4 rounded-xl hover:translate-y-0.5 active:scale-95 transition-all">
                     {{ deleteForm.processing ? t('btn.deleting') : t('btn.delete') }}
                 </button>
             </div>

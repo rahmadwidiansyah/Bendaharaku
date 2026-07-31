@@ -52,7 +52,7 @@ function select(wallet) {
 <template>
     <div class="mt-2 space-y-2">
         <!-- Label -->
-        <p class="text-2xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+        <p class="text-2xs font-bold text-debt-text uppercase tracking-wider flex items-center gap-1.5">
             <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
             </svg>
@@ -67,7 +67,7 @@ function select(wallet) {
         </div>
 
         <!-- Error -->
-        <p v-else-if="fetchError" class="text-2xs text-red-400">{{ fetchError }}</p>
+        <p v-else-if="fetchError" class="text-2xs text-expense-text">{{ fetchError }}</p>
 
         <!-- Wallet chips -->
         <div v-else class="flex flex-wrap gap-1.5">

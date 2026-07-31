@@ -46,13 +46,17 @@ const barChartKey = ref(0);
 const cumulativeChartKey = ref(0);
 const doughnutChartKey = ref(0);
 
-// Warna arus kas — TETAP: masuk hijau, keluar merah, hutang kuning, piutang ungu
-const FLOW_COLORS = {
-    income: '#34D399',
-    expense: '#F87171',
-    debt: '#FBBF24',
-    receivable: '#C084FC',
-};
+const cssVar = (name, fallback) =>
+    getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+
+// Warna arus kas — baca token CSS (otomatis mengikuti tema dark/light):
+// masuk hijau, keluar merah, hutang kuning, piutang ungu (statis)
+const FLOW_COLORS = computed(() => ({
+    income: cssVar('--color-income-chart', '#34D399'),
+    expense: cssVar('--color-expense-chart', '#F87171'),
+    debt: cssVar('--color-debt-chart', '#FBBF24'),
+    receivable: cssVar('--color-receivable-chart', '#C084FC'),
+}));
 
 const barViews = [
     { key: 'harian', label: () => t('analytics.view.daily') },
@@ -102,7 +106,7 @@ const initCumulativeChart = async () => {
                 pointRadius: 2,
                 pointHoverRadius: 7,
                 pointBackgroundColor: brand,
-                pointBorderColor: '#121212',
+                pointBorderColor: cssVar('--color-gray-950', '#121212'),
                 pointBorderWidth: 1.5,
                 pointHoverBackgroundColor: brand,
                 pointHoverBorderColor: '#fff',
@@ -252,10 +256,10 @@ const renderBarChart = async (view) => {
         data: {
             labels,
             datasets: [
-                { label: t('analytics.chartLabels.income'), data: incomes, backgroundColor: FLOW_COLORS.income, borderRadius: 5, barPercentage: 0.9, categoryPercentage: 0.85 },
-                { label: t('analytics.chartLabels.expense'), data: expenses, backgroundColor: FLOW_COLORS.expense, borderRadius: 5, barPercentage: 0.9, categoryPercentage: 0.85 },
-                { label: t('analytics.chartLabels.debt'), data: debts, backgroundColor: FLOW_COLORS.debt, borderRadius: 5, barPercentage: 0.9, categoryPercentage: 0.85 },
-                { label: t('analytics.chartLabels.receivable'), data: receivables, backgroundColor: FLOW_COLORS.receivable, borderRadius: 5, barPercentage: 0.9, categoryPercentage: 0.85 }
+                { label: t('analytics.chartLabels.income'), data: incomes, backgroundColor: FLOW_COLORS.value.income, borderRadius: 5, barPercentage: 0.9, categoryPercentage: 0.85 },
+                { label: t('analytics.chartLabels.expense'), data: expenses, backgroundColor: FLOW_COLORS.value.expense, borderRadius: 5, barPercentage: 0.9, categoryPercentage: 0.85 },
+                { label: t('analytics.chartLabels.debt'), data: debts, backgroundColor: FLOW_COLORS.value.debt, borderRadius: 5, barPercentage: 0.9, categoryPercentage: 0.85 },
+                { label: t('analytics.chartLabels.receivable'), data: receivables, backgroundColor: FLOW_COLORS.value.receivable, borderRadius: 5, barPercentage: 0.9, categoryPercentage: 0.85 }
             ]
         },
         options: {
@@ -317,14 +321,27 @@ const activeCategoryData = computed(() => {
 });
 
 const activeColors = computed(() => {
-    return categoryView.value === 'expense'
-        ? ['#F87171', '#FCA5A5', '#FECACA', '#DC2626', '#EF4444', '#B91C1C']
-        : categoryView.value === 'income'
-            ? ['#34D399', '#6EE7B7', '#A7F3D0', '#059669', '#10B981', '#047857']
-            : categoryView.value === 'debt'
-                ? ['#FBBF24', '#FCD34D', '#FDE68A', '#D97706', '#F59E0B', '#B45309']
-                : ['#C084FC', '#D8B4FE', '#E9D5FF', '#7C3AED', '#A855F7', '#6D28D9'];
+    const base = {
+        expense: () => cssVar('--color-expense-chart', '#F87171'),
+        income: () => cssVar('--color-income-chart', '#34D399'),
+        debt: () => cssVar('--color-debt-chart', '#FBBF24'),
+        receivable: () => cssVar('--color-receivable-chart', '#C084FC'),
+    }[categoryView.value]();
+    return buildPalette(base);
 });
+
+// Ramp 6 shade dari satu warna base: terang → gelap (urutan rank tetap sama)
+function buildPalette(baseHex) {
+    const mix = (hex, weight) => {
+        const { r, g, b } = hexRgb(hex);
+        const t = (v) => {
+            const n = weight > 0 ? Math.round(v + (255 - v) * weight) : Math.round(v * (1 + weight));
+            return Math.max(0, Math.min(255, n));
+        };
+        return `#${[t(r), t(g), t(b)].map((n) => n.toString(16).padStart(2, '0')).join('')}`;
+    };
+    return [mix(baseHex, 0.40), mix(baseHex, 0.22), baseHex, mix(baseHex, -0.15), mix(baseHex, -0.30), mix(baseHex, -0.45)];
+}
 
 const iconColorClass = computed(() => {
     const map = { income: 'Income', expense: 'Expense', debt: 'Debt', receivable: 'Receivable' };
@@ -396,7 +413,7 @@ const renderDoughnutChart = async () => {
                 data: dataObj.values,
                 backgroundColor: paint,
                 borderWidth: 2,
-                borderColor: '#121212'
+                borderColor: cssVar('--color-gray-950', '#121212')
             }]
         },
         options: {
@@ -438,7 +455,7 @@ onMounted(() => {
 
         <Head title="Analitik" />
 
-        <div class="px-4 sm:px-5 pb-40 w-full lg:max-w-4xl mx-auto lg:px-8 relative z-10 overflow-x-hidden">
+        <div class="px-4 sm:px-5 pb-40 w-full lg:max-w-7xl mx-auto lg:px-8 relative z-10 overflow-x-hidden">
 
             <!-- Date bar -->
             <div class="flex items-center justify-between pt-3 pb-1">
@@ -460,7 +477,7 @@ onMounted(() => {
             </header>
 
             <div class="grid grid-cols-2 gap-3 mb-5 lg:mb-6 animate-fade-in-up delay-100">
-                <div class="bg-linear-to-br from-green-900 to-green-800/50 p-3 lg:p-4 rounded-xl border border-white/10 relative overflow-hidden group">
+                <div class="bg-linear-to-br from-success-deep to-success-mid/50 p-3 lg:p-4 rounded-xl border border-white/10 relative overflow-hidden group">
                     <div class="flex items-center gap-1.5 mb-1 lg:mb-2">
                         <div class="w-1 h-1.5 lg:w-1.5 lg:h-1.5 rounded-full bg-green-400"></div>
                         <p class="text-2xs font-bold text-gray-400 uppercase tracking-widest">{{ $t('types.income') }}</p>
@@ -469,7 +486,7 @@ onMounted(() => {
                         <span class="text-2xs mr-0.5 opacity-70">+Rp</span>{{ formatNumber(totalIncome) }}
                     </p>
                 </div>
-                <div class="bg-linear-to-br from-red-900 to-red-800/50 p-3 lg:p-4 rounded-xl border border-white/10 relative overflow-hidden group">
+                <div class="bg-linear-to-br from-danger-deep to-danger-mid/50 p-3 lg:p-4 rounded-xl border border-white/10 relative overflow-hidden group">
                     <div class="flex items-center gap-1.5 mb-1 lg:mb-2">
                         <div class="w-1 h-1.5 lg:w-1.5 lg:h-1.5 rounded-full bg-red-400"></div>
                         <p class="text-2xs font-bold text-gray-400 uppercase tracking-widest">{{ $t('types.expense') }}</p>
@@ -507,7 +524,7 @@ onMounted(() => {
                             :class="[
                                 'text-2xs font-bold uppercase tracking-widest px-2 lg:px-3 py-1.5 rounded-md transition-colors duration-200',
                                 barView === v.key
-                                    ? 'bg-linear-to-br from-purple-500 to-purple-700 text-white shadow-sm'
+                                    ? 'bg-linear-to-br from-brand-soft to-brand-deep text-white shadow-sm'
                                     : 'text-gray-500 hover:text-white'
                             ]">{{ v.label() }}</button>
                     </div>
@@ -552,7 +569,7 @@ onMounted(() => {
                     :class="[
                         'text-2xs font-bold uppercase tracking-widest py-2 lg:py-3 rounded-lg transition-colors duration-200',
                         categoryView === c.key
-                            ? 'bg-linear-to-br from-purple-500 to-purple-700 text-white shadow-sm'
+                            ? 'bg-linear-to-br from-brand-soft to-brand-deep text-white shadow-sm'
                             : 'text-gray-500 hover:text-white'
                     ]">{{ c.label() }}</button>
             </div>

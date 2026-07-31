@@ -17,7 +17,7 @@ const isExpense = computed(() => props.type === 'expense')
 const isWallet = computed(() => !!props.groupType)
 const accentClass = computed(() => {
   if (isWallet.value) return 'text-white font-bold'
-  return isExpense.value ? 'text-rose-400/90' : 'text-emerald-400/90'
+  return isExpense.value ? 'text-expense-text' : 'text-income-text'
 })
 
 const typeName = computed(() => {

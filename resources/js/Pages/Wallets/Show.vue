@@ -88,7 +88,7 @@ const getTypeName = (name) => ({
 <template>
 	<AuthenticatedLayout :fullWidth="true">
 		<Head :title="wallet.name" />
-		<div class="p-5 w-full lg:max-w-4xl mx-auto lg:px-8 relative">
+		<div class="p-5 w-full lg:max-w-7xl mx-auto lg:px-8 relative">
 			<header class="hidden lg:block mb-6 pt-4">
 				<h1 class="text-2xl font-bold text-white tracking-tight">{{ wallet.name }}</h1>
 			</header>

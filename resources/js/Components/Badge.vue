@@ -15,6 +15,8 @@
  *              (default: 'neutral')
  *   size     — Ukuran: 'sm' | 'md' (default: 'sm')
  *   dot      — Tampilkan dot indicator sebelum teks (default: false)
+ *   pill     — Bentuk pill: rounded-full + uppercase + tracking lebar
+ *              (default: false — bentuk default rounded-md)
  *
  * Slots:
  *   default  — Konten teks badge
@@ -37,6 +39,10 @@ const props = defineProps({
         validator: (v) => ['sm', 'md'].includes(v),
     },
     dot: {
+        type: Boolean,
+        default: false,
+    },
+    pill: {
         type: Boolean,
         default: false,
     },
@@ -69,12 +75,20 @@ const dotColorClasses = computed(() => ({
 }[props.variant]))
 
 const sizeClasses = computed(() => ({
-    sm: 'text-2xs px-1.5 py-0.5',
-    md: 'text-xs  px-2   py-1',
+    sm: 'text-2xs',
+    md: 'text-xs',
 }[props.size]))
 
+const shapeClasses = computed(() =>
+    props.pill
+        ? 'rounded-full uppercase tracking-widest px-3 py-1'
+        : props.size === 'md'
+            ? 'rounded-md px-2 py-1'
+            : 'rounded-md px-1.5 py-0.5'
+)
+
 const badgeClasses = computed(() =>
-    `inline-flex items-center gap-1 rounded-md border font-bold ${variantClasses.value} ${sizeClasses.value}`
+    `inline-flex items-center gap-1 border font-bold ${variantClasses.value} ${sizeClasses.value} ${shapeClasses.value}`
 )
 </script>
 

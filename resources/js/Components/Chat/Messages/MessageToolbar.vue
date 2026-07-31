@@ -48,7 +48,7 @@ async function handleCopy() {
             :class="[
                 'w-6 h-6 flex items-center justify-center rounded-lg transition-all',
                 copied
-                    ? 'text-emerald-400'
+                    ? 'text-income-text'
                     : 'text-gray-600 hover:text-gray-300 hover:bg-white/8',
             ]"
             :title="copied ? t('chatTransaction.copied') : t('chatTransaction.copyMessage')"
@@ -79,7 +79,7 @@ async function handleCopy() {
         <button
             v-if="isError"
             @click.stop="$emit('retry', message)"
-            class="flex items-center gap-1 px-1.5 h-6 rounded-lg text-red-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
+            class="flex items-center gap-1 px-1.5 h-6 rounded-lg text-expense-text hover:bg-expense-bg-hover transition-all"
             :title="t('chatTransaction.retry')"
             :aria-label="t('chatTransaction.retrySend')"
         >

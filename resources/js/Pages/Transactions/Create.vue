@@ -435,7 +435,7 @@ const handleBack = () => router.visit(route('dashboard'))
                         <p class="text-xs text-gray-500 mt-1">{{ t('transaction.chooseTypeToContinue') }}</p>
                     </div>
 
-                    <div class="w-full max-w-sm grid grid-cols-1 gap-3">
+                    <div class="w-full sm:max-w-md grid grid-cols-1 gap-3">
                         <button
                             v-for="item in TYPE_ITEMS"
                             :key="item.tab"
@@ -801,7 +801,7 @@ const handleBack = () => router.visit(route('dashboard'))
                 <div v-if="showDateModal"
                     class="fixed inset-0 z-[200] flex flex-col justify-end bg-black/70 backdrop-blur-sm"
                     @click.self="showDateModal = false">
-                    <div class="w-full max-w-md mx-auto bg-gray-900 border border-white/10 rounded-t-2xl p-5 pb-8 animate-slide-up">
+                    <div class="w-full sm:max-w-xl mx-auto bg-gray-900 border border-white/10 rounded-t-2xl p-5 pb-8 animate-slide-up">
                         <div class="w-10 h-1 bg-white/20 rounded-full mx-auto mb-4 cursor-pointer" @click="showDateModal = false"></div>
                         <h3 class="text-sm font-black text-gray-400 mb-4 text-center tracking-widest uppercase">{{ t('transaction.chooseDate') }}</h3>
                         <div class="flex gap-2 mb-3">
@@ -837,7 +837,7 @@ const handleBack = () => router.visit(route('dashboard'))
                 <div v-if="showWalletModal"
                     class="fixed inset-0 z-[200] flex flex-col justify-end bg-black/70 backdrop-blur-sm"
                     @click.self="showWalletModal = false">
-                    <div class="w-full max-w-md mx-auto bg-gray-900 border border-white/10 rounded-t-2xl p-5 pb-8 animate-slide-up">
+                    <div class="w-full sm:max-w-xl mx-auto bg-gray-900 border border-white/10 rounded-t-2xl p-5 pb-8 animate-slide-up">
                         <div class="w-10 h-1 bg-white/20 rounded-full mx-auto mb-4 cursor-pointer" @click="showWalletModal = false"></div>
                         <h3 class="text-sm font-black text-gray-400 mb-4 text-center tracking-widest uppercase">{{ t('transaction.chooseWallet') }}</h3>
                         <div class="overflow-y-auto no-scrollbar space-y-2 max-h-[55vh]">

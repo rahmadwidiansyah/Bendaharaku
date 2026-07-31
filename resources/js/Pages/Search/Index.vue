@@ -108,7 +108,7 @@ const amountPrefix = (item) => {
     <AuthenticatedLayout>
         <Head :title="'Cari: ' + searchQuery" />
 
-        <div class="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto">
+        <div class="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto">
             <!-- Search input -->
             <div class="relative mb-6 animate-fade-in-up">
                 <div class="flex items-center gap-3 bg-gray-900 border border-white/15 rounded-2xl px-4 py-3.5 shadow-2xl shadow-black/50">

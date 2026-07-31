@@ -64,7 +64,7 @@ const statusText = computed(() =>
             <h1 class="text-sm font-bold text-white leading-tight truncate">{{ botName }}</h1>
             <p :class="[
                 'text-2xs leading-tight transition-colors duration-200 truncate',
-                isTyping ? 'text-emerald-400' : 'text-gray-600'
+                isTyping ? 'text-income-text' : 'text-gray-600'
             ]">{{ statusText }}</p>
         </div>
 
