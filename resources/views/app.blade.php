@@ -21,14 +21,27 @@
     <meta property="og:image" content="{{ asset('logo.png') }}">
 
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=inter:400,600,700,800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800,900&display=swap" rel="stylesheet" />
+
+    <script>
+        // ── Anti-FOUC: Theme ──────────────────────────────────────────
+        // Mirrors useTheme.js resolve + AuthenticatedLayout init logic.
+        // Server-rendered preference (DB) | default 'system'.
+        // Applies `.light` synchronously BEFORE first paint — no flash.
+        (function () {
+            var t = @json(auth()->user()?->theme ?? 'system');
+            t = ['dark', 'light', 'system'].includes(t) ? t : 'system';
+            var light = t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches);
+            if (light) document.documentElement.classList.add('light');
+        })();
+    </script>
 
     @routes
     @vite(['resources/js/app.js'])
     @inertiaHead
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1031540480419431" crossorigin="anonymous"></script>
 </head>
-<body class="font-sans antialiased text-gray-900 bg-gray-800">
+<body class="font-sans antialiased">
     @inertia
 </body>
 </html>

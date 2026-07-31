@@ -188,7 +188,7 @@ const calendarDayNames = computed(() => [
 
 		<Head title="Dashboard" />
 
-		<div class="p-3 sm:p-5 w-full mx-auto max-w-screen-sm sm:max-w-none">
+		<div class="p-3 sm:p-5 w-full mx-auto">
 			<!-- dual grid desktop view. (left: asset cards, right: transactions list) -->
 			<div :class="isDesktopLayout ? 'lg:flex lg:gap-8 lg:items-start' : ''">
 				<!-- left asset cards -->
@@ -200,9 +200,9 @@ const calendarDayNames = computed(() => [
 					<!-- MINI CASHFLOW -->
 					<div class="grid grid-cols-2 gap-2 sm:gap-3 mb-5 sm:mb-10 animate-fade-in-up delay-200">
 						<div
-							class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-lg sm:rounded-xl p-2.5 sm:p-4 flex items-center gap-2.5 sm:gap-3 relative overflow-hidden group">
+							class="bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] rounded-lg sm:rounded-xl p-2.5 sm:p-4 flex items-center gap-2.5 sm:gap-3 relative overflow-hidden group">
 							<div
-								class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/5 flex items-center justify-center text-green-400/70 shrink-0">
+								class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/5 flex items-center justify-center text-[var(--color-income-text)] shrink-0">
 								<svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24"
 									stroke="currentColor" stroke-width="2.5">
 									<path stroke-linecap="round" stroke-linejoin="round"
@@ -210,18 +210,18 @@ const calendarDayNames = computed(() => [
 								</svg>
 							</div>
 							<div class="min-w-0">
-								<p class="text-2xs text-gray-500 font-bold uppercase tracking-widest">{{
+								<p class="text-2xs text-[var(--color-text-secondary)] font-bold uppercase tracking-widest">{{
 									$t('dashboard.income') }}</p>
-								<p class="text-xs sm:text-sm font-bold text-white tracking-tight mt-0.5 truncate">
-									<span class="text-2xs text-gray-500 mr-1">Rp</span><span class="text-green-400/80">{{
+								<p class="text-xs sm:text-sm font-bold text-[var(--color-text-primary)] tracking-tight mt-0.5 truncate">
+									<span class="text-2xs text-[var(--color-text-secondary)] mr-1">Rp</span><span class="text-[var(--color-income-text)]">{{
 										isBalanceVisible ? formatNumber(thisMonthIncome) : '••••' }}</span>
 								</p>
 							</div>
 						</div>
 						<div
-							class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-lg sm:rounded-xl p-2.5 sm:p-4 flex items-center gap-2.5 sm:gap-3 relative overflow-hidden group">
+							class="bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] rounded-lg sm:rounded-xl p-2.5 sm:p-4 flex items-center gap-2.5 sm:gap-3 relative overflow-hidden group">
 							<div
-								class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/5 flex items-center justify-center text-red-400/70 shrink-0">
+								class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/5 flex items-center justify-center text-[var(--color-expense-text)] shrink-0">
 								<svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24"
 									stroke="currentColor" stroke-width="2.5">
 									<path stroke-linecap="round" stroke-linejoin="round"
@@ -229,10 +229,10 @@ const calendarDayNames = computed(() => [
 								</svg>
 							</div>
 							<div class="min-w-0">
-								<p class="text-2xs text-gray-500 font-bold uppercase tracking-widest">{{
+								<p class="text-2xs text-[var(--color-text-secondary)] font-bold uppercase tracking-widest">{{
 									$t('dashboard.expense') }}</p>
-								<p class="text-xs sm:text-sm font-bold text-white tracking-tight mt-0.5 truncate">
-									<span class="text-2xs text-gray-500 mr-1">Rp</span><span class="text-red-400/80">{{
+								<p class="text-xs sm:text-sm font-bold text-[var(--color-text-primary)] tracking-tight mt-0.5 truncate">
+									<span class="text-2xs text-[var(--color-text-secondary)] mr-1">Rp</span><span class="text-[var(--color-expense-text)]">{{
 										isBalanceVisible ? formatNumber(thisMonthExpense) : '••••' }}</span>
 								</p>
 							</div>
@@ -246,25 +246,25 @@ const calendarDayNames = computed(() => [
 
 				<!-- RIGHT COLUMN (Desktop) -->
 				<div
-					:class="isDesktopLayout ? 'lg:w-2/3 lg:bg-gray-900/30 lg:p-6 lg:rounded-2xl lg:border lg:border-white/5' : 'mt-4 sm:mt-8'">
+					:class="isDesktopLayout ? 'lg:w-2/3 lg:bg-[var(--color-surface-muted)]/30 lg:p-6 lg:rounded-2xl lg:border lg:border-[var(--color-border-subtle)]' : 'mt-4 sm:mt-8'">
 					<!-- TRANSACTION HISTORY HEADER-->
 					<div class="mb-3 sm:mb-4 px-1 animate-fade-in-up delay-500">
 						<div class="flex items-center gap-2 mb-2">
 							<h2
-								class="text-2xs font-bold text-white uppercase tracking-widest flex items-center gap-2 shrink-0">
+								class="text-2xs font-bold text-[var(--color-text-primary)] uppercase tracking-widest flex items-center gap-2 shrink-0">
 								<span class="w-1.5 h-1.5 rounded-full bg-[var(--color-brand)]"></span>
 								{{ $t('dashboard.transactionHistory') }}
 							</h2>
 							<div class="flex-1 h-px bg-linear-to-r from-[var(--color-brand-border)] to-transparent"></div>
 						</div>
-						<div class="grid grid-cols-2 gap-1 p-1 rounded-xl border border-white/10 bg-gray-900/70 shadow-sm shadow-black/20">
+						<div class="grid grid-cols-2 gap-1 p-1 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-raised)]/70 shadow-sm shadow-black/20">
 							<button @click="activeHistoryTab = 'detail'"
-								:class="activeHistoryTab === 'detail' ? 'text-white bg-[var(--color-brand)] shadow-sm' : 'text-gray-400 hover:text-white hover:bg-white/5'"
+								:class="activeHistoryTab === 'detail' ? 'text-white bg-[var(--color-brand)] shadow-sm' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-white/5'"
 								class="px-3 py-2 rounded-lg text-2xs font-bold uppercase tracking-widest transition-all text-center">
 								{{ $t('dashboard.detailTab') }}
 							</button>
 							<button @click="activeHistoryTab = 'calendar'"
-								:class="activeHistoryTab === 'calendar' ? 'text-white bg-[var(--color-brand)] shadow-sm' : 'text-gray-400 hover:text-white hover:bg-white/5'"
+								:class="activeHistoryTab === 'calendar' ? 'text-white bg-[var(--color-brand)] shadow-sm' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-white/5'"
 								class="px-3 py-2 rounded-lg text-2xs font-bold uppercase tracking-widest transition-all text-center">
 								{{ $t('dashboard.calendarTab') }}
 							</button>
@@ -272,9 +272,9 @@ const calendarDayNames = computed(() => [
 					</div>
 					<!-- Month Navigation & Filter Type-->
 					<div class="grid grid-cols-[1fr_auto] gap-2 mb-3 sm:mb-4 animate-fade-in-up delay-500 px-1 items-center">
-						<div class="flex items-center justify-between gap-2 min-w-0 rounded-xl border border-white/10 bg-gray-900/70 px-2 py-1.5 shadow-sm shadow-black/20">
+						<div class="flex items-center justify-between gap-2 min-w-0 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-raised)]/70 px-2 py-1.5 shadow-sm shadow-black/20">
 							<button @click="prevMonth"
-								class="p-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-colors active:scale-95 shrink-0">
+								class="p-1.5 rounded-lg bg-white/5 border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors active:scale-95 shrink-0">
 								<svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" viewBox="0 0 24 24"
 									stroke="currentColor" stroke-width="2.5">
 									<path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
@@ -282,11 +282,11 @@ const calendarDayNames = computed(() => [
 							</button>
 							<p class="min-w-0 flex-1 text-center">
 								<span class="block text-[10px] font-bold text-[var(--color-brand)] uppercase tracking-[0.18em]">Periode</span>
-								<span class="block text-sm font-bold text-white tracking-tight leading-tight truncate">{{ formattedPeriod }}</span>
+								<span class="block text-sm font-bold text-[var(--color-text-primary)] tracking-tight leading-tight truncate">{{ formattedPeriod }}</span>
 							</p>
 							<button @click="nextMonth" :disabled="!canGoNextMonth"
 								class="p-1.5 rounded-lg border transition-colors active:scale-95 shrink-0"
-								:class="canGoNextMonth ? 'bg-white/5 border-white/10 text-gray-400 hover:text-white' : 'bg-white/[0.03] border-white/5 text-gray-600 cursor-not-allowed'">
+								:class="canGoNextMonth ? 'bg-white/5 border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]' : 'bg-white/[0.03] border-[var(--color-border-subtle)] text-[var(--color-text-muted)] cursor-not-allowed'">
 								<svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" viewBox="0 0 24 24"
 									stroke="currentColor" stroke-width="2.5">
 									<path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
@@ -294,8 +294,8 @@ const calendarDayNames = computed(() => [
 							</button>
 						</div>
 						<button type="button" @click="showSortModal = true"
-							class="flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-gray-900/70 px-3 py-2 text-2xs font-bold uppercase tracking-widest active:scale-95 transition-all shadow-sm shadow-black/20"
-							:class="type ? 'text-[var(--color-brand)] border-[var(--color-brand-border)]' : 'text-gray-400 hover:text-white'">
+							class="flex items-center justify-center gap-1.5 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-raised)]/70 px-3 py-2 text-2xs font-bold uppercase tracking-widest active:scale-95 transition-all shadow-sm shadow-black/20"
+							:class="type ? 'text-[var(--color-brand)] border-[var(--color-brand-border)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'">
 							<svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"
 								stroke-width="2.5">
 								<path stroke-linecap="round" stroke-linejoin="round"
@@ -308,22 +308,22 @@ const calendarDayNames = computed(() => [
 					<!-- Kalender Tab Active -->
 					<div v-if="activeHistoryTab === 'calendar'" class="animate-fade-in-up delay-500 mb-4 sm:mb-8 px-1">
 						<div
-							class="bg-linear-to-br from-gray-900 to-gray-800 p-2.5 sm:p-4 rounded-xl border border-white/10 mb-3 sm:mb-5 shadow-lg shadow-black/20 w-full">
+							class="bg-[var(--color-surface-raised)] p-2.5 sm:p-4 rounded-xl border border-[var(--color-border-default)] mb-3 sm:mb-5 shadow-lg shadow-black/20 w-full">
 							<!-- Pemasukan, Total, Pengeluaran filter -->
 							<div class="flex justify-center mb-2.5 sm:mb-3">
-								<div class="flex w-full bg-gray-900 rounded-xl border border-white/10 p-0.5">
+								<div class="flex w-full bg-[var(--color-surface-muted)] rounded-xl border border-[var(--color-border-default)] p-0.5">
 									<button @click="calendarFilter = 'income'"
-										:class="calendarFilter === 'income' ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'text-gray-400 hover:text-white border border-transparent'"
+										:class="calendarFilter === 'income' ? 'bg-[var(--color-income-bg)] text-[var(--color-income-text)] border border-[var(--color-income-border)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-transparent'"
 										class="flex-1 px-2 py-1.5 rounded-lg text-2xs font-bold uppercase tracking-widest transition-all text-center">
 										{{ $t('dashboard.calendarFilter.income') }}
 									</button>
 									<button @click="calendarFilter = 'total'"
-										:class="calendarFilter === 'total' ? 'text-white border bg-[var(--color-brand)] border-[var(--color-brand)]' : 'text-gray-400 hover:text-white border border-transparent'"
+										:class="calendarFilter === 'total' ? 'text-white border bg-[var(--color-brand)] border-[var(--color-brand)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-transparent'"
 										class="flex-1 px-2 py-1.5 rounded-lg text-2xs font-bold uppercase tracking-widest transition-all text-center">
 										{{ $t('dashboard.calendarFilter.total') }}
 									</button>
 									<button @click="calendarFilter = 'expense'"
-										:class="calendarFilter === 'expense' ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'text-gray-400 hover:text-white border border-transparent'"
+										:class="calendarFilter === 'expense' ? 'bg-[var(--color-expense-bg)] text-[var(--color-expense-text)] border border-[var(--color-expense-border)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-transparent'"
 										class="flex-1 px-2 py-1.5 rounded-lg text-2xs font-bold uppercase tracking-widest transition-all text-center">
 										{{ $t('dashboard.calendarFilter.expense') }}
 									</button>
@@ -332,7 +332,7 @@ const calendarDayNames = computed(() => [
 							<!-- Day name headers -->
 							<div class="grid grid-cols-7 gap-1 text-center mb-1.5">
 								<div v-for="day in calendarDayNames" :key="day"
-									class="text-[9px] sm:text-2xs font-bold text-gray-500 uppercase tracking-widest py-1">
+									class="text-[9px] sm:text-2xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest py-1">
 									{{ day }}
 								</div>
 							</div>
@@ -343,15 +343,15 @@ const calendarDayNames = computed(() => [
 										class="w-full h-full rounded-md flex flex-col items-center justify-center p-0.5 border transition-all relative overflow-visible"
 										:class="[
 											selectedCalendarDate === day.dateStr ? 'bg-[var(--color-brand-subtle)] border-[var(--color-brand)] z-10' : 'bg-white/5 border-transparent hover:bg-white/10 z-0 hover:z-10',
-											day.dateStr === todayYMD && selectedCalendarDate !== day.dateStr ? 'border-white/20' : '',
+											day.dateStr === todayYMD && selectedCalendarDate !== day.dateStr ? 'border-[var(--color-border-strong)]' : '',
 										]">
 										<span class="text-2xs font-bold leading-none mb-0.5"
-											:class="selectedCalendarDate === day.dateStr ? 'text-[var(--color-brand)]' : 'text-gray-300'">{{
+											:class="selectedCalendarDate === day.dateStr ? 'text-[var(--color-brand)]' : 'text-[var(--color-text-secondary)]'">{{
 												day.day }}</span>
 										<div v-if="day.largestType" class="flex flex-col items-center overflow-visible">
 											<span
 												class="text-2xs font-bold leading-none tracking-tight whitespace-nowrap"
-												:class="day.largestType === 'income' ? 'text-green-400' : 'text-red-400'">
+												:class="day.largestType === 'income' ? 'text-[var(--color-income-text)]' : 'text-[var(--color-expense-text)]'">
 												{{ day.largestType === 'income' ? '+' : '-' }}{{
 													formatCompact(day.largestAmount) }}
 											</span>
@@ -366,18 +366,18 @@ const calendarDayNames = computed(() => [
 					<div class="space-y-2 sm:space-y-4 animate-fade-in-up delay-500 mb-4 sm:mb-8">
 						<!-- Calendar Tab: Grid Selection Group History-->
 						<div v-if="activeHistoryTab === 'calendar'" class="flex items-center gap-2 mb-2 sm:mb-3 px-1">
-							<svg class="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+							<svg class="w-4 h-4 text-[var(--color-brand)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"
 								stroke-width="2">
 								<path stroke-linecap="round" stroke-linejoin="round"
 									d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
 							</svg>
-							<h3 class="text-2xs font-bold text-gray-300 uppercase tracking-widest">
+							<h3 class="text-2xs font-bold text-[var(--color-text-secondary)] uppercase tracking-widest">
 								{{ selectedDateFormatted }}
 							</h3>
 						</div>
 
 						<!-- Group Transaction per Date -->
-						<div v-for="(group, dateKey) in visibleTransactions" :key="dateKey" class="border-b border-white/[0.06] last:border-b-0 pb-1 sm:pb-2">
+						<div v-for="(group, dateKey) in visibleTransactions" :key="dateKey" class="border-b border-[var(--color-border-subtle)] last:border-b-0 pb-1 sm:pb-2">
 							<div @click="activeHistoryTab === 'detail' && toggleDate(dateKey)"
 								class="flex justify-between items-center py-2.5 px-1 transition-colors group/header"
 								:class="[
@@ -394,8 +394,8 @@ const calendarDayNames = computed(() => [
 									{{ group.date }}
 								</h3>
 								<div class="text-2xs font-bold flex gap-2.5 tracking-wide">
-									<span v-if="group.income > 0" class="text-green-400/90">+{{ masked(group.income) }}</span>
-									<span v-if="group.expense > 0" class="text-red-400/90">-{{ masked(group.expense) }}</span>
+									<span v-if="group.income > 0" class="text-[var(--color-income-text)]">+{{ masked(group.income) }}</span>
+									<span v-if="group.expense > 0" class="text-[var(--color-expense-text)]">-{{ masked(group.expense) }}</span>
 								</div>
 							</div>
 
@@ -407,29 +407,29 @@ const calendarDayNames = computed(() => [
 									:class="activeHistoryTab === 'detail' && collapsedDates[dateKey] ? 'opacity-0' : 'opacity-100'">
 									<div>
 										<button v-for="(trx, trxIdx) in group.transactions" :key="trx.id" @click="openModal(trx)"
-											class="w-full text-left flex items-center gap-2.5 sm:gap-3 py-2.5 sm:py-3 px-1 transition-colors hover:bg-white/[0.03] active:bg-white/[0.06] border-b border-white/[0.04] last:border-b-0">
+											class="w-full text-left flex items-center gap-2.5 sm:gap-3 py-2.5 sm:py-3 px-1 transition-colors hover:bg-white/[0.03] active:bg-white/[0.06] border-b border-[var(--color-border-subtle)] last:border-b-0">
 											<div class="relative shrink-0">
 												<AppIcon :icon="trx.category?.icon" fallback="file-text"
 													:class="['w-5 h-5', getCategoryIconColor(trx.type?.name)]" />
 												<span v-if="!trx.is_cleared"
-													class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-gray-900" />
+													class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[var(--color-debt-text)] ring-2 ring-[var(--color-surface-raised)]" />
 											</div>
 
 											<div class="flex-1 min-w-0 leading-tight">
-												<p class="text-xs font-bold text-white truncate">
+												<p class="text-xs font-bold text-[var(--color-text-primary)] truncate">
 													{{ trx.category?.category_name || t('types.transfer') }}
 												</p>
-												<p class="text-2xs text-gray-500 truncate mt-[1px]">
+												<p class="text-2xs text-[var(--color-text-muted)] truncate mt-[1px]">
 													{{ getWalletName(trx) }}
 												</p>
 											</div>
 
 											<div class="text-right shrink-0 flex flex-col items-end">
 												<p class="text-2xs font-black" :class="trx.type.name === 'Income' || (['Debt', 'Receivable'].includes(trx.type.name) && trx.source_wallet?.group_type === 'System')
-														? 'text-green-400'
+														? 'text-[var(--color-income-text)]'
 														: trx.type.name === 'Transfer' && !['Debt', 'Receivable'].includes(trx.type.name)
-															? 'text-blue-400'
-															: 'text-red-400'
+															? 'text-[var(--color-transfer-text)]'
+															: 'text-[var(--color-expense-text)]'
 													">
 													{{
 														trx.type.name === 'Income' || (['Debt',
@@ -442,7 +442,7 @@ const calendarDayNames = computed(() => [
 														: '-'
 													}}{{ isBalanceVisible ? formatNumber(trx.amount) : '••••' }}
 												</p>
-												<span class="text-2xs text-gray-600 mt-[2px]">{{ trx.time }}</span>
+												<span class="text-2xs text-[var(--color-text-disabled)] mt-[2px]">{{ trx.time }}</span>
 											</div>
 										</button>
 									</div>
@@ -452,8 +452,8 @@ const calendarDayNames = computed(() => [
 
 						<!-- Empty state -->
 						<div v-if="Object.keys(visibleTransactions).length === 0"
-							class="text-center py-8 sm:py-12 bg-linear-to-br from-gray-900 to-gray-800 rounded-xl border border-white/10 relative overflow-hidden group">
-							<p class="text-2xs font-bold text-gray-500 uppercase tracking-widest relative z-10">
+							class="text-center py-8 sm:py-12 bg-[var(--color-surface-raised)] rounded-xl border border-[var(--color-border-default)] relative overflow-hidden group">
+							<p class="text-2xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest relative z-10">
 								{{ activeHistoryTab === 'calendar' ? $t('dashboard.noTransactions') :
 									$t('common.dataEmpty') }}
 							</p>
@@ -468,9 +468,9 @@ const calendarDayNames = computed(() => [
 				class="fixed inset-0 z-60 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
 				@click.self="showSortModal = false">
 				<div
-					class="w-full max-w-sm bg-linear-to-br from-gray-900 to-gray-800 rounded-lg sm:rounded-xl border border-white/10 p-4 sm:p-6 animate-pop-in relative">
+					class="w-full max-w-md sm:max-w-lg md:max-w-xl bg-[var(--color-surface-raised)] rounded-lg sm:rounded-xl border border-[var(--color-border-default)] p-4 sm:p-6 animate-pop-in relative">
 					<button type="button" @click="showSortModal = false"
-						class="absolute top-3 sm:top-4 right-3 sm:right-4 text-gray-500 hover:text-white transition-colors">
+						class="absolute top-3 sm:top-4 right-3 sm:right-4 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors">
 						<svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"
 							stroke-width="2.5">
 							<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -478,18 +478,18 @@ const calendarDayNames = computed(() => [
 					</button>
 
 					<h3
-						class="text-xs sm:text-sm font-bold text-white mb-4 sm:mb-6 text-center uppercase tracking-widest">
+						class="text-xs sm:text-sm font-bold text-[var(--color-text-primary)] mb-4 sm:mb-6 text-center uppercase tracking-widest">
 						{{ $t('dashboard.filterType') }}</h3>
 					<div class="grid grid-cols-2 gap-2 sm:gap-3">
 						<button @click="setType('')"
-							class="col-span-2 py-2.5 sm:py-3 rounded-lg sm:rounded-xl border border-white/10 text-2xs font-bold uppercase tracking-widest transition-all"
-							:class="!type ? 'bg-purple-600 text-white' : 'bg-linear-to-br from-gray-900 to-gray-800 text-gray-300'">
+							class="col-span-2 py-2.5 sm:py-3 rounded-lg sm:rounded-xl border border-[var(--color-border-default)] text-2xs font-bold uppercase tracking-widest transition-all"
+							:class="!type ? 'bg-[var(--color-brand)] text-white' : 'bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]'">
 							{{ $t('types.all') }}
 						</button>
 						<button v-for="key in ['Income', 'Expense', 'Transfer', 'Debt', 'Receivable']" :key="key"
 							@click="setType(key)"
-							class="py-2.5 sm:py-3 rounded-lg sm:rounded-xl border border-white/10 text-2xs font-bold uppercase tracking-widest transition-all"
-							:class="type === key ? 'bg-linear-to-br from-purple-800 to-purple-500 text-white' : 'bg-linear-to-br from-gray-900 to-gray-800 text-gray-300'">
+							class="py-2.5 sm:py-3 rounded-lg sm:rounded-xl border border-[var(--color-border-default)] text-2xs font-bold uppercase tracking-widest transition-all"
+							:class="type === key ? 'bg-[var(--color-brand)] text-white' : 'bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]'">
 							{{ getTypeName(key) }}
 						</button>
 					</div>

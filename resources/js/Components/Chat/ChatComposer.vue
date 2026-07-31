@@ -117,7 +117,7 @@ onBeforeUnmount(() => {
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50',
           isLoading
             ? 'opacity-40 cursor-not-allowed bg-gray-800/60 border-white/8 text-gray-600'
-            : 'bg-gray-800/80 border-white/8 text-gray-400 hover:text-sky-400 hover:border-sky-500/30 hover:bg-gray-800 active:scale-95',
+            : 'bg-gray-800/80 border-white/8 text-gray-400 hover:text-transfer-text hover:border-transfer-border hover:bg-gray-800 active:scale-95',
         ]"
         :aria-label="t('chat.attachmentButton')"
         :title="t('chat.attachmentTitle')"

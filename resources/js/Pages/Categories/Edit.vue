@@ -51,7 +51,7 @@ const confirmDelete = () => {
 
         <Head :title="t('category.titleEdit')" />
 
-        <div class="p-4 sm:p-5 w-full lg:max-w-4xl mx-auto lg:px-8 relative animate-fade-in-up">
+        <div class="p-4 sm:p-5 w-full lg:max-w-7xl mx-auto lg:px-8 relative animate-fade-in-up">
 
             <header class="hidden lg:block mb-8 pt-4">
                 <p class="text-2xs text-gray-300 font-semibold mb-1 uppercase tracking-wider">Vault</p>
@@ -119,7 +119,7 @@ const confirmDelete = () => {
                     </button>
                     <button type="submit" :disabled="form.processing"
                         :class="isSystem ? 'w-full' : 'flex-2'"
-                        class="bg-linear-to-br from-purple-800 to-purple-700 text-white font-bold text-sm tracking-wide py-3.5 lg:py-4 rounded-xl shadow-lg active:scale-95 transition-all hover:-translate-y-0.5">
+                        class="bg-linear-to-br from-brand-deep to-brand-mid text-white font-bold text-sm tracking-wide py-3.5 lg:py-4 rounded-xl shadow-lg active:scale-95 transition-all hover:-translate-y-0.5">
                         {{ form.processing ? t('btn.saving') : t('btn.update') }}
                     </button>
                 </div>

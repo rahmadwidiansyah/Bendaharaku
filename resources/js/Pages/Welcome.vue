@@ -1,5 +1,6 @@
 <script setup>
 import { Head, Link } from '@inertiajs/vue3';
+import PageContainer from '@/Components/PageContainer.vue';
 
 defineProps({
     canLogin: {
@@ -15,8 +16,8 @@ defineProps({
 
     <Head title="Welcome" />
 
-    <div class="bg-gray-800 relative flex justify-center min-h-screen text-gray-900 font-sans antialiased">
-        <div class="w-full max-w-md relative z-10 flex flex-col min-h-screen bg-gray-800 backdrop-blur-sm">
+    <div class="bg-gray-800 min-h-screen text-gray-900 font-sans antialiased">
+        <PageContainer class="flex flex-col min-h-screen">
 
             <nav class="w-full p-5 flex justify-between items-center relative z-50">
                 <div class="flex items-center gap-2">
@@ -26,7 +27,7 @@ defineProps({
                 </div>
                 <div class="flex items-center gap-3" v-if="canLogin">
                     <Link v-if="$page.props.auth?.user" href="/dashboard"
-                        class="text-2xs font-bold bg-transparent-to-br from-gray-900 to-gray-800 border border-white/10 text-purple-400 px-4 py-2 rounded-xl hover:bg-gray-700 transition-all uppercase tracking-widest">
+                        class="text-2xs font-bold bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 text-purple-400 px-4 py-2 rounded-xl hover:bg-gray-700 transition-all uppercase tracking-widest">
                         Dashboard
                     </Link>
                     <template v-else>
@@ -38,18 +39,18 @@ defineProps({
                 </div>
             </nav>
 
-            <main class="flex-1 flex flex-col items-center px-5 pt-8 pb-10">
+            <main class="flex-1 flex flex-col items-center px-5 pt-8 pb-10 mx-auto w-full max-w-2xl">
 
                 <div class="text-center w-full animate-fade-in-up">
                     <h1
-                        class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-gray-400 to-gray-200 tracking-tighter mb-4 leading-[1.1]">
+                        class="text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-gray-400 to-gray-200 tracking-tighter mb-4 leading-[1.1]">
                         Kendali Finansial <br>
                         <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-300">Di
                             Ujung
                             Jari</span>
                     </h1>
 
-                    <p class="text-gray-400 text-2xs mb-8 leading-relaxed font-medium px-2">
+                    <p class="text-gray-400 text-sm mb-8 leading-relaxed font-medium px-2">
                         Catat pemasukan harian, pantau saldo dompet, hingga lacak hutang teman. Semua dalam balutan
                         dark-mode
                         premium yang pas di kantong.
@@ -73,37 +74,37 @@ defineProps({
                     </div>
                 </div>
 
-                <div class="flex flex-col gap-4 mt-12 w-full">
-                    <div class="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-5 flex items-center gap-4 animate-fade-in-up delay-100 animate-float"
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-12 w-full">
+                    <div class="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-5 flex flex-col sm:flex-row items-center gap-4 animate-fade-in-up delay-100 animate-float"
                         style="animation-delay: 0s;">
                         <div
                             class="w-12 h-12 shrink-0 bg-gray-900 rounded-xl flex items-center justify-center text-xl border border-white/10">
                             📊</div>
-                        <div>
+                        <div class="text-center sm:text-left">
                             <h3 class="text-sm font-bold text-white mb-1 tracking-tight">Grafik Pintar</h3>
                             <p class="text-2xs text-gray-500 leading-relaxed">Pantau arus kas dengan diagram interaktif
                                 bulanan.</p>
                         </div>
                     </div>
 
-                    <div class="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-5 flex items-center gap-4 animate-fade-in-up delay-200 animate-float"
+                    <div class="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-5 flex flex-col sm:flex-row items-center gap-4 animate-fade-in-up delay-200 animate-float"
                         style="animation-delay: 1s;">
                         <div
                             class="w-12 h-12 shrink-0 bg-gray-900 rounded-xl flex items-center justify-center text-xl border border-white/10">
                             💳</div>
-                        <div>
+                        <div class="text-center sm:text-left">
                             <h3 class="text-sm font-bold text-white mb-1 tracking-tight">Multi Dompet</h3>
                             <p class="text-2xs text-gray-500 leading-relaxed">Pisahkan uang di BCA, Gopay, atau Uang
                                 Tunai.</p>
                         </div>
                     </div>
 
-                    <div class="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-5 flex items-center gap-4 animate-fade-in-up delay-300 animate-float"
+                    <div class="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-5 flex flex-col sm:flex-row items-center gap-4 animate-fade-in-up delay-300 animate-float"
                         style="animation-delay: 2s;">
                         <div
                             class="w-12 h-12 shrink-0 bg-gray-900 rounded-xl flex items-center justify-center text-xl border border-white/10">
                             🤝</div>
-                        <div>
+                        <div class="text-center sm:text-left">
                             <h3 class="text-sm font-bold text-white mb-1 tracking-tight">Lacak Hutang</h3>
                             <p class="text-2xs text-gray-500 leading-relaxed">Catat siapa saja yang ngutang beserta umur
                                 hutangnya.
@@ -112,12 +113,12 @@ defineProps({
                     </div>
                 </div>
 
-                <footer class="mt-auto text-center animate-fade-in-up delay-300">
+                <footer class="mt-auto text-center animate-fade-in-up delay-300 pt-12">
                     <p class="text-2xs text-gray-600">
                         &copy; {{ new Date().getFullYear() }} Bendaharaku V4.<br>Dibuat untuk Manajemen Keuangan.
                     </p>
                 </footer>
             </main>
-        </div>
+        </PageContainer>
     </div>
 </template>

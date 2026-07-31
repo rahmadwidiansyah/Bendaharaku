@@ -260,23 +260,23 @@ function toggle(id: string) {
       <div class="space-y-2">
 
         <!-- ── USER HERO CARD ─────────────────────────────────────── -->
-        <div class="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-purple-900/30 via-gray-900 to-gray-900 p-5 mb-6">
-          <div class="pointer-events-none absolute -top-12 -right-12 w-56 h-56 rounded-full bg-purple-600/10 blur-3xl" />
+        <div class="relative overflow-hidden rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-surface-raised)] p-5 mb-6">
+          <div class="pointer-events-none absolute -top-12 -right-12 w-56 h-56 rounded-full bg-[var(--color-brand)]/10 blur-3xl" />
           <div class="relative flex items-center gap-4">
 
             <!-- Avatar -->
             <div class="relative shrink-0">
-              <div class="w-14 h-14 rounded-xl overflow-hidden border border-purple-500/30 bg-gradient-to-br from-purple-600 to-indigo-900 flex items-center justify-center">
+              <div class="w-14 h-14 rounded-xl overflow-hidden border border-[var(--color-brand)]/30 bg-gradient-to-br from-[var(--color-brand)] to-[var(--color-brand-pressed)] flex items-center justify-center">
                 <img v-if="avatarSrc" :src="avatarSrc" :alt="user.name" class="w-full h-full object-cover" />
                 <span v-else class="text-lg font-black text-white/80 select-none">{{ initials }}</span>
               </div>
-              <span class="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-emerald-500 rounded-full border-2 border-gray-900" />
+              <span class="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-emerald-500 rounded-full border-2 border-[var(--color-surface-raised)]" />
             </div>
 
             <!-- Info -->
             <div class="flex-1 min-w-0">
-              <p class="text-2xs sm:text-sm font-bold text-white truncate">{{ user.name || '—' }}</p>
-              <p class="text-xs text-gray-400 truncate">{{ user.email || '—' }}</p>
+              <p class="text-2xs sm:text-sm font-bold text-[var(--color-text-primary)] truncate">{{ user.name || '—' }}</p>
+              <p class="text-xs text-[var(--color-text-secondary)] truncate">{{ user.email || '—' }}</p>
               <div class="mt-1.5 flex flex-wrap gap-1.5">
                 <span v-if="user.whatsapp_number" class="px-2 py-0.5 bg-green-500/10 border border-green-500/20 text-green-400 text-2xs font-bold rounded-md">WhatsApp</span>
                 <span v-if="user.telegram_id"     class="px-2 py-0.5 bg-sky-500/10   border border-sky-500/20   text-sky-400   text-2xs font-bold rounded-md">Telegram</span>
@@ -287,10 +287,10 @@ function toggle(id: string) {
             <!-- Edit shortcut -->
             <Link
               :href="route('settings.account.profile')"
-              class="shrink-0 p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
+              class="shrink-0 p-2 rounded-lg bg-[var(--color-surface-muted)] hover:bg-[var(--color-surface-overlay)] border border-[var(--color-border-default)] transition-colors"
               :aria-label="t('settings.account.profile.title')"
             >
-              <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <svg class="w-4 h-4 text-[var(--color-text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
               </svg>
             </Link>
@@ -304,8 +304,8 @@ function toggle(id: string) {
           :class="[
             'rounded-lg border overflow-hidden transition-colors',
             sec.id === 'danger'
-              ? 'border-red-500/15 bg-red-950/10'
-              : 'border-white/5 bg-gray-900/40',
+              ? 'border-[var(--color-expense-border)] bg-[var(--color-expense-bg)]'
+              : 'border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]',
           ]"
         >
           <!-- Section Header -->
@@ -328,14 +328,14 @@ function toggle(id: string) {
             <span
               :class="[
                 'flex-1 text-left text-xs sm:text-sm font-bold tracking-tight transition-colors',
-                sec.id === 'danger' ? 'text-red-400' : 'text-white group-hover:text-white',
+                sec.id === 'danger' ? 'text-[var(--color-expense-text)]' : 'text-[var(--color-text-primary)] group-hover:text-[var(--color-text-primary)]',
               ]"
             >
               {{ t(sec.labelKey) }}
             </span>
 
             <!-- Item count -->
-            <span class="text-2xs text-gray-600 font-semibold tabular-nums">
+            <span class="text-2xs text-[var(--color-text-muted)] font-semibold tabular-nums">
               {{ sec.items.length }} {{ t(sec.items.length === 1 ? 'settings.index.item' : 'settings.index.items') }}
             </span>
           </button>
@@ -349,7 +349,7 @@ function toggle(id: string) {
             leave-from-class="opacity-100 scale-y-100"
             leave-to-class="opacity-0 scale-y-95"
           >
-            <div v-if="!collapsed.has(sec.id)" class="border-t border-white/5">
+            <div v-if="!collapsed.has(sec.id)" class="border-t border-[var(--color-border-subtle)]">
               <div class="p-2 sm:p-3 space-y-1">
                 <Link
                   v-for="item in sec.items"
@@ -358,7 +358,7 @@ function toggle(id: string) {
                   :class="[
                     'group flex items-center gap-3 px-2.5 sm:px-3 py-2.5 sm:py-3 rounded-lg',
                     'border border-transparent',
-                    'hover:bg-gray-800/60 active:scale-[0.99]',
+                    'hover:bg-[var(--color-surface-overlay)] active:scale-[0.99]',
                     'transition-all duration-150',
                     a(item.accent).hover,
                   ]"
@@ -372,12 +372,12 @@ function toggle(id: string) {
 
                   <!-- Text -->
                   <div class="flex-1 min-w-0">
-                    <p class="text-xs sm:text-sm font-semibold text-white leading-tight">{{ t(item.labelKey) }}</p>
-                    <p class="text-2xs text-gray-500 mt-0.5 truncate hidden sm:block">{{ t(item.descKey) }}</p>
+                    <p class="text-xs sm:text-sm font-semibold text-[var(--color-text-primary)] leading-tight">{{ t(item.labelKey) }}</p>
+                    <p class="text-2xs text-[var(--color-text-muted)] mt-0.5 truncate hidden sm:block">{{ t(item.descKey) }}</p>
                   </div>
 
                   <!-- Arrow -->
-                  <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-600 group-hover:text-gray-400 shrink-0 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                  <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[var(--color-text-muted)] group-hover:text-[var(--color-text-secondary)] shrink-0 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
                   </svg>
                 </Link>

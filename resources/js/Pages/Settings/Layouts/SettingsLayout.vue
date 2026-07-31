@@ -20,7 +20,7 @@ useScrollRestore();
 </script>
 
 <template>
-  <div class="w-full max-w-4xl mx-auto px-3 sm:px-6 py-4 sm:py-6">
+  <div class="w-full max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6">
 
     <!-- Page title -->
     <div v-if="title" class="mb-4 sm:mb-6">

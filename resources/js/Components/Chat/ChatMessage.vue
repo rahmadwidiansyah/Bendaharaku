@@ -54,7 +54,7 @@ const {
         </div>
 
         <!-- CONTAINER UTAMA BARU: Menggabungkan Card + Text + Footer -->
-        <div :class="['flex flex-col min-w-0 border rounded-2xl rounded-tl-md shadow-sm overflow-hidden', isErrorMessage ? 'bg-red-950/40 border-red-900/50' : 'bg-gray-800/90 border-white/8']" style="max-width: 80%">
+        <div :class="['flex flex-col min-w-0 border rounded-2xl rounded-tl-md shadow-sm overflow-hidden', isErrorMessage ? 'bg-expense-bg border-expense-border' : 'bg-gray-800/90 border-white/8']" style="max-width: 80%">
 
             <!-- 1. Card components -->
             <template v-for="(comp, i) in cardComponents" :key="'card-' + i">
@@ -86,7 +86,7 @@ const {
 
         <!-- Bubble user -->
         <div class="flex flex-col gap-1 min-w-0 items-end" style="max-width: 80%">
-            <div class="bg-gradient-to-br from-purple-600 to-purple-500 text-white text-sm leading-relaxed px-3.5 pt-2 pb-1.5 rounded-2xl rounded-tr-md shadow-sm shadow-purple-500/20 break-words">
+            <div class="bg-gradient-to-br from-brand-mid to-brand-soft text-white text-sm leading-relaxed px-3.5 pt-2 pb-1.5 rounded-2xl rounded-tr-md shadow-sm shadow-purple-500/20 break-words">
                 <!-- Render semua inline components (text + image) -->
                 <template v-for="(comp, i) in filteredInline" :key="i">
                     <MessageRenderer

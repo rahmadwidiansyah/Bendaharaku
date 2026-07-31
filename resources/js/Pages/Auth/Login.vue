@@ -31,9 +31,9 @@ const submit = () => {
     <div
         class="antialiased selection:bg-gray-600 relative flex justify-center min-h-screen bg-gray-800 text-white font-sans overflow-x-hidden">
 
-        <div class="w-full max-w-md relative z-10 flex flex-col justify-center min-h-screen bg-gray-800 px-6 py-10">
+        <div class="w-full min-w-0 flex-1 relative z-10 flex flex-col justify-center min-h-screen bg-gray-800 px-4 sm:px-6 lg:px-8 py-10">
 
-            <div class="animate-slide-up w-full">
+            <div class="animate-slide-up w-full max-w-md mx-auto">
                 <div class="text-center mb-10">
                     <ApplicationLogo class="w-20 h-20 rounded-xl mx-auto mb-5" />
                     <h1 class="text-3xl font-bold text-white tracking-tight">Bendaharaku</h1>
@@ -108,7 +108,7 @@ const submit = () => {
                     <button
                         type="submit"
                         :disabled="form.processing"
-                        class="w-full bg-gradient-to-br from-purple-800 to-purple-500 text-white font-bold text-sm uppercase tracking-widest py-4 rounded-xl active:scale-95 transition-all mt-4 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:active:scale-100">
+                        class="w-full bg-gradient-to-br from-brand-deep to-brand-soft text-white font-bold text-sm uppercase tracking-widest py-4 rounded-xl active:scale-95 transition-all mt-4 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:active:scale-100">
                         <svg v-if="form.processing" class="animate-spin w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>

@@ -22,6 +22,7 @@
 import { ref, computed } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
+import { route } from 'ziggy-js'
 import { useTransactionForm } from '@/Composables/useTransactionForm'
 import { useLayoutPreference } from '@/Composables/useLayoutPreference'
 import AmountKeypad from './AmountKeypad.vue'
@@ -81,11 +82,11 @@ const {
 
 // === Transaction Types Definition (computed for i18n reactivity) ===
 const transactionTypes = computed(() => [
-    { id: 'Income',     label: t('types.income'),     icon: '📥', color: 'from-green-600 to-green-700' },
-    { id: 'Expense',    label: t('types.expense'),    icon: '📤', color: 'from-red-600 to-red-700' },
-    { id: 'Transfer',   label: t('types.transfer'),   icon: '🔄', color: 'from-blue-600 to-blue-700' },
-    { id: 'Debt',       label: t('types.debt'),       icon: '📊', color: 'from-purple-600 to-purple-700' },
-    { id: 'Receivable', label: t('types.receivable'), icon: '💰', color: 'from-yellow-600 to-yellow-700' },
+    { id: 'Income',     label: t('types.income'),     icon: '📥', color: 'from-success-mid to-success-deep' },
+    { id: 'Expense',    label: t('types.expense'),    icon: '📤', color: 'from-danger-mid to-danger-deep' },
+    { id: 'Transfer',   label: t('types.transfer'),   icon: '🔄', color: 'from-transfer-mid to-transfer-deep' },
+    { id: 'Debt',       label: t('types.debt'),       icon: '📊', color: 'from-brand-mid to-brand-deep' },
+    { id: 'Receivable', label: t('types.receivable'), icon: '💰', color: 'from-warning-mid to-warning-deep' },
 ])
 
 // === Computed Properties ===

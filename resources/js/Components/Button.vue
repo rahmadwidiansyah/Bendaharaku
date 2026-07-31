@@ -106,9 +106,9 @@ const handleClick = (e) => {
 // ─── Variant classes ──────────────────────────────────────────────
 const variantClasses = computed(() => ({
     primary: [
-        'bg-gradient-to-br from-purple-800 to-purple-500',
+        'bg-gradient-to-br from-brand-deep to-brand-soft',
         'text-white shadow-lg shadow-purple-500/20',
-        'hover:from-purple-700 hover:to-purple-400',
+        'hover:from-brand-mid hover:to-brand-tint',
         'border border-transparent',
         'disabled:opacity-70 disabled:cursor-not-allowed disabled:active:scale-100',
     ].join(' '),
@@ -121,9 +121,9 @@ const variantClasses = computed(() => ({
     ].join(' '),
 
     danger: [
-        'bg-gradient-to-br from-red-700 to-red-500',
+        'bg-gradient-to-br from-danger-mid to-danger-soft',
         'text-white shadow-lg shadow-red-500/20',
-        'hover:from-red-600 hover:to-red-400',
+        'hover:from-danger-mid hover:to-danger-tint',
         'border border-transparent',
         'disabled:opacity-70 disabled:cursor-not-allowed disabled:active:scale-100',
     ].join(' '),

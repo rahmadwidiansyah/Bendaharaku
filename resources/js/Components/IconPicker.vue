@@ -83,7 +83,7 @@ function handleCropped(blob) {
             <AppIcon v-else :icon="modelValue || defaultIcon" class="w-8 h-8 text-purple-400" />
         </button>
 
-        <BaseModal :show="isOpen" maxWidth="lg" :showCloseBtn="false" @close="closeModal">
+        <BaseModal :show="isOpen" maxWidth="adaptive" :showCloseBtn="false" @close="closeModal">
             <template #header>
                 <div class="flex items-center justify-between w-full">
                     <h3 class="text-sm font-black text-white uppercase tracking-widest truncate">{{ t('iconPicker.title') }}</h3>
@@ -106,34 +106,37 @@ function handleCropped(blob) {
                     </div>
                 </div>
             </template>
-            <div class="flex flex-col gap-3">
+            <div class="flex flex-col gap-4">
+                <!-- Search bar -->
                 <div class="relative">
-                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                     <input type="search" v-model="searchTerm" :placeholder="t('iconPicker.search')"
-                        class="w-full h-10 pl-10 pr-4 rounded-xl bg-gray-800 border border-white/10 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 transition-all" />
+                        class="w-full h-12 pl-12 pr-4 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 transition-all" />
                 </div>
 
-                <div class="flex gap-1 overflow-x-auto scrollbar-none pb-1 -mx-1 px-1">
+                <!-- Category chips -->
+                <div class="flex gap-2 overflow-x-auto scrollbar-none pb-1 -mx-1 px-1 snap-x">
                     <button v-for="tab in tabNames" :key="tab" @click="activeTab = tab"
-                        class="shrink-0 px-3 py-1.5 rounded-lg text-2xs font-bold uppercase tracking-wider transition-all whitespace-nowrap"
+                        class="shrink-0 snap-start px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap"
                         :class="activeTab === tab
                             ? 'bg-purple-500/15 text-purple-400 border border-purple-500/30'
-                            : 'text-gray-500 hover:text-gray-300 border border-transparent'">
+                            : 'text-gray-500 hover:text-gray-300 border border-transparent hover:bg-white/5'">
                         {{ t('iconPicker.tabs.' + tab) }}
                     </button>
                 </div>
 
-                <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-1.5 max-h-72 overflow-y-auto scrollbar-thin py-1">
+                <!-- Icon grid -->
+                <div class="grid grid-cols-5 gap-2 max-h-[50vh] overflow-y-auto scrollbar-thin py-1">
                     <div v-for="icon in filteredIcons" :key="icon" @click="selectIcon(icon)"
-                        class="aspect-square flex items-center justify-center cursor-pointer rounded-xl bg-gray-800/50 border border-white/5 hover:border-purple-500/40 hover:bg-purple-500/5 transition-all">
-                        <AppIcon :icon="icon" class="w-5 h-5 sm:w-6 sm:h-6 text-purple-400" />
+                        class="aspect-square flex items-center justify-center cursor-pointer rounded-xl bg-white/5 border border-white/5 hover:border-purple-500/40 hover:bg-purple-500/10 active:scale-90 transition-all">
+                        <AppIcon :icon="icon" class="w-6 h-6 text-purple-400" />
                     </div>
                     <div v-if="filteredIcons.length === 0"
                         class="col-span-full flex flex-col items-center justify-center py-10 text-gray-500">
                         <AppIcon icon="search-x" class="w-8 h-8 mb-2 text-purple-400" />
-                        <p class="text-2xs font-bold tracking-wider">{{ t('iconPicker.notFound') }}</p>
+                        <p class="text-xs font-bold tracking-wider">{{ t('iconPicker.notFound') }}</p>
                     </div>
                 </div>
             </div>

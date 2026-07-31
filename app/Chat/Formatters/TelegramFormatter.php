@@ -199,7 +199,8 @@ class TelegramFormatter implements ChatFormatterInterface
 
         $isSaldoOrWallet = str_contains(strtolower($c->translationKey ?? ''), 'balance')
             || str_contains(strtolower($c->translationKey ?? ''), 'saldo')
-            || str_contains(strtolower($c->translationKey ?? ''), 'wallet');
+            || str_contains(strtolower($c->translationKey ?? ''), 'wallet')
+            || str_contains(strtolower($c->translationKey ?? ''), 'asset');
 
         if ($isSaldoOrWallet) {
             $walletData = [];
@@ -250,6 +251,10 @@ class TelegramFormatter implements ChatFormatterInterface
                 foreach ($c->items as $item) {
                     $lines[] = "▫️ {$item}";
                 }
+            }
+
+            if ($c->total !== '') {
+                $lines[] = "💰 **Total: {$c->total}**";
             }
         } else {
             $isCategorySection = str_contains(strtolower($c->translationKey ?? ''), 'category');

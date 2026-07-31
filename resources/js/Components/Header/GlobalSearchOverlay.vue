@@ -190,7 +190,7 @@ const typeBadgeColors = {
                 />
 
                 <!-- Search panel -->
-                <div class="relative z-10 w-full max-w-2xl mx-auto mt-16 sm:mt-24 px-4">
+                <div class="relative z-10 w-full lg:max-w-4xl mx-auto mt-16 sm:mt-24 px-4">
                     <!-- Input bar -->
                     <div
                         class="flex items-center gap-3 bg-gray-900 border border-white/15 rounded-2xl px-4 py-3 shadow-2xl shadow-black/50"

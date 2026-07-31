@@ -39,7 +39,7 @@ const displayAmount = computed({
     <AuthenticatedLayout :fullWidth="true">
 
         <Head :title="t('wallet.titleCreate')" />
-        <div class="p-5 w-full lg:max-w-4xl mx-auto lg:px-8 relative animate-slide-up opacity-0"
+        <div class="p-5 w-full lg:max-w-7xl mx-auto lg:px-8 relative animate-slide-up opacity-0"
             style="animation-delay: 50ms;">
 
             <header class="hidden lg:block mb-8 pt-4">
@@ -100,7 +100,7 @@ const displayAmount = computed({
 
                 <div class="pt-3 lg:pt-4 animate-slide-up opacity-0 relative z-30" style="animation-delay: 275ms;">
                     <button type="submit" :disabled="form.processing"
-                        class="w-full bg-linear-to-br from-purple-800 to-purple-600 text-white font-bold text-sm tracking-wide py-3.5 lg:py-4 rounded-xl hover:-translate-y-0.5 active:scale-95 transition-all duration-200">
+                        class="w-full bg-linear-to-br from-brand-deep to-brand-mid text-white font-bold text-sm tracking-wide py-3.5 lg:py-4 rounded-xl hover:-translate-y-0.5 active:scale-95 transition-all duration-200">
                         {{ form.processing ? t('btn.saving') : t('btn.save') }}
                     </button>
                 </div>

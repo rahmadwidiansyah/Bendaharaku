@@ -99,7 +99,7 @@ const close  = () => { isOpen.value = false }
                     :href="route('transactions.create')"
                     @click="close"
                     aria-label="Catat transaksi manual"
-                    class="pointer-events-auto w-full flex items-center gap-4 px-5 py-4 rounded-2xl active:scale-95 transition-transform bg-gradient-to-br from-purple-700 to-purple-500 shadow-lg shadow-purple-500/30"
+                    class="pointer-events-auto w-full flex items-center gap-4 px-5 py-4 rounded-2xl active:scale-95 transition-transform bg-gradient-to-br from-brand-deep to-brand-soft shadow-lg shadow-purple-500/30"
                 >
                     <span class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(255,255,255,0.2);">
                         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5" aria-hidden="true">
@@ -127,7 +127,7 @@ const close  = () => { isOpen.value = false }
             class="pointer-events-auto w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl relative overflow-hidden active:scale-95 transition-transform focus:outline-none"
             :class="isOpen
                 ? 'bg-gray-800 border border-white/10 shadow-lg shadow-black/40'
-                : 'bg-gradient-to-br from-purple-700 via-purple-600 to-purple-500 shadow-lg shadow-purple-500/40 border border-purple-300/20'"
+                : 'bg-gradient-to-br from-brand-deep via-brand-mid to-brand-soft shadow-lg shadow-purple-500/40 border border-purple-300/20'"
         >
             <!-- Shimmer sweep (hanya saat closed) -->
             <span

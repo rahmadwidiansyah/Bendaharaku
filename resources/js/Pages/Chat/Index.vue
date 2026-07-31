@@ -4,7 +4,7 @@
  *
  * Halaman utama Web Chat Bendaharaku.
  *
- * Layout: fullscreen (hideNav=true), max-w-2xl centered di desktop.
+ * Layout: fullscreen (hideNav=true), full width di desktop (max-w-7xl).
  *
  * Jump-to-latest button ada di sini sebagai FAB overlay,
  * BUKAN di dalam ChatArea — agar tidak masuk ke scroll container
@@ -187,8 +187,9 @@ function handleCommitSuccess({ uuid }) {
             flex column, full viewport height.
             Uses visualViewport API for accurate height on Android when keyboard opens.
             `relative` agar FAB bisa absolute di dalam container ini.
+            `max-w-7xl mx-auto` agar desktop memakai ruang layar (bukan 672px ala mobile).
         -->
-        <div class="flex flex-col max-w-2xl mx-auto relative" :style="containerStyle">
+        <div class="flex flex-col w-full max-w-7xl mx-auto relative" :style="containerStyle">
 
             <!-- Header -->
             <ChatHeader

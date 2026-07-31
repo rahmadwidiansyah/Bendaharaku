@@ -27,11 +27,11 @@ const sortedGroups = computed(() => {
 
 const getTheme = (typeName) => {
     return {
-        'Income': { text: 'text-green-400', bg: 'bg-green-500', border: 'hover:border-green-500/50' },
-        'Expense': { text: 'text-red-400', bg: 'bg-red-500', border: 'hover:border-red-500/50' },
-        'Transfer': { text: 'text-blue-400', bg: 'bg-blue-500', border: 'hover:border-blue-500/50' },
-        'Debt': { text: 'text-amber-400', bg: 'bg-amber-500', border: 'hover:border-amber-500/50' },
-        'Receivable': { text: 'text-fuchsia-400', bg: 'bg-fuchsia-500', border: 'hover:border-fuchsia-500/50' },
+        'Income': { text: 'text-income-text', bg: 'bg-income-bg', border: 'hover:border-income-border' },
+        'Expense': { text: 'text-expense-text', bg: 'bg-expense-bg', border: 'hover:border-expense-border' },
+        'Transfer': { text: 'text-transfer-text', bg: 'bg-transfer-bg', border: 'hover:border-transfer-border' },
+        'Debt': { text: 'text-debt-text', bg: 'bg-debt-bg', border: 'hover:border-debt-border' },
+        'Receivable': { text: 'text-receivable-text', bg: 'bg-receivable-bg', border: 'hover:border-receivable-border' },
     }[typeName] || { text: 'text-white', bg: 'bg-white', border: 'hover:border-white/100' };
 };
 
@@ -45,7 +45,7 @@ const getHeaderText = (typeName) => {
 
         <Head :title="$t('category.title')" />
 
-        <div class="p-4 sm:p-5 w-full lg:max-w-4xl mx-auto lg:px-8 relative z-10 min-h-screen">
+        <div class="p-4 sm:p-5 w-full lg:max-w-7xl mx-auto lg:px-8 relative z-10 min-h-screen">
 
             <header class="mb-6 lg:mb-10 pt-3 lg:pt-4 animate-fade-in-up">
                 <div class="hidden lg:flex justify-between items-end mb-8 px-1">
@@ -68,7 +68,7 @@ const getHeaderText = (typeName) => {
 
                 <div :class="['grid grid-cols-1 gap-4', isDesktopLayout ? 'sm:grid-cols-1' : '']">
                     <Link :href="route('categories.create')"
-                        class="relative w-full min-h-16 py-3 bg-linear-to-br from-purple-900/50 to-gray-800 border border-purple-500/30 rounded-xl flex items-center justify-between px-4 sm:px-6 active:scale-[0.97] transition-all group overflow-hidden shadow-2xl hover:border-purple-400">
+                        class="relative w-full min-h-16 py-3 bg-linear-to-br from-brand-deep/50 to-gray-800 border border-brand-border rounded-xl flex items-center justify-between px-4 sm:px-6 active:scale-[0.97] transition-all group overflow-hidden shadow-2xl hover:border-brand-tint">
                         <div
                             class="absolute inset-0 bg-linear-to-r from-blue-900/0 via-blue-500/5 to-blue-900/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out">
                         </div>
@@ -89,7 +89,7 @@ const getHeaderText = (typeName) => {
                                 <span
                                     class="text-sm font-bold text-white uppercase tracking-wide truncate">{{ $t('category.addNew') }}</span>
                                 <span
-                                    class="text-2xs sm:text-2xs text-purple-300/70 font-bold uppercase tracking-widest mt-0.5 leading-tight">{{ $t('category.titleCreate') }}</span>
+                                    class="text-2xs sm:text-2xs text-purple-400 font-bold uppercase tracking-widest mt-0.5 leading-tight">{{ $t('category.titleCreate') }}</span>
                             </div>
                         </div>
 

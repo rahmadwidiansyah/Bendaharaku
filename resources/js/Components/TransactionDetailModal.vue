@@ -15,9 +15,11 @@
 import { ref } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
+import { route } from 'ziggy-js'
 import BaseModal from '@/Components/BaseModal.vue'
 import Badge from '@/Components/Badge.vue'
 import AppIcon from '@/Components/AppIcon.vue'
+import DetailRow from '@/Components/DetailRow.vue'
 import { getCategoryIconColor } from '@/Composables/useIcon.js'
 import { formatNumber, formatDate } from '@/utils/format.js'
 
@@ -97,10 +99,9 @@ const amountPrefix = (trx) => {
     return '-'
 }
 
-const dueDateLabel = (type) => ({ fixed: 'Sekali', monthly: 'Bulanan', daily: 'Per Hari' }[type] ?? type)
-const dueDateDetail = (trx) => {
+const dueDateText = (trx) => {
     if (trx.due_date_type === 'fixed')   return formatDate(trx.due_date)
-    if (trx.due_date_type === 'monthly') return `Tgl ${trx.due_date_interval}`
+    if (trx.due_date_type === 'monthly') return `Tgl ${trx.due_date_interval} • Bulanan`
     if (trx.due_date_type === 'daily')   return `Setiap ${trx.due_date_interval} hari`
     return ''
 }
@@ -115,96 +116,90 @@ const dueDateDetail = (trx) => {
         max-width="sm"
         @close="emit('close')"
     >
-        <div v-if="transaction" class="px-1">
-            <!-- Category icon + name -->
-            <div class="flex flex-col items-center mb-5 mt-1">
-                <AppIcon :icon="transaction.category?.icon" fallback="file-text" :class="['w-14 h-14 mb-3', getCategoryIconColor(transaction.type?.name)]" />
-                <p class="text-lg font-black text-white text-center leading-tight">
-                    {{ transaction.category?.category_name || 'Transfer' }}
-                </p>
-                <div class="flex items-center gap-2 mt-1.5">
-                    <Badge :variant="typeVariant(transaction.type?.name)" size="sm">
-                        {{ getTypeName(transaction.type?.name) }}
-                    </Badge>
-                    <!-- Draft badge -->
-                    <span
-                        v-if="!transaction.is_cleared"
-                        class="inline-flex items-center gap-1 text-2xs font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                        <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
-                        </svg>
-                        {{ $t('transaction.draft') }}
-                    </span>
-                </div>
-            </div>
+        <!-- ===== Slot #default: Header + Hero + Metadata ===== -->
+        <template #default>
+            <div v-if="transaction" class="w-full font-mono text-gray-200">
+                <div class="overflow-y-auto w-full max-h-[calc(100dvh-260px)]">
+                    <!-- ── Header: Icon + Title + Badge ─────────────────── -->
+                    <div class="flex flex-col items-center mt-2 mb-6">
+                        <AppIcon :icon="transaction.category?.icon" fallback="file-text" :class="['w-11 h-11 mb-3', getCategoryIconColor(transaction.type?.name)]" />
+                        <h2 class="text-xl font-bold tracking-wide text-white mb-2 text-center break-words leading-tight">
+                            {{ transaction.category?.category_name || 'Transfer' }}
+                        </h2>
+                        <div class="flex flex-wrap items-center justify-center gap-2">
+                            <Badge :variant="typeVariant(transaction.type?.name)" size="md" pill>
+                                {{ getTypeName(transaction.type?.name) }}
+                            </Badge>
+                            <Badge v-if="!transaction.is_cleared" variant="warning" size="md" pill>
+                                {{ $t('transaction.draft') }}
+                            </Badge>
+                        </div>
+                    </div>
 
-            <!-- Amount -->
-            <div class="bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 rounded-xl p-4 text-center mb-4">
-                <p class="text-2xs font-bold text-gray-500 uppercase tracking-widest mb-1">{{ $t('transaction.amount') }}</p>
-                <h2 :class="['text-3xl font-black tracking-tight', amountColor(transaction)]">
-                    {{ amountPrefix(transaction) }}
-                    <span class="text-xl text-gray-500 mr-0.5">Rp</span>{{ formatNumber(transaction.amount) }}
-                </h2>
-            </div>
+                    <!-- ===== Amount — Hero Section ===== -->
+                    <div class="border border-white/10 bg-white/5 rounded-2xl px-4 py-5 mb-6 text-center">
+                        <p class="text-2xs font-bold text-gray-400 uppercase tracking-[0.2em] mb-2">{{ $t('transaction.amount') }}</p>
+                        <p :class="['text-3xl font-bold tracking-tight tabular-nums', amountColor(transaction)]">
+                            <span class="flex items-center justify-center gap-2">
+                                <span>{{ amountPrefix(transaction) }}</span>
+                                <span class="whitespace-nowrap">
+                                    <span class="text-lg text-gray-500 mr-1 font-semibold">Rp</span>{{ formatNumber(transaction.amount) }}
+                                </span>
+                            </span>
+                        </p>
+                    </div>
 
-            <!-- Detail rows -->
-            <div class="space-y-3 mb-5 text-2xs">
-                <!-- ID transaksi -->
-                <div class="flex justify-between items-center py-2 border-b border-white/5">
-                    <span class="text-gray-500 font-bold uppercase tracking-widest">{{ $t('transaction.detail.transactionId') }}</span>
-                    <span class="font-bold text-gray-300">#{{ transaction.id }}</span>
-                </div>
+                    <!-- ===== Metadata Section (tanpa box, garis membentang penuh) ===== -->
+                    <div class="flex flex-col text-sm divide-y divide-white/10 border-t border-white/10">
+                        <!-- Tanggal & waktu -->
+                        <DetailRow :label="$t('transaction.detail.date')">
+                            <span class="font-semibold text-gray-300">{{ transaction.date }} • {{ transaction.time }}</span>
+                        </DetailRow>
 
-                <!-- Tanggal & waktu -->
-                <div class="flex justify-between items-center py-2 border-b border-white/5">
-                    <span class="text-gray-500 font-bold uppercase tracking-widest">{{ $t('transaction.detail.date') }}</span>
-                    <span class="font-bold text-gray-300">{{ transaction.date }} • {{ transaction.time }}</span>
-                </div>
+                        <!-- Dompet -->
+                        <DetailRow :label="$t('transaction.detail.wallet')">
+                            <div class="flex items-center justify-end gap-1.5 min-w-0">
+                                <span class="truncate font-semibold text-gray-300">{{ transaction.source_wallet?.name }}</span>
+                                <svg v-if="transaction.destination_wallet?.name" class="w-3.5 h-3.5 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                </svg>
+                                <span v-if="transaction.destination_wallet?.name" class="truncate font-semibold text-gray-300">{{ transaction.destination_wallet.name }}</span>
+                            </div>
+                        </DetailRow>
 
-                <!-- Dompet -->
-                <div class="flex justify-between items-center py-2 border-b border-white/5">
-                    <span class="text-gray-500 font-bold uppercase tracking-widest">{{ $t('transaction.detail.wallet') }}</span>
-                    <div class="flex items-center gap-1.5 font-bold text-gray-300">
-                        <span>{{ transaction.source_wallet?.name }}</span>
-                        <svg class="w-3 h-3 text-purple-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                            <path d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
-                        <span>{{ transaction.destination_wallet?.name }}</span>
+                        <!-- Pelaku (subject) -->
+                        <DetailRow v-if="transaction.subject && transaction.subject !== '-'" :label="$t('transaction.detail.party')">
+                            <span class="font-semibold text-gray-300">{{ transaction.subject }}</span>
+                        </DetailRow>
+
+                        <!-- Jatuh tempo -->
+                        <DetailRow v-if="transaction.due_date_type" :label="$t('transaction.detail.dueDate')">
+                            <span class="font-bold text-yellow-400">{{ dueDateText(transaction) }}</span>
+                        </DetailRow>
+
+                        <!-- Catatan -->
+                        <DetailRow :label="$t('transaction.detail.note')">
+                            <span class="font-medium text-gray-400 italic truncate">{{ transaction.notes || $t('transaction.detail.noNote') }}</span>
+                        </DetailRow>
+
+                        <!-- ID transaksi -->
+                        <DetailRow :label="$t('transaction.detail.transactionId')">
+                            <span class="font-semibold text-gray-300">#{{ transaction.id }}</span>
+                        </DetailRow>
                     </div>
                 </div>
-
-                <!-- Pelaku (subject) -->
-                <div v-if="transaction.subject && transaction.subject !== '-'" class="flex justify-between items-center py-2 border-b border-white/5">
-                    <span class="text-gray-500 font-bold uppercase tracking-widest">{{ $t('transaction.detail.party') }}</span>
-                    <span class="font-bold text-gray-300">{{ transaction.subject }}</span>
-                </div>
-
-                <!-- Jatuh tempo -->
-                <div v-if="transaction.due_date_type" class="flex justify-between items-start py-2 border-b border-white/5">
-                    <span class="text-gray-500 font-bold uppercase tracking-widest">{{ $t('transaction.detail.dueDate') }}</span>
-                    <div class="text-right">
-                        <p class="font-bold text-yellow-400">{{ dueDateLabel(transaction.due_date_type) }}</p>
-                        <p class="text-gray-500 mt-0.5">{{ dueDateDetail(transaction) }}</p>
-                    </div>
-                </div>
-
-                <!-- Catatan -->
-                <div class="flex justify-between items-start py-2">
-                    <span class="text-gray-500 font-bold uppercase tracking-widest">{{ $t('transaction.detail.note') }}</span>
-                    <span class="text-right italic text-gray-400 max-w-[60%]">
-                        {{ transaction.notes || $t('transaction.detail.noNote') }}
-                    </span>
-                </div>
             </div>
+        </template>
 
-            <!-- Action buttons -->
-            <div class="flex flex-col gap-2">
-                <!-- Konfirmasi Draft — hanya muncul saat is_cleared = false -->
+        <!-- ===== Slot #footer: Action Buttons (selalu terlihat) ===== -->
+        <template #footer>
+            <div v-if="transaction" class="flex flex-col gap-3 w-full border-t border-white/10 font-mono">
+                <!-- Konfirmasi Draft -->
                 <button
                     v-if="!transaction.is_cleared"
                     type="button"
                     @click="showConfirmDraft = true"
-                    class="w-full py-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 text-2xs font-black uppercase tracking-widest hover:bg-amber-500 hover:text-gray-900 hover:border-amber-500 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                    class="w-full py-3.5 rounded-2xl border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-widest hover:bg-amber-500/10 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -212,11 +207,11 @@ const dueDateDetail = (trx) => {
                 </button>
 
                 <!-- Edit & Hapus -->
-                <div class="flex gap-2">
+                <div class="flex gap-3">
                     <Link
                         :href="route('transactions.edit', { transaction: transaction.id, is_draft: transaction.is_draft })"
-                        class="flex-1 py-3 rounded-xl bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 text-gray-300 text-2xs font-bold uppercase tracking-widest hover:border-purple-500/40 hover:text-white transition-all active:scale-[0.98] flex items-center justify-center gap-1.5">
-                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        class="flex-1 py-3.5 rounded-2xl border border-white/10 text-gray-300 text-xs font-bold uppercase tracking-widest hover:bg-white/5 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" />
                         </svg>
                         {{ $t('transaction.detail.editBtn') }}
@@ -224,15 +219,15 @@ const dueDateDetail = (trx) => {
                     <button
                         type="button"
                         @click="showDeleteConfirm = true"
-                        class="flex-1 py-3 rounded-xl bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 text-red-500 text-2xs font-bold uppercase tracking-widest hover:bg-red-500/10 hover:border-red-500/30 transition-all active:scale-[0.98] flex items-center justify-center gap-1.5">
-                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        class="flex-1 py-3.5 rounded-2xl border border-red-500/15 text-red-500 text-xs font-bold uppercase tracking-widest hover:bg-red-500/10 hover:border-red-500/30 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                         {{ transaction.is_draft ? 'Batalkan Draft' : $t('transaction.detail.deleteBtn') }}
                     </button>
                 </div>
             </div>
-        </div>
+        </template>
     </BaseModal>
 
     <!-- ─── Dialog: Konfirmasi Draft ──────────────────────────────── -->

@@ -23,7 +23,7 @@ const maskedAmount = '••••••';
     <AuthenticatedLayout :fullWidth="true">
         <Head :title="t('loan.title')" />
 
-        <div class="p-5 w-full lg:max-w-4xl mx-auto lg:px-8 relative animate-slide-up">
+        <div class="p-5 w-full lg:max-w-7xl mx-auto lg:px-8 relative animate-slide-up">
 
             <!-- Header -->
             <header class="mb-6 pt-2 lg:pt-4">
@@ -40,7 +40,7 @@ const maskedAmount = '••••••';
                         :class="[
                             'flex items-center justify-center gap-2 py-2.5 rounded-lg text-2xs font-black uppercase tracking-widest transition-all',
                             isDebt
-                                ? 'bg-linear-to-br from-yellow-600 to-yellow-700 text-white shadow-sm'
+                                ? 'bg-linear-to-br from-warning-mid to-warning-deep text-white shadow-sm'
                                 : 'text-gray-500 hover:text-white'
                         ]">
                         <AppIcon icon="circle-dollar-sign" class="w-3.5 h-3.5" />

@@ -8,6 +8,7 @@ import { useI18n } from 'vue-i18n';
 import axios from 'axios';
 import { applyAccentColor, saveAccentColor, ACCENT_PALETTES, isCustomColor, isValidHex, getColorValue } from '@/Composables/useAccentColor.js';
 import { setCategoryIconColored } from '@/Composables/useIcon.js';
+import { useTheme } from '@/Composables/useTheme';
 import { useToast } from '@/Composables/useToast';
 
 const { t } = useI18n();
@@ -15,10 +16,12 @@ const { showToast } = useToast();
 
 const props = defineProps<{
   userAccentColor: string;
+  userTheme: string;
   categoryIconColored: boolean;
 }>();
 
-const theme = ref('dark');
+const { theme: currentTheme, setTheme } = useTheme();
+const theme = ref(props.userTheme ?? 'system');
 const accentColor = ref(props.userAccentColor);
 const customHex = ref('');
 const showCustomPicker = ref(false);
@@ -56,7 +59,8 @@ watch(accentColor, (color) => {
   saveAppearance();
 });
 
-watch(theme, () => {
+watch(theme, (newTheme) => {
+  setTheme(newTheme);
   saveAppearance();
 });
 
@@ -111,11 +115,11 @@ const saveAppearance = () => {
           <label
             v-for="value in ['light', 'dark', 'system']"
             :key="value"
-            class="flex items-center p-3 border border-gray-700 rounded-lg cursor-pointer hover:bg-gray-800 transition-colors"
+            class="flex items-center p-3 border border-border-default rounded-lg cursor-pointer hover:bg-surface-muted transition-colors"
             :class="theme === value && 'border-purple-500 bg-purple-500/10'"
           >
             <input v-model="theme" type="radio" :value="value" class="w-4 h-4" />
-            <span class="ml-3 text-sm text-white">
+            <span class="ml-3 text-sm text-text-primary">
               {{ t(`settings.application.appearance.theme.${value}`) }}
             </span>
           </label>
@@ -127,18 +131,18 @@ const saveAppearance = () => {
         :title="t('settings.application.appearance.category_icon_color.title')"
         :description="t('settings.application.appearance.category_icon_color.description')"
       >
-        <label class="flex items-center justify-between p-3 border border-gray-700 rounded-lg cursor-pointer hover:bg-gray-800 transition-colors">
+        <label class="flex items-center justify-between p-3 border border-border-default rounded-lg cursor-pointer hover:bg-surface-muted transition-colors">
           <div>
-            <p class="text-sm text-white font-medium">{{ t('settings.application.appearance.category_icon_color.label') }}</p>
-            <p class="text-2xs text-gray-500 mt-0.5">{{ iconColored ? t('settings.application.appearance.category_icon_color.on') : t('settings.application.appearance.category_icon_color.off') }}</p>
+            <p class="text-sm text-text-primary font-medium">{{ t('settings.application.appearance.category_icon_color.label') }}</p>
+            <p class="text-2xs text-text-muted mt-0.5">{{ iconColored ? t('settings.application.appearance.category_icon_color.on') : t('settings.application.appearance.category_icon_color.off') }}</p>
           </div>
           <button
             type="button"
             role="switch"
             :aria-checked="iconColored"
             @click="iconColored = !iconColored"
-            class="relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-900"
-            :class="iconColored ? 'bg-purple-600' : 'bg-gray-700'"
+            class="relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-surface-raised"
+            :class="iconColored ? 'bg-purple-600' : 'bg-surface-muted'"
           >
             <span class="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out" :class="iconColored ? 'translate-x-5' : 'translate-x-0'" />
           </button>
@@ -160,7 +164,7 @@ const saveAppearance = () => {
             :class="[
               'w-full h-12 rounded-lg transition-all',
               !isCustom && accentColor === color
-                ? 'ring-2 ring-white ring-offset-2 ring-offset-gray-900 scale-105'
+                ? 'ring-2 ring-white ring-offset-2 ring-offset-surface-raised scale-105'
                 : 'hover:scale-105 opacity-70 hover:opacity-100',
             ]"
             :aria-label="t('settings.application.appearance.accent_color.setAccent', { name: color })"
@@ -176,18 +180,18 @@ const saveAppearance = () => {
             'mt-3 w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all',
             isCustom
               ? 'border-purple-500/40 bg-purple-500/10 ring-2 ring-purple-500/20'
-              : 'border-white/10 bg-gray-800/50 hover:bg-gray-800',
+              : 'border-border-default bg-surface-muted hover:bg-surface-overlay',
           ]"
         >
           <div
-            class="w-6 h-6 rounded-md border border-white/20 shrink-0"
+            class="w-6 h-6 rounded-md border border-border-subtle shrink-0"
             :style="{ backgroundColor: isCustom ? currentDisplayColor : '#888' }"
           />
-          <span class="flex-1 text-left text-xs font-semibold text-gray-300">
+          <span class="flex-1 text-left text-xs font-semibold text-text-secondary">
             {{ isCustom ? currentDisplayColor : t('settings.application.appearance.accent_color.custom') }}
           </span>
           <svg
-            class="w-3.5 h-3.5 text-gray-500 transition-transform"
+            class="w-3.5 h-3.5 text-text-muted transition-transform"
             :class="showCustomPicker ? 'rotate-180' : ''"
             fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"
           >
@@ -205,31 +209,31 @@ const saveAppearance = () => {
           leave-to-class="opacity-0 -translate-y-2 max-h-0"
         >
           <div v-if="showCustomPicker" class="mt-3 overflow-hidden">
-            <div class="flex gap-2 items-center p-3 bg-gray-800/80 border border-white/10 rounded-xl">
+            <div class="flex gap-2 items-center p-3 bg-surface-overlay border border-border-default rounded-xl">
               <input
                 type="color"
                 :value="isCustom ? currentDisplayColor : '#8B5CF6'"
                 @input="handlePickerInput"
-                class="w-10 h-10 rounded-lg border border-white/10 cursor-pointer shrink-0 bg-transparent"
+                class="w-10 h-10 rounded-lg border border-border-default cursor-pointer shrink-0 bg-transparent"
               />
               <input
                 v-model="customHex"
                 type="text"
                 placeholder="#8B5CF6"
                 maxlength="7"
-                class="flex-1 bg-transparent border-none text-sm text-white font-mono placeholder-gray-600 focus:ring-0 focus:outline-none"
+                class="flex-1 bg-transparent border-none text-sm text-text-primary font-mono placeholder-text-muted focus:ring-0 focus:outline-none"
               />
             </div>
-            <p v-if="customHex && !customHexValid" class="mt-1 text-2xs text-red-400 ml-1">
+            <p v-if="customHex && !customHexValid" class="mt-1 text-2xs text-expense-text ml-1">
               Format HEX tidak valid. Gunakan format #RRGGBB atau #RGB.
             </p>
           </div>
         </Transition>
 
         <!-- Preview label warna terpilih -->
-        <p class="mt-3 text-xs text-gray-400 capitalize">
+        <p class="mt-3 text-xs text-text-secondary capitalize">
           {{ t('settings.application.appearance.accent_color.title') }}:
-          <span class="text-white font-semibold">{{ isCustom ? currentDisplayColor : accentColor }}</span>
+          <span class="text-text-primary font-semibold">{{ isCustom ? currentDisplayColor : accentColor }}</span>
         </p>
       </SettingsCard>
 

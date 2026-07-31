@@ -47,7 +47,7 @@ const handleExport = async () => {
       :description="t('settings.privacy.data.description')"
     >
       <SettingsCard :title="t('settings.privacy.data.export.title')" :description="t('settings.privacy.data.export.description')">
-        <button @click="handleExport" :disabled="isExporting" class="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2.5 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-lg sm:rounded-xl text-sm font-medium transition-colors">
+        <button @click="handleExport" :disabled="isExporting" class="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2.5 bg-purple-600 hover:bg-purple-700 disabled:bg-surface-muted disabled:cursor-not-allowed text-white rounded-lg sm:rounded-xl text-sm font-medium transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 11l5 5 5-5M12 4v12" />
           </svg>
@@ -56,7 +56,7 @@ const handleExport = async () => {
       </SettingsCard>
 
       <SettingsCard :title="t('settings.privacy.data.import.title')" :description="t('settings.privacy.data.import.description')">
-        <button disabled class="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2.5 bg-gray-700 text-gray-300 rounded-lg sm:rounded-xl text-sm font-medium opacity-50 cursor-not-allowed">
+        <button disabled class="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2.5 bg-surface-muted text-text-muted rounded-lg sm:rounded-xl text-sm font-medium opacity-50 cursor-not-allowed">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 11l5-5 5 5M12 4v12" />
           </svg>
@@ -65,7 +65,7 @@ const handleExport = async () => {
       </SettingsCard>
 
       <SettingsCard :title="t('settings.privacy.data.backup.title')" :description="t('settings.privacy.data.backup.description')">
-        <button disabled class="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2.5 bg-gray-700 text-gray-300 rounded-lg sm:rounded-xl text-sm font-medium opacity-50 cursor-not-allowed">
+        <button disabled class="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2.5 bg-surface-muted text-text-muted rounded-lg sm:rounded-xl text-sm font-medium opacity-50 cursor-not-allowed">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>

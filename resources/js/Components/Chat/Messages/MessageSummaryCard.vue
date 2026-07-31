@@ -12,9 +12,9 @@ const allSuccess = computed(() => props.component.all_success)
 const allFailed = computed(() => props.component.all_failed)
 
 const tint = computed(() => {
-  if (allSuccess.value) return { fg: 'text-emerald-400', bg: 'bg-emerald-500/10', dot: 'bg-emerald-500' }
-  if (allFailed.value) return { fg: 'text-red-400', bg: 'bg-red-500/10', dot: 'bg-red-500' }
-  return { fg: 'text-amber-400', bg: 'bg-amber-500/10', dot: 'bg-amber-500' }
+  if (allSuccess.value) return { fg: 'text-income-text', bg: 'bg-income-bg', dot: 'bg-income-text' }
+  if (allFailed.value) return { fg: 'text-expense-text', bg: 'bg-expense-bg', dot: 'bg-expense-text' }
+  return { fg: 'text-debt-text', bg: 'bg-debt-bg', dot: 'bg-debt-text' }
 })
 </script>
 
@@ -33,8 +33,8 @@ const tint = computed(() => {
     <div class="flex items-stretch divide-x divide-white/[0.04]">
       <div v-for="(stat, si) in [
         { label: t('common.total'), value: component.total, cls: 'text-white' },
-        { label: t('common.success'), value: component.success, cls: 'text-emerald-400' },
-        { label: t('common.error'), value: component.failed, cls: 'text-red-400' },
+        { label: t('common.success'), value: component.success, cls: 'text-income-text' },
+        { label: t('common.error'), value: component.failed, cls: 'text-expense-text' },
       ]" :key="si" class="flex-1 flex flex-col items-center py-3 px-1">
         <span class="text-lg font-bold tabular-nums leading-none" :class="stat.cls">{{ stat.value }}</span>
         <span class="text-2xs text-gray-500 mt-1">{{ stat.label }}</span>

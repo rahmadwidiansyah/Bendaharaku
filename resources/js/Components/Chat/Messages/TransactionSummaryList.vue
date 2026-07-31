@@ -29,7 +29,7 @@ function isString(item) {
       </div>
       <div class="flex items-center gap-3 text-2xs text-gray-500">
         <span v-if="count">{{ count }} {{ countLabel }}</span>
-        <span v-if="total" class="font-semibold tabular-nums" :class="accent === 'rose' ? 'text-rose-400/80' : 'text-emerald-400/80'">
+        <span v-if="total" class="font-semibold tabular-nums" :class="accent === 'rose' ? 'text-expense-text/80' : 'text-income-text/80'">
           Total {{ total }}
         </span>
       </div>

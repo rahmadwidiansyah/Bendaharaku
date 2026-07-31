@@ -166,6 +166,7 @@ Route::middleware(['auth'])->group(function () {
 
             return Inertia::render('Settings/Application/Appearance', [
                 'userAccentColor' => $user->accent_color ?? 'teal',
+                'userTheme' => $user->theme ?? 'dark',
                 'categoryIconColored' => $user->category_icon_colored ?? true,
             ]);
         })->name('appearance');
@@ -178,6 +179,7 @@ Route::middleware(['auth'])->group(function () {
 
             $user = $request->user();
             $user->update([
+                'theme' => $validated['theme'],
                 'accent_color' => $validated['accent_color'],
                 'category_icon_colored' => $validated['category_icon_colored'] ?? $user->category_icon_colored,
             ]);

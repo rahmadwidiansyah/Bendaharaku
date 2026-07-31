@@ -3,6 +3,8 @@ import { useI18n } from 'vue-i18n'
 import { computed } from 'vue'
 import TransactionSummaryList from './TransactionSummaryList.vue'
 import MarkdownRenderer from './MarkdownRenderer.vue'
+import AppIcon from '@/Components/AppIcon.vue'
+import { getWalletIconColor } from '@/Composables/useIcon.js'
 
 const { t } = useI18n()
 
@@ -23,7 +25,13 @@ const variant = computed(() => {
   return 'default'
 })
 
-const titleText = computed(() => props.component.title || (props.component.translationKey ? t(props.component.translationKey) : ''))
+const stripLeadingEmoji = (text) =>
+  String(text ?? '').replace(/^(\p{Extended_Pictographic}[\u{FE0F}\u{200D}\u{20E3}]*)[\s]*/u, '')
+
+const titleText = computed(() => {
+  const title = props.component.title || (props.component.translationKey ? t(props.component.translationKey) : '')
+  return props.component.emoji ? stripLeadingEmoji(title) : title
+})
 
 const hasStructuredItems = computed(() =>
   Array.isArray(props.component.items) && props.component.items.length > 0 && typeof props.component.items[0] === 'object'
@@ -78,8 +86,10 @@ function isIconUrl(icon) {
 }
 
 function defaultIcon(value) {
-  return value || '💳'
+    return value && value !== 'wallet' ? value : '💳'
 }
+
+const walletIconClass = computed(() => getWalletIconColor())
 
 function onImgError(e, fallback) {
   e.target.style.display = 'none'
@@ -127,7 +137,7 @@ function onImgError(e, fallback) {
             class="w-5 h-5 rounded-full object-cover shrink-0"
             @error="(e) => onImgError(e, defaultIcon(item.icon))"
           />
-          <span v-else class="text-lg leading-none shrink-0">{{ defaultIcon(item.icon) }}</span>
+          <AppIcon v-else :icon="item.icon" :class="['w-5 h-5 shrink-0', walletIconClass]" fallback="💳" />
           <div class="min-w-0">
             <span class="text-xs font-medium text-white truncate block">{{ item.name }}</span>
             <span v-if="item.group_type" class="text-2xs text-gray-500">
@@ -156,13 +166,22 @@ function onImgError(e, fallback) {
   <div
     v-else
     class="mx-2 my-1.5 rounded-xl overflow-hidden"
-    :class="variant === 'income' ? 'bg-emerald-500/8' : variant === 'expense' ? 'bg-rose-500/8' : 'bg-white/[0.03]'"
+    :class="variant === 'income' ? 'bg-income-bg' : variant === 'expense' ? 'bg-expense-bg' : 'bg-white/[0.03]'"
   >
     <!-- Header -->
-    <div class="flex items-center justify-between px-3.5 py-2.5 border-b border-white/[0.04]">
-      <h3 class="text-sm font-semibold text-white leading-tight truncate">
-        <MarkdownRenderer :content="titleText" inline />
-      </h3>
+    <div class="px-3.5 py-2.5 border-b border-white/[0.04]">
+      <div class="flex items-center justify-between min-w-0">
+        <div class="flex items-center gap-2 min-w-0">
+          <span v-if="component.emoji" class="text-base leading-none shrink-0">{{ component.emoji }}</span>
+          <h3 class="text-sm font-semibold text-white leading-tight truncate">
+            <MarkdownRenderer :content="titleText" inline />
+          </h3>
+        </div>
+      </div>
+      <div v-if="variant === 'asset'" class="flex items-center gap-3 text-2xs text-gray-500 mt-0.5">
+        <span v-if="component.count" class="font-medium text-gray-400">{{ component.count }} {{ t('chat.command.asset_count') }}</span>
+        <span v-if="component.total" class="font-semibold tabular-nums text-income-text/80">Total {{ component.total }}</span>
+      </div>
     </div>
 
     <!-- Content -->
@@ -177,12 +196,12 @@ function onImgError(e, fallback) {
         </div>
       </template>
 
-      <!-- Asset variant: same compact one-line -->
+      <!-- Asset variant: nama kiri, nominal kanan -->
       <template v-else-if="variant === 'asset'">
         <div v-for="(item, idx) in component.items" :key="idx"
           class="flex items-center justify-between px-3.5 py-2 hover:bg-white/[0.02] transition-colors">
-          <span class="text-xs text-gray-300 truncate">{{ item.split(' — ')[1] ?? item }}</span>
-          <span class="text-xs font-semibold text-white tabular-nums ml-2 shrink-0">{{ item.split(' — ')[0] ?? '' }}</span>
+          <span class="text-xs text-gray-300 truncate">{{ item.split(':')[0] ?? item }}</span>
+          <span class="text-xs font-semibold text-white tabular-nums ml-2 shrink-0">{{ item.split(':').slice(1).join(':') ?? '' }}</span>
         </div>
       </template>
 
@@ -223,15 +242,15 @@ function onImgError(e, fallback) {
             <div class="flex items-center gap-2 min-w-0 flex-1">
               <span class="text-3xs text-gray-500 tabular-nums shrink-0 w-9">{{ parseItem(item).date }}</span>
               <span class="w-1.5 h-1.5 rounded-full shrink-0"
-                :class="parseItem(item).type.toLowerCase() === 'income' ? 'bg-emerald-500' :
-                  parseItem(item).type.toLowerCase() === 'expense' ? 'bg-rose-500' : 'bg-blue-500'">
+                :class="parseItem(item).type.toLowerCase() === 'income' ? 'bg-income-text' :
+                  parseItem(item).type.toLowerCase() === 'expense' ? 'bg-expense-text' : 'bg-transfer-text'">
               </span>
               <span class="text-xs text-gray-200 font-medium truncate">{{ parseItem(item).category }}</span>
               <span v-if="parseItem(item).wallet" class="text-3xs text-gray-500 truncate max-w-[60px]">{{ parseItem(item).wallet }}</span>
             </div>
             <span class="text-xs font-semibold tabular-nums shrink-0 ml-1"
-              :class="parseItem(item).type.toLowerCase() === 'income' ? 'text-emerald-400' :
-                parseItem(item).type.toLowerCase() === 'expense' ? 'text-rose-400' : 'text-blue-400'">
+              :class="parseItem(item).type.toLowerCase() === 'income' ? 'text-income-text' :
+                parseItem(item).type.toLowerCase() === 'expense' ? 'text-expense-text' : 'text-transfer-text'">
               {{ parseItem(item).amount }}
             </span>
           </div>

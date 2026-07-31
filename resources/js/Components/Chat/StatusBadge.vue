@@ -21,17 +21,17 @@ const config = computed(() => {
     }
     const map = {
         PENDING:    { color: 'text-gray-400', bg: 'bg-gray-500/10', dot: 'bg-gray-400', key: t('chat.status.pending') },
-        UPLOADING:  { color: 'text-blue-400', bg: 'bg-blue-500/10', dot: 'bg-blue-400', key: t('chat.status.uploading') },
-        UPLOADED:   { color: 'text-emerald-400', bg: 'bg-emerald-500/10', dot: 'bg-emerald-400', key: t('chat.status.uploaded') },
-        PROCESSING: { color: 'text-amber-400', bg: 'bg-amber-500/10', dot: 'bg-amber-400', key: t('chat.status.processing') },
-        QUEUED:     { color: 'text-blue-400', bg: 'bg-blue-500/10', dot: 'bg-blue-400', key: t('chat.status.queued') },
-        OCR_COMPLETED:  { color: 'text-cyan-400', bg: 'bg-cyan-500/10', dot: 'bg-cyan-400', key: t('chat.status.ocrCompleted') },
-        CLASSIFIED: { color: 'text-indigo-400', bg: 'bg-indigo-500/10', dot: 'bg-indigo-400', key: t('chat.status.classified') },
-        PARSED:     { color: 'text-violet-400', bg: 'bg-violet-500/10', dot: 'bg-violet-400', key: t('chat.status.parsed') },
-        RESOLVED:   { color: 'text-fuchsia-400', bg: 'bg-fuchsia-500/10', dot: 'bg-fuchsia-400', key: t('chat.status.resolved') },
-        READY:      { color: 'text-green-400', bg: 'bg-green-500/10', dot: 'bg-green-400', key: t('chat.status.ready') },
-        COMPLETED:  { color: 'text-emerald-400', bg: 'bg-emerald-500/10', dot: 'bg-emerald-400', key: t('chat.status.completed') },
-        FAILED:     { color: 'text-red-400', bg: 'bg-red-500/10', dot: 'bg-red-400', key: t('chat.status.failed') },
+        UPLOADING:  { color: 'text-transfer-text', bg: 'bg-transfer-bg', dot: 'bg-transfer-text', key: t('chat.status.uploading') },
+        UPLOADED:   { color: 'text-income-text', bg: 'bg-income-bg', dot: 'bg-income-text', key: t('chat.status.uploaded') },
+        PROCESSING: { color: 'text-debt-text', bg: 'bg-debt-bg', dot: 'bg-debt-text', key: t('chat.status.processing') },
+        QUEUED:     { color: 'text-transfer-text', bg: 'bg-transfer-bg', dot: 'bg-transfer-text', key: t('chat.status.queued') },
+        OCR_COMPLETED:  { color: 'text-transfer-text', bg: 'bg-transfer-bg', dot: 'bg-transfer-text', key: t('chat.status.ocrCompleted') },
+        CLASSIFIED: { color: 'text-transfer-text', bg: 'bg-transfer-bg', dot: 'bg-transfer-text', key: t('chat.status.classified') },
+        PARSED:     { color: 'text-receivable-text', bg: 'bg-receivable-bg', dot: 'bg-receivable-text', key: t('chat.status.parsed') },
+        RESOLVED:   { color: 'text-receivable-text', bg: 'bg-receivable-bg', dot: 'bg-receivable-text', key: t('chat.status.resolved') },
+        READY:      { color: 'text-income-text', bg: 'bg-income-bg', dot: 'bg-income-text', key: t('chat.status.ready') },
+        COMPLETED:  { color: 'text-income-text', bg: 'bg-income-bg', dot: 'bg-income-text', key: t('chat.status.completed') },
+        FAILED:     { color: 'text-expense-text', bg: 'bg-expense-bg', dot: 'bg-expense-text', key: t('chat.status.failed') },
     }
     return map[props.status] ?? null
 })

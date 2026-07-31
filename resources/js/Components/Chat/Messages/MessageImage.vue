@@ -47,13 +47,13 @@ const showReviewBtn = computed(() =>
 const statusMeta = computed(() => {
     const map = {
         PENDING:    { label: 'Menunggu',   color: 'text-gray-400',   dot: 'bg-gray-400' },
-        UPLOADING:  { label: 'Upload...',  color: 'text-sky-400',    dot: 'bg-sky-400',   spin: true },
-        UPLOADED:   { label: 'Memproses', color: 'text-amber-400',  dot: 'bg-amber-400', spin: true },
-        PROCESSING: { label: 'Memproses', color: 'text-amber-400',  dot: 'bg-amber-400', spin: true },
-        READY:      { label: 'Siap review', color: 'text-green-400', dot: 'bg-green-400' },
-        RESOLVED:   { label: 'Siap review', color: 'text-green-400', dot: 'bg-green-400' },
+        UPLOADING:  { label: 'Upload...',  color: 'text-transfer-text', dot: 'bg-transfer-text',   spin: true },
+        UPLOADED:   { label: 'Memproses', color: 'text-debt-text',  dot: 'bg-debt-text', spin: true },
+        PROCESSING: { label: 'Memproses', color: 'text-debt-text',  dot: 'bg-debt-text', spin: true },
+        READY:      { label: 'Siap review', color: 'text-income-text', dot: 'bg-income-text' },
+        RESOLVED:   { label: 'Siap review', color: 'text-income-text', dot: 'bg-income-text' },
         COMMITTED:  { label: 'Tersimpan',  color: 'text-purple-400', dot: 'bg-purple-400' },
-        FAILED:     { label: 'Gagal',      color: 'text-red-400',    dot: 'bg-red-400' },
+        FAILED:     { label: 'Gagal',      color: 'text-expense-text', dot: 'bg-expense-text' },
     }
     return map[status.value] ?? map.UPLOADED
 })

@@ -27,10 +27,10 @@ onMounted(() => {
 
 <template>
     <transition name="toast-slide">
-        <div v-if="visible" class="fixed top-16 lg:top-5 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-sm">
+        <div v-if="visible" class="fixed top-16 lg:top-5 left-1/2 -translate-x-1/2 z-[100] w-[90%] sm:max-w-md lg:max-w-lg">
             <div :class="[
                 'rounded-xl p-4 shadow-xl border flex items-center gap-3',
-                toastType === 'success' ? 'bg-gradient-to-br from-green-900 to-gray-900 border-green-500/30' : 'bg-gradient-to-br from-red-900 to-gray-900 border-red-500/30'
+                toastType === 'success' ? 'bg-gradient-to-br from-success-deep to-gray-900 border-green-500/30' : 'bg-gradient-to-br from-danger-deep to-gray-900 border-red-500/30'
             ]">
                 <div :class="[
                     'w-8 h-8 rounded-full flex items-center justify-center shrink-0',
