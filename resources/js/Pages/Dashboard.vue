@@ -198,12 +198,12 @@ const calendarDayNames = computed(() => [
 						:wallets="wallets" :total-hutang="totalHutang" :total-piutang="totalPiutang"
 						@toggle-visibility="toggleVisibility" />
 					<!-- MINI CASHFLOW -->
-					<div class="grid grid-cols-2 gap-2 sm:gap-3 mb-5 sm:mb-10 animate-fade-in-up delay-200">
+					<div class="grid grid-cols-2 gap-3 sm:gap-4 mb-5 sm:mb-8 animate-fade-in-up delay-200">
 						<div
-							class="bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] rounded-lg sm:rounded-xl p-2.5 sm:p-4 flex items-center gap-2.5 sm:gap-3 relative overflow-hidden group">
+							class="bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] rounded-xl p-3 sm:p-4 flex items-center gap-3 relative overflow-hidden group">
 							<div
-								class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/5 flex items-center justify-center text-[var(--color-income-text)] shrink-0">
-								<svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24"
+								class="w-8 h-8 rounded-full bg-[var(--color-income-bg)] flex items-center justify-center text-[var(--color-income-text)] shrink-0">
+								<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24"
 									stroke="currentColor" stroke-width="2.5">
 									<path stroke-linecap="round" stroke-linejoin="round"
 										d="M19 14l-7 7m0 0l-7-7m7 7V3" />
@@ -212,17 +212,17 @@ const calendarDayNames = computed(() => [
 							<div class="min-w-0">
 								<p class="text-2xs text-[var(--color-text-secondary)] font-bold uppercase tracking-widest">{{
 									$t('dashboard.income') }}</p>
-								<p class="text-xs sm:text-sm font-bold text-[var(--color-text-primary)] tracking-tight mt-0.5 truncate">
+								<p class="text-sm font-bold text-[var(--color-text-primary)] tracking-tight mt-0.5 truncate">
 									<span class="text-2xs text-[var(--color-text-secondary)] mr-1">Rp</span><span class="text-[var(--color-income-text)]">{{
 										isBalanceVisible ? formatNumber(thisMonthIncome) : '••••' }}</span>
 								</p>
 							</div>
 						</div>
 						<div
-							class="bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] rounded-lg sm:rounded-xl p-2.5 sm:p-4 flex items-center gap-2.5 sm:gap-3 relative overflow-hidden group">
+							class="bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] rounded-xl p-3 sm:p-4 flex items-center gap-3 relative overflow-hidden group">
 							<div
-								class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/5 flex items-center justify-center text-[var(--color-expense-text)] shrink-0">
-								<svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24"
+								class="w-8 h-8 rounded-full bg-[var(--color-expense-bg)] flex items-center justify-center text-[var(--color-expense-text)] shrink-0">
+								<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24"
 									stroke="currentColor" stroke-width="2.5">
 									<path stroke-linecap="round" stroke-linejoin="round"
 										d="M5 10l7-7m0 0l7 7m-7-7v18" />
@@ -231,7 +231,7 @@ const calendarDayNames = computed(() => [
 							<div class="min-w-0">
 								<p class="text-2xs text-[var(--color-text-secondary)] font-bold uppercase tracking-widest">{{
 									$t('dashboard.expense') }}</p>
-								<p class="text-xs sm:text-sm font-bold text-[var(--color-text-primary)] tracking-tight mt-0.5 truncate">
+								<p class="text-sm font-bold text-[var(--color-text-primary)] tracking-tight mt-0.5 truncate">
 									<span class="text-2xs text-[var(--color-text-secondary)] mr-1">Rp</span><span class="text-[var(--color-expense-text)]">{{
 										isBalanceVisible ? formatNumber(thisMonthExpense) : '••••' }}</span>
 								</p>

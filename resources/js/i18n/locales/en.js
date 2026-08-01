@@ -463,10 +463,10 @@ export default {
         },
 
         categoryTab: {
-            expense:    'Expense',
-            income:     'Income',
-            debt:       'Debt',
-            receivable: 'Receivable',
+            expense:    'EX',
+            income:     'IN',
+            debt:       'DT',
+            receivable: 'RC',
         },
 
         chartLabels: {

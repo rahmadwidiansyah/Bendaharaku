@@ -474,13 +474,17 @@ export default {
             monthly: 'Bulan',
         },
 
-        // Tab kategori
-        categoryTab: {
-            expense:    'Pengeluaran',
-            income:     'Pemasukan',
-            debt:       'Hutang',
-            receivable: 'Piutang',
-        },
+// Tab kategori
+categoryTab: {
+    expense:    'Pengeluaran',
+    income:     'Pemasukan',
+    debt:       'Hutang',
+    receivable: 'Piutang',
+    expenseShort: 'Keluar',
+    incomeShort:  'Masuk',
+    debtShort:    'Hutang',
+    receivableShort: 'Piutang'
+},
 
         // Chart.js dataset labels
         chartLabels: {

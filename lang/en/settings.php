@@ -412,8 +412,27 @@ return [
     ],
 
     // ──────────────────────────────────────────────────────────────
-    // SYSTEM SECTION
+    // ANALYTICS SECTION
     // ──────────────────────────────────────────────────────────────
+    'analytics' => [
+        'title' => 'Analytics',
+        'category_tabs' => [
+            'all' => 'All',
+            'income' => 'Income',
+            'expense' => 'Expense',
+            'debt' => 'Debt',
+            'receivable' => 'Receivable',
+            'investment' => 'Investment',
+            'savings' => 'Savings',
+        ],
+        'categoryTab' => [
+            'expenseShort' => 'EX',
+            'incomeShort' => 'IN',
+            'debtShort' => 'DT',
+            'receivableShort' => 'RC',
+        ],
+    ],
+
     'system' => [
         'title' => 'System',
         'description' => 'About and diagnostics',

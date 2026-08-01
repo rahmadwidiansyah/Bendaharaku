@@ -412,8 +412,27 @@ return [
     ],
 
     // ──────────────────────────────────────────────────────────────
-    // SYSTEM SECTION
+    // ANALYTICS SECTION
     // ──────────────────────────────────────────────────────────────
+    'analytics' => [
+        'title' => 'Analitik',
+        'category_tabs' => [
+            'all' => 'Semua',
+            'income' => 'Pendapatan',
+            'expense' => 'Pengeluaran',
+            'debt' => 'Hutang',
+            'receivable' => 'Piutang',
+            'investment' => 'Investasi',
+            'savings' => 'Tabungan',
+        ],
+        'categoryTab' => [
+            'expenseShort' => 'PN',
+            'incomeShort' => 'PM',
+            'debtShort' => 'HG',
+            'receivableShort' => 'PT',
+        ],
+    ],
+
     'system' => [
         'title' => 'Sistem',
         'description' => 'Tentang & diagnostik',

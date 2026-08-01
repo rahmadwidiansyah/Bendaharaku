@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import DateModal from '@/Components/DateModal.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import { ref, shallowRef, onMounted, watch, computed, nextTick } from 'vue';
 import { Chart, registerables } from 'chart.js';
 import { formatNumber } from '@/utils/format.js';
@@ -46,6 +46,8 @@ const barChartKey = ref(0);
 const cumulativeChartKey = ref(0);
 const doughnutChartKey = ref(0);
 
+const isDateFilterActive = computed(() => usePage().url.includes('start_date='));
+
 const cssVar = (name, fallback) =>
     getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
 
@@ -65,10 +67,10 @@ const barViews = [
 ];
 
 const categoryViews = [
-    { key: 'expense', label: () => t('analytics.categoryTab.expense') },
-    { key: 'income', label: () => t('analytics.categoryTab.income') },
-    { key: 'debt', label: () => t('analytics.categoryTab.debt') },
-    { key: 'receivable', label: () => t('analytics.categoryTab.receivable') },
+    { key: 'expense', label: () => t('analytics.categoryTab.expenseShort') },
+    { key: 'income', label: () => t('analytics.categoryTab.incomeShort') },
+    { key: 'debt', label: () => t('analytics.categoryTab.debtShort') },
+    { key: 'receivable', label: () => t('analytics.categoryTab.receivableShort') },
 ];
 
 const destroyChart = (id) => {
@@ -79,69 +81,86 @@ const destroyChart = (id) => {
 };
 
 const initCumulativeChart = async () => {
-    destroyChart('cumulative');
-    cumulativeChartKey.value++;
-    await nextTick();
+    try {
+        destroyChart('cumulative');
+        cumulativeChartKey.value++;
+        await nextTick();
 
-    const ctx = document.getElementById('cumulativeChart')?.getContext('2d');
-    if (!ctx) return;
-
-    const brand = getComputedStyle(document.documentElement).getPropertyValue('--color-brand').trim() || '#a855f7';
-
-    let grad = ctx.createLinearGradient(0, 0, 0, 140);
-    grad.addColorStop(0, hexToRgba(brand, 0.35));
-    grad.addColorStop(1, hexToRgba(brand, 0));
-
-    charts.value['cumulative'] = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: props.dailyLabels,
-            datasets: [{
-                data: props.cumulativeData,
-                borderColor: brand,
-                borderWidth: 2.5,
-                backgroundColor: grad,
-                fill: true,
-                tension: 0.4,
-                pointRadius: 2,
-                pointHoverRadius: 7,
-                pointBackgroundColor: brand,
-                pointBorderColor: cssVar('--color-gray-950', '#121212'),
-                pointBorderWidth: 1.5,
-                pointHoverBackgroundColor: brand,
-                pointHoverBorderColor: '#fff',
-                pointHoverBorderWidth: 2,
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: { duration: 400 },
-            interaction: { mode: 'index', intersect: false },
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    enabled: true,
-                    backgroundColor: 'rgba(18,18,18,0.95)',
-                    titleColor: '#9CA3AF',
-                    titleFont: { size: 11, weight: 'bold' },
-                    bodyColor: '#fff',
-                    bodyFont: { size: 13, weight: 'bold' },
-                    padding: { x: 12, y: 8 },
-                    cornerRadius: 8,
-                    displayColors: false,
-                    callbacks: {
-                        title: (items) => {
-                            const d = new Date(items[0].label + 'T00:00:00');
-                            return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-                        },
-                        label: (item) => 'Rp ' + Number(item.raw).toLocaleString('id-ID'),
-                    }
-                },
-            },
-            scales: { x: { display: false }, y: { display: false } }
+        const ctx = document.getElementById('cumulativeChart')?.getContext('2d');
+        if (!ctx) {
+            console.warn('Cumulative chart canvas context not found');
+            return;
         }
-    });
+
+        // Validasi data sebelum membuat chart
+        if (!props.dailyLabels || !props.cumulativeData || 
+            props.dailyLabels.length === 0 || props.cumulativeData.length === 0) {
+            console.warn('Insufficient data for cumulative chart:', {
+                labels: props.dailyLabels?.length,
+                data: props.cumulativeData?.length
+            });
+            return;
+        }
+
+        const brand = cssVar('--color-brand', '#a855f7');
+
+        let grad = ctx.createLinearGradient(0, 0, 0, 140);
+        grad.addColorStop(0, hexToRgba(brand, 0.35));
+        grad.addColorStop(1, hexToRgba(brand, 0));
+
+        charts.value['cumulative'] = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: props.dailyLabels,
+                datasets: [{
+                    data: props.cumulativeData,
+                    borderColor: brand,
+                    borderWidth: 2.5,
+                    backgroundColor: grad,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 2,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: brand,
+                    pointBorderColor: cssVar('--color-gray-950', '#121212'),
+                    pointBorderWidth: 1.5,
+                    pointHoverBackgroundColor: brand,
+                    pointHoverBorderColor: '#fff',
+                    pointHoverBorderWidth: 2,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 400 },
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        enabled: true,
+                        backgroundColor: 'rgba(18,18,18,0.95)',
+                        titleColor: '#9CA3AF',
+                        titleFont: { size: 11, weight: 'bold' },
+                        bodyColor: '#fff',
+                        bodyFont: { size: 13, weight: 'bold' },
+                        padding: { x: 12, y: 8 },
+                        cornerRadius: 8,
+                        displayColors: false,
+                        callbacks: {
+                            title: (items) => {
+                                const d = new Date(items[0].label + 'T00:00:00');
+                                return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+                            },
+                            label: (item) => 'Rp ' + Number(item.raw).toLocaleString('id-ID'),
+                        }
+                    },
+                },
+                scales: { x: { display: false }, y: { display: false } }
+            }
+        });
+    } catch (error) {
+        console.error('Failed to initialize cumulative chart:', error);
+    }
 };
 
 function formatCompact(n) {
@@ -152,10 +171,8 @@ function formatCompact(n) {
 }
 
 /**
- * Bangun dataset untuk chart arus kas, DIBATASI supaya balok enak dilihat:
- * - harian   : 5 hari terakhir yang ada transaksinya
- * - mingguan : hanya minggu-minggu dalam BULAN BERJALAN (bukan seluruh histori)
- * - bulanan  : hanya 3 bulan terakhir
+ * Bangun dataset arus kas untuk seluruh periode yang tersedia.
+ * Kontainer chart menyediakan scroll horizontal agar periode lama tetap dapat diakses.
  */
 function buildBarData(view) {
     const dates = props.allDailyDates || [];
@@ -168,10 +185,8 @@ function buildBarData(view) {
     }
 
     if (view === 'harian') {
-        const n = 5;
-        const start = Math.max(0, dates.length - n);
-        for (let i = start; i < dates.length; i++) {
-            const d = new Date(dates[i]);
+        dates.forEach((date, i) => {
+            const d = new Date(date);
             pushNonEmpty(
                 d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }),
                 Math.abs(props.allDailyIncome[i] || 0),
@@ -179,33 +194,34 @@ function buildBarData(view) {
                 Math.abs(props.allDailyDebt[i] || 0),
                 Math.abs(props.allDailyReceivable[i] || 0)
             );
-        }
+        });
         return { labels, incomes, expenses, debts, receivables };
     }
 
     if (view === 'mingguan') {
-        const now = new Date();
-        const curY = now.getFullYear();
-        const curM = now.getMonth();
-        const idxs = dates
-            .map((d, i) => i)
-            .filter((i) => {
-                const d = new Date(dates[i]);
-                return d.getFullYear() === curY && d.getMonth() === curM;
-            });
-
         let bucket = null;
-        idxs.forEach((i, pos) => {
-            const d = new Date(dates[i]);
-            if (!bucket) bucket = { start: d.getDate(), end: d.getDate(), inc: 0, exp: 0, debt: 0, rec: 0 };
+        dates.forEach((date, i) => {
+            const d = new Date(date);
+            if (!bucket) {
+                bucket = {
+                    start: d.getDate(),
+                    end: d.getDate(),
+                    inc: 0,
+                    exp: 0,
+                    debt: 0,
+                    rec: 0,
+                    count: 0,
+                };
+            }
+
             bucket.end = d.getDate();
             bucket.inc += Math.abs(props.allDailyIncome[i] || 0);
             bucket.exp += Math.abs(props.allDailyExpense[i] || 0);
             bucket.debt += Math.abs(props.allDailyDebt[i] || 0);
             bucket.rec += Math.abs(props.allDailyReceivable[i] || 0);
+            bucket.count++;
 
-            const isLast = pos === idxs.length - 1;
-            if ((pos + 1) % 7 === 0 || isLast) {
+            if (bucket.count === 7 || i === dates.length - 1) {
                 pushNonEmpty(`${bucket.start}-${bucket.end}`, bucket.inc, bucket.exp, bucket.debt, bucket.rec);
                 bucket = null;
             }
@@ -213,7 +229,7 @@ function buildBarData(view) {
         return { labels, incomes, expenses, debts, receivables };
     }
 
-    // bulanan — 3 bulan terakhir
+    // bulanan — seluruh periode yang tersedia
     const monthMap = new Map();
     dates.forEach((dateStr, i) => {
         const d = new Date(dateStr);
@@ -231,7 +247,7 @@ function buildBarData(view) {
         m.rec += Math.abs(props.allDailyReceivable[i] || 0);
     });
 
-    Array.from(monthMap.values()).slice(-3).forEach((m) => {
+    Array.from(monthMap.values()).forEach((m) => {
         pushNonEmpty(m.label, m.inc, m.exp, m.debt, m.rec);
     });
 
@@ -284,22 +300,78 @@ const renderBarChart = async (view) => {
             id: 'barLabels',
             afterDraw(chart) {
                 const ctx2 = chart.ctx;
+                const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+                const fontSize = isMobile ? 9 : 10;
+                const placedLabels = [];
+                
+                ctx2.font = `bold ${fontSize}px sans-serif`;
+                ctx2.fillStyle = '#D1D5DB';
+                ctx2.textAlign = 'center';
+                ctx2.shadowColor = 'rgba(0, 0, 0, 0.5)';
+                ctx2.shadowBlur = 2;
+                ctx2.shadowOffsetY = 1;
+                
                 chart.data.datasets.forEach((ds, dsIndex) => {
                     const meta = chart.getDatasetMeta(dsIndex);
                     meta.data.forEach((el, i) => {
                         const val = Number(ds.data[i]);
                         if (!val || val <= 0) return;
-                        ctx2.fillStyle = '#D1D5DB';
-                        ctx2.font = 'bold 10px sans-serif';
-                        ctx2.textAlign = 'center';
-                        ctx2.textBaseline = 'bottom';
-                        ctx2.fillText(formatCompact(val), el.x, el.y - 4);
+                        
+                        const text = formatCompact(val);
+                        const textWidth = ctx2.measureText(text).width;
+                        const textHeight = fontSize;
+                        
+                        const positions = [
+                            { x: el.x, y: el.y - 4, baseline: 'bottom' },
+                            { x: el.x, y: el.y - 12, baseline: 'bottom' },
+                            { x: el.x, y: el.y - 20, baseline: 'bottom' },
+                            { x: el.x, y: el.y + 12, baseline: 'top' }
+                        ];
+                        
+                        let placed = false;
+                        for (const pos of positions) {
+                            const labelBounds = {
+                                x: pos.x - textWidth / 2 - 2,
+                                y: pos.baseline === 'bottom' ? pos.y - textHeight - 2 : pos.y,
+                                width: textWidth + 4,
+                                height: textHeight + 4
+                            };
+                            
+                            const hasCollision = placedLabels.some(placed => {
+                                return !(labelBounds.x + labelBounds.width < placed.x ||
+                                        labelBounds.x > placed.x + placed.width ||
+                                        labelBounds.y + labelBounds.height < placed.y ||
+                                        labelBounds.y > placed.y + placed.height);
+                            });
+                            
+                            if (!hasCollision && pos.y > 10 && pos.y < chart.height - 10) {
+                                ctx2.textBaseline = pos.baseline;
+                                ctx2.fillText(text, pos.x, pos.y);
+                                placedLabels.push(labelBounds);
+                                placed = true;
+                                break;
+                            }
+                        }
                     });
                 });
+                
+                ctx2.shadowColor = 'transparent';
             }
         }]
     });
 };
+
+const chartMinWidth = computed(() => {
+    const { labels } = buildBarData(barView.value);
+    const minWidthPerLabel = 80; // 80px per time period
+    return Math.max(labels.length * minWidthPerLabel, 300); // minimum 300px
+});
+
+const cumulativeChartMinWidth = computed(() => {
+    const labelCount = props.dailyLabels?.length ?? 0;
+    const minWidthPerLabel = 40; // 40px per day label for line chart
+    return Math.max(labelCount * minWidthPerLabel, 300); // minimum 300px
+});
 
 const activeCategoryData = computed(() => {
     function sortDesc(items) {
@@ -459,22 +531,23 @@ onMounted(() => {
 
             <!-- Date bar -->
             <div class="flex items-center justify-between pt-3 pb-1">
-                <p class="text-xs text-white font-medium">
-                    {{ $t('analytics.showingData') }}
-                    <span class="text-gray-300">{{ new Date(startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long' }) }} – {{ new Date(endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long' }) }}</span>
-                </p>
-                <DateModal :action="route('analytics.index')" :start-date="startDate" :end-date="endDate" />
-            </div>
+<p class="text-xs text-white font-medium">
+    {{ $t('analytics.showingData') }}
+    <span class="text-gray-300">{{ new Date(startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long' }) }} – {{ new Date(endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long' }) }}</span>
+</p>
+<div class="relative">
+    <DateModal :action="route('analytics.index')" :start-date="startDate" :end-date="endDate" />
+</div>
+</div>
 
-            <header class="flex items-center justify-between mb-4 lg:mb-6 animate-fade-in-up">
-                <div class="hidden lg:block">
-                    <p class="text-2xs text-purple-500 font-black mb-1.5 uppercase tracking-[0.2em] flex items-center gap-2">
-                        <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
-                        {{ $t('analytics.subtitle') }}
-                    </p>
-                    <h1 class="text-3xl font-black text-white tracking-tight leading-none">{{ $t('analytics.title') }}</h1>
-                </div>
-            </header>
+<header class="flex items-center justify-between mb-4 lg:mb-6 animate-fade-in-up">
+    <div class="hidden lg:block">
+<p class="text-2xs text-purple-500 font-black mb-1.5 uppercase tracking-[0.2em] flex items-center gap-2">
+    {{ $t('analytics.subtitle') }}
+</p>
+        <h1 class="text-3xl font-black text-white tracking-tight leading-none">{{ $t('analytics.title') }}</h1>
+    </div>
+</header>
 
             <div class="grid grid-cols-2 gap-3 mb-5 lg:mb-6 animate-fade-in-up delay-100">
                 <div class="bg-linear-to-br from-success-deep to-success-mid/50 p-3 lg:p-4 rounded-xl border border-white/10 relative overflow-hidden group">
@@ -501,7 +574,7 @@ onMounted(() => {
             <div class="bg-linear-to-br from-gray-900 to-gray-800 border border-gray-500/10 p-4 lg:p-6 rounded-xl mb-5 lg:mb-8 animate-fade-in-up delay-200 relative overflow-hidden group">
                 <div class="flex justify-between items-start mb-4 lg:mb-6 relative z-10">
                     <div>
-                        <p class="text-2xs lg:text-xs font-bold text-white uppercase tracking-[0.2em] mb-1">{{ $t('analytics.cumulativeBalance') }}</p>
+                <p class="text-2xs lg:text-xs font-bold text-white uppercase tracking-[0.2em] mb-1">{{ $t('analytics.cumulativeBalance') }}</p>
                         <p class="text-2xs text-gray-500 font-medium">{{ $t('analytics.cumulativeDesc') }}</p>
                     </div>
                     <p class="text-base lg:text-lg font-black text-white tracking-tight px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-xl">
@@ -550,10 +623,11 @@ onMounted(() => {
                     </div>
                 </div>
 
-                <!-- Karena view sudah dibatasi (5 hari / minggu bulan ini / 3 bulan), -->
-                <!-- gak perlu scroll horizontal lagi — balok otomatis lebih lebar & jelas -->
-                <div class="w-full" style="height: 220px;">
-                    <canvas ref="barChartRef" :key="barChartKey"></canvas>
+                <!-- Chart container dengan horizontal scroll -->
+                <div class="overflow-x-auto scrollbar-custom">
+                    <div :style="{ minWidth: chartMinWidth + 'px', height: '220px' }">
+                        <canvas ref="barChartRef" :key="barChartKey"></canvas>
+                    </div>
                 </div>
             </div>
 
@@ -645,4 +719,30 @@ onMounted(() => {
 .delay-300 { animation-delay: 300ms; }
 .delay-400 { animation-delay: 400ms; }
 .delay-500 { animation-delay: 500ms; }
+</style>
+
+<style>
+/* Custom scrollbar styling for bar chart */
+.scrollbar-custom {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(139, 92, 246, 0.3) rgba(31, 41, 55, 0.5);
+}
+
+.scrollbar-custom::-webkit-scrollbar {
+    height: 6px;
+}
+
+.scrollbar-custom::-webkit-scrollbar-track {
+    background: rgba(31, 41, 55, 0.5);
+    border-radius: 3px;
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb {
+    background: rgba(139, 92, 246, 0.3);
+    border-radius: 3px;
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb:hover {
+    background: rgba(139, 92, 246, 0.5);
+}
 </style>
