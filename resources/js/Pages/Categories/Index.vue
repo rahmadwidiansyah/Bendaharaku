@@ -45,9 +45,9 @@ const getHeaderText = (typeName) => {
 
         <Head :title="$t('category.title')" />
 
-        <div class="p-4 sm:p-5 w-full lg:max-w-7xl mx-auto lg:px-8 relative z-10 min-h-screen">
+        <div class="px-4 sm:px-5 pb-40 w-full lg:max-w-7xl mx-auto lg:px-8 relative z-10">
 
-            <header class="mb-6 lg:mb-10 pt-3 lg:pt-4 animate-fade-in-up">
+            <header class="mb-8 lg:mb-12 pt-3 lg:pt-4 animate-fade-in-up">
                 <div class="hidden lg:flex justify-between items-end mb-8 px-1">
                     <div>
                         <p class="text-2xs text-gray-300 font-bold uppercase tracking-[0.3em] mb-1 opacity-80">✨
@@ -66,16 +66,16 @@ const getHeaderText = (typeName) => {
                     </div>
                 </div>
 
-                <div :class="['grid grid-cols-1 gap-4', isDesktopLayout ? 'sm:grid-cols-1' : '']">
+                <div :class="['grid grid-cols-1 gap-3 lg:gap-4', isDesktopLayout ? 'sm:grid-cols-1' : '']">
                     <Link :href="route('categories.create')"
-                        class="relative w-full min-h-16 py-3 bg-linear-to-br from-brand-deep/50 to-gray-800 border border-brand-border rounded-xl flex items-center justify-between px-4 sm:px-6 active:scale-[0.97] transition-all group overflow-hidden shadow-2xl hover:border-brand-tint">
+                        class="relative w-full min-h-[72px] py-4 bg-linear-to-br from-brand-deep/50 to-gray-800 border border-brand-border rounded-xl flex items-center justify-between px-4 sm:px-6 active:scale-[0.98] transition-all group overflow-hidden hover:border-brand-tint hover:shadow-[0_0_30px_rgba(168,85,247,0.15)]">
                         <div
                             class="absolute inset-0 bg-linear-to-r from-blue-900/0 via-blue-500/5 to-blue-900/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out">
                         </div>
 
-                        <div class="relative z-10 flex items-center gap-3 sm:gap-4 w-full pr-8">
+                        <div class="relative z-10 flex items-center gap-3 sm:gap-4 w-full pr-10">
                             <div
-                                class="w-9 h-9 shrink-0 rounded-xl bg-purple-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                class="w-10 h-10 lg:w-11 lg:h-11 shrink-0 rounded-xl bg-purple-500 flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
                                 <svg class="hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path
@@ -87,9 +87,9 @@ const getHeaderText = (typeName) => {
                             </div>
                             <div class="flex flex-col min-w-0">
                                 <span
-                                    class="text-sm font-bold text-white uppercase tracking-wide truncate">{{ $t('category.addNew') }}</span>
+                                    class="text-sm lg:text-base font-bold text-white uppercase tracking-wide truncate">{{ $t('category.addNew') }}</span>
                                 <span
-                                    class="text-2xs sm:text-2xs text-purple-400 font-bold uppercase tracking-widest mt-0.5 leading-tight">{{ $t('category.titleCreate') }}</span>
+                                    class="text-2xs text-purple-400 font-bold uppercase tracking-widest mt-0.5 leading-tight">{{ $t('category.titleCreate') }}</span>
                             </div>
                         </div>
 
@@ -107,8 +107,8 @@ const getHeaderText = (typeName) => {
             </header>
 
             <div v-for="([typeName, categories], index) in sortedGroups" :key="typeName"
-                class="mb-6 lg:mb-10 animate-fade-in-up" :style="{ animationDelay: (index * 100) + 'ms' }">
-                <div class="flex items-center gap-3 mb-5 px-1">
+                class="mb-8 lg:mb-12 animate-fade-in-up" :style="{ animationDelay: (index * 100) + 'ms' }">
+                <div class="flex items-center gap-3 mb-4 lg:mb-5 px-1">
                     <div class="w-1.5 h-1.5 rounded-full" :class="getTheme(typeName).bg"></div>
                     <h2 class="text-[11px] font-bold uppercase tracking-[0.2em]" :class="getTheme(typeName).text">
                         {{ getHeaderText(typeName) }}
@@ -116,11 +116,11 @@ const getHeaderText = (typeName) => {
                     <div class="flex-1 h-px bg-linear-to-r from-purple-500 to-transparent"></div>
                 </div>
 
-                <div :class="['grid grid-cols-4 gap-2', isDesktopLayout ? 'lg:grid-cols-4 xl:grid-cols-6 lg:gap-5' : '']">
+                <div :class="['grid grid-cols-3 gap-3 lg:gap-4', isDesktopLayout ? 'sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6' : '']">
                 <Link v-for="category in categories" :key="category.id"
                     :href="route('categories.show', category.id)"
                     :title="category.category_name"
-                    class="relative group bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-2.5 lg:p-4 flex flex-col items-center justify-center text-center active:scale-95 transition-all duration-300"
+                    class="relative group bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-3 lg:p-4 flex flex-col items-center justify-center text-center active:scale-[0.97] transition-all duration-300 hover:shadow-lg"
                     :class="[getTheme(typeName).glow, getTheme(typeName).border]">
 
                         <!-- System category lock badge -->
@@ -131,10 +131,10 @@ const getHeaderText = (typeName) => {
                             </svg>
                         </div>
 
-                        <AppIcon :icon="category.icon" fallback="folder" :class="['w-8 h-8 lg:w-10 lg:h-10 mb-1 lg:mb-2.5 transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-1', getCategoryIconColor(category.type?.name)]" />
+                        <AppIcon :icon="category.icon" fallback="folder" :class="['w-9 h-9 lg:w-11 lg:h-11 mb-2 lg:mb-3 transition-transform duration-300 group-hover:scale-125 group-hover:-translate-y-1.5', getCategoryIconColor(category.type?.name)]" />
 
                         <p
-                            class="text-2xs lg:text-xs font-bold text-gray-300 tracking-wide line-clamp-2 leading-tight group-hover:text-white transition-colors">
+                            class="text-2xs lg:text-xs font-bold text-gray-300 tracking-wide line-clamp-2 leading-tight group-hover:text-white transition-colors px-1">
                             {{ category.category_name }}
                         </p>
                     </Link>
