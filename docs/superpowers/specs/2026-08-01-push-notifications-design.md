@@ -11,6 +11,7 @@ Memberi tahu user melalui **browser web push** (fokus utama: Android/mobile) ket
 1. **Balasan chat selesai diproses** — sukses maupun gagal — saat user tidak sedang membuka aplikasi (keluar app, pindah ke app lain, atau tab di-minimize).
 2. **Budget bulanan over** — pengeluaran melewati target — sekali per grup per bulan.
 3. **Budget bulan baru dibuat** — pada tanggal 1 (auto-generate) dan saat generate manual selesai — sukses maupun gagal.
+4. **Hutang/piutang jatuh tempo** — pengingat 1 hari sebelum (D-1) dan pada hari H, untuk hutang yang harus dibayar maupun piutang yang harus diterima.
 
 Batasan kunci: push dikirim **hanya jika user tidak sedang aktif melihat tab Bendaharaku**. Jika user sedang membuka aplikasi, notifikasi dalam aplikasi (toast) sudah menangani — tidak boleh ada notif ganda.
 
@@ -24,9 +25,11 @@ Bahasa notifikasi mengikuti `user->locale` (id/en), konsisten dengan locale apli
 | Kapan push chat dikirim | Hanya saat user **away** (tidak membuka tab Bendaharaku; minimize/background/tab tertutup = away) |
 | Ambang budget over | `spent > target` (over 100%), **sekali** per grup per bulan |
 | Deteksi kehadiran | Sinyal presensi dari browser (`visibilitychange` + heartbeat 60s) + fallback timestamp kedaluwarsa 2 menit |
-| Bahasa | `user->locale`, keys di `lang/id/chat.php` & `lang/en/chat.php` (atau file baru `lang/{id,en}/push.php`) |
+| Bahasa | `user->locale`, keys di `lang/{id,en}/push.php` (file baru) |
 | Pengiriman | `SendPushNotificationJob` (queue), agar tidak memperlambat job utama |
 | Endpoint mati | `POST /notifications/*` + PATCH settings jadi nyata |
+| Pengingat jatuh tempo | Command harian `loan:send-reminders` (07:00); push saat **D-1** dan **H** per (subject, tipe, tanggal jatuh tempo); hanya saldo > 0; dedupe persisten via tabel `loan_reminders` |
+| Cakupan jatuh tempo | Ketiga tipe `due_date_type`: `fixed`, `monthly`, `daily` — logika `next_due_date` diekstrak dari `DashboardController` ke service bersama `DueDateService` agar tidak duplikat |
 
 ### 2.1. Mengapa VAPID server-driven (bukan client `showNotification`)
 
@@ -68,9 +71,11 @@ Aturan push (server, di job trigger):
 | `app/Services/Push/PushPayloadBuilder.php` | Bangun array payload `{title, body, url, tag, icon, data}` dari template lokal + context |
 | `app/Jobs/SendPushNotificationJob.php` | Queue worker pengiriman (tries 2, timeout 60, backoff [10]) |
 | `app/Jobs/CheckBudgetAlertsJob.php` | Hitung spend per grup bulan berjalan; kirim push over-budget sekali per grup |
+| `app/Jobs/CheckLoanRemindersJob.php` | Per-user: cari hutang/piutang jatuh tempo (D-1 & H), kirim push, catat ke `loan_reminders` |
+| `app/Services/Loan/DueDateService.php` | Logika `next_due_date` (fixed/monthly/daily) + `upcomingDueDates(user)` — diekstrak dari `DashboardController::index` agar satu sumber kebenaran |
 | `app/Http/Controllers/PushNotificationController.php` | `subscribe`, `unsubscribe`, `presence` |
 | `app/Console/Commands/GenerateVapidKeysCommand.php` | `php artisan notification:generate-vapid-keys` — generate + print pasangan VAPID |
-| `routes/web.php` | 3 route notifikasi + perbaikan PATCH settings (persist nyata) |
+| `routes/console.php` | Schedule `loan:send-reminders` harian 07:00 + command; + 3 route notifikasi di web.php |
 
 ### 3.3. Trigger push
 
@@ -82,6 +87,15 @@ Aturan push (server, di job trigger):
 | Generate budget gagal (manual) | `GenerateBudgetJob::failed()` | "Generate budget gagal" | `/budgeting` |
 | Budget auto-generate tgl 1 | command `budget:auto-generate` (`routes/console.php`) setelah generate per user (sukses/gagal) | sama seperti manual | `/budgeting` |
 | Budget over | `ProcessTransactionAction` (setelah create/confirm sukses) → dispatch `CheckBudgetAlertsJob` | "Budget {nama grup} sudah terlewati bulan ini" | `/budgeting` |
+| Jatuh tempo D-1 | command `loan:send-reminders` (harian 07:00) → `CheckLoanRemindersJob` per user | "Besok {subject} jatuh tempo" (+ nominal & tipe hutang/piutang) | `/loans/hutang` atau `/loans/piutang` |
+| Jatuh tempo H | command `loan:send-reminders` (harian 07:00) → `CheckLoanRemindersJob` per user | "Hari ini {subject} jatuh tempo" (+ nominal & tipe) | `/loans/hutang` atau `/loans/piutang` |
+
+### 3.5. Pengingat jatuh tempo — dedupe & cakupan
+
+- Tabel baru `loan_reminders`: `id`, `user_id` FK cascade, `subject` (uppercase), `loan_type` (`debt`|`receivable`), `reminder_type` (`day_before`|`due_date`), `due_date` (date), `sent_at` (timestamp), `created_at/updated_at`; **unique** `(user_id, subject, loan_type, reminder_type, due_date)`.
+- `CheckLoanRemindersJob(user, date)`: panggil `DueDateService::dueTransactions(user, date)` → ambil transaksi `LOAN`/`RECEIVABLE` dengan `due_date_type` not null yang `next_due_date`-nya = `date` atau `date + 1`; sisa saldo per `subject` dihitung via `CalculatesDebtAndReceivable` (balance > 0 → aktif); untuk tiap subject aktif → upsert `loan_reminders` (tanpa duplikat) → jika baris baru (belum diingatkan) → push (gate presensi).
+- Rekurensi: `monthly`/`daily` otomatis ter-remind tiap instance berikutnya karena `due_date` baru; `fixed` sekali saja (dedupe by design).
+- Perubahan `DashboardController` agar memakai `DueDateService` (refactor kecil, perilaku tidak berubah).
 
 Aturan bersama di semua trigger: panggil helper `PushGate::dispatchIfAway(user, payload)` — jika user **aktif**, job tidak di-dispatch (toast di frontend yang menangani).
 
@@ -102,12 +116,23 @@ Aturan bersama di semua trigger: panggil helper `PushGate::dispatchIfAway(user, 
    - `push_notifications` boolean default `true`
 3. `add_over_alert_sent_at_to_budget_groups_table`:
    - `over_alert_sent_at` timestamp nullable.
+4. `create_loan_reminders_table` (lihat §3.5): unique `(user_id, subject, loan_type, reminder_type, due_date)`.
 
 ### 4.2. Model
 
 - `PushSubscription`: `$fillable` (user_id, endpoint, p256dh, auth, user_agent); relasi `user()`.
 - `User`: relasi `subscriptions()` (hasMany); casts `email_notifications`/`push_notifications` boolean; fillable diperbarui.
 - `BudgetGroup`: fillable + cast `over_alert_sent_at` datetime.
+- `LoanReminder`: fillable + casts (`due_date` date, `sent_at` datetime); relasi `user()`.
+
+### 4.2.1. DueDateService (refactor bersama)
+
+- Ekstrak logika `next_due_date` dari `DashboardController::index` (baris ~301-322):
+  - `fixed` → `due_date`
+  - `monthly` → tanggal `due_date_interval` bulan berikutnya
+  - `daily` → `due_date + interval` hari
+- API: `nextDueDate(TransactionLog $trx): ?Carbon` dan `dueTransactions(User $user, Carbon $date): Collection` (transaksi tipe `LOAN`/`RECEIVABLE` aktif dengan jatuh tempo target).
+- `DashboardController` diubah memakai service ini (output identik).
 
 ### 4.3. Konfigurasi
 
@@ -165,6 +190,7 @@ PATCH `settings.application.notifications.update` (route lama) diubah:
 - Command `budget:auto-generate` (`routes/console.php`): setelah generate sukses per user → payload sama seperti job; pada kegagalan per-user → payload gagal (jangan hentikan loop). 
   - Catatan: command tetap sinkron (di luar scope untuk refactor async), hanya menambah push.
 - `ProcessTransactionAction`: setelah create/confirm sukses → `CheckBudgetAlertsJob::dispatch($userId, now()->month, now()->year)` (job sendiri yang hitung & dedupe; tanpa cek presensi karena tidak tahu tipe notif).
+- Schedule harian (routes/console.php): `loan:send-reminders` → `dailyAt('07:00')` + `withoutOverlapping()`; command mendispatch `CheckLoanRemindersJob` per user (hanya user dengan `push_notifications = true` dan punya transaksi jatuh tempo).
 
 ### 4.7. PushNotificationService
 
@@ -199,6 +225,8 @@ sendToUser(User $user, array $payload): void
 - `tests/Feature/Push/ChatPushTriggerTest`: job chat sukses → dispatch `SendPushNotificationJob` saat away; tidak saat aktif (mock PresenceService)
 - `tests/Feature/Push/BudgetOverAlertTest`: grup + item + transaksi over → `CheckBudgetAlertsJob` kirim sekali + set `over_alert_sent_at`; jalankan ulang → tidak kirim (dedupe)
 - `tests/Feature/Push/GenerateBudgetPushTest`: `GenerateBudgetJob` sukses/gagal → push ter-dispatch saat away
+- `tests/Feature/Push/LoanReminderTest`: D-1 dan H-day memicu push (mock PresenceService); dedupe (jalankan 2x → 1 push); hutang lunas tidak diingatkan; monthly berulang; `loan_reminders` terisi; command `loan:send-reminders` mendispatch job per user
+- `tests/Feature/Push/DueDateServiceTest`: next_due_date fixed/monthly/daily
 - Unit: `PushPayloadBuilderTest` (locale id/en, truncate preview)
 
 Semua test memakai `Queue::fake` + mock `PresenceService`/`WebPush\WebPush` — tidak ada panggilan jaringan nyata.
@@ -218,3 +246,4 @@ Semua test memakai `Queue::fake` + mock `PresenceService`/`WebPush\WebPush` — 
 - Notifikasi budget over real-time tanpa jeda (cek per aksi transaksi = praktis real-time; biaya rendah karena hanya hitung grup bulan berjalan)
 - Presence multi-tab (asumsi 1 tab aktif; sinkronisasi antar tab di luar scope)
 - iOS Safari (dapat berjalan tapi tidak diuji; fokus Android)
+- Notifikasi in-app/persisten (semua pengingat via push browser + widget Dashboard yang sudah ada; tidak ada inbox notifikasi)
