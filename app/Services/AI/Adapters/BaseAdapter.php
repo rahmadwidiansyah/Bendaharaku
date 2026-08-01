@@ -47,6 +47,40 @@ abstract class BaseAdapter implements LLMAdapterInterface
             ->post($url, $body);
     }
 
+    public function generateText(
+        string $prompt,
+        string $apiKey,
+        string $model,
+    ): string {
+        $responseData = [];
+
+        try {
+            $url = $this->getBaseUrl($model);
+            $body = $this->buildRequestBody($model, $prompt);
+
+            $response = $this->sendRequest($url, $apiKey, $body, $this->getSingleTimeout());
+
+            $this->assertSuccessful($response);
+
+            $responseData = $response->json() ?? [];
+            $content = $this->extractResponseContent($responseData);
+
+            if (blank($content)) {
+                throw new AiProviderException($this->getProviderName(), 'Response LLM kosong.');
+            }
+
+            return $content;
+        } catch (AiRateLimitException|AiTimeoutException|AiProviderException $e) {
+            throw $e;
+        } catch (ConnectionException $e) {
+            Log::warning($this->getProviderName().' Connection Timeout', ['message' => $e->getMessage()]);
+            throw new AiTimeoutException($this->getProviderName());
+        } catch (Throwable $e) {
+            $this->logProviderCrash($e, $model, $responseData);
+            throw new AiProviderException($this->getProviderName(), $e->getMessage());
+        }
+    }
+
     public function parseTransaction(
         string $prompt,
         string $apiKey,
@@ -269,16 +303,19 @@ abstract class BaseAdapter implements LLMAdapterInterface
         foreach ($data as $key => $value) {
             if (in_array(strtolower((string) $key), $sensitiveKeys, true)) {
                 $sanitized[$key] = '[redacted]';
+
                 continue;
             }
 
             if (is_array($value)) {
                 $sanitized[$key] = $this->sanitizeProviderResponse($value);
+
                 continue;
             }
 
             if (is_string($value) && strlen($value) > 2000) {
                 $sanitized[$key] = substr($value, 0, 2000).'... [truncated]';
+
                 continue;
             }
 

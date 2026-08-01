@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\AI;
 
 use App\DTO\AIParseResult;
+use App\DTO\AiProviderRequest;
 use App\Exceptions\AiConfigurationException;
 use App\Exceptions\AiProviderException;
 use App\Exceptions\AiRateLimitException;
@@ -38,6 +39,7 @@ class AIManager
                 'is_cleared' => $ruleEngineResult->transaction?->isCleared,
                 'category' => $ruleEngineResult->transaction?->category,
             ]);
+
             return $ruleEngineResult;
         }
 
@@ -62,11 +64,12 @@ class AIManager
         $pythonResult = $this->runPythonNlp($text, $wallets, $pythonCategories);
 
         // 2. CIRCUIT BREAKER 2: FALLBACK KE LLM (GEMINI/OPENAI)
-        $preference = $this->preferenceManager->getActivePreference($user);
+        $preference = $this->preferenceManager->resolveActivePreference($user);
 
         if (! $preference) {
             if ($pythonResult !== null && $pythonResult->success) {
                 Log::info("AIManager: Tiada LLM setup, guna hasil Python (confidence rendah) untuk user #{$user->id}");
+
                 return $pythonResult;
             }
             throw new AiConfigurationException('Sistem AI gagal memproses transaksi. Python service offline dan LLM (Gemini/OpenAI) belum dikonfigurasi. Sila setup AI di tetapan akaun.');
@@ -122,7 +125,7 @@ class AIManager
     private function runPythonNlp(string $text, array $wallets, array $categories): ?AIParseResult
     {
         try {
-            $pythonRequest = new \App\DTO\AiProviderRequest($text, '', 'local-nlp', $wallets, $categories, []);
+            $pythonRequest = new AiProviderRequest($text, '', 'local-nlp', $wallets, $categories, []);
             $pythonResult = $this->pythonNlp->parseTransaction($pythonRequest);
             if ($pythonResult->success && $pythonResult->confidence >= 0.85) {
                 return $pythonResult;

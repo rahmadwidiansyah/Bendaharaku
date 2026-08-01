@@ -16,6 +16,7 @@ use PHPUnit\Framework\TestCase;
 class AIContextBuilderTest extends TestCase
 {
     private AIContextBuilder $aiBuilder;
+
     private RuleContextBuilder $ruleBuilder;
 
     protected function setUp(): void

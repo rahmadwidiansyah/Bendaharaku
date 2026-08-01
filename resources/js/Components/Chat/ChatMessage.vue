@@ -18,9 +18,11 @@
 import MessageRenderer  from './Messages/MessageRenderer.vue'
 import ResponseMeta     from './Messages/ResponseMeta.vue'
 import MessageToolbar   from './Messages/MessageToolbar.vue'
+import TypingIndicator  from './Messages/TypingIndicator.vue'
 import BotAvatar        from './BotAvatar.vue'
 import ChatTimestamp    from './ChatTimestamp.vue'
 import { useMessageContent } from '@/Composables/useMessageContent.js'
+import { computed } from 'vue'
 
 const props = defineProps({
     message:    { type: Object,  required: true },
@@ -32,6 +34,12 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['retry', 'regenerate', 'suggest', 'review'])
+
+// Pesan bot yang masih diproses di background queue
+const isPending = computed(() =>
+    props.message?.role === 'assistant' &&
+    (props.message.status === 'pending' || props.message.status === 'processing'),
+)
 
 // ── Content parsing (delegasi ke composable) ──────────────────────
 const {
@@ -45,8 +53,11 @@ const {
 </script>
 
 <template>
+    <!-- ── BOT MESSAGE PENDING (masih diproses di queue) ────────── -->
+    <TypingIndicator v-if="isPending" :bot-avatar="botAvatar" :bot-name="botName" class="px-3 py-0.5" />
+
     <!-- ── BOT MESSAGE ─────────────────────────────────────────── -->
-    <div v-if="isBot" class="flex items-end gap-1.5 px-3 py-0.5 animate-fade-in group">
+    <div v-else-if="isBot" class="flex items-end gap-1.5 px-3 py-0.5 animate-fade-in group">
 
         <!-- Avatar bot -->
         <div class="w-6 h-6 shrink-0 self-end mb-0.5">
@@ -86,7 +97,7 @@ const {
 
         <!-- Bubble user -->
         <div class="flex flex-col gap-1 min-w-0 items-end" style="max-width: 80%">
-            <div class="bg-gradient-to-br from-brand-mid to-brand-soft text-white text-sm leading-relaxed px-3.5 pt-2 pb-1.5 rounded-2xl rounded-tr-md shadow-sm shadow-purple-500/20 break-words">
+            <div class="user-bubble bg-gradient-to-br from-brand-mid to-brand-soft text-white text-sm leading-relaxed px-3.5 pt-2 pb-1.5 rounded-2xl rounded-tr-md shadow-sm shadow-purple-500/20 break-words">
                 <!-- Render semua inline components (text + image) -->
                 <template v-for="(comp, i) in filteredInline" :key="i">
                     <MessageRenderer
@@ -100,7 +111,7 @@ const {
                 <div class="flex justify-end mt-0.5">
                     <ChatTimestamp
                         :datetime="message.created_at"
-                        class="text-white/40 select-none"
+                        class="text-white/50 select-none"
                     />
                 </div>
             </div>
@@ -119,3 +130,30 @@ const {
         </div>
     </div>
 </template>
+
+<style scoped>
+/* Override warna teks markdown di dalam bubble user agar tetap putih */
+.user-bubble :deep(.markdown-body),
+.user-bubble :deep(.markdown-body p),
+.user-bubble :deep(.markdown-body li),
+.user-bubble :deep(.markdown-body span),
+.user-bubble :deep(.markdown-inline) {
+    color: rgba(255, 255, 255, 0.95) !important;
+}
+.user-bubble :deep(.markdown-body strong),
+.user-bubble :deep(.markdown-body b) {
+    color: #ffffff !important;
+}
+.user-bubble :deep(.markdown-body em) {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+.user-bubble :deep(.markdown-body a) {
+    color: rgba(255, 255, 255, 0.9);
+    text-decoration-color: rgba(255, 255, 255, 0.5);
+}
+.user-bubble :deep(.markdown-body code) {
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+</style>

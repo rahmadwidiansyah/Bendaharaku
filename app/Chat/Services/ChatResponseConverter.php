@@ -13,10 +13,8 @@ use App\Chat\Components\WarningComponent;
 use App\Chat\DTOs\ChatContext;
 use App\Chat\DTOs\ChatResponse;
 use App\Chat\Errors\ErrorDetail;
-use App\DTO\MultiTransactionItem;
 use App\DTO\MultiTransactionResult;
 use App\Enums\ChatErrorSeverity;
-use App\Models\TransactionDraft;
 
 class ChatResponseConverter
 {

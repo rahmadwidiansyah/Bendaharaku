@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Unit;
 
 use App\Services\AI\Context\AIContext;
-use App\Services\AI\Prompt\PromptInstructions;
 use App\Services\AI\Prompt\PromptRenderer;
 use PHPUnit\Framework\TestCase;
 

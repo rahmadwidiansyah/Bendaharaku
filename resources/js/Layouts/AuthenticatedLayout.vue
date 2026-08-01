@@ -50,11 +50,13 @@ import TransactionSkeleton from '@/Components/Skeleton/TransactionSkeleton.vue'
 import AssetSkeleton       from '@/Components/Skeleton/AssetSkeleton.vue'
 import StatisticsSkeleton  from '@/Components/Skeleton/StatisticsSkeleton.vue'
 import SettingsSkeleton    from '@/Components/Skeleton/SettingsSkeleton.vue'
+import BudgetingSkeleton   from '@/Components/Skeleton/BudgetingSkeleton.vue'
 import { useLayoutPreference } from '@/Composables/useLayoutPreference'
 import { usePageLoading }      from '@/Composables/usePageLoading'
 import { initTheme }           from '@/Composables/useTheme'
+import { usePushNotifications } from '@/Composables/usePushNotifications'
 import { usePage }             from '@inertiajs/vue3'
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 
 
 const SKELETON_COMPONENTS = {
@@ -63,6 +65,7 @@ const SKELETON_COMPONENTS = {
     AssetSkeleton,
     StatisticsSkeleton,
     SettingsSkeleton,
+    BudgetingSkeleton,
 }
 
 const props = defineProps({
@@ -85,6 +88,17 @@ const page = usePage()
 onMounted(() => {
     const userTheme = page.props.auth?.user?.theme ?? 'system'
     initTheme(userTheme)
+})
+
+// ── Push presence: sinyal aktif/away + registrasi service worker ──
+const push = usePushNotifications()
+onMounted(() => {
+    push.setVapidKey(page.props.vapidPublicKey ?? null)
+    push.startPresence()
+    push.updateState()
+})
+onUnmounted(() => {
+    push.stopPresence()
 })
 
 // Root panel selalu full width di desktop.

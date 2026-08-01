@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\DTO;
 
+use App\Models\Category;
 use App\Models\User;
+use App\Models\Wallet;
 use Illuminate\Database\Eloquent\Collection;
 
 /**
@@ -14,8 +16,8 @@ use Illuminate\Database\Eloquent\Collection;
 readonly class ConfidenceScoreContext
 {
     /**
-     * @param  Collection<int, \App\Models\Wallet>|null  $wallets
-     * @param  Collection<int, \App\Models\Category>|null  $categories
+     * @param  Collection<int, Wallet>|null  $wallets
+     * @param  Collection<int, Category>|null  $categories
      */
     public function __construct(
         public User $user,

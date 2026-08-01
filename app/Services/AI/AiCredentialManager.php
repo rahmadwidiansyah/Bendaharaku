@@ -39,10 +39,27 @@ class AiCredentialManager
 
     public function getCredential(User $user, AiProvider $provider): ?UserAiCredential
     {
-        return $user->aiCredentials()
+        $credential = $user->aiCredentials()
             ->where('provider', $provider->value)
             ->where('is_valid', true)
             ->first();
+
+        if ($credential !== null) {
+            return $credential;
+        }
+
+        if ($provider === AiProvider::OpenAiCompatible) {
+            $apiKey = (string) config('bendaharaku.ai.openai_compatible.api_key');
+
+            if (! blank($apiKey)) {
+                return (new UserAiCredential)->forceFill([
+                    'api_key' => $apiKey,
+                    'is_valid' => true,
+                ]);
+            }
+        }
+
+        return null;
     }
 
     public function markAsInvalid(UserAiCredential $credential): void

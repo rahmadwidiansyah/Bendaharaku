@@ -4,20 +4,23 @@ use App\Console\Commands\AggregateAiMetricsCommand;
 use App\Console\Commands\PruneAiMemoriesCommand;
 use App\Http\Controllers\AiAnalyticsController;
 use App\Http\Controllers\AnalyticsController;
+use App\Http\Controllers\Api\V1\BudgetController;
+use App\Http\Controllers\BudgetingController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ChatBotProfileController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EvidenceController;
 use App\Http\Controllers\EvidenceDebugController;
 use App\Http\Controllers\EvidenceReviewController;
-use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\LoanController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PushNotificationController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\Settings\AiSettingsController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\WebChatController;
-use App\Models\Wallet;
 use App\Support\SettingsChangeLogger;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -42,6 +45,33 @@ Route::middleware(['auth'])->group(function () {
     // Dashboard & Main Analytics
     Route::get('/dashboard', [DashboardController::class, 'index'])->middleware('verified')->name('dashboard');
     Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
+
+    // Budgeting
+    Route::get('/budgeting', function (Request $request) {
+        $user = $request->user();
+
+        $categories = $user->categories()
+            ->whereHas('type', fn ($q) => $q->where('name', 'Expense'))
+            ->with('type')
+            ->orderBy('category_name')
+            ->get(['id', 'type_id', 'category_name', 'icon', 'custom_name', 'custom_icon']);
+
+        $expenseGroups = config('bendaharaku.budget.expense_groups');
+
+        return Inertia::render('Budgeting/Index', [
+            'categories' => $categories,
+            'expenseGroups' => $expenseGroups,
+            'botName' => $user->bot_display_name,
+            'botAvatar' => $user->bot_avatar_url,
+        ]);
+    })->middleware('verified')->name('budgeting.index');
+
+    Route::get('/budgeting/create', [BudgetingController::class, 'create'])
+        ->middleware('verified')
+        ->name('budgeting.create');
+    Route::post('/budgeting/create', [BudgetingController::class, 'store'])
+        ->middleware('verified')
+        ->name('budgeting.store');
 
     // Settings
     Route::get('/settings', function (Request $request) {
@@ -195,7 +225,15 @@ Route::middleware(['auth'])->group(function () {
             return response()->json(['success' => true, 'message' => 'Tampilan berhasil diperbarui.']);
         })->name('appearance.update');
 
-        Route::get('/notifications', fn () => Inertia::render('Settings/Application/Notifications'))->name('notifications');
+        Route::get('/notifications', function (Request $request) {
+            $user = $request->user();
+
+            return Inertia::render('Settings/Application/Notifications', [
+                'emailNotifications' => (bool) $user->email_notifications,
+                'pushNotifications' => (bool) $user->push_notifications,
+                'vapidPublicKey' => config('services.webpush.vapid_public_key'),
+            ]);
+        })->name('notifications');
         Route::patch('/notifications', function (Request $request) {
             $validated = $request->validate([
                 'email_notifications' => ['required', 'boolean'],
@@ -203,7 +241,10 @@ Route::middleware(['auth'])->group(function () {
             ]);
 
             $user = $request->user();
-            // Store notification preferences
+            $user->update([
+                'email_notifications' => $validated['email_notifications'],
+                'push_notifications' => $validated['push_notifications'],
+            ]);
 
             SettingsChangeLogger::logChange(
                 $user,
@@ -396,6 +437,7 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('chat')->name('chat.')->group(function () {
         Route::get('/', [WebChatController::class, 'index'])->name('index');
         Route::post('/message', [WebChatController::class, 'sendMessage'])->name('message');
+        Route::get('/message/{id}/status', [WebChatController::class, 'messageStatus'])->name('message.status');
         Route::get('/history', [WebChatController::class, 'history'])->name('history');
         Route::get('/commands', [WebChatController::class, 'commands'])->name('commands');
         Route::get('/wallets', [WebChatController::class, 'wallets'])->name('wallets');
@@ -431,11 +473,26 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // ── Global search ─────────────────────────────────────────────
-    Route::get('/search', [App\Http\Controllers\SearchController::class, 'index'])->name('search.page');
-    Route::get('/api/search', [App\Http\Controllers\SearchController::class, 'search'])->name('search.global');
+    Route::get('/search', [SearchController::class, 'index'])->name('search.page');
+    Route::get('/api/search', [SearchController::class, 'search'])->name('search.global');
+
+    // ── Budgeting API (session auth, sama seperti Chat) ─────────────
+    Route::prefix('api/v1/budget')->name('budget.')->group(function () {
+        Route::get('/settings', [BudgetController::class, 'settings'])->name('settings');
+        Route::post('/settings', [BudgetController::class, 'updateSettings'])->name('settings.update');
+        Route::post('/generate', [BudgetController::class, 'generate'])->name('generate');
+        Route::get('/generate/status', [BudgetController::class, 'generationStatus'])->name('generate.status');
+        Route::get('/{year}/{month}', [BudgetController::class, 'show'])->name('show');
+        Route::put('/{budgetGroup}', [BudgetController::class, 'update'])->name('update');
+    });
 
     // ── Redirects for backward compatibility ───────────────────────
     Route::get('/settings/chat/bot-profile', fn () => redirect('/settings/ai/bot', 301));
+
+    // ── Web Push Notifications ──────────────────────────────────────
+    Route::post('/notifications/subscribe', [PushNotificationController::class, 'subscribe'])->name('notifications.subscribe');
+    Route::post('/notifications/unsubscribe', [PushNotificationController::class, 'unsubscribe'])->name('notifications.unsubscribe');
+    Route::post('/notifications/presence', [PushNotificationController::class, 'presence'])->name('notifications.presence');
 
     // Resources CRUD
     Route::patch('wallets/{wallet}/set-pin', [WalletController::class, 'setPin'])->name('wallets.set-pin');

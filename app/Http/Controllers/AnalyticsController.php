@@ -17,8 +17,11 @@ class AnalyticsController extends Controller
     use CalculatesDebtAndReceivable;
 
     private const TYPE_INCOME = 1;
+
     private const TYPE_EXPENSE = 2;
+
     private const TYPE_DEBT = 4;
+
     private const TYPE_RECEIVABLE = 5;
 
     /**

@@ -43,6 +43,12 @@ return [
         'token' => env('TELEGRAM_BOT_TOKEN'),
     ],
 
+    'webpush' => [
+        'vapid_public_key' => env('VAPID_PUBLIC_KEY'),
+        'vapid_private_key' => env('VAPID_PRIVATE_KEY'),
+        'vapid_subject' => env('VAPID_SUBJECT', 'mailto:admin@bendaharaku.id'),
+    ],
+
     'ai_parser' => [
         'url' => env('AI_PARSER_URL', 'http://ai-parser:3987'),
     ],

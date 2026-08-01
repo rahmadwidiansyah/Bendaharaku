@@ -8,7 +8,6 @@ use App\Models\TransactionDraft;
 use App\Models\TransactionLog;
 use App\Services\Chat\DraftConfirmationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\Feature\Regression\RegressionTestHelpers;
 use Tests\TestCase;
 
 class DraftFlowRegressionTest extends TestCase

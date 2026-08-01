@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
+use App\Exceptions\AiProviderException;
+use App\Exceptions\AiRateLimitException;
+use App\Exceptions\AiTimeoutException;
 use App\Services\AI\Adapters\DeepSeekAdapter;
 use App\Services\AI\Adapters\GeminiAdapter;
 use App\Services\AI\Adapters\OpenAIAdapter;
@@ -14,7 +17,9 @@ use Tests\TestCase;
 class LLMAdapterTest extends TestCase
 {
     private OpenAIAdapter $openAI;
+
     private DeepSeekAdapter $deepSeek;
+
     private GeminiAdapter $gemini;
 
     protected function setUp(): void
@@ -242,7 +247,7 @@ class LLMAdapterTest extends TestCase
             ], 400),
         ]);
 
-        $this->expectException(\App\Exceptions\AiProviderException::class);
+        $this->expectException(AiProviderException::class);
         $this->expectExceptionMessage('HTTP 400');
 
         $this->gemini->parseTransaction('test prompt', 'fake-key', 'gemini-2.0-flash');
@@ -256,7 +261,7 @@ class LLMAdapterTest extends TestCase
             ]),
         ]);
 
-        $this->expectException(\App\Exceptions\AiProviderException::class);
+        $this->expectException(AiProviderException::class);
         $this->openAI->parseTransaction('test prompt', 'fake-key', 'gpt-4o');
     }
 
@@ -266,7 +271,7 @@ class LLMAdapterTest extends TestCase
             '*' => Http::response([], 429),
         ]);
 
-        $this->expectException(\App\Exceptions\AiRateLimitException::class);
+        $this->expectException(AiRateLimitException::class);
         $this->openAI->parseTransaction('test', 'key', 'model');
     }
 
@@ -276,7 +281,7 @@ class LLMAdapterTest extends TestCase
             '*' => Http::response([], 503),
         ]);
 
-        $this->expectException(\App\Exceptions\AiTimeoutException::class);
+        $this->expectException(AiTimeoutException::class);
         $this->deepSeek->parseTransaction('test', 'key', 'model');
     }
 
@@ -286,7 +291,7 @@ class LLMAdapterTest extends TestCase
             '*' => Http::response([], 401),
         ]);
 
-        $this->expectException(\App\Exceptions\AiProviderException::class);
+        $this->expectException(AiProviderException::class);
         $this->expectExceptionMessage('API Key tidak valid');
         $this->openAI->parseTransaction('test', 'key', 'model');
     }
@@ -300,7 +305,7 @@ class LLMAdapterTest extends TestCase
         try {
             $this->gemini->parseTransaction('test', 'key', 'model');
             $this->fail('Expected AiProviderException was not thrown');
-        } catch (\App\Exceptions\AiProviderException $e) {
+        } catch (AiProviderException $e) {
             $this->assertStringContainsString('401', $e->getMessage());
         }
     }
@@ -311,7 +316,7 @@ class LLMAdapterTest extends TestCase
             '*' => Http::response([], 401),
         ]);
 
-        $this->expectException(\App\Exceptions\AiProviderException::class);
+        $this->expectException(AiProviderException::class);
         $this->expectExceptionMessage('API Key tidak valid');
         $this->deepSeek->parseTransaction('test', 'key', 'model');
     }

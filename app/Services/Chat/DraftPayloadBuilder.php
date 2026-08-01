@@ -49,20 +49,20 @@ class DraftPayloadBuilder
         bool $needsWallet,
     ): array {
         return [
-            'amount'                  => $resolved->amount,
-            'category_id'             => $resolved->categoryId,
-            'category_name'           => $categoryName,
-            'source_wallet_id'        => $resolved->sourceWalletId,
-            'source_wallet_name'      => $sourceWalletName,
-            'destination_wallet_id'   => $resolved->destinationWalletId,
+            'amount' => $resolved->amount,
+            'category_id' => $resolved->categoryId,
+            'category_name' => $categoryName,
+            'source_wallet_id' => $resolved->sourceWalletId,
+            'source_wallet_name' => $sourceWalletName,
+            'destination_wallet_id' => $resolved->destinationWalletId,
             'destination_wallet_name' => $destinationWalletName,
-            'subject'                 => $subject,
-            'notes'                   => $notes,
-            'type_key'                => $typeKey,
-            'needs_wallet'            => $needsWallet,
-            'is_cleared'              => false,
-            'date'                    => now()->format('Y-m-d'),
-            'amount_formatted'        => MoneyFormatter::rupiah($resolved->amount),
+            'subject' => $subject,
+            'notes' => $notes,
+            'type_key' => $typeKey,
+            'needs_wallet' => $needsWallet,
+            'is_cleared' => false,
+            'date' => now()->format('Y-m-d'),
+            'amount_formatted' => MoneyFormatter::rupiah($resolved->amount),
         ];
     }
 }

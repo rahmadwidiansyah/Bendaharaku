@@ -76,7 +76,7 @@ class Wallet extends Model
         }
 
         if (str_contains($this->icon, '.')) {
-            return '/storage/' . $this->icon;
+            return '/storage/'.$this->icon;
         }
 
         return $this->icon;

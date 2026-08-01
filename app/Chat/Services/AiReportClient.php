@@ -62,6 +62,7 @@ class AiReportClient
 
         if ($response === null) {
             Log::warning('Gemini all attempts failed', ['model' => $model]);
+
             return null;
         }
 

@@ -24,6 +24,7 @@ class TransactionResolver
         private readonly WalletResolutionService $walletResolution,
         private readonly CategoryResolutionService $categoryResolution,
     ) {}
+
     /**
      * Mentranslasikan ParsedTransaction menjadi entitas ID primitif database.
      *

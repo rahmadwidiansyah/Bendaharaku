@@ -9,6 +9,7 @@ use App\Services\AI\Adapters\Contracts\LLMAdapterInterface;
 use App\Services\AI\Adapters\DeepSeekAdapter;
 use App\Services\AI\Adapters\GeminiAdapter;
 use App\Services\AI\Adapters\OpenAIAdapter;
+use App\Services\AI\Adapters\OpenAiCompatibleAdapter;
 
 readonly class AiProviderFactory
 {
@@ -16,6 +17,7 @@ readonly class AiProviderFactory
         private GeminiAdapter $geminiAdapter,
         private OpenAIAdapter $openAiAdapter,
         private DeepSeekAdapter $deepSeekAdapter,
+        private OpenAiCompatibleAdapter $openAiCompatibleAdapter,
     ) {}
 
     public function make(AiProvider $providerEnum): LLMAdapterInterface
@@ -24,6 +26,7 @@ readonly class AiProviderFactory
             AiProvider::Gemini => $this->geminiAdapter,
             AiProvider::OpenAI => $this->openAiAdapter,
             AiProvider::DeepSeek => $this->deepSeekAdapter,
+            AiProvider::OpenAiCompatible => $this->openAiCompatibleAdapter,
         };
     }
 }

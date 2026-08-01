@@ -11,7 +11,6 @@ use App\DTO\MultiTransactionResult;
 use App\DTO\ParsedTransaction;
 use App\DTO\ResolvedTransaction;
 use App\Enums\MultiTransactionErrorCode;
-use App\Enums\TransactionIntent;
 use App\Enums\TransactionSource;
 use App\Enums\WalletSide;
 use App\Exceptions\AiConfigurationException;
@@ -141,9 +140,10 @@ class MultiTransactionProcessor
 
     private function resolveMultiContext(User $user, string $text, array $wallets, array $categories, array $activeMemories, string $source, string $prompt = ''): ?array
     {
-        $preference = $this->preferenceManager->getActivePreference($user);
+        $preference = $this->preferenceManager->resolveActivePreference($user);
         if (! $preference) {
             Log::info("MultiTx: No LLM configured for user #{$user->id}, fallback to single parse.");
+
             return null;
         }
 

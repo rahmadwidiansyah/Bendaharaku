@@ -102,7 +102,7 @@ class SearchController extends Controller
                 'source_wallet' => $t->sourceWallet ? ['id' => $t->sourceWallet->id, 'name' => $t->sourceWallet->name, 'group_type' => $t->sourceWallet->group_type] : null,
                 'destination_wallet' => $t->destinationWallet ? ['id' => $t->destinationWallet->id, 'name' => $t->destinationWallet->name, 'group_type' => $t->destinationWallet->group_type] : null,
                 'notes' => $t->notes,
-                'description' => 'Rp' . number_format($t->amount, 0, ',', '.') . ' — ' . $t->date,
+                'description' => 'Rp'.number_format($t->amount, 0, ',', '.').' — '.$t->date,
                 'route' => route('transactions.edit', $t->id),
                 'icon' => $t->category?->icon ?: 'receipt',
                 'color' => 'purple',

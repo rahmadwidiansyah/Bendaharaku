@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasColumn('users', 'theme')) {
+        if (! Schema::hasColumn('users', 'theme')) {
             Schema::table('users', function (Blueprint $table) {
                 $table->string('theme')->default('system')->after('accent_color');
             });

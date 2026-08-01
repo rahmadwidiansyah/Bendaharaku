@@ -29,6 +29,9 @@ class User extends Authenticatable
         'accent_color',
         'theme',
         'category_icon_colored',
+        'auto_budget_enabled',
+        'email_notifications',
+        'push_notifications',
     ];
 
     protected $hidden = [
@@ -77,6 +80,16 @@ class User extends Authenticatable
     public function conversations(): HasMany
     {
         return $this->hasMany(Conversation::class);
+    }
+
+    public function pushSubscriptions(): HasMany
+    {
+        return $this->hasMany(PushSubscription::class);
+    }
+
+    public function loanReminders(): HasMany
+    {
+        return $this->hasMany(LoanReminder::class);
     }
 
     public function monthlyReports(): HasMany
@@ -138,6 +151,9 @@ class User extends Authenticatable
             'password' => 'hashed',
             'allow_negative_balance' => 'boolean',
             'category_icon_colored' => 'boolean',
+            'auto_budget_enabled' => 'boolean',
+            'email_notifications' => 'boolean',
+            'push_notifications' => 'boolean',
         ];
     }
 

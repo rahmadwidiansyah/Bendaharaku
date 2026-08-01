@@ -36,3 +36,7 @@ __pycache__/
 # Production config (contains secrets)
 /Production/
 
+# Docs and Markdown
+/docs/
+/*.md
+!README.md

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Loan\DueDateService;
 use App\Traits\CalculatesDebtAndReceivable;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -13,11 +14,16 @@ use Inertia\Response;
 class DashboardController extends Controller
 {
     use CalculatesDebtAndReceivable;
+
     // Constant mapping untuk menghindari query `whereHas` berulang kali
     private const TYPE_INCOME = 1;
+
     private const TYPE_EXPENSE = 2;
+
     private const TYPE_TRANSFER = 3;
+
     private const TYPE_DEBT = 4;
+
     private const TYPE_RECEIVABLE = 5;
 
     private const TYPE_MAP = [
@@ -56,10 +62,10 @@ class DashboardController extends Controller
             ->whereNull('deleted_at')
             ->whereBetween('date', [$startOfMonth, $endOfMonth])
             ->whereIn('type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE])
-            ->selectRaw("
-                COALESCE(SUM(CASE WHEN type_id = " . self::TYPE_INCOME . " THEN amount ELSE 0 END), 0) as total_income,
-                COALESCE(SUM(CASE WHEN type_id = " . self::TYPE_EXPENSE . " THEN amount ELSE 0 END), 0) as total_expense
-            ")
+            ->selectRaw('
+                COALESCE(SUM(CASE WHEN type_id = '.self::TYPE_INCOME.' THEN amount ELSE 0 END), 0) as total_income,
+                COALESCE(SUM(CASE WHEN type_id = '.self::TYPE_EXPENSE.' THEN amount ELSE 0 END), 0) as total_expense
+            ')
             ->first();
 
         // 3. PINNED WALLETS
@@ -79,7 +85,7 @@ class DashboardController extends Controller
                 ->where('group_type', '!=', 'System')
                 ->withCount(['sourceTransactions', 'destinationTransactions'])
                 ->get()
-                ->sortByDesc(fn($w) => $w->source_transactions_count + $w->destination_transactions_count)
+                ->sortByDesc(fn ($w) => $w->source_transactions_count + $w->destination_transactions_count)
                 ->take(4 - $pinnedWallets->count())
                 ->values();
 
@@ -208,6 +214,7 @@ class DashboardController extends Controller
 
         $draftData = $pendingDraftsQuery->orderBy('created_at', 'desc')->get()->map(function ($draft) {
             $payload = $draft->payload ?? [];
+
             return [
                 'id' => $draft->id,
                 'is_draft' => true,
@@ -244,10 +251,14 @@ class DashboardController extends Controller
 
         $transactions = $transactions->concat($draftData)->sort(function ($a, $b) {
             $dateCompare = strcmp($b['raw_date'], $a['raw_date']);
-            if ($dateCompare !== 0) return $dateCompare;
+            if ($dateCompare !== 0) {
+                return $dateCompare;
+            }
 
             $timeCompare = strcmp($b['time'], $a['time']);
-            if ($timeCompare !== 0) return $timeCompare;
+            if ($timeCompare !== 0) {
+                return $timeCompare;
+            }
 
             return $b['id'] <=> $a['id'];
         })->values();
@@ -270,40 +281,25 @@ class DashboardController extends Controller
 
         // 6a. Menentukan Subject mana saja yang jatuh tempo <= 7 hari (Murni komputasi CPU, 0 Query)
         foreach ($debtsWithDueDate as $trx) {
-            if (!$trx->category || !$trx->subject) continue;
+            if (! $trx->category || ! $trx->subject) {
+                continue;
+            }
 
             $catName = strtolower($trx->category->category_name);
             $isDebt = str_contains($catName, 'dapat hutang');
             $isReceivable = str_contains($catName, 'ngasih piutang');
 
-            if (!$isDebt && !$isReceivable) continue;
+            if (! $isDebt && ! $isReceivable) {
+                continue;
+            }
 
             $cacheKey = $trx->subject.'_'.($isDebt ? 'debt' : 'receivable');
-            if (isset($processedSubjects[$cacheKey])) continue;
+            if (isset($processedSubjects[$cacheKey])) {
+                continue;
+            }
             $processedSubjects[$cacheKey] = true;
 
-            $nextDueDate = null;
-
-            if ($trx->due_date_type === 'fixed' && $trx->due_date) {
-                $nextDueDate = Carbon::parse($trx->due_date)->startOfDay();
-            } elseif ($trx->due_date_type === 'monthly' && $trx->due_date_interval) {
-                $day = min(31, max(1, $trx->due_date_interval));
-                $nextDueDate = Carbon::now()->setDay($day)->startOfDay();
-                if ($nextDueDate->isBefore($nowStart)) {
-                    $nextDueDate->addMonth();
-                }
-            } elseif ($trx->due_date_type === 'daily' && $trx->due_date_interval) {
-                $start = Carbon::parse($trx->date)->startOfDay();
-                $interval = $trx->due_date_interval;
-                $diff = $nowStart->diffInDays($start);
-
-                if ($start->isAfter($nowStart)) {
-                    $nextDueDate = $start;
-                } else {
-                    $cyclesPassed = floor($diff / $interval);
-                    $nextDueDate = $start->copy()->addDays(($cyclesPassed + 1) * $interval);
-                }
-            }
+            $nextDueDate = app(DueDateService::class)->nextDueDate($trx, $nowStart);
 
             if ($nextDueDate) {
                 $daysUntilDue = (int) $nowStart->diffInDays($nextDueDate, false);
@@ -319,7 +315,7 @@ class DashboardController extends Controller
         }
 
         // 6b. ONE Single Query untuk menghitung sisa hutang/piutang (agregat SQL)
-        if (!empty($subjectsToQuery)) {
+        if (! empty($subjectsToQuery)) {
             $balancesRaw = DB::table('transaction_logs')
                 ->join('categories', 'transaction_logs.category_id', '=', 'categories.id')
                 ->where('transaction_logs.user_id', $userId)

@@ -16,7 +16,9 @@ class BackfillMissingWalletSide extends Command
     protected $description = 'Isi missing_wallet_side untuk draft existing berdasarkan heuristic payload';
 
     private const string TYPE_INCOME = 'income';
+
     private const string TYPE_EXPENSE = 'expense';
+
     private const string TYPE_DEBT = 'debt';
 
     public function handle(): int
@@ -25,6 +27,7 @@ class BackfillMissingWalletSide extends Command
 
         if ($drafts->isEmpty()) {
             $this->info('Tidak ada draft yang perlu di-backfill.');
+
             return Command::SUCCESS;
         }
 
@@ -38,6 +41,7 @@ class BackfillMissingWalletSide extends Command
             $side = $this->determineSide($draft->payload);
             if ($side === null) {
                 $bar->advance();
+
                 continue;
             }
 
@@ -84,6 +88,7 @@ class BackfillMissingWalletSide extends Command
             if ($typeKey === self::TYPE_INCOME) {
                 return WalletSide::Destination;
             }
+
             return WalletSide::Both;
         }
 
@@ -91,6 +96,7 @@ class BackfillMissingWalletSide extends Command
             if ($typeKey === self::TYPE_INCOME) {
                 return WalletSide::Destination;
             }
+
             return WalletSide::Source;
         }
 
@@ -98,6 +104,7 @@ class BackfillMissingWalletSide extends Command
             if ($typeKey === self::TYPE_DEBT) {
                 return WalletSide::Destination;
             }
+
             return WalletSide::Destination;
         }
 

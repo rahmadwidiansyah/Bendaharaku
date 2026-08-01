@@ -52,5 +52,38 @@ return [
             'max_memories' => 15,
             'max_effective_weight' => 10.0,
         ],
+        'openai_compatible' => [
+            'base_url' => env('OPENAI_COMPAT_BASE_URL', 'https://api.openai.com/v1/chat/completions'),
+            'api_key' => env('OPENAI_COMPAT_API_KEY', ''),
+            'model' => env('OPENAI_COMPAT_MODEL', 'gpt-4o-mini'),
+            'secret_header_name' => env('OPENAI_COMPAT_SECRET_HEADER_NAME', ''),
+            'secret_header_value' => env('OPENAI_COMPAT_SECRET_HEADER_VALUE', ''),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Budgeting Configuration
+    |--------------------------------------------------------------------------
+    */
+    'budget' => [
+        'expense_groups' => [
+            'fixed' => 'Biaya Tetap',
+            'variable' => 'Biaya Variabel',
+            'sinking_fund' => 'Biaya Tidak Rutin',
+            'investment' => 'Investasi & Tabungan',
+            'discretionary' => 'Biaya Keinginan & Gaya Hidup',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Push Notifications
+    |--------------------------------------------------------------------------
+    */
+    'push' => [
+        'presence_ttl_seconds' => 120,
+        'chat_preview_length' => 60,
+        'notification_ttl_seconds' => 86400,
     ],
 ];

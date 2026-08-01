@@ -28,6 +28,7 @@ class TimeExtractor
 
                     if ((int) $hour >= 0 && (int) $hour <= 23 && (int) $minute >= 0 && (int) $minute <= 59) {
                         $time = "{$hour}:{$minute}";
+
                         return [
                             'time' => $time,
                             'confidence' => 0.9,

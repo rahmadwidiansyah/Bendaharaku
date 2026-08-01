@@ -7,10 +7,8 @@ namespace App\Services\Category;
 use App\Exceptions\CategoryNotFoundException;
 use App\Models\Category;
 use App\Models\TransactionType;
-use App\Models\User;
 use App\Support\StringUtils;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\Log;
 
 class CategoryResolutionService
 {

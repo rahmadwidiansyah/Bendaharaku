@@ -36,11 +36,11 @@ class CommandRouter
         $command = $this->normalizeCommand($lower);
 
         Log::debug('[PIPELINE:ROUTE] commandRouter invoked', [
-            'trace_id'         => $traceId,
-            'normalized_text'  => $normalizedText,
-            'command'          => $command,
-            'source'           => $context->sourcePrefix(),
-            'platform'         => $context->platform->value,
+            'trace_id' => $traceId,
+            'normalized_text' => $normalizedText,
+            'command' => $command,
+            'source' => $context->sourcePrefix(),
+            'platform' => $context->platform->value,
         ]);
 
         $lane = $context->lane ?? 'default';

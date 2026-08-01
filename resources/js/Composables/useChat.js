@@ -13,10 +13,13 @@
  * - State: isLoading, isTyping, showJumpBtn, unreadCount
  */
 
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, onUnmounted } from 'vue'
 import axios from 'axios'
+import { useI18n } from 'vue-i18n'
+import { useChatPending } from './useChatPending'
 
 export function useChat(initialMessages = [], initialConversationId = null, initialHasMore = false) {
+    const { t } = useI18n()
     // ── State ─────────────────────────────────────────────────────
     const messages        = ref([...initialMessages])
     const conversationId  = ref(initialConversationId)
@@ -30,6 +33,115 @@ export function useChat(initialMessages = [], initialConversationId = null, init
     const showJumpBtn     = ref(false)
     /** Jumlah pesan baru dari bot yang masuk saat user sedang scroll ke atas */
     const unreadCount     = ref(0)
+
+    /** Pesan bot yang masih diproses di background queue (botId → interval) */
+    const pendingTimers   = new Map()
+    /** Waktu mulai polling per pesan (botId → timestamp) untuk batas timeout */
+    const pendingStartedAt = new Map()
+    const { trackBotMessage, untrackBotMessage } = useChatPending()
+
+    /** Batas maksimal polling pesan bot — 90 detik cukup untuk normal AI response */
+    const POLL_MAX_MS = 90 * 1000
+
+    // ── Pending bot message (async queue) ─────────────────────────
+
+    function isPendingMessage(msg) {
+        return msg?.role === 'assistant' && (msg.status === 'pending' || msg.status === 'processing')
+    }
+
+    function hasPendingMessages() {
+        return pendingTimers.size > 0
+    }
+
+    function stopPollingBotMessage(botId) {
+        const timer = pendingTimers.get(botId)
+        if (timer) clearInterval(timer)
+        pendingTimers.delete(botId)
+        pendingStartedAt.delete(botId)
+    }
+
+    function pollBotMessage(botId) {
+        if (!botId || pendingTimers.has(botId)) return
+        if (!pendingStartedAt.has(botId)) pendingStartedAt.set(botId, Date.now())
+
+        const tick = async () => {
+            // Timeout: polling berhenti & bubble ditandai gagal supaya tidak muter terus
+            if (Date.now() - (pendingStartedAt.get(botId) ?? Date.now()) > POLL_MAX_MS) {
+                stopPollingBotMessage(botId)
+                untrackBotMessage(botId)
+
+                const idx = messages.value.findIndex((m) => m.id === botId)
+                if (idx !== -1) {
+                    messages.value[idx] = { 
+                        ...messages.value[idx], 
+                        status: 'failed',
+                        content: [{ type: 'error', message: t('chat.timeout'), severity: 'error' }]
+                    }
+                }
+                error.value = t('chat.timeout')
+                if (!hasPendingMessages()) {
+                    isLoading.value = false
+                    isTyping.value = false
+                }
+                return
+            }
+
+            try {
+                const { data } = await axios.get(route('chat.message.status', { id: botId }))
+
+                if (data.status === 'completed' || data.status === 'failed') {
+                    stopPollingBotMessage(botId)
+                    untrackBotMessage(botId)
+
+                    const idx = messages.value.findIndex((m) => m.id === botId)
+                    if (idx !== -1) {
+                        messages.value[idx] = normalizeMessage(data.bot_message ?? messages.value[idx])
+                    }
+
+                    if (!isAtBottom.value) {
+                        unreadCount.value += 1
+                    }
+
+                    if (data.status === 'failed' && data.error_message) {
+                        error.value = data.error_message
+                    }
+
+                    if (!hasPendingMessages()) {
+                        isLoading.value = false
+                        isTyping.value = false
+                        await scrollToBottom(true)
+                    }
+                }
+            } catch {
+                // Pesan tidak ditemukan / network — hentikan polling
+                stopPollingBotMessage(botId)
+                untrackBotMessage(botId)
+                if (!hasPendingMessages()) {
+                    isLoading.value = false
+                    isTyping.value = false
+                }
+            }
+        }
+
+        pendingTimers.set(botId, setInterval(tick, 2000))
+        tick()
+    }
+
+    /** Resume polling untuk pesan pending dari riwayat (misal setelah kembali ke halaman) */
+    function resumePending() {
+        for (const m of messages.value) {
+            if (isPendingMessage(m)) {
+                trackBotMessage(m.id)
+                pollBotMessage(m.id)
+            }
+        }
+    }
+
+    onUnmounted(() => {
+        for (const botId of [...pendingTimers.keys()]) {
+            stopPollingBotMessage(botId)
+        }
+    })
 
     // ── Scroll ────────────────────────────────────────────────────
 
@@ -98,12 +210,16 @@ export function useChat(initialMessages = [], initialConversationId = null, init
             }
 
             if (data.bot_message) {
-                messages.value.push(normalizeMessage(data.bot_message))
-            }
+                const bot = normalizeMessage(data.bot_message)
+                messages.value.push(bot)
 
-            // Increment unread jika user tidak di bawah
-            if (!isAtBottom.value) {
-                unreadCount.value += 1
+                // Proses AI berjalan di background queue → polling status
+                if (isPendingMessage(bot)) {
+                    trackBotMessage(bot.id)
+                    pollBotMessage(bot.id)
+                } else if (!isAtBottom.value) {
+                    unreadCount.value += 1
+                }
             }
 
         } catch (err) {
@@ -128,7 +244,9 @@ export function useChat(initialMessages = [], initialConversationId = null, init
             }
         } finally {
             isLoading.value = false
-            isTyping.value  = false
+            if (!hasPendingMessages()) {
+                isTyping.value = false
+            }
             await scrollToBottom(true)
         }
     }
@@ -178,11 +296,15 @@ export function useChat(initialMessages = [], initialConversationId = null, init
             }
 
             if (data.bot_message) {
-                messages.value.push(normalizeMessage(data.bot_message))
-            }
+                const bot = normalizeMessage(data.bot_message)
+                messages.value.push(bot)
 
-            if (!isAtBottom.value) {
-                unreadCount.value += 1
+                if (isPendingMessage(bot)) {
+                    trackBotMessage(bot.id)
+                    pollBotMessage(bot.id)
+                } else if (!isAtBottom.value) {
+                    unreadCount.value += 1
+                }
             }
 
         } catch (err) {
@@ -203,7 +325,9 @@ export function useChat(initialMessages = [], initialConversationId = null, init
             }
         } finally {
             isLoading.value = false
-            isTyping.value  = false
+            if (!hasPendingMessages()) {
+                isTyping.value = false
+            }
             await scrollToBottom(true)
         }
     }
@@ -257,6 +381,7 @@ export function useChat(initialMessages = [], initialConversationId = null, init
             id:         msg.id,
             _localId:   msg._localId ?? null,
             role:       msg.role,
+            status:     msg.status ?? 'completed',
             content:    msg.content ?? [],
             metadata:   msg.metadata ?? {},
             created_at: msg.created_at,
@@ -400,5 +525,6 @@ export function useChat(initialMessages = [], initialConversationId = null, init
         onScrollUpdate,
         updateTransactionInMessage,
         updateEvidenceInMessage,
+        resumePending,
     }
 }

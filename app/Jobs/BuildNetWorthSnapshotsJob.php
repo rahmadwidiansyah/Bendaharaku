@@ -18,11 +18,15 @@ class BuildNetWorthSnapshotsJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     private const TYPE_INCOME = 1;
+
     private const TYPE_EXPENSE = 2;
+
     private const TYPE_DEBT = 4;
+
     private const TYPE_RECEIVABLE = 5;
 
     public int $tries = 3;
+
     public int $timeout = 300;
 
     public function __construct(

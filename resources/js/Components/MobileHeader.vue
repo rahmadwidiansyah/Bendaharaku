@@ -34,10 +34,7 @@ const avatarSrc = computed(() => {
 // Nilai berupa t() key, bukan string hardcoded
 const routeTitleMap = computed(() => ({
     'dashboard':           t('dashboard.title'),
-    'wallets.index':       t('wallet.title'),
-    'wallets.show':        t('wallet.titleEdit'),
-    'wallets.create':      t('wallet.titleCreate'),
-    'wallets.edit':        t('wallet.titleEdit'),
+    'budgeting.index':     t('nav.budgeting'),
     'transactions.index':  t('transaction.title'),
     'transactions.create': t('transaction.title'),
     'transactions.edit':   t('transaction.titleEdit'),

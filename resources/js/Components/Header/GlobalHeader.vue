@@ -96,10 +96,10 @@ const isCategorySubPage = computed(() => {
     }
 })
 
-const isWalletSubPage = computed(() => {
+const isBudgetingSubPage = computed(() => {
     try {
         const current = route().current()
-        return current && current.startsWith('wallets.') && current !== 'wallets.index'
+        return current && current.startsWith('budgeting.') && current !== 'budgeting.index'
     } catch {
         return false
     }
@@ -107,7 +107,7 @@ const isWalletSubPage = computed(() => {
 
 // showBackButton: jika prop diset manual, ikuti prop; jika null, auto
 const effectiveShowBackButton = computed(() =>
-    props.showBackButton !== null ? props.showBackButton : isSettingsSubPage.value || isCategorySubPage.value || isWalletSubPage.value
+    props.showBackButton !== null ? props.showBackButton : isSettingsSubPage.value || isCategorySubPage.value || isBudgetingSubPage.value
 )
 
 // showGreeting: jika prop diset manual, ikuti prop; jika null, auto dari route
@@ -151,10 +151,7 @@ onUnmounted(() => {
 // ─── Route → label halaman ────────────────────────────────────────
 const routeTitleMap = computed(() => ({
     'dashboard':                  t('dashboard.title'),
-    'wallets.index':              t('wallet.title'),
-    'wallets.show':               t('wallet.titleEdit'),
-    'wallets.create':             t('wallet.titleCreate'),
-    'wallets.edit':               t('wallet.titleEdit'),
+    'budgeting.index':            t('nav.budgeting'),
     'transactions.index':         t('transaction.title'),
     'transactions.create':        t('transaction.title'),
     'transactions.edit':          t('transaction.titleEdit'),
@@ -260,12 +257,12 @@ const handleBack = () => {
         return
     }
 
-    // Untuk halaman wallet sub-page, kembali ke wallets index
-    if (isWalletSubPage.value) {
+    // Untuk halaman budgeting sub-page, kembali ke budgeting index
+    if (isBudgetingSubPage.value) {
         try {
-            router.visit(route('wallets.index'))
+            router.visit(route('budgeting.index'))
         } catch {
-            router.visit('/dashboard')
+            window.history.back()
         }
         return
     }

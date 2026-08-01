@@ -3,9 +3,8 @@
 namespace App\Traits;
 
 use App\Models\TransactionLog;
-use App\Models\Category;
-use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 trait CalculatesDebtAndReceivable
 {
@@ -30,7 +29,7 @@ trait CalculatesDebtAndReceivable
             ->whereNotNull('subject')
             ->whereHas('category', function ($query) {
                 $query->whereIn('system_key', [
-                    'LOAN', 'DEBT_PAYMENT', 'RECEIVABLE', 'RECEIVABLE_PAYMENT'
+                    'LOAN', 'DEBT_PAYMENT', 'RECEIVABLE', 'RECEIVABLE_PAYMENT',
                 ]);
             })
             ->with('category:id,system_key')
@@ -45,7 +44,7 @@ trait CalculatesDebtAndReceivable
             $systemKey = $transaction->category->system_key;
             $amount = $transaction->amount;
 
-            if (!isset($subjects[$subject])) {
+            if (! isset($subjects[$subject])) {
                 $subjects[$subject] = [
                     'debt' => 0,
                     'receivable' => 0,
@@ -75,7 +74,7 @@ trait CalculatesDebtAndReceivable
                 $subjects[$subject]['latest_debt_date'] = $transaction->date;
 
                 if ($subjects[$subject]['debt'] <= 0) {
-                     // Reset if paid off, but keep the latest date for sorting
+                    // Reset if paid off, but keep the latest date for sorting
                     if ($systemKey === 'DEBT_PAYMENT') {
                         $subjects[$subject]['debt_since'] = null;
                     }
@@ -94,11 +93,11 @@ trait CalculatesDebtAndReceivable
                     $subjects[$subject]['receivable'] -= $amount;
                 }
 
-                 $subjects[$subject]['latest_receivable_date'] = $transaction->date;
+                $subjects[$subject]['latest_receivable_date'] = $transaction->date;
 
                 if ($subjects[$subject]['receivable'] <= 0) {
                     if ($systemKey === 'RECEIVABLE_PAYMENT') {
-                       $subjects[$subject]['receivable_since'] = null;
+                        $subjects[$subject]['receivable_since'] = null;
                     }
                 }
             }
@@ -133,10 +132,10 @@ trait CalculatesDebtAndReceivable
                 $totalReceivable += $data['receivable'];
             }
         }
-        
+
         // Sort by latest transaction date descending
-        usort($debts, fn($a, $b) => $b['latest_date'] <=> $a['latest_date']);
-        usort($receivables, fn($a, $b) => $b['latest_date'] <=> $a['latest_date']);
+        usort($debts, fn ($a, $b) => $b['latest_date'] <=> $a['latest_date']);
+        usort($receivables, fn ($a, $b) => $b['latest_date'] <=> $a['latest_date']);
 
         return [
             'debts' => $debts,
