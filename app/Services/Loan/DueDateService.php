@@ -3,7 +3,7 @@
 namespace App\Services\Loan;
 
 use App\Models\TransactionLog;
-use Illuminate\Support\Carbon;
+use Carbon\Carbon;
 
 /**
  * DueDateService — satu sumber kebenaran untuk perhitungan tanggal jatuh tempo.
