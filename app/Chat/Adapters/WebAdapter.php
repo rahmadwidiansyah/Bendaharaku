@@ -17,6 +17,7 @@ use App\Models\User;
 use App\Support\MoneyFormatter;
 use App\Chat\Services\CommandRouter;
 use App\Enums\ChatPlatform;
+use App\Enums\TransactionIntent;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
