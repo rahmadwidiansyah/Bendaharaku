@@ -7,16 +7,16 @@ namespace App\Chat\Adapters;
 use App\Chat\ChatApplicationService;
 use App\Chat\DTOs\ChatContext;
 use App\Chat\DTOs\ChatRequest;
-use App\Chat\DTOs\ChatResponse;
 use App\Chat\Formatters\WebFormatter;
-use App\Enums\ChatPlatform;
-use App\Enums\TransactionIntent;
+use App\Jobs\ProcessChatMessageJob;
 use App\Models\ChatMessage;
 use App\Models\Conversation;
 use App\Models\TransactionDraft;
 use App\Models\TransactionLog;
 use App\Models\User;
 use App\Support\MoneyFormatter;
+use App\Chat\Services\CommandRouter;
+use App\Enums\ChatPlatform;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -27,12 +27,11 @@ use Illuminate\Support\Facades\Log;
  * 1. Menerima HTTP request data (teks, user, conversation_id)
  * 2. Resolve atau buat Conversation aktif untuk user
  * 3. Simpan pesan user ke chat_messages
- * 4. Delegate ke ChatApplicationService
- * 5. Format ChatResponse via WebFormatter → JSON array
- * 6. Simpan respons bot ke chat_messages
- * 7. Return data terstruktur untuk HTTP response
+ * 4. Buat pesan bot pending + dispatch ProcessChatMessageJob (async)
+ * 5. Format data untuk HTTP response
  *
  * Tidak ada AI logic, tidak ada business rule di sini.
+ * Proses AI berjalan di background job agar tidak batal saat user pindah halaman.
  * Tidak ada Telegram-specific code.
  */
 class WebAdapter
@@ -40,101 +39,84 @@ class WebAdapter
     public function __construct(
         private readonly ChatApplicationService $chatService,
         private readonly WebFormatter $formatter,
+        private readonly CommandRouter $commandRouter,
     ) {}
 
     /**
-     * Proses satu pesan dari Web Chat.
+     * Terima satu pesan dari Web Chat (async).
+     *
+     * Pesan user + pesan bot pending disimpan langsung, lalu proses AI
+     * di-delegate ke ProcessChatMessageJob. Response dikembalikan segera.
      *
      * @param  User  $user  User yang mengirim pesan
      * @param  string  $rawMessage  Teks mentah dari user
      * @param  int|null  $conversationId  ID conversation (null = gunakan/buat active)
      * @return array JSON-ready response
      */
-    public function handle(User $user, string $rawMessage, ?int $conversationId = null): array
+    public function enqueueMessage(User $user, string $rawMessage, ?int $conversationId = null): array
     {
-        $startTime = microtime(true);
-
         // 1. Resolve conversation — selalu ada, tidak pernah null
         $conversation = $this->resolveConversation($user, $conversationId);
 
-        // 2. Resolve locale & timezone
-        $locale = ChatContext::resolveLocale($user->locale, null);
-        $timezone = $user->timezone ?? 'Asia/Jakarta';
-
-        // 3. Simpan pesan user ke DB SEBELUM memproses AI.
-        //    Ini kritis: user message harus persisted dulu, sehingga
-        //    jika AI crash sekalipun, conversation tetap ada dan
-        //    conversation_id tetap valid di response.
+        // 2. Simpan pesan user ke DB
         $userMessage = ChatMessage::create([
             'conversation_id' => $conversation->id,
             'role' => 'user',
             'content' => [['type' => 'text', 'text' => $rawMessage]],
             'raw_text' => $rawMessage,
             'metadata' => null,
+            'status' => 'completed',
         ]);
 
-        // 4. Bangun ChatContext + ChatRequest
+        // 3. Coba handle sebagai command langsung (sync, tanpa queue).
+        //    Command seperti /help, /saldo, /transaksi tidak butuh AI/LLM
+        //    sehingga aman diproses synchronous di HTTP request.
+        $startTime = microtime(true);
+        $locale = $user->locale ?? 'id';
+        $latency = (int) round((microtime(true) - $startTime) * 1000);
+        $metadata = [
+            'platform' => ChatPlatform::Web->value,
+            'latency_ms' => $latency,
+        ];
+
         $context = ChatContext::make(
             platform: ChatPlatform::Web,
             conversationId: (string) $conversation->id,
             locale: $locale,
-            timezone: $timezone,
+            timezone: $user->timezone ?? 'Asia/Jakarta',
             sessionId: (string) $conversation->id,
             metadata: ['web_message_id' => $userMessage->id],
         );
 
-        $request = ChatRequest::make(
-            rawMessage: $rawMessage,
-            user: $user,
-            context: $context,
-        );
+        $commandResponse = $this->commandRouter->route($rawMessage, $user, $context, $startTime);
 
-        // 5–7. Proses AI + simpan bot message.
-        //      Dibungkus try/catch agar jika AI atau formatter crash,
-        //      kita tetap bisa return conversation_id + user_message_id
-        //      yang valid ke frontend. Dengan ini:
-        //      - conversationId frontend tidak jadi null
-        //      - history tidak hilang saat user kembali ke halaman chat
-        try {
-            $response = $this->chatService->handleMessage($request);
-            $formatted = $this->formatter->format($response, $context);
+        if ($commandResponse !== null) {
+            // Command dikenali — proses sync, langsung simpan sebagai completed
+            $formatted = $this->formatter->format($commandResponse, $context);
             $latency = (int) round((microtime(true) - $startTime) * 1000);
 
             $botMessage = ChatMessage::create([
                 'conversation_id' => $conversation->id,
                 'role' => 'assistant',
                 'content' => $formatted['components'],
-                'raw_text' => $this->extractTextFromComponents($formatted['components']),
-                'metadata' => array_merge($response->metadata, [
-                    'intent' => $response->intent->value,
-                    'success' => $response->success,
+                'raw_text' => self::extractTextFromComponents($formatted['components']),
+                'metadata' => array_merge($commandResponse->metadata, [
+                    'intent' => $commandResponse->intent->value,
+                    'success' => $commandResponse->success,
                     'latency_ms' => $latency,
                     'raw_prompt' => $rawMessage,
                 ]),
-            ]);
-
-            // Auto-set judul conversation dari pesan pertama
-            if (! $conversation->title && $conversation->messages()->count() <= 2) {
-                $conversation->update([
-                    'title' => mb_substr($rawMessage, 0, 60),
-                ]);
-            }
-
-            Log::info('WebAdapter: message processed', [
-                'trace_id' => $context->traceId,
-                'user_id' => $user->id,
-                'conversation_id' => $conversation->id,
-                'intent' => $response->intent->value,
-                'success' => $response->success,
-                'latency_ms' => $latency,
+                'status' => 'completed',
             ]);
 
             return [
-                'success' => $response->success,
+                'success' => true,
+                'queued' => false,
                 'conversation_id' => $conversation->id,
                 'user_message' => [
                     'id' => $userMessage->id,
                     'role' => 'user',
+                    'status' => 'completed',
                     'content' => [['type' => 'text', 'text' => $rawMessage]],
                     'metadata' => [],
                     'created_at' => $userMessage->created_at->toIso8601String(),
@@ -142,78 +124,73 @@ class WebAdapter
                 'bot_message' => [
                     'id' => $botMessage->id,
                     'role' => 'assistant',
+                    'status' => 'completed',
                     'content' => $formatted['components'],
-                    'metadata' => [
-                        'intent' => $response->intent->value,
-                        'success' => $response->success,
-                        'trace_id' => $context->traceId,
-                        'latency_ms' => $latency,
-                        'provider' => $response->meta('provider'),
-                        'model' => $response->meta('model'),
-                        'confidence' => $response->meta('confidence'),
-                        'total_tokens' => $response->meta('total_tokens'),
-                        'raw_prompt' => $rawMessage,
-                    ],
-                    'created_at' => $botMessage->created_at->toIso8601String(),
-                ],
-            ];
-
-        } catch (\Throwable $e) {
-            // AI / formatter crash — simpan error message ke DB agar
-            // riwayat percakapan tetap lengkap dan bisa diaudit
-            $latency = (int) round((microtime(true) - $startTime) * 1000);
-            $errorMsg = __('chat.error.system');
-
-            $botMessage = ChatMessage::create([
-                'conversation_id' => $conversation->id,
-                'role' => 'assistant',
-                'content' => [[
-                    'type' => 'error',
-                    'message' => $errorMsg,
-                    'severity' => 'error',
-                ]],
-                'raw_text' => $errorMsg,
-                'metadata' => [
-                    'trace_id' => $context->traceId,
-                    'error' => true,
-                    'latency_ms' => $latency,
-                    'exception' => get_class($e),
-                ],
-            ]);
-
-            Log::error('WebAdapter: handle exception', [
-                'trace_id' => $context->traceId,
-                'user_id' => $user->id,
-                'conversation_id' => $conversation->id,
-                'latency_ms' => $latency,
-                'exception' => $e->getMessage(),
-            ]);
-
-            // Tetap return conversation_id + user_message + bot_message
-            // agar frontend tidak kehilangan conversationId
-            return [
-                'success' => false,
-                'conversation_id' => $conversation->id,
-                'user_message' => [
-                    'id' => $userMessage->id,
-                    'role' => 'user',
-                    'content' => [['type' => 'text', 'text' => $rawMessage]],
-                    'metadata' => [],
-                    'created_at' => $userMessage->created_at->toIso8601String(),
-                ],
-                'bot_message' => [
-                    'id' => $botMessage->id,
-                    'role' => 'assistant',
-                    'content' => [[
-                        'type' => 'error',
-                        'message' => $errorMsg,
-                        'severity' => 'error',
-                    ]],
-                    'metadata' => ['error' => true, 'latency_ms' => $latency],
+                    'metadata' => $botMessage->metadata ?? [],
                     'created_at' => $botMessage->created_at->toIso8601String(),
                 ],
             ];
         }
+
+        // 4. Bukan command — proses AI via background queue
+        $botMessage = ChatMessage::create([
+            'conversation_id' => $conversation->id,
+            'role' => 'assistant',
+            'content' => [],
+            'raw_text' => null,
+            'metadata' => ['web_message_id' => $userMessage->id],
+            'status' => 'pending',
+        ]);
+
+        ProcessChatMessageJob::dispatch($user->id, $conversation->id, $userMessage->id, $botMessage->id);
+
+        // 5. Return segera — frontend polling status pesan bot
+        return [
+            'success' => true,
+            'queued' => true,
+            'conversation_id' => $conversation->id,
+            'user_message' => [
+                'id' => $userMessage->id,
+                'role' => 'user',
+                'status' => 'completed',
+                'content' => [['type' => 'text', 'text' => $rawMessage]],
+                'metadata' => [],
+                'created_at' => $userMessage->created_at->toIso8601String(),
+            ],
+            'bot_message' => [
+                'id' => $botMessage->id,
+                'role' => 'assistant',
+                'status' => 'pending',
+                'content' => [],
+                'metadata' => [],
+                'created_at' => $botMessage->created_at->toIso8601String(),
+            ],
+        ];
+    }
+
+    /**
+     * Format satu pesan untuk client (endpoint status & riwayat).
+     */
+    public function formatMessageForClient(ChatMessage $msg): array
+    {
+        $content = $msg->content ?? [];
+        
+        if ($msg->status === 'failed' && $msg->error_message && empty($content)) {
+            $content = [[
+                'type' => 'error',
+                'message' => $msg->error_message,
+                'severity' => 'error',
+            ]];
+        }
+
+        return [
+            'id' => $msg->id,
+            'role' => $msg->role,
+            'status' => $msg->status ?? 'completed',
+            'content' => $content,
+            'metadata' => $msg->metadata ?? [],
+            'created_at' => $msg->created_at->toIso8601String(),
+        ];
     }
 
     /**
@@ -227,13 +204,9 @@ class WebAdapter
             ->orderBy('id')
             ->get();
 
-        return $this->syncTransactionCardsWithDb($messages, $conversation->user_id)->map(fn (ChatMessage $msg) => [
-            'id' => $msg->id,
-            'role' => $msg->role,
-            'content' => $msg->content ?? [],
-            'metadata' => $msg->metadata ?? [],
-            'created_at' => $msg->created_at->toIso8601String(),
-        ])->all();
+        return $this->syncTransactionCardsWithDb($messages, $conversation->user_id)
+            ->map(fn (ChatMessage $msg) => $this->formatMessageForClient($msg))
+            ->all();
     }
 
     /**
@@ -255,15 +228,9 @@ class WebAdapter
         // Ambil N terbaru (desc), lalu sortBy id ascending → chronological
         $messages = $query->get()->sortBy('id')->values();
 
-        return $this->syncTransactionCardsWithDb($messages, $conversation->user_id)->map(function (ChatMessage $msg) {
-            return [
-                'id' => $msg->id,
-                'role' => $msg->role,
-                'content' => $msg->content ?? [],
-                'metadata' => $msg->metadata ?? [],
-                'created_at' => $msg->created_at->toIso8601String(),
-            ];
-        })->all();
+        return $this->syncTransactionCardsWithDb($messages, $conversation->user_id)
+            ->map(fn (ChatMessage $msg) => $this->formatMessageForClient($msg))
+            ->all();
     }
 
     // ── Private ───────────────────────────────────────────────────
@@ -424,7 +391,10 @@ class WebAdapter
      * Phase awal: satu active conversation per user.
      * Phase future: user bisa membuat conversation baru, memilih conversation.
      */
-    private function extractTextFromComponents(array $components): string
+    /**
+     * Ekstrak ringkasan teks dari komponen pesan (dipakai juga oleh ProcessChatMessageJob).
+     */
+    public static function extractTextFromComponents(array $components): string
     {
         $texts = [];
         foreach ($components as $component) {
@@ -444,6 +414,7 @@ class WebAdapter
                 $texts[] = $component['message'] ?? '';
             }
         }
+
         return implode(' | ', array_filter($texts));
     }
 

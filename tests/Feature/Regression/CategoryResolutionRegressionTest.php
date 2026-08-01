@@ -6,7 +6,6 @@ namespace Tests\Feature\Regression;
 
 use App\Evidence\Resolver\CategoryResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\Feature\Regression\RegressionTestHelpers;
 use Tests\TestCase;
 
 class CategoryResolutionRegressionTest extends TestCase

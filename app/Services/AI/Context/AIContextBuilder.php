@@ -7,6 +7,7 @@ namespace App\Services\AI\Context;
 class AIContextBuilder
 {
     private const MAX_WALLETS = 10;
+
     private const MAX_CATEGORIES = 20;
 
     public function build(ContextSnapshot $snapshot, ContextOptions $options = new ContextOptions): AIContext
@@ -37,7 +38,7 @@ class AIContextBuilder
         return array_map(fn (array $w) => $options->includeWalletBalance
             ? ['id' => $w['id'], 'name' => $w['name'], 'balance' => $w['balance']]
             : ['id' => $w['id'], 'name' => $w['name']],
-        $wallets);
+            $wallets);
     }
 
     private function buildCategories(ContextSnapshot $snapshot): array

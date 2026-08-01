@@ -24,6 +24,7 @@ class EvidenceDebugCommand extends Command
 
         if (! $evidence) {
             $this->error("Evidence not found: {$id}");
+
             return self::FAILURE;
         }
 
@@ -43,32 +44,32 @@ class EvidenceDebugCommand extends Command
         $this->info(" MIME Type:              {$evidence->mime_type}");
         $this->info(" Storage Path:           {$evidence->disk}:{$evidence->path}");
         $this->info(" Retry Count:            {$evidence->retry_count}");
-        $this->info(" Document Type:          " . ($evidence->document_type?->value ?? 'N/A'));
-        $this->info(" Classifier Confidence:  " . ($evidence->classifier_confidence !== null ? round($evidence->classifier_confidence, 4) : 'N/A'));
-        $this->info(" Parser Confidence:      " . ($evidence->parser_confidence !== null ? round($evidence->parser_confidence, 4) : 'N/A'));
-        $this->info(" Resolver Confidence:    " . ($evidence->resolver_confidence !== null ? round($evidence->resolver_confidence, 4) : 'N/A'));
+        $this->info(' Document Type:          '.($evidence->document_type?->value ?? 'N/A'));
+        $this->info(' Classifier Confidence:  '.($evidence->classifier_confidence !== null ? round($evidence->classifier_confidence, 4) : 'N/A'));
+        $this->info(' Parser Confidence:      '.($evidence->parser_confidence !== null ? round($evidence->parser_confidence, 4) : 'N/A'));
+        $this->info(' Resolver Confidence:    '.($evidence->resolver_confidence !== null ? round($evidence->resolver_confidence, 4) : 'N/A'));
 
         $this->newLine();
 
         // ── OCR Info ────────────────────────────────────────────────
         $this->line(' <fg=yellow>OCR Information</>');
         $this->line(' ────────────────────────────────────────────────────');
-        $this->info(" OCR Text Length:        " . (strlen($evidence->ocr_text ?? '') ?: 'N/A'));
-        $this->info(" OCR Engine:             " . ($evidence->ocr_engine ?? 'N/A'));
-        $this->info(" OCR Duration (ms):      " . ($evidence->ocr_duration_ms ?? 'N/A'));
-        $this->info(" Normalized Text Length: " . (strlen($evidence->normalized_text ?? '') ?: 'N/A'));
-        $this->info(" Normalization Duration: " . ($evidence->normalization_duration_ms ?? 'N/A'));
-        $this->info(" Normalization Changes:  " . ($evidence->normalization_changes ?? 'N/A'));
+        $this->info(' OCR Text Length:        '.(strlen($evidence->ocr_text ?? '') ?: 'N/A'));
+        $this->info(' OCR Engine:             '.($evidence->ocr_engine ?? 'N/A'));
+        $this->info(' OCR Duration (ms):      '.($evidence->ocr_duration_ms ?? 'N/A'));
+        $this->info(' Normalized Text Length: '.(strlen($evidence->normalized_text ?? '') ?: 'N/A'));
+        $this->info(' Normalization Duration: '.($evidence->normalization_duration_ms ?? 'N/A'));
+        $this->info(' Normalization Changes:  '.($evidence->normalization_changes ?? 'N/A'));
 
         $this->newLine();
 
         // ── Timing ──────────────────────────────────────────────────
         $this->line(' <fg=yellow>Timing</>');
         $this->line(' ────────────────────────────────────────────────────');
-        $this->info(" Created At:             " . ($evidence->created_at?->toIso8601String() ?? 'N/A'));
-        $this->info(" Processing Started:     " . ($evidence->processing_started_at?->toIso8601String() ?? 'N/A'));
-        $this->info(" Processing Finished:    " . ($evidence->processing_finished_at?->toIso8601String() ?? 'N/A'));
-        $this->info(" Last Processed:         " . ($evidence->last_processed_at?->toIso8601String() ?? 'N/A'));
+        $this->info(' Created At:             '.($evidence->created_at?->toIso8601String() ?? 'N/A'));
+        $this->info(' Processing Started:     '.($evidence->processing_started_at?->toIso8601String() ?? 'N/A'));
+        $this->info(' Processing Finished:    '.($evidence->processing_finished_at?->toIso8601String() ?? 'N/A'));
+        $this->info(' Last Processed:         '.($evidence->last_processed_at?->toIso8601String() ?? 'N/A'));
 
         $this->newLine();
 
@@ -115,7 +116,7 @@ class EvidenceDebugCommand extends Command
         $totalDuration = $processingLog->getTotalPipelineDuration($evidence);
         $this->line(' <fg=yellow>Total Pipeline Duration</>');
         $this->line(' ────────────────────────────────────────────────────');
-        $this->info(' ' . ($totalDuration !== null ? "{$totalDuration} ms" : 'N/A'));
+        $this->info(' '.($totalDuration !== null ? "{$totalDuration} ms" : 'N/A'));
 
         $this->newLine();
         $this->line(' <fg=cyan>═══════════════════════════════════════════════════════════</>');

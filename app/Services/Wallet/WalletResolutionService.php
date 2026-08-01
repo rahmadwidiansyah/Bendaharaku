@@ -7,7 +7,6 @@ namespace App\Services\Wallet;
 use App\Enums\TransactionIntent;
 use App\Enums\WalletSide;
 use App\Exceptions\WalletNotFoundException;
-use App\Models\TransactionDraft;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Support\StringUtils;
@@ -36,6 +35,7 @@ class WalletResolutionService
             );
         }
         Log::debug("{$traceId} WalletResolutionService::resolveSystemWallet - Exit: walletId={$wallet->id}");
+
         return $wallet;
     }
 

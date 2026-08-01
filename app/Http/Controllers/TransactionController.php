@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\ProcessTransactionAction;
+use App\Enums\TransactionSource;
 use App\Models\Category;
 use App\Models\TransactionDraft;
 use App\Models\TransactionLog;
@@ -13,12 +14,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
-use App\Enums\TransactionSource;
 use Inertia\Response;
 
 class TransactionController extends Controller
 {
     use CalculatesDebtAndReceivable;
+
     /**
      * Menampilkan daftar transaksi.
      */

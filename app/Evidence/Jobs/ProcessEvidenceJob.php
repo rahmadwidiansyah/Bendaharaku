@@ -143,6 +143,7 @@ class ProcessEvidenceJob implements ShouldQueue
                 'evidence_id' => $this->evidenceId,
                 'error' => $exception->getMessage(),
             ]);
+
             return;
         }
 

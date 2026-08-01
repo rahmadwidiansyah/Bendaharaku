@@ -37,6 +37,7 @@ const SKELETON_MAP = [
     { pattern: /\/transactions\/\d+\/edit/,    skeleton: null                   }, // fullscreen, skip
     { pattern: /\/transactions/,               skeleton: 'TransactionSkeleton'  },
     { pattern: /^\/$|\/dashboard/,             skeleton: 'DashboardSkeleton'    },
+    { pattern: /\/budgeting/,                  skeleton: 'BudgetingSkeleton'    },
     { pattern: /\/wallets/,                    skeleton: 'AssetSkeleton'        },
     { pattern: /\/analytics/,                  skeleton: 'StatisticsSkeleton'   },
     { pattern: /\/categories/,                 skeleton: 'StatisticsSkeleton'   },

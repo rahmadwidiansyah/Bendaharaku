@@ -1,56 +1,81 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
+import { ref, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
+import axios from 'axios';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import SettingsLayout from '../Layouts/SettingsLayout.vue';
 import SettingsCard from '@/Components/Settings/SettingsCard.vue';
-import { useI18n } from 'vue-i18n';
+import { useToast } from '@/Composables/useToast.js';
 
 const { t } = useI18n();
+const { showToast } = useToast();
 
+const autoBudgetEnabled = ref(false);
+const isLoading = ref(true);
+const isSaving = ref(false);
 
-import { ref, onMounted } from 'vue';
-const budgets = ref([] as Array<{id:string,name:string,amount:number,period:string}>);
-const newBudget = ref({ name: '', amount: 0, period: 'monthly' });
+const loadSettings = async () => {
+  try {
+    const response = await axios.get('/api/v1/budget/settings');
+    autoBudgetEnabled.value = Boolean(response.data.auto_budget_enabled);
+  } catch {
+    showToast(t('settings.finance.budget.save_error'), 'error');
+  } finally {
+    isLoading.value = false;
+  }
+};
 
-onMounted(()=>{
-  try{ const raw = localStorage.getItem('finance_budgets'); if(raw) budgets.value = JSON.parse(raw);}catch(e){}
-});
-function persistBudgets(){ try{ localStorage.setItem('finance_budgets', JSON.stringify(budgets.value)); }catch(e){} }
-function addBudget(){ if(!newBudget.value.name.trim() || !newBudget.value.amount) return; budgets.value.push({ id: Date.now().toString(), name: newBudget.value.name.trim(), amount: newBudget.value.amount, period: newBudget.value.period}); newBudget.value.name=''; newBudget.value.amount=0; newBudget.value.period='monthly'; persistBudgets(); }
-function removeBudget(i:number){ budgets.value.splice(i,1); persistBudgets(); }
+const saveAutoBudget = async (value: boolean) => {
+  isSaving.value = true;
+  const previous = autoBudgetEnabled.value;
+  autoBudgetEnabled.value = value;
+
+  try {
+    await axios.post('/api/v1/budget/settings', { auto_budget_enabled: value });
+    showToast(t('settings.finance.budget.save_success'), 'success');
+  } catch {
+    autoBudgetEnabled.value = previous;
+    showToast(t('settings.finance.budget.save_error'), 'error');
+  } finally {
+    isSaving.value = false;
+  }
+};
+
+onMounted(loadSettings);
 </script>
 
 <template>
   <AuthenticatedLayout :fullWidth="true">
     <Head :title="t('settings.finance.budget.title')" />
-    
+
     <SettingsLayout
       :title="t('settings.finance.budget.title')"
       :description="t('settings.finance.budget.description')"
     >
-      <SettingsCard :title="t('settings.finance.budget.title')" :description="t('settings.finance.budget.description')">
-        <div class="space-y-4">
-          <div v-for="(b, idx) in budgets" :key="b.id" class="flex items-center justify-between p-3 bg-gray-900 rounded-lg border border-gray-700">
-            <div>
-              <div class="text-sm font-medium">{{ b.name }}</div>
-              <div class="text-xs text-gray-400">{{ b.amount }} • {{ b.period }}</div>
-            </div>
-            <div class="flex gap-2">
-              <button @click="removeBudget(idx)" class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs transition-colors">{{ t('common.delete') }}</button>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <input v-model="newBudget.name" :placeholder="t('common.name')" class="col-span-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded focus:outline-none focus:border-purple-500 text-sm text-white" />
-            <input v-model.number="newBudget.amount" type="number" :placeholder="t('common.amount')" class="col-span-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded focus:outline-none focus:border-purple-500 text-sm text-white" />
-            <select v-model="newBudget.period" class="col-span-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded focus:outline-none focus:border-purple-500 text-sm text-white">
-              <option value="monthly">{{ t('common.period') }}: Monthly</option>
-              <option value="weekly">{{ t('common.period') }}: Weekly</option>
-            </select>
-          </div>
-          <div class="flex justify-end">
-            <button @click="addBudget" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm transition-colors">{{ t('common.add') }}</button>
-          </div>
+      <!-- Auto-generate Toggle -->
+      <SettingsCard
+        :title="t('settings.finance.budget.auto_title')"
+        :description="t('settings.finance.budget.auto_description')"
+      >
+        <div class="flex items-center gap-3">
+          <button
+            type="button"
+            role="switch"
+            :aria-checked="autoBudgetEnabled"
+            :disabled="isLoading || isSaving"
+            @click="saveAutoBudget(!autoBudgetEnabled)"
+            class="relative w-10 h-6 rounded-full transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500"
+            :class="autoBudgetEnabled ? 'bg-purple-600' : 'bg-gray-700'"
+          >
+            <span
+              class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform"
+              :class="autoBudgetEnabled ? 'translate-x-4' : ''"
+            />
+          </button>
+          <span class="text-sm text-gray-300">
+            {{ autoBudgetEnabled ? t('common.active') : t('common.inactive') }}
+          </span>
         </div>
       </SettingsCard>
     </SettingsLayout>

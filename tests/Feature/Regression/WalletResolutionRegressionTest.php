@@ -6,7 +6,6 @@ namespace Tests\Feature\Regression;
 
 use App\Evidence\Resolver\WalletResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\Feature\Regression\RegressionTestHelpers;
 use Tests\TestCase;
 
 class WalletResolutionRegressionTest extends TestCase

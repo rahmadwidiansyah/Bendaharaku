@@ -4,13 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use App\DTO\ParsedTransaction;
-use App\DTO\ResolvedTransaction;
-use App\Enums\TransactionIntent;
 use App\Exceptions\CategoryNotFoundException;
 use App\Exceptions\WalletNotFoundException;
 use App\Models\Category;
-use App\Models\Wallet;
 use App\Services\AI\TransactionResolver;
 use App\Services\Category\CategoryResolutionService;
 use App\Services\Wallet\WalletResolutionService;
@@ -23,9 +19,13 @@ use ReflectionMethod;
 class TransactionResolverTest extends TestCase
 {
     private TransactionResolver $resolver;
+
     private CategoryResolutionService&Mockery\MockInterface $categoryResolution;
+
     private WalletResolutionService&Mockery\MockInterface $walletResolution;
+
     private ReflectionMethod $searchCategoryMethod;
+
     private ReflectionMethod $searchWalletTokenMethod;
 
     protected function setUp(): void
@@ -52,7 +52,7 @@ class TransactionResolverTest extends TestCase
 
     // ── searchCategory return type tests ──────────────────────────────
 
-    public function test_searchCategory_returns_app_models_category(): void
+    public function test_search_category_returns_app_models_category(): void
     {
         $category = $this->makeCategory(['id' => 5, 'category_name' => 'Makanan', 'system_key' => null]);
 
@@ -62,13 +62,13 @@ class TransactionResolverTest extends TestCase
             ->with('Makanan', Mockery::type(Collection::class))
             ->andReturn($category);
 
-        $result = $this->searchCategoryMethod->invoke($this->resolver, 'Makanan', new Collection());
+        $result = $this->searchCategoryMethod->invoke($this->resolver, 'Makanan', new Collection);
 
         $this->assertInstanceOf(Category::class, $result);
         $this->assertSame(5, $result->id);
     }
 
-    public function test_searchCategory_throws_on_not_found(): void
+    public function test_search_category_throws_on_not_found(): void
     {
         $this->categoryResolution
             ->shouldReceive('resolveByName')
@@ -78,12 +78,12 @@ class TransactionResolverTest extends TestCase
         $this->expectException(CategoryNotFoundException::class);
         $this->expectExceptionMessage('Kategori \'NonExistent\' tidak terdaftar.');
 
-        $this->searchCategoryMethod->invoke($this->resolver, 'NonExistent', new Collection());
+        $this->searchCategoryMethod->invoke($this->resolver, 'NonExistent', new Collection);
     }
 
     // ── searchWalletToken return type tests ──────────────────────────
 
-    public function test_searchWalletToken_returns_int_wallet_id(): void
+    public function test_search_wallet_token_returns_int_wallet_id(): void
     {
         $wallets = $this->makeCollection([
             ['id' => 10, 'name' => 'Cash', 'keyword' => 'cash'],
@@ -96,7 +96,7 @@ class TransactionResolverTest extends TestCase
         $this->assertSame(10, $result);
     }
 
-    public function test_searchWalletToken_throws_on_not_found(): void
+    public function test_search_wallet_token_throws_on_not_found(): void
     {
         $wallets = $this->makeCollection([
             ['id' => 10, 'name' => 'Cash'],
@@ -108,7 +108,7 @@ class TransactionResolverTest extends TestCase
         $this->searchWalletTokenMethod->invoke($this->resolver, 'BCA', $wallets, 'Asal');
     }
 
-    public function test_searchWalletToken_throws_on_empty_input(): void
+    public function test_search_wallet_token_throws_on_empty_input(): void
     {
         $wallets = $this->makeCollection();
 
@@ -118,7 +118,7 @@ class TransactionResolverTest extends TestCase
         $this->searchWalletTokenMethod->invoke($this->resolver, '', $wallets, 'Asal');
     }
 
-    public function test_searchWalletToken_finds_by_keyword(): void
+    public function test_search_wallet_token_finds_by_keyword(): void
     {
         $wallets = $this->makeCollection([
             ['id' => 15, 'name' => 'ShopeePay', 'keyword' => 'spay,shopeepay'],

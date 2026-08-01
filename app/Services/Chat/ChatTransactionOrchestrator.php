@@ -5,14 +5,9 @@ declare(strict_types=1);
 namespace App\Services\Chat;
 
 use App\Actions\ProcessTransactionAction;
-use App\DTO\AiProviderRequest;
-use App\DTO\AIParseResultMulti;
 use App\DTO\ConfidenceScoreContext;
-use App\DTO\MultiTransactionItem;
-use App\DTO\MultiTransactionResult;
 use App\DTO\ParsedTransaction;
 use App\DTO\ResolvedTransaction;
-use App\Enums\MultiTransactionErrorCode;
 use App\Enums\TransactionIntent;
 use App\Enums\TransactionSource;
 use App\Enums\WalletSide;
@@ -184,6 +179,7 @@ class ChatTransactionOrchestrator
             $message = $guardError === 'INVALID_AMOUNT'
                 ? "🤔 *Nominalnya berapa Bos?*\nAku bingung nih, kamu belum nyebutin jumlah uangnya."
                 : "🧐 *Masuk kategori apa nih?*\nSebutkan nama barang atau kegiatannya ya.";
+
             return ['success' => false, 'error_code' => $guardError, 'message' => $message];
         }
 
@@ -195,33 +191,33 @@ class ChatTransactionOrchestrator
             return ['success' => false, 'error_code' => 'MISSING_SUBJECT', 'message' => "🤝 *Nama orangnya siapa Bos?*\nKarena ini transaksi Hutang/Piutang, kamu WAJIB pakai hashtag.\n\n💡 *Contoh:* pinjam uang 50k dana #Budi"];
         }
 
-$finalSubject = $extractedSubject ?? $user->name;
-          $threshold = (float) config('bendaharaku.ai.confidence.threshold_auto_clear', 0.85);
-          $finalConfidence = 0.0;
-          $resolved = null;
-          $walletExplicitlyMentioned = $this->hasExplicitWalletMention($text, $user);
+        $finalSubject = $extractedSubject ?? $user->name;
+        $threshold = (float) config('bendaharaku.ai.confidence.threshold_auto_clear', 0.85);
+        $finalConfidence = 0.0;
+        $resolved = null;
+        $walletExplicitlyMentioned = $this->hasExplicitWalletMention($text, $user);
 
-          try {
-$resolved = $this->resolver->resolve($user, $parsed);
+        try {
+            $resolved = $this->resolver->resolve($user, $parsed);
 
-              $scoreContext = new ConfidenceScoreContext(
-                  user: $user, inputText: $text, parseResult: $aiResult,
-                  resolvedTransaction: $resolved, activeMemories: $activeMemories,
-                  wallets: $wallets, categories: $categories,
-              );
-              $finalConfidence = $this->scoringEngine->calculateFinalScore($scoreContext);
-
-        $resolved = ($isWebSource && ! $walletExplicitlyMentioned && $parsed->transactionType !== TransactionIntent::Transfer)
-            ? $this->resolveWebDraftWithoutWallet($user, $parsed, $finalSubject)
-            : new ResolvedTransaction(
-                amount: $resolved->amount,
-                categoryId: $resolved->categoryId,
-                sourceWalletId: $resolved->sourceWalletId,
-                destinationWalletId: $resolved->destinationWalletId,
-                subject: $resolved->subject,
-                notes: $resolved->notes,
-                isCleared: ($finalConfidence >= $threshold && (! $isWebSource || $walletExplicitlyMentioned)),
+            $scoreContext = new ConfidenceScoreContext(
+                user: $user, inputText: $text, parseResult: $aiResult,
+                resolvedTransaction: $resolved, activeMemories: $activeMemories,
+                wallets: $wallets, categories: $categories,
             );
+            $finalConfidence = $this->scoringEngine->calculateFinalScore($scoreContext);
+
+            $resolved = ($isWebSource && ! $walletExplicitlyMentioned && $parsed->transactionType !== TransactionIntent::Transfer)
+                ? $this->resolveWebDraftWithoutWallet($user, $parsed, $finalSubject)
+                : new ResolvedTransaction(
+                    amount: $resolved->amount,
+                    categoryId: $resolved->categoryId,
+                    sourceWalletId: $resolved->sourceWalletId,
+                    destinationWalletId: $resolved->destinationWalletId,
+                    subject: $resolved->subject,
+                    notes: $resolved->notes,
+                    isCleared: ($finalConfidence >= $threshold && (! $isWebSource || $walletExplicitlyMentioned)),
+                );
 
         } catch (CategoryNotFoundException|WalletNotFoundException $e) {
             if ($isWebSource && ! $walletExplicitlyMentioned && $parsed->category && $parsed->transactionType !== TransactionIntent::Transfer) {

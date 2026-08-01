@@ -37,6 +37,8 @@ class ChatMessage extends Model
         'content',
         'raw_text',
         'metadata',
+        'status',
+        'error_message',
     ];
 
     protected function casts(): array

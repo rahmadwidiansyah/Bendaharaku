@@ -4,6 +4,7 @@ namespace App\Actions;
 
 use App\Enums\TransactionSource;
 use App\Events\TransactionPosted;
+use App\Jobs\CheckBudgetAlertsJob;
 use App\Models\Category;
 use App\Models\TransactionLog;
 use App\Models\User;
@@ -19,6 +20,7 @@ class ProcessTransactionAction
     public function __construct(
         private readonly CategoryResolutionService $categoryResolution,
     ) {}
+
     /**
      * Membuat data transaksi baru, memutasi saldo dompet, dan mencatat log transaksi.
      * Concurrency safe dengan pessimistics locking (lockForUpdate).
@@ -89,6 +91,8 @@ class ProcessTransactionAction
         });
 
         event(new TransactionPosted($transactionLog, $source));
+
+        $this->dispatchBudgetOverCheckIfExpense($transactionLog);
 
         return $transactionLog;
     }
@@ -211,6 +215,8 @@ class ProcessTransactionAction
                 'notes' => $cleanNotes,
             ]);
 
+            $this->dispatchBudgetOverCheckIfExpense($transaction);
+
             return $transaction;
         });
     }
@@ -247,6 +253,19 @@ class ProcessTransactionAction
 
         $source->decrement('balance', $amount);
         $destination->increment('balance', $amount);
+    }
+
+    /**
+     * Method Internal: Dispatch cek budget over hanya untuk transaksi tipe Expense.
+     * Dipanggil setelah create/confirm berhasil.
+     */
+    private function dispatchBudgetOverCheckIfExpense(TransactionLog $transaction): void
+    {
+        if (strtolower($transaction->type?->name ?? '') !== 'expense') {
+            return;
+        }
+
+        CheckBudgetAlertsJob::dispatch($transaction->user_id, now()->month, now()->year);
     }
 
     /**

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Models\BudgetExpenseGroup;
+use App\Models\BudgetGroup;
+use App\Models\BudgetItem;
 use App\Models\Category;
 use App\Models\Conversation;
 use App\Models\TransactionLog;
@@ -13,10 +16,10 @@ use App\Models\UserAiMemory;
 use App\Models\Wallet;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Database\Seeders\WalletSeeder;
 
 class TestDataSeeder extends Seeder
 {
@@ -42,9 +45,10 @@ class TestDataSeeder extends Seeder
         $this->ensureAiMemories($user);
         $this->ensureConversation($user);
         $this->ensureHistoricalTransactions($user, $types);
+        $this->ensureCurrentMonthBudget($user);
     }
 
-    private function ensureWallets(User $user, \Illuminate\Support\Collection $types): void
+    private function ensureWallets(User $user, Collection $types): void
     {
         Config::set('bendaharaku.system_wallets', [
             'debt' => 'System Hutang',
@@ -74,18 +78,18 @@ class TestDataSeeder extends Seeder
 
         foreach ($systemWallets as $w) {
             if (! $existingWallets->has($w['name'])) {
-                Wallet::create(array_merge($w, ['user_id' => $user->id, 'icon' => \Database\Seeders\WalletSeeder::iconFor($w['name']), 'balance' => 0, 'is_active' => true]));
+                Wallet::create(array_merge($w, ['user_id' => $user->id, 'icon' => WalletSeeder::iconFor($w['name']), 'balance' => 0, 'is_active' => true]));
             }
         }
 
         foreach ($userWallets as $w) {
             if (! $existingWallets->has($w['name'])) {
-                Wallet::create(array_merge($w, ['user_id' => $user->id, 'icon' => \Database\Seeders\WalletSeeder::iconFor($w['name']), 'is_active' => true]));
+                Wallet::create(array_merge($w, ['user_id' => $user->id, 'icon' => WalletSeeder::iconFor($w['name']), 'is_active' => true]));
             }
         }
     }
 
-    private function ensureCategories(User $user, \Illuminate\Support\Collection $types): void
+    private function ensureCategories(User $user, Collection $types): void
     {
         $expenseTypeId = $types['Expense'];
         $incomeTypeId = $types['Income'];
@@ -192,7 +196,73 @@ class TestDataSeeder extends Seeder
         $conversation->update(['title' => 'Chat Utama']);
     }
 
-    private function ensureHistoricalTransactions(User $user, \Illuminate\Support\Collection $types): void
+    private function ensureCurrentMonthBudget(User $user): void
+    {
+        $cats = Category::where('user_id', $user->id)->get()->keyBy('category_name');
+
+        $plan = [
+            'Makan & Minum'     => ['amount' => 600000, 'group' => 'variable'],
+            'Belanja'           => ['amount' => 650000, 'group' => 'variable'],
+            'Transportasi'      => ['amount' => 250000, 'group' => 'variable'],
+            'Listrik & Air'     => ['amount' => 165000, 'group' => 'fixed'],
+            'Pulsa & Internet'  => ['amount' => 120000, 'group' => 'fixed'],
+            'Pendidikan'        => ['amount' => 500000, 'group' => 'fixed'],
+            'Hiburan'           => ['amount' => 165000, 'group' => 'discretionary'],
+            'Donasi'            => ['amount' => 50000,  'group' => 'discretionary'],
+            'Kesehatan'         => ['amount' => 100000, 'group' => 'sinking_fund'],
+            'Pakaian'           => ['amount' => 150000, 'group' => 'sinking_fund'],
+        ];
+
+        $now = Carbon::now();
+        $budget = BudgetGroup::updateOrCreate(
+            [
+                'user_id' => $user->id,
+                'period_month' => $now->month,
+                'period_year' => $now->year,
+            ],
+            [
+                'total_budget_amount' => array_sum(array_column($plan, 'amount')),
+                'ai_notes' => 'Anggaran bulan ini disusun berdasarkan rata-rata pengeluaran 3 bulan terakhir. Prioritaskan kebutuhan tetap dan sisihkan untuk tabungan.',
+                'generated_by' => 'manual',
+            ]
+        );
+
+        $budget->items()->delete();
+        $budget->expenseGroups()->delete();
+
+        foreach ($plan as $categoryName => $p) {
+            $category = $cats->get($categoryName);
+            if (! $category) {
+                continue;
+            }
+            BudgetItem::create([
+                'budget_group_id' => $budget->id,
+                'budgetable_id' => $category->id,
+                'budgetable_type' => Category::class,
+                'target_amount' => $p['amount'],
+            ]);
+        }
+
+        foreach (config('bendaharaku.budget.expense_groups') as $key => $name) {
+            $categoryIds = collect($plan)
+                ->filter(fn ($p) => $p['group'] === $key)
+                ->map(fn ($p, $categoryName) => $cats->get($categoryName)?->id)
+                ->filter()
+                ->values()
+                ->all();
+
+            if ($categoryIds !== []) {
+                BudgetExpenseGroup::create([
+                    'budget_group_id' => $budget->id,
+                    'group_key' => $key,
+                    'group_name' => $name,
+                    'category_ids' => $categoryIds,
+                ]);
+            }
+        }
+    }
+
+    private function ensureHistoricalTransactions(User $user, Collection $types): void
     {
         $wallets = Wallet::where('user_id', $user->id)->get()->keyBy('name');
         $cats = Category::where('user_id', $user->id)->get()->keyBy('category_name');
@@ -202,58 +272,85 @@ class TestDataSeeder extends Seeder
         $debtId = $wallets->get('System Hutang')?->id;
         $receivableId = $wallets->get('System Piutang')?->id;
 
-        $transactions = [
-            [
-                'amount' => 15000, 'subject' => 'Beli makan siang',
-                'category_id' => $cats->get('Makan & Minum')?->id,
-                'source_wallet_id' => $wallets->get('BCA')?->id,
-                'destination_wallet_id' => $merchantId,
-                'type_id' => $types['Expense'],
-                'date' => Carbon::now()->subDays(2),
-            ],
-            [
-                'amount' => 25000, 'subject' => 'Naik Grab ke kantor',
-                'category_id' => $cats->get('Transportasi')?->id,
-                'source_wallet_id' => $wallets->get('Dana')?->id,
-                'destination_wallet_id' => $merchantId,
-                'type_id' => $types['Expense'],
-                'date' => Carbon::now()->subDays(3),
-            ],
-            [
-                'amount' => 8000000, 'subject' => 'Gaji bulan ini',
-                'category_id' => $cats->get('Gaji')?->id,
-                'source_wallet_id' => $externalId,
-                'destination_wallet_id' => $wallets->get('Mandiri')?->id,
-                'type_id' => $types['Income'],
-                'date' => Carbon::now()->subDays(5),
-            ],
-            [
-                'amount' => 500000, 'subject' => 'Bayar hutang Budi',
-                'category_id' => $cats->get('Bayar Cicilan Hutang')?->id,
-                'source_wallet_id' => $wallets->get('Cash')?->id,
-                'destination_wallet_id' => $debtId,
-                'type_id' => $types['Debt'],
-                'date' => Carbon::now()->subDays(7),
-            ],
-            [
-                'amount' => 50000, 'subject' => 'Beli bahan masakan',
-                'category_id' => $cats->get('Belanja')?->id,
-                'source_wallet_id' => $wallets->get('Cash')?->id,
-                'destination_wallet_id' => $merchantId,
-                'type_id' => $types['Expense'],
-                'date' => Carbon::now()->subDays(1),
-            ],
-        ];
+        $expense = $types['Expense'];
+        $income = $types['Income'];
+        $debt = $types['Debt'];
 
-        foreach ($transactions as $t) {
-            TransactionLog::create(array_merge($t, [
-                'user_id' => $user->id,
-                'reference_number' => 'TRX-TEST-'.strtoupper(Str::random(8)),
-                'balance_before' => 0,
-                'balance_after' => 0,
-                'notes' => $t['subject'],
-                'is_cleared' => true,
-            ]));
+        // Profil: mahasiswa — pemasukan 3-4 jt/bulan, pengeluaran 2.5-3 jt/bulan
+        for ($back = 2; $back >= 0; $back--) {
+            $monthStart = Carbon::now()->startOfMonth()->subMonths($back);
+            $rows = [];
+
+            // ── Pemasukan ──
+            $rows[] = ['amount' => 3000000, 'subject' => 'Uang saku bulanan dari orang tua', 'category' => 'Gaji', 'wallet' => 'Mandiri', 'direction' => $income, 'day' => 1];
+            $rows[] = ['amount' => $back % 2 === 0 ? 850000 : 650000, 'subject' => 'Project freelance design', 'category' => 'Freelance', 'wallet' => 'BCA', 'direction' => $income, 'day' => 12];
+            if ($back === 1) {
+                $rows[] = ['amount' => 400000, 'subject' => 'Hasil jual barang online', 'category' => 'Pendapatan Lain', 'wallet' => 'Dana', 'direction' => $income, 'day' => 24];
+            }
+
+            // ── Makan & Minum (2x/hari di hari tertentu) ──
+            $mealDays = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28];
+            $mealAmounts = [15000, 20000, 18000, 15000, 22000, 18000, 15000, 25000, 20000, 15000, 25000, 18000, 15000, 20000];
+            foreach ($mealDays as $i => $day) {
+                $rows[] = ['amount' => $mealAmounts[$i], 'subject' => 'Makan siang', 'category' => 'Makan & Minum', 'wallet' => 'Dana', 'direction' => $expense, 'day' => $day];
+                $rows[] = ['amount' => $mealAmounts[$i] - 3000, 'subject' => 'Makan malam', 'category' => 'Makan & Minum', 'wallet' => 'Cash', 'direction' => $expense, 'day' => $day];
+            }
+
+            // ── Belanja bahan masakan (mingguan) ──
+            $groceries = [150000, 180000, 140000, 165000];
+            foreach ($groceries as $i => $amount) {
+                $rows[] = ['amount' => $amount, 'subject' => 'Belanja bahan masakan', 'category' => 'Belanja', 'wallet' => 'Cash', 'direction' => $expense, 'day' => [3, 9, 17, 25][$i]];
+            }
+
+            // ── Transportasi ──
+            $transit = [22000, 18000, 25000, 20000, 15000];
+            foreach ($transit as $i => $amount) {
+                $rows[] = ['amount' => $amount, 'subject' => 'Naik ojek online', 'category' => 'Transportasi', 'wallet' => 'Dana', 'direction' => $expense, 'day' => [5, 10, 16, 21, 26][$i]];
+            }
+            $rows[] = ['amount' => 100000, 'subject' => 'Isi bensin motor', 'category' => 'Transportasi', 'wallet' => 'Cash', 'direction' => $expense, 'day' => 24];
+
+            // ── Tagihan rutin ──
+            $rows[] = ['amount' => 165000, 'subject' => 'Bayar listrik & air', 'category' => 'Listrik & Air', 'wallet' => 'BCA', 'direction' => $expense, 'day' => 7];
+            $rows[] = ['amount' => 120000, 'subject' => 'Paket internet & pulsa', 'category' => 'Pulsa & Internet', 'wallet' => 'Dana', 'direction' => $expense, 'day' => 6];
+            $rows[] = ['amount' => 500000, 'subject' => 'SPP bulanan', 'category' => 'Pendidikan', 'wallet' => 'Mandiri', 'direction' => $expense, 'day' => 9];
+
+            // ── Gaya hidup ──
+            $rows[] = ['amount' => 60000, 'subject' => 'Langganan streaming', 'category' => 'Hiburan', 'wallet' => 'BCA', 'direction' => $expense, 'day' => 12];
+            $rows[] = ['amount' => 49000, 'subject' => 'Top up game', 'category' => 'Hiburan', 'wallet' => 'Dana', 'direction' => $expense, 'day' => 21];
+            if ($back !== 1) {
+                $rows[] = ['amount' => 55000, 'subject' => 'Nonton bioskop', 'category' => 'Hiburan', 'wallet' => 'Dana', 'direction' => $expense, 'day' => 27];
+            }
+
+            // ── Tidak rutin ──
+            if ($back === 1) {
+                $rows[] = ['amount' => 90000, 'subject' => 'Beli obat & vitamin', 'category' => 'Kesehatan', 'wallet' => 'Cash', 'direction' => $expense, 'day' => 15];
+            }
+            if ($back === 0) {
+                $rows[] = ['amount' => 150000, 'subject' => 'Beli kaos baru', 'category' => 'Pakaian', 'wallet' => 'BCA', 'direction' => $expense, 'day' => 22];
+            }
+            $rows[] = ['amount' => 50000, 'subject' => 'Donasi', 'category' => 'Donasi', 'wallet' => 'Cash', 'direction' => $expense, 'day' => 29];
+
+            // ── Hutang ──
+            $rows[] = ['amount' => 150000, 'subject' => 'Cicil hutang Budi', 'category' => 'Bayar Cicilan Hutang', 'wallet' => 'Cash', 'direction' => $debt, 'day' => 20, 'to' => $debtId];
+
+            foreach ($rows as $t) {
+                $date = $monthStart->copy()->addDays($t['day'] - 1);
+                TransactionLog::create([
+                    'user_id' => $user->id,
+                    'reference_number' => 'TRX-TEST-'.strtoupper(Str::random(8)),
+                    'date' => $date,
+                    'type_id' => $t['direction'],
+                    'category_id' => $cats->get($t['category'])?->id,
+                    'source_wallet_id' => $t['direction'] === $income ? $externalId : $wallets->get($t['wallet'])?->id,
+                    'destination_wallet_id' => $t['direction'] === $income ? $wallets->get($t['wallet'])?->id : ($t['to'] ?? $merchantId),
+                    'amount' => $t['amount'],
+                    'balance_before' => 0,
+                    'balance_after' => 0,
+                    'subject' => $t['subject'],
+                    'notes' => $t['subject'],
+                    'is_cleared' => true,
+                ]);
+            }
         }
     }
 }

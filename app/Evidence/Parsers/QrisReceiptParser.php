@@ -223,6 +223,7 @@ class QrisReceiptParser
                 if (preg_match('/^(total|nominal|jumlah|ref|tanggal|jam|status|metode)/i', $line)) {
                     continue;
                 }
+
                 return [
                     'merchant_name' => $line,
                     'confidence' => 0.5,
@@ -248,6 +249,7 @@ class QrisReceiptParser
                 }
             }
         }
+
         return null;
     }
 
@@ -267,6 +269,7 @@ class QrisReceiptParser
 
         if ($time !== null) {
             $datePart = now()->format('Y-m-d');
+
             return "{$datePart}T{$time}:00";
         }
 

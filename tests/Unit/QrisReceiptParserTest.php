@@ -54,7 +54,7 @@ class QrisReceiptParserTest extends TestCase
             ."Tanggal\n"
             ."22/07/2026\n"
             ."Jam\n"
-            ."14:33";
+            .'14:33';
 
         $result = $this->parser->parse($this->makeEvidence($ocrText));
 
@@ -85,7 +85,7 @@ class QrisReceiptParserTest extends TestCase
             ."Tanggal\n"
             ."22/07/2026\n"
             ."Jam\n"
-            ."10:15";
+            .'10:15';
 
         $result = $this->parser->parse($this->makeEvidence($ocrText));
 
@@ -112,7 +112,7 @@ class QrisReceiptParserTest extends TestCase
             ."Tanggal\n"
             ."22/07/2026\n"
             ."Jam\n"
-            ."18:45";
+            .'18:45';
 
         $result = $this->parser->parse($this->makeEvidence($ocrText));
 
@@ -139,7 +139,7 @@ class QrisReceiptParserTest extends TestCase
             ."Tanggal\n"
             ."22/07/2026\n"
             ."Jam\n"
-            ."12:00";
+            .'12:00';
 
         $result = $this->parser->parse($this->makeEvidence($ocrText));
 
@@ -165,7 +165,7 @@ class QrisReceiptParserTest extends TestCase
             ."Tanggal\n"
             ."22/07/2026\n"
             ."Jam\n"
-            ."09:15";
+            .'09:15';
 
         $result = $this->parser->parse($this->makeEvidence($ocrText));
 
@@ -190,7 +190,7 @@ class QrisReceiptParserTest extends TestCase
             ."Tanggal\n"
             ."22/07/2026\n"
             ."Jam\n"
-            ."14:33";
+            .'14:33';
 
         $result = $this->parser->parse($this->makeEvidence($ocrText));
 
@@ -215,7 +215,7 @@ class QrisReceiptParserTest extends TestCase
             ."Tanggal\n"
             ."22/07/2026\n"
             ."Jam\n"
-            ."11:20";
+            .'11:20';
 
         $result = $this->parser->parse($this->makeEvidence($ocrText));
 
@@ -240,7 +240,7 @@ class QrisReceiptParserTest extends TestCase
             ."Tanggal\n"
             ."22/07/2026\n"
             ."Jam\n"
-            ."16:45";
+            .'16:45';
 
         $result = $this->parser->parse($this->makeEvidence($ocrText));
 
@@ -265,7 +265,7 @@ class QrisReceiptParserTest extends TestCase
             ."Tanggal\n"
             ."22/07/2026\n"
             ."Jam\n"
-            ."13:00";
+            .'13:00';
 
         $result = $this->parser->parse($this->makeEvidence($ocrText));
 
@@ -292,7 +292,7 @@ class QrisReceiptParserTest extends TestCase
             ."Tanggal\n"
             ."22/07/2026\n"
             ."Jam\n"
-            ."13:00";
+            .'13:00';
 
         $result = $this->parser->parse($this->makeEvidence($ocrText));
 
@@ -319,7 +319,7 @@ class QrisReceiptParserTest extends TestCase
             ."Tanggal\n"
             ."22/07/2026\n"
             ."Jam\n"
-            ."13:00";
+            .'13:00';
 
         $evidence = Mockery::mock(Evidence::class)->makePartial();
         $evidence->shouldReceive('getAttribute')->with('id')->andReturn(1);
@@ -347,7 +347,7 @@ class QrisReceiptParserTest extends TestCase
             ."Tanggal\n"
             ."22/07/2026\n"
             ."Jam\n"
-            ."13:00";
+            .'13:00';
 
         $result = $this->parser->parse($this->makeEvidence($ocrText));
 
@@ -369,7 +369,7 @@ class QrisReceiptParserTest extends TestCase
             ."Tanggal\n"
             ."22/07/2026\n"
             ."Jam\n"
-            ."13:00";
+            .'13:00';
 
         $result = $this->parser->parse($this->makeEvidence($ocrText));
 

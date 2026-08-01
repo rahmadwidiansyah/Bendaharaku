@@ -7,14 +7,11 @@ namespace Tests\Feature\Regression;
 use App\DTO\AIParseResult;
 use App\DTO\ParsedTransaction;
 use App\Enums\TransactionIntent;
-use App\Models\TransactionDraft;
-use App\Models\TransactionLog;
 use App\Services\AI\AIManager;
 use App\Services\Chat\ChatTransactionOrchestrator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Mockery\MockInterface;
-use Tests\Feature\Regression\RegressionTestHelpers;
 use Tests\TestCase;
 
 class SingleTransactionRegressionTest extends TestCase

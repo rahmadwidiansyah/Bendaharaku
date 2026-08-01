@@ -34,8 +34,11 @@ use Illuminate\Support\Carbon;
 class TransactionDraft extends Model
 {
     public const string STATUS_PENDING = 'pending';
+
     public const string STATUS_CONFIRMED = 'confirmed';
+
     public const string STATUS_CANCELLED = 'cancelled';
+
     public const string STATUS_EXPIRED = 'expired';
 
     protected $fillable = [

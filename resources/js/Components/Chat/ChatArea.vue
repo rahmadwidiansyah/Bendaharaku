@@ -10,7 +10,7 @@
  * tidak auto-trigger saat scroll agar tidak mengganggu UX.
  */
 
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ChatMessage     from './ChatMessage.vue'
 import TypingIndicator from './Messages/TypingIndicator.vue'
@@ -29,6 +29,13 @@ const props = defineProps({
 const { t } = useI18n()
 
 const emit = defineEmits(['loadMore', 'scrollUpdate', 'retry', 'regenerate', 'suggest', 'review'])
+
+/** Ada pesan bot pending yang sudah dirender sebagai bubble mengetik */
+const hasPendingBotMessage = computed(() =>
+    props.messages.some(
+        (m) => m?.role === 'assistant' && (m.status === 'pending' || m.status === 'processing'),
+    ),
+)
 
 /** Avatar grouping: tampilkan avatar hanya di awal grup role yang sama */
 function shouldShowAvatar(messages, index) {
@@ -146,7 +153,7 @@ defineExpose({ el: containerRef })
             leave-to-class="opacity-0"
         >
             <TypingIndicator
-                v-if="isTyping"
+                v-if="isTyping && !hasPendingBotMessage"
                 :bot-avatar="botAvatar"
                 :bot-name="botName"
             />

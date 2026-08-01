@@ -453,6 +453,7 @@ class MonthlyReportService
                 'user_id' => $user->id,
                 'message' => $e->getMessage(),
             ]);
+
             return null;
         }
     }

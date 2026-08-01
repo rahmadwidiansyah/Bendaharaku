@@ -9,6 +9,11 @@ case "$MODE" in
         exec apache2-foreground
         ;;
 
+    queue)
+        echo "Entrypoint: running Queue Worker"
+        exec php artisan queue:work --sleep=2 --tries=3 --timeout=300
+        ;;
+
     ai-parser-only|ai-parser)
         echo "Entrypoint: running AI Parser only"
         cd /var/www/script_pencatat_keuangan

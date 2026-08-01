@@ -33,6 +33,8 @@ class AiSettingsController extends Controller
     {
         $user = Auth::user()->load(['aiCredentials', 'aiPreferences']);
 
+        $hasAnyActivePreference = $user->aiPreferences->contains(fn ($p) => $p->is_active_provider);
+
         $providerStatuses = [];
         $modelsByProvider = [];
 
@@ -42,12 +44,21 @@ class AiSettingsController extends Controller
 
             $modelsByProvider[$provider->value] = $this->modelsFor($provider);
 
-            $providerStatuses[$provider->value] = [
-                'status' => $credential instanceof UserAiCredential
+            if ($provider === AiProvider::OpenAiCompatible) {
+                $status = blank(config('bendaharaku.ai.openai_compatible.api_key'))
+                    ? 'Not Configured'
+                    : 'Connected';
+            } else {
+                $status = $credential instanceof UserAiCredential
                     ? ($credential->is_valid ? 'Connected' : 'Invalid')
-                    : 'Not Configured',
+                    : 'Not Configured';
+            }
+
+            $providerStatuses[$provider->value] = [
+                'status' => $status,
                 'selected_model' => $preference?->selected_model ?? $provider->defaultModel(),
-                'is_active_provider' => $preference?->is_active_provider ?? false,
+                'is_active_provider' => $preference?->is_active_provider
+                    ?? ($provider === AiProvider::OpenAiCompatible && ! $hasAnyActivePreference),
             ];
         }
 
@@ -127,9 +138,9 @@ class AiSettingsController extends Controller
             );
         }
 
-        // Jadikan aktif jika: user centang checkbox ATAU belum ada provider aktif sama sekali
-        $hasNoActiveProvider = ! $user->aiPreferences()->where('is_active_provider', true)->exists();
-        $isNowActive = $wantsActive || $hasNoActiveProvider;
+        // Aktifkan hanya jika user mencentang toggle. Tanpa toggle, provider
+        // default (OpenAI API Compatible dari .env) tetap yang dipakai.
+        $isNowActive = $wantsActive;
 
         if ($isNowActive) {
             $this->preferenceManager->switchActiveProvider($user, $provider);
@@ -191,6 +202,10 @@ class AiSettingsController extends Controller
             $apiKey = $storedCredential?->api_key ?? '';
         }
 
+        if (blank($apiKey) && $provider === AiProvider::OpenAiCompatible) {
+            $apiKey = (string) config('bendaharaku.ai.openai_compatible.api_key');
+        }
+
         if (blank($apiKey)) {
             return response()->json([
                 'success' => false,
@@ -237,6 +252,7 @@ class AiSettingsController extends Controller
             ],
             AiProvider::OpenAI => ['gpt-4o-mini', 'gpt-4o'],
             AiProvider::DeepSeek => ['deepseek-chat'],
+            AiProvider::OpenAiCompatible => [AiProvider::OpenAiCompatible->defaultModel()],
         };
     }
 
@@ -252,9 +268,9 @@ class AiSettingsController extends Controller
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('keyword_pattern', 'like', "%{$search}%")
-                  ->orWhere('raw_subject', 'like', "%{$search}%")
-                  ->orWhere('normalized_subject', 'like', "%{$search}%")
-                  ->orWhere('memory_keyword', 'like', "%{$search}%");
+                    ->orWhere('raw_subject', 'like', "%{$search}%")
+                    ->orWhere('normalized_subject', 'like', "%{$search}%")
+                    ->orWhere('memory_keyword', 'like', "%{$search}%");
             });
         }
 

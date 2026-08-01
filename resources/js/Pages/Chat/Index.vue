@@ -60,6 +60,7 @@ const {
     retryLastMessage,
     regenerateMessage,
     updateEvidenceInMessage,
+    resumePending,
 } = useChat(props.initialMessages, props.conversation?.id ?? null, props.initialHasMore)
 
 const {
@@ -108,6 +109,8 @@ onMounted(async () => {
     if (chatAreaComp.value?.el) {
         chatAreaRef.value = chatAreaComp.value.el
     }
+    // Resume polling pesan bot yang masih diproses (dari sesi sebelumnya)
+    resumePending()
     await scrollToBottom(false)
 })
 

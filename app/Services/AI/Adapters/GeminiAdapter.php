@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\AI\Adapters;
 
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Http\Client\ConnectionException;
 use Throwable;
 
 class GeminiAdapter extends BaseAdapter
@@ -50,6 +50,7 @@ class GeminiAdapter extends BaseAdapter
                             'attempt' => $attempt,
                             'delay_ms' => $delayMs,
                         ]);
+
                         return $delayMs;
                     },
                     function (Throwable $exception) {
@@ -60,6 +61,7 @@ class GeminiAdapter extends BaseAdapter
                 ->post($url.'?key='.$apiKey, $body);
 
             $status = $response->status();
+
             return $response;
         } finally {
             Log::info('Gemini Request Finished', [

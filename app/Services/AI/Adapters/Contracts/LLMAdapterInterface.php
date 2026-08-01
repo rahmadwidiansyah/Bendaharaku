@@ -9,6 +9,12 @@ use App\DTO\AIParseResultMulti;
 
 interface LLMAdapterInterface
 {
+    public function generateText(
+        string $prompt,
+        string $apiKey,
+        string $model,
+    ): string;
+
     public function parseTransaction(
         string $prompt,
         string $apiKey,

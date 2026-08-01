@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Traits\CalculatesDebtAndReceivable;
-use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class LoanController extends Controller
@@ -26,7 +25,7 @@ class LoanController extends Controller
             $total = $balances['total_receivable'];
             $title = 'Rincian Piutang';
         }
-        
+
         return Inertia::render('Loans/Index', [
             'loanDetails' => $loanDetails,
             'title' => $title,

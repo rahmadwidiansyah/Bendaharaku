@@ -2,13 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Traits\CalculatesDebtAndReceivable;
 use App\Models\Wallet;
 use App\Support\SettingsChangeLogger;
+use App\Traits\CalculatesDebtAndReceivable;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
@@ -18,27 +17,28 @@ class WalletController extends Controller
     // Menampilkan daftar Wallet (opsional jika dibutuhkan)
     // Ganti isi method index() dan tambahkan private method baru di WalletController
 
-// Menampilkan daftar Wallet (opsional jika dibutuhkan)
-public function index()
-{
-    $user = Auth::user();
+    // Menampilkan daftar Wallet (opsional jika dibutuhkan)
+    public function index()
+    {
+        $user = Auth::user();
 
-    // Hanya ambil kolom yang benar-benar dipakai di kartu wallet frontend
-    // FIX: Blokir dompet 'System' agar tidak tampil di list UI frontend
-    $wallets = $user->wallets()
-        ->select(['id', 'name', 'balance', 'icon', 'keyword', 'group_type', 'is_pinned'])
-        ->where('group_type', '!=', 'System')
-        ->orderBy('id')
-        ->get();
+        // Hanya ambil kolom yang benar-benar dipakai di kartu wallet frontend
+        // FIX: Blokir dompet 'System' agar tidak tampil di list UI frontend
+        $wallets = $user->wallets()
+            ->select(['id', 'name', 'balance', 'icon', 'keyword', 'group_type', 'is_pinned'])
+            ->where('group_type', '!=', 'System')
+            ->orderBy('id')
+            ->get();
 
-    $balances = $this->calculateAllBalances();
+        $balances = $this->calculateAllBalances();
 
-    return Inertia::render('Wallets/Index', [
-        'wallets' => $wallets,
-        'totalHutang' => $balances['total_debt'],
-        'totalPiutang' => $balances['total_receivable'],
-    ]);
-}
+        return Inertia::render('Wallets/Index', [
+            'wallets' => $wallets,
+            'totalHutang' => $balances['total_debt'],
+            'totalPiutang' => $balances['total_receivable'],
+        ]);
+    }
+
     // Tampilkan Form Tambah Wallet
     public function create()
     {

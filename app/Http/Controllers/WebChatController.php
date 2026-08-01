@@ -66,6 +66,16 @@ class WebChatController extends Controller
         $hasMore = false;
         if ($conversation) {
             $sevenDaysAgo = now()->subDays(7)->startOfDay();
+
+            // Reset pesan yang stuck (pending/processing > 5 menit) agar frontend tidak polling selamanya
+            $conversation->messages()
+                ->whereIn('status', ['pending', 'processing'])
+                ->where('updated_at', '<', now()->subMinutes(5))
+                ->update([
+                    'status' => 'failed',
+                    'error_message' => 'Proses timeout. Silakan kirim ulang pesan.',
+                ]);
+
             $raw = $this->adapter->getHistorySince($conversation, $sevenDaysAgo);
 
             // hasMore = true jika ada pesan lebih lama dari 7 hari yang lalu
@@ -95,7 +105,8 @@ class WebChatController extends Controller
 
     /**
      * POST /chat/message
-     * Terima dan proses pesan dari user.
+     * Terima pesan dari user dan dispatch proses AI ke background queue.
+     * Response dikembalikan segera — frontend polling status pesan bot.
      */
     public function sendMessage(Request $request): JsonResponse
     {
@@ -105,13 +116,13 @@ class WebChatController extends Controller
         ]);
 
         try {
-            $result = $this->adapter->handle(
+            $result = $this->adapter->enqueueMessage(
                 user: $request->user(),
                 rawMessage: $validated['message'],
                 conversationId: $validated['conversation_id'] ?? null,
             );
 
-            return response()->json($result);
+            return response()->json($result, 202);
 
         } catch (Throwable $e) {
             // Fallback terakhir — hanya terjadi jika DB down atau exception
@@ -136,10 +147,12 @@ class WebChatController extends Controller
 
             return response()->json([
                 'success' => false,
+                'queued' => false,
                 'conversation_id' => $fallbackConvId,
                 'bot_message' => [
                     'id' => null,
                     'role' => 'assistant',
+                    'status' => 'failed',
                     'content' => [[
                         'type' => 'error',
                         'message' => __('chat.error.system'),
@@ -150,6 +163,43 @@ class WebChatController extends Controller
                 ],
             ], 500);
         }
+    }
+
+    /**
+     * GET /chat/message/{id}/status
+     * Status proses pesan bot (polling oleh frontend).
+     */
+    public function messageStatus(Request $request, int $id): JsonResponse
+    {
+        $message = ChatMessage::where('id', $id)
+            ->where('role', 'assistant')
+            ->whereHas('conversation', fn ($q) => $q->where('user_id', $request->user()->id))
+            ->first();
+
+        if (! $message) {
+            return response()->json([
+                'status' => 'not_found',
+                'bot_message' => null,
+            ], 404);
+        }
+
+        // Jika pesan masih pending/processing tapi sudah > 5 menit tidak diupdate,
+        // anggap job stuck — tandai failed agar frontend tidak polling terus
+        $isStuck = in_array($message->status, ['pending', 'processing'])
+            && $message->updated_at->diffInMinutes(now()) > 5;
+
+        if ($isStuck) {
+            $message->update([
+                'status' => 'failed',
+                'error_message' => 'Proses timeout. Silakan kirim ulang pesan.',
+            ]);
+        }
+
+        return response()->json([
+            'status' => $message->status ?? 'completed',
+            'error_message' => $message->error_message,
+            'bot_message' => $this->adapter->formatMessageForClient($message),
+        ]);
     }
 
     /**
@@ -329,7 +379,7 @@ class WebChatController extends Controller
         $typeName = strtolower($transaction->type?->name ?? '');
 
         if ($typeName === 'income') {
-            DB::transaction(function () use ($transaction, $wallet, $user) {
+            DB::transaction(function () use ($transaction, $wallet) {
                 $transaction->destination_wallet_id = $wallet->id;
                 $balanceBefore = $wallet->balance;
                 $wallet->increment('balance', $transaction->amount);

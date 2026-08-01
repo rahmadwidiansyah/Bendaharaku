@@ -62,4 +62,33 @@ class AiPreferenceManager
     {
         return $user->activeAiPreference;
     }
+
+    /**
+     * Mendapatkan preferensi default (OpenAI API Compatible dari .env) sebagai
+     * model instance virtual yang tidak dipersistensikan.
+     */
+    public function getDefaultPreference(): ?UserAiPreference
+    {
+        $apiKey = (string) config('bendaharaku.ai.openai_compatible.api_key');
+        $baseUrl = (string) config('bendaharaku.ai.openai_compatible.base_url');
+
+        if (blank($apiKey) || blank($baseUrl)) {
+            return null;
+        }
+
+        return new UserAiPreference([
+            'provider' => AiProvider::OpenAiCompatible,
+            'selected_model' => AiProvider::OpenAiCompatible->defaultModel(),
+            'is_active_provider' => true,
+        ]);
+    }
+
+    /**
+     * Resolusi preferensi AI aktif: preferensi user jika ada, jika tidak
+     * gunakan provider default (OpenAI API Compatible dari .env).
+     */
+    public function resolveActivePreference(User $user): ?UserAiPreference
+    {
+        return $this->getActivePreference($user) ?? $this->getDefaultPreference();
+    }
 }
