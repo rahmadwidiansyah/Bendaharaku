@@ -102,7 +102,7 @@ class ProcessChatMessageJob implements ShouldQueue
                 ]);
             }
 
-            PushGate::dispatchIfAway(
+            PushGate::dispatch(
                 $user,
                 PushPayloadBuilder::chatReplyReady($user, (string) $botMessage->raw_text)
             );
@@ -137,7 +137,7 @@ class ProcessChatMessageJob implements ShouldQueue
                 ],
             ]);
 
-            PushGate::dispatchIfAway($user, PushPayloadBuilder::chatReplyFailed($user));
+            PushGate::dispatch($user, PushPayloadBuilder::chatReplyFailed($user));
 
             Log::error('ProcessChatMessageJob: handle exception', [
                 'trace_id' => $context->traceId,

@@ -19,9 +19,10 @@ use Illuminate\Support\Facades\DB;
 /**
  * CheckLoanRemindersJob — pengingat jatuh tempo hutang/piutang per user.
  *
- * Menemukan transaksi LOAN/RECEIVABLE aktif (saldo > 0) yang jatuh tempo
- * hari ini (due_date) atau besok (day_before), lalu kirim push — sekali
- * per (subject, tipe, reminder_type, due_date) via tabel loan_reminders.
+ * Mengikuti logika widget "Upcoming Debts" di dashboard: transaksi LOAN/
+ * RECEIVABLE aktif (saldo > 0) yang jatuh tempo dalam 7 hari ke depan
+ * (termasuk yang sudah overdue) berhak menerima push — sekali per
+ * (subject, tipe, reminder_type, due_date) via tabel loan_reminders.
  */
 class CheckLoanRemindersJob implements ShouldQueue
 {
@@ -44,7 +45,6 @@ class CheckLoanRemindersJob implements ShouldQueue
         }
 
         $today = Carbon::parse($this->date)->startOfDay();
-        $tomorrow = $today->copy()->addDay();
 
         $transactions = $user->transactionLogs()
             ->with('category:id,category_name,system_key')
@@ -53,11 +53,11 @@ class CheckLoanRemindersJob implements ShouldQueue
             ->get();
 
         foreach ($transactions as $trx) {
-            $this->processTransaction($user, $trx, $today, $tomorrow);
+            $this->processTransaction($user, $trx, $today);
         }
     }
 
-    private function processTransaction(User $user, TransactionLog $trx, Carbon $today, Carbon $tomorrow): void
+    private function processTransaction(User $user, TransactionLog $trx, Carbon $today): void
     {
         if (! $trx->category || ! $trx->subject) {
             return;
@@ -84,13 +84,19 @@ class CheckLoanRemindersJob implements ShouldQueue
             return;
         }
 
-        if ($nextDue->eq($today)) {
-            $reminderType = 'due_date';
-        } elseif ($nextDue->eq($tomorrow)) {
-            $reminderType = 'day_before';
-        } else {
+        // Konsisten dengan widget dashboard: push hanya jika jatuh tempo
+        // dalam 7 hari ke depan ATAU sudah terlewat (overdue).
+        $daysUntilDue = (int) $today->diffInDays($nextDue, false);
+        if ($daysUntilDue > 7) {
             return;
         }
+
+        $reminderType = match (true) {
+            $daysUntilDue < 0 => 'overdue',
+            $daysUntilDue === 0 => 'due_date',
+            $daysUntilDue === 1 => 'day_before',
+            default => 'upcoming',
+        };
 
         $reminder = LoanReminder::firstOrCreate(
             [
@@ -107,9 +113,9 @@ class CheckLoanRemindersJob implements ShouldQueue
             return;
         }
 
-        PushGate::dispatchIfAway(
+        PushGate::dispatch(
             $user,
-            PushPayloadBuilder::loanReminder($user, $loanType, $reminderType, $trx->subject, $balance)
+            PushPayloadBuilder::loanReminder($user, $loanType, $reminderType, $trx->subject, $balance, $daysUntilDue)
         );
     }
 

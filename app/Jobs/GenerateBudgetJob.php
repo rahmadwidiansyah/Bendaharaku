@@ -55,7 +55,7 @@ class GenerateBudgetJob implements ShouldQueue
 
         $status->update(['status' => StatusEnum::Completed->value]);
 
-        PushGate::dispatchIfAway(
+        PushGate::dispatch(
             $user,
             PushPayloadBuilder::budgetCreated($user, $this->month, $this->year)
         );
@@ -73,7 +73,7 @@ class GenerateBudgetJob implements ShouldQueue
 
         $user = User::find($this->userId);
         if ($user) {
-            PushGate::dispatchIfAway(
+            PushGate::dispatch(
                 $user,
                 PushPayloadBuilder::budgetGenerationFailed($user, $this->month, $this->year)
             );

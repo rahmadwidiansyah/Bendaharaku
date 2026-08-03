@@ -153,8 +153,14 @@ class MonthlyReportService
                 'period_month' => $periodKey,
             ],
             [
-                'summary' => $finalReport,
+                'title' => 'Laporan '.$monthStart->translatedFormat('F Y'),
+                'local_summary' => $localReport,
+                'ai_summary' => $geminiReport,
+                'final_summary' => $finalReport,
                 'metrics' => $metrics,
+                'previous_month_summary' => null,
+                'provider' => $geminiReport ? 'gemini' : 'local',
+                'model' => $geminiResult['model'] ?? null,
                 'status' => 'completed',
             ]
         );

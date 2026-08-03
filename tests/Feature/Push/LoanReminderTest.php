@@ -9,7 +9,6 @@ use App\Models\TransactionLog;
 use App\Models\TransactionType;
 use App\Models\User;
 use App\Models\Wallet;
-use App\Services\Push\PresenceService;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
@@ -32,7 +31,6 @@ class LoanReminderTest extends TestCase
             'auth' => 'y',
         ]);
         Queue::fake();
-        $this->mock(PresenceService::class, fn ($mock) => $mock->shouldReceive('isAway')->andReturn(true));
     }
 
     private function systemWallet(string $name): Wallet
@@ -113,6 +111,44 @@ class LoanReminderTest extends TestCase
 
         Queue::assertPushed(SendPushNotificationJob::class, 1);
         $this->assertSame(1, LoanReminder::count());
+    }
+
+    public function test_fixed_due_within_seven_days_dispatches_upcoming_reminder(): void
+    {
+        $this->createLoan('Budi', 'LOAN', 'fixed', now()->addDays(5)->toDateString(), now()->toDateString());
+
+        (new CheckLoanRemindersJob($this->user->id, now()->toDateString()))->handle();
+
+        Queue::assertPushed(SendPushNotificationJob::class, fn ($job) => $job->payload['url'] === '/loans/hutang');
+        $this->assertDatabaseHas('loan_reminders', [
+            'subject' => 'BUDI',
+            'loan_type' => 'debt',
+            'reminder_type' => 'upcoming',
+        ]);
+    }
+
+    public function test_fixed_due_more_than_seven_days_is_not_reminded(): void
+    {
+        $this->createLoan('Budi', 'LOAN', 'fixed', now()->addDays(10)->toDateString(), now()->toDateString());
+
+        (new CheckLoanRemindersJob($this->user->id, now()->toDateString()))->handle();
+
+        Queue::assertNotPushed(SendPushNotificationJob::class);
+        $this->assertSame(0, LoanReminder::count());
+    }
+
+    public function test_overdue_fixed_due_dispatches_overdue_reminder(): void
+    {
+        $this->createLoan('Budi', 'LOAN', 'fixed', now()->subDays(3)->toDateString(), now()->subDays(3)->toDateString());
+
+        (new CheckLoanRemindersJob($this->user->id, now()->toDateString()))->handle();
+
+        Queue::assertPushed(SendPushNotificationJob::class, fn ($job) => $job->payload['url'] === '/loans/hutang');
+        $this->assertDatabaseHas('loan_reminders', [
+            'subject' => 'BUDI',
+            'loan_type' => 'debt',
+            'reminder_type' => 'overdue',
+        ]);
     }
 
     public function test_settled_loan_is_not_reminded(): void

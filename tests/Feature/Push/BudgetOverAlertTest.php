@@ -11,7 +11,6 @@ use App\Models\Category;
 use App\Models\TransactionLog;
 use App\Models\TransactionType;
 use App\Models\User;
-use App\Services\Push\PresenceService;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
@@ -87,7 +86,6 @@ class BudgetOverAlertTest extends TestCase
     public function test_over_budget_dispatches_push_once(): void
     {
         Queue::fake();
-        $this->mock(PresenceService::class, fn ($mock) => $mock->shouldReceive('isAway')->andReturn(true));
 
         $this->createExpense(150_000);
 
@@ -102,7 +100,6 @@ class BudgetOverAlertTest extends TestCase
     public function test_alert_is_idempotent(): void
     {
         Queue::fake();
-        $this->mock(PresenceService::class, fn ($mock) => $mock->shouldReceive('isAway')->andReturn(true));
 
         $this->createExpense(150_000);
 
@@ -116,7 +113,6 @@ class BudgetOverAlertTest extends TestCase
     public function test_no_alert_when_budget_not_exceeded(): void
     {
         Queue::fake();
-        $this->mock(PresenceService::class, fn ($mock) => $mock->shouldReceive('isAway')->andReturn(true));
 
         $this->createExpense(50_000);
 
@@ -130,7 +126,6 @@ class BudgetOverAlertTest extends TestCase
     public function test_no_alert_when_no_budget_group(): void
     {
         Queue::fake();
-        $this->mock(PresenceService::class, fn ($mock) => $mock->shouldReceive('isAway')->andReturn(true));
 
         BudgetGroup::query()->delete();
         $this->createExpense(150_000);
