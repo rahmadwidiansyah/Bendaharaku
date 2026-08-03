@@ -32,14 +32,14 @@ Artisan::command('budget:auto-generate', function () {
     foreach ($users as $user) {
         try {
             $service->generate($user, $now->month, $now->year);
-            PushGate::dispatchIfAway(
+            PushGate::dispatch(
                 $user,
                 PushPayloadBuilder::budgetCreated($user, $now->month, $now->year)
             );
             $ok++;
         } catch (Throwable $e) {
             $failed++;
-            PushGate::dispatchIfAway(
+            PushGate::dispatch(
                 $user,
                 PushPayloadBuilder::budgetGenerationFailed($user, $now->month, $now->year)
             );

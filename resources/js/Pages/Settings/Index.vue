@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import SettingsLayout from './Layouts/SettingsLayout.vue';
 import { useI18n } from 'vue-i18n';
@@ -250,6 +250,10 @@ function toggle(id: string) {
   next.has(id) ? next.delete(id) : next.add(id);
   collapsed.value = next;
 }
+
+const handleLogout = () => {
+  router.post(route('logout'));
+};
 </script>
 
 <template>
@@ -385,6 +389,26 @@ function toggle(id: string) {
             </div>
           </Transition>
         </section>
+
+        <!-- ── LOGOUT ─────────────────────────────────────────────── -->
+        <button
+          type="button"
+          @click="handleLogout"
+          class="mt-1 w-full flex items-center gap-3 rounded-lg border border-[var(--color-expense-border)] bg-[var(--color-expense-bg)] px-3 sm:px-4 py-3 sm:py-3.5 transition-colors active:scale-[0.99] focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-expense-text)]"
+          :aria-label="t('profile.logout')"
+        >
+          <!-- Icon badge -->
+          <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center shrink-0 bg-[var(--color-expense-bg)] border border-[var(--color-expense-border)]">
+            <svg class="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 text-[var(--color-expense-text)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </div>
+
+          <!-- Label -->
+          <span class="flex-1 text-left text-xs sm:text-sm font-bold text-[var(--color-expense-text)]">
+            {{ t('profile.logout') }}
+          </span>
+        </button>
 
       </div>
     </SettingsLayout>

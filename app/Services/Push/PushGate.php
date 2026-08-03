@@ -8,18 +8,14 @@ use App\Models\User;
 /**
  * PushGate — gerbang pengiriman push dari trigger (job/command/action).
  *
- * Push HANYA dikirim jika user 'away' (tidak membuka tab Bendaharaku),
- * push diaktifkan, dan punya minimal satu subscription.
+ * Push dikirim segera (tanpa menunggu user 'away') jika user mengaktifkan
+ * push dan punya minimal satu subscription.
  */
 class PushGate
 {
-    public static function dispatchIfAway(User $user, array $payload): void
+    public static function dispatch(User $user, array $payload): void
     {
         if (! $user->push_notifications) {
-            return;
-        }
-
-        if (! app(PresenceService::class)->isAway($user->id)) {
             return;
         }
 

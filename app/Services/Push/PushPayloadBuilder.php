@@ -76,18 +76,44 @@ class PushPayloadBuilder
         string $reminderType,
         string $subject,
         float $balance,
+        int $daysUntilDue = 0,
     ): array {
         $typeName = self::t('push.loan.type_'.$loanType, $user);
-        $key = $reminderType === 'day_before' ? 'push.loan.day_before_body' : 'push.loan.due_body';
-        $titleKey = $reminderType === 'day_before' ? 'push.loan.day_before_title' : 'push.loan.due_title';
+
+        $titleKey = $messageKey = null;
+        $replace = [
+            'subject' => $subject,
+            'type' => $typeName,
+            'amount' => MoneyFormatter::rupiah(abs($balance)),
+        ];
+
+        switch ($reminderType) {
+            case 'day_before':
+                $titleKey = 'push.loan.day_before_title';
+                $messageKey = 'push.loan.day_before_body';
+                break;
+
+            case 'due_date':
+                $titleKey = 'push.loan.due_title';
+                $messageKey = 'push.loan.due_body';
+                break;
+
+            case 'overdue':
+                $replace['days'] = abs($daysUntilDue);
+                $titleKey = 'push.loan.overdue_title';
+                $messageKey = 'push.loan.overdue_body';
+                break;
+
+            default:
+                $replace['days'] = max(0, $daysUntilDue);
+                $titleKey = 'push.loan.upcoming_title';
+                $messageKey = 'push.loan.upcoming_body';
+                break;
+        }
 
         return [
             'title' => self::t($titleKey, $user),
-            'body' => self::t($key, $user, [
-                'subject' => $subject,
-                'type' => $typeName,
-                'amount' => MoneyFormatter::rupiah($balance),
-            ]),
+            'body' => self::t($messageKey, $user, $replace),
             'url' => $loanType === 'debt' ? '/loans/hutang' : '/loans/piutang',
             'tag' => 'loan-'.$loanType,
             'data' => ['kind' => 'loan', 'loan_type' => $loanType],

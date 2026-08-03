@@ -31,7 +31,7 @@ class WebChatAsyncTest extends TestCase
         Queue::fake();
 
         $response = $this->actingAs($this->user)
-            ->postJson('/chat/message', ['message' => 'halo'])
+            ->postJson('/chat/message', ['message' => 'halo apa kabar, tolong catat beli kopi 15 ribu'])
             ->assertStatus(202)
             ->assertJsonPath('queued', true);
 

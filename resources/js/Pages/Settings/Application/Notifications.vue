@@ -97,7 +97,7 @@ onUnmounted(() => {
             <span class="text-2xs sm:text-sm text-text-secondary">{{ t('settings.application.notifications.push.label') }}</span>
             <p class="text-2xs text-text-secondary mt-1">{{ permissionHint }}</p>
           </div>
-          <label class="relative inline-flex items-center cursor-pointer shrink-0" :class="{ 'opacity-50 pointer-events-none': push.busy }">
+          <label class="relative inline-flex items-center cursor-pointer shrink-0" :class="{ 'opacity-50 pointer-events-none': push.busy.value }">
             <input
               v-model="pushEnabled"
               type="checkbox"

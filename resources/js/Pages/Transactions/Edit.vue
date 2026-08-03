@@ -59,7 +59,7 @@ const tx = useTransactionForm(form, props, {
 })
 
 const {
-    rawAmount, handleKeypad,
+    rawAmount, handleKeypad, setRawInputAmount,
     loadWalletFrequency,
     mainTab, activeType, debtSubTab, setMainTab, setDebtSubTab,
     showWalletModal, showKeypad, showDateModal, dateModalTarget,
@@ -231,17 +231,18 @@ const isSwapping = ref(false)
 const transferAll = ref(false)
 const transferErrors = ref({})
 
+const syncTransferAllAmount = (balance) => {
+    const amount = Math.abs(parseInt(balance, 10) || 0)
+    setRawInputAmount(amount > 0 ? String(amount) : '0')
+}
+
 watch(transferAll, () => {
-    if (transferAll.value && selectedSourceWallet.value) {
-        rawAmount.value = String(Math.abs(parseInt(selectedSourceWallet.value.balance)))
-    } else {
-        rawAmount.value = '0'
-    }
+    syncTransferAllAmount(transferAll.value ? selectedSourceWallet.value?.balance : 0)
 })
 
 watch(selectedSourceWallet, () => {
-    if (transferAll.value && selectedSourceWallet.value) {
-        rawAmount.value = String(Math.abs(parseInt(selectedSourceWallet.value.balance)))
+    if (transferAll.value) {
+        syncTransferAllAmount(selectedSourceWallet.value?.balance)
     }
 })
 
@@ -276,22 +277,16 @@ const debtBalance = computed(() => {
 })
 
 watch(lunasi, () => {
-    if (lunasi.value && debtBalance.value > 0) {
-        rawAmount.value = String(Math.abs(debtBalance.value))
-    } else {
-        rawAmount.value = '0'
-    }
-    form.amount = parseInt(rawAmount.value, 10) || 0
+    setRawInputAmount(lunasi.value && debtBalance.value > 0 ? String(Math.abs(debtBalance.value)) : '0')
 })
 
 watch(() => form.subject, () => {
     if (lunasi.value && debtBalance.value > 0) {
-        rawAmount.value = String(Math.abs(debtBalance.value))
+        setRawInputAmount(String(Math.abs(debtBalance.value)))
     } else if (lunasi.value) {
         lunasi.value = false
-        rawAmount.value = '0'
+        setRawInputAmount('0')
     }
-    form.amount = parseInt(rawAmount.value, 10) || 0
 })
 
 const submitTransfer = () => {

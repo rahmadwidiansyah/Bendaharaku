@@ -60,7 +60,7 @@ class CheckBudgetAlertsJob implements ShouldQueue
 
             $group->update(['over_alert_sent_at' => now()]);
 
-            PushGate::dispatchIfAway($user, PushPayloadBuilder::budgetOver($user, $group));
+            PushGate::dispatch($user, PushPayloadBuilder::budgetOver($user, $group));
         }
     }
 

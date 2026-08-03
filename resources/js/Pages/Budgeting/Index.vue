@@ -8,6 +8,7 @@ import AppIcon from '@/Components/AppIcon.vue';
 import BaseModal from '@/Components/BaseModal.vue';
 import Button from '@/Components/Button.vue';
 import ConfirmationDialog from '@/Components/ConfirmationDialog.vue';
+import BudgetingSkeleton from '@/Components/Skeleton/BudgetingSkeleton.vue';
 import { getCategoryIconColor } from '@/Composables/useIcon.js';
 import { useBotAvatar } from '@/Composables/useBotAvatar.js';
 import { useToast } from '@/Composables/useToast.js';
@@ -348,13 +349,11 @@ onUnmounted(stopGenerationPolling);
                 </div>
             </div>
 
-            <!-- Loading indicator (top) -->
-            <div v-if="isLoading" class="h-0.5 rounded-full bg-[var(--color-surface-muted)]/60 overflow-hidden mb-5 sm:mb-6" role="status" aria-label="Loading">
-                <div class="h-full bg-[var(--color-brand)] animate-pulse rounded-full"></div>
-            </div>
+            <!-- Skeleton saat fetch budget (mencegah flash ke state kosong "Generate AI") -->
+            <BudgetingSkeleton v-if="isLoading" :embedded="true" />
 
             <!-- Error state -->
-            <div v-if="loadError" class="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-raised)] shadow-card p-6 text-center">
+            <div v-else-if="loadError" class="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-raised)] shadow-card p-6 text-center">
                 <AppIcon icon="alert-triangle" class="w-8 h-8 mx-auto text-[var(--color-expense-text)] mb-3" />
                 <p class="text-sm font-semibold text-[var(--color-text-primary)]">{{ t('budgeting.loadError') }}</p>
                 <Button variant="secondary" size="sm" class="mt-4" @click="fetchBudget">{{ t('budgeting.retry') }}</Button>

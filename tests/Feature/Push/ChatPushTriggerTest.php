@@ -9,7 +9,6 @@ use App\Jobs\SendPushNotificationJob;
 use App\Models\ChatMessage;
 use App\Models\Conversation;
 use App\Models\User;
-use App\Services\Push\PresenceService;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
@@ -54,10 +53,9 @@ class ChatPushTriggerTest extends TestCase
         $job->handle(app(ChatApplicationService::class), app(WebFormatter::class));
     }
 
-    public function test_reply_success_dispatches_push_when_away(): void
+    public function test_reply_success_dispatches_push(): void
     {
         Queue::fake();
-        $this->mock(PresenceService::class, fn ($mock) => $mock->shouldReceive('isAway')->andReturn(true));
 
         $this->runJob();
 
@@ -65,16 +63,6 @@ class ChatPushTriggerTest extends TestCase
             return $job->userId === $this->user->id
                 && $job->payload['url'] === '/chat';
         });
-    }
-
-    public function test_reply_success_skips_push_when_active(): void
-    {
-        Queue::fake();
-        $this->mock(PresenceService::class, fn ($mock) => $mock->shouldReceive('isAway')->andReturn(false));
-
-        $this->runJob();
-
-        Queue::assertNotPushed(SendPushNotificationJob::class);
     }
 
     public function test_reply_success_skips_push_when_no_subscription(): void
@@ -87,10 +75,9 @@ class ChatPushTriggerTest extends TestCase
         Queue::assertNotPushed(SendPushNotificationJob::class);
     }
 
-    public function test_reply_failure_dispatches_push_when_away(): void
+    public function test_reply_failure_dispatches_push(): void
     {
         Queue::fake();
-        $this->mock(PresenceService::class, fn ($mock) => $mock->shouldReceive('isAway')->andReturn(true));
 
         $this->mock(ChatApplicationService::class, function ($mock) {
             $mock->shouldReceive('handleMessage')->once()->andThrow(new \RuntimeException('LLM down'));

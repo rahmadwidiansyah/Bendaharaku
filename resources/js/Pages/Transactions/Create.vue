@@ -39,7 +39,7 @@ const form = useForm({
 const tx = useTransactionForm(form, props, { isDesktopLayout })
 
 const {
-    rawAmount, formattedAmount, handleKeypad, handleDesktopInput,
+    rawAmount, formattedAmount, handleKeypad, handleDesktopInput, setRawInputAmount,
     walletFrequency, loadWalletFrequency,
     mainTab, activeType, debtSubTab, setMainTab, setType, setDebtSubTab,
     showCategoryModal, showWalletModal, walletModalMode,
@@ -85,17 +85,18 @@ onMounted(() => {
 const isSwapping = ref(false)
 const transferAll = ref(false)
 
+const syncTransferAllAmount = (balance) => {
+    const amount = Math.abs(parseInt(balance, 10) || 0)
+    setRawInputAmount(amount > 0 ? String(amount) : '0')
+}
+
 watch(transferAll, () => {
-    if (transferAll.value && selectedSourceWallet.value) {
-        rawAmount.value = String(Math.abs(parseInt(selectedSourceWallet.value.balance)))
-    } else {
-        rawAmount.value = '0'
-    }
+    syncTransferAllAmount(transferAll.value ? selectedSourceWallet.value?.balance : 0)
 })
 
 watch(selectedSourceWallet, () => {
-    if (transferAll.value && selectedSourceWallet.value) {
-        rawAmount.value = String(Math.abs(parseInt(selectedSourceWallet.value.balance)))
+    if (transferAll.value) {
+        syncTransferAllAmount(selectedSourceWallet.value?.balance)
     }
 })
 
@@ -272,8 +273,7 @@ const debtBalance = computed(() => {
 })
 
 const setLunasiAmount = (val) => {
-    rawAmount.value = val
-    form.amount = parseInt(val, 10) || 0
+    setRawInputAmount(val)
 }
 
 watch(lunasi, () => {

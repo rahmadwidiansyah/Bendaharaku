@@ -72,6 +72,14 @@ export function useTransactionForm(form, props, options = {}) {
         form.amount = parseInt(clean, 10) || 0
     }
 
+    // Satu-satunya pintu untuk mengubah nominal dari luar keypad
+    // (dipakai checkbox "Transfer Semua / Lunasi / Bayar Semua").
+    // Selalu menyinkronkan rawAmount (tampilan) DAN form.amount (payload backend).
+    const setRawInputAmount = (val) => {
+        rawAmount.value = String(val)
+        form.amount = parseInt(rawAmount.value, 10) || 0
+    }
+
     // ─── Wallet frequency cache ───────────────────────────────────────
     const walletFrequency = ref({})
 
@@ -336,6 +344,7 @@ export function useTransactionForm(form, props, options = {}) {
         formattedAmount,
         handleKeypad,
         handleDesktopInput,
+        setRawInputAmount,
 
         // Wallet cache
         walletFrequency,

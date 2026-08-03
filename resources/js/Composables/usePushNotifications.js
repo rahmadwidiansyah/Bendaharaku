@@ -12,17 +12,41 @@ import { useToast } from '@/Composables/useToast';
 
 let swRegistration = null;
 
-async function getRegistration() {
-  if (swRegistration) return swRegistration;
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return null;
+/**
+ * Jalankan promise dengan batas waktu. Mencegah await yang menggantung
+ * (mis. navigator.serviceWorker.ready yang tak pernah resolve) sehingga
+ * state `busy` tidak selamanya true dan UI tak terkunci.
+ */
+function withTimeout(promise, ms = 8000, label = '') {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(`[push] timeout: ${label}`)), ms)),
+  ]);
+}
+
+async function getRegistration(forceFresh = false) {
+  if (swRegistration && !forceFresh) return swRegistration;
+  const canRegister = 'serviceWorker' in navigator && 'PushManager' in window;
+  if (!canRegister) return null;
   try {
-    await navigator.serviceWorker.register('/sw.js');
-    swRegistration = await navigator.serviceWorker.ready;
+    swRegistration = null;
+    const registration = await withTimeout(navigator.serviceWorker.register('/sw.js'), 5000, 'register /sw.js');
+    if (registration.active) {
+      swRegistration = registration;
+      return registration;
+    }
+    if (forceFresh && registration.installing) {
+      try {
+        await registration.unregister();
+      } catch (e) { /* abaikan */ }
+    }
+    swRegistration = await withTimeout(navigator.serviceWorker.ready, 5000, 'ready');
+    return swRegistration;
   } catch (e) {
     console.warn('[push] service worker gagal diregistrasi', e);
     swRegistration = null;
+    return null;
   }
-  return swRegistration;
 }
 
 function base64UrlToUint8Array(base64Url) {
@@ -42,6 +66,20 @@ export function usePushNotifications() {
   const isSubscribed = ref(false);
   const vapidPublicKey = ref(null);
   const busy = ref(false);
+  let busyTimer = null;
+
+  const setBusy = (value) => {
+    busy.value = value;
+    if (value) {
+      clearTimeout(busyTimer);
+      busyTimer = setTimeout(() => {
+        busy.value = false;
+        console.warn('[push] busy watchdog: dikunci otomatis');
+      }, 10000);
+    } else {
+      clearTimeout(busyTimer);
+    }
+  };
 
   const updateState = async () => {
     if (!isSupported) return;
@@ -58,7 +96,7 @@ export function usePushNotifications() {
 
   const enablePush = async () => {
     if (busy.value) return false;
-    busy.value = true;
+    setBusy(true);
     try {
       if (!isSupported) return false;
 
@@ -70,13 +108,28 @@ export function usePushNotifications() {
       permission.value = await Notification.requestPermission();
       if (permission.value !== 'granted') return false;
 
-      const registration = await getRegistration();
+      let registration = await getRegistration();
       if (!registration) return false;
 
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: base64UrlToUint8Array(vapidPublicKey.value),
-      });
+      let subscription;
+      try {
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: base64UrlToUint8Array(vapidPublicKey.value),
+        });
+      } catch (e) {
+        // Service worker lama/rusak (redundant) sering membuat Chrome
+        // melempar AbortError "no active Service Worker". Coba sekali lagi
+        // dengan registrasi segar (unregister + re-register).
+        console.warn('[push] subscribe pertama gagal, coba registrasi segar:', e);
+        await new Promise((r) => setTimeout(r, 750));
+        registration = await getRegistration(true);
+        if (!registration) return false;
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: base64UrlToUint8Array(vapidPublicKey.value),
+        });
+      }
 
       await axios.post(route('notifications.subscribe'), {
         endpoint: subscription.endpoint,
@@ -91,13 +144,13 @@ export function usePushNotifications() {
       showToast('Gagal mengaktifkan notifikasi.', 'error');
       return false;
     } finally {
-      busy.value = false;
+      setBusy(false);
     }
   };
 
   const disablePush = async () => {
     if (busy.value) return;
-    busy.value = true;
+    setBusy(true);
     try {
       const registration = await getRegistration();
       if (registration) {
@@ -113,7 +166,7 @@ export function usePushNotifications() {
       }
       isSubscribed.value = false;
     } finally {
-      busy.value = false;
+      setBusy(false);
     }
   };
 
