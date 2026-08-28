@@ -36,7 +36,7 @@ class ProcessTransactionActionRegressionTest extends TestCase
             'subject' => 'Budi',
             'notes' => 'beli siomay',
             'is_cleared' => true,
-            'transaction_date' => Carbon::today(),
+            'date' => Carbon::today()->toDateString(),
         ], $this->user->id);
 
         $this->assertInstanceOf(TransactionLog::class, $tx);
@@ -56,7 +56,7 @@ class ProcessTransactionActionRegressionTest extends TestCase
             'subject' => 'Budi',
             'notes' => 'gaji bulan ini',
             'is_cleared' => true,
-            'transaction_date' => Carbon::today(),
+            'date' => Carbon::today()->toDateString(),
         ], $this->user->id);
 
         $this->assertInstanceOf(TransactionLog::class, $tx);
@@ -75,11 +75,15 @@ class ProcessTransactionActionRegressionTest extends TestCase
             'subject' => 'Budi',
             'notes' => 'beli siomay',
             'is_cleared' => true,
-            'transaction_date' => Carbon::today(),
+            'date' => Carbon::today()->toDateString(),
         ], $this->user->id);
 
         $updated = $this->action->update($tx, [
+            'date' => $tx->date->toDateString(),
             'amount' => 30000,
+            'source_wallet_id' => $this->cashWallet->id,
+            'destination_wallet_id' => $this->merchantWallet->id,
+            'transaction_type' => 'expense',
             'notes' => 'beli siomay + es teh',
         ]);
 
@@ -99,7 +103,7 @@ class ProcessTransactionActionRegressionTest extends TestCase
             'subject' => 'Budi',
             'notes' => 'beli siomay',
             'is_cleared' => false,
-            'transaction_date' => Carbon::today(),
+            'date' => Carbon::today()->toDateString(),
         ], $this->user->id);
 
         $confirmed = $this->action->confirm($tx);
@@ -119,13 +123,13 @@ class ProcessTransactionActionRegressionTest extends TestCase
             'subject' => 'Budi',
             'notes' => 'beli siomay',
             'is_cleared' => true,
-            'transaction_date' => Carbon::today(),
+            'date' => Carbon::today()->toDateString(),
         ], $this->user->id);
 
         $deleted = $this->action->delete($tx);
 
         $this->assertTrue($deleted);
-        $this->assertDatabaseMissing('transaction_logs', ['id' => $tx->id]);
+        $this->assertSoftDeleted('transaction_logs', ['id' => $tx->id]);
         $this->assertBalanceEquals($this->cashWallet, 500000);
     }
 
@@ -140,13 +144,12 @@ class ProcessTransactionActionRegressionTest extends TestCase
             'subject' => 'Budi',
             'notes' => 'bakso',
             'is_cleared' => true,
-            'transaction_date' => Carbon::today(),
+            'date' => Carbon::today()->toDateString(),
         ], $this->user->id, 'TRX', TransactionSource::SYSTEM);
 
-        $this->assertEquals('Expense', $tx->type);
-        $this->assertEquals('SYSTEM', $tx->source);
-        $this->assertNotNull($tx->transaction_code);
-        $this->assertStringStartsWith('TRX', $tx->transaction_code);
+        $this->assertEquals('Expense', $tx->type->name);
+        $this->assertNotNull($tx->reference_number);
+        $this->assertStringStartsWith('TRX', $tx->reference_number);
     }
 
     public function test_create_transfer_moves_balance_between_user_wallets(): void
@@ -159,7 +162,7 @@ class ProcessTransactionActionRegressionTest extends TestCase
             'subject' => 'Budi',
             'notes' => 'pindah saldo',
             'is_cleared' => true,
-            'transaction_date' => Carbon::today(),
+            'date' => Carbon::today()->toDateString(),
         ], $this->user->id);
 
         $this->assertBalanceEquals($this->bcaWallet, 800000);
@@ -180,10 +183,10 @@ class ProcessTransactionActionRegressionTest extends TestCase
             'subject' => 'Budi',
             'notes' => 'pinjam duit',
             'is_cleared' => true,
-            'transaction_date' => Carbon::today(),
+            'date' => Carbon::today()->toDateString(),
         ], $this->user->id);
 
-        $this->assertEquals('Debt', $tx->type);
+        $this->assertEquals('Debt', $tx->type->name);
         $this->assertBalanceEquals($this->cashWallet, 0);
     }
 }

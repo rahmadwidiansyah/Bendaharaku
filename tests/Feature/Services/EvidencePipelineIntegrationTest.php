@@ -66,6 +66,7 @@ class EvidencePipelineIntegrationTest extends TestCase
 
         $parsedData = new EvidenceData(
             documentType: DocumentType::TransferReceipt,
+            rawText: 'Transfer BCA ke rekening tujuan Rp500.000',
             amount: 500000.0,
             walletName: 'BCA',
             referenceNumber: 'TXN20260715001',
@@ -84,7 +85,7 @@ class EvidencePipelineIntegrationTest extends TestCase
             categoryId: 1,
             amount: 500000.0,
             description: 'Transfer',
-            date: now()->toDateString(),
+            transactionDate: now()->toDateString(),
             confidence: 0.85,
             resolved: true,
         );

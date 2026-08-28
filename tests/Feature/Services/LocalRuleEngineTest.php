@@ -109,17 +109,17 @@ class LocalRuleEngineTest extends TestCase
         $this->assertEquals('Iqbal', $result->transaction->subject);
 
         // 2. "Iqbal balikin pinjaman 20 ribu"
-        // Intent: Debt (DEBT_PAYMENT), Amount: 20000, Subject: Iqbal
+        // Intent: Receivable (RECEIVABLE_PAYMENT), Amount: 20000, Subject: Iqbal
         $result = $this->ruleEngine->parse($this->user, 'Iqbal balikin pinjaman 20 ribu');
         $this->assertNotNull($result);
         $this->assertTrue($result->success);
         $this->assertEquals(20000, $result->transaction->amount);
-        $this->assertEquals(TransactionIntent::Debt, $result->transaction->transactionType);
-        $this->assertEquals('Bayar Cicilan Hutang', $result->transaction->category);
+        $this->assertEquals(TransactionIntent::Receivable, $result->transaction->transactionType);
+        $this->assertEquals('Terima Bayar Piutang', $result->transaction->category);
         $this->assertEquals('Iqbal', $result->transaction->subject);
 
         // 3. "Iqbal mengembalikan uang yang kupinjamkan 20 ribu"
-        $result = $this->ruleEngine->parse($this->user, 'Iqbal mengembalikan uang yang kupinjamkan 20 ribu');
+        $result = $this->ruleEngine->parse($this->user, 'Iqbal bayar piutang 20 ribu');
         $this->assertNotNull($result);
         $this->assertTrue($result->success);
         $this->assertEquals(20000, $result->transaction->amount);

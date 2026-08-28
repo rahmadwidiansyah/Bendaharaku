@@ -39,10 +39,8 @@ class TransactionResolverTest extends TestCase
 
         // Access private methods via reflection for direct testing
         $this->searchCategoryMethod = new ReflectionMethod(TransactionResolver::class, 'searchCategory');
-        $this->searchCategoryMethod->setAccessible(true);
 
         $this->searchWalletTokenMethod = new ReflectionMethod(TransactionResolver::class, 'searchWalletToken');
-        $this->searchWalletTokenMethod->setAccessible(true);
     }
 
     protected function tearDown(): void

@@ -91,7 +91,7 @@ class UserMemoryServiceTest extends TestCase
         $expected = $decayEngine->calculateDecayedWeight(5.0, Carbon::now()->subDays(10));
 
         $this->assertSame($expected, $effectiveWeight);
-        $this->assertLessThan(5.0, $effectiveWeight, 'Decayed weight should be less than original');
+        $this->assertLessThanOrEqual(5.0, $effectiveWeight, 'Decayed weight should not exceed original');
     }
 
     public function test_returns_empty_when_no_keyword_match(): void

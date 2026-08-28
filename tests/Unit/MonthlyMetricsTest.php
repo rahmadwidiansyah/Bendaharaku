@@ -2,7 +2,7 @@
 
 namespace Tests\Unit;
 
-use App\Chat\ChatApplicationService;
+use App\Chat\Services\MonthlyReportService;
 use Illuminate\Support\Collection;
 use Tests\TestCase;
 
@@ -11,7 +11,7 @@ class MonthlyMetricsTest extends TestCase
     public function test_build_monthly_metrics_handles_array_and_collection()
     {
         // instantiate service without constructor so we can call private methods
-        $ref = new \ReflectionClass(ChatApplicationService::class);
+        $ref = new \ReflectionClass(MonthlyReportService::class);
         $service = $ref->newInstanceWithoutConstructor();
 
         // prepare fake transactions as array
@@ -36,7 +36,7 @@ class MonthlyMetricsTest extends TestCase
 
     public function test_build_local_monthly_report_handles_empty()
     {
-        $ref = new \ReflectionClass(ChatApplicationService::class);
+        $ref = new \ReflectionClass(MonthlyReportService::class);
         $service = $ref->newInstanceWithoutConstructor();
 
         $method = $ref->getMethod('buildLocalMonthlyReport');

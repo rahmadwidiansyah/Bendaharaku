@@ -27,6 +27,7 @@ class CategoryResolutionRegressionTest extends TestCase
         $result = $this->resolver->resolve(
             $this->user,
             transactionType: 'Expense',
+            documentType: null,
             description: 'beli bakso'
         );
 
@@ -41,6 +42,7 @@ class CategoryResolutionRegressionTest extends TestCase
         $result = $this->resolver->resolve(
             $this->user,
             transactionType: 'Expense',
+            documentType: null,
             description: 'makan siang'
         );
 
@@ -53,6 +55,7 @@ class CategoryResolutionRegressionTest extends TestCase
         $result = $this->resolver->resolve(
             $this->user,
             transactionType: 'Income',
+            documentType: null,
             description: 'gaji bulan ini'
         );
 
@@ -65,6 +68,7 @@ class CategoryResolutionRegressionTest extends TestCase
         $result = $this->resolver->resolve(
             $this->user,
             transactionType: 'Expense',
+            documentType: null,
             description: 'xyzabc123'
         );
 
@@ -77,6 +81,7 @@ class CategoryResolutionRegressionTest extends TestCase
         $result = $this->resolver->resolve(
             $this->user,
             transactionType: null,
+            documentType: null,
             description: 'makan'
         );
 

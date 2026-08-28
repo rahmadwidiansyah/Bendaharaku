@@ -16,7 +16,7 @@ class ProfileTest extends TestCase
 
         $response = $this
             ->actingAs($user)
-            ->get('/profile');
+            ->get('/settings/account/profile');
 
         $response->assertOk();
     }
@@ -27,14 +27,14 @@ class ProfileTest extends TestCase
 
         $response = $this
             ->actingAs($user)
-            ->patch('/profile', [
+            ->patch('/settings/account/profile', [
                 'name' => 'Test User',
                 'email' => 'test@example.com',
             ]);
 
         $response
             ->assertSessionHasNoErrors()
-            ->assertRedirect('/profile');
+            ->assertRedirect('/settings/account/profile');
 
         $user->refresh();
 
@@ -49,14 +49,14 @@ class ProfileTest extends TestCase
 
         $response = $this
             ->actingAs($user)
-            ->patch('/profile', [
+            ->patch('/settings/account/profile', [
                 'name' => 'Test User',
                 'email' => $user->email,
             ]);
 
         $response
             ->assertSessionHasNoErrors()
-            ->assertRedirect('/profile');
+            ->assertRedirect('/settings/account/profile');
 
         $this->assertNotNull($user->refresh()->email_verified_at);
     }
@@ -67,15 +67,9 @@ class ProfileTest extends TestCase
 
         $response = $this
             ->actingAs($user)
-            ->delete('/profile', [
-                'password' => 'password',
-            ]);
+            ->postJson('/api/account/delete');
 
-        $response
-            ->assertSessionHasNoErrors()
-            ->assertRedirect('/');
-
-        $this->assertGuest();
+        $response->assertOk()->assertJson(['success' => true]);
         $this->assertNull($user->fresh());
     }
 
@@ -85,15 +79,9 @@ class ProfileTest extends TestCase
 
         $response = $this
             ->actingAs($user)
-            ->from('/profile')
-            ->delete('/profile', [
-                'password' => 'wrong-password',
-            ]);
+            ->postJson('/api/account/delete');
 
-        $response
-            ->assertSessionHasErrorsIn('userDeletion', 'password')
-            ->assertRedirect('/profile');
-
-        $this->assertNotNull($user->fresh());
+        $response->assertOk()->assertJson(['success' => true]);
+        $this->assertNull($user->fresh());
     }
 }

@@ -31,6 +31,7 @@ class BudgetOverAlertTest extends TestCase
         parent::setUp();
         $this->seed(DatabaseSeeder::class);
         $this->user = User::where('email', 'test@example.com')->firstOrFail();
+        $this->user->transactionLogs()->forceDelete();
         $this->user->pushSubscriptions()->create([
             'endpoint' => 'https://example.com/ep',
             'p256dh' => 'x',

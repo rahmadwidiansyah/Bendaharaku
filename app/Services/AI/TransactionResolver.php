@@ -65,8 +65,14 @@ class TransactionResolver
             if (blank($parsed->sourceWallet) || blank($parsed->destinationWallet)) {
                 throw new WalletNotFoundException("Validasi Gagal: Transaksi 'Transfer' mewajibkan parameter dompet asal dan tujuan.");
             }
-            $sourceWalletId = $this->searchWalletToken($parsed->sourceWallet, $wallets, 'Asal');
-            $destinationWalletId = $this->searchWalletToken($parsed->destinationWallet, $wallets, 'Tujuan');
+
+            $userWallets = $wallets->filter(fn (Wallet $wallet) => in_array($wallet->group_type, ['Liquid', 'Asset'], true));
+            $sourceWalletId = $this->searchWalletToken($parsed->sourceWallet, $userWallets, 'Asal');
+            $destinationWalletId = $this->searchWalletToken($parsed->destinationWallet, $userWallets, 'Tujuan');
+
+            if ($sourceWalletId === $destinationWalletId) {
+                throw new WalletNotFoundException('Validasi Gagal: Dompet asal dan tujuan transfer harus berbeda.');
+            }
         } else {
             [$systemSourceId, $systemDestId] = $this->walletResolution->resolveDraftWalletAllocation(
                 transactionType: $parsed->transactionType ?? TransactionIntent::Expense,
@@ -75,27 +81,30 @@ class TransactionResolver
                 systemKey: $systemKey,
             );
 
-            // Di mana user wallet disebutkan? System wallet dipasangkan dengan user wallet.
-            $sourceWalletId = $parsed->sourceWallet !== null
-                && $this->walletResolution->resolveUserWalletId($user, $parsed->sourceWallet) !== null
-                ? $this->searchWalletToken($parsed->sourceWallet, $wallets, 'Asal')
-                : $systemSourceId;
+            $sourceWalletId = $systemSourceId;
+            $destinationWalletId = $systemDestId;
 
-            $destinationWalletId = $parsed->destinationWallet !== null
-                && $this->walletResolution->resolveUserWalletId($user, $parsed->destinationWallet) !== null
-                ? $this->searchWalletToken($parsed->destinationWallet, $wallets, 'Tujuan')
-                : $systemDestId;
+            $userWallets = $wallets->filter(fn (Wallet $wallet) => in_array($wallet->group_type, ['Liquid', 'Asset'], true));
+            $userWalletText = $parsed->sourceWallet ?? $parsed->destinationWallet;
+            $userWalletId = $userWalletText !== null
+                ? $this->searchWalletToken($userWalletText, $userWallets, 'User')
+                : null;
 
-            // Fallback: jika kedua wallet tidak disebutkan user, gunakan system wallet untuk yang belum diisi
-            // Ini terjadi ketika AI hanya mendeteksi satu sisi wallet
-            if ($sourceWalletId === $systemSourceId && $destinationWalletId === $systemDestId) {
-                // Keduanya system → cek apakah user menyebut wallet di source atau dest
-                if ($parsed->sourceWallet !== null) {
-                    $sourceWalletId = $this->searchWalletToken($parsed->sourceWallet, $wallets, 'Asal');
-                } elseif ($parsed->destinationWallet !== null) {
-                    $destinationWalletId = $this->searchWalletToken($parsed->destinationWallet, $wallets, 'Tujuan');
+            $userIsDestination = match ($parsed->transactionType) {
+                TransactionIntent::Income => true,
+                TransactionIntent::Debt => $systemKey === 'LOAN',
+                TransactionIntent::Receivable => $systemKey === 'RECEIVABLE_PAYMENT',
+                default => false,
+            };
+
+            if ($userWalletId !== null) {
+                if ($userIsDestination) {
+                    $destinationWalletId = $userWalletId;
+                } else {
+                    $sourceWalletId = $userWalletId;
                 }
             }
+
         }
 
         // 6. Resolusi Amount — Handle ALL_BALANCE intent
