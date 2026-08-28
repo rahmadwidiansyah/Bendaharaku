@@ -84,6 +84,7 @@ class SingleTransactionRegressionTest extends TestCase
             amount: 5000000,
             transactionType: TransactionIntent::Income,
             category: 'gaji',
+            destinationWallet: 'cash',
             isCleared: true
         );
         $mockAiResult = new AIParseResult(true, 0.95, null, $parsed);
@@ -106,6 +107,7 @@ class SingleTransactionRegressionTest extends TestCase
         $parsed = new ParsedTransaction(
             amount: 500000,
             transactionType: TransactionIntent::Transfer,
+            category: 'transfer',
             sourceWallet: 'bca',
             destinationWallet: 'cash',
             isCleared: true
@@ -131,8 +133,8 @@ class SingleTransactionRegressionTest extends TestCase
         $parsed = new ParsedTransaction(
             amount: 200000,
             transactionType: TransactionIntent::Debt,
-            category: 'ngutang',
-            sourceWallet: 'cash',
+            category: 'dapat hutangan',
+            destinationWallet: 'cash',
             isCleared: true
         );
         $mockAiResult = new AIParseResult(true, 0.95, null, $parsed);
@@ -142,7 +144,7 @@ class SingleTransactionRegressionTest extends TestCase
         }));
 
         $this->orchestrator = $this->app->make(ChatTransactionOrchestrator::class);
-        $result = $this->orchestrator->process($this->user, 'ngutang 200rb ke budi cash', 'TEL');
+        $result = $this->orchestrator->process($this->user, 'ngutang 200rb ke budi cash #Budi', 'TEL');
 
         $this->assertTrue($result['success']);
         $this->assertTrue($result['transaction']->is_cleared);
@@ -165,7 +167,7 @@ class SingleTransactionRegressionTest extends TestCase
         }));
 
         $this->orchestrator = $this->app->make(ChatTransactionOrchestrator::class);
-        $result = $this->orchestrator->process($this->user, 'pinjamin 150rb ke rudi cash', 'TEL');
+        $result = $this->orchestrator->process($this->user, 'pinjamin 150rb ke rudi cash #Rudi', 'TEL');
 
         $this->assertTrue($result['success']);
         $this->assertTrue($result['transaction']->is_cleared);

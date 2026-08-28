@@ -81,6 +81,13 @@ trait RegressionTestHelpers
         ]);
 
         $this->user->categories()->create([
+            'category_name' => 'Transfer Saldo',
+            'keyword' => 'transfer, pindah saldo, pindah uang, mutasi',
+            'type_id' => $this->transferType->id,
+            'system_key' => 'TRANSFER',
+        ]);
+
+        $this->user->categories()->create([
             'category_name' => 'Dapat Hutangan',
             'keyword' => 'dapat hutangan, ngutang, pinjam duit',
             'type_id' => $this->debtType->id,

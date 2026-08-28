@@ -63,8 +63,16 @@ class ChatTransactionOrchestratorTest extends TestCase
             'group_type' => 'System',
         ]);
 
-        // Setup System Wallet Configuration
-        config(['bendaharaku.system_wallets.merchant' => 'Merchant System']);
+        foreach (['External System', 'Hutang System', 'Piutang System'] as $name) {
+            $this->user->wallets()->create(['name' => $name, 'group_type' => 'System']);
+        }
+
+        config([
+            'bendaharaku.system_wallets.merchant' => 'Merchant System',
+            'bendaharaku.system_wallets.external' => 'External System',
+            'bendaharaku.system_wallets.debt' => 'Hutang System',
+            'bendaharaku.system_wallets.receivable' => 'Piutang System',
+        ]);
     }
 
     /** @test */

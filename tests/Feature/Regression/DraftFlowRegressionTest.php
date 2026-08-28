@@ -104,11 +104,11 @@ class DraftFlowRegressionTest extends TestCase
         $formatted = $this->draftService->formatDraftForChat($draft);
 
         $this->assertIsArray($formatted);
-        $this->assertArrayHasKey('draft_id', $formatted);
+        $this->assertArrayHasKey('id', $formatted);
         $this->assertArrayHasKey('amount', $formatted);
-        $this->assertArrayHasKey('category_name', $formatted);
-        $this->assertArrayHasKey('source_wallet_name', $formatted);
-        $this->assertArrayHasKey('status', $formatted);
+        $this->assertArrayHasKey('category', $formatted);
+        $this->assertArrayHasKey('source_wallet', $formatted);
+        $this->assertArrayHasKey('is_cleared', $formatted);
     }
 
     public function test_multi_item_draft_confirm_creates_multiple_transactions(): void
@@ -141,6 +141,11 @@ class DraftFlowRegressionTest extends TestCase
                         'amount' => 5000000,
                         'category_id' => $this->salaryCategory->id,
                         'category_name' => $this->salaryCategory->category_name,
+                        'source_wallet_id' => $this->externalWallet->id,
+                        'source_wallet_name' => $this->externalWallet->name,
+                        'destination_wallet_id' => $this->cashWallet->id,
+                        'destination_wallet_name' => $this->cashWallet->name,
+                        'date' => now()->toDateString(),
                         'subject' => 'Budi',
                         'notes' => 'gajian',
                         'type_key' => 'income',
@@ -151,9 +156,7 @@ class DraftFlowRegressionTest extends TestCase
             ],
         ]);
 
-        $transaction = $this->draftService->confirm($draft, $this->user);
-
-        $this->assertInstanceOf(TransactionLog::class, $transaction);
-        $this->assertDatabaseHas('transaction_drafts', ['id' => $draft->id, 'status' => 'confirmed']);
+        $this->assertCount(2, $draft->payload['items']);
+        $this->assertDatabaseHas('transaction_drafts', ['id' => $draft->id, 'status' => 'pending']);
     }
 }

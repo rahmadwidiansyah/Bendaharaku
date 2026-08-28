@@ -25,6 +25,12 @@ const props = defineProps({
 
 const showDeleteConfirm = ref(false)
 
+const normalizeDate = (value) => {
+    if (!value) return value
+    if (typeof value === 'string') return value.slice(0, 10)
+    return value.toISOString().slice(0, 10)
+}
+
 // ─── Tentukan initialType dari transaksi yang sedang di-edit ─────
 const _initCat = props.categories.find(c => c.id === props.transaction.category_id)
 const _initType = props.transaction.transaction_type
@@ -39,7 +45,7 @@ const form = useForm({
     source_wallet_id: props.transaction.source_wallet_id,
     destination_wallet_id: props.transaction.destination_wallet_id,
     amount: Math.trunc(Number(props.transaction.amount) || 0),
-    date: props.transaction.date,
+    date: normalizeDate(props.transaction.date),
     subject: props.transaction.subject || '-',
     notes: props.transaction.notes || '',
     transaction_type: _initType.toLowerCase(),

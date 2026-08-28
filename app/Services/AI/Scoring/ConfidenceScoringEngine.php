@@ -68,9 +68,9 @@ readonly class ConfidenceScoringEngine
         $baseScore = match ($t->transactionType) {
             TransactionIntent::Expense => $sourceMatch ? 1.0 : 0.0,
             TransactionIntent::Income => ($sourceMatch || $destMatch) ? 1.0 : 0.0,
-            TransactionIntent::Transfer,
+            TransactionIntent::Transfer => ($sourceMatch && $destMatch) ? 1.0 : ($sourceMatch || $destMatch ? 0.5 : 0.0),
             TransactionIntent::Debt,
-            TransactionIntent::Receivable => ($sourceMatch && $destMatch) ? 1.0 : ($sourceMatch || $destMatch ? 0.5 : 0.0),
+            TransactionIntent::Receivable => ($sourceMatch || $destMatch) ? 1.0 : 0.0,
             default => 0.0,
         };
 
@@ -91,8 +91,8 @@ readonly class ConfidenceScoringEngine
             TransactionIntent::Expense => $t->sourceWallet,
             TransactionIntent::Transfer => $t->sourceWallet,
             TransactionIntent::Income => null,
-            TransactionIntent::Debt => $t->sourceWallet,
-            TransactionIntent::Receivable => $t->sourceWallet,
+            TransactionIntent::Debt => $t->sourceWallet ?? $t->destinationWallet,
+            TransactionIntent::Receivable => $t->sourceWallet ?? $t->destinationWallet,
             default => null,
         };
 

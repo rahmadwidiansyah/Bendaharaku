@@ -219,7 +219,7 @@ class LocalRuleEngine
         ];
 
         $hasBayar = str_contains($text, 'bayar') || str_contains($text, 'lunas') || str_contains($text, 'nyicil') || str_contains($text, 'cicil');
-        $hasBalikin = str_contains($text, 'balikin') || str_contains($text, 'kembali') || str_contains($text, 'ganti');
+        $hasBalikin = str_contains($text, 'balikin') || str_contains($text, 'kembali') || str_contains($text, 'mengembalikan') || str_contains($text, 'ganti');
         $hasPayment = $hasBayar || $hasBalikin;
 
         $hasHutang = str_contains($text, 'hutang') || str_contains($text, 'utang');
@@ -257,8 +257,7 @@ class LocalRuleEngine
                 // "bayar hutang ke budi" -> DEBT_PAYMENT
                 $scores['DEBT_PAYMENT'] += 100;
                 $scores['RECEIVABLE_PAYMENT'] -= 50;
-            } elseif ($subject !== null && $subject !== '-') {
-                // "budi bayar hutang" / "budi balikin pinjaman" -> RECEIVABLE_PAYMENT
+            } elseif ($subject !== null && $subject !== '-' && ! $hasHutang) {
                 $scores['RECEIVABLE_PAYMENT'] += 100;
                 $scores['DEBT_PAYMENT'] -= 50;
             } else {
@@ -269,7 +268,10 @@ class LocalRuleEngine
 
         // Rule 4: "balikin uang" / "mengembalikan uang" / "balikin duit"
         if ($hasBalikin && (str_contains($text, 'uang') || str_contains($text, 'duit') || str_contains($text, 'pinjaman'))) {
-            if ($hasKe) {
+            if (str_contains($text, 'kupinjamkan') || str_contains($text, 'saya pinjamkan')) {
+                $scores['RECEIVABLE_PAYMENT'] += 100;
+                $scores['DEBT_PAYMENT'] -= 50;
+            } elseif ($hasKe) {
                 $scores['DEBT_PAYMENT'] += 100;
                 $scores['RECEIVABLE_PAYMENT'] -= 50;
             } elseif ($subject !== null && $subject !== '-') {

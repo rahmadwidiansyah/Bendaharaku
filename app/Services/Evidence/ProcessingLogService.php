@@ -108,11 +108,15 @@ class ProcessingLogService
             ->whereNotNull('ocr_duration_ms')
             ->avg('ocr_duration_ms');
 
-        $avgPipelineDuration = DB::table('evidence_processing_logs')
-            ->where('created_at', '>=', $since)
-            ->whereNotNull('duration_ms')
-            ->selectRaw('SUM(duration_ms) as total')
-            ->groupBy('evidence_id')
+        $avgPipelineDuration = DB::query()
+            ->fromSub(
+                DB::table('evidence_processing_logs')
+                    ->where('created_at', '>=', $since)
+                    ->whereNotNull('duration_ms')
+                    ->selectRaw('evidence_id, SUM(duration_ms) as total')
+                    ->groupBy('evidence_id'),
+                'pipeline_durations'
+            )
             ->avg('total');
 
         $avgConfidence = DB::table('evidence')

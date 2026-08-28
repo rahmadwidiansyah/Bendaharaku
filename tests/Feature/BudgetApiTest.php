@@ -29,6 +29,7 @@ class BudgetApiTest extends TestCase
         parent::setUp();
         $this->seed(DatabaseSeeder::class);
         $this->user = User::where('email', 'test@example.com')->firstOrFail();
+        $this->user->transactionLogs()->forceDelete();
     }
 
     private function createExpenseTransaction(Category $category, TransactionType $type, int $amount, string $date): TransactionLog
