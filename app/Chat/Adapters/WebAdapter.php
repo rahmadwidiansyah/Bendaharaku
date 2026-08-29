@@ -6,8 +6,10 @@ namespace App\Chat\Adapters;
 
 use App\Chat\ChatApplicationService;
 use App\Chat\DTOs\ChatContext;
-use App\Chat\DTOs\ChatRequest;
 use App\Chat\Formatters\WebFormatter;
+use App\Chat\Services\CommandRouter;
+use App\Enums\ChatPlatform;
+use App\Enums\TransactionIntent;
 use App\Jobs\ProcessChatMessageJob;
 use App\Models\ChatMessage;
 use App\Models\Conversation;
@@ -15,9 +17,6 @@ use App\Models\TransactionDraft;
 use App\Models\TransactionLog;
 use App\Models\User;
 use App\Support\MoneyFormatter;
-use App\Chat\Services\CommandRouter;
-use App\Enums\ChatPlatform;
-use App\Enums\TransactionIntent;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -175,7 +174,7 @@ class WebAdapter
     public function formatMessageForClient(ChatMessage $msg): array
     {
         $content = $msg->content ?? [];
-        
+
         if ($msg->status === 'failed' && $msg->error_message && empty($content)) {
             $content = [[
                 'type' => 'error',

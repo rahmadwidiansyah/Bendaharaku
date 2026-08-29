@@ -55,7 +55,7 @@ class TransactionController extends Controller
                 'notes' => $trx->notes,
                 'subject' => $trx->subject,
                 'date' => Carbon::parse($trx->date)->translatedFormat('d M Y'),
-                'raw_date' => $trx->date,
+                'raw_date' => $trx->date?->toDateString(),
                 'time' => Carbon::parse($trx->created_at)->format('H:i'),
                 'type' => $trx->type,
                 'category' => $trx->category,
@@ -447,7 +447,7 @@ class TransactionController extends Controller
         $isSystemManagedCategory = in_array($type, ['transfer', 'debt', 'receivable']);
 
         return $request->validate([
-            'date' => 'required|date',
+            'date' => 'required|date_format:Y-m-d',
             'category_id' => $isSystemManagedCategory ? 'nullable' : 'required|exists:categories,id',
             'source_wallet_id' => 'required|exists:wallets,id',
             'destination_wallet_id' => 'required|exists:wallets,id',
@@ -455,7 +455,7 @@ class TransactionController extends Controller
             'transaction_type' => 'nullable|string',
             'subject' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
-            'due_date' => 'nullable|date',
+            'due_date' => 'nullable|date_format:Y-m-d',
             'due_date_type' => 'nullable|in:fixed,monthly,daily',
             'due_date_interval' => 'nullable|integer',
             // debt_sub_type memberi tahu backend apakah ini "loan" atau "debt_payment"
