@@ -2,10 +2,10 @@
 
 namespace App\Jobs;
 
-use App\Models\LoanBalance;
 use App\Models\LoanReminder;
 use App\Models\User;
 use App\Services\Loan\ActiveLoanCycleService;
+use App\Services\Loan\LoanBalanceService;
 use App\Services\Push\PushGate;
 use App\Services\Push\PushPayloadBuilder;
 use Illuminate\Bus\Queueable;

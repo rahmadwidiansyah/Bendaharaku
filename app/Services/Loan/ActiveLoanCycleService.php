@@ -2,6 +2,7 @@
 
 namespace App\Services\Loan;
 
+use App\Models\LoanBalance;
 use App\Models\TransactionLog;
 use App\Models\User;
 use Carbon\Carbon;
@@ -11,6 +12,10 @@ class ActiveLoanCycleService
     public function calculateForUser(User $user, ?Carbon $today = null): array
     {
         $today = $today ?? Carbon::today();
+        if (! LoanBalance::where('user_id', $user->id)->exists()) {
+            app(LoanBalanceService::class)->rebuildAll($user->id);
+        }
+
         $transactions = $user->transactionLogs()
             ->where('is_cleared', true)
             ->whereNotNull('subject')
@@ -54,13 +59,26 @@ class ActiveLoanCycleService
             }
         }
 
+        $summaryBalances = LoanBalance::where('user_id', $user->id)
+            ->where('balance', '>', 0.001)
+            ->get()
+            ->keyBy(fn ($balance) => $balance->subject.'|'.$balance->loan_type);
+
         $result = ['debts' => [], 'receivables' => [], 'total_debt' => 0, 'total_receivable' => 0];
         foreach ($cycles as $cycle) {
             if ($cycle['balance'] <= 0 || ! $cycle['since']) {
                 continue;
             }
+            $summary = $summaryBalances->get($cycle['subject'].'|'.$cycle['type']);
+            if (! $summary) {
+                continue;
+            }
+
             $opening = $cycle['opening_transaction'];
             $dueDate = $opening ? app(DueDateService::class)->nextDueDate($opening, $today) : null;
+            $cycle['balance'] = $summary->balance;
+            $cycle['since'] = $summary->opened_at?->toDateString() ?? $cycle['since'];
+            $cycle['latest_date'] = $summary->last_transaction_at?->toDateString() ?? $cycle['latest_date'];
             $cycle['age'] = Carbon::parse($cycle['since'])->diffInDays($today);
             $cycle['due_date'] = $dueDate;
             $result[$cycle['type'] === 'debt' ? 'debts' : 'receivables'][] = $cycle;
