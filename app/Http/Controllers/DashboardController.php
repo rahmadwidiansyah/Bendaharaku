@@ -2,8 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\LoanBalance;
-use App\Services\Loan\DueDateService;
+use App\Services\Loan\ActiveLoanCycleService;
 use App\Traits\CalculatesDebtAndReceivable;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -264,79 +263,25 @@ class DashboardController extends Controller
             return $b['id'] <=> $a['id'];
         })->values();
 
-        // 6. NOTIFIKASI UPCOMING DEBT (Penghapusan Loop N+1 Query)
+        // 6. NOTIFIKASI UPCOMING DEBT
         $upcomingDebts = [];
-
-        // Optimasi: Hanya ambil kolom yang benar-benar dibutuhkan
-        $debtsWithDueDate = $user->transactionLogs()
-            ->with('category:id,category_name,system_key')
-            ->where('is_cleared', true)
-            ->whereNotNull('due_date_type')
-            ->select(['id', 'subject', 'category_id', 'date', 'due_date', 'due_date_type', 'due_date_interval'])
-            ->get();
-
-        $processedSubjects = [];
-        $subjectsToQuery = [];
-        $subjectDetails = [];
         $nowStart = Carbon::now()->startOfDay();
+        $activeCycles = app(ActiveLoanCycleService::class)->calculateForUser($user, $nowStart);
 
-        // 6a. Menentukan Subject mana saja yang jatuh tempo <= 7 hari (Murni komputasi CPU, 0 Query)
-        foreach ($debtsWithDueDate as $trx) {
-            if (! $trx->category || ! $trx->subject) {
+        foreach (array_merge($activeCycles['debts'], $activeCycles['receivables']) as $cycle) {
+            if (! $cycle['due_date']) {
                 continue;
             }
 
-            $isDebt = $trx->category->system_key === 'LOAN';
-            $isReceivable = $trx->category->system_key === 'RECEIVABLE';
-
-            if (! $isDebt && ! $isReceivable) {
-                continue;
-            }
-
-            $cacheKey = $trx->subject.'_'.($isDebt ? 'debt' : 'receivable');
-            if (isset($processedSubjects[$cacheKey])) {
-                continue;
-            }
-            $processedSubjects[$cacheKey] = true;
-
-            $nextDueDate = app(DueDateService::class)->nextDueDate($trx, $nowStart);
-
-            if ($nextDueDate) {
-                $daysUntilDue = (int) $nowStart->diffInDays($nextDueDate, false);
-
-                if ($daysUntilDue <= 7) {
-                    $subjectsToQuery[] = $trx->subject;
-                    $subjectDetails[$trx->subject][$isDebt ? 'Hutang' : 'Piutang'] = [
-                        'days_until' => $daysUntilDue,
-                        'next_due_date' => $nextDueDate->format('d M Y'),
-                    ];
-                }
-            }
-        }
-
-        // 6b. ONE Single Query untuk menghitung sisa hutang/piutang (agregat SQL)
-        if (! empty($subjectsToQuery)) {
-            $balances = LoanBalance::where('user_id', $userId)
-                ->whereIn('subject', array_unique($subjectsToQuery))
-                ->where('balance', '>', 0)
-                ->get()
-                ->keyBy(fn ($balance) => $balance->subject.'_'.$balance->loan_type);
-
-            foreach ($subjectDetails as $subject => $details) {
-                foreach ($details as $label => $detail) {
-                    $loanType = $label === 'Hutang' ? 'debt' : 'receivable';
-                    $balance = $balances->get($subject.'_'.$loanType);
-                    if (! $balance) {
-                        continue;
-                    }
-                    $upcomingDebts[] = [
-                        'subject' => $subject,
-                        'type' => $label,
-                        'remaining' => $balance->balance,
-                        'days_until' => $detail['days_until'],
-                        'next_due_date' => $detail['next_due_date'],
-                    ];
-                }
+            $daysUntilDue = (int) $nowStart->diffInDays($cycle['due_date'], false);
+            if ($daysUntilDue <= 7) {
+                $upcomingDebts[] = [
+                    'subject' => $cycle['subject'],
+                    'type' => $cycle['type'] === 'debt' ? 'Hutang' : 'Piutang',
+                    'remaining' => $cycle['balance'],
+                    'days_until' => $daysUntilDue,
+                    'next_due_date' => $cycle['due_date']->format('d M Y'),
+                ];
             }
         }
 

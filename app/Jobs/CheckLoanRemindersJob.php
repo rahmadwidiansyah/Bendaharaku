@@ -4,10 +4,8 @@ namespace App\Jobs;
 
 use App\Models\LoanBalance;
 use App\Models\LoanReminder;
-use App\Models\TransactionLog;
 use App\Models\User;
-use App\Services\Loan\DueDateService;
-use App\Services\Loan\LoanBalanceService;
+use App\Services\Loan\ActiveLoanCycleService;
 use App\Services\Push\PushGate;
 use App\Services\Push\PushPayloadBuilder;
 use Illuminate\Bus\Queueable;
@@ -48,44 +46,19 @@ class CheckLoanRemindersJob implements ShouldQueue
         $today = Carbon::parse($this->date)->startOfDay();
         app(LoanBalanceService::class)->rebuildAll($user->id);
 
-        $transactions = $user->transactionLogs()
-            ->with('category:id,category_name,system_key')
-            ->where('is_cleared', true)
-            ->whereNotNull('due_date_type')
-            ->get();
+        $cycles = app(ActiveLoanCycleService::class)->calculateForUser($user, $today);
 
-        foreach ($transactions as $trx) {
-            $this->processTransaction($user, $trx, $today);
+        foreach (array_merge($cycles['debts'], $cycles['receivables']) as $cycle) {
+            $this->processCycle($user, $cycle, $today);
         }
     }
 
-    private function processTransaction(User $user, TransactionLog $trx, Carbon $today): void
+    private function processCycle(User $user, array $cycle, Carbon $today): void
     {
-        if (! $trx->category || ! $trx->subject) {
-            return;
-        }
-
-        $systemKey = (string) $trx->category->system_key;
-        $loanType = match ($systemKey) {
-            'LOAN' => 'debt',
-            'RECEIVABLE' => 'receivable',
-            default => null,
-        };
-
-        if ($loanType === null) {
-            return;
-        }
-
-        $balance = (float) LoanBalance::where('user_id', $user->id)
-            ->where('subject', strtoupper(trim($trx->subject)))
-            ->where('loan_type', $loanType)
-            ->value('balance');
-        if ($balance <= 0) {
-            return;
-        }
-
-        $nextDue = app(DueDateService::class)->nextDueDate($trx, $today);
-        if ($nextDue === null) {
+        $loanType = $cycle['type'];
+        $balance = $cycle['balance'];
+        $nextDue = $cycle['due_date'];
+        if ($balance <= 0 || $nextDue === null) {
             return;
         }
 
@@ -106,7 +79,7 @@ class CheckLoanRemindersJob implements ShouldQueue
         $reminder = LoanReminder::firstOrCreate(
             [
                 'user_id' => $user->id,
-                'subject' => strtoupper(trim($trx->subject)),
+                'subject' => $cycle['subject'],
                 'loan_type' => $loanType,
                 'reminder_type' => $reminderType,
                 'due_date' => $nextDue->toDateString(),
@@ -120,7 +93,7 @@ class CheckLoanRemindersJob implements ShouldQueue
 
         PushGate::dispatch(
             $user,
-            PushPayloadBuilder::loanReminder($user, $loanType, $reminderType, $trx->subject, $balance, $daysUntilDue)
+            PushPayloadBuilder::loanReminder($user, $loanType, $reminderType, $cycle['subject'], $balance, $daysUntilDue)
         );
     }
 }

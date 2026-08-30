@@ -9,6 +9,7 @@ use App\Models\TransactionLog;
 use App\Models\TransactionType;
 use App\Models\User;
 use App\Models\Wallet;
+use App\Services\Loan\ActiveLoanCycleService;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
@@ -178,6 +179,62 @@ class LoanReminderTest extends TestCase
 
         Queue::assertNotPushed(SendPushNotificationJob::class);
         $this->assertSame(0, LoanReminder::count());
+    }
+
+    public function test_new_loan_cycle_uses_new_due_date_after_previous_cycle_is_settled(): void
+    {
+        $today = now()->startOfDay();
+        $this->createLoan('Budi', 'LOAN', 'fixed', $today->copy()->subDays(20)->toDateString(), $today->copy()->subDays(20)->toDateString());
+
+        $category = $this->user->categories()->where('system_key', 'DEBT_PAYMENT')->firstOrFail();
+        $type = TransactionType::where('name', $category->type->name)->firstOrFail();
+        $cash = $this->user->wallets()->where('group_type', 'Liquid')->first();
+        TransactionLog::create([
+            'reference_number' => 'TEST-'.uniqid(),
+            'user_id' => $this->user->id,
+            'date' => $today->copy()->subDays(10)->toDateString(),
+            'type_id' => $type->id,
+            'category_id' => $category->id,
+            'source_wallet_id' => $cash->id,
+            'destination_wallet_id' => $this->systemWallet('Hutang')->id,
+            'amount' => 1_000_000,
+            'balance_before' => 0,
+            'balance_after' => 0,
+            'subject' => 'BUDI',
+            'is_cleared' => true,
+        ]);
+
+        $this->createLoan('Budi', 'LOAN', 'fixed', $today->copy()->addDays(10)->toDateString(), $today->toDateString(), 500_000);
+
+        $cycles = app(ActiveLoanCycleService::class)->calculateForUser($this->user, $today);
+        $cycle = collect($cycles['debts'])->firstWhere('subject', 'BUDI');
+        $this->assertNotNull($cycle);
+        $this->assertSame(500000.0, $cycle['balance']);
+        $this->assertSame($today->toDateString(), $cycle['since']);
+        $this->assertSame($today->copy()->addDays(10)->toDateString(), $cycle['due_date']->toDateString());
+    }
+
+    public function test_new_loan_cycle_without_due_date_does_not_inherit_old_due_date(): void
+    {
+        $today = now()->startOfDay();
+        $this->createLoan('Budi', 'LOAN', 'fixed', $today->copy()->subDays(20)->toDateString(), $today->copy()->subDays(20)->toDateString());
+
+        $category = $this->user->categories()->where('system_key', 'DEBT_PAYMENT')->firstOrFail();
+        $type = TransactionType::where('name', $category->type->name)->firstOrFail();
+        $cash = $this->user->wallets()->where('group_type', 'Liquid')->first();
+        TransactionLog::create([
+            'reference_number' => 'TEST-'.uniqid(), 'user_id' => $this->user->id,
+            'date' => $today->copy()->subDays(10)->toDateString(), 'type_id' => $type->id,
+            'category_id' => $category->id, 'source_wallet_id' => $cash->id,
+            'destination_wallet_id' => $this->systemWallet('Hutang')->id, 'amount' => 1_000_000,
+            'balance_before' => 0, 'balance_after' => 0, 'subject' => 'BUDI', 'is_cleared' => true,
+        ]);
+
+        $loan = $this->createLoan('Budi', 'LOAN', 'fixed', null, $today->toDateString(), 500_000);
+        $loan->update(['due_date_type' => null]);
+
+        $cycles = app(ActiveLoanCycleService::class)->calculateForUser($this->user, $today);
+        $this->assertNull($cycles['debts'][0]['due_date']);
     }
 
     public function test_monthly_recurring_is_reminded_per_instance(): void
