@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\LoanBalance;
 use App\Services\Loan\DueDateService;
 use App\Traits\CalculatesDebtAndReceivable;
 use Carbon\Carbon;
@@ -268,7 +269,7 @@ class DashboardController extends Controller
 
         // Optimasi: Hanya ambil kolom yang benar-benar dibutuhkan
         $debtsWithDueDate = $user->transactionLogs()
-            ->with('category:id,category_name')
+            ->with('category:id,category_name,system_key')
             ->where('is_cleared', true)
             ->whereNotNull('due_date_type')
             ->select(['id', 'subject', 'category_id', 'date', 'due_date', 'due_date_type', 'due_date_interval'])
@@ -285,9 +286,8 @@ class DashboardController extends Controller
                 continue;
             }
 
-            $catName = strtolower($trx->category->category_name);
-            $isDebt = str_contains($catName, 'dapat hutang');
-            $isReceivable = str_contains($catName, 'ngasih piutang');
+            $isDebt = $trx->category->system_key === 'LOAN';
+            $isReceivable = $trx->category->system_key === 'RECEIVABLE';
 
             if (! $isDebt && ! $isReceivable) {
                 continue;
@@ -316,49 +316,26 @@ class DashboardController extends Controller
 
         // 6b. ONE Single Query untuk menghitung sisa hutang/piutang (agregat SQL)
         if (! empty($subjectsToQuery)) {
-            $balancesRaw = DB::table('transaction_logs')
-                ->join('categories', 'transaction_logs.category_id', '=', 'categories.id')
-                ->where('transaction_logs.user_id', $userId)
-                ->where('transaction_logs.is_cleared', true)
-                ->whereNull('transaction_logs.deleted_at')
-                ->whereIn('transaction_logs.subject', array_unique($subjectsToQuery))
-                ->select('transaction_logs.subject')
-                ->selectRaw("
-                    SUM(CASE WHEN categories.system_key = 'LOAN' THEN amount ELSE 0 END) as debt_borrowed,
-                    SUM(CASE WHEN categories.system_key = 'DEBT_PAYMENT' THEN amount ELSE 0 END) as debt_paid,
-                    SUM(CASE WHEN categories.system_key = 'RECEIVABLE' THEN amount ELSE 0 END) as rec_borrowed,
-                    SUM(CASE WHEN categories.system_key = 'RECEIVABLE_PAYMENT' THEN amount ELSE 0 END) as rec_paid
-                ")
-                ->groupBy('transaction_logs.subject')
-                ->get();
+            $balances = LoanBalance::where('user_id', $userId)
+                ->whereIn('subject', array_unique($subjectsToQuery))
+                ->where('balance', '>', 0)
+                ->get()
+                ->keyBy(fn ($balance) => $balance->subject.'_'.$balance->loan_type);
 
-            foreach ($balancesRaw as $row) {
-                $subject = $row->subject;
-
-                if (isset($subjectDetails[$subject]['Hutang'])) {
-                    $remainingDebt = $row->debt_borrowed - $row->debt_paid;
-                    if ($remainingDebt > 0) {
-                        $upcomingDebts[] = [
-                            'subject' => $subject,
-                            'type' => 'Hutang',
-                            'remaining' => $remainingDebt,
-                            'days_until' => $subjectDetails[$subject]['Hutang']['days_until'],
-                            'next_due_date' => $subjectDetails[$subject]['Hutang']['next_due_date'],
-                        ];
+            foreach ($subjectDetails as $subject => $details) {
+                foreach ($details as $label => $detail) {
+                    $loanType = $label === 'Hutang' ? 'debt' : 'receivable';
+                    $balance = $balances->get($subject.'_'.$loanType);
+                    if (! $balance) {
+                        continue;
                     }
-                }
-
-                if (isset($subjectDetails[$subject]['Piutang'])) {
-                    $remainingRec = $row->rec_borrowed - $row->rec_paid;
-                    if ($remainingRec > 0) {
-                        $upcomingDebts[] = [
-                            'subject' => $subject,
-                            'type' => 'Piutang',
-                            'remaining' => $remainingRec,
-                            'days_until' => $subjectDetails[$subject]['Piutang']['days_until'],
-                            'next_due_date' => $subjectDetails[$subject]['Piutang']['next_due_date'],
-                        ];
-                    }
+                    $upcomingDebts[] = [
+                        'subject' => $subject,
+                        'type' => $label,
+                        'remaining' => $balance->balance,
+                        'days_until' => $detail['days_until'],
+                        'next_due_date' => $detail['next_due_date'],
+                    ];
                 }
             }
         }

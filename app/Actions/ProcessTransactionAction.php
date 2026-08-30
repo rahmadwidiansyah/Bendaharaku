@@ -10,6 +10,7 @@ use App\Models\TransactionLog;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Services\Category\CategoryResolutionService;
+use App\Services\Loan\LoanBalanceService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -19,6 +20,7 @@ class ProcessTransactionAction
 {
     public function __construct(
         private readonly CategoryResolutionService $categoryResolution,
+        private readonly LoanBalanceService $loanBalances,
     ) {}
 
     /**
@@ -70,7 +72,7 @@ class ProcessTransactionAction
             $subjectInput = isset($data['subject']) ? strtoupper(trim($data['subject'])) : '';
             $finalSubject = $subjectInput === '' ? '-' : $subjectInput;
 
-            return TransactionLog::create([
+            $transaction = TransactionLog::create([
                 'reference_number' => $sourcePrefix.'-'.Str::ulid(),
                 'user_id' => $userId,
                 'date' => $data['date'],
@@ -88,6 +90,15 @@ class ProcessTransactionAction
                 'due_date_type' => $data['due_date_type'] ?? null,
                 'due_date_interval' => $data['due_date_interval'] ?? null,
             ]);
+
+            $transaction->setRelation('category', $category);
+            $this->loanBalances->validate($transaction);
+            $loanType = $this->loanType($category->system_key);
+            if ($loanType) {
+                $this->loanBalances->rebuild($userId, $finalSubject, $loanType);
+            }
+
+            return $transaction;
         });
 
         event(new TransactionPosted($transactionLog, $source));
@@ -171,6 +182,8 @@ class ProcessTransactionAction
                 'due_date_interval' => $data['due_date_interval'] ?? null,
             ]);
 
+            $this->loanBalances->rebuildAll($userId);
+
             return $transaction;
         });
     }
@@ -238,8 +251,20 @@ class ProcessTransactionAction
                 }
             }
 
-            return $transaction->delete();
+            $deleted = $transaction->delete();
+            $this->loanBalances->rebuildAll($transaction->user_id);
+
+            return $deleted;
         });
+    }
+
+    private function loanType(?string $systemKey): ?string
+    {
+        return match ($systemKey) {
+            'LOAN', 'DEBT_PAYMENT' => 'debt',
+            'RECEIVABLE', 'RECEIVABLE_PAYMENT' => 'receivable',
+            default => null,
+        };
     }
 
     /**

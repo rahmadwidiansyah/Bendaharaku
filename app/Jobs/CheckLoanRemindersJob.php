@@ -2,10 +2,12 @@
 
 namespace App\Jobs;
 
+use App\Models\LoanBalance;
 use App\Models\LoanReminder;
 use App\Models\TransactionLog;
 use App\Models\User;
 use App\Services\Loan\DueDateService;
+use App\Services\Loan\LoanBalanceService;
 use App\Services\Push\PushGate;
 use App\Services\Push\PushPayloadBuilder;
 use Illuminate\Bus\Queueable;
@@ -14,7 +16,6 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 
 /**
  * CheckLoanRemindersJob — pengingat jatuh tempo hutang/piutang per user.
@@ -45,6 +46,7 @@ class CheckLoanRemindersJob implements ShouldQueue
         }
 
         $today = Carbon::parse($this->date)->startOfDay();
+        app(LoanBalanceService::class)->rebuildAll($user->id);
 
         $transactions = $user->transactionLogs()
             ->with('category:id,category_name,system_key')
@@ -74,7 +76,10 @@ class CheckLoanRemindersJob implements ShouldQueue
             return;
         }
 
-        $balance = $this->balanceForSubject($user, $trx->subject, $systemKey);
+        $balance = (float) LoanBalance::where('user_id', $user->id)
+            ->where('subject', strtoupper(trim($trx->subject)))
+            ->where('loan_type', $loanType)
+            ->value('balance');
         if ($balance <= 0) {
             return;
         }
@@ -117,24 +122,5 @@ class CheckLoanRemindersJob implements ShouldQueue
             $user,
             PushPayloadBuilder::loanReminder($user, $loanType, $reminderType, $trx->subject, $balance, $daysUntilDue)
         );
-    }
-
-    private function balanceForSubject(User $user, string $subject, string $systemKey): float
-    {
-        $paidKey = $systemKey === 'LOAN' ? 'DEBT_PAYMENT' : 'RECEIVABLE_PAYMENT';
-
-        $row = DB::table('transaction_logs')
-            ->join('categories', 'transaction_logs.category_id', '=', 'categories.id')
-            ->where('transaction_logs.user_id', $user->id)
-            ->where('transaction_logs.is_cleared', true)
-            ->whereNull('transaction_logs.deleted_at')
-            ->whereRaw('UPPER(TRIM(transaction_logs.subject)) = ?', [strtoupper(trim($subject))])
-            ->selectRaw('
-                SUM(CASE WHEN categories.system_key = ? THEN amount ELSE 0 END) as borrowed,
-                SUM(CASE WHEN categories.system_key = ? THEN amount ELSE 0 END) as paid
-            ', [$systemKey, $paidKey])
-            ->first();
-
-        return (float) ($row->borrowed ?? 0) - (float) ($row->paid ?? 0);
     }
 }

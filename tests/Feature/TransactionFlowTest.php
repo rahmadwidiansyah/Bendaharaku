@@ -68,6 +68,17 @@ class TransactionFlowTest extends TestCase
         $liquidWallet = $this->user->wallets()->where('group_type', 'Liquid')->firstOrFail();
         $systemHutang = $this->user->wallets()->where('name', 'Hutang System')->firstOrFail();
 
+        $this->actingAs($this->user)->post(route('transactions.store'), [
+            'date' => now()->format('Y-m-d'),
+            'category_id' => null,
+            'source_wallet_id' => $systemHutang->id,
+            'destination_wallet_id' => $liquidWallet->id,
+            'amount' => 100000,
+            'transaction_type' => 'debt',
+            'debt_sub_type' => 'income',
+            'subject' => 'BUDI',
+        ]);
+
         $payload = [
             'date' => now()->format('Y-m-d'),
             'category_id' => null,
@@ -141,6 +152,17 @@ class TransactionFlowTest extends TestCase
     {
         $liquidWallet = $this->user->wallets()->where('group_type', 'Liquid')->firstOrFail();
         $systemPiutang = $this->user->wallets()->where('name', 'Piutang System')->firstOrFail();
+
+        $this->actingAs($this->user)->post(route('transactions.store'), [
+            'date' => now()->format('Y-m-d'),
+            'category_id' => null,
+            'source_wallet_id' => $liquidWallet->id,
+            'destination_wallet_id' => $systemPiutang->id,
+            'amount' => 200000,
+            'transaction_type' => 'receivable',
+            'debt_sub_type' => 'expense',
+            'subject' => 'ANI',
+        ]);
 
         $payload = [
             'date' => now()->format('Y-m-d'),
@@ -237,12 +259,12 @@ class TransactionFlowTest extends TestCase
         $payload = [
             'date' => now()->format('Y-m-d'),
             'category_id' => null, // test auto-resolve during edit/update
-            'source_wallet_id' => $liquidWallet->id, // swap direction to DEBT_PAYMENT
-            'destination_wallet_id' => $systemHutang->id,
+            'source_wallet_id' => $systemHutang->id,
+            'destination_wallet_id' => $liquidWallet->id,
             'amount' => 75000,
             'transaction_type' => 'debt',
-            'debt_sub_type' => 'expense', // change subtype to Bayar Hutang
-            'subject' => 'BUDI-EDITED',
+            'debt_sub_type' => 'income',
+            'subject' => 'BUDI',
             'notes' => 'Hutang terupdate',
         ];
 
@@ -253,9 +275,9 @@ class TransactionFlowTest extends TestCase
 
         $transaction->refresh();
         $this->assertEquals(75000, $transaction->amount);
-        $this->assertEquals('BUDI-EDITED', $transaction->subject);
-        $this->assertEquals('DEBT_PAYMENT', $transaction->category->system_key);
-        $this->assertEquals($liquidWallet->id, $transaction->source_wallet_id);
-        $this->assertEquals($systemHutang->id, $transaction->destination_wallet_id);
+        $this->assertEquals('BUDI', $transaction->subject);
+        $this->assertEquals('LOAN', $transaction->category->system_key);
+        $this->assertEquals($systemHutang->id, $transaction->source_wallet_id);
+        $this->assertEquals($liquidWallet->id, $transaction->destination_wallet_id);
     }
 }
