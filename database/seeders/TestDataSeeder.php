@@ -201,16 +201,16 @@ class TestDataSeeder extends Seeder
         $cats = Category::where('user_id', $user->id)->get()->keyBy('category_name');
 
         $plan = [
-            'Makan & Minum'     => ['amount' => 600000, 'group' => 'variable'],
-            'Belanja'           => ['amount' => 650000, 'group' => 'variable'],
-            'Transportasi'      => ['amount' => 250000, 'group' => 'variable'],
-            'Listrik & Air'     => ['amount' => 165000, 'group' => 'fixed'],
-            'Pulsa & Internet'  => ['amount' => 120000, 'group' => 'fixed'],
-            'Pendidikan'        => ['amount' => 500000, 'group' => 'fixed'],
-            'Hiburan'           => ['amount' => 165000, 'group' => 'discretionary'],
-            'Donasi'            => ['amount' => 50000,  'group' => 'discretionary'],
-            'Kesehatan'         => ['amount' => 100000, 'group' => 'sinking_fund'],
-            'Pakaian'           => ['amount' => 150000, 'group' => 'sinking_fund'],
+            'Makan & Minum' => ['amount' => 600000, 'group' => 'variable'],
+            'Belanja' => ['amount' => 650000, 'group' => 'variable'],
+            'Transportasi' => ['amount' => 250000, 'group' => 'variable'],
+            'Listrik & Air' => ['amount' => 165000, 'group' => 'fixed'],
+            'Pulsa & Internet' => ['amount' => 120000, 'group' => 'fixed'],
+            'Pendidikan' => ['amount' => 500000, 'group' => 'fixed'],
+            'Hiburan' => ['amount' => 165000, 'group' => 'discretionary'],
+            'Donasi' => ['amount' => 50000,  'group' => 'discretionary'],
+            'Kesehatan' => ['amount' => 100000, 'group' => 'sinking_fund'],
+            'Pakaian' => ['amount' => 150000, 'group' => 'sinking_fund'],
         ];
 
         $now = Carbon::now();

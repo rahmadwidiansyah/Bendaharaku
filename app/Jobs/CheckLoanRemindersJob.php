@@ -3,9 +3,8 @@
 namespace App\Jobs;
 
 use App\Models\LoanReminder;
-use App\Models\TransactionLog;
 use App\Models\User;
-use App\Services\Loan\DueDateService;
+use App\Services\Loan\ActiveLoanCycleService;
 use App\Services\Push\PushGate;
 use App\Services\Push\PushPayloadBuilder;
 use Illuminate\Bus\Queueable;
@@ -14,7 +13,6 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 
 /**
  * CheckLoanRemindersJob — pengingat jatuh tempo hutang/piutang per user.
@@ -46,41 +44,19 @@ class CheckLoanRemindersJob implements ShouldQueue
 
         $today = Carbon::parse($this->date)->startOfDay();
 
-        $transactions = $user->transactionLogs()
-            ->with('category:id,category_name,system_key')
-            ->where('is_cleared', true)
-            ->whereNotNull('due_date_type')
-            ->get();
+        $cycles = app(ActiveLoanCycleService::class)->calculateForUser($user, $today);
 
-        foreach ($transactions as $trx) {
-            $this->processTransaction($user, $trx, $today);
+        foreach (array_merge($cycles['debts'], $cycles['receivables']) as $cycle) {
+            $this->processCycle($user, $cycle, $today);
         }
     }
 
-    private function processTransaction(User $user, TransactionLog $trx, Carbon $today): void
+    private function processCycle(User $user, array $cycle, Carbon $today): void
     {
-        if (! $trx->category || ! $trx->subject) {
-            return;
-        }
-
-        $systemKey = (string) $trx->category->system_key;
-        $loanType = match ($systemKey) {
-            'LOAN' => 'debt',
-            'RECEIVABLE' => 'receivable',
-            default => null,
-        };
-
-        if ($loanType === null) {
-            return;
-        }
-
-        $balance = $this->balanceForSubject($user, $trx->subject, $systemKey);
-        if ($balance <= 0) {
-            return;
-        }
-
-        $nextDue = app(DueDateService::class)->nextDueDate($trx, $today);
-        if ($nextDue === null) {
+        $loanType = $cycle['type'];
+        $balance = $cycle['balance'];
+        $nextDue = $cycle['due_date'];
+        if ($balance <= 0 || $nextDue === null) {
             return;
         }
 
@@ -101,7 +77,7 @@ class CheckLoanRemindersJob implements ShouldQueue
         $reminder = LoanReminder::firstOrCreate(
             [
                 'user_id' => $user->id,
-                'subject' => strtoupper(trim($trx->subject)),
+                'subject' => $cycle['subject'],
                 'loan_type' => $loanType,
                 'reminder_type' => $reminderType,
                 'due_date' => $nextDue->toDateString(),
@@ -115,26 +91,7 @@ class CheckLoanRemindersJob implements ShouldQueue
 
         PushGate::dispatch(
             $user,
-            PushPayloadBuilder::loanReminder($user, $loanType, $reminderType, $trx->subject, $balance, $daysUntilDue)
+            PushPayloadBuilder::loanReminder($user, $loanType, $reminderType, $cycle['subject'], $balance, $daysUntilDue)
         );
-    }
-
-    private function balanceForSubject(User $user, string $subject, string $systemKey): float
-    {
-        $paidKey = $systemKey === 'LOAN' ? 'DEBT_PAYMENT' : 'RECEIVABLE_PAYMENT';
-
-        $row = DB::table('transaction_logs')
-            ->join('categories', 'transaction_logs.category_id', '=', 'categories.id')
-            ->where('transaction_logs.user_id', $user->id)
-            ->where('transaction_logs.is_cleared', true)
-            ->whereNull('transaction_logs.deleted_at')
-            ->whereRaw('UPPER(TRIM(transaction_logs.subject)) = ?', [strtoupper(trim($subject))])
-            ->selectRaw('
-                SUM(CASE WHEN categories.system_key = ? THEN amount ELSE 0 END) as borrowed,
-                SUM(CASE WHEN categories.system_key = ? THEN amount ELSE 0 END) as paid
-            ', [$systemKey, $paidKey])
-            ->first();
-
-        return (float) ($row->borrowed ?? 0) - (float) ($row->paid ?? 0);
     }
 }

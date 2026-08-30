@@ -32,7 +32,7 @@ class TransactionFlowTest extends TestCase
         $systemHutang = $this->user->wallets()->where('name', 'Hutang System')->firstOrFail();
 
         $payload = [
-            'date' => now()->format('Y-m-d'),
+            'date' => '2026-08-15',
             'category_id' => null, // nullable for debt
             'source_wallet_id' => $systemHutang->id,
             'destination_wallet_id' => $liquidWallet->id,
@@ -69,7 +69,7 @@ class TransactionFlowTest extends TestCase
         $systemHutang = $this->user->wallets()->where('name', 'Hutang System')->firstOrFail();
 
         $payload = [
-            'date' => now()->format('Y-m-d'),
+            'date' => '2026-08-15',
             'category_id' => null,
             'source_wallet_id' => $liquidWallet->id,
             'destination_wallet_id' => $systemHutang->id,
@@ -106,7 +106,7 @@ class TransactionFlowTest extends TestCase
         $systemPiutang = $this->user->wallets()->where('name', 'Piutang System')->firstOrFail();
 
         $payload = [
-            'date' => now()->format('Y-m-d'),
+            'date' => '2026-08-15',
             'category_id' => null,
             'source_wallet_id' => $liquidWallet->id,
             'destination_wallet_id' => $systemPiutang->id,
@@ -143,7 +143,7 @@ class TransactionFlowTest extends TestCase
         $systemPiutang = $this->user->wallets()->where('name', 'Piutang System')->firstOrFail();
 
         $payload = [
-            'date' => now()->format('Y-m-d'),
+            'date' => '2026-08-15',
             'category_id' => null,
             'source_wallet_id' => $systemPiutang->id,
             'destination_wallet_id' => $liquidWallet->id,
@@ -182,7 +182,7 @@ class TransactionFlowTest extends TestCase
         $w2 = $wallets[1];
 
         $payload = [
-            'date' => now()->format('Y-m-d'),
+            'date' => '2026-08-15',
             'category_id' => null,
             'source_wallet_id' => $w1->id,
             'destination_wallet_id' => $w2->id,
@@ -221,7 +221,7 @@ class TransactionFlowTest extends TestCase
         $transaction = TransactionLog::create([
             'reference_number' => 'TRX-'.Str::ulid(),
             'user_id' => $this->user->id,
-            'date' => now()->format('Y-m-d'),
+            'date' => '2026-08-15',
             'type_id' => $loanCategory->type_id,
             'category_id' => $loanCategory->id,
             'source_wallet_id' => $systemHutang->id,
@@ -235,7 +235,7 @@ class TransactionFlowTest extends TestCase
         ]);
 
         $payload = [
-            'date' => now()->format('Y-m-d'),
+            'date' => '2026-08-15',
             'category_id' => null, // test auto-resolve during edit/update
             'source_wallet_id' => $liquidWallet->id, // swap direction to DEBT_PAYMENT
             'destination_wallet_id' => $systemHutang->id,
@@ -252,6 +252,7 @@ class TransactionFlowTest extends TestCase
         $response->assertRedirect(route('dashboard'));
 
         $transaction->refresh();
+        $this->assertEquals('2026-08-15', $transaction->date->toDateString());
         $this->assertEquals(75000, $transaction->amount);
         $this->assertEquals('BUDI-EDITED', $transaction->subject);
         $this->assertEquals('DEBT_PAYMENT', $transaction->category->system_key);
