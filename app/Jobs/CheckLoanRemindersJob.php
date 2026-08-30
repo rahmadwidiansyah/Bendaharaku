@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\LoanBalance;
 use App\Models\LoanReminder;
 use App\Models\User;
 use App\Services\Loan\ActiveLoanCycleService;
@@ -43,6 +44,7 @@ class CheckLoanRemindersJob implements ShouldQueue
         }
 
         $today = Carbon::parse($this->date)->startOfDay();
+        app(LoanBalanceService::class)->rebuildAll($user->id);
 
         $cycles = app(ActiveLoanCycleService::class)->calculateForUser($user, $today);
 
