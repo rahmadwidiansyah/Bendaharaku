@@ -129,21 +129,26 @@ export function useTransactionForm(form, props, options = {}) {
         else currentMonth.value++
     }
 
+    const parseDateOnly = (value) => {
+        const match = typeof value === 'string' ? value.match(/^(\d{4})-(\d{2})-(\d{2})/) : null
+        return match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : new Date()
+    }
+
     // Sync calendar display saat modal terbuka
     watch(showDateModal, (val) => {
         if (val) {
-            const d = dateModalTarget.value === 'due_date' && form.due_date
-                ? new Date(form.due_date)
-                : new Date(form.date)
+            const value = dateModalTarget.value === 'due_date' ? form.due_date : form.date
+            const d = parseDateOnly(value)
             currentMonth.value = d.getMonth()
             currentYear.value  = d.getFullYear()
         }
     })
 
-    // Format tanggal lokal menghindari UTC shift
     const toLocalYMD = (d) => {
-        const offset = d.getTimezoneOffset() * 60000
-        return new Date(d - offset).toISOString().slice(0, 10)
+        const year = d.getFullYear()
+        const month = String(d.getMonth() + 1).padStart(2, '0')
+        const day = String(d.getDate()).padStart(2, '0')
+        return `${year}-${month}-${day}`
     }
 
     const selectSpecificDate = (day) => {

@@ -31,7 +31,7 @@ const openDetail = (trx) => {
         source_wallet: trx.source_wallet,
         destination_wallet: trx.destination_wallet,
         time: new Date(trx.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-        date: new Date(trx.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+        date: formatDate(trx.date)
     };
     showDetailModal.value = true;
 };
@@ -140,9 +140,7 @@ const formatDateRange = () => {
                     <div class="flex-1 min-w-0 pr-3 relative z-10">
                         <div class="flex items-center gap-2 mb-1.5 lg:mb-2">
                             <p class="text-2xs font-bold text-gray-500">
-                                {{ new Date(trx.date).toLocaleDateString('id-ID', {
-                                    day: '2-digit', month: 'short',
-                                year: 'numeric' }) }}
+                                {{ formatDate(trx.date) }}
                             </p>
                             <span class="w-1 h-1 bg-gray-500 rounded-full"></span>
                             <p class="text-2xs text-gray-600 font-bold">{{ new

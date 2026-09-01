@@ -4,7 +4,7 @@ import DateModal from '@/Components/DateModal.vue';
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import { ref, shallowRef, onMounted, onBeforeUnmount, computed, nextTick, watch } from 'vue';
 import { Chart, registerables } from 'chart.js';
-import { formatNumber } from '@/utils/format.js';
+import { formatNumber, formatDate, parseDateOnly } from '@/utils/format.js';
 import { useI18n } from 'vue-i18n';
 import AppIcon from '@/Components/AppIcon.vue';
 import { getCategoryIconColor } from '@/Composables/useIcon.js';
@@ -151,7 +151,7 @@ const initCumulativeChart = async () => {
 
                 const take = Math.min(7, allDates.length);
                 visibleLabels = allDates.slice(-take).map(d =>
-                    new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })
+                    formatDate(d, { day: '2-digit', month: 'short' })
                 );
                 visibleData = allCumulative.slice(-take);
             } else {
@@ -211,7 +211,7 @@ const initCumulativeChart = async () => {
                             displayColors: false,
                             callbacks: {
                                 title: (items) => {
-                                    const d = new Date(items[0].label + 'T00:00:00');
+                                    const d = parseDateOnly(items[0].label);
                                     return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
                                 },
                                 label: (item) => 'Rp ' + Number(item.raw).toLocaleString('id-ID'),
@@ -281,7 +281,7 @@ function buildBarData(view) {
             const debt = Math.abs(props.allDailyDebt[i] || 0);
             const rec = Math.abs(props.allDailyReceivable[i] || 0);
             pushNonEmpty(
-                new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }),
+                formatDate(date, { day: '2-digit', month: 'short' }),
                 inc, exp, debt, rec
             );
         });
@@ -291,7 +291,7 @@ function buildBarData(view) {
     if (view === 'mingguan') {
         let bucket = null;
         dates.forEach((date, i) => {
-            const d = new Date(date);
+            const d = parseDateOnly(date);
             if (!bucket) {
                 bucket = {
                     start: d.getDate(),
@@ -322,7 +322,7 @@ function buildBarData(view) {
     // bulanan — seluruh periode yang tersedia
     const monthMap = new Map();
     dates.forEach((dateStr, i) => {
-        const d = new Date(dateStr);
+        const d = parseDateOnly(dateStr);
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
         if (!monthMap.has(key)) {
             monthMap.set(key, {
@@ -762,7 +762,7 @@ onBeforeUnmount(() => {
             <div class="flex items-center justify-between pt-3 pb-1">
 <p class="text-xs text-white font-medium">
     {{ $t('analytics.showingData') }}
-    <span class="text-gray-300">{{ new Date(startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long' }) }} – {{ new Date(endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long' }) }}</span>
+    <span class="text-gray-300">{{ formatDate(startDate, { day: 'numeric', month: 'long' }) }} – {{ formatDate(endDate, { day: 'numeric', month: 'long' }) }}</span>
 </p>
 <div class="relative">
     <DateModal :action="route('analytics.index')" :start-date="startDate" :end-date="endDate" />

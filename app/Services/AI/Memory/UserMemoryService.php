@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\AI\Memory;
 
 use App\Models\UserAiMemory;
+use App\Models\UserAiMemoryContribution;
 use App\Models\UserAiMemoryLog;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -36,10 +37,13 @@ readonly class UserMemoryService
             return;
         }
 
-        DB::transaction(function () use ($userId, $keyword, $extracted, $correctedData, $source, $transactionId) {
+        $targetType = ! empty($correctedData['category_id']) ? 'category' : 'wallet';
+
+        DB::transaction(function () use ($userId, $keyword, $extracted, $correctedData, $source, $transactionId, $targetType) {
             $memory = UserAiMemory::firstOrNew([
                 'user_id' => $userId,
                 'keyword_pattern' => $keyword,
+                'target_type' => $targetType,
             ]);
 
             $isNew = ! $memory->exists;
@@ -57,17 +61,39 @@ readonly class UserMemoryService
                 'raw_subject' => $extracted['raw'],
                 'normalized_subject' => $extracted['normalized'],
                 'memory_keyword' => $extracted['keyword'],
+                'target_type' => $targetType,
                 'category_id' => $correctedData['category_id'] ?? null,
                 'wallet_id' => $correctedData['source_wallet_id'] ?? null,
                 'weight' => $newWeight,
                 'last_applied_at' => now(),
+                'hit_count' => $newHitCount,
             ]);
 
             $memory->save();
 
-            DB::table('user_ai_memories')
-                ->where('id', $memory->id)
-                ->increment('hit_count');
+            if ($transactionId !== null) {
+                $exists = UserAiMemoryContribution::where('user_id', $userId)
+                    ->where('transaction_id', $transactionId)
+                    ->where('keyword', $keyword)
+                    ->where('target_type', $targetType)
+                    ->where('is_active', true)
+                    ->exists();
+
+                if (! $exists) {
+                    UserAiMemoryContribution::create([
+                        'memory_id' => $memory->id,
+                        'user_id' => $userId,
+                        'transaction_id' => $transactionId,
+                        'source' => $source,
+                        'keyword' => $keyword,
+                        'target_type' => $targetType,
+                        'target_id' => $targetType === 'category' ? ($correctedData['category_id'] ?? null) : ($correctedData['source_wallet_id'] ?? null),
+                        'target_name' => null,
+                        'weight_delta' => 1.0,
+                        'is_active' => true,
+                    ]);
+                }
+            }
 
             $action = $isNew ? 'CREATED' : 'REWARDED';
             $metadata = [
@@ -110,6 +136,181 @@ readonly class UserMemoryService
                 'algorithm_version' => 'v1-keyword',
             ]);
         });
+
+        $this->invalidateCache($userId);
+    }
+
+    public function learnFromKeywords(int $userId, array $keywords, ?string $source = null, ?int $transactionId = null): void
+    {
+        if (empty($keywords)) {
+            return;
+        }
+
+        DB::transaction(function () use ($userId, $keywords, $source, $transactionId) {
+            foreach ($keywords as $entry) {
+                $keyword = trim($entry['keyword'] ?? '');
+                $targetType = $entry['target_type'] ?? null;
+                $targetId = $entry['target_id'] ?? null;
+                $targetName = $entry['target_name'] ?? null;
+
+                if (strlen($keyword) < 2 || ! in_array($targetType, ['category', 'wallet'], true)) {
+                    continue;
+                }
+
+                if ($transactionId !== null) {
+                    $exists = UserAiMemoryContribution::where('user_id', $userId)
+                        ->where('transaction_id', $transactionId)
+                        ->where('keyword', $keyword)
+                        ->where('target_type', $targetType)
+                        ->where('is_active', true)
+                        ->exists();
+
+                    if ($exists) {
+                        continue;
+                    }
+                }
+
+                $memory = UserAiMemory::firstOrNew([
+                    'user_id' => $userId,
+                    'keyword_pattern' => mb_strtolower($keyword),
+                    'target_type' => $targetType,
+                ]);
+
+                $isNew = ! $memory->exists;
+                $oldWeight = (float) ($memory->weight ?? 0.0);
+
+                $decayedWeight = $memory->exists
+                    ? $this->decayEngine->calculateDecayedWeight($oldWeight, $memory->last_applied_at ?? now())
+                    : 0.0;
+
+                $newWeight = min(5.0, $decayedWeight + 1.0);
+
+                $fillData = [
+                    'memory_keyword' => mb_strtolower($keyword),
+                    'weight' => $newWeight,
+                    'last_applied_at' => now(),
+                ];
+
+                if ($targetType === 'category' && $targetId !== null) {
+                    $fillData['category_id'] = $targetId;
+                }
+
+                if ($targetType === 'wallet' && $targetId !== null) {
+                    $fillData['wallet_id'] = $targetId;
+                }
+
+                $memory->fill($fillData);
+                $memory->save();
+
+                if ($isNew) {
+                    $memory->hit_count = 1;
+                } else {
+                    DB::table('user_ai_memories')
+                        ->where('id', $memory->id)
+                        ->increment('hit_count');
+                }
+
+                UserAiMemoryContribution::create([
+                    'memory_id' => $memory->id,
+                    'user_id' => $userId,
+                    'transaction_id' => $transactionId,
+                    'source' => $source,
+                    'keyword' => mb_strtolower($keyword),
+                    'target_type' => $targetType,
+                    'target_id' => $targetId,
+                    'target_name' => $targetName,
+                    'weight_delta' => 1.0,
+                    'is_active' => true,
+                ]);
+            }
+        });
+
+        $this->invalidateCache($userId);
+    }
+
+    private function invalidateCache(int $userId): void
+    {
+        Cache::forget("ai-mem-v2-{$userId}");
+        Cache::forget("ai-mem-resolve-{$userId}");
+    }
+
+    public function revokeContributions(int $userId, int $transactionId): void
+    {
+        $contributions = UserAiMemoryContribution::where('user_id', $userId)
+            ->where('transaction_id', $transactionId)
+            ->where('is_active', true)
+            ->get();
+
+        if ($contributions->isEmpty()) {
+            return;
+        }
+
+        $affectedMemoryIds = [];
+
+        DB::transaction(function () use ($contributions, &$affectedMemoryIds) {
+            foreach ($contributions as $contribution) {
+                $contribution->update(['is_active' => false]);
+                $affectedMemoryIds[] = $contribution->memory_id;
+            }
+        });
+
+        foreach (array_unique($affectedMemoryIds) as $memoryId) {
+            $this->rebuildMemoryWeight($memoryId);
+        }
+
+        $this->invalidateCache($userId);
+    }
+
+    public function syncTransactionMemory(int $userId, int $transactionId, array $newKeywords, ?string $source = null): void
+    {
+        $this->revokeContributions($userId, $transactionId);
+
+        if (! empty($newKeywords)) {
+            $this->learnFromKeywords($userId, $newKeywords, $source, $transactionId);
+        }
+    }
+
+    private function rebuildMemoryWeight(int $memoryId): void
+    {
+        $memory = UserAiMemory::find($memoryId);
+        if (! $memory) {
+            return;
+        }
+
+        $activeContributions = $memory->activeContributions()->get();
+
+        if ($activeContributions->isEmpty()) {
+            UserAiMemoryLog::create([
+                'memory_id' => $memory->id,
+                'user_id' => $memory->user_id,
+                'action' => 'PRUNED',
+                'reason' => 'No active contributions remaining',
+                'old_weight' => $memory->weight,
+                'new_weight' => 0.0,
+                'algorithm_version' => 'v2-provenance',
+            ]);
+
+            $memory->delete();
+
+            return;
+        }
+
+        $newWeight = min(5.0, $activeContributions->sum('weight_delta'));
+
+        UserAiMemoryLog::create([
+            'memory_id' => $memory->id,
+            'user_id' => $memory->user_id,
+            'action' => 'REBUILT',
+            'reason' => 'Rebuilt from '.$activeContributions->count().' active contributions',
+            'old_weight' => $memory->weight,
+            'new_weight' => $newWeight,
+            'algorithm_version' => 'v2-provenance',
+        ]);
+
+        $memory->update([
+            'weight' => $newWeight,
+            'hit_count' => $activeContributions->count(),
+        ]);
     }
 
     /**
@@ -121,7 +322,7 @@ readonly class UserMemoryService
 
         $memories = Cache::remember($cacheKey, 300, function () use ($userId) {
             return UserAiMemory::where('user_id', $userId)
-                ->with('category:id,category_name')
+                ->with(['category:id,category_name', 'wallet:id,name'])
                 ->orderByDesc('weight')
                 ->get();
         });
@@ -129,13 +330,13 @@ readonly class UserMemoryService
         if (! ($memories instanceof Collection)) {
             Cache::forget($cacheKey);
             $memories = UserAiMemory::where('user_id', $userId)
-                ->with('category:id,category_name')
+                ->with(['category:id,category_name', 'wallet:id,name'])
                 ->orderByDesc('weight')
                 ->get();
         }
 
         $matched = [];
-        $textLower = strtolower($inputText);
+        $textLower = mb_strtolower($inputText);
 
         foreach ($memories as $memory) {
             if (! ($memory instanceof UserAiMemory)) {
@@ -148,20 +349,26 @@ readonly class UserMemoryService
                 continue;
             }
 
-            if (preg_match("/\b".preg_quote(strtolower($pattern), '/')."\b/i", $textLower)) {
-                $decayedWeight = $this->decayEngine->calculateDecayedWeight(
-                    (float) $memory->weight,
-                    $memory->last_applied_at ?? $memory->created_at
-                );
-
-                $matched[] = [
-                    'keyword' => $pattern,
-                    'category' => $memory->category?->category_name,
-                    'effective_weight' => $decayedWeight,
-                    'hit_count' => $memory->hit_count,
-                ];
+            if (! preg_match('/\b'.preg_quote(mb_strtolower($pattern), '/').'\b/iu', $textLower)) {
+                continue;
             }
+
+            $decayedWeight = $this->decayEngine->calculateDecayedWeight(
+                (float) $memory->weight,
+                $memory->last_applied_at ?? $memory->created_at
+            );
+
+            $matched[] = [
+                'keyword' => $pattern,
+                'category' => $memory->category?->category_name,
+                'wallet' => $memory->wallet?->name,
+                'target_type' => $memory->target_type,
+                'effective_weight' => $decayedWeight,
+                'hit_count' => $memory->hit_count,
+            ];
         }
+
+        usort($matched, fn ($a, $b) => $b['effective_weight'] <=> $a['effective_weight']);
 
         $limit = (int) config('bendaharaku.ai.memory.max_memories', 5);
 

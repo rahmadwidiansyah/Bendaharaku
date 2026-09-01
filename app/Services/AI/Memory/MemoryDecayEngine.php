@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\AI\Memory;
 
-use Carbon\Carbon;
+use DateTimeInterface;
+use Illuminate\Support\Carbon;
 
 class MemoryDecayEngine
 {
@@ -12,9 +13,10 @@ class MemoryDecayEngine
      * Menghitung bobot baru berdasarkan waktu yang berlalu (Exponential Decay).
      * Rumus: W = W0 * e^(-λ * t)
      */
-    public function calculateDecayedWeight(float $currentWeight, Carbon $lastAppliedAt): float
+    public function calculateDecayedWeight(float $currentWeight, DateTimeInterface $lastAppliedAt): float
     {
-        $daysElapsed = Carbon::now()->diffInDays($lastAppliedAt);
+        $lastApplied = Carbon::instance($lastAppliedAt);
+        $daysElapsed = (int) $lastApplied->diffInDays(now());
 
         if ($daysElapsed <= 0) {
             return $currentWeight;

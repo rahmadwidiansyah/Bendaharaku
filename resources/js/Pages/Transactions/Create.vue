@@ -9,6 +9,7 @@ import { useTransactionForm } from '@/Composables/useTransactionForm.js'
 import { useWizardNavigation } from '@/Composables/useWizardNavigation.js'
 import AppIcon from '@/Components/AppIcon.vue'
 import { getCategoryIconColor } from '@/Composables/useIcon.js'
+import { formatDate, formatLocalYMD, isFutureDateOnly, isTodayDateOnly } from '@/utils/format.js'
 
 const { t } = useI18n()
 const { isDesktopLayout } = useLayoutPreference()
@@ -26,7 +27,7 @@ const form = useForm({
     source_wallet_id: null,
     destination_wallet_id: null,
     amount: 0,
-    date: new Date().toISOString().split('T')[0],
+    date: formatLocalYMD(),
     subject: '-',
     notes: '',
     transaction_type: null,
@@ -310,7 +311,7 @@ const submitTransfer = (closeAfter = true) => {
 
 const submit = (closeAfter = true) => {
     if (!form.amount || form.amount <= 0) { form.setError('amount', t('transaction.validation.amountPositive')); return }
-    if (new Date(form.date) > new Date()) { form.setError('date', t('transaction.validation.dateFuture')); return }
+    if (isFutureDateOnly(form.date)) { form.setError('date', t('transaction.validation.dateFuture')); return }
     if (['Debt', 'Receivable'].includes(activeType.value) && (!form.subject || form.subject === '-')) {
         form.setError('subject', t('transaction.validation.subjectRequired')); return
     }
@@ -581,7 +582,7 @@ const handleBack = () => router.visit(route('dashboard'))
                                 <button type="button" @click="dateModalTarget = 'transaction'; showDateModal = true"
                                     class="flex-1 h-12 bg-gray-800 border border-white/8 rounded-xl flex items-center justify-center gap-2 text-2xs font-bold text-gray-400 active:scale-95 transition-transform">
                                     <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                    {{ new Date(form.date).toDateString() === new Date().toDateString() ? t('transaction.today') : new Date(form.date).toLocaleDateString('id-ID', {day:'numeric', month:'short'}) }}
+                                    {{ isTodayDateOnly(form.date) ? t('transaction.today') : formatDate(form.date, { day: 'numeric', month: 'short' }) }}
                                 </button>
                                 <!-- Toggle keypad -->
                                 <button type="button" @click="showKeypad = !showKeypad"
@@ -651,7 +652,7 @@ const handleBack = () => router.visit(route('dashboard'))
                                     @click="dateModalTarget = 'due_date'; showDateModal = true"
                                     class="w-full py-2 bg-gray-900 border border-white/10 rounded-lg text-sm font-bold text-white flex items-center justify-center gap-2">
                                     <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                    {{ form.due_date ? new Date(form.due_date).toLocaleDateString('id-ID', {day:'numeric',month:'short',year:'numeric'}) : t('transaction.chooseDate') }}
+                                    {{ form.due_date ? formatDate(form.due_date, { day: 'numeric', month: 'short', year: 'numeric' }) : t('transaction.chooseDate') }}
                                 </button>
                                 <input v-if="form.due_date_type === 'monthly'" type="number" min="1" max="31" v-model="form.due_date_interval" :placeholder="t('transaction.dayPlaceholder')"
                                     class="w-full bg-gray-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:ring-0 text-center" :class="typeTheme.focusBorder" />
@@ -766,7 +767,7 @@ const handleBack = () => router.visit(route('dashboard'))
                             <button type="button" @click="dateModalTarget = 'transaction'; showDateModal = true"
                                 class="flex-1 h-12 bg-gray-800 border border-white/8 rounded-xl flex items-center justify-center gap-2 text-2xs font-bold text-gray-400 active:scale-95 transition-transform">
                                 <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                {{ new Date(form.date).toDateString() === new Date().toDateString() ? t('transaction.today') : new Date(form.date).toLocaleDateString('id-ID', {day:'numeric', month:'short'}) }}
+                                {{ isTodayDateOnly(form.date) ? t('transaction.today') : formatDate(form.date, { day: 'numeric', month: 'short' }) }}
                             </button>
                             <!-- Toggle keypad -->
                             <button type="button" @click="showKeypad = !showKeypad"

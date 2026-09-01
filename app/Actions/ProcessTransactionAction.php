@@ -8,7 +8,9 @@ use App\Jobs\CheckBudgetAlertsJob;
 use App\Models\Category;
 use App\Models\TransactionLog;
 use App\Models\User;
+use App\Models\UserAiMemoryContribution;
 use App\Models\Wallet;
+use App\Services\AI\Memory\UserMemoryService;
 use App\Services\Category\CategoryResolutionService;
 use App\Services\Loan\LoanBalanceService;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +23,7 @@ class ProcessTransactionAction
     public function __construct(
         private readonly CategoryResolutionService $categoryResolution,
         private readonly LoanBalanceService $loanBalances,
+        private readonly UserMemoryService $memoryService,
     ) {}
 
     /**
@@ -33,6 +36,7 @@ class ProcessTransactionAction
         int $userId,
         string $sourcePrefix = 'TRX',
         TransactionSource $source = TransactionSource::SYSTEM,
+        array $aiKeywords = [],
     ): TransactionLog {
         if ($data['source_wallet_id'] === $data['destination_wallet_id']) {
             throw new InvalidArgumentException('Transaksi gagal: Dompet asal dan dompet tujuan tidak boleh sama.');
@@ -101,7 +105,7 @@ class ProcessTransactionAction
             return $transaction;
         });
 
-        event(new TransactionPosted($transactionLog, $source));
+        event(new TransactionPosted($transactionLog, $source, $aiKeywords));
 
         $this->dispatchBudgetOverCheckIfExpense($transactionLog);
 
@@ -112,7 +116,7 @@ class ProcessTransactionAction
      * Memperbarui data transaksi, mengembalikan efek saldo lama, dan menerapkan efek saldo baru.
      * Proteksi penuh dari race condition saat pemulihan saldo lama dan penerapan saldo baru.
      */
-    public function update(TransactionLog $transaction, array $data): TransactionLog
+    public function update(TransactionLog $transaction, array $data, array $newAiKeywords = [], ?string $source = null): TransactionLog
     {
         $userId = $transaction->user_id;
 
@@ -124,7 +128,7 @@ class ProcessTransactionAction
             throw new InvalidArgumentException('Update gagal: Nominal transaksi harus lebih besar dari nol.');
         }
 
-        return DB::transaction(function () use ($transaction, $data, $userId) {
+        $result = DB::transaction(function () use ($transaction, $data, $userId) {
             $user = User::findOrFail($userId);
 
             // Resolve kategori — sama dengan create()
@@ -186,6 +190,17 @@ class ProcessTransactionAction
 
             return $transaction;
         });
+
+        $hasContributions = UserAiMemoryContribution::where('user_id', $userId)
+            ->where('transaction_id', $transaction->id)
+            ->where('is_active', true)
+            ->exists();
+
+        if ($hasContributions || ! empty($newAiKeywords)) {
+            $this->memoryService->syncTransactionMemory($userId, $transaction->id, $newAiKeywords, $source);
+        }
+
+        return $result;
     }
 
     /**
@@ -250,6 +265,9 @@ class ProcessTransactionAction
                     $this->reverseTransaction($source, $destination, $transaction->amount, $allowNegativeBalance);
                 }
             }
+
+            // Revoke memory contributions dari transaksi ini
+            $this->memoryService->revokeContributions($transaction->user_id, $transaction->id);
 
             $deleted = $transaction->delete();
             $this->loanBalances->rebuildAll($transaction->user_id);

@@ -216,7 +216,7 @@ class TransactionController extends Controller
                 'amount' => (float) ($payload['amount'] ?? 0),
                 'notes' => $payload['notes'] ?? $draft->original_text,
                 'subject' => $payload['subject'] ?? '-',
-                'date' => $payload['date'] ?? $draft->created_at->toDateString(),
+                'date' => ! empty($payload['date']) ? substr((string) $payload['date'], 0, 10) : $draft->created_at->toDateString(),
                 'category_id' => $payload['category_id'] ?? null,
                 'source_wallet_id' => $payload['source_wallet_id'] ?? null,
                 'destination_wallet_id' => $payload['destination_wallet_id'] ?? null,
@@ -237,8 +237,26 @@ class TransactionController extends Controller
         $transaction = $user->transactionLogs()->findOrFail($id);
         $this->authorizeOwnership($transaction);
 
+        $mappedTransaction = [
+            'id' => $transaction->id,
+            'amount' => (float) $transaction->amount,
+            'notes' => $transaction->notes,
+            'subject' => $transaction->subject,
+            'date' => $transaction->date?->format('Y-m-d'),
+            'category_id' => $transaction->category_id,
+            'source_wallet_id' => $transaction->source_wallet_id,
+            'destination_wallet_id' => $transaction->destination_wallet_id,
+            'due_date' => $transaction->due_date?->format('Y-m-d'),
+            'due_date_type' => $transaction->due_date_type,
+            'due_date_interval' => $transaction->due_date_interval,
+            'transaction_type' => $transaction->transaction_type,
+            'debt_sub_type' => $transaction->debt_sub_type,
+            'created_at' => $transaction->created_at?->toISOString(),
+            'updated_at' => $transaction->updated_at?->toISOString(),
+        ];
+
         return Inertia::render('Transactions/Edit', array_merge(
-            ['transaction' => $transaction],
+            ['transaction' => $mappedTransaction],
             $this->getFormData()
         ));
     }
@@ -269,7 +287,9 @@ class TransactionController extends Controller
             $validated = $this->validateTransaction($request);
 
             try {
-                $transactionLog = DB::transaction(function () use ($draft, $user, $validated, $action) {
+                $aiKeywords = $draft->payload['aiKeywords'] ?? $draft->payload['ai_keywords'] ?? [];
+
+                $transactionLog = DB::transaction(function () use ($draft, $user, $validated, $action, $aiKeywords) {
                     // a. Insert ke transactions (buat TransactionLog via ProcessTransactionAction)
                     // b. Update saldo wallet (otomatis dilakukan di ProcessTransactionAction::create)
                     $log = $action->create(
@@ -290,7 +310,8 @@ class TransactionController extends Controller
                         ],
                         userId: $user->id,
                         sourcePrefix: 'WEB',
-                        source: TransactionSource::WEB,
+                        source: TransactionSource::DRAFT,
+                        aiKeywords: $aiKeywords,
                     );
 
                     // c. Hapus/Tandai Draft selesai (confirmed)
@@ -317,7 +338,7 @@ class TransactionController extends Controller
         $validated = $this->validateTransaction($request);
 
         try {
-            $action->update($transaction, $validated);
+            $action->update($transaction, $validated, [], 'web');
 
             return redirect()->route('dashboard')->with('success', 'Transaksi diupdate!');
         } catch (\Exception $e) {

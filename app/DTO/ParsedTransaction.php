@@ -20,8 +20,13 @@ readonly class ParsedTransaction
         public float|int $amount,
         public ?TransactionIntent $transactionType = null, // Strongly-typed Enum
         public ?string $category = null,
+        public ?string $categoryKeyword = null,
         public ?string $sourceWallet = null,
+        public ?string $sourceWalletKeyword = null,
         public ?string $destinationWallet = null,
+        public ?string $destinationWalletKeyword = null,
+        /** @var MemoryCandidate[] */
+        public array $memoryCandidates = [],
         public ?string $subject = null,
         public ?string $notes = null,
         public bool $isCleared = true,

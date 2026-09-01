@@ -58,16 +58,22 @@ class PromptRendererTest extends TestCase
         $context = $this->makeContext([
             'memories' => [
                 ['keyword' => 'bakso', 'category' => 'Makanan', 'effective_weight' => 3.0],
+                ['keyword' => 'cash', 'wallet' => 'Cash', 'effective_weight' => 2.0],
             ],
         ]);
 
         $result = $this->renderer->renderSingle($context);
 
         $payload = json_decode($result, true);
-        $this->assertArrayHasKey('user_historical_patterns', $payload);
-        $this->assertCount(1, $payload['user_historical_patterns']);
-        $this->assertSame('bakso', $payload['user_historical_patterns'][0]['keyword']);
-        $this->assertSame('Makanan', $payload['user_historical_patterns'][0]['target_category']);
+        $this->assertArrayHasKey('user_category_patterns', $payload);
+        $this->assertCount(1, $payload['user_category_patterns']);
+        $this->assertSame('bakso', $payload['user_category_patterns'][0]['keyword']);
+        $this->assertSame('Makanan', $payload['user_category_patterns'][0]['target_category']);
+
+        $this->assertArrayHasKey('user_wallet_patterns', $payload);
+        $this->assertCount(1, $payload['user_wallet_patterns']);
+        $this->assertSame('cash', $payload['user_wallet_patterns'][0]['keyword']);
+        $this->assertSame('Cash', $payload['user_wallet_patterns'][0]['target_wallet']);
     }
 
     public function test_render_single_skips_historical_patterns_when_no_memories(): void
@@ -77,7 +83,8 @@ class PromptRendererTest extends TestCase
         $result = $this->renderer->renderSingle($context);
 
         $payload = json_decode($result, true);
-        $this->assertArrayNotHasKey('user_historical_patterns', $payload);
+        $this->assertArrayNotHasKey('user_category_patterns', $payload);
+        $this->assertArrayNotHasKey('user_wallet_patterns', $payload);
     }
 
     public function test_render_multi_returns_valid_json(): void
@@ -119,9 +126,9 @@ class PromptRendererTest extends TestCase
         $result = $this->renderer->renderMulti($context);
 
         $payload = json_decode($result, true);
-        $this->assertArrayHasKey('historical_patterns', $payload);
-        $this->assertCount(1, $payload['historical_patterns']);
-        $this->assertSame('bensin', $payload['historical_patterns'][0]['keyword']);
+        $this->assertArrayHasKey('user_category_patterns', $payload);
+        $this->assertCount(1, $payload['user_category_patterns']);
+        $this->assertSame('bensin', $payload['user_category_patterns'][0]['keyword']);
     }
 
     public function test_both_templates_expand_all_variables(): void

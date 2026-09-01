@@ -230,6 +230,38 @@ class TransactionFlowTest extends TestCase
         $this->assertEquals('TRANSFER', $log->category->system_key);
     }
 
+    public function test_edit_transaction_preserves_date_only_as_y_m_d()
+    {
+        $liquidWallet = $this->user->wallets()->where('group_type', 'Liquid')->firstOrFail();
+        $systemHutang = $this->user->wallets()->where('name', 'Hutang System')->firstOrFail();
+        $loanCategory = $this->user->categories()->where('system_key', 'LOAN')->firstOrFail();
+
+        $transaction = TransactionLog::create([
+            'reference_number' => 'TRX-'.Str::ulid(),
+            'user_id' => $this->user->id,
+            'date' => '2026-07-30',
+            'type_id' => $loanCategory->type_id,
+            'category_id' => $loanCategory->id,
+            'source_wallet_id' => $systemHutang->id,
+            'destination_wallet_id' => $liquidWallet->id,
+            'amount' => 150000,
+            'balance_before' => 0,
+            'balance_after' => 150000,
+            'subject' => 'BUDI',
+            'notes' => 'Hutang awal',
+            'is_cleared' => true,
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->get(route('transactions.edit', $transaction->id));
+
+        $response->assertInertia(fn ($page) => $page
+            ->component('Transactions/Edit')
+            ->where('transaction.date', '2026-07-30')
+            ->where('transaction.due_date', null)
+        );
+    }
+
     /**
      * Test update flow untuk transaction
      */

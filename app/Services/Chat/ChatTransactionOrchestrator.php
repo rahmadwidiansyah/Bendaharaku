@@ -251,6 +251,8 @@ class ChatTransactionOrchestrator
             ])];
         }
 
+        $aiKeywords = $this->buildAiKeywords($parsed, $resolved);
+
         // ── WEB Source atau Draft (is_cleared = false): Simpan ke transaction_drafts ──
         if ($isWebSource || ! $resolved->isCleared) {
             return $this->processSingleWebDraft(
@@ -263,6 +265,7 @@ class ChatTransactionOrchestrator
                 finalSubject: $finalSubject,
                 wallets: $wallets,
                 categories: $categories,
+                aiKeywords: $aiKeywords,
             );
         }
 
@@ -283,6 +286,7 @@ class ChatTransactionOrchestrator
             userId: $user->id,
             sourcePrefix: $source,
             source: TransactionSource::TELEGRAM,
+            aiKeywords: $aiKeywords,
         );
 
         if ($parseLogId > 0) {
@@ -316,6 +320,7 @@ class ChatTransactionOrchestrator
         string $finalSubject,
         Collection $wallets,
         Collection $categories,
+        array $aiKeywords = [],
     ): array {
         // ── Resolusi nama kategori ───────────────────────────────────
         $categoryName = null;
@@ -392,6 +397,7 @@ class ChatTransactionOrchestrator
                 notes: $text,
                 typeKey: $typeKey,
                 needsWallet: $needsWallet,
+                aiKeywords: $aiKeywords,
             ),
         ]);
 
@@ -417,6 +423,69 @@ class ChatTransactionOrchestrator
     private function hasExplicitWalletMention(string $text, User $user): bool
     {
         return $this->walletResolution->userWalletMentionedInText($text, $user);
+    }
+
+    private function buildAiKeywords(ParsedTransaction $parsed, ResolvedTransaction $resolved): array
+    {
+        $keywords = [];
+
+        if (! blank($parsed->categoryKeyword) && $resolved->categoryId) {
+            $keywords[] = [
+                'keyword' => mb_strtolower(trim($parsed->categoryKeyword)),
+                'target_type' => 'category',
+                'target_id' => $resolved->categoryId,
+                'target_name' => $parsed->category,
+            ];
+        }
+
+        if (! blank($parsed->sourceWalletKeyword) && $resolved->sourceWalletId) {
+            $keywords[] = [
+                'keyword' => mb_strtolower(trim($parsed->sourceWalletKeyword)),
+                'target_type' => 'wallet',
+                'target_id' => $resolved->sourceWalletId,
+                'target_name' => $parsed->sourceWallet,
+            ];
+        }
+
+        if (! blank($parsed->destinationWalletKeyword) && $resolved->destinationWalletId) {
+            $keywords[] = [
+                'keyword' => mb_strtolower(trim($parsed->destinationWalletKeyword)),
+                'target_type' => 'wallet',
+                'target_id' => $resolved->destinationWalletId,
+                'target_name' => $parsed->destinationWallet,
+            ];
+        }
+
+        foreach ($parsed->memoryCandidates as $candidate) {
+            $kw = mb_strtolower(trim($candidate->keyword));
+            $exists = false;
+            foreach ($keywords as $k) {
+                if ($k['keyword'] === $kw && $k['target_type'] === $candidate->targetType) {
+                    $exists = true;
+                    break;
+                }
+            }
+            if ($exists) {
+                continue;
+            }
+
+            $targetId = null;
+            $targetName = $candidate->targetName;
+            if ($candidate->targetType === 'category' && $resolved->categoryId) {
+                $targetId = $resolved->categoryId;
+            } elseif ($candidate->targetType === 'wallet') {
+                $targetId = $parsed->destinationWalletKeyword ? $resolved->destinationWalletId : $resolved->sourceWalletId;
+            }
+
+            $keywords[] = [
+                'keyword' => $kw,
+                'target_type' => $candidate->targetType,
+                'target_id' => $targetId,
+                'target_name' => $targetName,
+            ];
+        }
+
+        return array_values(array_filter($keywords, fn ($k) => mb_strlen($k['keyword']) >= 2));
     }
 
     private function resolveWebDraftWithoutWallet(User $user, ParsedTransaction $parsed, string $subject): ResolvedTransaction

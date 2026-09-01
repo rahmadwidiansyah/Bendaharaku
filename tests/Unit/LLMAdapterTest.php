@@ -38,8 +38,10 @@ class LLMAdapterTest extends TestCase
                 'choices' => [['message' => ['content' => json_encode([
                     'amount' => 50000,
                     'category' => 'Makanan',
-                    'sourceWallet' => 'Cash',
-                    'transactionType' => 'expense',
+                    'category_keyword' => 'nasi goreng',
+                    'source_wallet' => 'Cash',
+                    'source_wallet_keyword' => 'cash',
+                    'transaction_type' => 'expense',
                     'confidence' => 0.92,
                     'notes' => 'beli nasi goreng',
                 ])]]],
@@ -52,7 +54,9 @@ class LLMAdapterTest extends TestCase
         $this->assertTrue($result->success);
         $this->assertSame(50000.0, $result->transaction?->amount);
         $this->assertSame('Makanan', $result->transaction?->category);
+        $this->assertSame('nasi goreng', $result->transaction?->categoryKeyword);
         $this->assertSame('Cash', $result->transaction?->sourceWallet);
+        $this->assertSame('cash', $result->transaction?->sourceWalletKeyword);
         $this->assertSame('openai', $result->provider);
         $this->assertSame(100, $result->usage['prompt']);
         $this->assertSame(150, $result->usage['total']);

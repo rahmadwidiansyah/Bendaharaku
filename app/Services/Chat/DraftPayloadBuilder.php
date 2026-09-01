@@ -47,6 +47,7 @@ class DraftPayloadBuilder
         string $notes,
         string $typeKey,
         bool $needsWallet,
+        array $aiKeywords = [],
     ): array {
         return [
             'amount' => $resolved->amount,
@@ -63,6 +64,7 @@ class DraftPayloadBuilder
             'is_cleared' => false,
             'date' => now()->format('Y-m-d'),
             'amount_formatted' => MoneyFormatter::rupiah($resolved->amount),
+            'aiKeywords' => $aiKeywords,
         ];
     }
 }

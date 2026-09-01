@@ -9,6 +9,8 @@ use App\Models\TransactionType;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Services\AI\LocalRuleEngine;
+use App\Services\AI\Memory\KeywordResolverService;
+use App\Services\AI\Memory\MemoryDecayEngine;
 use App\Services\Category\CategoryResolutionService;
 use App\Services\Wallet\WalletResolutionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -29,6 +31,7 @@ class LocalRuleEngineTest extends TestCase
         $this->ruleEngine = new LocalRuleEngine(
             new CategoryResolutionService,
             new WalletResolutionService,
+            new KeywordResolverService(new MemoryDecayEngine),
         );
 
         // 1. Create Transaction Types

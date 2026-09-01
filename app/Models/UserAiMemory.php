@@ -6,6 +6,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class UserAiMemory extends Model
 {
@@ -15,6 +16,7 @@ class UserAiMemory extends Model
         'raw_subject',
         'normalized_subject',
         'memory_keyword',
+        'target_type',
         'category_id',
         'wallet_id',
         'hit_count',
@@ -44,5 +46,15 @@ class UserAiMemory extends Model
     public function wallet(): BelongsTo
     {
         return $this->belongsTo(Wallet::class);
+    }
+
+    public function contributions(): HasMany
+    {
+        return $this->hasMany(UserAiMemoryContribution::class, 'memory_id');
+    }
+
+    public function activeContributions(): HasMany
+    {
+        return $this->contributions()->where('is_active', true);
     }
 }

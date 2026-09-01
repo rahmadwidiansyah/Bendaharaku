@@ -9,7 +9,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { useBalanceVisibility } from '@/Composables/useBalanceVisibility'
 import { useLayoutPreference } from '@/Composables/useLayoutPreference'
 import { useCalendar } from '@/Composables/useCalendar'
-import { formatNumber, formatCompact } from '@/utils/format.js'
+import { formatNumber, formatCompact, formatDate, parseDateOnly } from '@/utils/format.js'
 import AppIcon from '@/Components/AppIcon.vue'
 import { getCategoryIconColor } from '@/Composables/useIcon.js'
 
@@ -145,13 +145,13 @@ const visibleTransactions = computed(() =>
 
 // ─── Period label ─────────────────────────────────────────────────
 const formattedPeriod = computed(() => {
-	const start = new Date(props.startDate)
-	const end = new Date(props.endDate)
+	const start = parseDateOnly(props.startDate)
+	const end = parseDateOnly(props.endDate)
 	if (start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()
 		&& start.getDate() === 1 && end.getDate() >= 28) {
-		return start.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
+		return formatDate(props.startDate, { month: 'long', year: 'numeric' })
 	}
-	return `${start.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} - ${end.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}`
+	return `${formatDate(props.startDate, { day: 'numeric', month: 'short' })} - ${formatDate(props.endDate, { day: 'numeric', month: 'short', year: 'numeric' })}`
 })
 
 // ─── Type helpers ─────────────────────────────────────────────────

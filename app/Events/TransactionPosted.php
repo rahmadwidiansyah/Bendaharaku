@@ -16,5 +16,6 @@ class TransactionPosted
     public function __construct(
         public TransactionLog $transaction,
         public TransactionSource $source = TransactionSource::SYSTEM,
+        public array $aiKeywords = [],
     ) {}
 }
