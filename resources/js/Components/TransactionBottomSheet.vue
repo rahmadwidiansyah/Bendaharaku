@@ -26,6 +26,7 @@ import { route } from 'ziggy-js'
 import { useTransactionForm } from '@/Composables/useTransactionForm'
 import { useLayoutPreference } from '@/Composables/useLayoutPreference'
 import AmountKeypad from './AmountKeypad.vue'
+import { formatLocalYMD, isFutureDateOnly } from '@/utils/format.js'
 
 const { t } = useI18n()
 
@@ -59,7 +60,7 @@ const form = useForm({
     source_wallet_id: null,
     destination_wallet_id: null,
     amount: 0,
-    date: new Date().toISOString().split('T')[0],
+    date: formatLocalYMD(),
     subject: '-',
     notes: '',
     due_date: null,
@@ -122,7 +123,7 @@ const handleSubmit = async () => {
         return
     }
 
-    if (new Date(form.date) > new Date()) {
+    if (isFutureDateOnly(form.date)) {
         form.setError('date', t('validation.futureDateNotAllowed'))
         return
     }

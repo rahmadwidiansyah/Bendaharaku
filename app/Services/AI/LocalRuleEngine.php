@@ -10,6 +10,7 @@ use App\Enums\TransactionIntent;
 use App\Models\Category;
 use App\Models\User;
 use App\Models\Wallet;
+use App\Services\AI\Memory\KeywordResolverService;
 use App\Services\Category\CategoryResolutionService;
 use App\Services\Wallet\WalletResolutionService;
 use Illuminate\Support\Facades\Log;
@@ -19,6 +20,7 @@ class LocalRuleEngine
     public function __construct(
         private readonly CategoryResolutionService $categoryResolution,
         private readonly WalletResolutionService $walletResolution,
+        private readonly KeywordResolverService $keywordResolver,
     ) {}
 
     /**
@@ -61,8 +63,8 @@ class LocalRuleEngine
         // 3. Provisional Subject Extraction for Scoring
         $provisionalSubject = $this->extractSubjectSimple($normalizedText);
 
-        // 4. Match Category with Indonesian NLP scoring
-        $categoryMatch = $this->matchCategory($normalizedText, $categories, $provisionalSubject);
+        // 4. Match Category with Indonesian NLP scoring + memory fallback
+        $categoryMatch = $this->matchCategory($normalizedText, $categories, $provisionalSubject, $user->id);
         if ($categoryMatch === null) {
             return null; // Cannot determine category
         }
@@ -73,8 +75,8 @@ class LocalRuleEngine
             return null;
         }
 
-        // 6. Match Wallets
-        $walletData = $this->matchWallets($normalizedText, $wallets, $intent);
+        // 6. Match Wallets (builtin + memory fallback)
+        $walletData = $this->matchWallets($normalizedText, $wallets, $intent, $user->id);
 
         // 7. Extract Subject for Debt/Receivable
         $subject = $this->extractSubject($normalizedText, $intent);
@@ -189,11 +191,10 @@ class LocalRuleEngine
     /**
      * Match Category using longest token match logic with substring support and NLP scoring.
      */
-    private function matchCategory(string $text, $categories, ?string $subject): ?Category
+    private function matchCategory(string $text, $categories, ?string $subject, int $userId): ?Category
     {
         $lowerText = mb_strtolower($text);
 
-        // 1. Run scoring engine for the 4 system categories (LOAN, DEBT_PAYMENT, RECEIVABLE, RECEIVABLE_PAYMENT)
         $scoredSystemKey = $this->scoreSystemCategory($lowerText, $subject);
         if ($scoredSystemKey !== null) {
             $systemCategory = $categories->firstWhere('system_key', $scoredSystemKey);
@@ -202,8 +203,20 @@ class LocalRuleEngine
             }
         }
 
-        // 2. Fallback to token matching via CategoryResolutionService
-        return $this->categoryResolution->resolveFromText($text, $categories, $subject);
+        $builtinMatch = $this->categoryResolution->resolveFromText($text, $categories, $subject);
+        if ($builtinMatch !== null) {
+            return $builtinMatch;
+        }
+
+        $memoryResult = $this->keywordResolver->resolveCategory($text, $categories, $userId);
+        if ($memoryResult->isResolved()) {
+            $memoryCat = $categories->firstWhere('id', $memoryResult->targetId);
+            if ($memoryCat !== null) {
+                return $memoryCat;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -342,9 +355,18 @@ class LocalRuleEngine
         };
     }
 
-    private function matchWallets(string $text, $wallets, TransactionIntent $intent): array
+    private function matchWallets(string $text, $wallets, TransactionIntent $intent, int $userId): array
     {
-        return $this->walletResolution->matchWalletsFromText($text, $wallets, $intent);
+        $result = $this->walletResolution->matchWalletsFromText($text, $wallets, $intent);
+
+        if ($result['sourceWallet'] === null) {
+            $memoryResult = $this->keywordResolver->resolveWallet($text, $wallets, $userId);
+            if ($memoryResult->isResolved()) {
+                $result['sourceWallet'] = $memoryResult->targetName;
+            }
+        }
+
+        return $result;
     }
 
     /**

@@ -12,13 +12,16 @@ class MemoryMatchService
             return 0.0;
         }
 
-        $inputLower = strtolower($inputText);
+        $inputLower = mb_strtolower($inputText);
         $highestWeight = 0.0;
 
         foreach ($activeMemories as $memory) {
-            if (str_contains($inputLower, strtolower($memory['keyword']))) {
-                $highestWeight = max($highestWeight, (float) $memory['effective_weight']);
+            $keyword = $memory['keyword'] ?? '';
+            if ($keyword === '' || ! preg_match('/\b'.preg_quote(mb_strtolower($keyword), '/').'\b/iu', $inputLower)) {
+                continue;
             }
+
+            $highestWeight = max($highestWeight, (float) $memory['effective_weight']);
         }
 
         $maxEffective = (float) config('bendaharaku.ai.memory.max_effective_weight', 10.0);

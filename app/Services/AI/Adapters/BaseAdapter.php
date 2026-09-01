@@ -6,6 +6,7 @@ namespace App\Services\AI\Adapters;
 
 use App\DTO\AIParseResult;
 use App\DTO\AIParseResultMulti;
+use App\DTO\MemoryCandidate;
 use App\DTO\ParsedTransaction;
 use App\Enums\TransactionIntent;
 use App\Exceptions\AiProviderException;
@@ -109,9 +110,11 @@ abstract class BaseAdapter implements LLMAdapterInterface
                 );
             }
 
-            if (! isset($aiRaw['amount'])) {
+            if (! isset($aiRaw['amount']) || ! is_numeric($aiRaw['amount'])) {
                 throw new AiProviderException($this->getProviderName(), 'Response tidak mengandung format transaksi yang valid.');
             }
+
+            $this->validateTransactionFields($aiRaw);
 
             return new AIParseResult(
                 success: true,
@@ -173,6 +176,14 @@ abstract class BaseAdapter implements LLMAdapterInterface
                 throw new AiProviderException($this->getProviderName(), 'Response multi-transaksi tidak mengandung array "transactions".');
             }
 
+            foreach ($aiRaw['transactions'] as $transaction) {
+                if (! is_array($transaction) || ! isset($transaction['amount']) || ! is_numeric($transaction['amount'])) {
+                    throw new AiProviderException($this->getProviderName(), 'Item response multi-transaksi tidak valid.');
+                }
+
+                $this->validateTransactionFields($transaction);
+            }
+
             return new AIParseResultMulti(
                 success: true,
                 transactions: $this->buildParsedTransactions($aiRaw['transactions'], $fallbackText),
@@ -232,19 +243,60 @@ abstract class BaseAdapter implements LLMAdapterInterface
 
     protected function buildParsedTransaction(array $raw, string $fallbackNotes): ParsedTransaction
     {
-        $intentString = $raw['transactionType'] ?? null;
+        $intentString = $raw['transaction_type'] ?? $raw['transactionType'] ?? null;
 
         return new ParsedTransaction(
             amount: (float) ($raw['amount'] ?? 0),
             transactionType: $intentString ? TransactionIntent::tryFrom(strtolower(trim($intentString))) : null,
             category: $raw['category'] ?? null,
-            sourceWallet: $raw['sourceWallet'] ?? null,
-            destinationWallet: $raw['destinationWallet'] ?? null,
+            categoryKeyword: $raw['category_keyword'] ?? null,
+            sourceWallet: $raw['source_wallet'] ?? $raw['sourceWallet'] ?? null,
+            sourceWalletKeyword: $raw['source_wallet_keyword'] ?? null,
+            destinationWallet: $raw['destination_wallet'] ?? $raw['destinationWallet'] ?? null,
+            destinationWalletKeyword: $raw['destination_wallet_keyword'] ?? null,
+            memoryCandidates: $this->buildMemoryCandidates($raw),
             subject: $raw['subject'] ?? null,
             notes: $raw['notes'] ?? $fallbackNotes,
-            isCleared: (bool) ($raw['isCleared'] ?? true),
+            isCleared: (bool) ($raw['is_cleared'] ?? $raw['isCleared'] ?? true),
             useAllBalance: (bool) ($raw['use_all_balance'] ?? false),
         );
+    }
+
+    private function validateTransactionFields(array $raw): void
+    {
+        foreach (['category_keyword', 'source_wallet_keyword', 'destination_wallet_keyword'] as $field) {
+            if (array_key_exists($field, $raw) && $raw[$field] !== null && ! is_string($raw[$field])) {
+                throw new AiProviderException($this->getProviderName(), 'Field '.$field.' harus berupa string atau null.');
+            }
+        }
+
+        if (array_key_exists('memory_candidates', $raw) && ! is_array($raw['memory_candidates'])) {
+            throw new AiProviderException($this->getProviderName(), 'Field memory_candidates harus berupa array.');
+        }
+    }
+
+    protected function buildMemoryCandidates(array $raw): array
+    {
+        $candidates = $raw['memory_candidates'] ?? $raw['memoryCandidates'] ?? [];
+
+        if (! is_array($candidates)) {
+            return [];
+        }
+
+        return array_values(array_filter(array_map(
+            static function (mixed $candidate): ?MemoryCandidate {
+                if (! is_array($candidate) || ! is_string($candidate['keyword'] ?? null) || ! is_string($candidate['target_type'] ?? $candidate['targetType'] ?? null)) {
+                    return null;
+                }
+
+                return new MemoryCandidate(
+                    keyword: trim($candidate['keyword']),
+                    targetType: trim($candidate['target_type'] ?? $candidate['targetType']),
+                    targetName: isset($candidate['target_name']) ? (string) $candidate['target_name'] : ($candidate['targetName'] ?? null),
+                );
+            },
+            $candidates
+        )));
     }
 
     /** @return ParsedTransaction[] */

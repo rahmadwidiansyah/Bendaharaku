@@ -10,6 +10,7 @@ import { useTransactionForm } from '@/Composables/useTransactionForm.js'
 import { useWizardNavigation } from '@/Composables/useWizardNavigation.js'
 import AppIcon from '@/Components/AppIcon.vue'
 import { getCategoryIconColor } from '@/Composables/useIcon.js'
+import { formatDate, isTodayDateOnly } from '@/utils/format.js'
 
 const { t } = useI18n()
 const { isDesktopLayout } = useLayoutPreference()
@@ -26,9 +27,12 @@ const props = defineProps({
 const showDeleteConfirm = ref(false)
 
 const normalizeDate = (value) => {
-    if (!value) return value
+    if (!value) return null
     if (typeof value === 'string') return value.slice(0, 10)
-    return value.toISOString().slice(0, 10)
+    if (typeof value === 'object' && value.year && value.month && value.day) {
+        return `${value.year}-${String(value.month).padStart(2, '0')}-${String(value.day).padStart(2, '0')}`
+    }
+    return null
 }
 
 // ─── Tentukan initialType dari transaksi yang sedang di-edit ─────
@@ -50,7 +54,7 @@ const form = useForm({
     notes: props.transaction.notes || '',
     transaction_type: _initType.toLowerCase(),
     debt_sub_type: ['Debt', 'Receivable'].includes(_initType) ? _initDebtSubTab : null,
-    due_date: props.transaction.due_date,
+    due_date: normalizeDate(props.transaction.due_date),
     due_date_type: props.transaction.due_date_type,
     due_date_interval: props.transaction.due_date_interval,
 })
@@ -307,7 +311,9 @@ const submitTransfer = () => {
 // ─── Submit / Delete ──────────────────────────────────────────────
 const submit = () => {
     if (!form.amount || form.amount <= 0) { form.setError('amount', t('transaction.validation.amountPositive')); return }
-    if (new Date(form.date) > new Date()) { form.setError('date', t('transaction.validation.dateFuture')); return }
+    const today = new Date()
+    const todayYMD = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+    if (form.date > todayYMD) { form.setError('date', t('transaction.validation.dateFuture')); return }
     if (['Debt', 'Receivable'].includes(activeType.value) && (!form.subject || form.subject === '-')) {
         form.setError('subject', t('transaction.validation.subjectRequired')); return
     }
@@ -519,7 +525,7 @@ const handleBack = () => router.visit(route('dashboard'))
                                 <button type="button" @click="dateModalTarget = 'transaction'; showDateModal = true"
                                     class="flex-1 h-12 bg-gray-800 border border-white/8 rounded-xl flex items-center justify-center gap-2 text-2xs font-bold text-gray-400 active:scale-95 transition-transform">
                                     <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                    {{ new Date(form.date).toDateString() === new Date().toDateString() ? $t('transaction.today') : new Date(form.date).toLocaleDateString('id-ID', {day:'numeric', month:'short'}) }}
+                                    {{ isTodayDateOnly(form.date) ? $t('transaction.today') : formatDate(form.date, { day: 'numeric', month: 'short' }) }}
                                 </button>
                                 <!-- Toggle keypad -->
                                 <button type="button" @click="showKeypad = !showKeypad"
@@ -565,7 +571,7 @@ const handleBack = () => router.visit(route('dashboard'))
                                 </div>
                                 <button v-if="form.due_date_type === 'fixed'" type="button" @click="dateModalTarget = 'due_date'; showDateModal = true" class="w-full py-2 bg-gray-900 border border-white/10 rounded-lg text-sm font-bold text-white flex items-center justify-center gap-2">
                                     <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                    {{ form.due_date ? new Date(form.due_date).toLocaleDateString('id-ID', {day:'numeric',month:'short',year:'numeric'}) : $t('transaction.chooseDate') }}
+                                    {{ form.due_date ? formatDate(form.due_date, { day: 'numeric', month: 'short', year: 'numeric' }) : $t('transaction.chooseDate') }}
                                 </button>
                                 <input v-if="form.due_date_type === 'monthly'" type="number" min="1" max="31" v-model="form.due_date_interval" :placeholder="$t('transaction.dayPlaceholder')" class="w-full bg-gray-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:ring-0 text-center" :class="typeTheme.focusBorder" />
                                 <input v-if="form.due_date_type === 'daily'" type="number" min="1" v-model="form.due_date_interval" :placeholder="$t('transaction.cyclePlaceholder')" class="w-full bg-gray-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:ring-0 text-center" :class="typeTheme.focusBorder" />
@@ -675,7 +681,7 @@ const handleBack = () => router.visit(route('dashboard'))
                         <div class="flex gap-2">
                             <button type="button" @click="dateModalTarget = 'transaction'; showDateModal = true" class="flex-1 h-12 bg-gray-800 border border-white/8 rounded-xl flex items-center justify-center gap-2 text-2xs font-bold text-gray-400 active:scale-95 transition-transform">
                                 <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                    {{ new Date(form.date).toDateString() === new Date().toDateString() ? $t('transaction.today') : new Date(form.date).toLocaleDateString('id-ID', {day:'numeric', month:'short'}) }}
+                                    {{ isTodayDateOnly(form.date) ? $t('transaction.today') : formatDate(form.date, { day: 'numeric', month: 'short' }) }}
                             </button>
                             <button type="button" @click="showKeypad = !showKeypad" class="w-12 h-12 bg-gray-800 border border-white/8 rounded-xl flex items-center justify-center shrink-0 active:scale-95 transition-all" :class="showKeypad ? typeTheme.keypadToggle : 'text-gray-500'">
                                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>

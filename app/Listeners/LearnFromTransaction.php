@@ -15,7 +15,7 @@ class LearnFromTransaction
         TransactionSource::TELEGRAM->value,
         TransactionSource::WEB_CHAT->value,
         TransactionSource::OCR->value,
-        TransactionSource::WEB->value,
+        TransactionSource::DRAFT->value,
     ];
 
     public function __construct(
@@ -30,20 +30,25 @@ class LearnFromTransaction
 
         $transaction = $event->transaction;
 
-        if ($transaction->subject === '-' || blank($transaction->subject)) {
-            return;
+        if (! empty($event->aiKeywords)) {
+            $this->memoryService->learnFromKeywords(
+                userId: $transaction->user_id,
+                keywords: $event->aiKeywords,
+                source: $event->source->value,
+                transactionId: $transaction->id,
+            );
+        } else {
+            $this->memoryService->upsertMemory(
+                userId: $transaction->user_id,
+                correctedData: [
+                    'subject' => $transaction->subject,
+                    'category_id' => $transaction->category_id,
+                    'source_wallet_id' => $transaction->source_wallet_id,
+                ],
+                source: $event->source->value,
+                transactionId: $transaction->id,
+            );
         }
-
-        $this->memoryService->upsertMemory(
-            userId: $transaction->user_id,
-            correctedData: [
-                'subject' => $transaction->subject,
-                'category_id' => $transaction->category_id,
-                'source_wallet_id' => $transaction->source_wallet_id,
-            ],
-            source: $event->source->value,
-            transactionId: $transaction->id,
-        );
 
         Log::info('Memory learn from transaction', [
             'user_id' => $transaction->user_id,
@@ -51,6 +56,7 @@ class LearnFromTransaction
             'source' => $event->source->value,
             'subject' => $transaction->subject,
             'category_id' => $transaction->category_id,
+            'ai_keywords_count' => count($event->aiKeywords),
         ]);
     }
 }

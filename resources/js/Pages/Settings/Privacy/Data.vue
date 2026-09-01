@@ -6,6 +6,7 @@ import SettingsCard from '@/Components/Settings/SettingsCard.vue';
 import { useI18n } from 'vue-i18n';
 import axios from 'axios';
 import { ref } from 'vue';
+import { formatLocalYMD } from '@/utils/format.js';
 import { useToast } from '@/Composables/useToast';
  
 const { t } = useI18n();
@@ -21,7 +22,7 @@ const handleExport = async () => {
    // Create blob and download
    const blob = new Blob([response.data], { type: 'application/json' });
    const link = document.createElement('a');
-   const fileName = `bendaharaku-export-${new Date().toISOString().slice(0,10)}.json`;
+   const fileName = `bendaharaku-export-${formatLocalYMD()}.json`;
    link.href = window.URL.createObjectURL(blob);
    link.download = fileName;
    document.body.appendChild(link);

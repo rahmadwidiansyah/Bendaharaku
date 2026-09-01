@@ -44,10 +44,30 @@ export const formatCompact = (n) => {
  * Format string/Date ke tanggal lokal Indonesia.
  * Contoh: "2025-07-17" → "17 Jul 2025"
  */
+export const parseDateOnly = (value) => {
+    const match = typeof value === 'string' ? value.match(/^(\d{4})-(\d{2})-(\d{2})/) : null;
+    return match
+        ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+        : null;
+};
+
 export const formatDate = (dateString, options = {}) => {
     if (!dateString) return '';
     const defaultOptions = { day: '2-digit', month: 'short', year: 'numeric' };
-    return new Date(dateString).toLocaleDateString(ID_LOCALE, { ...defaultOptions, ...options });
+    const date = parseDateOnly(dateString) ?? new Date(dateString);
+    return date.toLocaleDateString(ID_LOCALE, { ...defaultOptions, ...options });
+};
+
+export const isTodayDateOnly = (value) => {
+    const date = parseDateOnly(value);
+    if (!date) return false;
+    return formatLocalYMD(date) === formatLocalYMD();
+};
+
+export const isFutureDateOnly = (value) => {
+    const date = parseDateOnly(value);
+    if (!date) return false;
+    return formatLocalYMD(date) > formatLocalYMD();
 };
 
 /**

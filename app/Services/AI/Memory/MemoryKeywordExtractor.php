@@ -16,32 +16,39 @@ readonly class MemoryKeywordExtractor
         $this->minLength = (int) config('memory.min_keyword_length', 3);
     }
 
-    /**
-     * Mengekstrak keyword canonical dari subject mentah.
-     *
-     * Pipeline:
-     *   1. lowercase
-     *   2. hapus karakter non-alfanumerik (kecuali spasi)
-     *   3. tokenize
-     *   4. hapus stopword
-     *   5. filter panjang minimum
-     *   6. ambil token pertama sebagai keyword utama
-     *
-     * @return array{raw: string, normalized: string, keyword: string}
-     */
     public function extract(string $subject): array
     {
         $raw = trim($subject);
-
         $normalized = $this->normalize($raw);
-
         $keyword = $this->extractKeyword($normalized);
 
         return [
             'raw' => $raw,
             'normalized' => $normalized,
             'keyword' => $keyword,
+            'keywords' => $this->extractAllKeywords($normalized),
         ];
+    }
+
+    public function extractAllKeywords(string $normalized): array
+    {
+        $tokens = explode(' ', $normalized);
+        $tokens = array_filter($tokens, fn (string $t) => ! in_array($t, $this->stopwords, true));
+        $tokens = array_filter($tokens, fn (string $t) => mb_strlen($t) >= $this->minLength);
+
+        $tokens = array_values($tokens);
+        if (empty($tokens)) {
+            return [];
+        }
+
+        $ngrams = [];
+        $count = count($tokens);
+
+        if ($count >= 2) {
+            $ngrams[] = $tokens[0].' '.$tokens[1];
+        }
+
+        return array_merge($tokens, $ngrams);
     }
 
     private function normalize(string $text): string
@@ -55,11 +62,7 @@ readonly class MemoryKeywordExtractor
 
     private function extractKeyword(string $normalized): string
     {
-        $tokens = explode(' ', $normalized);
-        $tokens = array_filter($tokens, fn (string $t) => ! in_array($t, $this->stopwords, true));
-        $tokens = array_filter($tokens, fn (string $t) => mb_strlen($t) >= $this->minLength);
-
-        $tokens = array_values($tokens);
+        $tokens = $this->extractAllKeywords($normalized);
 
         if (empty($tokens)) {
             return $normalized;

@@ -70,6 +70,8 @@ class DraftConfirmationService
         $transactionLog = DB::transaction(function () use ($draft, $user, $payload) {
             // Buat TransactionLog via ProcessTransactionAction
             // ProcessTransactionAction::create() menangani mutasi saldo, reference number, dll.
+            $aiKeywords = $payload['aiKeywords'] ?? [];
+
             $log = $this->transactionAction->create(
                 data: [
                     'date' => $payload['date'] ?? now()->format('Y-m-d'),
@@ -84,6 +86,7 @@ class DraftConfirmationService
                 userId: $user->id,
                 sourcePrefix: 'WEB',
                 source: TransactionSource::DRAFT,
+                aiKeywords: $aiKeywords,
             );
 
             // Tandai draft sebagai confirmed + simpan referensi ke transaction_log

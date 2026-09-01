@@ -188,6 +188,8 @@ class MultiTransactionProcessor
                 return $this->buildDraftItem($user, $resolved, $parsed, $multiResult, $num, $rawText);
             }
 
+            $aiKeywords = $this->buildAiKeywords($parsed, $resolved);
+
             $log = $this->transactionAction->create(
                 data: [
                     'date' => now()->format('Y-m-d'),
@@ -202,6 +204,7 @@ class MultiTransactionProcessor
                 userId: $user->id,
                 sourcePrefix: $source,
                 source: TransactionSource::TELEGRAM,
+                aiKeywords: $aiKeywords,
             );
 
             return MultiTransactionItem::success(
@@ -274,6 +277,68 @@ class MultiTransactionProcessor
         return MultiTransactionItem::failed(index: $num, raw: $rawText, errorCode: $errorCode, reason: $reason);
     }
 
+    private function buildAiKeywords(ParsedTransaction $parsed, ResolvedTransaction $resolved): array
+    {
+        $keywords = [];
+
+        if (! blank($parsed->categoryKeyword) && $resolved->categoryId) {
+            $keywords[] = [
+                'keyword' => mb_strtolower(trim($parsed->categoryKeyword)),
+                'target_type' => 'category',
+                'target_id' => $resolved->categoryId,
+                'target_name' => $parsed->category,
+            ];
+        }
+
+        if (! blank($parsed->sourceWalletKeyword) && $resolved->sourceWalletId) {
+            $keywords[] = [
+                'keyword' => mb_strtolower(trim($parsed->sourceWalletKeyword)),
+                'target_type' => 'wallet',
+                'target_id' => $resolved->sourceWalletId,
+                'target_name' => $parsed->sourceWallet,
+            ];
+        }
+
+        if (! blank($parsed->destinationWalletKeyword) && $resolved->destinationWalletId) {
+            $keywords[] = [
+                'keyword' => mb_strtolower(trim($parsed->destinationWalletKeyword)),
+                'target_type' => 'wallet',
+                'target_id' => $resolved->destinationWalletId,
+                'target_name' => $parsed->destinationWallet,
+            ];
+        }
+
+        foreach ($parsed->memoryCandidates as $candidate) {
+            $kw = mb_strtolower(trim($candidate->keyword));
+            $exists = false;
+            foreach ($keywords as $k) {
+                if ($k['keyword'] === $kw && $k['target_type'] === $candidate->targetType) {
+                    $exists = true;
+                    break;
+                }
+            }
+            if ($exists) {
+                continue;
+            }
+
+            $targetId = null;
+            if ($candidate->targetType === 'category' && $resolved->categoryId) {
+                $targetId = $resolved->categoryId;
+            } elseif ($candidate->targetType === 'wallet') {
+                $targetId = $parsed->destinationWalletKeyword ? $resolved->destinationWalletId : $resolved->sourceWalletId;
+            }
+
+            $keywords[] = [
+                'keyword' => $kw,
+                'target_type' => $candidate->targetType,
+                'target_id' => $targetId,
+                'target_name' => $candidate->targetName,
+            ];
+        }
+
+        return array_values(array_filter($keywords, fn ($k) => mb_strlen($k['keyword']) >= 2));
+    }
+
     private function buildDraftItem(User $user, ResolvedTransaction $resolved, ParsedTransaction $parsed, AIParseResultMulti $multiResult, int $num, string $rawText): MultiTransactionItem
     {
         $allWallets = $user->wallets()->get(['id', 'name', 'group_type']);
@@ -300,6 +365,8 @@ class MultiTransactionProcessor
             ->latest()
             ->value('id');
 
+        $aiKeywords = $this->buildAiKeywords($parsed, $resolved);
+
         $draft = TransactionDraft::create([
             'user_id' => $user->id,
             'conversation_id' => $activeConversationId,
@@ -320,6 +387,7 @@ class MultiTransactionProcessor
                 notes: $rawText,
                 typeKey: $typeKey,
                 needsWallet: $needsWallet,
+                aiKeywords: $aiKeywords,
             ),
         ]);
 
