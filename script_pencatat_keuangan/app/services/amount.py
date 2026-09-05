@@ -5,13 +5,13 @@ from typing import Optional
 def get_nominal_smart(text: str) -> Optional[float]:
     text_lower = text.lower()
 
-    match_suffix = re.search(r'(\d+[.,]?\d*)\s*(rb|ribu|k|jt|juta)\b', text_lower)
+    match_suffix = re.search(r'\b(\d+[.,]?\d*)\s*(rb|ribu|rbu|k|jt|juta|jtr|m)\b', text_lower)
     if match_suffix:
         angka = float(match_suffix.group(1).replace(",", "."))
         suffix = match_suffix.group(2)
-        if suffix in ('rb', 'ribu', 'k'):
+        if suffix in ('rb', 'ribu', 'rbu', 'k'):
             return angka * 1000
-        if suffix in ('jt', 'juta'):
+        if suffix in ('jt', 'juta', 'jtr', 'm'):
             return angka * 1_000_000
 
     nums = re.findall(r'\b\d+\b', text_lower.replace(".", "").replace(",", ""))

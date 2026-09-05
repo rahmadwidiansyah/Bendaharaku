@@ -38,7 +38,7 @@ class MultiTransactionRouter
      * - Angka murni: 20000, 5000000
      * - Shorthand: 20k, 50rb, 2jt, 500ribu, 5juta, 2m, 1.5jt
      */
-    private const NOMINAL_PATTERN = '/\b(\d+(?:[.,]\d+)?)\s*(k|rb|ribu|jt|juta|m|jtr|rbu)?\b/i';
+    private const NOMINAL_PATTERN = '/\b(\d+(?:[.,]\d+)?)\s*(k|rb|ribu|rbu|jt|juta|jtr|m)?\b/iu';
 
     /**
      * Tentukan apakah teks mengandung multi-transaksi.

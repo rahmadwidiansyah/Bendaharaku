@@ -5,11 +5,14 @@ import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 
 const props = defineProps({
-  isLoading:   { type: Boolean, default: false },
-  placeholder: { type: String,  default: '' },
+  isLoading:         { type: Boolean, default: false },
+  placeholder:       { type: String,  default: '' },
+  attachmentPreview: { type: String,  default: null },
+  attachmentName:    { type: String,  default: '' },
+  isUploading:       { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['send', 'openCommands', 'openUpload'])
+const emit = defineEmits(['send', 'openCommands', 'openUpload', 'removeAttachment'])
 
 const text        = ref('')
 const textareaRef = ref(null)
@@ -49,7 +52,11 @@ function onKeydown(e) {
 
 const placeholderText = computed(() => props.placeholder || t('chat.placeholder'))
 
-const canSend = computed(() => text.value.trim().length > 0 && !props.isLoading)
+const canSend = computed(() => {
+  const hasText = text.value.trim().length > 0
+  const hasAttachment = !!props.attachmentPreview
+  return (hasText || hasAttachment) && !props.isLoading && !props.isUploading
+})
 
 function submit() {
   if (!canSend.value) return
@@ -84,6 +91,23 @@ onBeforeUnmount(() => {
       paddingBottom: 'max(10px, env(safe-area-inset-bottom, 10px))',
     }"
   >
+    <!-- WA-style: preview foto struk + caption (tidak langsung kirim, tunggu tombol Send) -->
+    <div v-if="attachmentPreview" class="mx-3 mt-2.5 mb-1 rounded-2xl overflow-hidden border border-white/10 bg-gray-800/80 flex items-center gap-3 p-2">
+      <div class="relative w-14 h-14 rounded-xl overflow-hidden bg-gray-900 shrink-0">
+        <img :src="attachmentPreview" alt="Preview" class="w-full h-full object-cover" />
+        <div v-if="isUploading" class="absolute inset-0 bg-black/60 flex items-center justify-center">
+          <svg class="animate-spin w-5 h-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+        </div>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-xs font-semibold text-white truncate">{{ attachmentName || t('chat.evidence') }}</p>
+        <p class="text-2xs truncate" :class="isUploading ? 'text-purple-400' : 'text-gray-500'">{{ isUploading ? t('chat.evidenceUploading') : t('chat.captionHint') }}</p>
+      </div>
+      <button type="button" @click="$emit('removeAttachment')" :disabled="isUploading" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-gray-400 hover:text-white flex items-center justify-center shrink-0 transition-colors disabled:opacity-50" :aria-label="t('chat.removeAttachment')">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
     <div class="flex items-center gap-3 px-3 pt-2.5 pb-1.5">
 
       <button

@@ -26,8 +26,10 @@ class AmountExtractor
         '/rp\.?\s*([\d.,]+)/i',
         // "IDR 50000" atau "IDR 50.000"
         '/idr\.?\s*([\d.,]+)/i',
-        // Standalone large numbers (>= 4 digits) as fallback
+        // Standalone large numbers (>= 4 digits) as fallback — grouped thousands
         '/\b(\d{1,3}(?:[.,]\d{3})+(?:[.,]\d{2})?)\b/',
+        // Plain 4+ digits without separator (e.g. Rp50000)
+        '/\b(\d{4,})\b/',
     ];
 
     /**

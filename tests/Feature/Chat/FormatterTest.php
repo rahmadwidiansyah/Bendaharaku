@@ -405,7 +405,9 @@ class FormatterTest extends TestCase
 
         $output = $this->telegramFormatter->format($response, $this->context);
 
-        $this->assertStringContainsString('─', $output);
+        // Telegram lean: divider ga penting, jangan ikut terkirim (Web tetap pakai divider)
+        $this->assertStringNotContainsString('─', $output);
+        $this->assertSame('', $output);
     }
 
     // ══════════════════════════════════════════════════════════════════

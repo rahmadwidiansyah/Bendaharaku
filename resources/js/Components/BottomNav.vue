@@ -116,20 +116,18 @@ defineEmits(['toggle'])
                 </span>
             </Link>
 
-            <a
-                href="https://t.me/catatwidi_bot"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="flex items-center justify-center lg:justify-start gap-2 w-full px-3 py-3 rounded-xl text-white bg-blue-600/90 hover:bg-blue-500 shadow-lg shadow-blue-500/20 active:scale-95 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
-                :aria-label="$t('nav.telegram')"
+            <Link
+                :href="route('chat.index')"
+                class="flex items-center justify-center lg:justify-start gap-2 w-full px-3 py-3 rounded-xl text-white bg-violet-600/90 hover:bg-violet-500 shadow-lg shadow-violet-500/20 active:scale-95 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-300"
+                :aria-label="$t('nav.chat')"
             >
-                <svg class="w-6 h-6 shrink-0" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.223-.548.223l.188-2.85 5.18-4.68c.223-.198-.054-.31-.346-.11l-6.4 4.02-2.76-.89c-.6-.188-.612-.6.126-.89l10.814-4.17c.5-.188.948.116.822.885z" />
+                <svg class="w-6 h-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 4v-4z" />
                 </svg>
                 <span :class="['text-2xs font-bold tracking-wider uppercase', !isSidebarOpen ? 'lg:hidden' : '']">
-                    {{ $t('nav.telegram') }}
+                    {{ $t('nav.chat') }}
                 </span>
-            </a>
+            </Link>
         </div>
 
         <!-- ── Nav Items ── -->
@@ -168,7 +166,8 @@ defineEmits(['toggle'])
                 </template>
             </NavItem>
 
-            <!-- Catat — desktop pakai NavItem biasa di sidebar -->
+            <!-- Catat — hidden on desktop (hanya mobile FAB yang tampil di tengah) -->
+            <!--
             <NavItem
                 v-if="isDesktopLayout"
                 :href="route('transactions.create')"
@@ -183,6 +182,7 @@ defineEmits(['toggle'])
                     </svg>
                 </template>
             </NavItem>
+            -->
 
             <!-- Catat mobile — Floating Action Button (FAB) menonjol dan bercahaya -->
             <div v-if="!isDesktopLayout" class="flex-1 flex flex-col items-center justify-center relative select-none" style="overflow: visible; z-index: 10;">

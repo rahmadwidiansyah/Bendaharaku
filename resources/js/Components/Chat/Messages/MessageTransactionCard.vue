@@ -3,6 +3,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import axios from 'axios'
 import { useI18n } from 'vue-i18n'
 import { useToast } from '@/Composables/useToast'
+import AppIcon from '@/Components/AppIcon.vue'
 import TransactionDetailModal from './TransactionDetailModal.vue'
 import DraftActions from './DraftActions.vue'
 import QuickWalletPicker from './QuickWalletPicker.vue'
@@ -44,13 +45,13 @@ const apiId = computed(() => {
 })
 
 const typeConfig = computed(() => ({
-    income:   { label: t('types.income'),      icon: '↑', color: 'text-income-text', bg: 'bg-income-bg',      border: 'border-income-border',    badge: 'bg-income-bg text-income-text border-income-border' },
-    expense:  { label: t('types.expense'),     icon: '↓', color: 'text-expense-text', bg: 'bg-expense-bg',    border: 'border-expense-border',   badge: 'bg-expense-bg text-expense-text border-expense-border' },
-    transfer: { label: t('types.transfer'),    icon: '⇄', color: 'text-transfer-text', bg: 'bg-transfer-bg',  border: 'border-transfer-border',  badge: 'bg-transfer-bg text-transfer-text border-transfer-border' },
-    debt:     { label: t('types.debt'),        icon: '🤝', color: 'text-debt-text',   bg: 'bg-debt-bg',        border: 'border-debt-border',      badge: 'bg-debt-bg text-debt-text border-debt-border' },
-    receivable: { label: t('types.receivable'), icon: '🤝', color: 'text-receivable-text', bg: 'bg-receivable-bg', border: 'border-receivable-border', badge: 'bg-receivable-bg text-receivable-text border-receivable-border' },
-    other:    { label: t('transaction.title'), icon: '•', color: 'text-gray-400',    bg: 'bg-gray-500/8',     border: 'border-gray-500/15',    badge: 'bg-gray-500/12 text-gray-400 border-gray-500/20' },
-}[localTrx.value.type_key ?? 'other'] ?? { label: t('transaction.title'), icon: '•', color: 'text-gray-400', bg: 'bg-gray-500/8', border: 'border-gray-500/15', badge: 'bg-gray-500/12 text-gray-400 border-gray-500/20' }))
+    income:   { label: t('types.income'),      icon: 'trending-up',     color: 'text-income-text', bg: 'bg-income-bg',      border: 'border-income-border',    badge: 'bg-income-bg text-income-text border-income-border' },
+    expense:  { label: t('types.expense'),     icon: 'trending-down',   color: 'text-expense-text', bg: 'bg-expense-bg',    border: 'border-expense-border',   badge: 'bg-expense-bg text-expense-text border-expense-border' },
+    transfer: { label: t('types.transfer'),    icon: 'arrow-left-right', color: 'text-transfer-text', bg: 'bg-transfer-bg',  border: 'border-transfer-border',  badge: 'bg-transfer-bg text-transfer-text border-transfer-border' },
+    debt:     { label: t('types.debt'),        icon: 'hand-coins',      color: 'text-debt-text',   bg: 'bg-debt-bg',        border: 'border-debt-border',      badge: 'bg-debt-bg text-debt-text border-debt-border' },
+    receivable: { label: t('types.receivable'), icon: 'handshake',       color: 'text-receivable-text', bg: 'bg-receivable-bg', border: 'border-receivable-border', badge: 'bg-receivable-bg text-receivable-text border-receivable-border' },
+    other:    { label: t('transaction.title'), icon: 'file-text',       color: 'text-gray-400',    bg: 'bg-gray-500/8',     border: 'border-gray-500/15',    badge: 'bg-gray-500/12 text-gray-400 border-gray-500/20' },
+}[localTrx.value.type_key ?? 'other'] ?? { label: t('transaction.title'), icon: 'file-text', color: 'text-gray-400', bg: 'bg-gray-500/8', border: 'border-gray-500/15', badge: 'bg-gray-500/12 text-gray-400 border-gray-500/20' }))
 
 const needsWallet = computed(() =>
     !localTrx.value.is_cancelled
@@ -181,18 +182,24 @@ onMounted(checkStatus)
             <div class="flex items-center gap-2">
                 <span v-if="component.index !== null && component.index !== undefined"
                     class="text-2xs font-black text-gray-600 tabular-nums">#{{ component.index }}</span>
-                <span class="text-xs font-semibold px-2 py-0.5 rounded-full border" :class="typeConfig.badge">
-                    {{ typeConfig.icon }} {{ localTrx.type_label ?? typeConfig.label }}
+                <span class="text-xs font-semibold px-2 py-0.5 rounded-full border inline-flex items-center gap-1" :class="typeConfig.badge">
+                    <AppIcon :icon="typeConfig.icon" class="w-3 h-3 shrink-0" />
+                    {{ localTrx.type_label ?? typeConfig.label }}
                 </span>
             </div>
             <span :class="[
-                'text-2xs font-bold px-1.5 py-0.5 rounded-full border',
+                'text-2xs font-bold px-1.5 py-0.5 rounded-full border inline-flex items-center gap-1',
                 localTrx.is_cancelled
                     ? 'text-gray-400 bg-gray-500/10 border-gray-500/20'
                     : localTrx.is_cleared
                     ? 'text-income-text bg-income-bg border-income-border'
                     : 'text-debt-text bg-debt-bg border-debt-border'
-            ]">{{ localTrx.is_cancelled ? `× ${t('transaction.cancelled')}` : (localTrx.is_cleared ? `● ${t('common.success')}` : `◐ ${t('transaction.draft')}`) }}</span>
+            ]">
+                <AppIcon v-if="localTrx.is_cancelled" icon="x" class="w-3 h-3 shrink-0" />
+                <AppIcon v-else-if="localTrx.is_cleared" icon="check-circle-2" class="w-3 h-3 shrink-0" />
+                <AppIcon v-else icon="clock-3" class="w-3 h-3 shrink-0" />
+                {{ localTrx.is_cancelled ? t('transaction.cancelled') : (localTrx.is_cleared ? t('common.success') : t('transaction.draft')) }}
+            </span>
         </div>
 
         <!-- Amount -->
@@ -207,27 +214,27 @@ onMounted(checkStatus)
         <template v-if="component.show_details">
             <div class="border-t border-white/5 divide-y divide-white/5">
                 <div v-if="localTrx.category" class="flex items-center gap-2.5 px-3.5 py-2">
-                    <span class="text-sm w-4 text-center">📂</span>
+                    <AppIcon icon="folder" class="w-4 h-4 shrink-0 text-gray-500" />
                     <span class="text-2xs text-gray-500 w-16 shrink-0">{{ $t('transaction.detail.category') }}</span>
                     <span class="text-xs text-gray-200 font-medium truncate">{{ localTrx.category }}</span>
                 </div>
                 <div v-if="localTrx.source_wallet" class="flex items-center gap-2.5 px-3.5 py-2">
-                    <span class="text-sm w-4 text-center">👛</span>
+                    <AppIcon icon="wallet" class="w-4 h-4 shrink-0 text-gray-500" />
                     <span class="text-2xs text-gray-500 w-16 shrink-0">{{ $t('transaction.detail.wallet') }}</span>
                     <span class="text-xs text-gray-200 font-medium truncate">{{ localTrx.source_wallet }}</span>
                 </div>
                 <div v-if="localTrx.dest_wallet" class="flex items-center gap-2.5 px-3.5 py-2">
-                    <span class="text-sm w-4 text-center">📥</span>
+                    <AppIcon icon="arrow-down-to-line" class="w-4 h-4 shrink-0 text-gray-500" />
                     <span class="text-2xs text-gray-500 w-16 shrink-0">{{ $t('transaction.detail.to') }} {{ $t('transaction.detail.wallet') }}</span>
                     <span class="text-xs text-gray-200 font-medium truncate">{{ localTrx.dest_wallet }}</span>
                 </div>
                 <div v-if="localTrx.subject" class="flex items-center gap-2.5 px-3.5 py-2">
-                    <span class="text-sm w-4 text-center">👤</span>
+                    <AppIcon icon="user" class="w-4 h-4 shrink-0 text-gray-500" />
                     <span class="text-2xs text-gray-500 w-16 shrink-0">{{ $t('transaction.detail.party') }}</span>
                     <span class="text-xs text-gray-200 font-medium truncate">{{ localTrx.subject }}</span>
                 </div>
                 <div v-if="localTrx.date" class="flex items-center gap-2.5 px-3.5 py-2">
-                    <span class="text-sm w-4 text-center">📅</span>
+                    <AppIcon icon="calendar" class="w-4 h-4 shrink-0 text-gray-500" />
                     <span class="text-2xs text-gray-500 w-16 shrink-0">{{ $t('transaction.detail.date') }}</span>
                     <span class="text-xs text-gray-200 font-medium">{{ localTrx.date }}</span>
                 </div>

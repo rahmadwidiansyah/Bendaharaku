@@ -13,6 +13,7 @@ use App\Enums\TransactionIntent;
 use App\Jobs\ProcessChatMessageJob;
 use App\Models\ChatMessage;
 use App\Models\Conversation;
+use App\Models\Evidence;
 use App\Models\TransactionDraft;
 use App\Models\TransactionLog;
 use App\Models\User;
@@ -53,18 +54,64 @@ class WebAdapter
      * @param  int|null  $conversationId  ID conversation (null = gunakan/buat active)
      * @return array JSON-ready response
      */
-    public function enqueueMessage(User $user, string $rawMessage, ?int $conversationId = null): array
+    public function enqueueMessage(User $user, string $rawMessage, ?int $conversationId = null, ?string $evidenceUuid = null): array
     {
         // 1. Resolve conversation — selalu ada, tidak pernah null
         $conversation = $this->resolveConversation($user, $conversationId);
 
-        // 2. Simpan pesan user ke DB
+        // 2. Build user content — support image evidence (WA-style: foto + caption)
+        $userContent = [];
+        $evidence = null;
+        $imageUrl = null;
+
+        if ($evidenceUuid) {
+            $evidence = Evidence::where('uuid', $evidenceUuid)
+                ->where('user_id', $user->id)
+                ->first();
+
+            if ($evidence) {
+                // URL via Evidence model (akan jadi route chat.evidence.image setelah fix)
+                try {
+                    $imageUrl = $evidence->url;
+                } catch (\Throwable $e) {
+                    $imageUrl = null;
+                }
+
+                $userContent[] = [
+                    'type' => 'image',
+                    'imageUrl' => $imageUrl,
+                    'image_url' => $imageUrl, // alias untuk kompatibilitas
+                    'evidenceUuid' => $evidence->uuid,
+                    'evidence_uuid' => $evidence->uuid,
+                    'evidenceStatus' => $evidence->status->value,
+                    'evidence_status' => $evidence->status->value,
+                    'committed' => false,
+                ];
+            }
+        }
+
+        // Tambahkan teks jika ada dan bukan placeholder "[Evidence]"
+        $trimmed = trim($rawMessage);
+        if ($trimmed !== '' && $trimmed !== '[Evidence]') {
+            $userContent[] = ['type' => 'text', 'text' => $trimmed];
+        } elseif (empty($userContent)) {
+            // Fallback: jika tidak ada image dan teks kosong (tidak seharusnya), simpan placeholder
+            $userContent[] = ['type' => 'text', 'text' => $trimmed !== '' ? $trimmed : '[Evidence]'];
+        }
+
+        // Metadata: simpan evidence_uuid untuk tracking
+        $userMetadata = null;
+        if ($evidence) {
+            $userMetadata = ['evidence_uuid' => $evidence->uuid];
+        }
+
+        // 2b. Simpan pesan user ke DB
         $userMessage = ChatMessage::create([
             'conversation_id' => $conversation->id,
             'role' => 'user',
-            'content' => [['type' => 'text', 'text' => $rawMessage]],
+            'content' => $userContent,
             'raw_text' => $rawMessage,
-            'metadata' => null,
+            'metadata' => $userMetadata,
             'status' => 'completed',
         ]);
 
@@ -117,8 +164,8 @@ class WebAdapter
                     'id' => $userMessage->id,
                     'role' => 'user',
                     'status' => 'completed',
-                    'content' => [['type' => 'text', 'text' => $rawMessage]],
-                    'metadata' => [],
+                    'content' => $userMessage->content,
+                    'metadata' => $userMessage->metadata ?? [],
                     'created_at' => $userMessage->created_at->toIso8601String(),
                 ],
                 'bot_message' => [
@@ -153,8 +200,8 @@ class WebAdapter
                 'id' => $userMessage->id,
                 'role' => 'user',
                 'status' => 'completed',
-                'content' => [['type' => 'text', 'text' => $rawMessage]],
-                'metadata' => [],
+                'content' => $userMessage->content,
+                'metadata' => $userMessage->metadata ?? [],
                 'created_at' => $userMessage->created_at->toIso8601String(),
             ],
             'bot_message' => [

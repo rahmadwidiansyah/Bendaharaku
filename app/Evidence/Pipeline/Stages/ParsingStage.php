@@ -11,6 +11,7 @@ use App\Evidence\Parsers\ShoppingReceiptParser;
 use App\Evidence\Parsers\TransferReceiptParser;
 use App\Evidence\Pipeline\Context\EvidenceContext;
 use App\Evidence\Pipeline\Contracts\EvidenceStage;
+use App\Services\Evidence\LlmEvidenceParser;
 use Closure;
 use Illuminate\Support\Facades\Log;
 
@@ -26,7 +27,10 @@ class ParsingStage implements EvidenceStage
         private TransferReceiptParser $transferReceiptParser,
         private ShoppingReceiptParser $shoppingReceiptParser,
         private QrisReceiptParser $qrisReceiptParser,
-    ) {}
+        private ?LlmEvidenceParser $llmParser = null,
+    ) {
+        $this->llmParser ??= app(LlmEvidenceParser::class);
+    }
 
     public function handle(EvidenceContext $context, Closure $next): void
     {
@@ -37,12 +41,48 @@ class ParsingStage implements EvidenceStage
             'document_type' => $context->documentType?->value,
         ]);
 
-        // Dispatch ke parser berdasarkan document type
-        $parsedData = match ($context->documentType) {
-            DocumentType::QrisReceipt => $this->parseQrisReceipt($context),
-            DocumentType::ShoppingReceipt => $this->parseShoppingReceipt($context),
-            default => $this->parseTransferReceipt($context),
-        };
+        $ocrText = $context->getTextForProcessing();
+        $useLlmPrimary = (bool) config('evidence.llm.primary', false);
+        $llmEnabled = (bool) config('evidence.llm.enabled', true);
+        $threshold = (float) config('evidence.llm.fallback_threshold', 0.6);
+
+        $parsedData = null;
+
+        // Jika LLM primary, coba LLM dulu
+        if ($llmEnabled && $useLlmPrimary && ! blank($ocrText)) {
+            $llmData = $this->llmParser->parse($context->evidence, $ocrText);
+            if ($llmData !== null) {
+                $parsedData = $llmData;
+                Log::channel('evidence')->info('Parsing via LLM primary', ['evidence_id' => $context->evidence->id]);
+            }
+        }
+
+        // Fallback / default: regex parser per document_type
+        if ($parsedData === null) {
+            $parsedData = match ($context->documentType) {
+                DocumentType::QrisReceipt => $this->parseQrisReceipt($context),
+                DocumentType::ShoppingReceipt => $this->parseShoppingReceipt($context),
+                default => $this->parseTransferReceipt($context),
+            };
+        }
+
+        // Jika regex hasilnya low confidence / amount null → coba LLM fallback (sesuai request: OCR text dikirim ke LLM API biar langsung dikelompokkan)
+        $needsLlmFallback = $llmEnabled
+            && ! $useLlmPrimary
+            && ! blank($ocrText)
+            && ($parsedData === null || $parsedData->amount === null || $parsedData->confidence < $threshold);
+
+        if ($needsLlmFallback) {
+            Log::channel('evidence')->info('Parsing low confidence, trying LLM fallback', [
+                'evidence_id' => $context->evidence->id,
+                'regex_confidence' => $parsedData?->confidence,
+                'threshold' => $threshold,
+            ]);
+            $llmData = $this->llmParser->parse($context->evidence, $ocrText);
+            if ($llmData !== null) {
+                $parsedData = $llmData;
+            }
+        }
 
         $context->parsedData = $parsedData;
 

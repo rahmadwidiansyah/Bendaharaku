@@ -18,12 +18,15 @@ def match_wallets(text: str, wallets: List[WalletItem]) -> List[str]:
             continue
 
         raw_kws = w.keyword if w.keyword and w.keyword.strip() not in ('-', '') else w.name
-        kws = [k.strip().lower() for k in raw_kws.split(',')]
+        kws = [k.strip().lower() for k in re.split(r'\s*[,|;]\s*', raw_kws) if k.strip()]
 
         found = False
         for kw in kws:
-            if kw and re.search(r'\b' + re.escape(kw) + r'\b', text_lower):
-                matched.append((text_lower.find(kw), w.name))
+            if not kw:
+                continue
+            m = re.search(r'\b' + re.escape(kw) + r'\b', text_lower)
+            if m:
+                matched.append((m.start(), w.name))
                 found = True
                 break
 

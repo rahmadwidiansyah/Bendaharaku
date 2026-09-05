@@ -1,10 +1,12 @@
 <script setup>
 import TransactionSummaryItem from './TransactionSummaryItem.vue'
 import MarkdownRenderer from './MarkdownRenderer.vue'
+import AppIcon from '@/Components/AppIcon.vue'
+import { toLucide } from '@/utils/chatIcons.js'
 
 const props = defineProps({
   title:       { type: String, default: '' },
-  emoji:       { type: String, default: '📊' },
+  emoji:       { type: String, default: 'bar-chart-3' },
   items:       { type: Array, default: () => [] },
   total:       { type: String, default: '' },
   count:       { type: [Number, String], default: 0 },
@@ -22,7 +24,7 @@ function isString(item) {
     <!-- Header -->
     <div class="px-3.5 pt-3 pb-2">
       <div class="flex items-center gap-2 mb-1">
-        <span class="text-base leading-none">{{ emoji }}</span>
+        <AppIcon :icon="toLucide(emoji)" class="w-4 h-4 shrink-0 text-purple-400" fallback="bar-chart-3" />
         <h3 class="text-sm font-bold text-white leading-tight truncate">
           <MarkdownRenderer :content="title" inline />
         </h3>

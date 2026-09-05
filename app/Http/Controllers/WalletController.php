@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Wallet;
+use App\Support\ActivityLogger;
 use App\Support\SettingsChangeLogger;
 use App\Traits\CalculatesDebtAndReceivable;
 use Carbon\Carbon;
@@ -73,6 +74,7 @@ class WalletController extends Controller
             null,
             ['id' => $wallet->id, 'name' => $wallet->name]
         );
+        ActivityLogger::forUser(Auth::user(), 'wallet', 'created', 'Dompet baru: '.$wallet->name, 'Dompet "'.$wallet->name.'" dibuat', ['wallet_id' => $wallet->id, 'name' => $wallet->name]);
 
         return redirect()->route('dashboard')->with('success', 'Dompet berhasil ditambahkan!');
     }
@@ -177,6 +179,7 @@ class WalletController extends Controller
                 );
             }
         }
+        ActivityLogger::forUser(Auth::user(), 'wallet', 'updated', 'Dompet diupdate: '.$wallet->name, 'Dompet "'.$wallet->name.'" diperbarui', ['wallet_id' => $wallet->id]);
 
         return redirect()->route('wallets.show', $wallet)->with('success', 'Dompet diupdate!');
     }
@@ -212,6 +215,7 @@ class WalletController extends Controller
                 $old,
                 null
             );
+            ActivityLogger::forUser(Auth::user(), 'wallet', 'deleted', 'Dompet dihapus: '.($old['name'] ?? '-'), 'Dompet dihapus', ['wallet_id' => $old['id'] ?? null]);
 
             return redirect()->route('dashboard')->with('success', 'Dompet berhasil dihapus!');
 
@@ -246,6 +250,7 @@ class WalletController extends Controller
             $oldVal,
             $validated['state']
         );
+        ActivityLogger::forUser(Auth::user(), 'wallet', $validated['state'] ? 'pinned' : 'unpinned', 'Dompet '.($validated['state'] ? 'di-pin' : 'di-unpin').': '.$wallet->name, null, ['wallet_id' => $wallet->id]);
 
         $message = $validated['state'] ? 'Dompet berhasil ditambahkan ke Dashboard!' : 'Dompet berhasil dilepas dari Dashboard!';
 

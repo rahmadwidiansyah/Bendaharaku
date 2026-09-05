@@ -17,6 +17,7 @@
  */
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import AppIcon from '@/Components/AppIcon.vue'
 
 const { t } = useI18n()
 
@@ -43,17 +44,17 @@ const showReviewBtn = computed(() =>
     !committed.value && uuid.value && (status.value === 'READY' || status.value === 'RESOLVED')
 )
 
-// Status label + warna
+// Status label + warna — semua via i18n (audit fix)
 const statusMeta = computed(() => {
     const map = {
-        PENDING:    { label: 'Menunggu',   color: 'text-gray-400',   dot: 'bg-gray-400' },
-        UPLOADING:  { label: 'Upload...',  color: 'text-transfer-text', dot: 'bg-transfer-text',   spin: true },
-        UPLOADED:   { label: 'Memproses', color: 'text-debt-text',  dot: 'bg-debt-text', spin: true },
-        PROCESSING: { label: 'Memproses', color: 'text-debt-text',  dot: 'bg-debt-text', spin: true },
-        READY:      { label: 'Siap review', color: 'text-income-text', dot: 'bg-income-text' },
-        RESOLVED:   { label: 'Siap review', color: 'text-income-text', dot: 'bg-income-text' },
-        COMMITTED:  { label: 'Tersimpan',  color: 'text-purple-400', dot: 'bg-purple-400' },
-        FAILED:     { label: 'Gagal',      color: 'text-expense-text', dot: 'bg-expense-text' },
+        PENDING:    { label: t('chat.evidenceStatus.pending'),   color: 'text-gray-400',       dot: 'bg-gray-400' },
+        UPLOADING:  { label: t('chat.evidenceStatus.uploading'), color: 'text-transfer-text', dot: 'bg-transfer-text',   spin: true },
+        UPLOADED:   { label: t('chat.evidenceStatus.processing'),color: 'text-debt-text',     dot: 'bg-debt-text', spin: true },
+        PROCESSING: { label: t('chat.evidenceStatus.processing'),color: 'text-debt-text',     dot: 'bg-debt-text', spin: true },
+        READY:      { label: t('chat.evidenceStatus.ready'),     color: 'text-income-text',   dot: 'bg-income-text' },
+        RESOLVED:   { label: t('chat.evidenceStatus.ready'),     color: 'text-income-text',   dot: 'bg-income-text' },
+        COMMITTED:  { label: t('chat.evidenceStatus.committed'), color: 'text-purple-400',    dot: 'bg-purple-400' },
+        FAILED:     { label: t('chat.evidenceStatus.failed'),    color: 'text-expense-text',  dot: 'bg-expense-text' },
     }
     return map[status.value] ?? map.UPLOADED
 })
@@ -66,7 +67,7 @@ const statusMeta = computed(() => {
             <img
                 v-if="src"
                 :src="src"
-                alt="Evidence"
+                :alt="t('chat.evidence')"
                 class="w-full h-full object-cover"
                 loading="lazy"
             />
@@ -126,8 +127,9 @@ const statusMeta = computed(() => {
             </button>
 
             <!-- Committed label -->
-            <p v-else-if="committed" class="text-2xs text-purple-400 font-semibold">
-                ✓ {{ t('chat.committed') }}
+            <p v-else-if="committed" class="text-2xs text-purple-400 font-semibold inline-flex items-center gap-1">
+                <AppIcon icon="check" class="w-3 h-3 shrink-0" />
+                {{ t('chat.committed') }}
             </p>
         </div>
     </div>

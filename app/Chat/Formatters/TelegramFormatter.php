@@ -87,14 +87,23 @@ class TelegramFormatter implements ChatFormatterInterface
 
     private function renderText(TextComponent $c, string $locale): string
     {
+        // Telegram: elemen ga penting jangan ikut — original_msg & provider cuma untuk Web debug
+        if (in_array($c->translationKey, [
+            'chat.transaction.label_original_msg',
+            'chat.transaction.label_ai_provider',
+        ], true)) {
+            return '';
+        }
+
         $text = trans($c->translationKey, $c->params, $locale);
 
         return $c->bold ? $text : $text;  // Bold sudah di-embed di translation string
     }
 
-    private function renderDivider(): string
+    private function renderDivider(): ?string
     {
-        return '─────────────────────';
+        // Telegram: divider dekoratif ga penting, bikin pesan kepanjangan — skip
+        return null;
     }
 
     private function renderTransactionCard(TransactionCardComponent $c, string $locale): string
@@ -123,30 +132,52 @@ class TelegramFormatter implements ChatFormatterInterface
             return "{$index}_{$catName}_ *{$amount}* ({$wallet})";
         }
 
-        // Detail: untuk single transaction
-        $labelRef = trans('chat.transaction.label_ref', [], $locale);
+        // Detail: untuk single transaction — Telegram versi lean (ga usah Ref ID & field kosong)
         $labelAmt = trans('chat.transaction.label_amount', [], $locale);
         $labelCat = trans('chat.transaction.label_category', [], $locale);
         $labelSrc = trans('chat.transaction.label_source', [], $locale);
         $labelDst = trans('chat.transaction.label_destination', [], $locale);
         $labelSubj = trans('chat.transaction.label_subject', [], $locale);
 
-        $catName = $trx->category?->category_name ?? '-';
-        $srcName = $trx->sourceWallet?->name ?? '-';
-        $dstName = $trx->destinationWallet?->name ?? '-';
-        $refNumber = $trx->reference_number ?? '-';
+        $catName = $trx->category?->category_name ?? null;
+        $srcName = $trx->sourceWallet?->name ?? null;
+        $dstName = $trx->destinationWallet?->name ?? null;
+        $subject = $trx->subject ?? null;
+        // Normalisasi subject: '-' dianggap kosong (ga penting untuk Telegram)
+        $hasSubject = $subject !== null && trim($subject) !== '' && trim($subject) !== '-';
 
-        return implode("\n", [
-            "{$statusIcon}",
-            "_{$typeName}_",
-            '',
-            "🏷 *{$labelRef}    :* `{$refNumber}`",
-            "💰 *{$labelAmt} :* {$amount}",
-            "📂 *{$labelCat} :* {$catName}",
-            "📤 *{$labelSrc}  :* {$srcName}",
-            "📥 *{$labelDst}  :* {$dstName}",
-            "👤 *{$labelSubj}     :* {$trx->subject}",
-        ]);
+        $typeLower = strtolower($trx->type?->name ?? '');
+
+        $lines = [
+            "{$statusIcon} _{$typeName}_",
+            "💰 *{$labelAmt}:* {$amount}",
+        ];
+
+        if ($catName) {
+            $lines[] = "📂 *{$labelCat}:* {$catName}";
+        }
+
+        // Wallet: tampilkan hanya yang relevan biar ga penuhi chat Telegram
+        if ($typeLower === 'transfer') {
+            if ($srcName) $lines[] = "📤 *{$labelSrc}:* {$srcName}";
+            if ($dstName) $lines[] = "📥 *{$labelDst}:* {$dstName}";
+        } elseif ($typeLower === 'income') {
+            if ($dstName) $lines[] = "📥 *{$labelDst}:* {$dstName}";
+            elseif ($srcName) $lines[] = "📂 *{$labelSrc}:* {$srcName}";
+        } else {
+            // expense, debt, receivable, default — tampilkan sumber
+            if ($srcName) $lines[] = "📂 *{$labelSrc}:* {$srcName}";
+            if ($typeLower === 'debt' || $typeLower === 'receivable') {
+                if ($dstName) $lines[] = "📥 *{$labelDst}:* {$dstName}";
+            }
+        }
+
+        if ($hasSubject) {
+            $lines[] = "👤 *{$labelSubj}:* {$subject}";
+        }
+
+        // Hapus baris kosong & ' - ' yang ga penting sudah otomatis via kondisi di atas
+        return implode("\n", $lines);
     }
 
     private function renderSummaryCard(SummaryCardComponent $c, string $locale): string
@@ -203,58 +234,33 @@ class TelegramFormatter implements ChatFormatterInterface
             || str_contains(strtolower($c->translationKey ?? ''), 'asset');
 
         if ($isSaldoOrWallet) {
-            $walletData = [];
-            $maxNameLen = 0;
-            $maxBalLen = 0;
+            // Telegram lean: jangan kirim code block monospaced yang kepanjangan & banyak padding
+            // Kirim list sederhana + total, cukup 8 baris teratas biar ga spam
+            $maxItems = 8;
+            $shown = array_slice($c->items, 0, $maxItems);
 
-            foreach ($c->items as $item) {
+            foreach ($shown as $item) {
                 if (is_array($item)) {
                     $name = $item['name'] ?? $item['category'] ?? '-';
                     $balStr = $item['amount'] ?? '';
+                    $lines[] = $balStr !== '' ? "• *{$name}*: {$balStr}" : "• {$name}";
                 } elseif (str_contains($item, ':')) {
                     $parts = explode(':', $item, 2);
                     $name = trim($parts[0]);
                     $balStr = trim($parts[1]);
-                } elseif (str_contains($item, ' — ')) {
-                    $parts = explode(' — ', $item, 2);
-                    $balStr = trim($parts[0]);
-                    $name = trim($parts[1]);
+                    $lines[] = "• *{$name}*: {$balStr}";
                 } else {
-                    $name = $item;
-                    $balStr = '';
+                    $lines[] = "• {$item}";
                 }
-
-                $nameUpper = strtoupper($name);
-                if (strlen($nameUpper) > $maxNameLen) {
-                    $maxNameLen = strlen($nameUpper);
-                }
-                if (strlen($balStr) > $maxBalLen) {
-                    $maxBalLen = strlen($balStr);
-                }
-                $walletData[] = ['name' => $nameUpper, 'balStr' => $balStr];
             }
 
-            if ($maxNameLen > 0) {
-                $textMsg = "```text\n";
-                foreach ($walletData as $wd) {
-                    if ($wd['balStr'] !== '') {
-                        $textMsg .= str_pad($wd['name'], $maxNameLen, ' ', STR_PAD_RIGHT)
-                            .': '
-                            .str_pad($wd['balStr'], $maxBalLen, ' ', STR_PAD_LEFT)."\n";
-                    } else {
-                        $textMsg .= $wd['name']."\n";
-                    }
-                }
-                $textMsg .= '```';
-                $lines[] = $textMsg;
-            } else {
-                foreach ($c->items as $item) {
-                    $lines[] = "▫️ {$item}";
-                }
+            if (count($c->items) > $maxItems) {
+                $more = count($c->items) - $maxItems;
+                $lines[] = "_…dan {$more} lagi, cek di Web Dashboard_";
             }
 
             if ($c->total !== '') {
-                $lines[] = "💰 **Total: {$c->total}**";
+                $lines[] = "💰 *Total: {$c->total}*";
             }
         } else {
             $isCategorySection = str_contains(strtolower($c->translationKey ?? ''), 'category');

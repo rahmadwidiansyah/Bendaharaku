@@ -19,6 +19,7 @@ use App\Chat\DTOs\ChatResponse;
 use App\Chat\Errors\ErrorDetail;
 use App\Enums\ChatIntent;
 use App\Enums\TransactionIntent;
+use App\Support\ChatIconMap;
 use App\Support\MoneyFormatter;
 
 /**
@@ -212,7 +213,7 @@ class WebFormatter implements ChatFormatterInterface
         // Contoh: '💸 Pengeluaran: "Beli nasi goreng 15k bca"' → 'Beli nasi goreng 15k bca'
         // Jika tidak ada kutipan, gunakan teks penuh.
         $insertText = $message;
-        if (preg_match('/["""](.+?)["""]/', $message, $matches)) {
+        if (preg_match('/[\"“”](.+?)[\"“”]/u', $message, $matches)) {
             $insertText = $matches[1];
         }
 
@@ -236,11 +237,28 @@ class WebFormatter implements ChatFormatterInterface
     {
         $title = $c->title ?: ($c->translationKey ? trans($c->translationKey, [], $locale) : '');
 
+        // Web harus pakai lucide — konversi emoji legacy → lucide kebab
+        $emojiLucide = $c->emoji !== '' ? ChatIconMap::toLucide($c->emoji) : '';
+
+        // Konversi icon di dalam items (category_icon, type_icon, icon) dari emoji → lucide
+        $items = array_values($c->items);
+        foreach ($items as &$item) {
+            if (is_array($item)) {
+                foreach (['category_icon', 'type_icon', 'icon'] as $key) {
+                    if (isset($item[$key]) && is_string($item[$key])) {
+                        $item[$key] = ChatIconMap::toLucide($item[$key]);
+                    }
+                }
+                // Saldo list items: icon field sudah dihandle di atas
+            }
+        }
+        unset($item);
+
         return [
             'type' => 'report_section',
             'title' => $title,
-            'emoji' => $c->emoji,
-            'items' => array_values($c->items),
+            'emoji' => $emojiLucide,
+            'items' => $items,
             'translationKey' => $c->translationKey,
             'total' => $c->total,
             'count' => $c->count,

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\TransactionType;
+use App\Support\ActivityLogger;
 use App\Support\SettingsChangeLogger;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -67,6 +68,7 @@ class CategoryController extends Controller
             null,
             ['id' => $category->id, 'name' => $category->category_name]
         );
+        ActivityLogger::forUser(Auth::user(), 'category', 'created', 'Kategori baru: '.$category->category_name, 'Kategori "'.$category->category_name.'" dibuat', ['category_id' => $category->id]);
 
         return redirect()->route('transactions.create')->with('success', 'Kategori ditambahkan!');
     }
@@ -129,6 +131,7 @@ class CategoryController extends Controller
                 );
             }
         }
+        ActivityLogger::forUser(Auth::user(), 'category', 'updated', 'Kategori diupdate: '.$category->category_name, null, ['category_id' => $category->id]);
 
         return redirect()->route('categories.index')->with('success', 'Kategori diupdate!');
     }
@@ -154,6 +157,7 @@ class CategoryController extends Controller
             $old,
             null
         );
+        ActivityLogger::forUser(Auth::user(), 'category', 'deleted', 'Kategori dihapus: '.($old['category_name'] ?? '-'), null, ['category_id' => $old['id'] ?? null]);
 
         return redirect()->route('categories.index')->with('success', 'Kategori dihapus!');
     }

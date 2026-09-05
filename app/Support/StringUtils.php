@@ -15,7 +15,7 @@ class StringUtils
         }
 
         return array_values(array_filter(
-            array_map('trim', preg_split('/[,|;]+/', $keywords))
+            array_map('trim', preg_split('/\s*[,|;]\s*/', $keywords))
         ));
     }
 

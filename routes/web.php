@@ -1,7 +1,5 @@
 <?php
 
-use App\Console\Commands\AggregateAiMetricsCommand;
-use App\Console\Commands\PruneAiMemoriesCommand;
 use App\Http\Controllers\AiAnalyticsController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\Api\V1\BudgetController;
@@ -21,13 +19,13 @@ use App\Http\Controllers\Settings\AiSettingsController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\WebChatController;
+use App\Support\ActivityLogger;
 use App\Support\SettingsChangeLogger;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Schedule;
 use Inertia\Inertia;
 
 // Google Auth
@@ -95,6 +93,7 @@ Route::middleware(['auth'])->group(function () {
             $oldLocale,
             $newLocale
         );
+        ActivityLogger::forUser($user, 'preferences', 'updated', 'Bahasa diubah', 'Locale: '.($oldLocale ?? 'auto').' → '.($newLocale ?? 'auto'), ['old' => $oldLocale, 'new' => $newLocale]);
 
         return response()->json(['success' => true]);
     })->name('settings.locale.update');
@@ -184,6 +183,7 @@ Route::middleware(['auth'])->group(function () {
                 ['timezone' => $user->getOriginal('timezone'), 'date_format' => $user->getOriginal('date_format'), 'locale' => $user->getOriginal('locale')],
                 $validated
             );
+            ActivityLogger::forUser($user, 'preferences', 'updated', 'Preferensi diperbarui', 'Timezone/format bahasa diubah', ['validated' => $validated]);
 
             return response()->json(['success' => true, 'message' => 'Preferensi berhasil diperbarui.']);
         })->name('preferences.update');
@@ -221,6 +221,7 @@ Route::middleware(['auth'])->group(function () {
                 ['accent_color' => $user->getOriginal('accent_color')],
                 $validated
             );
+            ActivityLogger::forUser($user, 'appearance', 'updated', 'Warna/tema diubah', 'Warna aksen/tema diperbarui ke '.$validated['accent_color'].' / '.$validated['theme'], $validated);
 
             return response()->json(['success' => true, 'message' => 'Tampilan berhasil diperbarui.']);
         })->name('appearance.update');
@@ -253,6 +254,7 @@ Route::middleware(['auth'])->group(function () {
                 [],
                 $validated
             );
+            ActivityLogger::forUser($user, 'notifications', 'updated', 'Pengaturan notifikasi diubah', null, $validated);
 
             return response()->json(['success' => true, 'message' => 'Notifikasi berhasil diperbarui.']);
         })->name('notifications.update');
@@ -279,6 +281,7 @@ Route::middleware(['auth'])->group(function () {
                 ['allow_negative_balance' => $old],
                 $validated
             );
+            ActivityLogger::forUser($user, 'finance', 'updated', 'Logika transaksi diubah', ($validated['allow_negative_balance'] ? 'Izinkan saldo minus' : 'Tolak saldo minus'), $validated);
 
             return response()->json(['success' => true, 'message' => 'Logika transaksi diperbarui.']);
         })->name('logic.update');
@@ -305,12 +308,14 @@ Route::middleware(['auth'])->group(function () {
                 [],
                 $validated
             );
+            ActivityLogger::forUser($user, 'privacy', 'updated', 'Pengaturan privasi diubah', null, $validated);
 
             return response()->json(['success' => true, 'message' => 'Privasi berhasil diperbarui.']);
         })->name('settings.update');
 
         Route::get('/data', fn () => Inertia::render('Settings/Privacy/Data'))->name('data');
         Route::get('/danger', fn () => Inertia::render('Settings/Privacy/Danger'))->name('danger');
+        Route::get('/logs', [\App\Http\Controllers\Settings\PrivacyLogController::class, 'index'])->name('logs');
     });
 
     // API helpers used by frontend Settings (cache clear, account delete, account export)
@@ -451,6 +456,8 @@ Route::middleware(['auth'])->group(function () {
         // ── Evidence (OCR Upload & Review) ────────────────────────
         // Upload gambar bukti transaksi, trigger OCR pipeline
         Route::post('/evidence', [EvidenceController::class, 'store'])->name('evidence.store');
+        // Serve private image untuk Chat (foto harus tampil, bukan text [Evidence])
+        Route::get('/evidence/{uuid}/image', [EvidenceController::class, 'image'])->name('evidence.image');
 
         // Review & edit draft hasil OCR
         Route::get('/evidence/{uuid}/draft', [EvidenceReviewController::class, 'show'])->name('evidence.draft.show');
@@ -519,9 +526,5 @@ Route::get('/ready', function () {
         'time' => now()->toIso8601String(),
     ]);
 });
-
-// Scheduling
-Schedule::command(PruneAiMemoriesCommand::class)->dailyAt('02:00')->withoutOverlapping();
-Schedule::command(AggregateAiMetricsCommand::class)->dailyAt('00:10')->withoutOverlapping();
 
 require __DIR__.'/auth.php';

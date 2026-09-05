@@ -16,8 +16,8 @@ namespace App\Evidence\Parsers\Extractors;
 class NameExtractor
 {
     private const PATTERNS = [
-        '/(?:transfer\s*ke|penerima|recipient|atas\s*nama|ke\s*(?:nama)?)[:\s]*([A-Z][a-zA-Z\s]{2,50})/i',
-        '/(?:to)\s*[:\s]*([A-Z][a-zA-Z\s]{2,50})/i',
+        '/(?:transfer\s*ke|penerima|recipient|atas\s*nama|ke\s*(?:nama)?)[:\s]*([\p{Lu}][\p{L}\s\'\-.]{2,50})/iu',
+        '/(?:to)\s*[:\s]*([\p{Lu}][\p{L}\s\'\-.]{2,50})/iu',
     ];
 
     /**

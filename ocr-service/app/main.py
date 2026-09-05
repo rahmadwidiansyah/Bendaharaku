@@ -15,8 +15,8 @@ logging.basicConfig(
 
 app = FastAPI(
     title="Bendaharaku OCR Service",
-    description="PaddleOCR microservice for receipt/bukti text extraction",
-    version="1.0.0",
+    description="RapidOCR microservice (fallback for Tesseract) for receipt/bukti text extraction",
+    version="2.0.0-rapid",
 )
 
 app.add_middleware(
@@ -36,8 +36,8 @@ async def health_check():
     """Health check endpoint for Docker."""
     return HealthResponse(
         status="ok",
-        engine="PaddleOCR",
-        version="1.0.0",
+        engine="RapidOCR",
+        version="2.0.0-rapid",
     )
 
 

@@ -35,6 +35,7 @@
  */
 
 import { ref, computed, watch } from 'vue'
+import { parseDateOnly as parseDateOnlyUtil, formatLocalYMD as toLocalYMD } from '@/utils/format.js'
 
 export function useTransactionForm(form, props, options = {}) {
     const { isDesktopLayout } = options
@@ -130,26 +131,19 @@ export function useTransactionForm(form, props, options = {}) {
     }
 
     const parseDateOnly = (value) => {
-        const match = typeof value === 'string' ? value.match(/^(\d{4})-(\d{2})-(\d{2})/) : null
-        return match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : new Date()
+        const d = parseDateOnlyUtil(value)
+        return d ?? null
     }
 
     // Sync calendar display saat modal terbuka
     watch(showDateModal, (val) => {
         if (val) {
             const value = dateModalTarget.value === 'due_date' ? form.due_date : form.date
-            const d = parseDateOnly(value)
+            const d = parseDateOnly(value) ?? new Date()
             currentMonth.value = d.getMonth()
             currentYear.value  = d.getFullYear()
         }
     })
-
-    const toLocalYMD = (d) => {
-        const year = d.getFullYear()
-        const month = String(d.getMonth() + 1).padStart(2, '0')
-        const day = String(d.getDate()).padStart(2, '0')
-        return `${year}-${month}-${day}`
-    }
 
     const selectSpecificDate = (day) => {
         const dateStr = toLocalYMD(new Date(currentYear.value, currentMonth.value, day))

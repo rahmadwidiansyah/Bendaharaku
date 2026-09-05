@@ -135,6 +135,9 @@ class CommandRouter
         $registry = new ChatCommandRegistry;
         $commands = $registry->forPlatform($platform, includeHidden: false);
 
+        // Telegram: lean — banyak elemen help ga penting, bikin spam & kepanjangan
+        $isTelegram = $platform === 'telegram';
+
         $components = [
             new TextComponent(
                 translationKey: 'chat.command.help_greeting',
@@ -147,31 +150,31 @@ class CommandRouter
             new TextComponent(translationKey: 'chat.command.help_guide', bold: true),
             new TextComponent(translationKey: 'chat.command.help_example_intro'),
             new DividerComponent,
-
-            new SuggestionComponent(
-                messageKey: 'chat.command.help_example_expense',
-                params: [],
-                actionUrl: null,
-            ),
-            new SuggestionComponent(
-                messageKey: 'chat.command.help_example_income',
-                params: [],
-                actionUrl: null,
-            ),
-            new SuggestionComponent(
-                messageKey: 'chat.command.help_example_transfer',
-                params: [],
-                actionUrl: null,
-            ),
-            new SuggestionComponent(
-                messageKey: 'chat.command.help_example_debt',
-                params: [],
-                actionUrl: null,
-            ),
-            new DividerComponent,
-
-            new TextComponent(translationKey: 'chat.command.help_commands_title', bold: true),
         ];
+
+        // Telegram cuma butuh 2 contoh biar ga penuhi chat (Web boleh lengkap 4)
+        $suggestions = $isTelegram ? [
+            'chat.command.help_example_expense',
+            'chat.command.help_example_income',
+        ] : [
+            'chat.command.help_example_expense',
+            'chat.command.help_example_income',
+            'chat.command.help_example_transfer',
+            'chat.command.help_example_debt',
+        ];
+
+        foreach ($suggestions as $key) {
+            $components[] = new SuggestionComponent(messageKey: $key, params: [], actionUrl: null);
+        }
+
+        $components[] = new DividerComponent;
+        $components[] = new TextComponent(translationKey: 'chat.command.help_commands_title', bold: true);
+
+        // Telegram: filter command biar ga kirim 12 baris yang jarang dipakai
+        if ($isTelegram) {
+            $essential = ['/saldo', '/transaksi', '/ringkasan', '/help', '/web', '/wallet'];
+            $commands = array_values(array_filter($commands, fn (array $c) => in_array($c['command'], $essential, true)));
+        }
 
         foreach ($commands as $cmd) {
             $components[] = new TextComponent(

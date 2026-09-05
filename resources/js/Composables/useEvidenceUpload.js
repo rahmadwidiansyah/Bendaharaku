@@ -1,5 +1,6 @@
 import { ref, computed, reactive } from 'vue'
 import axios from 'axios'
+import { useI18n } from 'vue-i18n'
 
 export const UploadState = {
     PENDING: 'PENDING',
@@ -11,6 +12,10 @@ export const UploadState = {
 }
 
 export function useEvidenceUpload() {
+    // i18n fallback — jika diluar setup, t akan fallback ke key
+    let t = (k) => k
+    try { t = useI18n().t } catch (_) {}
+
     const state = ref(UploadState.PENDING)
     const progress = ref(0)
     const error = ref(null)
@@ -62,11 +67,11 @@ export function useEvidenceUpload() {
                     localPreviewUrl.value = null
                 }
             } else {
-                throw new Error(response.data.message || 'Upload failed')
+                throw new Error(response.data.message || t('chat.error.uploadFailed'))
             }
         } catch (err) {
             state.value = UploadState.FAILED
-            error.value = err.response?.data?.message || err.message || 'Upload gagal'
+            error.value = err.response?.data?.message || err.message || t('chat.error.uploadFailed')
         }
     }
 

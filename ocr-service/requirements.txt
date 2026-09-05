@@ -1,18 +1,16 @@
-# OCR Microservice — Python Dependencies
-# Audit date: 2026-07-22
-# Strategy: Stay on PaddleOCR 2.x (stable, backward-compatible API).
-#           PaddleOCR 3.x has breaking API changes and requires paddlex.
+# OCR Microservice — RapidOCR (lightweight) for 2GB server
+# Strategy: RapidOCR ONNX Runtime — ~20MB model, ~150MB RAM, no PaddlePaddle 1.5GB
+# Tesseract is primary (in Laravel app container), RapidOCR is fallback via this service
 #
-# paddlepaddle 2.6.2: Last 2.x release, available on PyPI, supports Python 3.11
-# paddleocr 2.10.0:   Last 2.x release, backward-compatible PaddleOCR() API
-# numpy 1.26.4:       Compatible with paddlepaddle 2.6.x and opencv 4.10.x
-# opencv-python-headless 4.10.0.84: CPU-only, no GUI deps needed in Docker
+# rapidocr-onnxruntime: ONNX version, mobile PP-OCRv4 models lite
+# onnxruntime: CPU provider
+# Pillow, numpy, opencv-headless: minimal deps
 
 fastapi==0.115.10
 uvicorn[standard]==0.30.6
 python-multipart==0.0.18
-paddleocr==2.10.0
-paddlepaddle==2.6.2
+rapidocr-onnxruntime==1.3.9
+onnxruntime==1.17.1
 Pillow==10.4.0
 numpy==1.26.4
 opencv-python-headless==4.10.0.84

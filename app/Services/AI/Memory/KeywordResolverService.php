@@ -81,7 +81,7 @@ class KeywordResolverService
                 continue;
             }
 
-            if (! preg_match('/\b'.preg_quote(mb_strtolower($pattern), '/').'\b/iu', $textLower)) {
+            if (! $this->memoryContains($textLower, $pattern)) {
                 continue;
             }
 
@@ -118,6 +118,16 @@ class KeywordResolverService
         }
 
         return $bestResult ?? KeywordResolverResult::notFound();
+    }
+
+    private function memoryContains(string $textLower, string $keyword): bool
+    {
+        $k = trim(mb_strtolower($keyword));
+        if ($k === '' || mb_strlen($k) < 3) {
+            return false;
+        }
+        $escaped = preg_quote($k, '/');
+        return (bool) preg_match('/(?<![\p{L}\p{N}_])'.$escaped.'(?![\p{L}\p{N}_])/iu', $textLower);
     }
 
     private function getUserMemories(int $userId): \Illuminate\Support\Collection

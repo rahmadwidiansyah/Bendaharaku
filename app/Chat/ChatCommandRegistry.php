@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Chat;
 
+use App\Support\ChatIconMap;
+
 /**
  * ChatCommandRegistry — Single Source of Truth untuk semua command chat.
  *
@@ -288,11 +290,17 @@ class ChatCommandRegistry
      */
     public function toApiResponse(string $platform = 'web', string $locale = 'id'): array
     {
-        return array_map(function (array $cmd) use ($locale) {
+        return array_map(function (array $cmd) use ($locale, $platform) {
+            $icon = $cmd['icon'];
+            // Web chat harus pakai lucide, Telegram tetap emoji
+            if ($platform === 'web') {
+                $icon = ChatIconMap::toLucide($icon);
+            }
+
             return [
                 'command' => $cmd['command'],
                 'category' => $cmd['category'],
-                'icon' => $cmd['icon'],
+                'icon' => $icon,
                 'description' => trans($cmd['description'], [], $locale),
                 'hint' => $cmd['hint'] ? trans($cmd['hint'], [], $locale) : null,
             ];

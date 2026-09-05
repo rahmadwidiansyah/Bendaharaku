@@ -13,6 +13,7 @@ use App\Models\Wallet;
 use App\Services\AI\Memory\UserMemoryService;
 use App\Services\Category\CategoryResolutionService;
 use App\Services\Loan\LoanBalanceService;
+use App\Support\ActivityLogger;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -108,6 +109,17 @@ class ProcessTransactionAction
         event(new TransactionPosted($transactionLog, $source, $aiKeywords));
 
         $this->dispatchBudgetOverCheckIfExpense($transactionLog);
+
+        // Unified activity log (7-day retention via prune command)
+        $sourceLabel = $source->value ?? 'SYSTEM';
+        if ($sourceLabel === TransactionSource::WEB->value) $sourceLabel = 'WEB';
+        ActivityLogger::log($userId, 'transaction', 'created', $transactionLog->subject !== '-' ? $transactionLog->subject : 'Transaksi ('.$sourceLabel.')', 'Transaksi Rp '.number_format((float) $transactionLog->amount, 0, ',', '.').' via '.$sourceLabel, [
+            'source' => $sourceLabel,
+            'transaction_id' => $transactionLog->id,
+            'amount' => (float) $transactionLog->amount,
+            'category_id' => $transactionLog->category_id,
+            'ai_keywords_count' => count($aiKeywords),
+        ]);
 
         return $transactionLog;
     }

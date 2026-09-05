@@ -153,9 +153,9 @@ class LocalRuleEngine
             $useAllBalance = true;
         }
 
-        // Regex pattern to extract digits with suffix (k, rb, ribu, jt, juta)
-        // matches things like: 20 ribu, 20ribu, 20k, 20.000, 20,000, 1.5 juta, 1,5 jt
-        $pattern = '/(\d+(?:[.,]\d+)?)\s*(ribu|rb|k|juta|jt)?/i';
+        // Regex pattern to extract digits with suffix (k, rb, ribu, rbu, jt, juta, jtr, m)
+        // matches things like: 20 ribu, 20ribu, 20k, 20.000, 20,000, 1.5 juta, 1,5 jt, 2m
+        $pattern = '/\b(\d+(?:[.,]\d+)?)\s*(ribu|rb|rbu|k|juta|jt|jtr|m)?\b/iu';
         if (preg_match_all($pattern, $text, $matches, PREG_SET_ORDER)) {
             // Find the match that looks like the principal amount. Usually the first one or the one with a suffix/size.
             foreach ($matches as $match) {
@@ -163,10 +163,19 @@ class LocalRuleEngine
                 $val = (float) $rawVal;
                 $suffix = isset($match[2]) ? strtolower($match[2]) : '';
 
-                if ($suffix === 'k' || $suffix === 'rb' || $suffix === 'ribu') {
+                if ($suffix === 'k' || $suffix === 'rb' || $suffix === 'ribu' || $suffix === 'rbu') {
                     $val *= 1000;
-                } elseif ($suffix === 'jt' || $suffix === 'juta') {
+                } elseif ($suffix === 'jt' || $suffix === 'juta' || $suffix === 'jtr' || $suffix === 'm') {
                     $val *= 1000000;
+                } elseif ($suffix === '' && $val < 100) {
+                    // Skip bare small numbers like day/month from dates (22 Jul 2026) — keep real amounts like 500
+                    continue;
+                } elseif ($suffix === '' && $val >= 1900 && $val <= 2100) {
+                    // Skip year-like numbers when a month name is nearby (invoice 22 Jul 2026)
+                    $lowerCheck = mb_strtolower($text);
+                    if (preg_match('/\b(jan|januari|feb|februari|mar|maret|apr|april|mei|jun|juni|jul|juli|agu|agustus|ags|sep|september|okt|oktober|nov|november|des|desember)\b/u', $lowerCheck)) {
+                        continue;
+                    }
                 }
 
                 if ($val > 0) {
@@ -375,18 +384,18 @@ class LocalRuleEngine
     private function extractSubjectSimple(string $text): ?string
     {
         // 1. Check hashtag
-        if (preg_match('/#([a-zA-Z0-9_]+)/', $text, $matches)) {
+        if (preg_match('/#([a-zA-Z0-9_]+)/u', $text, $matches)) {
             return $matches[1];
         }
 
-        // 2. Pattern A: "Pinjamin Andi 100k"
-        $patternA = '/(?:pinjamin|pinjamkan|ngutangin|kasih pinjam|pinjamkan ke|kasih pinjam ke|pinjam ke)\s+([A-Za-z]+)/i';
+        // 2. Pattern A: "Pinjamin Andi 100k" — support multi-word names
+        $patternA = '/(?:pinjamin|pinjamkan|ngutangin|kasih pinjam|pinjamkan ke|kasih pinjam ke|pinjam ke)\s+([\p{L}\s\'\-]{2,50})/iu';
         if (preg_match($patternA, $text, $matches)) {
-            return $matches[1];
+            return trim($matches[1]);
         }
 
-        // 3. Pattern B: "Iqbal bayar hutang"
-        $patternB = '/\b([A-Za-z]+)\s+(?:bayar|balikin|lunasin|mengembalikan|kembalikan|ngutang|utang|hutang|pinjam)\b/i';
+        // 3. Pattern B: "Iqbal bayar hutang" — unicode names
+        $patternB = '/\b([\p{L}\s\'\-]{2,50}?)\s+(?:bayar|balikin|lunasin|mengembalikan|kembalikan|ngutang|utang|hutang|pinjam)\b/iu';
         if (preg_match($patternB, $text, $matches)) {
             return $matches[1];
         }

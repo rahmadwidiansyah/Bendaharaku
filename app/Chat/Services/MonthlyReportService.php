@@ -269,7 +269,7 @@ class MonthlyReportService
         ];
 
         foreach ($months as $name => $month) {
-            if (! preg_match('/\b'.preg_quote($name, '/').'\b/u', $text)) {
+            if (! $this->monthContains($text, $name)) {
                 continue;
             }
 
@@ -284,6 +284,16 @@ class MonthlyReportService
         }
 
         return $now->copy()->startOfMonth();
+    }
+
+    private function monthContains(string $text, string $name): bool
+    {
+        $k = trim(mb_strtolower($name));
+        if ($k === '' || mb_strlen($k) < 2) {
+            return false;
+        }
+        $escaped = preg_quote($k, '/');
+        return (bool) preg_match('/(?<![\p{L}\p{N}_])'.$escaped.'(?![\p{L}\p{N}_])/iu', mb_strtolower($text));
     }
 
     public function formatCurrency(float $amount): string
