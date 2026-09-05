@@ -54,8 +54,8 @@ readonly class MemoryKeywordExtractor
     private function normalize(string $text): string
     {
         $text = mb_strtolower(trim($text));
-        $text = preg_replace('/[^a-z0-9\s]/', ' ', $text);
-        $text = preg_replace('/\s+/', ' ', $text);
+        $text = preg_replace('/[^\p{Ll}\p{Nd}\s]/u', ' ', $text);
+        $text = preg_replace('/\s+/u', ' ', $text);
 
         return trim($text);
     }

@@ -52,9 +52,9 @@ const confidenceColor = computed(() => {
 const confidenceLabel = computed(() => {
     if (!draft.value) return ''
     const c = draft.value.confidence
-    if (c >= 0.8) return 'Tinggi'
-    if (c >= 0.5) return 'Sedang'
-    return 'Rendah'
+    if (c >= 0.8) return t('chatTransaction.confidence.high')
+    if (c >= 0.5) return t('chatTransaction.confidence.medium')
+    return t('chatTransaction.confidence.low')
 })
 
 function close() {
@@ -93,7 +93,7 @@ async function fetchDraft() {
             isDirty.value = false
         }
     } catch (err) {
-        error.value = err.response?.data?.message || 'Gagal memuat data draft'
+        error.value = err.response?.data?.message || t('chat.error.loadDraftFailed')
     } finally {
         isLoading.value = false
     }
@@ -121,7 +121,7 @@ async function saveDraft() {
             showToast(t('toast.saved'), 'success')
         }
     } catch (err) {
-        error.value = err.response?.data?.message || 'Gagal menyimpan'
+        error.value = err.response?.data?.message || t('chat.error.saveFailed')
         showToast(err.response?.data?.message || t('toast.error'), 'error')
     } finally {
         isSaving.value = false
@@ -151,12 +151,12 @@ async function commitTransaction() {
             showToast(t('toast.saved'), 'success')
             close()
         } else {
-            error.value = res.data.message || 'Gagal membuat transaksi'
+            error.value = res.data.message || t('chat.error.commitFailed')
             emit('commitError', { uuid: props.evidenceUuid, error: error.value })
             showToast(error.value, 'error')
         }
     } catch (err) {
-        error.value = err.response?.data?.message || 'Gagal membuat transaksi'
+        error.value = err.response?.data?.message || t('chat.error.commitFailed')
         emit('commitError', { uuid: props.evidenceUuid, error: error.value })
         showToast(error.value, 'error')
     } finally {
@@ -199,8 +199,8 @@ watch(() => props.modelValue, (v) => {
         <!-- Header -->
         <template #header>
             <div>
-                <h2 class="text-sm font-bold text-white">Review Transaksi</h2>
-                <p class="text-2xs text-gray-500 mt-0.5">Periksa dan edit data sebelum disimpan</p>
+                <h2 class="text-sm font-bold text-white">{{ t('chat.evidenceReview.title') }}</h2>
+                <p class="text-2xs text-gray-500 mt-0.5">{{ t('chat.evidenceReview.subtitle') }}</p>
             </div>
         </template>
 
@@ -220,7 +220,7 @@ watch(() => props.modelValue, (v) => {
             <!-- Error -->
             <div v-else-if="error" class="text-center py-8">
                 <p class="text-expense-text text-sm">{{ error }}</p>
-                <button @click="fetchDraft" class="mt-3 text-purple-400 text-sm hover:underline">Coba Lagi</button>
+                <button @click="fetchDraft" class="mt-3 text-purple-400 text-sm hover:underline">{{ t('chat.evidenceReview.retry') }}</button>
             </div>
 
             <!-- Draft form -->
@@ -242,7 +242,7 @@ watch(() => props.modelValue, (v) => {
                 <!-- Amount -->
                 <div>
                     <label class="flex items-center justify-between mb-1.5">
-                        <span class="text-xs font-semibold text-gray-400">Nominal</span>
+                        <span class="text-xs font-semibold text-gray-400">{{ t('chat.evidenceReview.amount') }}</span>
                         <span :class="['text-2xs px-1.5 py-0.5 rounded', getBadge(draft.amount_confidence).bg, getBadge(draft.amount_confidence).text]">
                             {{ Math.round(draft.amount_confidence * 100) }}%
                         </span>
@@ -258,23 +258,23 @@ watch(() => props.modelValue, (v) => {
                 <!-- Transaction Type -->
                 <div>
                     <label class="flex items-center justify-between mb-1.5">
-                        <span class="text-xs font-semibold text-gray-400">Tipe Transaksi</span>
+                        <span class="text-xs font-semibold text-gray-400">{{ t('chat.evidenceReview.transactionType') }}</span>
                     </label>
                     <select
                         v-model="editForm.transaction_type"
                         @change="onFieldChange"
                         class="w-full bg-gray-800 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/15"
                     >
-                        <option value="EXPENSE">Pengeluaran</option>
-                        <option value="INCOME">Pemasukan</option>
-                        <option value="TRANSFER">Transfer</option>
+                        <option value="EXPENSE">{{ t('chat.evidenceReview.typeExpense') }}</option>
+                        <option value="INCOME">{{ t('chat.evidenceReview.typeIncome') }}</option>
+                        <option value="TRANSFER">{{ t('chat.evidenceReview.typeTransfer') }}</option>
                     </select>
                 </div>
 
                 <!-- Wallet -->
                 <div>
                     <label class="flex items-center justify-between mb-1.5">
-                        <span class="text-xs font-semibold text-gray-400">Dompet Sumber</span>
+                        <span class="text-xs font-semibold text-gray-400">{{ t('chat.evidenceReview.sourceWallet') }}</span>
                         <span :class="['text-2xs px-1.5 py-0.5 rounded', getBadge(draft.wallet_confidence).bg, getBadge(draft.wallet_confidence).text]">
                             {{ Math.round(draft.wallet_confidence * 100) }}%
                         </span>
@@ -284,7 +284,7 @@ watch(() => props.modelValue, (v) => {
                         @change="onFieldChange"
                         class="w-full bg-gray-800 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/15"
                     >
-                        <option :value="null">Pilih dompet...</option>
+                        <option :value="null">{{ t('chat.evidenceReview.selectWallet') }}</option>
                         <option v-for="w in wallets" :key="w.id" :value="w.id">{{ w.name }}</option>
                     </select>
                 </div>
@@ -292,7 +292,7 @@ watch(() => props.modelValue, (v) => {
                 <!-- Date -->
                 <div>
                     <label class="flex items-center justify-between mb-1.5">
-                        <span class="text-xs font-semibold text-gray-400">Tanggal</span>
+                        <span class="text-xs font-semibold text-gray-400">{{ t('chat.evidenceReview.date') }}</span>
                         <span :class="['text-2xs px-1.5 py-0.5 rounded', getBadge(draft.date_confidence).bg, getBadge(draft.date_confidence).text]">
                             {{ Math.round(draft.date_confidence * 100) }}%
                         </span>
@@ -309,7 +309,7 @@ watch(() => props.modelValue, (v) => {
                 <!-- Description -->
                 <div>
                     <label class="flex items-center justify-between mb-1.5">
-                        <span class="text-xs font-semibold text-gray-400">Deskripsi</span>
+                        <span class="text-xs font-semibold text-gray-400">{{ t('chat.evidenceReview.description') }}</span>
                     </label>
                     <input
                         v-model="editForm.description"
@@ -323,7 +323,7 @@ watch(() => props.modelValue, (v) => {
                 <template v-if="editForm.transaction_type === 'TRANSFER' || editForm.transaction_type === 'INTERNAL_TRANSFER'">
                     <div>
                         <label class="flex items-center justify-between mb-1.5">
-                            <span class="text-xs font-semibold text-gray-400">Nama Tujuan</span>
+                            <span class="text-xs font-semibold text-gray-400">{{ t('chat.evidenceReview.destinationName') }}</span>
                             <span :class="['text-2xs px-1.5 py-0.5 rounded', getBadge(draft.destination_name_confidence).bg, getBadge(draft.destination_name_confidence).text]">
                                 {{ Math.round(draft.destination_name_confidence * 100) }}%
                             </span>
@@ -337,7 +337,7 @@ watch(() => props.modelValue, (v) => {
                     </div>
                     <div>
                         <label class="flex items-center justify-between mb-1.5">
-                            <span class="text-xs font-semibold text-gray-400">Rekening Tujuan</span>
+                            <span class="text-xs font-semibold text-gray-400">{{ t('chat.evidenceReview.destinationAccount') }}</span>
                             <span :class="['text-2xs px-1.5 py-0.5 rounded', getBadge(draft.destination_account_confidence).bg, getBadge(draft.destination_account_confidence).text]">
                                 {{ Math.round(draft.destination_account_confidence * 100) }}%
                             </span>
@@ -354,7 +354,7 @@ watch(() => props.modelValue, (v) => {
                 <!-- Reference Number (read-only) -->
                 <div v-if="draft.reference_number">
                     <label class="flex items-center justify-between mb-1.5">
-                        <span class="text-xs font-semibold text-gray-400">No. Referensi</span>
+                        <span class="text-xs font-semibold text-gray-400">{{ t('chat.evidenceReview.referenceNumber') }}</span>
                         <span :class="['text-2xs px-1.5 py-0.5 rounded', getBadge(draft.reference_confidence).bg, getBadge(draft.reference_confidence).text]">
                             {{ Math.round(draft.reference_confidence * 100) }}%
                         </span>
@@ -377,7 +377,7 @@ watch(() => props.modelValue, (v) => {
                     :disabled="isCommitting"
                     class="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-400 bg-gray-800 border border-white/10 hover:bg-gray-700 transition-colors disabled:opacity-50"
                 >
-                    Batal
+                    {{ t('chat.evidenceReview.cancel') }}
                 </button>
                 <button
                     v-if="isDirty"
@@ -385,7 +385,7 @@ watch(() => props.modelValue, (v) => {
                     :disabled="isSaving"
                     class="flex-1 py-2.5 rounded-xl text-sm font-bold text-purple-400 bg-purple-500/10 border border-purple-500/30 hover:bg-purple-500/20 transition-colors disabled:opacity-50"
                 >
-                    {{ isSaving ? 'Menyimpan...' : 'Simpan' }}
+                    {{ isSaving ? t('chat.evidenceReview.saving') : t('chat.evidenceReview.save') }}
                 </button>
                 <button
                     @click="commitTransaction"
@@ -396,7 +396,7 @@ watch(() => props.modelValue, (v) => {
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                     </svg>
-                    {{ isCommitting ? 'Menyimpan...' : 'Simpan Transaksi' }}
+                    {{ isCommitting ? t('chat.evidenceReview.committing') : t('chat.evidenceReview.commit') }}
                 </button>
             </template>
         </template>

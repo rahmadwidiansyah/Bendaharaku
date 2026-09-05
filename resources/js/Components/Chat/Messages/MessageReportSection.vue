@@ -5,6 +5,7 @@ import TransactionSummaryList from './TransactionSummaryList.vue'
 import MarkdownRenderer from './MarkdownRenderer.vue'
 import AppIcon from '@/Components/AppIcon.vue'
 import { getWalletIconColor } from '@/Composables/useIcon.js'
+import { toLucide } from '@/utils/chatIcons.js'
 
 const { t } = useI18n()
 
@@ -86,7 +87,7 @@ function isIconUrl(icon) {
 }
 
 function defaultIcon(value) {
-    return value && value !== 'wallet' ? value : '💳'
+    return value && value !== 'wallet' ? value : 'credit-card'
 }
 
 const walletIconClass = computed(() => getWalletIconColor())
@@ -109,7 +110,7 @@ function onImgError(e, fallback) {
   <div v-if="isSaldoHeader" class="mx-2 my-1.5 rounded-xl overflow-hidden bg-white/[0.015] border border-white/[0.06]">
     <div class="px-3.5 pt-3 pb-2">
       <div class="flex items-center gap-2 mb-1">
-        <span class="text-base leading-none">{{ component.emoji }}</span>
+        <AppIcon v-if="component.emoji" :icon="toLucide(component.emoji)" class="w-4 h-4 shrink-0 text-purple-400" fallback="wallet" />
         <h3 class="text-sm font-bold text-white leading-tight truncate">
           <MarkdownRenderer :content="titleText" inline />
         </h3>
@@ -137,7 +138,7 @@ function onImgError(e, fallback) {
             class="w-5 h-5 rounded-full object-cover shrink-0"
             @error="(e) => onImgError(e, defaultIcon(item.icon))"
           />
-          <AppIcon v-else :icon="item.icon" :class="['w-5 h-5 shrink-0', walletIconClass]" fallback="💳" />
+          <AppIcon v-else :icon="toLucide(item.icon)" :class="['w-5 h-5 shrink-0', walletIconClass]" fallback="credit-card" />
           <div class="min-w-0">
             <span class="text-xs font-medium text-white truncate block">{{ item.name }}</span>
             <span v-if="item.group_type" class="text-2xs text-gray-500">
@@ -172,7 +173,7 @@ function onImgError(e, fallback) {
     <div class="px-3.5 py-2.5 border-b border-white/[0.04]">
       <div class="flex items-center justify-between min-w-0">
         <div class="flex items-center gap-2 min-w-0">
-          <span v-if="component.emoji" class="text-base leading-none shrink-0">{{ component.emoji }}</span>
+          <AppIcon v-if="component.emoji" :icon="toLucide(component.emoji)" class="w-4 h-4 shrink-0 text-purple-400" fallback="bar-chart-3" />
           <h3 class="text-sm font-semibold text-white leading-tight truncate">
             <MarkdownRenderer :content="titleText" inline />
           </h3>
@@ -210,7 +211,7 @@ function onImgError(e, fallback) {
         <div v-if="hasStructuredCategorySections" class="px-3.5 pt-3 pb-2">
           <div v-for="(section, sIdx) in component.items" :key="sIdx" class="mb-4 last:mb-0">
             <div class="flex items-center gap-2 mb-2">
-              <span class="text-sm leading-none">{{ section.type_icon }}</span>
+              <AppIcon :icon="toLucide(section.type_icon)" class="w-4 h-4 shrink-0 text-violet-400" fallback="folder" />
               <h4 class="text-xs font-bold text-white leading-tight">
                 {{ section.label_key ? t(section.label_key) : section.type_name }}
               </h4>
@@ -219,7 +220,7 @@ function onImgError(e, fallback) {
             <div class="pl-5 space-y-1">
               <div v-for="(cat, cIdx) in section.categories" :key="cIdx"
                 class="flex items-center gap-2 text-xs text-gray-300">
-                <span class="text-2xs text-gray-600 select-none">•</span>
+                <AppIcon icon="dot" class="w-3 h-3 shrink-0 text-gray-600" />
                 <span>{{ cat }}</span>
               </div>
             </div>
@@ -255,7 +256,7 @@ function onImgError(e, fallback) {
             </span>
           </div>
           <div v-else class="flex items-start gap-2 px-3.5 py-2 text-xs text-gray-400">
-            <span class="text-purple-400/60 select-none shrink-0">✦</span>
+            <AppIcon icon="sparkles" class="w-3.5 h-3.5 shrink-0 text-purple-400/60" />
             <span class="leading-relaxed">{{ item }}</span>
           </div>
         </div>

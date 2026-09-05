@@ -302,9 +302,20 @@ class Evidence extends Model
 
     /**
      * URL untuk mengakses file original.
+     * Sekarang pakai route private chat.evidence.image agar foto tampil di chat
+     * (storage evidence adalah private disk, tidak bisa diakses via /storage URL).
      */
     public function getUrlAttribute(): string
     {
+        // Jika sedang dalam konteks web request, pakai route; fallback ke storage URL untuk CLI/queue
+        try {
+            if (app()->runningInConsole() === false) {
+                return route('chat.evidence.image', ['uuid' => $this->uuid]);
+            }
+        } catch (\Throwable $e) {
+            // ignore
+        }
+
         return Storage::disk($this->disk)->url($this->path);
     }
 

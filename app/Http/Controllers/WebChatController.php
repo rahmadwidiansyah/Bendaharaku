@@ -13,6 +13,7 @@ use App\Models\Conversation;
 use App\Models\TransactionDraft;
 use App\Models\TransactionLog;
 use App\Services\Chat\DraftConfirmationService;
+use App\Support\ActivityLogger;
 use App\Support\MoneyFormatter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -73,7 +74,7 @@ class WebChatController extends Controller
                 ->where('updated_at', '<', now()->subMinutes(5))
                 ->update([
                     'status' => 'failed',
-                    'error_message' => 'Proses timeout. Silakan kirim ulang pesan.',
+                    'error_message' => __('chat.timeout'),
                 ]);
 
             $raw = $this->adapter->getHistorySince($conversation, $sevenDaysAgo);
@@ -113,6 +114,7 @@ class WebChatController extends Controller
         $validated = $request->validate([
             'message' => ['required', 'string', 'max:2000'],
             'conversation_id' => ['nullable', 'integer'],
+            'evidence_uuid' => ['nullable', 'string', 'uuid'],
         ]);
 
         try {
@@ -120,7 +122,10 @@ class WebChatController extends Controller
                 user: $request->user(),
                 rawMessage: $validated['message'],
                 conversationId: $validated['conversation_id'] ?? null,
+                evidenceUuid: $validated['evidence_uuid'] ?? null,
             );
+
+            ActivityLogger::log($request->user()->id, 'chat', 'sent', 'Chat: '.mb_strimwidth($validated['message'], 0, 60, '...'), null, ['conversation_id' => $result['conversation_id'] ?? $validated['conversation_id']]);
 
             return response()->json($result, 202);
 
@@ -191,7 +196,7 @@ class WebChatController extends Controller
         if ($isStuck) {
             $message->update([
                 'status' => 'failed',
-                'error_message' => 'Proses timeout. Silakan kirim ulang pesan.',
+                'error_message' => __('chat.timeout'),
             ]);
         }
 

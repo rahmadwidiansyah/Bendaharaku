@@ -15,7 +15,7 @@ def match_best_category(text: str, categories: List[CategoryItem]) -> Optional[s
 
     for c in categories:
         raw_kws = c.keyword if c.keyword and c.keyword.strip() not in ('-', '') else c.category_name
-        kws = [k.strip().lower() for k in raw_kws.split(',')]
+        kws = [k.strip().lower() for k in re.split(r'\s*[,|;]\s*', raw_kws) if k.strip()]
 
         escaped = [re.escape(k) for k in kws if k]
         if escaped:

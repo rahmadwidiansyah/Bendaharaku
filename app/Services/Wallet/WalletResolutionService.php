@@ -203,8 +203,8 @@ class WalletResolutionService
             } elseif (count($matchedWallets) === 1) {
                 $name = $matchedWallets[0]['wallet']->name;
                 $offset = $matchedWallets[0]['offset'];
-                $prefix = substr($text, max(0, $offset - 10), 10);
-                if (preg_match('/\b(ke|to)\b/i', $prefix)) {
+                $prefix = mb_substr($text, max(0, $offset - 10), 10);
+                if (preg_match('/\b(ke|to)\b/iu', $prefix)) {
                     $destinationWallet = $name;
                 } else {
                     $sourceWallet = $name;

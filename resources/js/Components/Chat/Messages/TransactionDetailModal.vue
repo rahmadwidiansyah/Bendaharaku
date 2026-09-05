@@ -14,6 +14,7 @@ import { Link } from '@inertiajs/vue3'
 import axios from 'axios'
 import { useI18n } from 'vue-i18n'
 import { useToast } from '@/Composables/useToast'
+import AppIcon from '@/Components/AppIcon.vue'
 import ConfirmationDialog from '@/Components/ConfirmationDialog.vue'
 import BaseModal from '@/Components/BaseModal.vue'
 
@@ -51,15 +52,15 @@ const sourceInfo = computed(() => {
     const ref = props.transaction?.reference_number ?? ''
     const prefix = ref.split('-')[0] ?? ''
     const map = {
-        'WEB': { label: t('chat.source.web'),       icon: '💬', color: 'text-purple-400' },
-        'TEL': { label: t('chat.source.telegram'),  icon: '📡', color: 'text-blue-400' },
-        'WA':  { label: t('chat.source.whatsapp'),  icon: '📱', color: 'text-emerald-400' },
-        'DSC': { label: t('chat.source.discord'),   icon: '🎮', color: 'text-indigo-400' },
-        'API': { label: t('chat.source.api'),       icon: '⚡', color: 'text-yellow-400' },
-        'IMP': { label: t('chat.source.import'),    icon: '📂', color: 'text-orange-400' },
-        'MNL': { label: t('chat.source.manual'),    icon: '✏️', color: 'text-gray-400' },
+        'WEB': { label: t('chat.source.web'),       icon: 'message-circle', color: 'text-purple-400' },
+        'TEL': { label: t('chat.source.telegram'),  icon: 'send',           color: 'text-blue-400' },
+        'WA':  { label: t('chat.source.whatsapp'),  icon: 'smartphone',     color: 'text-emerald-400' },
+        'DSC': { label: t('chat.source.discord'),   icon: 'gamepad-2',      color: 'text-indigo-400' },
+        'API': { label: t('chat.source.api'),       icon: 'zap',            color: 'text-yellow-400' },
+        'IMP': { label: t('chat.source.import'),    icon: 'folder-down',    color: 'text-orange-400' },
+        'MNL': { label: t('chat.source.manual'),    icon: 'pencil',         color: 'text-gray-400' },
     }
-    return map[prefix] ?? { label: t('chat.source.dashboard'), icon: '🌐', color: 'text-gray-400' }
+    return map[prefix] ?? { label: t('chat.source.dashboard'), icon: 'globe', color: 'text-gray-400' }
 })
 
 function formatDateTime(dt) {
@@ -196,7 +197,7 @@ async function confirmDeleteTransaction() {
             <div class="divide-y divide-white/5">
 
                 <div class="flex items-center gap-3 py-2.5">
-                    <span class="text-base w-5 text-center">{{ sourceInfo.icon }}</span>
+                    <AppIcon :icon="sourceInfo.icon" class="w-5 h-5 shrink-0" :class="sourceInfo.color" />
                     <div class="flex-1">
                         <p class="text-2xs text-gray-500">{{ $t('chatTransaction.recordedFrom') }}</p>
                         <p :class="['text-sm font-medium', sourceInfo.color]">{{ sourceInfo.label }}</p>
@@ -204,7 +205,7 @@ async function confirmDeleteTransaction() {
                 </div>
 
                 <div v-if="intentLabel" class="flex items-center gap-3 py-2.5">
-                    <span class="text-base w-5 text-center">🎯</span>
+                    <AppIcon icon="target" class="w-5 h-5 shrink-0 text-violet-400" />
                     <div class="flex-1">
                         <p class="text-2xs text-gray-500">{{ $t('chatTransaction.intent.label') }}</p>
                         <p class="text-sm font-medium text-white">{{ intentLabel }}</p>
@@ -212,7 +213,7 @@ async function confirmDeleteTransaction() {
                 </div>
 
                 <div v-if="modelLabel" class="flex items-center gap-3 py-2.5">
-                    <span class="text-base w-5 text-center">🤖</span>
+                    <AppIcon icon="bot" class="w-5 h-5 shrink-0 text-sky-400" />
                     <div class="flex-1">
                         <p class="text-2xs text-gray-500">{{ $t('chatTransaction.processedBy') }}</p>
                         <p class="text-sm font-medium text-white">{{ modelLabel }}</p>
@@ -220,7 +221,7 @@ async function confirmDeleteTransaction() {
                 </div>
 
                 <div v-if="latencyLabel" class="flex items-center gap-3 py-2.5">
-                    <span class="text-base w-5 text-center">⏱</span>
+                    <AppIcon icon="clock-3" class="w-5 h-5 shrink-0 text-amber-400" />
                     <div class="flex-1">
                         <p class="text-2xs text-gray-500">{{ $t('chatTransaction.processingDuration') }}</p>
                         <p class="text-sm font-medium text-white">{{ latencyLabel }}</p>
@@ -228,7 +229,7 @@ async function confirmDeleteTransaction() {
                 </div>
 
                 <div v-if="confidenceLabel" class="flex items-center gap-3 py-2.5">
-                    <span class="text-base w-5 text-center">📊</span>
+                    <AppIcon icon="bar-chart-3" class="w-5 h-5 shrink-0 text-purple-400" />
                     <div class="flex-1">
                         <p class="text-2xs text-gray-500">{{ $t('chatTransaction.aiConfidence') }}</p>
                         <p :class="['text-sm font-medium', confidenceLabel.color]">
@@ -238,7 +239,7 @@ async function confirmDeleteTransaction() {
                 </div>
 
                 <div class="flex items-center gap-3 py-2.5">
-                    <span class="text-base w-5 text-center">✅</span>
+                    <AppIcon icon="check" class="w-5 h-5 shrink-0 text-emerald-400" />
                     <div class="flex-1">
                         <p class="text-2xs text-gray-500">{{ $t('common.status') }}</p>
                         <p :class="['text-sm font-medium', parseStatus.color]">{{ parseStatus.label }}</p>
@@ -246,7 +247,7 @@ async function confirmDeleteTransaction() {
                 </div>
 
                 <div v-if="transaction.date || transaction.created_at" class="flex items-center gap-3 py-2.5">
-                    <span class="text-base w-5 text-center">📅</span>
+                    <AppIcon icon="calendar" class="w-5 h-5 shrink-0 text-blue-400" />
                     <div class="flex-1">
                         <p class="text-2xs text-gray-500">{{ $t('chatTransaction.transactionTime') }}</p>
                         <p class="text-sm font-medium text-white">
@@ -266,7 +267,7 @@ async function confirmDeleteTransaction() {
                         class="w-full flex items-center justify-between py-3 text-left hover:bg-white/3 transition-colors"
                     >
                         <div class="flex items-center gap-2">
-                            <span class="text-base">💬</span>
+                            <AppIcon icon="message-square" class="w-4 h-4 shrink-0 text-gray-500" />
                             <span class="text-sm text-gray-400 font-medium">{{ $t('chatTransaction.rawPrompt') }}</span>
                         </div>
                         <svg :class="['w-4 h-4 text-gray-600 transition-transform', openAccordion === 'prompt' ? 'rotate-180' : '']" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -285,7 +286,7 @@ async function confirmDeleteTransaction() {
                         class="w-full flex items-center justify-between py-3 text-left hover:bg-white/3 transition-colors"
                     >
                         <div class="flex items-center gap-2">
-                            <span class="text-base">🔧</span>
+                            <AppIcon icon="code-2" class="w-4 h-4 shrink-0 text-gray-500" />
                             <span class="text-sm text-gray-400 font-medium">JSON Metadata</span>
                         </div>
                         <svg :class="['w-4 h-4 text-gray-600 transition-transform', openAccordion === 'json' ? 'rotate-180' : '']" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

@@ -4,7 +4,7 @@
  *
  * Halaman utama Web Chat Bendaharaku.
  *
- * Layout: fullscreen (hideNav=true), full width di desktop (max-w-7xl).
+ * Layout: desktop sidebar tetap tampil (hideNav hanya di mobile), full width max-w-7xl.
  *
  * Jump-to-latest button ada di sini sebagai FAB overlay,
  * BUKAN di dalam ChatArea — agar tidak masuk ke scroll container
@@ -26,6 +26,7 @@ import { useChat }            from '@/Composables/useChat.js'
 import { useChatCommands }    from '@/Composables/useChatCommands.js'
 import { useVisualViewport }  from '@/Composables/useVisualViewport.js'
 import { useEvidenceUpload }  from '@/Composables/useEvidenceUpload.js'
+import { useLayoutPreference } from '@/Composables/useLayoutPreference.js'
 
 // ── Props dari Inertia (server-side) ──────────────────────────────
 const props = defineProps({
@@ -74,19 +75,31 @@ const {
 
 const { t } = useI18n()
 
+// ── Layout preference (desktop sidebar khusus chat) ─────────────────
+const { isDesktopLayout } = useLayoutPreference()
+const hideNav = computed(() => !isDesktopLayout.value)
+
 // ── Visual viewport (responsive to Android keyboard) ───────────────
 const { height: viewportHeight } = useVisualViewport()
 
-// ── Evidence upload ───────────────────────────────────────────────
+// ── Evidence upload — WA-style: foto dipilih → preview di composer, tidak langsung kirim ──
+// User bisa tambah caption lalu klik Send (seperti WA/Tele)
 const {
     setFile,
     upload,
     localPreviewUrl,
     evidence,
+    uploadedFile,
+    isUploading,
     reset: resetUpload,
 } = useEvidenceUpload()
 
 const isUploadSheetOpen = ref(false)
+
+// Preview untuk composer (WA-style): tampilkan thumbnail di atas input, tunggu Send
+const attachmentPreview = computed(() => localPreviewUrl.value ?? evidence.value?.url ?? null)
+const attachmentName = computed(() => uploadedFile.value?.name ?? evidence.value?.original_name ?? '')
+const hasAttachment = computed(() => !!uploadedFile.value || !!evidence.value?.uuid)
 
 // ── Evidence review ───────────────────────────────────────────────
 const isReviewSheetOpen = ref(false)
@@ -126,29 +139,66 @@ watch(isTyping, async (isNowTyping) => {
 
 // ── Handlers ──────────────────────────────────────────────────────
 
+/**
+ * WA-style: kirim teks + foto struk bersamaan.
+ * - Jika ada attachment (foto dipilih) → upload dulu, baru kirim evidence+caption sebagai SATU pesan.
+ * - Jika tidak ada attachment → kirim teks biasa.
+ * Foto HANYA ditampilkan sebagai image (tidak jadi text "[Evidence]").
+ */
 async function handleSend(text) {
     if (chatAreaComp.value?.el && !chatAreaRef.value) {
         chatAreaRef.value = chatAreaComp.value.el
     }
-    await sendMessage(text)
+
+    const trimmed = (text ?? '').trim()
+    const hasFile = !!uploadedFile.value
+
+    // Tidak ada teks & tidak ada foto → ignore
+    if (!trimmed && !hasFile) return
+
+    // Jika ada foto: upload dulu (jika belum), lalu kirim sebagai 1 bubble image+caption
+    if (hasFile) {
+        // Capture preview sebelum upload (karena upload() akan revoke blob)
+        const previewBefore = localPreviewUrl.value
+
+        // Upload jika belum punya evidence.uuid
+        if (!evidence.value?.uuid) {
+            await upload()
+        }
+
+        if (!evidence.value?.uuid) {
+            // Upload gagal → jangan kirim, biarkan user coba lagi (preview tetap ada)
+            return
+        }
+
+        const uuid = evidence.value.uuid
+        const previewUrl = previewBefore ?? evidence.value.url ?? localPreviewUrl.value
+        // Kirim SATU pesan: image + caption (caption bisa kosong)
+        await sendEvidenceMessage(uuid, previewUrl, trimmed)
+
+        resetUpload()
+        return
+    }
+
+    // Tidak ada foto → kirim teks biasa
+    await sendMessage(trimmed)
 }
 
-async function handleFileSelected(file) {
+function handleFileSelected(file) {
     if (chatAreaComp.value?.el && !chatAreaRef.value) {
         chatAreaRef.value = chatAreaComp.value.el
     }
 
-    // Siapkan file dan buat local preview URL
+    // WA-style: hanya set preview di composer, TIDAK langsung upload/kirim.
+    // User bisa tambah caption lalu klik Send (seperti WA & Telegram).
     setFile(file)
+    isUploadSheetOpen.value = false
+    nextTick(() => {
+        composerRef.value?.$el?.querySelector('textarea')?.focus()
+    })
+}
 
-    // Upload ke backend dulu, dapatkan UUID
-    await upload()
-
-    // Setelah upload selesai, evidence.value berisi { uuid, url, ... }
-    if (evidence.value?.uuid) {
-        await sendEvidenceMessage(evidence.value.uuid, localPreviewUrl.value ?? evidence.value.url)
-    }
-
+function handleRemoveAttachment() {
     resetUpload()
 }
 
@@ -182,8 +232,8 @@ function handleCommitSuccess({ uuid }) {
 }
 </script>
 
-<template>
-    <AuthenticatedLayout :hideNav="true">
+ <template>
+    <AuthenticatedLayout :hideNav="hideNav">
         <Head :title="t('chat.assistant')" />
 
         <!--
@@ -278,13 +328,17 @@ function handleCommitSuccess({ uuid }) {
                 @select="handleCommandSelect"
             />
 
-            <!-- Composer (sticky bottom) -->
+            <!-- Composer (sticky bottom) — WA-style: preview foto di atas input, caption bisa diketik -->
             <ChatComposer
                 ref="composerRef"
                 :is-loading="isLoading"
+                :is-uploading="isUploading"
+                :attachment-preview="attachmentPreview"
+                :attachment-name="attachmentName"
                 @send="handleSend"
                 @openCommands="openSheet"
                 @openUpload="isUploadSheetOpen = true"
+                @removeAttachment="handleRemoveAttachment"
             />
 
             <!-- Upload bottom sheet -->

@@ -5,7 +5,7 @@ from io import BytesIO
 from PIL import Image
 
 
-def preprocess_image(image_bytes: bytes, max_size: int = 4096) -> Image.Image:
+def preprocess_image(image_bytes: bytes, max_size: int = 2048) -> Image.Image:
     """
     Preprocess image for OCR:
     - Convert to RGB
@@ -44,6 +44,6 @@ def preprocess_image(image_bytes: bytes, max_size: int = 4096) -> Image.Image:
     if max(width, height) > max_size:
         ratio = max_size / max(width, height)
         new_size = (int(width * ratio), int(height * ratio))
-        img = img.resize(new_size, Image.LANCZOS)
+        img = img.resize(new_size, Image.BILINEAR)
 
     return img

@@ -1,6 +1,8 @@
 <script setup>
 import { useI18n } from 'vue-i18n'
 import BaseModal from '@/Components/BaseModal.vue'
+import AppIcon from '@/Components/AppIcon.vue'
+import { toLucide } from '@/utils/chatIcons.js'
 
 const { t } = useI18n()
 
@@ -62,7 +64,7 @@ function selectCommand(cmd) {
                         class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 active:bg-white/8 transition-colors text-left group"
                     >
                         <!-- Icon -->
-                        <span class="text-lg w-7 text-center shrink-0 leading-none">{{ cmd.icon }}</span>
+                        <AppIcon :icon="toLucide(cmd.icon)" class="w-5 h-5 shrink-0 text-purple-400" fallback="circle-help" />
 
                         <!-- Command + description -->
                         <div class="flex-1 min-w-0">

@@ -7,6 +7,7 @@ namespace App\Services\AI\Memory;
 use App\Models\UserAiMemory;
 use App\Models\UserAiMemoryContribution;
 use App\Models\UserAiMemoryLog;
+use App\Support\ActivityLogger;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -135,6 +136,9 @@ readonly class UserMemoryService
                 'metadata' => $metadata,
                 'algorithm_version' => 'v1-keyword',
             ]);
+
+            // Unified activity
+            ActivityLogger::log($userId, 'memory', strtolower($action), 'Memory '.strtolower($action).': '.$extracted['keyword'], implode('; ', $reasons).' (w:'.$newWeight.')', ['keyword' => $extracted['keyword'], 'source' => $source, 'weight' => $newWeight]);
         });
 
         $this->invalidateCache($userId);
@@ -349,7 +353,7 @@ readonly class UserMemoryService
                 continue;
             }
 
-            if (! preg_match('/\b'.preg_quote(mb_strtolower($pattern), '/').'\b/iu', $textLower)) {
+            if (! $this->memoryContains($textLower, $pattern)) {
                 continue;
             }
 
@@ -373,5 +377,15 @@ readonly class UserMemoryService
         $limit = (int) config('bendaharaku.ai.memory.max_memories', 5);
 
         return array_slice($matched, 0, $limit);
+    }
+
+    private function memoryContains(string $textLower, string $keyword): bool
+    {
+        $k = trim(mb_strtolower($keyword));
+        if ($k === '' || mb_strlen($k) < 3) {
+            return false;
+        }
+        $escaped = preg_quote($k, '/');
+        return (bool) preg_match('/(?<![\p{L}\p{N}_])'.$escaped.'(?![\p{L}\p{N}_])/iu', $textLower);
     }
 }

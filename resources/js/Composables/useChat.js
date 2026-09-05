@@ -239,7 +239,7 @@ export function useChat(initialMessages = [], initialConversationId = null, init
                 messages.value.push(normalizeMessage(errData.bot_message))
             } else {
                 // Fallback: tampilkan error bubble lokal
-                error.value = 'Gagal mengirim pesan. Periksa koneksi internet.'
+                error.value = t('chat.error.sendFailed')
                 messages.value.push(buildErrorMessage(err))
             }
         } finally {
@@ -320,7 +320,7 @@ export function useChat(initialMessages = [], initialConversationId = null, init
                 }
                 messages.value.push(normalizeMessage(errData.bot_message))
             } else {
-                error.value = 'Gagal mengirim bukti. Periksa koneksi internet.'
+                error.value = t('chat.error.evidenceFailed')
                 messages.value.push(buildErrorMessage(err))
             }
         } finally {
@@ -401,7 +401,7 @@ export function useChat(initialMessages = [], initialConversationId = null, init
 
     function buildErrorMessage(err) {
         const message = err?.response?.data?.message
-            ?? 'Gagal terhubung ke server. Coba lagi.'
+            ?? t('chat.error.connection')
         return {
             id:         null,
             _localId:   `error_${Date.now()}`,

@@ -231,7 +231,7 @@ abstract class BaseAdapter implements LLMAdapterInterface
 
     protected function decodeJson(string $jsonString): array
     {
-        $clean = trim(preg_replace('/^```json\s*|\s*```$/im', '', $jsonString));
+        $clean = trim(preg_replace('/\A\s*```(?:json)?\s*|\s*```\s*\z/i', '', $jsonString));
         $data = json_decode($clean, true);
 
         if (! is_array($data)) {

@@ -109,4 +109,20 @@ return [
     */
     'log_channel' => env('EVIDENCE_LOG_CHANNEL', 'evidence'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | LLM Fallback untuk OCR
+    |--------------------------------------------------------------------------
+    |
+    | Jika true, hasil OCR text akan dikirim ke LLM API (via AIManager) untuk
+    | pengelompokan transaksi otomatis. Regex parser tetap jadi fallback jika
+    | LLM tidak dikonfigurasi atau gagal. Cocok untuk struk yang rumit.
+    |
+    */
+    'llm' => [
+        'enabled' => env('EVIDENCE_LLM_ENABLED', true),
+        'fallback_threshold' => (float) env('EVIDENCE_LLM_FALLBACK_THRESHOLD', 0.6),
+        'primary' => env('EVIDENCE_LLM_PRIMARY', false), // jika true, LLM jadi primary sebelum regex
+    ],
+
 ];

@@ -68,3 +68,6 @@ Artisan::command('loan:send-reminders', function () {
 })->purpose('Kirim pengingat jatuh tempo hutang/piutang (D-1 dan hari H)');
 
 Schedule::command('loan:send-reminders')->dailyAt('07:00')->withoutOverlapping();
+
+// ── Prune activity logs 7 hari (Privacy > Activity Logs) setiap 03:00 ──
+Schedule::command('activity:prune --days=7')->dailyAt('03:00')->withoutOverlapping();

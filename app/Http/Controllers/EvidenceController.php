@@ -12,6 +12,8 @@ use App\Services\Evidence\EvidencePipelineService;
 use App\Services\Evidence\EvidenceUploadService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class EvidenceController extends Controller
 {
@@ -33,7 +35,8 @@ class EvidenceController extends Controller
             );
 
             $evidence = $result['evidence'];
-            $url = $result['url'];
+            // Pakai accessor model yang sudah route ke chat.evidence.image agar foto langsung tampil
+            $url = $evidence->url;
 
             Log::info('Evidence uploaded', [
                 'user_id' => $user->id,
@@ -74,5 +77,38 @@ class EvidenceController extends Controller
                 'message' => __('evidence.upload_failed'),
             ], 500);
         }
+    }
+
+    /**
+     * GET /chat/evidence/{uuid}/image
+     * Serve private evidence file dengan auth check.
+     * Dipakai ChatMessage imageUrl agar foto struk tampil di chat.
+     */
+    public function image(\Illuminate\Http\Request $request, string $uuid): BinaryFileResponse|\Illuminate\Http\JsonResponse
+    {
+        $user = $request->user();
+
+        $evidence = Evidence::where('uuid', $uuid)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (! $evidence) {
+            return response()->json(['message' => 'Evidence tidak ditemukan.'], 404);
+        }
+
+        $disk = $evidence->disk ?? 'evidence';
+        $path = $evidence->path;
+
+        if (! Storage::disk($disk)->exists($path)) {
+            return response()->json(['message' => 'File tidak ditemukan.'], 404);
+        }
+
+        $fullPath = Storage::disk($disk)->path($path);
+
+        return response()->file($fullPath, [
+            'Content-Type' => $evidence->mime_type ?? 'image/jpeg',
+            'Content-Disposition' => 'inline; filename="'.$evidence->original_name.'"',
+            'Cache-Control' => 'private, max-age=86400',
+        ]);
     }
 }

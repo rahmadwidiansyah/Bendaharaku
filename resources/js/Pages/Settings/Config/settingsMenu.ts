@@ -143,6 +143,13 @@ const settingsMenuTree: SettingsCategory[] = [
         route: 'settings.privacy.data',
       },
       {
+        id: 'activity-logs',
+        label: 'Activity Logs',
+        icon: 'Clock',
+        description: 'Riwayat aktivitas & log 7 hari',
+        route: 'settings.privacy.logs',
+      },
+      {
         id: 'danger-zone',
         label: 'Danger Zone',
         icon: 'AlertTriangle',

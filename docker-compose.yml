@@ -79,6 +79,26 @@ services:
         condition: service_healthy
 
   # ────────────────────────────────────────────────────────────────
+  # Scheduler — loop plug & play, menjalankan semua Schedule::command
+  # 00:30 ai:aggregate-metrics, 01:00 ai:prune-memories, 03:00 activity:prune --days=7,
+  # monthly tgl 1 06:00 budget:auto-generate, 07:00 loan:send-reminders
+  # ────────────────────────────────────────────────────────────────
+  scheduler:
+    image: bendaharaku:latest
+    container_name: bendaharaku_scheduler
+    restart: unless-stopped
+    command: ["sh", "-c", "while true; do php artisan schedule:run --verbose --no-interaction; sleep 60; done"]
+    env_file:
+      - .env
+    volumes:
+      - ./.env:/var/www/.env
+    networks:
+      - laravel
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ────────────────────────────────────────────────────────────────
   # Nginx
   # ────────────────────────────────────────────────────────────────
   nginx:
@@ -120,12 +140,16 @@ services:
   # ────────────────────────────────────────────────────────────────
   # OCR Service (Python FastAPI)
   # ────────────────────────────────────────────────────────────────
+  # OCR RapidOCR fallback (opsional, hemat RAM — Tesseract primary di app)
   ocr-service:
     build: ./ocr-service
-    image: bendaharaku-ocr-service
+    image: bendaharaku-rapidocr:latest
     container_name: bendaharaku_ocr
     hostname: ocr-service
     restart: unless-stopped
+    profiles: ["ocr"]
+    mem_limit: 512m
+    cpus: 1.0
     expose:
       - "8000"
     networks:

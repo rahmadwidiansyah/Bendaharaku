@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\TransactionDraft;
 use App\Models\TransactionLog;
 use App\Services\Chat\DraftConfirmationService;
+use App\Support\ActivityLogger;
 use App\Traits\CalculatesDebtAndReceivable;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -326,6 +327,13 @@ class TransactionController extends Controller
                 // Sinkronkan riwayat chat
                 $draftService->syncChatHistoryAfterConfirm($user->id, $draft->id, $transactionLog);
 
+                ActivityLogger::log($user->id, 'transaction', 'created', $transactionLog->subject !== '-' ? $transactionLog->subject : 'Transaksi dari Draft', 'Draft #'.$draft->id.' dikonfirmasi menjadi transaksi #'.$transactionLog->id, [
+                    'source' => 'DRAFT',
+                    'draft_id' => $draft->id,
+                    'transaction_id' => $transactionLog->id,
+                    'amount' => (float) $transactionLog->amount,
+                ]);
+
                 return redirect()->route('dashboard')->with('success', 'Draft berhasil disimpan dan dikonfirmasi!');
             } catch (\Exception $e) {
                 return back()->with('error', $e->getMessage());
@@ -338,7 +346,13 @@ class TransactionController extends Controller
         $validated = $this->validateTransaction($request);
 
         try {
-            $action->update($transaction, $validated, [], 'web');
+            $updated = $action->update($transaction, $validated, [], 'web');
+
+            ActivityLogger::log(Auth::id(), 'transaction', 'updated', $updated->subject !== '-' ? $updated->subject : 'Transaksi diupdate', 'Transaksi #'.$updated->id.' diupdate via web', [
+                'source' => 'WEB',
+                'transaction_id' => $updated->id,
+                'amount' => (float) $updated->amount,
+            ]);
 
             return redirect()->route('dashboard')->with('success', 'Transaksi diupdate!');
         } catch (\Exception $e) {
@@ -387,7 +401,12 @@ class TransactionController extends Controller
         }
 
         try {
-            $action->confirm($transaction);
+            $confirmed = $action->confirm($transaction);
+
+            ActivityLogger::log(Auth::id(), 'transaction', 'confirmed', $confirmed->subject !== '-' ? $confirmed->subject : 'Transaksi dikonfirmasi', 'Transaksi #'.$confirmed->id.' dikonfirmasi', [
+                'transaction_id' => $confirmed->id,
+                'amount' => (float) $confirmed->amount,
+            ]);
 
             return back()->with('success', 'Transaksi berhasil dikonfirmasi!');
         } catch (\Exception $e) {
@@ -433,7 +452,13 @@ class TransactionController extends Controller
         $this->authorizeOwnership($transaction);
 
         try {
+            $tid = $transaction->id;
+            $subject = $transaction->subject;
             $action->delete($transaction);
+
+            ActivityLogger::log(Auth::id(), 'transaction', 'deleted', $subject !== '-' ? $subject : 'Transaksi dihapus', 'Transaksi #'.$tid.' dihapus via web', [
+                'transaction_id' => $tid,
+            ]);
 
             return redirect()->route('dashboard')->with('success', 'Transaksi dihapus!');
         } catch (\Exception $e) {

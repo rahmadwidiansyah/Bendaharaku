@@ -15,6 +15,7 @@ use App\Models\UserAiMemoryLog;
 use App\Services\AI\AiCredentialManager;
 use App\Services\AI\AiPreferenceManager;
 use App\Services\AI\PlaceholderConnectionTester;
+use App\Support\ActivityLogger;
 use App\Support\SettingsChangeLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -165,6 +166,8 @@ class AiSettingsController extends Controller
                 $selectedModel
             );
         }
+
+        ActivityLogger::forUser($user, 'ai', $request->filled('api_key') ? 'updated' : 'switched', 'AI '.strtoupper($provider->value).' diperbarui', $oldModel !== $selectedModel ? "Model: {$oldModel} → {$selectedModel}" : null, ['provider' => $provider->value, 'model' => $selectedModel, 'is_active' => $isNowActive]);
 
         return response()->json([
             'success' => true,

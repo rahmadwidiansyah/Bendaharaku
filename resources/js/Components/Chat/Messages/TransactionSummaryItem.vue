@@ -2,11 +2,12 @@
 import { computed } from 'vue'
 import AppIcon from '@/Components/AppIcon.vue'
 import { getCategoryIconColor, getWalletIconColor } from '@/Composables/useIcon.js'
+import { toLucide } from '@/utils/chatIcons.js'
 
 const props = defineProps({
   type:         { type: String, default: 'expense' },
   category:     { type: String, default: '' },
-  categoryIcon: { type: String, default: '📄' },
+  categoryIcon: { type: String, default: 'file-text' },
   date:         { type: String, default: '' },
   amount:       { type: String, default: '' },
   wallet:       { type: String, default: '' },
@@ -33,7 +34,7 @@ const iconColor = computed(() => {
 
 <template>
   <div class="flex items-center gap-2.5 px-3.5 py-1.5 hover:bg-white/[0.02] transition-colors min-h-[2.25rem]">
-    <AppIcon :icon="categoryIcon" :class="['inline w-4 h-4 shrink-0', iconColor]" />
+    <AppIcon :icon="toLucide(categoryIcon)" :class="['inline w-4 h-4 shrink-0', iconColor]" fallback="file-text" />
     <div class="flex-1 min-w-0">
       <span class="text-xs font-medium text-gray-200 truncate leading-tight block">{{ category }}</span>
       <span v-if="groupType" class="text-2xs text-gray-600 leading-tight block mt-px">{{ groupType }}</span>
