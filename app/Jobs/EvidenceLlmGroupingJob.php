@@ -83,6 +83,11 @@ class EvidenceLlmGroupingJob implements ShouldQueue
                     'error_message' => $result['message'] ?? 'Grouping failed',
                     'metadata' => array_merge($botMessage->metadata ?? [], ['evidence_uuid' => $evidence->uuid, 'error_code' => $result['error_code'] ?? 'GROUPING_FAILED']),
                 ]);
+                $this->updateUserImageStatus($botMessage->conversation_id, $evidence->uuid, 'FAILED');
+                // Jika fail karena INVALID_AMOUNT (token abis, LLM gagal ekstrak nominal 0), coba fallback ke parsed amount evidence
+                if (($result['error_code'] ?? '') === 'INVALID_AMOUNT' || str_contains($result['message'] ?? '', 'Nominal tidak valid')) {
+                    Log::warning('EvidenceLlmGroupingJob: fallback ke parsed amount karena LLM amount 0', ['evidence_id' => $evidence->id, 'parsed_amount' => $evidence->parsed_data['amount'] ?? $evidence->amount ?? null]);
+                }
                 return;
             }
 
@@ -165,7 +170,37 @@ class EvidenceLlmGroupingJob implements ShouldQueue
                 'content' => [['type' => 'error', 'message' => 'Gagal memproses struk via LLM: ' . $e->getMessage(), 'severity' => 'error']],
                 'error_message' => $e->getMessage(),
             ]);
+            $this->updateUserImageStatus($botMessage->conversation_id, $evidence->uuid, 'FAILED');
         }
+    }
+
+    private function updateUserImageStatus(int $conversationId, string $uuid, string $status): void
+    {
+        $userMessage = ChatMessage::where('conversation_id', $conversationId)
+            ->where('role', 'user')
+            ->latest('id')
+            ->get()
+            ->first(function ($msg) use ($uuid) {
+                foreach ($msg->content ?? [] as $c) {
+                    if (($c['type'] ?? '') === 'image' && (($c['evidenceUuid'] ?? $c['evidence_uuid'] ?? '') === $uuid)) {
+                        return true;
+                    }
+                }
+                return false;
+            });
+        if (!$userMessage) return;
+        $content = $userMessage->content;
+        $changed = false;
+        foreach ($content as &$c) {
+            if (($c['type'] ?? '') === 'image' && (($c['evidenceUuid'] ?? $c['evidence_uuid'] ?? '') === $uuid)) {
+                $c['evidenceStatus'] = $status;
+                $c['evidence_status'] = $status;
+                $changed = true;
+            }
+        }
+        unset($c);
+        if ($changed) $userMessage->update(['content' => $content]);
+    }
     }
 
     private function buildChatResponseFromResult(array $result, \App\Chat\DTOs\ChatContext $context): \App\Chat\DTOs\ChatResponse

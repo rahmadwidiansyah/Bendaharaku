@@ -77,6 +77,99 @@ class LlmEvidenceGroupingService
         $source = 'WEB';
         $result = $this->orchestrator->process($user, $text, $source);
 
+        // Fallback kertas vs digital: jika LLM gagal ekstrak nominal (amount 0) tapi evidence punya parsed amount 5029, pakai itu
+        // Ini untuk struk kertas yang OCR-nya jelek (244 char) tapi TransferReceiptParser sudah benar 5029
+        $fallbackAmount = $evidence->parsed_data['amount'] ?? $evidence->amount ?? null;
+        if (!empty($result['is_multi']) && isset($result['multi_result'])) {
+            $hasZeroAmount = false;
+            foreach ($result['multi_result']->results as $it) {
+                if ($it->isSuccess() && ($it->transaction?->amount ?? $it->draft?->payload['amount'] ?? 0) == 0) {
+                    $hasZeroAmount = true;
+                    break;
+                }
+                if (!$it->isSuccess() && ($it->errorCode?->value ?? '') === 'INVALID_AMOUNT') {
+                    $hasZeroAmount = true;
+                    break;
+                }
+            }
+            // Jika semua item amount 0 dan ada fallback, pakai fallback (bagi rata atau single)
+            if ($hasZeroAmount && $fallbackAmount && $fallbackAmount > 0) {
+                Log::warning('Evidence LLM: amount 0 fallback ke parsed amount', ['evidence_id' => $evidence->id, 'fallback' => $fallbackAmount, 'caption' => $captionHint]);
+                $totalItems = count($result['multi_result']->results);
+                $failedItems = array_filter($result['multi_result']->results, fn($it) => !$it->isSuccess() && ($it->errorCode?->value ?? '') === 'INVALID_AMOUNT');
+                $successCount = $result['multi_result']->successCount();
+                // Hitung perItem berdasarkan jumlah item yang filter minta (jika ada filter, hitung dari failed+success yang terfilter)
+                $targetCount = $successCount > 0 ? $successCount : count($failedItems);
+                $perItem = $targetCount > 0 ? round($fallbackAmount / $targetCount, 2) : $fallbackAmount;
+
+                if ($successCount === 0 && count($failedItems) > 0) {
+                    // Semua failed karena INVALID_AMOUNT (kasus kertas 244 char) → buat ulang item yang gagal jadi sukses dengan fallback amount
+                    // Jangan buat single, tapi perbaiki tiap failed item jadi draft dengan amount perItem
+                    $newResults = [];
+                    foreach ($result['multi_result']->results as $it) {
+                        if (!$it->isSuccess() && ($it->errorCode?->value ?? '') === 'INVALID_AMOUNT') {
+                            // Buat draft baru untuk item yang gagal, pakai raw text sebagai notes
+                            $raw = $it->raw ?? 'Item';
+                            // Coba resolve kategori & wallet dari raw + fallback
+                            $fallbackText = $raw . ' ' . $perItem . ' dana';
+                            $fb = $this->orchestrator->process($user, $fallbackText, 'WEB');
+                            if (!empty($fb['success']) && isset($fb['transaction'])) {
+                                $newResults[] = \App\DTO\MultiTransactionItem::success(index: $it->index, transaction: $fb['transaction'], raw: $raw);
+                            } elseif (!empty($fb['success']) && isset($fb['draft'])) {
+                                $newResults[] = \App\DTO\MultiTransactionItem::successDraft(index: $it->index, draft: $fb['draft'], raw: $raw);
+                            } else {
+                                // Jika masih gagal, paksa buat draft manual dengan perItem
+                                $cat = $user->categories()->where('type_id', function($q){ $q->select('id')->from('transaction_types')->where('name','Expense')->limit(1); })->first();
+                                $wallet = $this->resolveHintWallet($captionHint, $user) ?? $this->detectWalletInOcr($ocrText, $user) ?? $user->wallets()->where('group_type','!=','System')->first();
+                                $payload = [
+                                    'amount' => $perItem,
+                                    'category_id' => $cat?->id,
+                                    'category_name' => $cat?->category_name ?? 'Lainnya',
+                                    'source_wallet_id' => $wallet?->id,
+                                    'source_wallet_name' => $wallet?->name,
+                                    'subject' => $raw,
+                                    'notes' => $raw,
+                                    'type_key' => 'expense',
+                                    'needs_wallet' => false,
+                                ];
+                                $draft = \App\Models\TransactionDraft::create([
+                                    'user_id' => $user->id,
+                                    'conversation_id' => $user->conversations()->where('is_active', true)->latest()->value('id'),
+                                    'ai_provider' => 'fallback',
+                                    'ai_model' => 'fallback-amount',
+                                    'draft_type' => 'single',
+                                    'status' => 'pending',
+                                    'ai_confidence' => 0.6,
+                                    'original_text' => $raw,
+                                    'expires_at' => now()->addHours(24),
+                                    'payload' => $payload,
+                                ]);
+                                $fakeTrx = app(\App\Chat\Services\DraftViewModelBuilder::class)->buildFakeTransactionFromPayload($payload, null);
+                                $newResults[] = \App\DTO\MultiTransactionItem::successDraft(index: $it->index, draft: $draft, raw: $raw);
+                            }
+                        } else {
+                            $newResults[] = $it;
+                        }
+                    }
+                    // Ganti results dengan yang sudah diperbaiki
+                    $result['multi_result'] = new \App\DTO\MultiTransactionResult(results: $newResults, provider: $result['multi_result']->provider ?? 'fallback', model: $result['multi_result']->model ?? 'fallback', confidence: 0.6);
+                    $result['success'] = true;
+                    $result['is_multi'] = true;
+                    return $result;
+                } else {
+                    // Patch amount 0 jadi perItem untuk yang sukses tapi 0
+                    foreach ($result['multi_result']->results as $it) {
+                        if ($it->isSuccess() && ($it->transaction?->amount ?? 0) == 0) {
+                            $it->transaction->amount = $perItem;
+                        }
+                        if ($it->isSuccess() && ($it->draft?->payload['amount'] ?? 0) == 0) {
+                            $it->draft->payload['amount'] = $perItem;
+                        }
+                    }
+                }
+            }
+        }
+
         // Post-process: samakan notes = description (jika LLM isi notes tapi description kosong, atau sebaliknya)
         // Dan pastikan wallet null → biar QuickWalletPicker muncul (jangan default ke Dompet Cash)
         if (!empty($result['is_multi']) && isset($result['multi_result'])) {
