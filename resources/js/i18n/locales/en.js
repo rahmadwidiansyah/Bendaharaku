@@ -1497,6 +1497,12 @@ export default {
             retry: 'Retry',
             loading: 'Loading...',
         },
+        evidence: {
+            summaryTitle: '📄 Receipt — :count items detected',
+            received: '📎 Receipt received, processing OCR. Review button will appear when ready.',
+            ready: '📎 Receipt ready for review. Click Review in the photo bubble to save.',
+            filterHint: 'Receipt filtered as requested.',
+        },
     },
 
     search: {
