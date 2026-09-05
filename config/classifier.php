@@ -20,7 +20,8 @@ return [
 
     // Minimum confidence threshold untuk classification
     // Jika di bawah threshold → UNKNOWN
-    'confidence_threshold' => env('CLASSIFIER_CONFIDENCE_THRESHOLD', 0.2),
+    // 0.15 lebih toleran untuk struk kertas pendek (244 char OCR Tesseract)
+    'confidence_threshold' => env('CLASSIFIER_CONFIDENCE_THRESHOLD', 0.15),
 
     // Keyword lists per document type
     // Setiap type punya array keywords (case-insensitive matching)
@@ -45,6 +46,7 @@ return [
         'SHOPPING_RECEIPT' => [
             'total',
             'subtotal',
+            'grand total',
             'ppn',
             'kasir',
             'qty',
@@ -59,6 +61,16 @@ return [
             'harga',
             'qty',
             'struk',
+            // fallback keywords untuk struk kertas pendek / OCR Tesseract
+            'rp',
+            'idr',
+            'jumlah',
+            'bayar',
+            'terima kasih',
+            'thank you',
+            'grandtotal',
+            'total rp',
+            'harga rp',
         ],
 
         'QRIS_RECEIPT' => [

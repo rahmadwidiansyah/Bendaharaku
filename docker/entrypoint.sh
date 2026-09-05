@@ -32,6 +32,16 @@ case "$MODE" in
             --workers 2
         ;;
 
+    scheduler)
+        echo "Entrypoint: running Scheduler loop"
+        exec sh -c "while true; do php artisan schedule:run --verbose --no-interaction; sleep 60; done"
+        ;;
+
+    sh|bash)
+        echo "Entrypoint: running custom shell command: $@"
+        exec "$@"
+        ;;
+
     *)
         echo "Entrypoint: unknown mode '$MODE', falling back to Apache only"
         exec apache2-foreground
