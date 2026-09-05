@@ -11,10 +11,9 @@
  * dan tidak menutupi bubble/card.
  */
 
-import { ref, computed, onMounted, nextTick, watch, onUnmounted } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { Head, usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
-import axios from 'axios'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import ChatHeader      from '@/Components/Chat/ChatHeader.vue'
 import ChatArea        from '@/Components/Chat/ChatArea.vue'
@@ -22,7 +21,6 @@ import ChatComposer    from '@/Components/Chat/ChatComposer.vue'
 import CommandSheet    from '@/Components/Chat/CommandSheet.vue'
 import ChatEmptyState  from '@/Components/Chat/ChatEmptyState.vue'
 import ChatUploadSheet    from '@/Components/Chat/ChatUploadSheet.vue'
-import EvidenceReviewSheet from '@/Components/Chat/EvidenceReviewSheet.vue'
 import { useChat }            from '@/Composables/useChat.js'
 import { useChatCommands }    from '@/Composables/useChatCommands.js'
 import { useVisualViewport }  from '@/Composables/useVisualViewport.js'
@@ -62,7 +60,6 @@ const {
     retryLastMessage,
     regenerateMessage,
     updateEvidenceInMessage,
-    updateEvidenceStatus,
     resumePending,
 } = useChat(props.initialMessages, props.conversation?.id ?? null, props.initialHasMore)
 
@@ -103,44 +100,6 @@ const attachmentPreview = computed(() => localPreviewUrl.value ?? evidence.value
 const attachmentName = computed(() => uploadedFile.value?.name ?? evidence.value?.original_name ?? '')
 const hasAttachment = computed(() => !!uploadedFile.value || !!evidence.value?.uuid)
 
-// ── Polling status evidence biar tombol Review muncul otomatis (fix: foto cuma jadi [Evidence] karena status ga ke-update) ──
-const evidencePollTimers = new Map()
-function pollEvidenceStatus(uuid) {
-    if (evidencePollTimers.has(uuid)) return
-    updateEvidenceStatus(uuid, 'PROCESSING')
-    const timer = setInterval(async () => {
-        try {
-            const { data } = await axios.get(route('chat.evidence.draft.show', { uuid }))
-            if (data.success) {
-                const status = data.evidence?.status ?? 'READY'
-                updateEvidenceStatus(uuid, status)
-                clearInterval(timer)
-                evidencePollTimers.delete(uuid)
-            }
-        } catch (e) {
-            const sc = e.response?.status
-            if (sc === 404) {
-                updateEvidenceStatus(uuid, 'FAILED')
-                clearInterval(timer)
-                evidencePollTimers.delete(uuid)
-            } else if (sc === 422) {
-                updateEvidenceStatus(uuid, 'PROCESSING')
-            }
-        }
-    }, 2000)
-    evidencePollTimers.set(uuid, timer)
-    setTimeout(() => {
-        if (evidencePollTimers.has(uuid)) {
-            clearInterval(evidencePollTimers.get(uuid))
-            evidencePollTimers.delete(uuid)
-        }
-    }, 90000)
-}
-
-// ── Evidence review ───────────────────────────────────────────────
-const isReviewSheetOpen = ref(false)
-const reviewUuid        = ref(null)
-
 // Dynamic container height: use visualViewport when available, fallback to 100dvh
 const containerStyle = computed(() => ({
     height: viewportHeight.value > 0
@@ -161,11 +120,6 @@ onMounted(async () => {
     // Resume polling pesan bot yang masih diproses (dari sesi sebelumnya)
     resumePending()
     await scrollToBottom(false)
-})
-
-onUnmounted(() => {
-    for (const t of evidencePollTimers.values()) clearInterval(t)
-    evidencePollTimers.clear()
 })
 
 // Pantau jika bot mulai mengetik, otomatis scroll ke bawah agar indikator 3 titik terlihat
@@ -214,10 +168,8 @@ async function handleSend(text) {
 
         const uuid = evidence.value.uuid
         const previewUrl = previewBefore ?? evidence.value.url ?? localPreviewUrl.value
-        // Kirim SATU pesan: image + caption (caption bisa kosong)
+        // Kirim SATU pesan: image + caption (caption bisa kosong) → LLM grouping via bubble (bukan sheet)
         await sendEvidenceMessage(uuid, previewUrl, trimmed)
-        // Mulai polling status OCR biar tombol Review muncul otomatis tanpa reload
-        pollEvidenceStatus(uuid)
 
         resetUpload()
         return
@@ -263,16 +215,6 @@ async function handleRegenerate(botMessage) {
     }
     await regenerateMessage(botMessage)
 }
-
-function handleReview(uuid) {
-    reviewUuid.value        = uuid
-    isReviewSheetOpen.value = true
-}
-
-function handleCommitSuccess({ uuid }) {
-    // Update bubble gambar agar status berubah ke COMMITTED dan tombol Review hilang
-    updateEvidenceInMessage(uuid)
-}
 </script>
 
  <template>
@@ -294,7 +236,7 @@ function handleCommitSuccess({ uuid }) {
                 :is-typing="isTyping"
             />
 
-            <!-- Chat area (flex-1, scrollable) -->
+            <!-- Chat area (flex-1, scrollable) — sekarang evidence via bubble LLM, bukan sheet -->
             <ChatArea
                 ref="chatAreaComp"
                 :messages="messages"
@@ -309,7 +251,6 @@ function handleCommitSuccess({ uuid }) {
                 @scrollUpdate="onScrollUpdate"
                 @regenerate="handleRegenerate"
                 @suggest="handleSuggestionSelect"
-                @review="handleReview"
                 class="flex-1"
             >
                 <template v-if="messages.length === 0 && !isLoading">
@@ -388,13 +329,6 @@ function handleCommitSuccess({ uuid }) {
             <ChatUploadSheet
                 v-model="isUploadSheetOpen"
                 @camera="handleFileSelected"
-            />
-
-            <!-- Evidence review sheet -->
-            <EvidenceReviewSheet
-                v-model="isReviewSheetOpen"
-                :evidence-uuid="reviewUuid"
-                @commitSuccess="handleCommitSuccess"
             />
 
         </div>

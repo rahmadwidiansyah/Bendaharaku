@@ -3,7 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import IconPicker from '@/Components/IconPicker.vue';
 import ConfirmationDialog from '@/Components/ConfirmationDialog.vue';
-import { computed, ref } from 'vue';
+import { computed, ref, nextTick, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
@@ -44,6 +44,17 @@ const deleteWallet = () => {
 const confirmDeleteWallet = () => {
     deleteForm.delete(route('wallets.destroy', props.wallet.id));
 };
+
+const keywordRef = ref(null);
+const autoResizeKeyword = () => {
+    nextTick(() => {
+        const el = keywordRef.value;
+        if (!el) return;
+        el.style.height = 'auto';
+        el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+    });
+};
+onMounted(() => autoResizeKeyword());
 </script>
 
 <template>
@@ -92,9 +103,10 @@ const confirmDeleteWallet = () => {
                 <div class="flex flex-col animate-slide-up opacity-0 relative z-40" style="animation-delay: 250ms;">
                     <label class="block text-2xs lg:text-sm font-medium text-gray-300 mb-1.5 lg:mb-2 ml-1">{{ t('wallet.keyword') }}</label>
                     <div
-                        class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-3 lg:p-4 group focus-within:border-purple-500/40 focus-within:ring-1 focus-within:ring-purple-500/20 transition-all">
-                        <input type="text" v-model="form.keyword" :placeholder="t('wallet.keywordHint')"
-                            class="w-full bg-transparent border-none text-white p-0 text-sm placeholder-gray-600 focus:ring-0 focus:outline-none">
+                        class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl px-3 lg:px-4 py-3 group focus-within:border-purple-500/40 focus-within:ring-1 focus-within:ring-purple-500/20 transition-all min-h-[52px] lg:min-h-[60px] flex items-center">
+                        <textarea ref="keywordRef" v-model="form.keyword" :placeholder="t('wallet.keywordHint')" rows="1"
+                            @input="autoResizeKeyword"
+                            class="w-full bg-transparent border-none text-white p-0 text-sm placeholder-gray-600 focus:ring-0 focus:outline-none resize-none overflow-hidden leading-5 min-h-[20px] max-h-[160px] break-words whitespace-pre-wrap"></textarea>
                     </div>
                     <div v-if="form.errors.keyword" class="text-red-500 text-2xs mt-1">{{ form.errors.keyword }}</div>
                 </div>

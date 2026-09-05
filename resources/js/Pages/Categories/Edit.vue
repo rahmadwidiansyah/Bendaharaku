@@ -3,7 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import IconPicker from '@/Components/IconPicker.vue';
 import ConfirmationDialog from '@/Components/ConfirmationDialog.vue';
 import { Head, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, nextTick, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
@@ -21,6 +21,17 @@ const form = useForm({
     icon_file: null,
     keyword: props.category.keyword,
 });
+
+const keywordRef = ref(null);
+const autoResizeKeyword = () => {
+    nextTick(() => {
+        const el = keywordRef.value;
+        if (!el) return;
+        el.style.height = 'auto';
+        el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+    });
+};
+onMounted(() => autoResizeKeyword());
 
 const handleFileSelected = (file) => {
     form.icon_file = file;
@@ -105,9 +116,10 @@ const confirmDelete = () => {
 
                 <div class="flex flex-col">
                     <label class="block text-2xs lg:text-sm font-medium text-gray-300 mb-1.5 lg:mb-2 ml-1">{{ t('category.keyword') }}</label>
-                    <div class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-3 lg:p-4 group focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all shadow-inner">
-                        <input type="text" v-model="form.keyword" :placeholder="t('category.keywordHint')"
-                            class="w-full bg-transparent border-none text-white p-0 text-sm placeholder-gray-600 focus:ring-0 focus:outline-none">
+                    <div class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl px-3 lg:px-4 py-3 group focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all shadow-inner min-h-[52px] lg:min-h-[60px] flex items-center">
+                        <textarea ref="keywordRef" v-model="form.keyword" :placeholder="t('category.keywordHint')" rows="1"
+                            @input="autoResizeKeyword"
+                            class="w-full bg-transparent border-none text-white p-0 text-sm placeholder-gray-600 focus:ring-0 focus:outline-none resize-none overflow-hidden leading-5 min-h-[20px] max-h-[160px] break-words whitespace-pre-wrap"></textarea>
                     </div>
                     <p class="text-2xs text-gray-500 mt-1.5 lg:mt-2 ml-1 italic">{{ t('category.keywordHint') }}</p>
                 </div>

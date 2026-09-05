@@ -17,8 +17,11 @@ class DraftViewModelBuilder
         $fakeTrx = new TransactionLog;
         $fakeTrx->amount = $payload['amount'] ?? 0;
         $fakeTrx->is_cleared = false;
-        $fakeTrx->subject = $payload['subject'] ?? null;
-        $fakeTrx->notes = $payload['notes'] ?? null;
+        // Samakan notes & description (nama barang) — sesuai request: description samain aja dengan note
+        $notes = $payload['notes'] ?? $payload['description'] ?? null;
+        $subject = $payload['subject'] ?? $notes ?? null;
+        $fakeTrx->subject = $subject;
+        $fakeTrx->notes = $notes ?? $subject;
         $fakeTrx->date = isset($payload['date'])
             ? Carbon::parse($payload['date'])
             : now();
