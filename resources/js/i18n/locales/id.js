@@ -1518,6 +1518,12 @@ categoryTab: {
             retry: 'Coba Lagi',
             loading: 'Memuat...',
         },
+        evidence: {
+            summaryTitle: '📄 Struk — :count item terdeteksi',
+            received: '📎 Bukti diterima, sedang diproses OCR. Tombol Review akan muncul saat siap.',
+            ready: '📎 Bukti siap direview. Klik Review di bubble foto untuk menyimpan transaksi.',
+            filterHint: 'Hasil struk difilter sesuai permintaan.',
+        },
     },
 
     search: {
