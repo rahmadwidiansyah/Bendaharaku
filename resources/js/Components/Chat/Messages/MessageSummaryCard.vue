@@ -6,7 +6,10 @@ const { t } = useI18n()
 
 const props = defineProps({
   component: { type: Object, required: true },
+  metadata: { type: Object, default: () => ({}) },
 })
+
+const isEvidence = computed(() => !!props.metadata?.evidence_uuid)
 
 const allSuccess = computed(() => props.component.all_success)
 const allFailed = computed(() => props.component.all_failed)
@@ -23,7 +26,7 @@ const tint = computed(() => {
     <div class="flex items-center justify-between px-3.5 py-2.5 border-b border-white/[0.04]">
       <div class="flex items-center gap-2">
         <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="tint.dot"></span>
-        <span class="text-xs font-semibold text-gray-200">{{ t('chat.multi.result') }}</span>
+        <span class="text-xs font-semibold text-gray-200">{{ isEvidence ? t('chat.evidence.summaryTitle', { count: component.total }) : t('chat.multi.result') }}</span>
       </div>
       <span class="text-2xs font-medium px-2 py-0.5 rounded-full" :class="[tint.bg, tint.fg]">
         {{ allSuccess ? t('common.success') : allFailed ? t('common.error') : t('common.partial') }}

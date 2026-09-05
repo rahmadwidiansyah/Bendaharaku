@@ -58,7 +58,7 @@ const componentMap = {
         v-if="componentMap[component.type]"
         :component="component"
         :content="content"
-        v-bind="component.type === 'transaction_card' ? { metadata } : {}"
+        v-bind="['transaction_card','summary_card'].includes(component.type) ? { metadata } : {}"
         @suggest="emit('suggest', $event)"
         @review="emit('review', $event)"
     />

@@ -285,6 +285,16 @@ return [
     'command_icon_saldo' => '💳',
 
     // ──────────────────────────────────────────────────────────────
+    // EVIDENCE / RECEIPT
+    // ──────────────────────────────────────────────────────────────
+    'evidence' => [
+        'summaryTitle' => '📄 Struk — :count item terdeteksi',
+        'received' => '📎 Bukti diterima, sedang diproses OCR. Tombol Review akan muncul saat siap.',
+        'ready_review' => '📎 Bukti siap direview. Klik Review di bubble foto untuk menyimpan transaksi.',
+        'filter_hint' => 'Hasil struk difilter sesuai permintaan.',
+    ],
+
+    // ──────────────────────────────────────────────────────────────
     // SUGGESTIONS
     // ──────────────────────────────────────────────────────────────
     'suggestion' => [

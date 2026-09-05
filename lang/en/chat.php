@@ -279,6 +279,16 @@ return [
     'command_icon_saldo' => '💳',
 
     // ──────────────────────────────────────────────────────────────
+    // EVIDENCE / RECEIPT
+    // ──────────────────────────────────────────────────────────────
+    'evidence' => [
+        'summaryTitle' => '📄 Receipt — :count items detected',
+        'received' => '📎 Receipt received, processing OCR. Review button will appear when ready.',
+        'ready_review' => '📎 Receipt ready for review. Click Review in the photo bubble to save.',
+        'filter_hint' => 'Receipt filtered as requested.',
+    ],
+
+    // ──────────────────────────────────────────────────────────────
     // SUGGESTIONS
     // ──────────────────────────────────────────────────────────────
     'suggestion' => [

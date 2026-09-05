@@ -1429,7 +1429,7 @@ categoryTab: {
         replyFailed: 'AI gagal merespons. Buka chat untuk melihat detail.',
         timeout: 'Bot tidak merespons terlalu lama. Coba kirim ulang pesanmu.',
         history: 'Riwayat percakapan',
-        placeholder: 'Tanya saya apa saja...',
+        placeholder: 'Ketik pesan...',
         typing: 'Sedang mengetik...',
         multi: {
             result: 'Hasil Multi Transaksi',

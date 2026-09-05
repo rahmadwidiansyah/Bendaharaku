@@ -33,27 +33,44 @@ class LlmEvidenceGroupingService
             return ['success' => false, 'error_code' => 'OCR_EMPTY', 'message' => 'OCR belum selesai, coba lagi.'];
         }
 
-        // Build text untuk LLM: OCR + wallet hint
+        // Build text untuk LLM: OCR + wallet hint + item filter hint
         $text = $ocrText;
         $captionHint = trim($captionHint);
+        $isFilterCaption = $captionHint !== '' && preg_match('/\b(punyaku|cuma|hanya|punya saya|milikku|yang saya)\b/iu', $captionHint);
+        $isWalletCaption = false;
+        $hintWallet = null;
+
         if ($captionHint !== '' && $captionHint !== '[Evidence]') {
-            // Validasi caption adalah wallet milik user (name/keyword) sebelum append
-            $hintWallet = $this->resolveHintWallet($captionHint, $user);
-            if ($hintWallet) {
-                $text .= "\n\n[Wallet hint: {$hintWallet->name}]";
-                Log::info('Evidence LLM: caption hint wallet resolved', ['evidence_id' => $evidence->id, 'hint' => $captionHint, 'wallet' => $hintWallet->name]);
+            if ($isFilterCaption) {
+                // Caption adalah filter item (mis. "punyaku cuma ayam goreng dan es jeruk") → jangan jadi wallet hint, tapi jadi filter hint
+                $text .= "\n\n[User filter: hanya simpan item yang disebutkan di: \"{$captionHint}\" — abaikan item lain di struk]";
+                Log::info('Evidence LLM: caption as item filter', ['evidence_id' => $evidence->id, 'hint' => $captionHint]);
             } else {
-                // Caption bukan wallet valid → tetap append sebagai hint tapi LLM boleh ignore
-                $text .= "\n\n[Wallet hint: {$captionHint}]";
+                // Cek apakah caption adalah wallet
+                $hintWallet = $this->resolveHintWallet($captionHint, $user);
+                if ($hintWallet) {
+                    $text .= "\n\n[Wallet hint: {$hintWallet->name}]";
+                    Log::info('Evidence LLM: caption hint wallet resolved', ['evidence_id' => $evidence->id, 'hint' => $captionHint, 'wallet' => $hintWallet->name]);
+                    $isWalletCaption = true;
+                } else {
+                    // Caption bukan wallet valid dan bukan filter eksplisit → treat sebagai catatan user (mis. penjelasan order) + bisa jadi filter implisit
+                    $text .= "\n\n[User note: {$captionHint} — gunakan sebagai konteks tambahan untuk grouping, jika ada nama barang spesifik di note, prioritaskan yang disebut]";
+                    Log::info('Evidence LLM: caption generic note', ['evidence_id' => $evidence->id, 'hint' => $captionHint]);
+                }
             }
-        } else {
-            // Caption kosong → coba deteksi wallet label di OCR text
+        }
+
+        if (!$isWalletCaption && !$isFilterCaption) {
+            // Caption kosong atau bukan wallet/filter → coba deteksi wallet label di OCR text
             $ocrWallet = $this->detectWalletInOcr($ocrText, $user);
             if ($ocrWallet) {
                 $text .= "\n\n[Wallet hint: {$ocrWallet->name}]";
                 Log::info('Evidence LLM: OCR wallet label detected', ['evidence_id' => $evidence->id, 'wallet' => $ocrWallet->name]);
             }
         }
+
+        // Instruksi PENTING: kelompok per kategori, jangan gabung semua jadi 1 (bug 5 item jadi 1)
+        $text .= "\n\n[Instruksi PENTING: Kelompokkan HANYA per kategori user. Jika 5 item semua kategori 'Makanan' → jadi 1 transaksi dengan notes berisi semua nama dipisah koma (contoh: 'Ayam Goreng, Nasi, Es Teh'). Jika ada Es Jeruk kategori 'Minuman' dan Ayam Goreng kategori 'Makanan' → jadi 2 transaksi terpisah. Jangan buat 1 transaksi untuk semua jika beda kategori. Amount per transaksi = jumlah amount item dalam kategori tersebut. Notes = daftar nama barang dalam kategori itu (samakan dengan description). Jika ada filter user seperti 'punyaku cuma X', hanya buat transaksi untuk X yang disebutkan. Jangan gabung reference number (12+ digit) sebagai amount.]";
 
         // Panggil orchestrator dengan source EVIDENCE (biar is_cleared logic sesuai WEB/DRAFT)
         // Pakai WEB agar jadi draft (butuh QuickWalletPicker jika wallet null)
