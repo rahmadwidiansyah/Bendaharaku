@@ -15,7 +15,7 @@
  * Emits:
  *   review(evidenceUuid)       — user menekan tombol Review
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppIcon from '@/Components/AppIcon.vue'
 
@@ -29,6 +29,106 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['review'])
+
+const isPreviewOpen = ref(false)
+
+// ——— WA-style full-screen zoom state ———
+const scale = ref(1)
+const translate = ref({ x: 0, y: 0 })
+const isDragging = ref(false)
+const dragStart = ref({ x: 0, y: 0 })
+const startTranslate = ref({ x: 0, y: 0 })
+const lastTouchDist = ref(0)
+const lastTap = ref(0)
+const swipeStartY = ref(0)
+
+function resetZoom() {
+    scale.value = 1
+    translate.value = { x: 0, y: 0 }
+}
+function clampScale(v) { return Math.min(4, Math.max(1, v)) }
+function handleWheel(e) {
+    e.preventDefault()
+    const delta = -e.deltaY * 0.001
+    const next = clampScale(scale.value + delta)
+    // keep centered — simple
+    scale.value = next
+    if (next === 1) translate.value = { x: 0, y: 0 }
+}
+function handleDoubleTap() {
+    if (scale.value > 1.5) resetZoom()
+    else scale.value = 2.5
+}
+function handleTouchStart(e) {
+    if (e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX
+        const dy = e.touches[0].clientY - e.touches[1].clientY
+        lastTouchDist.value = Math.hypot(dx, dy)
+    } else if (e.touches.length === 1) {
+        const now = Date.now()
+        if (now - lastTap.value < 300) handleDoubleTap()
+        lastTap.value = now
+        swipeStartY.value = e.touches[0].clientY
+        if (scale.value > 1) {
+            isDragging.value = true
+            dragStart.value = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+            startTranslate.value = { ...translate.value }
+        }
+    }
+}
+function handleTouchMove(e) {
+    if (e.touches.length === 2 && lastTouchDist.value) {
+        e.preventDefault()
+        const dx = e.touches[0].clientX - e.touches[1].clientX
+        const dy = e.touches[0].clientY - e.touches[1].clientY
+        const dist = Math.hypot(dx, dy)
+        const factor = dist / lastTouchDist.value
+        scale.value = clampScale(scale.value * factor)
+        lastTouchDist.value = dist
+        if (scale.value === 1) translate.value = { x: 0, y: 0 }
+    } else if (e.touches.length === 1 && isDragging.value) {
+        e.preventDefault()
+        const dx = e.touches[0].clientX - dragStart.value.x
+        const dy = e.touches[0].clientY - dragStart.value.y
+        translate.value = { x: startTranslate.value.x + dx, y: startTranslate.value.y + dy }
+    } else if (e.touches.length === 1 && scale.value === 1) {
+        // swipe down to close — track
+        const dy = e.touches[0].clientY - swipeStartY.value
+        if (dy > 0) {
+            // visual feedback via translate
+            translate.value = { x: 0, y: dy * 0.3 }
+        }
+    }
+}
+function handleTouchEnd(e) {
+    if (e.touches.length === 0) {
+        if (scale.value === 1) {
+            const dy = (e.changedTouches?.[0]?.clientY ?? 0) - swipeStartY.value
+            if (dy > 100) {
+                isPreviewOpen.value = false
+                resetZoom()
+            } else {
+                translate.value = { x: 0, y: 0 }
+            }
+        }
+        isDragging.value = false
+        lastTouchDist.value = 0
+    }
+}
+function handleDragStart(e) {
+    if (scale.value === 1) return
+    isDragging.value = true
+    dragStart.value = { x: e.clientX, y: e.clientY }
+    startTranslate.value = { ...translate.value }
+}
+function handleDragMove(e) {
+    if (!isDragging.value) return
+    const dx = e.clientX - dragStart.value.x
+    const dy = e.clientY - dragStart.value.y
+    translate.value = { x: startTranslate.value.x + dx, y: startTranslate.value.y + dy }
+}
+function handleDragEnd() { isDragging.value = false }
+function closePreview() { isPreviewOpen.value = false; resetZoom() }
 
 // Pilih URL gambar: lokalPreview dulu, fallback ke URL backend
 const src = computed(() =>
@@ -62,8 +162,13 @@ const statusMeta = computed(() => {
 
 <template>
     <div class="flex items-start gap-2.5 py-0.5">
-        <!-- Thumbnail -->
-        <div class="relative shrink-0 w-16 h-16 rounded-xl overflow-hidden border border-white/10 bg-gray-800">
+        <!-- Thumbnail — klik untuk popup gede biar bisa dibaca -->
+        <button
+            type="button"
+            class="relative shrink-0 w-16 h-16 rounded-xl overflow-hidden border border-white/10 bg-gray-800 hover:border-white/20 hover:scale-[1.02] active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50 group"
+            :aria-label="t('chat.openFullscreen')"
+            @click="isPreviewOpen = true"
+        >
             <img
                 v-if="src"
                 :src="src"
@@ -71,6 +176,10 @@ const statusMeta = computed(() => {
                 class="w-full h-full object-cover"
                 loading="lazy"
             />
+            <!-- Hint zoom -->
+            <span class="absolute bottom-1 right-1 w-5 h-5 rounded-full bg-black/60 backdrop-blur flex items-center justify-center opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity">
+                <AppIcon icon="maximize-2" class="w-3 h-3 text-white" />
+            </span>
             <!-- Overlay saat loading -->
             <div
                 v-if="statusMeta.spin"
@@ -84,13 +193,13 @@ const statusMeta = computed(() => {
             <!-- Committed checkmark -->
             <div
                 v-else-if="committed"
-                class="absolute inset-0 bg-purple-600/30 flex items-center justify-center"
+                class="absolute inset-0 bg-purple-600/30 flex items-center justify-center pointer-events-none"
             >
                 <svg class="w-6 h-6 text-white drop-shadow" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
             </div>
-        </div>
+        </button>
 
         <!-- Info + actions -->
         <div class="flex flex-col gap-1 min-w-0">
@@ -133,4 +242,84 @@ const statusMeta = computed(() => {
             </p>
         </div>
     </div>
+
+    <!-- WA-style full-screen viewer — zoom wheel/pinch, double-tap, drag, swipe down -->
+    <Teleport to="body">
+        <Transition
+            enter-active-class="transition duration-200 ease-out"
+            enter-from-class="opacity-0"
+            enter-to-class="opacity-100"
+            leave-active-class="transition duration-150 ease-in"
+            leave-from-class="opacity-100"
+            leave-to-class="opacity-0"
+        >
+            <div
+                v-if="isPreviewOpen"
+                class="fixed inset-0 z-[100] bg-black/95 backdrop-blur flex flex-col select-none"
+                tabindex="-1"
+                @keydown.esc="closePreview"
+                @click.self="closePreview"
+            >
+                <!-- Top bar WA -->
+                <header class="shrink-0 flex items-center gap-3 px-3 sm:px-4 py-3 bg-black/60 backdrop-blur border-b border-white/10">
+                    <button type="button" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors" :aria-label="t('common.close')" @click="closePreview">
+                        <AppIcon icon="arrow-left" class="w-5 h-5" />
+                    </button>
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold text-white leading-tight truncate">{{ t('chat.evidencePreview') }}</p>
+                        <p class="text-2xs text-white/60 truncate">Pinch/scroll untuk zoom • double-tap • drag saat zoom</p>
+                    </div>
+                    <a v-if="src" :href="src" target="_blank" rel="noopener" class="ml-auto w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center" :title="t('chat.openFullscreen')">
+                        <AppIcon icon="external-link" class="w-4 h-4" />
+                    </a>
+                    <button type="button" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center" @click="closePreview">
+                        <AppIcon icon="x" class="w-5 h-5" />
+                    </button>
+                </header>
+
+                <!-- Image stage -->
+                <div
+                    class="flex-1 relative overflow-hidden flex items-center justify-center bg-black touch-none"
+                    @wheel.prevent="handleWheel"
+                    @touchstart.passive="handleTouchStart"
+                    @touchmove.prevent="handleTouchMove"
+                    @touchend="handleTouchEnd"
+                    @mousedown="handleDragStart"
+                    @mousemove="handleDragMove"
+                    @mouseup="handleDragEnd"
+                    @mouseleave="handleDragEnd"
+                    @dblclick="handleDoubleTap"
+                >
+                    <img
+                        v-if="src"
+                        :src="src"
+                        :alt="t('chat.evidence')"
+                        class="max-w-[92vw] max-h-[82vh] object-contain will-change-transform select-none"
+                        :style="{
+                            transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`,
+                            transition: isDragging ? 'none' : 'transform 0.2s ease-out',
+                            cursor: scale > 1 ? (isDragging ? 'grabbing' : 'grab') : 'zoom-in'
+                        }"
+                        draggable="false"
+                    />
+                    <p v-else class="text-sm text-white/60">{{ t('common.noData') }}</p>
+                    <!-- hint -->
+                    <p v-if="scale === 1" class="absolute bottom-4 left-1/2 -translate-x-1/2 text-2xs text-white/50 bg-black/50 px-2.5 py-1 rounded-full pointer-events-none">Scroll untuk zoom • double-tap</p>
+                </div>
+
+                <!-- Bottom controls -->
+                <div class="shrink-0 flex items-center justify-center gap-2 px-4 py-3 bg-black/60 backdrop-blur border-t border-white/10">
+                    <button type="button" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center disabled:opacity-30" :disabled="scale<=1" @click="scale = clampScale(scale - 0.25)">
+                        <AppIcon icon="zoom-out" class="w-4 h-4" />
+                    </button>
+                    <span class="min-w-[56px] text-center text-xs font-bold tabular-nums text-white bg-white/10 px-2.5 py-1 rounded-full">{{ Math.round(scale*100) }}%</span>
+                    <button type="button" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center disabled:opacity-30" :disabled="scale>=4" @click="scale = clampScale(scale + 0.25)">
+                        <AppIcon icon="zoom-in" class="w-4 h-4" />
+                    </button>
+                    <span class="w-px h-6 bg-white/10 mx-1"></span>
+                    <button type="button" class="px-3 py-1.5 rounded-full bg-white text-black text-xs font-bold hover:bg-white/90 disabled:opacity-50" :disabled="scale===1 && translate.x===0 && translate.y===0" @click="resetZoom">Reset</button>
+                </div>
+            </div>
+        </Transition>
+    </Teleport>
 </template>

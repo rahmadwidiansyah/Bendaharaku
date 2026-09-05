@@ -10,6 +10,7 @@ use App\Chat\Formatters\WebFormatter;
 use App\Chat\Services\CommandRouter;
 use App\Enums\ChatPlatform;
 use App\Enums\TransactionIntent;
+use App\Jobs\EvidenceLlmGroupingJob;
 use App\Jobs\ProcessChatMessageJob;
 use App\Models\ChatMessage;
 use App\Models\Conversation;
@@ -115,33 +116,30 @@ class WebAdapter
             'status' => 'completed',
         ]);
 
-        // 3. Jika ada evidence (foto struk) → jangan parse caption sebagai transaksi
-        //    Caption "Tunai" yang ikut dengan foto bukan transaksi baru, tapi hint wallet untuk struk.
-        //    Sebelum fix, "Tunai" diparse sebagai transaksi dan gagal AI_PARSE_FAILED (log 5 char).
-        //    Sekarang: langsung ack bukti, OCR pipeline yang akan urus (bukan orchestrator).
+        // 3. Jika ada evidence (foto struk) → LLM primary grouping, tampil di bubble (bukan sheet)
+        //    Caption "Tunai"/"BCA" jadi wallet hint prioritas 1, OCR label wallet prioritas 2, else QuickWalletPicker
+        //    Nama barang → notes = description (samakan) biar multi kategori langsung kelompok
         if ($evidence) {
-            $isReady = $evidence->status->value === 'READY' || $evidence->status->value === 'RESOLVED';
-            $evidenceText = $isReady
-                ? '📎 Bukti siap direview. Klik Review di bubble foto untuk menyimpan transaksi.'
-                : '📎 Bukti diterima, sedang diproses OCR. Tombol Review akan muncul di foto saat siap — tidak perlu kirim "Tunai" lagi.';
-
+            $captionHint = trim($rawMessage) !== '' && trim($rawMessage) !== '[Evidence]' ? trim($rawMessage) : '';
             $botMessage = ChatMessage::create([
                 'conversation_id' => $conversation->id,
                 'role' => 'assistant',
-                'content' => [['type' => 'text', 'text' => $evidenceText]],
-                'raw_text' => $evidenceText,
+                'content' => [],
+                'raw_text' => null,
                 'metadata' => [
                     'evidence_uuid' => $evidence->uuid,
-                    'evidence_status' => $evidence->status->value,
-                    'intent' => 'evidence_ack',
+                    'caption_hint' => $captionHint,
+                    'intent' => 'evidence_grouping',
                     'success' => true,
                 ],
-                'status' => 'completed',
+                'status' => 'pending',
             ]);
+
+            EvidenceLlmGroupingJob::dispatch($evidence->id, $user->id, $botMessage->id, $captionHint);
 
             return [
                 'success' => true,
-                'queued' => false,
+                'queued' => true,
                 'conversation_id' => $conversation->id,
                 'user_message' => [
                     'id' => $userMessage->id,
@@ -154,12 +152,19 @@ class WebAdapter
                 'bot_message' => [
                     'id' => $botMessage->id,
                     'role' => 'assistant',
-                    'status' => 'completed',
-                    'content' => $botMessage->content,
+                    'status' => 'pending',
+                    'content' => [],
                     'metadata' => $botMessage->metadata ?? [],
                     'created_at' => $botMessage->created_at->toIso8601String(),
                 ],
             ];
+        }
+
+        // 3a. Filter struk: jika pesan seperti "punyaku cuma ayam goreng dan es jeruk" setelah evidence 5 item
+        //     → filter bubble sebelumnya jadi hanya 2 item yang disebutkan (biar ga perlu edit manual 3 lainnya)
+        $filterResponse = $this->tryHandleEvidenceFilter($user, $conversation, $rawMessage, $userMessage);
+        if ($filterResponse !== null) {
+            return $filterResponse;
         }
 
         // 3b. Coba handle sebagai command langsung (sync, tanpa queue).
@@ -510,6 +515,128 @@ class WebAdapter
         }
 
         return implode(' | ', array_filter($texts));
+    }
+
+    private function tryHandleEvidenceFilter(User $user, Conversation $conversation, string $rawMessage, ChatMessage $userMessage): ?array
+    {
+        $lower = mb_strtolower(trim($rawMessage));
+        // Deteksi filter: harus mengandung kata filter + minimal 3 char
+        $isFilter = str_contains($lower, 'punyaku') || str_contains($lower, 'cuma') || str_contains($lower, 'hanya') || str_contains($lower, 'punya saya') || str_contains($lower, 'milikku') || str_contains($lower, 'yang saya');
+        if (!$isFilter || mb_strlen($lower) < 5) {
+            return null;
+        }
+
+        // Cari bot message terakhir yang evidence_grouping (LLM struk)
+        $lastBot = ChatMessage::where('conversation_id', $conversation->id)
+            ->where('role', 'assistant')
+            ->where('status', 'completed')
+            ->whereJsonContains('metadata->intent', 'evidence_grouping')
+            ->latest('id')
+            ->first();
+
+        // Fallback: cari bot message terakhir yang multiTransaction (jika intent berbeda)
+        if (!$lastBot) {
+            $lastBot = ChatMessage::where('conversation_id', $conversation->id)
+                ->where('role', 'assistant')
+                ->where('status', 'completed')
+                ->latest('id')
+                ->first();
+            if (!$lastBot || empty($lastBot->content)) return null;
+            $hasCards = collect($lastBot->content)->contains(fn($c) => ($c['type'] ?? '') === 'transaction_card');
+            if (!$hasCards) return null;
+        }
+
+        $prevCards = collect($lastBot->content)->filter(fn($c) => ($c['type'] ?? '') === 'transaction_card')->values();
+        if ($prevCards->isEmpty()) return null;
+
+        // Filter: keep card jika notes/category-nya disebut di filter text
+        $filtered = $prevCards->filter(function ($card) use ($lower) {
+            $notes = mb_strtolower($card['transaction']['notes'] ?? $card['transaction']['category'] ?? '');
+            $category = mb_strtolower($card['transaction']['category'] ?? '');
+            // Cek apakah notes atau category muncul di filter text
+            if ($notes !== '' && str_contains($lower, $notes)) return true;
+            // Cek per kata (mis. "ayam goreng" → cek "ayam" dan "goreng")
+            $words = preg_split('/\s+/', $notes, -1, PREG_SPLIT_NO_EMPTY);
+            $matchedWords = 0;
+            foreach ($words as $w) {
+                if (mb_strlen($w) >= 3 && str_contains($lower, $w)) $matchedWords++;
+            }
+            if ($matchedWords >= 1 && count($words) <= 2) return true;
+            if ($matchedWords >= 2) return true;
+            if ($category !== '' && str_contains($lower, $category)) return true;
+            return false;
+        })->values();
+
+        // Jika tidak ada yang match atau semua match → bukan filter valid, biarkan flow normal
+        if ($filtered->isEmpty() || $filtered->count() === $prevCards->count()) {
+            return null;
+        }
+
+        // Buat summary baru untuk filtered
+        $total = $filtered->count();
+        $summary = collect($lastBot->content)->firstWhere('type', 'summary_card');
+        $newSummary = $summary ? [
+            'type' => 'summary_card',
+            'total' => $total,
+            'success' => $total,
+            'failed' => 0,
+            'confidence' => $summary['confidence'] ?? 0.9,
+            'label' => "✅ *{$total} transaksi terpilih* (dari {$prevCards->count()})",
+            'all_success' => true,
+            'all_failed' => false,
+        ] : null;
+
+        $newComponents = [];
+        if ($newSummary) $newComponents[] = $newSummary;
+        // Re-index filtered cards dengan index baru 1..n
+        foreach ($filtered as $idx => $card) {
+            $card['index'] = $idx + 1;
+            $newComponents[] = $card;
+        }
+
+        $botMessage = ChatMessage::create([
+            'conversation_id' => $conversation->id,
+            'role' => 'assistant',
+            'content' => $newComponents,
+            'raw_text' => self::extractTextFromComponents($newComponents),
+            'metadata' => [
+                'intent' => 'evidence_filter',
+                'success' => true,
+                'filtered_from' => $lastBot->id,
+                'original_count' => $prevCards->count(),
+                'filtered_count' => $total,
+            ],
+            'status' => 'completed',
+        ]);
+
+        Log::info('Evidence filter applied', [
+            'conversation_id' => $conversation->id,
+            'filter_text' => $rawMessage,
+            'original' => $prevCards->count(),
+            'filtered' => $total,
+        ]);
+
+        return [
+            'success' => true,
+            'queued' => false,
+            'conversation_id' => $conversation->id,
+            'user_message' => [
+                'id' => $userMessage->id,
+                'role' => 'user',
+                'status' => 'completed',
+                'content' => $userMessage->content,
+                'metadata' => $userMessage->metadata ?? [],
+                'created_at' => $userMessage->created_at->toIso8601String(),
+            ],
+            'bot_message' => [
+                'id' => $botMessage->id,
+                'role' => 'assistant',
+                'status' => 'completed',
+                'content' => $botMessage->content,
+                'metadata' => $botMessage->metadata ?? [],
+                'created_at' => $botMessage->created_at->toIso8601String(),
+            ],
+        ];
     }
 
     private function resolveConversation(User $user, ?int $conversationId): Conversation

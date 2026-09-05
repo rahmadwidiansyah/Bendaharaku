@@ -102,6 +102,42 @@ class EvidenceResolver
         $confidences[] = $duplicate['confidence'];
         $metadata['duplicate'] = $duplicate;
 
+        // ── Guard: SHOPPING_RECEIPT tidak boleh income (bug 81M) ───────
+        if (($data->documentType?->value ?? '') === 'SHOPPING_RECEIPT' && strtolower($transactionType) === 'income') {
+            Log::warning('Evidence resolver: SHOPPING_RECEIPT income mismatch, force to expense', [
+                'evidence_id' => $evidence->id,
+                'original_type' => $transactionType,
+                'merchant' => $data->merchantName,
+                'category' => $category['category_name'] ?? null,
+            ]);
+            $transactionType = 'expense';
+            $warnings[] = 'type_mismatch_shopping_income';
+            // confidence turun biar tidak auto-resolved
+            $confidences[] = 0.3;
+        }
+
+        // ── Guard: amount absurd (81M) — jangan auto-resolved ────────────
+        $amountGuardThreshold = 100_000_000; // 100jt
+        if (($data->amount ?? 0) > $amountGuardThreshold) {
+            Log::warning('Evidence resolver: amount suspicious, force review', [
+                'evidence_id' => $evidence->id,
+                'amount' => $data->amount,
+                'threshold' => $amountGuardThreshold,
+            ]);
+            $warnings[] = 'amount_suspicious';
+            $confidences[] = 0.2;
+        }
+
+        // ── Guard: merchant "Pendapatan Lain-lain" di shopping receipt → kategori tidak reliable ──
+        if (str_contains(mb_strtolower($data->merchantName ?? ''), 'pendapatan') && ($data->documentType?->value ?? '') === 'SHOPPING_RECEIPT') {
+            Log::warning('Evidence resolver: merchant pendapatan on shopping, low confidence', [
+                'evidence_id' => $evidence->id,
+                'merchant' => $data->merchantName,
+            ]);
+            $warnings[] = 'merchant_pendapatan_mismatch';
+            $confidences[] = 0.25;
+        }
+
         // ── Hitung overall confidence ────────────────────────────────
         $validConfidences = array_filter($confidences, fn ($c) => $c > 0);
         $overallConfidence = count($validConfidences) > 0
