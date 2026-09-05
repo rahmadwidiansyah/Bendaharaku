@@ -285,44 +285,47 @@ onUnmounted(stopGenerationPolling);
 
     <AuthenticatedLayout>
         <div class="px-4 sm:px-5 pb-40 pt-4 sm:pt-6 w-full lg:max-w-7xl mx-auto lg:px-8 relative z-10">
-            <!-- Top bar: month slider kiri, aksi kanan -->
+            <!-- Top bar: month slider kiri, aksi kanan — optimasi hit area & a11y -->
             <div class="flex items-center justify-between gap-2 mb-5 sm:mb-6">
                 <div class="flex items-center gap-1.5">
                     <button
                         type="button"
-                        class="w-8 h-8 shrink-0 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-raised)] flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
-                        aria-label="Previous month"
+                        class="w-9 h-9 sm:w-8 sm:h-8 shrink-0 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-raised)] flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-brand-border)] hover:bg-[var(--color-surface-overlay)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/30 transition-all active:scale-95"
+                        :aria-label="t('btn.prev')"
                         @click="shiftMonth(-1)"
                     >
                         <AppIcon icon="chevron-left" class="w-4 h-4" />
                     </button>
 
-                    <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-raised)] shadow-card">
-                        <AppIcon icon="calendar" class="w-3.5 h-3.5 text-[var(--color-brand)]" />
-                        <span class="text-xs font-bold text-[var(--color-text-primary)]">{{ periodLabel }}</span>
+                    <div class="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-raised)] shadow-card backdrop-blur">
+                        <span class="w-7 h-7 rounded-lg bg-[var(--color-brand-subtle)] border border-[var(--color-brand-border)] flex items-center justify-center shrink-0">
+                            <AppIcon icon="calendar" class="w-3.5 h-3.5 text-[var(--color-brand)]" />
+                        </span>
+                        <span class="text-sm font-bold tracking-tight text-[var(--color-text-primary)] tabular-nums">{{ periodLabel }}</span>
                     </div>
 
                     <button
                         type="button"
-                        class="w-8 h-8 shrink-0 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-raised)] flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
-                        aria-label="Next month"
+                        class="w-9 h-9 sm:w-8 sm:h-8 shrink-0 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-raised)] flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-brand-border)] hover:bg-[var(--color-surface-overlay)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/30 transition-all active:scale-95"
+                        :aria-label="t('btn.next')"
                         @click="shiftMonth(1)"
                     >
                         <AppIcon icon="chevron-right" class="w-4 h-4" />
                     </button>
                 </div>
 
-                <div class="flex items-center gap-1.5">
+                <div class="flex items-center gap-1.5 sm:gap-2">
                     <Button
                         v-if="!budgetData && isCurrentPeriod"
                         as="a"
                         :href="route('budgeting.create')"
                         variant="secondary"
                         size="xs"
-                        class="w-8 h-8 shrink-0 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-raised)] flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+                        class="w-9 h-9 sm:w-auto sm:px-3 sm:py-2 shrink-0 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-raised)] flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-brand)] hover:border-[var(--color-brand-border)] hover:bg-[var(--color-brand-subtle)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/30 transition-all active:scale-95"
                         :aria-label="t('budgeting.createManual')"
                     >
                         <template #icon-left><AppIcon icon="plus" class="w-4 h-4" /></template>
+                        <span class="hidden sm:inline text-xs font-semibold ml-1">{{ t('budgeting.createManual') }}</span>
                     </Button>
                     <Button
                         v-if="budgetData && isCurrentPeriod"
@@ -330,21 +333,25 @@ onUnmounted(stopGenerationPolling);
                         :href="route('budgeting.create')"
                         variant="secondary"
                         size="xs"
-                        class="w-8 h-8 shrink-0 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-raised)] flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
-                        :aria-label="t('budgeting.createManual')"
+                        class="w-9 h-9 sm:w-auto sm:px-3 sm:py-2 shrink-0 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-raised)] flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-brand)] hover:border-[var(--color-brand-border)] hover:bg-[var(--color-brand-subtle)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/30 transition-all active:scale-95"
+                        :aria-label="t('budgeting.edit')"
+                        :title="t('budgeting.edit')"
                     >
                         <template #icon-left><AppIcon icon="pencil" class="w-4 h-4" /></template>
+                        <span class="hidden sm:inline text-xs font-semibold ml-1">{{ t('budgeting.edit') }}</span>
                     </Button>
                     <Button
                         v-if="budgetData && isCurrentPeriod"
                         variant="secondary"
                         size="xs"
-                        class="w-8 h-8 shrink-0 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-raised)] flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+                        class="w-9 h-9 sm:w-auto sm:px-3 sm:py-2 shrink-0 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-raised)] flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-brand)] hover:border-[var(--color-brand-border)] hover:bg-[var(--color-brand-subtle)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/30 transition-all active:scale-95"
                         :aria-label="t('budgeting.refresh')"
+                        :title="t('budgeting.refresh')"
                         :loading="isGenerating"
                         @click="requestRegenerate"
                     >
-                        <template #icon-left><AppIcon icon="refresh-cw" class="w-4 h-4" /></template>
+                        <template #icon-left><AppIcon :icon="isGenerating ? 'loader-2' : 'refresh-cw'" :class="['w-4 h-4', isGenerating ? 'animate-spin' : '']" /></template>
+                        <span class="hidden sm:inline text-xs font-semibold ml-1">{{ t('budgeting.refresh') }}</span>
                     </Button>
                 </div>
             </div>
@@ -452,24 +459,26 @@ onUnmounted(stopGenerationPolling);
                             </div>
                         </div>
 
-                        <!-- Stats -->
-                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 mt-5">
-                            <div class="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-overlay)] p-3 sm:p-4 text-center">
-                                <p class="text-base sm:text-lg font-bold leading-tight tracking-tight break-words text-[var(--color-text-primary)]">{{ formatRupiah(totalBudget) }}</p>
-                                <p class="text-2xs text-[var(--color-text-muted)] mt-1">{{ t('budgeting.totalBudget') }}</p>
+                        <!-- Stats — hierarki nominal diperjelas: tabular, compact untuk mobile -->
+                        <div class="grid grid-cols-3 gap-2 sm:gap-3 mt-5">
+                            <div class="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-overlay)] p-2.5 sm:p-4 text-center group hover:border-[var(--color-brand-border)] transition-colors">
+                                <p class="text-[11px] font-bold tracking-widest uppercase text-[var(--color-text-muted)]">{{ t('budgeting.totalBudget') }}</p>
+                                <p class="text-sm sm:text-base lg:text-lg font-black leading-none tracking-tight tabular-nums text-[var(--color-text-primary)] mt-1 truncate" :title="formatRupiah(totalBudget)">{{ formatRupiah(totalBudget) }}</p>
+                                <p class="hidden sm:block text-2xs text-[var(--color-text-muted)] mt-1 tabular-nums">{{ formatRupiah(totalBudget) }}</p>
                             </div>
-                            <div class="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-expense-bg)] p-3 sm:p-4 text-center">
-                                <p class="text-base sm:text-lg font-bold leading-tight tracking-tight break-words text-[var(--color-expense-text)]">{{ formatRupiah(totalSpent) }}</p>
-                                <p class="text-2xs text-[var(--color-expense-text)] mt-1">{{ t('budgeting.totalSpent') }}</p>
+                            <div class="rounded-xl border border-[var(--color-expense-border)] bg-[var(--color-expense-bg)] p-2.5 sm:p-4 text-center">
+                                <p class="text-[11px] font-bold tracking-widest uppercase text-[var(--color-expense-text)]/70">{{ t('budgeting.totalSpent') }}</p>
+                                <p class="text-sm sm:text-base lg:text-lg font-black leading-none tracking-tight tabular-nums text-[var(--color-expense-text)] mt-1 truncate" :title="formatRupiah(totalSpent)">{{ formatRupiah(totalSpent) }}</p>
+                                <div class="mt-1.5 h-1 rounded-full bg-[var(--color-expense-text)]/15 overflow-hidden hidden sm:block">
+                                    <div class="h-full bg-[var(--color-expense-text)] transition-all" :style="{ width: Math.min(100, totalBudget>0 ? (totalSpent/totalBudget)*100 : 0) + '%' }"></div>
+                                </div>
                             </div>
-                            <div class="col-span-2 sm:col-span-1 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-overlay)] p-3 sm:p-4 text-center">
-                                <p
-                                    class="text-base sm:text-lg font-bold leading-tight tracking-tight break-words"
-                                    :class="totalRemaining < 0 ? 'text-[var(--color-expense-text)]' : 'text-[var(--color-brand)]'"
-                                >
-                                    {{ formatRupiah(totalRemaining) }}
+                            <div class="rounded-xl border p-2.5 sm:p-4 text-center transition-colors" :class="totalRemaining < 0 ? 'border-[var(--color-expense-border)] bg-[var(--color-expense-bg)]' : 'border-[var(--color-border-default)] bg-[var(--color-surface-overlay)] hover:border-[var(--color-brand-border)]'">
+                                <p class="text-[11px] font-bold tracking-widest uppercase" :class="totalRemaining < 0 ? 'text-[var(--color-expense-text)]/70' : 'text-[var(--color-text-muted)]'">{{ t('budgeting.totalRemaining') }}</p>
+                                <p class="text-sm sm:text-base lg:text-lg font-black leading-none tracking-tight tabular-nums mt-1 truncate" :class="totalRemaining < 0 ? 'text-[var(--color-expense-text)]' : 'text-[var(--color-brand)]'" :title="formatRupiah(totalRemaining)">{{ formatRupiah(totalRemaining) }}</p>
+                                <p class="text-2xs font-semibold mt-1" :class="totalRemaining < 0 ? 'text-[var(--color-expense-text)]' : 'text-[var(--color-income-text)]'">
+                                    {{ totalRemaining < 0 ? 'Over ' + formatRupiah(Math.abs(totalRemaining)) : (totalBudget>0 ? Math.round((totalRemaining/totalBudget)*100)+' % sisa' : '') }}
                                 </p>
-                                <p class="text-2xs text-[var(--color-text-muted)] mt-1">{{ t('budgeting.totalRemaining') }}</p>
                             </div>
                         </div>
 
@@ -516,66 +525,75 @@ onUnmounted(stopGenerationPolling);
                                 />
                             </div>
 
-                            <div class="mt-3 space-y-2">
-                                <div class="flex items-center justify-between gap-1">
-                                    <span class="text-2xs text-[var(--color-text-muted)]">{{ t('budgeting.budget') }}</span>
-                                    <span class="text-xs font-semibold text-[var(--color-text-primary)]">
+                            <div class="mt-3 space-y-2.5">
+                                <div class="flex items-baseline justify-between gap-2">
+                                    <span class="text-2xs font-semibold tracking-widest uppercase text-[var(--color-text-muted)]">{{ t('budgeting.budget') }}</span>
+                                    <span class="text-sm font-black tabular-nums tracking-tight text-[var(--color-text-primary)]">
                                         {{ formatRupiah(row.target) }}
                                     </span>
                                 </div>
 
-                                <!-- Progress bar -->
-                                <div class="h-1.5 rounded-full bg-[var(--color-surface-muted)]/60 overflow-hidden" role="progressbar" :aria-valuenow="pct(row)" aria-valuemin="0" aria-valuemax="100">
+                                <!-- Progress bar — lebih tebal & ada label % -->
+                                <div class="relative h-2.5 rounded-full bg-[var(--color-surface-muted)] overflow-hidden p-0.5" role="progressbar" :aria-valuenow="pct(row)" aria-valuemin="0" aria-valuemax="100" :aria-label="row.name">
                                     <div
-                                        class="h-full rounded-full transition-all duration-500"
-                                        :class="isOver(row) ? 'bg-[var(--color-expense-text)]' : 'bg-[var(--color-brand)]'"
+                                        class="h-full rounded-full transition-all duration-700 ease-out relative overflow-hidden"
+                                        :class="isOver(row) ? 'bg-[var(--color-expense-text)]' : 'bg-gradient-to-r from-[var(--color-brand)] to-[var(--color-brand-mid)]'"
                                         :style="{ width: pct(row) + '%' }"
-                                    ></div>
-                                </div>
-
-                                <div class="flex items-center justify-between gap-1">
-                                    <span class="text-2xs text-[var(--color-text-muted)]">{{ t('budgeting.spent') }} {{ formatRupiah(row.spent) }}</span>
-                                    <span
-                                        class="text-2xs font-semibold"
-                                        :class="row.remaining < 0 ? 'text-[var(--color-expense-text)]' : 'text-[var(--color-text-secondary)]'"
                                     >
-                                        {{ t('budgeting.remaining') }} {{ formatRupiah(row.remaining) }}
-                                    </span>
+                                        <span class="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></span>
+                                    </div>
+                                    <span class="absolute inset-0 flex items-center justify-center text-[9px] font-black tracking-widest text-[var(--color-text-muted)] pointer-events-none" :class="pct(row) > 35 ? 'text-white/90' : ''">{{ pct(row) }}%</span>
                                 </div>
 
-                                <p v-if="isOver(row)" class="text-2xs font-semibold text-[var(--color-expense-text)]">
-                                    {{ t('budgeting.overBudget') }} {{ formatRupiah(row.spent - row.target) }}
+                                <div class="grid grid-cols-2 gap-2 text-2xs">
+                                    <div class="rounded-lg bg-[var(--color-surface-muted)]/40 px-2.5 py-2">
+                                        <p class="text-[10px] font-bold tracking-widest uppercase text-[var(--color-text-muted)]">{{ t('budgeting.spent') }}</p>
+                                        <p class="text-xs font-bold tabular-nums text-[var(--color-text-primary)] mt-0.5 truncate" :title="formatRupiah(row.spent)">{{ formatRupiah(row.spent) }}</p>
+                                    </div>
+                                    <div class="rounded-lg px-2.5 py-2 border" :class="row.remaining < 0 ? 'bg-[var(--color-expense-bg)] border-[var(--color-expense-border)]' : 'bg-[var(--color-surface-muted)]/30 border-transparent'">
+                                        <p class="text-[10px] font-bold tracking-widest uppercase" :class="row.remaining < 0 ? 'text-[var(--color-expense-text)]/70' : 'text-[var(--color-text-muted)]'">{{ t('budgeting.remaining') }}</p>
+                                        <p class="text-xs font-black tabular-nums mt-0.5 truncate" :class="row.remaining < 0 ? 'text-[var(--color-expense-text)]' : 'text-[var(--color-income-text)]'" :title="formatRupiah(row.remaining)">{{ formatRupiah(row.remaining) }}</p>
+                                    </div>
+                                </div>
+
+                                <p v-if="isOver(row)" class="inline-flex items-center gap-1 rounded-full bg-[var(--color-expense-bg)] border border-[var(--color-expense-border)] px-2.5 py-1 text-2xs font-bold text-[var(--color-expense-text)]">
+                                    <AppIcon icon="alert-triangle" class="w-3 h-3" /> {{ t('budgeting.overBudget') }} {{ formatRupiah(row.spent - row.target) }}
                                 </p>
                             </div>
 
-                            <!-- Expanded members -->
+                            <!-- Expanded members — nominal hierarchy diperjelas -->
                             <div
                                 v-if="expandedGroups.has(row.key)"
-                                class="mt-3 pt-3 border-t border-[var(--color-border-default)] space-y-2.5 animate-fade-in-up"
+                                class="mt-3 pt-3 border-t border-[var(--color-border-default)] space-y-3 animate-fade-in-up"
                             >
-                                <div v-for="m in row.members" :key="m.id" class="flex items-center gap-2">
-                                    <AppIcon
-                                        :icon="m.icon"
-                                        fallback="folder"
-                                        class="w-4 h-4 shrink-0"
-                                        :class="getCategoryIconColor(m.type?.name)"
-                                    />
+                                <div v-for="m in row.members" :key="m.id" class="group/member flex items-center gap-3 rounded-xl px-2 py-2 -mx-2 hover:bg-[var(--color-surface-overlay)] transition-colors">
+                                    <span class="w-9 h-9 rounded-xl bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] flex items-center justify-center shrink-0 group-hover/member:border-[var(--color-brand-border)] transition-colors">
+                                        <AppIcon
+                                            :icon="m.icon"
+                                            fallback="folder"
+                                            class="w-4 h-4"
+                                            :class="getCategoryIconColor(m.type?.name)"
+                                        />
+                                    </span>
                                     <div class="min-w-0 flex-1">
-                                        <p class="text-2xs font-semibold text-[var(--color-text-primary)] truncate sm:break-words">{{ m.name }}</p>
-                                        <div class="h-1 rounded-full bg-[var(--color-surface-muted)]/60 overflow-hidden mt-1" role="progressbar" :aria-valuenow="pct(m)" aria-valuemin="0" aria-valuemax="100">
-                                            <div
-                                                class="h-full rounded-full"
-                                                :class="isOver(m) ? 'bg-[var(--color-expense-text)]' : 'bg-[var(--color-brand)]'"
-                                                :style="{ width: pct(m) + '%' }"
-                                            ></div>
+                                        <p class="text-xs font-bold text-[var(--color-text-primary)] truncate">{{ m.name }}</p>
+                                        <div class="flex items-center gap-2 mt-1">
+                                            <div class="flex-1 h-1.5 rounded-full bg-[var(--color-surface-muted)] overflow-hidden" role="progressbar" :aria-valuenow="pct(m)" aria-valuemin="0" aria-valuemax="100">
+                                                <div
+                                                    class="h-full rounded-full transition-all"
+                                                    :class="isOver(m) ? 'bg-[var(--color-expense-text)]' : 'bg-[var(--color-brand)]'"
+                                                    :style="{ width: pct(m) + '%' }"
+                                                ></div>
+                                            </div>
+                                            <span class="text-[10px] font-black tabular-nums text-[var(--color-text-muted)] shrink-0">{{ pct(m) }}%</span>
                                         </div>
                                     </div>
-                                    <div class="text-right shrink-0">
-                                        <p class="text-xs font-bold text-[var(--color-text-primary)]">{{ formatRupiah(m.target) }}</p>
-                                        <p class="text-2xs text-[var(--color-text-muted)]">{{ t('budgeting.spent') }} {{ formatRupiah(m.spent) }}</p>
+                                    <div class="text-right shrink-0 min-w-[84px]">
+                                        <p class="text-xs font-black tabular-nums text-[var(--color-text-primary)] truncate" :title="formatRupiah(m.target)">{{ formatRupiah(m.target) }}</p>
+                                        <p class="text-[10px] tabular-nums truncate" :class="isOver(m) ? 'text-[var(--color-expense-text)] font-bold' : 'text-[var(--color-text-muted)]'" :title="formatRupiah(m.spent)">{{ formatRupiah(m.spent) }} / {{ formatRupiah(m.target) }}</p>
                                     </div>
                                 </div>
-                                <p v-if="row.members.length === 0" class="text-2xs text-[var(--color-text-muted)] text-center">—</p>
+                                <p v-if="row.members.length === 0" class="text-2xs text-[var(--color-text-muted)] text-center py-2 border border-dashed border-[var(--color-border-default)] rounded-xl">— {{ t('common.noData') }} —</p>
                             </div>
                         </div>
                     </div>

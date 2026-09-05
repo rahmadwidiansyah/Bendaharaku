@@ -125,12 +125,23 @@ const addCustomGroup = () => {
     closePicker();
 };
 
-// ─── Nominal & submit ──────────────────────────────────────────────
-const formatAmount = (value) =>
-    value ? new Intl.NumberFormat('id-ID').format(value) : '';
+// ─── Nominal & submit — optimasi UX nominal ─────────────────────────
+const formatAmount = (value) => {
+    if (!value && value !== 0) return '';
+    const n = String(value).replace(/\D/g, '');
+    if (!n) return '';
+    return new Intl.NumberFormat('id-ID').format(Number(n));
+};
 
 const onAmountInput = (index, event) => {
-    form.rows[index].target_amount = String(event.target.value).replace(/\D/g, '');
+    const raw = String(event.target.value).replace(/\D/g, '');
+    // batasi 9 digit (maks 999jt) biar ga overflow
+    form.rows[index].target_amount = raw.slice(0, 9);
+};
+
+const quickAmounts = [50000, 100000, 250000, 500000, 1000000];
+const setQuickAmount = (index, amount) => {
+    form.rows[index].target_amount = String(amount);
 };
 
 const totalBudget = computed(() =>
@@ -198,7 +209,7 @@ const submit = () => {
                     <div
                         v-for="(r, index) in form.rows"
                         :key="index"
-                        class="grid grid-cols-2 lg:grid-cols-12 gap-2.5 lg:gap-3 rounded-xl border border-white/10 bg-linear-to-br from-gray-900 to-gray-800 p-3 lg:p-3.5 shadow-inner animate-fade-in-up"
+                        class="grid grid-cols-2 lg:grid-cols-12 gap-2.5 lg:gap-3 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-raised)] p-3 lg:p-3.5 shadow-card animate-fade-in-up hover:border-[var(--color-brand-border)] transition-colors"
                     >
                         <!-- Kategori -->
                         <div class="col-span-2 lg:col-span-4">
@@ -262,19 +273,28 @@ const submit = () => {
                             </div>
                         </div>
 
-                        <!-- Nominal -->
+                        <!-- Nominal — optimasi: tabular, clear, chips -->
                         <div class="col-span-1 lg:col-span-4">
-                            <label class="block lg:hidden text-2xs font-semibold text-gray-500 mb-1 ml-1">{{ t('budgeting.amountLabel') }}</label>
-                            <div class="flex items-center gap-1 min-h-[44px] lg:h-[48px] bg-gray-900 border border-white/15 rounded-xl px-3 focus-within:border-purple-500 transition-all" :class="form.errors[`rows.${index}.target_amount`] ? 'border-red-500' : ''">
-                                <span class="text-xs font-bold text-purple-500 opacity-80 shrink-0">Rp</span>
+                            <label class="block lg:hidden text-2xs font-semibold tracking-widest uppercase text-gray-500 mb-1 ml-1">{{ t('budgeting.amountLabel') }}</label>
+                            <div class="flex items-center gap-1.5 min-h-[44px] lg:h-[48px] bg-[var(--color-surface-raised)] border rounded-xl px-3 transition-all focus-within:border-[var(--color-brand)] focus-within:ring-2 focus-within:ring-[var(--color-brand)]/20" :class="form.errors[`rows.${index}.target_amount`] ? 'border-[var(--color-expense-text)]' : 'border-[var(--color-border-default)]'">
+                                <span class="text-xs font-black tracking-widest text-[var(--color-brand)] shrink-0">RP</span>
                                 <input
                                     type="text"
                                     inputmode="numeric"
                                     :value="formatAmount(r.target_amount)"
                                     @input="onAmountInput(index, $event)"
                                     :placeholder="t('budgeting.amountPlaceholder')"
-                                    class="w-full bg-transparent border-none text-white p-0 text-sm font-semibold placeholder-gray-600 focus:ring-0 focus:outline-none text-right"
+                                    class="w-full bg-transparent border-none text-[var(--color-text-primary)] p-0 text-sm font-black tabular-nums placeholder:text-[var(--color-text-muted)] focus:ring-0 focus:outline-none text-right"
+                                    :aria-label="t('budgeting.amountLabel')"
                                 >
+                                <button v-if="r.target_amount" type="button" class="w-6 h-6 shrink-0 rounded-full bg-[var(--color-surface-muted)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] flex items-center justify-center transition-colors" @click="form.rows[index].target_amount=''" aria-label="Clear">
+                                    <AppIcon icon="x" class="w-3 h-3" />
+                                </button>
+                            </div>
+                            <!-- Quick chips + helper -->
+                            <div class="flex items-center gap-1 mt-1.5 flex-wrap">
+                                <button v-for="q in quickAmounts.slice(0,3)" :key="q" type="button" class="px-2 py-1 rounded-full border border-[var(--color-border-default)] bg-[var(--color-surface-overlay)] text-2xs font-bold tabular-nums text-[var(--color-text-secondary)] hover:border-[var(--color-brand-border)] hover:text-[var(--color-brand)] hover:bg-[var(--color-brand-subtle)] transition-colors" @click="setQuickAmount(index, q)">{{ formatRupiah(q) }}</button>
+                                <span v-if="r.target_amount" class="ml-auto text-2xs tabular-nums text-[var(--color-text-muted)]">{{ formatRupiah(r.target_amount) }}</span>
                             </div>
                         </div>
 
@@ -310,17 +330,23 @@ const submit = () => {
                     </button>
                 </div>
 
-                <!-- Total summary -->
-                <div class="rounded-xl border border-white/10 bg-linear-to-br from-gray-900 to-gray-800 p-4 lg:p-5 flex items-center justify-between shadow-inner">
-                    <p class="text-2xs sm:text-sm font-semibold text-gray-400">{{ t('budgeting.totalLabel') }}</p>
-                    <p class="text-base sm:text-lg font-black text-white tracking-tight">{{ formatRupiah(totalBudget) }}</p>
+                <!-- Total summary — sticky di mobile, hierarki nominal diperjelas -->
+                <div class="sticky bottom-2 z-10 rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-surface-raised)]/95 backdrop-blur-xl shadow-lg p-4 lg:p-5 flex items-center justify-between gap-3">
+                    <div>
+                        <p class="text-[11px] font-bold tracking-widest uppercase text-[var(--color-text-muted)]">{{ t('budgeting.totalLabel') }} · {{ form.rows.length }} {{ t('budgeting.categories') }}</p>
+                        <p class="text-2xs tabular-nums text-[var(--color-text-muted)] mt-0.5 hidden sm:block">{{ t('budgeting.totalBudget') }} = Σ nominal per kategori</p>
+                    </div>
+                    <p class="text-lg sm:text-xl font-black tracking-tight tabular-nums text-[var(--color-text-primary)]" :title="formatRupiah(totalBudget)">{{ formatRupiah(totalBudget) }}</p>
                 </div>
 
                 <div class="pt-1 lg:pt-2">
-                    <button type="submit" :disabled="form.processing"
-                        class="w-full bg-linear-to-br from-brand-deep to-brand-mid text-white font-bold text-sm tracking-wide py-3.5 lg:py-4 rounded-xl hover:-translate-y-0.5 active:scale-95 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed">
+                    <button type="submit" :disabled="form.processing || totalBudget===0"
+                        class="w-full bg-gradient-to-br from-[var(--color-brand-deep)] to-[var(--color-brand-mid)] text-white font-black text-sm tracking-wide py-3.5 lg:py-4 rounded-xl shadow-lg shadow-[var(--color-brand)]/20 hover:shadow-xl hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center gap-2">
+                        <AppIcon v-if="form.processing" icon="loader-2" class="w-4 h-4 animate-spin" />
+                        <AppIcon v-else icon="check" class="w-4 h-4" />
                         {{ form.processing ? t('btn.saving') : t('btn.save') }}
                     </button>
+                    <p v-if="totalBudget===0" class="text-center text-2xs text-[var(--color-text-muted)] mt-2">Isi minimal 1 nominal untuk simpan</p>
                 </div>
             </form>
 

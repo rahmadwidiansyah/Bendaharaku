@@ -503,6 +503,28 @@ export function useChat(initialMessages = [], initialConversationId = null, init
         })
     }
 
+    function updateEvidenceStatus(evidenceUuid, status) {
+        if (!evidenceUuid || !status) return
+        const normalized = String(status).toUpperCase()
+        messages.value = messages.value.map(msg => {
+            if (msg.role !== 'user') return msg
+            if (!Array.isArray(msg.content)) return msg
+            const hasTarget = msg.content.some(
+                c => c.type === 'image' && (c.evidenceUuid === evidenceUuid || c.evidence_uuid === evidenceUuid)
+            )
+            if (!hasTarget) return msg
+            return {
+                ...msg,
+                content: msg.content.map(c => {
+                    if (c.type === 'image' && (c.evidenceUuid === evidenceUuid || c.evidence_uuid === evidenceUuid)) {
+                        return { ...c, evidenceStatus: normalized, evidence_status: normalized }
+                    }
+                    return c
+                }),
+            }
+        })
+    }
+
     return {
         messages,
         conversationId,
@@ -525,6 +547,7 @@ export function useChat(initialMessages = [], initialConversationId = null, init
         onScrollUpdate,
         updateTransactionInMessage,
         updateEvidenceInMessage,
+        updateEvidenceStatus,
         resumePending,
     }
 }

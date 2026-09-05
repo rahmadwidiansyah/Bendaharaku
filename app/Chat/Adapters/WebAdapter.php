@@ -115,7 +115,54 @@ class WebAdapter
             'status' => 'completed',
         ]);
 
-        // 3. Coba handle sebagai command langsung (sync, tanpa queue).
+        // 3. Jika ada evidence (foto struk) → jangan parse caption sebagai transaksi
+        //    Caption "Tunai" yang ikut dengan foto bukan transaksi baru, tapi hint wallet untuk struk.
+        //    Sebelum fix, "Tunai" diparse sebagai transaksi dan gagal AI_PARSE_FAILED (log 5 char).
+        //    Sekarang: langsung ack bukti, OCR pipeline yang akan urus (bukan orchestrator).
+        if ($evidence) {
+            $isReady = $evidence->status->value === 'READY' || $evidence->status->value === 'RESOLVED';
+            $evidenceText = $isReady
+                ? '📎 Bukti siap direview. Klik Review di bubble foto untuk menyimpan transaksi.'
+                : '📎 Bukti diterima, sedang diproses OCR. Tombol Review akan muncul di foto saat siap — tidak perlu kirim "Tunai" lagi.';
+
+            $botMessage = ChatMessage::create([
+                'conversation_id' => $conversation->id,
+                'role' => 'assistant',
+                'content' => [['type' => 'text', 'text' => $evidenceText]],
+                'raw_text' => $evidenceText,
+                'metadata' => [
+                    'evidence_uuid' => $evidence->uuid,
+                    'evidence_status' => $evidence->status->value,
+                    'intent' => 'evidence_ack',
+                    'success' => true,
+                ],
+                'status' => 'completed',
+            ]);
+
+            return [
+                'success' => true,
+                'queued' => false,
+                'conversation_id' => $conversation->id,
+                'user_message' => [
+                    'id' => $userMessage->id,
+                    'role' => 'user',
+                    'status' => 'completed',
+                    'content' => $userMessage->content,
+                    'metadata' => $userMessage->metadata ?? [],
+                    'created_at' => $userMessage->created_at->toIso8601String(),
+                ],
+                'bot_message' => [
+                    'id' => $botMessage->id,
+                    'role' => 'assistant',
+                    'status' => 'completed',
+                    'content' => $botMessage->content,
+                    'metadata' => $botMessage->metadata ?? [],
+                    'created_at' => $botMessage->created_at->toIso8601String(),
+                ],
+            ];
+        }
+
+        // 3b. Coba handle sebagai command langsung (sync, tanpa queue).
         //    Command seperti /help, /saldo, /transaksi tidak butuh AI/LLM
         //    sehingga aman diproses synchronous di HTTP request.
         $startTime = microtime(true);
