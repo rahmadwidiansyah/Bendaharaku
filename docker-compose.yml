@@ -46,6 +46,10 @@ services:
     command: ["apache-only"]
     env_file:
       - .env
+    environment:
+      DB_HOST: host.docker.internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./.env:/var/www/.env
     networks:
@@ -70,6 +74,10 @@ services:
     command: ["queue"]
     env_file:
       - .env
+    environment:
+      DB_HOST: host.docker.internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./.env:/var/www/.env
     networks:
@@ -90,6 +98,10 @@ services:
     command: ["sh", "-c", "while true; do php artisan schedule:run --verbose --no-interaction; sleep 60; done"]
     env_file:
       - .env
+    environment:
+      DB_HOST: host.docker.internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./.env:/var/www/.env
     networks:
