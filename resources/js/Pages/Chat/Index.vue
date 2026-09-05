@@ -155,7 +155,8 @@ async function handleSend(text) {
 
     // Jika ada foto: upload dulu (jika belum), lalu kirim sebagai 1 bubble image+caption
     if (hasFile) {
-        // Capture preview sebelum upload (karena upload() akan revoke blob)
+        // Keep blob valid sampai optimistic bubble terganti server data
+        // upload() sekarang TIDAK revoke, jadi preview tetap valid
         const previewBefore = localPreviewUrl.value
 
         // Upload jika belum punya evidence.uuid
@@ -169,10 +170,12 @@ async function handleSend(text) {
         }
 
         const uuid = evidence.value.uuid
-        const previewUrl = previewBefore ?? evidence.value.url ?? localPreviewUrl.value
+        // Prefer blob yang masih valid, fallback ke server url
+        const previewUrl = previewBefore ?? localPreviewUrl.value ?? evidence.value.url
         // Kirim SATU pesan: image + caption (caption bisa kosong) → LLM grouping via bubble (bukan sheet)
         await sendEvidenceMessage(uuid, previewUrl, trimmed)
 
+        // Baru revoke setelah bubble terkirim (server akan pakai /chat/evidence/{uuid}/image)
         resetUpload()
         return
     }

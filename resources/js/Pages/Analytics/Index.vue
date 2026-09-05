@@ -211,8 +211,8 @@ const initCumulativeChart = async () => {
                             displayColors: false,
                             callbacks: {
                                 title: (items) => {
-                                    const d = parseDateOnly(items[0].label);
-                                    return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+                                    const d = parseDateOnly(items[0]?.label);
+                                    return d?.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) ?? (items[0]?.label ?? '');
                                 },
                                 label: (item) => 'Rp ' + Number(item.raw).toLocaleString('id-ID'),
                             }
@@ -323,6 +323,7 @@ function buildBarData(view) {
     const monthMap = new Map();
     dates.forEach((dateStr, i) => {
         const d = parseDateOnly(dateStr);
+        if (!d) return;
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
         if (!monthMap.has(key)) {
             monthMap.set(key, {

@@ -32,6 +32,9 @@ export function useEvidenceUpload() {
     const isDone = computed(() => state.value === UploadState.READY || state.value === UploadState.FAILED)
 
     function setFile(file) {
+        if (localPreviewUrl.value) {
+            URL.revokeObjectURL(localPreviewUrl.value)
+        }
         uploadedFile.value = file
         localPreviewUrl.value = URL.createObjectURL(file)
         state.value = UploadState.PENDING
@@ -62,10 +65,9 @@ export function useEvidenceUpload() {
             if (response.data.success) {
                 evidence.value = response.data.evidence
                 state.value = UploadState.UPLOADED
-                if (localPreviewUrl.value) {
-                    URL.revokeObjectURL(localPreviewUrl.value)
-                    localPreviewUrl.value = null
-                }
+                // JANGAN revoke localPreviewUrl di sini — masih dipakai optimistic bubble
+                // Biarkan Index.vue:handleSend() yang pakai previewBefore (blob valid)
+                // dan baru revoke saat resetUpload() setelah sendEvidenceMessage selesai
             } else {
                 throw new Error(response.data.message || t('chat.error.uploadFailed'))
             }

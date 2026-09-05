@@ -146,13 +146,14 @@ class OCRClient
             'ocr_version' => '2.0-tess-rapid',
         ]);
 
-        // Save to evidence_processing_logs for observability (Privacy Logs)
+        // Save to evidence_processing_logs for observability (Privacy Logs) — pakai status_before/after sesuai migration kanonik
         try {
             DB::table('evidence_processing_logs')->insert([
                 'evidence_id' => $evidence->id,
-                'stage' => 'ocr',
-                'status' => 'success',
-                'engine' => $engine,
+                'stage' => 'OCR',
+                'status_before' => $evidence->status->value ?? null,
+                'status_after' => 'OCR_SUCCESS',
+                'duration_ms' => $processingTimeMs,
                 'message' => $fallbackReason ? "fallback: {$fallbackReason}" : "engine: {$engine}",
                 'metadata' => json_encode([
                     'engine' => $engine,
