@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Chat\ChatApplicationService;
+use App\Chat\Components\TextComponent;
 use App\Chat\DTOs\ChatContext;
 use App\Chat\DTOs\ChatRequest;
+use App\Chat\DTOs\ChatResponse;
 use App\Chat\Formatters\WebFormatter;
 use App\Enums\ChatPlatform;
 use App\Models\ChatMessage;
@@ -118,6 +120,34 @@ class EvidenceLlmGroupingJob implements ShouldQueue
                 ]),
                 'error_message' => null,
             ]);
+
+            // Update user bubble status dari "Memproses" jadi "Siap" biar tidak stuck di "Memproses" meski sukses (request user)
+            // Cari user message yang mengandung evidence_uuid (lebih reliable dari LIKE JSON)
+            $userMessage = ChatMessage::where('conversation_id', $botMessage->conversation_id)
+                ->where('role', 'user')
+                ->latest('id')
+                ->get()
+                ->first(function ($msg) use ($evidence) {
+                    foreach ($msg->content ?? [] as $c) {
+                        if (($c['type'] ?? '') === 'image' && (($c['evidenceUuid'] ?? $c['evidence_uuid'] ?? '') === $evidence->uuid)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                });
+            if ($userMessage) {
+                $content = $userMessage->content;
+                $changed = false;
+                foreach ($content as &$c) {
+                    if (($c['type'] ?? '') === 'image' && (($c['evidenceUuid'] ?? $c['evidence_uuid'] ?? '') === $evidence->uuid)) {
+                        $c['evidenceStatus'] = 'READY';
+                        $c['evidence_status'] = 'READY';
+                        $changed = true;
+                    }
+                }
+                unset($c);
+                if ($changed) $userMessage->update(['content' => $content]);
+            }
 
             Log::info('EvidenceLlmGroupingJob: completed', [
                 'evidence_id' => $evidence->id,

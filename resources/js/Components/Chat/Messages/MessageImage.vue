@@ -161,11 +161,11 @@ const statusMeta = computed(() => {
 </script>
 
 <template>
-    <div class="flex items-start gap-2.5 py-0.5">
-        <!-- Thumbnail — klik untuk popup gede biar bisa dibaca -->
+    <div class="flex flex-col gap-1.5 py-0.5 w-full max-w-[280px]">
+        <!-- WA-style: gambar di atas, full width bubble -->
         <button
             type="button"
-            class="relative shrink-0 w-16 h-16 rounded-xl overflow-hidden border border-white/10 bg-gray-800 hover:border-white/20 hover:scale-[1.02] active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50 group"
+            class="relative w-full aspect-[4/3] rounded-xl overflow-hidden border border-white/10 bg-gray-800 hover:border-white/20 active:scale-[0.98] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50 group"
             :aria-label="t('chat.openFullscreen')"
             @click="isPreviewOpen = true"
         >
@@ -177,7 +177,7 @@ const statusMeta = computed(() => {
                 loading="lazy"
             />
             <!-- Hint zoom -->
-            <span class="absolute bottom-1 right-1 w-5 h-5 rounded-full bg-black/60 backdrop-blur flex items-center justify-center opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity">
+            <span class="absolute bottom-2 right-2 w-6 h-6 rounded-full bg-black/60 backdrop-blur flex items-center justify-center opacity-80 group-hover:opacity-100 transition-opacity">
                 <AppIcon icon="maximize-2" class="w-3 h-3 text-white" />
             </span>
             <!-- Overlay saat loading -->
@@ -201,9 +201,9 @@ const statusMeta = computed(() => {
             </div>
         </button>
 
-        <!-- Info + actions -->
-        <div class="flex flex-col gap-1 min-w-0">
-            <!-- Status -->
+        <!-- Caption hint dari struk ada di bubble terpisah (MessageText), di sini cuma status -->
+        <!-- Status di bawah gambar — WA style -->
+        <div class="flex items-center justify-between gap-2 px-1">
             <div class="flex items-center gap-1.5">
                 <span
                     class="inline-block w-1.5 h-1.5 rounded-full shrink-0"
@@ -213,34 +213,26 @@ const statusMeta = computed(() => {
                     {{ statusMeta.label }}
                 </span>
             </div>
-
-            <!-- Label bukti -->
-            <p class="text-xs text-white/80 leading-tight truncate max-w-[140px]">
-                {{ t('chat.evidenceLabel') }}
-            </p>
-
-            <!-- Tombol Review -->
-            <button
-                v-if="showReviewBtn"
-                type="button"
-                @click="emit('review', uuid)"
-                class="mt-0.5 self-start inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-2xs font-bold
-                       bg-white/10 text-white border border-white/15
-                       hover:bg-white/20 hover:border-white/25 active:scale-95 transition-all"
-            >
-                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-                {{ t('chat.reviewBtn') }}
-            </button>
-
-            <!-- Committed label -->
-            <p v-else-if="committed" class="text-2xs text-purple-400 font-semibold inline-flex items-center gap-1">
-                <AppIcon icon="check" class="w-3 h-3 shrink-0" />
-                {{ t('chat.committed') }}
-            </p>
+            <span class="text-2xs text-white/50 truncate">{{ t('chat.evidenceLabel') }}</span>
         </div>
+
+        <!-- Tombol Review — di bawah status, full width jika ada -->
+        <button
+            v-if="showReviewBtn"
+            type="button"
+            @click="emit('review', uuid)"
+            class="self-stretch inline-flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold
+                   bg-white text-black
+                   hover:bg-white/90 active:scale-[0.98] transition-all"
+        >
+            <AppIcon icon="eye" class="w-3.5 h-3.5" />
+            {{ t('chat.reviewBtn') }}
+        </button>
+
+        <p v-else-if="committed" class="text-2xs text-purple-400 font-semibold inline-flex items-center gap-1 px-1">
+            <AppIcon icon="check" class="w-3 h-3 shrink-0" />
+            {{ t('chat.committed') }}
+        </p>
     </div>
 
     <!-- WA-style full-screen viewer — zoom wheel/pinch, double-tap, drag, swipe down -->

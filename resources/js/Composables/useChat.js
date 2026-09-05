@@ -98,6 +98,14 @@ export function useChat(initialMessages = [], initialConversationId = null, init
                         messages.value[idx] = normalizeMessage(data.bot_message ?? messages.value[idx])
                     }
 
+                    // WA-style: update user bubble status juga biar tidak stuck "Memproses" meski sukses
+                    const botMeta = data.bot_message?.metadata ?? {}
+                    const evidenceUuid = botMeta.evidence_uuid || botMeta.evidenceUuid
+                    if (evidenceUuid) {
+                        const newStatus = data.status === 'completed' ? 'READY' : data.status === 'failed' ? 'FAILED' : 'PROCESSING'
+                        updateEvidenceStatus(evidenceUuid, newStatus)
+                    }
+
                     if (!isAtBottom.value) {
                         unreadCount.value += 1
                     }
