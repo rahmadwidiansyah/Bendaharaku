@@ -111,4 +111,101 @@ class EvidenceController extends Controller
             'Cache-Control' => 'private, max-age=86400',
         ]);
     }
+
+    /**
+     * POST /chat/evidence/{uuid}/retry
+     * Retry grouping LLM jika gagal (server LLM down) — chat turun seperti kirim lagi.
+     * Cari bot message pending/failed untuk evidence ini, set jadi pending lagi & dispatch job.
+     */
+    public function retry(\Illuminate\Http\Request $request, string $uuid): JsonResponse
+    {
+        $user = $request->user();
+
+        $evidence = Evidence::where('uuid', $uuid)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (! $evidence) {
+            return response()->json(['success' => false, 'message' => 'Evidence tidak ditemukan.'], 404);
+        }
+
+        // Cari conversation & bot message terakhir untuk evidence ini
+        $conversation = \App\Models\Conversation::where('user_id', $user->id)
+            ->where('is_active', true)
+            ->latest()
+            ->first();
+
+        if (! $conversation) {
+            return response()->json(['success' => false, 'message' => 'Conversation tidak ditemukan.'], 404);
+        }
+
+        $botMessage = \App\Models\ChatMessage::where('conversation_id', $conversation->id)
+            ->where('role', 'assistant')
+            ->where('status', '!=', 'completed')
+            ->whereJsonContains('metadata->evidence_uuid', $uuid)
+            ->latest('id')
+            ->first();
+
+        // Fallback: ambil bot terakhir dengan evidence_uuid apapun status
+        if (! $botMessage) {
+            $botMessage = \App\Models\ChatMessage::where('conversation_id', $conversation->id)
+                ->where('role', 'assistant')
+                ->whereJsonContains('metadata->evidence_uuid', $uuid)
+                ->latest('id')
+                ->first();
+        }
+
+        if (! $botMessage) {
+            return response()->json(['success' => false, 'message' => 'Pesan bot untuk evidence ini tidak ditemukan.'], 404);
+        }
+
+        // Reset user bubble status jadi PROCESSING biar tidak stuck di FAILED
+        $userMessage = \App\Models\ChatMessage::where('conversation_id', $conversation->id)
+            ->where('role', 'user')
+            ->latest('id')
+            ->get()
+            ->first(function ($msg) use ($uuid) {
+                foreach ($msg->content ?? [] as $c) {
+                    if (($c['type'] ?? '') === 'image' && (($c['evidenceUuid'] ?? $c['evidence_uuid'] ?? '') === $uuid)) {
+                        return true;
+                    }
+                }
+                return false;
+            });
+
+        if ($userMessage) {
+            $content = $userMessage->content;
+            $changed = false;
+            foreach ($content as &$c) {
+                if (($c['type'] ?? '') === 'image' && (($c['evidenceUuid'] ?? $c['evidence_uuid'] ?? '') === $uuid)) {
+                    $c['evidenceStatus'] = 'PROCESSING';
+                    $c['evidence_status'] = 'PROCESSING';
+                    $changed = true;
+                }
+            }
+            unset($c);
+            if ($changed) $userMessage->update(['content' => $content]);
+        }
+
+        // Reset bot jadi pending & dispatch ulang
+        $captionHint = $botMessage->metadata['caption_hint'] ?? '';
+        $botMessage->update([
+            'status' => 'pending',
+            'content' => [],
+            'error_message' => null,
+            'metadata' => array_merge($botMessage->metadata ?? [], ['retry_at' => now()->toIso8601String()]),
+        ]);
+
+        \App\Jobs\EvidenceLlmGroupingJob::dispatch($evidence->id, $user->id, $botMessage->id, $captionHint);
+
+        Log::info('Evidence retry dispatched', ['evidence_id' => $evidence->id, 'uuid' => $uuid, 'bot_message_id' => $botMessage->id]);
+
+        return response()->json([
+            'success' => true,
+            'bot_message' => [
+                'id' => $botMessage->id,
+                'status' => 'pending',
+            ],
+        ]);
+    }
 }

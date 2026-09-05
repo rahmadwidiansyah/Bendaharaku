@@ -37,7 +37,7 @@ defineProps({
     },
 })
 
-const emit = defineEmits(['suggest', 'review'])
+const emit = defineEmits(['suggest', 'review', 'retry'])
 
 const componentMap = {
     text:             MessageText,
@@ -61,6 +61,7 @@ const componentMap = {
         v-bind="['transaction_card','summary_card'].includes(component.type) ? { metadata } : {}"
         @suggest="emit('suggest', $event)"
         @review="emit('review', $event)"
+        @retry="emit('retry', $event)"
     />
     <!-- Fallback: tipe tidak dikenal, tampilkan teks mentah (debug only) -->
     <div v-else class="text-2xs text-gray-600 font-mono px-2 py-1">

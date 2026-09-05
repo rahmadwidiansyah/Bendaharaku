@@ -14,6 +14,7 @@
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { Head, usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
+import axios from 'axios'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import ChatHeader      from '@/Components/Chat/ChatHeader.vue'
 import ChatArea        from '@/Components/Chat/ChatArea.vue'
@@ -60,6 +61,7 @@ const {
     retryLastMessage,
     regenerateMessage,
     updateEvidenceInMessage,
+    updateEvidenceStatus,
     resumePending,
 } = useChat(props.initialMessages, props.conversation?.id ?? null, props.initialHasMore)
 
@@ -215,6 +217,33 @@ async function handleRegenerate(botMessage) {
     }
     await regenerateMessage(botMessage)
 }
+
+async function handleRetryEvidence(uuid) {
+    if (!uuid) return
+    if (chatAreaComp.value?.el && !chatAreaRef.value) {
+        chatAreaRef.value = chatAreaComp.value.el
+    }
+    // Optimistic: set user bubble jadi PROCESSING biar tidak stuck di FAILED, chat turun seperti kirim lagi
+    updateEvidenceStatus(uuid, 'PROCESSING')
+    await scrollToBottom(true, true)
+    try {
+        const { data } = await axios.post(route('chat.evidence.retry', { uuid }))
+        if (data.success) {
+            // Bot akan jadi pending lagi, polling akan jalan via resumePending / pollBotMessage
+            // Cari bot pending terbaru dan track
+            const pendingBot = messages.value.find(m => m.role === 'assistant' && m.status === 'pending' && m.metadata?.evidence_uuid === uuid)
+            if (pendingBot) {
+                // useChat akan handle polling otomatis via resumePending, tapi kita trigger manual
+                await scrollToBottom(true)
+            }
+        }
+    } catch (e) {
+        updateEvidenceStatus(uuid, 'FAILED')
+        console.error('retryEvidence failed', e)
+    }
+    // Scroll turun seperti WA kirim lagi
+    await scrollToBottom(true, true)
+}
 </script>
 
  <template>
@@ -251,6 +280,7 @@ async function handleRegenerate(botMessage) {
                 @scrollUpdate="onScrollUpdate"
                 @regenerate="handleRegenerate"
                 @suggest="handleSuggestionSelect"
+                @retryEvidence="handleRetryEvidence"
                 class="flex-1"
             >
                 <template v-if="messages.length === 0 && !isLoading">

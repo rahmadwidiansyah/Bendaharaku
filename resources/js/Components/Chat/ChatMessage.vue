@@ -33,7 +33,7 @@ const props = defineProps({
     showAvatar: { type: Boolean, default: true },
 })
 
-const emit = defineEmits(['retry', 'regenerate', 'suggest', 'review'])
+const emit = defineEmits(['retry', 'regenerate', 'suggest', 'review', 'retryEvidence'])
 
 // Pesan bot yang masih diproses di background queue
 const isPending = computed(() =>
@@ -104,6 +104,7 @@ const {
                         :component="comp"
                         @suggest="emit('suggest', $event)"
                         @review="emit('review', $event)"
+                        @retry="emit('retryEvidence', $event)"
                     />
                 </template>
                 <!-- Fallback: hanya teks (backward compat untuk pesan lama tanpa filteredInline) -->

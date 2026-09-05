@@ -458,6 +458,8 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/evidence', [EvidenceController::class, 'store'])->name('evidence.store');
         // Serve private image untuk Chat (foto harus tampil, bukan text [Evidence])
         Route::get('/evidence/{uuid}/image', [EvidenceController::class, 'image'])->name('evidence.image');
+        // Retry grouping LLM jika gagal (server LLM down) — chat turun seperti kirim lagi
+        Route::post('/evidence/{uuid}/retry', [EvidenceController::class, 'retry'])->name('evidence.retry');
 
         // Review & edit draft hasil OCR
         Route::get('/evidence/{uuid}/draft', [EvidenceReviewController::class, 'show'])->name('evidence.draft.show');
