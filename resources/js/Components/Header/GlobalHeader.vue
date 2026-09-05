@@ -233,16 +233,16 @@ const closeProfileMenu = () => { showProfileMenu.value = false }
 // ─── Back button ──────────────────────────────────────────────────
 const handleBack = () => {
     if (props.backHref) {
-        router.visit(props.backHref)
+        router.visit(props.backHref, { preserveState: false, preserveScroll: false })
         return
     }
 
     // Untuk halaman settings sub-page, kembali ke settings index
     if (isSettingsSubPage.value) {
         try {
-            router.visit(route('settings.index'))
+            router.visit(route('settings.index'), { preserveState: false })
         } catch {
-            router.visit('/dashboard')
+            router.visit('/dashboard', { preserveState: false })
         }
         return
     }
@@ -250,9 +250,9 @@ const handleBack = () => {
     // Untuk halaman category sub-page, kembali ke categories index
     if (isCategorySubPage.value) {
         try {
-            router.visit(route('categories.index'))
+            router.visit(route('categories.index'), { preserveState: false })
         } catch {
-            router.visit('/dashboard')
+            router.visit('/dashboard', { preserveState: false })
         }
         return
     }
@@ -260,21 +260,21 @@ const handleBack = () => {
     // Untuk halaman budgeting sub-page, kembali ke budgeting index
     if (isBudgetingSubPage.value) {
         try {
-            router.visit(route('budgeting.index'))
+            router.visit(route('budgeting.index'), { preserveState: false, preserveScroll: false })
         } catch {
-            window.history.back()
+            router.visit('/dashboard', { preserveState: false })
         }
         return
     }
 
-    // Fallback: gunakan Inertia router.back() yang aman
-    // Jika tidak ada riwayat navigasi, arahkan ke dashboard
+    // Fallback: selalu fresh visit (jangan router.back()/history.back biar tidak bfcache stale)
+    // Semua page finansial sekarang auto-reload via AuthenticatedLayout stale handler,
+    // tapi fresh visit tetap lebih benar daripada restore history.state.
     try {
-        window.history.length > 1
-            ? router.back()
-            : router.visit('/dashboard')
+        // Jika ada backHref spesifik, sudah di-handle di atas; fallback ke dashboard fresh
+        router.visit('/dashboard', { preserveState: false, preserveScroll: false })
     } catch {
-        router.visit('/dashboard')
+        window.location.href = '/dashboard'
     }
 }
 

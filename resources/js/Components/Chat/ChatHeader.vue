@@ -8,7 +8,7 @@
  */
 
 import { computed } from 'vue'
-import { Link }     from '@inertiajs/vue3'
+import { Link, router }     from '@inertiajs/vue3'
 import { useI18n }  from 'vue-i18n'
 import BotAvatar    from '@/Components/Chat/BotAvatar.vue'
 
@@ -24,6 +24,16 @@ const { t } = useI18n()
 const statusText = computed(() =>
     props.isTyping ? t('chat.typing') : t('chat.assistant')
 )
+
+function handleBack() {
+    // Selalu fresh GET /dashboard (bukan history.back) agar Dashboard tidak stale.
+    // Dashboard sendiri juga akan reload via sessionStorage flag / pageshow jika hardware back.
+    try {
+        router.visit(route('dashboard'), { preserveState: false, preserveScroll: false })
+    } catch {
+        window.location.href = route('dashboard')
+    }
+}
 </script>
 
 <template>
@@ -38,16 +48,17 @@ const statusText = computed(() =>
     >
         <div class="flex items-center gap-3 px-4 h-14">
 
-        <!-- Back button (mobile only) -->
-        <Link
-            :href="route('dashboard')"
-            class="lg:hidden w-8 h-8 shrink-0 flex items-center justify-center rounded-xl text-gray-500 hover:text-white hover:bg-white/6 transition-colors"
+        <!-- Back button — mobile & desktop, selalu fresh visit (44px hit-area a11y) -->
+        <button
+            type="button"
+            @click="handleBack"
+            class="w-10 h-10 lg:w-11 lg:h-11 shrink-0 flex items-center justify-center rounded-xl lg:rounded-2xl text-gray-400 hover:text-white hover:bg-white/8 active:scale-90 border border-transparent hover:border-white/8 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 transition-all"
             :aria-label="t('btn.back')"
         >
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
-        </Link>
+        </button>
 
         <!-- Bot avatar + online dot -->
         <BotAvatar

@@ -55,8 +55,9 @@ import { useLayoutPreference } from '@/Composables/useLayoutPreference'
 import { usePageLoading }      from '@/Composables/usePageLoading'
 import { initTheme }           from '@/Composables/useTheme'
 import { usePushNotifications } from '@/Composables/usePushNotifications'
-import { usePage }             from '@inertiajs/vue3'
+import { usePage, router }             from '@inertiajs/vue3'
 import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { consumeStaleForRoute } from '@/utils/stale.js'
 
 
 const SKELETON_COMPONENTS = {
@@ -99,6 +100,83 @@ onMounted(() => {
 })
 onUnmounted(() => {
     push.stopPresence()
+})
+
+// ── Global stale handler — semua page auto-reload jika kembali via bfcache/hardware back ──
+function currentRouteName() {
+    try { return route().current() ?? '' } catch { return '' }
+}
+function handleGlobalPageshow(e) {
+    const r = currentRouteName()
+    if (e?.persisted) {
+        // bfcache restore → selalu fresh (tanpa only, biar semua props update)
+        if (r && !r.startsWith('chat.')) {
+            router.reload({ preserveScroll: true, preserveState: false })
+        }
+        return
+    }
+    if (consumeStaleForRoute(r)) {
+        router.reload({ preserveScroll: true, preserveState: false })
+    }
+}
+function handleGlobalVisibility() {
+    if (document.visibilityState !== 'visible') return
+    const r = currentRouteName()
+    if (consumeStaleForRoute(r)) {
+        router.reload({ preserveScroll: true, preserveState: false })
+    }
+}
+function handleGlobalStaleEvent() {
+    // event dari chat di tab sama — jika user sudah di page yang stale, reload langsung
+    // tapi jangan spam jika baru saja reload; consume akan hapus flag
+    const r = currentRouteName()
+    if (consumeStaleForRoute(r)) {
+        router.reload({ preserveScroll: true, preserveState: false })
+    }
+}
+function handleGlobalStorage(e) {
+    if (!e.key?.startsWith('bendaharaku:stale')) return
+    const r = currentRouteName()
+    // storage event hanya fire di tab lain — cek flag sessionStorage (sudah set via markStale localStorage sync)
+    // simple: jika ada flag untuk route ini, reload
+    try {
+        if (sessionStorage.getItem(e.key)) {
+            if (consumeStaleForRoute(r)) router.reload({ preserveScroll: true, preserveState: false })
+        } else if (e.newValue) {
+            // tab lain set localStorage, tab ini belum punya sessionStorage — set lalu consume
+            sessionStorage.setItem(e.key, e.newValue)
+            if (consumeStaleForRoute(r)) router.reload({ preserveScroll: true, preserveState: false })
+        }
+    } catch {}
+}
+onMounted(() => {
+    window.addEventListener('pageshow', handleGlobalPageshow)
+    document.addEventListener('visibilitychange', handleGlobalVisibility)
+    window.addEventListener('stale:updated', handleGlobalStaleEvent)
+    window.addEventListener('bendaharaku:stale', handleGlobalStaleEvent)
+    window.addEventListener('dashboard:stale', handleGlobalStaleEvent)
+    window.addEventListener('storage', handleGlobalStorage)
+    // initial check (jika navigate via Inertia visit normal tapi flag masih ada)
+    // delay 100ms agar initial page render tidak double-fetch saat fresh visit dari chat
+    // hanya reload jika benar-benar bfcache? kita cek flag tapi debounce
+    setTimeout(() => {
+        const r = currentRouteName()
+        // jangan reload langsung setelah fresh visit — bfcache handler sudah cover
+        // hanya reload jika flag ada dan page bukan chat
+        if (r && !r.startsWith('chat.') && consumeStaleForRoute(r)) {
+            // debounce: hanya jika bukan navigasi baru (< 2s setelah mount, Inertia sudah fresh)
+            // kita tetap reload karena chat transaksi bisa belum masuk ke props initial
+            router.reload({ preserveScroll: true, preserveState: false })
+        }
+    }, 300)
+})
+onUnmounted(() => {
+    window.removeEventListener('pageshow', handleGlobalPageshow)
+    document.removeEventListener('visibilitychange', handleGlobalVisibility)
+    window.removeEventListener('stale:updated', handleGlobalStaleEvent)
+    window.removeEventListener('bendaharaku:stale', handleGlobalStaleEvent)
+    window.removeEventListener('dashboard:stale', handleGlobalStaleEvent)
+    window.removeEventListener('storage', handleGlobalStorage)
 })
 
 // Root panel selalu full width di desktop.

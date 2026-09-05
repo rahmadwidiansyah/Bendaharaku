@@ -3,6 +3,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import axios from 'axios'
 import { useI18n } from 'vue-i18n'
 import { useToast } from '@/Composables/useToast'
+import { markStale } from '@/utils/stale.js'
 import AppIcon from '@/Components/AppIcon.vue'
 import TransactionDetailModal from './TransactionDetailModal.vue'
 import DraftActions from './DraftActions.vue'
@@ -126,6 +127,7 @@ async function assignWallet({ walletId }) {
         if (data.success) {
             applyTransactionPatch(data.transaction)
             isConfirmed.value = true
+            markStale()
             showToast(t('toast.updated'), 'success')
         }
     } catch (e) {
@@ -149,6 +151,7 @@ async function confirmDraft() {
                 is_cleared: true,
             })
             isConfirmed.value = true
+            markStale()
             showToast(t('toast.saved'), 'success')
         }
     } catch (e) {

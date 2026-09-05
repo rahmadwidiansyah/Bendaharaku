@@ -17,6 +17,7 @@ import { ref, nextTick, onUnmounted } from 'vue'
 import axios from 'axios'
 import { useI18n } from 'vue-i18n'
 import { useChatPending } from './useChatPending'
+import { markStale, hasTransactionInContent } from '@/utils/stale.js'
 
 export function useChat(initialMessages = [], initialConversationId = null, initialHasMore = false) {
     const { t } = useI18n()
@@ -104,6 +105,11 @@ export function useChat(initialMessages = [], initialConversationId = null, init
                     if (evidenceUuid) {
                         const newStatus = data.status === 'completed' ? 'READY' : data.status === 'failed' ? 'FAILED' : 'PROCESSING'
                         updateEvidenceStatus(evidenceUuid, newStatus)
+                    }
+
+                    // Semua page finansial stale jika ada kartu transaksi → tandai untuk auto-reload saat kembali
+                    if (data.status === 'completed' && data.bot_message?.content && hasTransactionInContent(data.bot_message.content)) {
+                        markStale()
                     }
 
                     if (!isAtBottom.value) {
@@ -221,6 +227,11 @@ export function useChat(initialMessages = [], initialConversationId = null, init
                 const bot = normalizeMessage(data.bot_message)
                 messages.value.push(bot)
 
+                // Jika bot langsung completed dengan kartu transaksi (non-pending) → semua page stale
+                if (!isPendingMessage(bot) && hasTransactionInContent(bot.content)) {
+                    markStale()
+                }
+
                 // Proses AI berjalan di background queue → polling status
                 if (isPendingMessage(bot)) {
                     trackBotMessage(bot.id)
@@ -306,6 +317,10 @@ export function useChat(initialMessages = [], initialConversationId = null, init
             if (data.bot_message) {
                 const bot = normalizeMessage(data.bot_message)
                 messages.value.push(bot)
+
+                if (!isPendingMessage(bot) && hasTransactionInContent(bot.content)) {
+                    markStale()
+                }
 
                 if (isPendingMessage(bot)) {
                     trackBotMessage(bot.id)

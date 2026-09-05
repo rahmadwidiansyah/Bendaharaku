@@ -201,7 +201,6 @@ class EvidenceLlmGroupingJob implements ShouldQueue
         unset($c);
         if ($changed) $userMessage->update(['content' => $content]);
     }
-    }
 
     private function buildChatResponseFromResult(array $result, \App\Chat\DTOs\ChatContext $context): \App\Chat\DTOs\ChatResponse
     {
