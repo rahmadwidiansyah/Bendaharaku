@@ -28,7 +28,7 @@ const props = defineProps({
     },
 })
 
-const emit = defineEmits(['review'])
+const emit = defineEmits(['review', 'retry'])
 
 const isPreviewOpen = ref(false)
 
@@ -233,6 +233,19 @@ const statusMeta = computed(() => {
             <AppIcon icon="check" class="w-3 h-3 shrink-0" />
             {{ t('chat.committed') }}
         </p>
+
+        <!-- Retry jika gagal grouping / LLM down — chat turun seperti kirim lagi -->
+        <button
+            v-if="status === 'FAILED' && uuid"
+            type="button"
+            @click="emit('retry', uuid)"
+            class="self-stretch inline-flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold
+                   bg-expense-bg text-expense-text border border-expense-border
+                   hover:bg-expense-bg-hover active:scale-[0.98] transition-all"
+        >
+            <AppIcon icon="refresh-cw" class="w-3.5 h-3.5" />
+            {{ t('chat.retry') }}
+        </button>
     </div>
 
     <!-- WA-style full-screen viewer — zoom wheel/pinch, double-tap, drag, swipe down -->
