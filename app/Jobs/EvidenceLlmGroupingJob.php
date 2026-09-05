@@ -86,7 +86,7 @@ class EvidenceLlmGroupingJob implements ShouldQueue
                 $this->updateUserImageStatus($botMessage->conversation_id, $evidence->uuid, 'FAILED');
                 // Jika fail karena INVALID_AMOUNT (token abis, LLM gagal ekstrak nominal 0), coba fallback ke parsed amount evidence
                 if (($result['error_code'] ?? '') === 'INVALID_AMOUNT' || str_contains($result['message'] ?? '', 'Nominal tidak valid')) {
-                    Log::warning('EvidenceLlmGroupingJob: fallback ke parsed amount karena LLM amount 0', ['evidence_id' => $evidence->id, 'parsed_amount' => $evidence->parsed_data['amount'] ?? $evidence->amount ?? null]);
+                    Log::warning('EvidenceLlmGroupingJob: fallback ke parsed amount karena LLM amount 0', ['evidence_id' => $evidence->id, 'parsed_amount' => $evidence->parsed_data?->amount ?? $evidence->amount ?? null]);
                 }
                 return;
             }

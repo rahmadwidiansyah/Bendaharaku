@@ -79,7 +79,8 @@ class LlmEvidenceGroupingService
 
         // Fallback kertas vs digital: jika LLM gagal ekstrak nominal (amount 0) tapi evidence punya parsed amount 5029, pakai itu
         // Ini untuk struk kertas yang OCR-nya jelek (244 char) tapi TransferReceiptParser sudah benar 5029
-        $fallbackAmount = $evidence->parsed_data['amount'] ?? $evidence->amount ?? null;
+        $parsedData = $evidence->parsed_data; // EvidenceData DTO (atau null)
+        $fallbackAmount = $parsedData?->amount ?? $evidence->amount ?? null;
         if (!empty($result['is_multi']) && isset($result['multi_result'])) {
             $hasZeroAmount = false;
             foreach ($result['multi_result']->results as $it) {
