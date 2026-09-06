@@ -31,12 +31,47 @@ async function main() {
     process.exit(1)
   }
 
+  // --- Sync share_target from public/manifest.json (Web Manifest) ---
+  // Bubblewrap's TwaManifest.fromFile does NOT auto-sync share_target (only fromWebManifest does).
+  // Without this, AndroidManifest.xml won't have SEND intent-filter and Gallery Share won't show the app.
+  try {
+    const webManifestPath = path.resolve(path.dirname(resolvedManifest), '../public/manifest.json')
+    // Fallback: also try relative to cwd
+    const altWebManifest = path.resolve('public/manifest.json')
+    const webManifestFile = fs.existsSync(webManifestPath) ? webManifestPath : altWebManifest
+    if (fs.existsSync(webManifestFile)) {
+      const webManifest = JSON.parse(fs.readFileSync(webManifestFile, 'utf8'))
+      if (webManifest.share_target) {
+        const webManifestUrl = new URL(twaManifest.webManifestUrl || `https://${twaManifest.host}/manifest.json`)
+        const verified = TwaManifest.verifyShareTarget(webManifestUrl, webManifest.share_target)
+        if (verified) {
+          twaManifest.shareTarget = verified
+          console.log(`✅ Synced share_target from ${webManifestFile}: action=${verified.action}`)
+          console.log(`   files: ${JSON.stringify(verified.params?.files || [])}`)
+        } else {
+          console.log(`⚠️  share_target in ${webManifestFile} failed verification, skipping`)
+        }
+      } else {
+        console.log(`ℹ️  No share_target in ${webManifestFile} - Gallery Share will not appear`)
+      }
+    } else {
+      console.log(`⚠️  Web manifest not found at ${webManifestPath} or ${altWebManifest}, skipping share_target sync`)
+    }
+  } catch (e) {
+    console.log(`⚠️  Failed to sync share_target: ${e.message}`)
+  }
+
   const validationError = twaManifest.validate()
   if (validationError) {
     console.error(`❌ TwaManifest validation failed: ${validationError}`)
     process.exit(1)
   }
   console.log(`✅ Manifest valid: ${twaManifest.host}${twaManifest.startUrl} (${twaManifest.packageId})`)
+  if (twaManifest.shareTarget) {
+    console.log(`✅ Share Target will generate intent-filter for: ${(twaManifest.shareTarget.params?.files || []).flatMap(f=>f.accept).join(', ') || 'text/plain'}`)
+  } else {
+    console.log(`⚠️  No shareTarget - Gallery Share intent-filter will NOT be generated`)
+  }
 
   // Ensure target dir exists
   await fs.promises.mkdir(resolvedTarget, { recursive: true })
