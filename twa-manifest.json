@@ -7,7 +7,7 @@
   "themeColor": "#f59e0b",
   "navigationColor": "#0f172a",
   "backgroundColor": "#0f172a",
-  "startUrl": "/chat",
+  "startUrl": "/dashboard",
   "iconUrl": "https://raw.githubusercontent.com/rahmadwidiansyah/script_pencatat_keuangan/refs/heads/main/logo.png",
   "maskableIconUrl": "https://raw.githubusercontent.com/rahmadwidiansyah/script_pencatat_keuangan/refs/heads/main/logo.png",
   "splashScreenFadeOutDuration": 300,
