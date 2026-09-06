@@ -101,13 +101,13 @@ jobs:
           cd "$TWA_DIR"
           if [ -f release.keystore ] && [ -n "$ANDROID_KEYSTORE_PASSWORD" ]; then
             echo "🔐 Building signed APK..."
-            bubblewrap build --skipPwaValidation || (bubblewrap update --skipPwaValidation && bubblewrap build --skipPwaValidation)
+            printf "n\n" | bubblewrap build --skipPwaValidation || (printf "n\n" | bubblewrap update --skipPwaValidation && printf "n\n" | bubblewrap build --skipPwaValidation)
           else
             echo "🔨 Building unsigned (debug) APK..."
             if command -v jq >/dev/null 2>&1; then
               jq 'del(.signingKey)' twa-manifest.json > /tmp/twa.json && mv /tmp/twa.json twa-manifest.json
             fi
-            bubblewrap build --skipPwaValidation || true
+            printf "n\n" | bubblewrap build --skipPwaValidation || true
           fi
           ls -lh app/build/outputs/apk/release/ app/build/outputs/bundle/release/ 2>&1 | head -n 50 || true
           find . -name "*.apk" -type f | head -n 20
