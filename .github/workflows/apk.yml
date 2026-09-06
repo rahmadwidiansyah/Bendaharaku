@@ -139,14 +139,23 @@ jobs:
             console.log('Generated checksum:', sum);
           "
           ls -lh "$TWA_DIR"/manifest-checksum.txt || true
-          # If TWA project not yet initialized (no app/build.gradle), init it non-interactively
+          # If TWA project not yet initialized (no app/build.gradle) OR share intent missing, init non-interactively
+          NEED_INIT=false
           if [ ! -f "$TWA_DIR/app/build.gradle" ]; then
+            NEED_INIT=true
+            echo "→ No existing project, need init"
+          elif [ -f "$TWA_DIR/app/src/main/AndroidManifest.xml" ] && ! grep -q "android.intent.action.SEND" "$TWA_DIR/app/src/main/AndroidManifest.xml"; then
+            NEED_INIT=true
+            echo "→ Share intent missing in AndroidManifest, need re-init for Gallery Share"
+          fi
+          if [ "$NEED_INIT" = "true" ]; then
             echo "Initializing TWA project (non-interactive)..."
             # Validate again before init — fail fast on Invalid URL
             node scripts/validate-twa-manifest.js "$TWA_DIR/twa-manifest.json"
             # Use our non-interactive generator instead of `bubblewrap init` which requires web URL + prompts
             # This creates Android project + gradlew without needing `bubblewrap init --manifest <URL>`
             # Dependency is local via npm ci (@bubblewrap/core from package.json), reproducible
+            # Also syncs share_target from public/manifest.json → Android SEND intent
             node scripts/generate-twa-project.js "$TWA_DIR" "$TWA_DIR/twa-manifest.json"
             if [ ! -f "$TWA_DIR/app/build.gradle" ]; then
               echo "❌ Failed to generate Android project (app/build.gradle missing)"
@@ -158,10 +167,17 @@ jobs:
               ls -la "$TWA_DIR" || true
               exit 1
             fi
-            echo "✅ Project initialized successfully"
+            echo "✅ Project initialized successfully (with Gallery Share intent if share_target present)"
             ls -lh "$TWA_DIR/gradlew" "$TWA_DIR/app/build.gradle" || true
+            # Verify share intent was generated
+            if grep -q "android.intent.action.SEND" "$TWA_DIR/app/src/main/AndroidManifest.xml"; then
+              echo "✅ Gallery Share intent-filter present"
+              grep -A2 "SEND" "$TWA_DIR/app/src/main/AndroidManifest.xml" | head -n 20
+            else
+              echo "⚠️  No SEND intent-filter found - check public/manifest.json share_target"
+            fi
           else
-            echo "✅ TWA project already exists, skipping init"
+            echo "✅ TWA project already exists with share intent, skipping init"
           fi
           cd "$TWA_DIR"
           # Ensure checksum is up-to-date after init (generate script already does, but re-sync for safety)
