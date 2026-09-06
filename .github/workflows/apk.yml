@@ -38,8 +38,15 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Bubblewrap
-        run: npm i -g @bubblewrap/cli
+      - name: Verify Bubblewrap dependencies
+        run: |
+          echo "🔍 Verifying @bubblewrap/core can be resolved from project node_modules..."
+          node -e "import('@bubblewrap/core').then(m=>{ console.log('✅ @bubblewrap/core resolved:', !!m.TwaManifest); if(!m.TwaManifest) process.exit(1); })"
+          echo "🔍 Verifying @bubblewrap/cli can be resolved..."
+          node -e "import('fs').then(fs=>{ const p=JSON.parse(fs.readFileSync('node_modules/@bubblewrap/cli/package.json','utf8')); console.log('✅ @bubblewrap/cli resolved:', p.version); if(p.version!=='1.25.0') console.log('⚠️ version mismatch'); })"
+          echo "🔍 Checking @bubblewrap/core version consistency..."
+          node -e "import('fs').then(fs=>{ const c=JSON.parse(fs.readFileSync('node_modules/@bubblewrap/core/package.json','utf8')); const cli=JSON.parse(fs.readFileSync('node_modules/@bubblewrap/cli/package.json','utf8')); console.log('core:',c.version,'cli:',cli.version); if(c.version!==cli.version) { console.error('❌ Version mismatch'); process.exit(1);} console.log('✅ Versions compatible'); })"
+          echo "✅ Bubblewrap dependencies verified (local, reproducible via npm ci)"
 
       - name: Restore keystore (if secrets present)
         env:
@@ -119,7 +126,7 @@ jobs:
           printf '{"jdkPath":"%s","androidSdkPath":"%s"}\n' "$JAVA_HOME" "$SDK_PATH" > ~/.bubblewrap/config.json
           echo "Bubblewrap config:"
           cat ~/.bubblewrap/config.json
-          bubblewrap doctor 2>&1 | head -n 30 || true
+          npx bubblewrap doctor 2>&1 | head -n 30 || true
           # Generate checksum so build doesn't prompt "No checksum file..."
           # (build checks twa/manifest-checksum.txt vs current manifest)
           node -e "
@@ -139,7 +146,7 @@ jobs:
             node scripts/validate-twa-manifest.js "$TWA_DIR/twa-manifest.json"
             # Use our non-interactive generator instead of `bubblewrap init` which requires web URL + prompts
             # This creates Android project + gradlew without needing `bubblewrap init --manifest <URL>`
-            export NODE_PATH=$(npm root -g):$NODE_PATH
+            # Dependency is local via npm ci (@bubblewrap/core from package.json), reproducible
             node scripts/generate-twa-project.js "$TWA_DIR" "$TWA_DIR/twa-manifest.json"
             if [ ! -f "$TWA_DIR/app/build.gradle" ]; then
               echo "❌ Failed to generate Android project (app/build.gradle missing)"
@@ -170,14 +177,14 @@ jobs:
           cat manifest-checksum.txt || true
           if [ -f release.keystore ] && [ -n "$BUBBLEWRAP_KEYSTORE_PASSWORD" ]; then
             echo "🔐 Building signed APK (non-interactive via BUBBLEWRAP env)..."
-            bubblewrap build --skipPwaValidation
+            npx bubblewrap build --skipPwaValidation
           else
             echo "🔨 Building unsigned (debug) APK..."
             if command -v jq >/dev/null 2>&1; then
               jq 'del(.signingKey)' twa-manifest.json > /tmp/twa.json && mv /tmp/twa.json twa-manifest.json
               node -e "const fs=require('fs'),c=require('crypto');const p='twa-manifest.json',d='manifest-checksum.txt';fs.writeFileSync(d,c.createHash('sha1').update(fs.readFileSync(p)).digest('hex')); console.log('Regenerated checksum for unsigned:', fs.readFileSync(d,'utf8'))"
             fi
-            bubblewrap build --skipPwaValidation
+            npx bubblewrap build --skipPwaValidation
           fi
           echo "=== Build outputs ==="
           ls -lh app/build/outputs/apk/release/ app/build/outputs/bundle/release/ 2>&1 | head -n 50 || true
