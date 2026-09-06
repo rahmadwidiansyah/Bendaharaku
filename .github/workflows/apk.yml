@@ -100,11 +100,19 @@ jobs:
           fi
           cd "$TWA_DIR"
           echo "JAVA_HOME=$JAVA_HOME"
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
           ls -d "$JAVA_HOME" 2>&1 | head
-          # Pre-configure Bubblewrap JDK to avoid interactive prompt (exit 130)
+          ls -d "$ANDROID_HOME" 2>&1 | head || ls -d "$ANDROID_SDK_ROOT" 2>&1 | head || true
+          # Pre-configure Bubblewrap JDK + Android SDK to avoid interactive prompts (exit 130)
           mkdir -p ~/.bubblewrap
-          printf '{"jdkPath":"%s"}\n' "$JAVA_HOME" > ~/.bubblewrap/config.json
+          SDK_PATH="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          if [ -z "$SDK_PATH" ]; then SDK_PATH="$ANDROID_HOME"; fi
+          if [ -z "$SDK_PATH" ] || [ ! -d "$SDK_PATH" ]; then SDK_PATH="/usr/local/lib/android/sdk"; fi
+          printf '{"jdkPath":"%s","androidSdkPath":"%s"}\n' "$JAVA_HOME" "$SDK_PATH" > ~/.bubblewrap/config.json
           cat ~/.bubblewrap/config.json
+          # Also ensure bubblewrap doctor passes
+          bubblewrap doctor 2>&1 | head -n 50 || true
           if [ -f release.keystore ] && [ -n "$ANDROID_KEYSTORE_PASSWORD" ]; then
             echo "🔐 Building signed APK..."
             bubblewrap build --skipPwaValidation || (bubblewrap update --skipPwaValidation && bubblewrap build --skipPwaValidation)
