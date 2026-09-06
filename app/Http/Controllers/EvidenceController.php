@@ -41,19 +41,37 @@ class EvidenceController extends Controller
      */
     public function share(Request $request): JsonResponse|RedirectResponse
     {
-        // Share Target dari OS kadang kirim `image` (sesuai manifest), kadang `file` atau array.
-        // Validasi longgar: terima file apapun dengan key image/file/files
-        $request->validate([
-            'image' => ['nullable', 'file', 'max:10240', 'mimes:jpg,jpeg,png,webp', 'dimensions:max_width=10000,max_height=10000'],
-            'file' => ['nullable', 'file', 'max:10240', 'mimes:jpg,jpeg,png,webp'],
-            'title' => ['nullable', 'string', 'max:500'],
-            'text' => ['nullable', 'string', 'max:2000'],
+        Log::info('ShareTarget hit', [
+            'hasFile_image' => $request->hasFile('image'),
+            'hasFile_file' => $request->hasFile('file'),
+            'allFiles' => array_keys($request->allFiles()),
+            'input' => $request->only(['title', 'text']),
+            'headers' => $request->headers->all(),
         ]);
 
+        // Share Target dari OS kadang kirim `image` (sesuai manifest), kadang `file` atau array.
+        // Validasi longgar: terima file apapun dengan key image/file/files
+        try {
+            $request->validate([
+                'image' => ['nullable', 'file', 'max:10240', 'mimes:jpg,jpeg,png,webp,heic,heif', 'dimensions:max_width=10000,max_height=10000'],
+                'file' => ['nullable', 'file', 'max:10240', 'mimes:jpg,jpeg,png,webp,heic,heif'],
+                'title' => ['nullable', 'string', 'max:500'],
+                'text' => ['nullable', 'string', 'max:2000'],
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::warning('ShareTarget validation failed', ['errors' => $e->errors(), 'allFiles' => $request->allFiles()]);
+
+            return $request->expectsJson() || $request->wantsJson()
+                ? response()->json(['success' => false, 'message' => 'File tidak valid.', 'errors' => $e->errors()], 422)
+                : redirect()->route('chat.index')->with('error', 'File tidak valid: '.collect($e->errors())->flatten()->implode(', '));
+        }
+
         if (! $request->hasFile('image') && ! $request->hasFile('file') && empty($request->allFiles())) {
+            Log::warning('ShareTarget no file', ['all' => $request->all(), 'files' => $request->allFiles()]);
+
             return $request->expectsJson() || $request->wantsJson()
                 ? response()->json(['success' => false, 'message' => 'File gambar wajib dipilih.'], 422)
-                : redirect()->route('chat.index')->with('error', 'File gambar wajib dipilih.');
+                : redirect()->route('chat.index')->with('error', 'File gambar wajib dipilih. Coba share ulang dari Gallery.');
         }
 
         // Build caption dari share_target params title + text
