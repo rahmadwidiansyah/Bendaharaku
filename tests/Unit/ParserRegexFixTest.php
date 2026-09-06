@@ -154,7 +154,7 @@ class ParserRegexFixTest extends TestCase
         $resolver = new WalletResolutionService;
         $wallets = $this->user->wallets()->where('group_type', '!=', 'System')->get();
         // Text with emoji before wallet name to test mb_substr vs substr
-        $text = "bayar utang 😀 Bank BCA ke Dompet Cash 20k";
+        $text = 'bayar utang 😀 Bank BCA ke Dompet Cash 20k';
         $result = $resolver->matchWalletsFromText($text, $wallets, TransactionIntent::Transfer);
         $this->assertEquals('Bank BCA', $result['sourceWallet']);
         $this->assertEquals('Dompet Cash', $result['destinationWallet']);

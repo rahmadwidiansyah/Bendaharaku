@@ -5,11 +5,10 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Chat\ChatApplicationService;
-use App\Chat\Components\TextComponent;
 use App\Chat\DTOs\ChatContext;
-use App\Chat\DTOs\ChatRequest;
 use App\Chat\DTOs\ChatResponse;
 use App\Chat\Formatters\WebFormatter;
+use App\Chat\Services\ChatResponseConverter;
 use App\Enums\ChatPlatform;
 use App\Models\ChatMessage;
 use App\Models\Evidence;
@@ -27,6 +26,7 @@ class EvidenceLlmGroupingJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 1;
+
     public int $timeout = 120;
 
     public function __construct(
@@ -44,12 +44,13 @@ class EvidenceLlmGroupingJob implements ShouldQueue
         $user = User::find($this->userId);
         $botMessage = ChatMessage::find($this->botMessageId);
 
-        if (!$evidence || !$user || !$botMessage) {
+        if (! $evidence || ! $user || ! $botMessage) {
             Log::warning('EvidenceLlmGroupingJob: missing models', [
                 'evidence_id' => $this->evidenceId,
                 'user_id' => $this->userId,
                 'bot_message_id' => $this->botMessageId,
             ]);
+
             return;
         }
 
@@ -68,6 +69,7 @@ class EvidenceLlmGroupingJob implements ShouldQueue
                 'content' => [['type' => 'error', 'message' => 'OCR belum selesai, coba buka Review manual.', 'severity' => 'error']],
                 'error_message' => 'OCR timeout',
             ]);
+
             return;
         }
 
@@ -88,6 +90,7 @@ class EvidenceLlmGroupingJob implements ShouldQueue
                 if (($result['error_code'] ?? '') === 'INVALID_AMOUNT' || str_contains($result['message'] ?? '', 'Nominal tidak valid')) {
                     Log::warning('EvidenceLlmGroupingJob: fallback ke parsed amount karena LLM amount 0', ['evidence_id' => $evidence->id, 'parsed_amount' => $evidence->parsed_data?->amount ?? $evidence->amount ?? null]);
                 }
+
                 return;
             }
 
@@ -138,6 +141,7 @@ class EvidenceLlmGroupingJob implements ShouldQueue
                             return true;
                         }
                     }
+
                     return false;
                 });
             if ($userMessage) {
@@ -151,7 +155,9 @@ class EvidenceLlmGroupingJob implements ShouldQueue
                     }
                 }
                 unset($c);
-                if ($changed) $userMessage->update(['content' => $content]);
+                if ($changed) {
+                    $userMessage->update(['content' => $content]);
+                }
             }
 
             Log::info('EvidenceLlmGroupingJob: completed', [
@@ -167,7 +173,7 @@ class EvidenceLlmGroupingJob implements ShouldQueue
             ]);
             $botMessage->update([
                 'status' => 'failed',
-                'content' => [['type' => 'error', 'message' => 'Gagal memproses struk via LLM: ' . $e->getMessage(), 'severity' => 'error']],
+                'content' => [['type' => 'error', 'message' => 'Gagal memproses struk via LLM: '.$e->getMessage(), 'severity' => 'error']],
                 'error_message' => $e->getMessage(),
             ]);
             $this->updateUserImageStatus($botMessage->conversation_id, $evidence->uuid, 'FAILED');
@@ -186,9 +192,12 @@ class EvidenceLlmGroupingJob implements ShouldQueue
                         return true;
                     }
                 }
+
                 return false;
             });
-        if (!$userMessage) return;
+        if (! $userMessage) {
+            return;
+        }
         $content = $userMessage->content;
         $changed = false;
         foreach ($content as &$c) {
@@ -199,15 +208,17 @@ class EvidenceLlmGroupingJob implements ShouldQueue
             }
         }
         unset($c);
-        if ($changed) $userMessage->update(['content' => $content]);
+        if ($changed) {
+            $userMessage->update(['content' => $content]);
+        }
     }
 
-    private function buildChatResponseFromResult(array $result, \App\Chat\DTOs\ChatContext $context): \App\Chat\DTOs\ChatResponse
+    private function buildChatResponseFromResult(array $result, ChatContext $context): ChatResponse
     {
         // Jika result sudah berupa ChatResponse (dari orchestrator), kembalikan langsung
         // Tapi orchestrator mengembalikan array, bukan ChatResponse untuk multi
         // Kita perlu convert via ChatResponseConverter
-        $converter = app(\App\Chat\Services\ChatResponseConverter::class);
+        $converter = app(ChatResponseConverter::class);
         $metadata = [
             'trace_id' => $context->traceId,
             'platform' => $context->platform->value,
@@ -218,11 +229,11 @@ class EvidenceLlmGroupingJob implements ShouldQueue
             'evidence_uuid' => $context->metadata['evidence_uuid'] ?? null,
         ];
 
-        if (!empty($result['is_multi']) && isset($result['multi_result'])) {
+        if (! empty($result['is_multi']) && isset($result['multi_result'])) {
             return $converter->convertMultiResult($result['multi_result'], $context, $metadata);
         }
 
-        if (!empty($result['success']) && isset($result['transaction'])) {
+        if (! empty($result['success']) && isset($result['transaction'])) {
             return $converter->convertSingleSuccess($result, $context, $metadata, $context->metadata['caption_hint'] ?? '');
         }
 
@@ -231,6 +242,6 @@ class EvidenceLlmGroupingJob implements ShouldQueue
         }
 
         // Fallback
-        return \App\Chat\DTOs\ChatResponse::singleSuccess([], $metadata);
+        return ChatResponse::singleSuccess([], $metadata);
     }
 }

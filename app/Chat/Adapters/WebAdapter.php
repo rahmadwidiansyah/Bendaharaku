@@ -522,7 +522,7 @@ class WebAdapter
         $lower = mb_strtolower(trim($rawMessage));
         // Deteksi filter: harus mengandung kata filter + minimal 3 char
         $isFilter = str_contains($lower, 'punyaku') || str_contains($lower, 'cuma') || str_contains($lower, 'hanya') || str_contains($lower, 'punya saya') || str_contains($lower, 'milikku') || str_contains($lower, 'yang saya');
-        if (!$isFilter || mb_strlen($lower) < 5) {
+        if (! $isFilter || mb_strlen($lower) < 5) {
             return null;
         }
 
@@ -535,35 +535,52 @@ class WebAdapter
             ->first();
 
         // Fallback: cari bot message terakhir yang multiTransaction (jika intent berbeda)
-        if (!$lastBot) {
+        if (! $lastBot) {
             $lastBot = ChatMessage::where('conversation_id', $conversation->id)
                 ->where('role', 'assistant')
                 ->where('status', 'completed')
                 ->latest('id')
                 ->first();
-            if (!$lastBot || empty($lastBot->content)) return null;
-            $hasCards = collect($lastBot->content)->contains(fn($c) => ($c['type'] ?? '') === 'transaction_card');
-            if (!$hasCards) return null;
+            if (! $lastBot || empty($lastBot->content)) {
+                return null;
+            }
+            $hasCards = collect($lastBot->content)->contains(fn ($c) => ($c['type'] ?? '') === 'transaction_card');
+            if (! $hasCards) {
+                return null;
+            }
         }
 
-        $prevCards = collect($lastBot->content)->filter(fn($c) => ($c['type'] ?? '') === 'transaction_card')->values();
-        if ($prevCards->isEmpty()) return null;
+        $prevCards = collect($lastBot->content)->filter(fn ($c) => ($c['type'] ?? '') === 'transaction_card')->values();
+        if ($prevCards->isEmpty()) {
+            return null;
+        }
 
         // Filter: keep card jika notes/category-nya disebut di filter text
         $filtered = $prevCards->filter(function ($card) use ($lower) {
             $notes = mb_strtolower($card['transaction']['notes'] ?? $card['transaction']['category'] ?? '');
             $category = mb_strtolower($card['transaction']['category'] ?? '');
             // Cek apakah notes atau category muncul di filter text
-            if ($notes !== '' && str_contains($lower, $notes)) return true;
+            if ($notes !== '' && str_contains($lower, $notes)) {
+                return true;
+            }
             // Cek per kata (mis. "ayam goreng" → cek "ayam" dan "goreng")
             $words = preg_split('/\s+/', $notes, -1, PREG_SPLIT_NO_EMPTY);
             $matchedWords = 0;
             foreach ($words as $w) {
-                if (mb_strlen($w) >= 3 && str_contains($lower, $w)) $matchedWords++;
+                if (mb_strlen($w) >= 3 && str_contains($lower, $w)) {
+                    $matchedWords++;
+                }
             }
-            if ($matchedWords >= 1 && count($words) <= 2) return true;
-            if ($matchedWords >= 2) return true;
-            if ($category !== '' && str_contains($lower, $category)) return true;
+            if ($matchedWords >= 1 && count($words) <= 2) {
+                return true;
+            }
+            if ($matchedWords >= 2) {
+                return true;
+            }
+            if ($category !== '' && str_contains($lower, $category)) {
+                return true;
+            }
+
             return false;
         })->values();
 
@@ -587,7 +604,9 @@ class WebAdapter
         ] : null;
 
         $newComponents = [];
-        if ($newSummary) $newComponents[] = $newSummary;
+        if ($newSummary) {
+            $newComponents[] = $newSummary;
+        }
         // Re-index filtered cards dengan index baru 1..n
         foreach ($filtered as $idx => $card) {
             $card['index'] = $idx + 1;

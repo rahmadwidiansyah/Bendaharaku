@@ -263,7 +263,7 @@ class Evidence extends Model
      */
     public function getParsedDataAttribute(): ?EvidenceData
     {
-        $raw = $this->attributes['parsed_data'];
+        $raw = $this->attributes['parsed_data'] ?? null;
 
         if ($raw === null) {
             return null;
@@ -283,7 +283,7 @@ class Evidence extends Model
      */
     public function getResolvedDataAttribute(): ?TransactionDraft
     {
-        $raw = $this->attributes['resolved_data'];
+        $raw = $this->attributes['resolved_data'] ?? null;
 
         if ($raw === null) {
             return null;

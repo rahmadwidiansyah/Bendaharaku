@@ -7,6 +7,7 @@ namespace App\Services\AI;
 use App\DTO\AIParseResult;
 use App\DTO\ParsedTransaction;
 use App\Enums\TransactionIntent;
+use App\Evidence\Parsers\Extractors\NumberParser;
 use App\Models\Category;
 use App\Models\User;
 use App\Models\Wallet;
@@ -142,6 +143,8 @@ class LocalRuleEngine
 
     /**
      * Extract amount and check for all balance intent.
+     * - Untuk text evidence/struk (panjang, ada Rp/total) pilih amount dari baris Total/Rp terakhir terbesar, bukan first-match.
+     * - Untuk chat biasa tetap first-match agar "20 ribu" tidak rusak.
      */
     private function extractAmount(string $text): ?array
     {
@@ -151,6 +154,17 @@ class LocalRuleEngine
         $useAllBalance = false;
         if (str_contains($lowerText, 'semua saldo') || str_contains($lowerText, 'seluruh saldo') || str_contains($lowerText, 'transfer semua') || str_contains($lowerText, 'pindah semua')) {
             $useAllBalance = true;
+        }
+
+        // Deteksi apakah ini teks struk/evidence (butuh prioritas Total/Rp, bukan first-match)
+        $isEvidenceLike = $this->isEvidenceLikeText($text);
+
+        if ($isEvidenceLike) {
+            $evidenceAmount = $this->extractEvidenceAmount($text, $useAllBalance);
+            if ($evidenceAmount !== null) {
+                return $evidenceAmount;
+            }
+            // Jika evidence-like tapi tidak ada Rp/Total yang jelas, fallback ke generic first-match di bawah
         }
 
         // Regex pattern to extract digits with suffix (k, rb, ribu, rbu, jt, juta, jtr, m)
@@ -192,6 +206,132 @@ class LocalRuleEngine
                 'amount' => 0.0,
                 'useAllBalance' => true,
             ];
+        }
+
+        return null;
+    }
+
+    private function isEvidenceLikeText(string $text): bool
+    {
+        $lower = mb_strtolower($text);
+        if (preg_match('/\b(subtotal|grand\s*total|total\s*pembayaran|total\s*belanja|item\s*details|order\s*id|nota\s*pesanan|rincian\s*pesanan|receipt\s*number|kasir|collected\s*by)\b/iu', $text)) {
+            return true;
+        }
+        // Panjang + banyak Rp → evidence
+        if (mb_strlen($text) > 200 && substr_count($lower, 'rp') >= 2) {
+            return true;
+        }
+        // Banyak baris dengan angka Rp
+        if (preg_match_all('/rp\s*[\d.,]+/iu', $text) >= 2) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private function extractEvidenceAmount(string $text, bool $useAllBalance): ?array
+    {
+        // 1. Prioritas: baris Total/Grand Total/Total Pembayaran dengan Rp
+        $totalPatterns = [
+            '/(?:total\s*pembayaran|grand\s*total|total\s*belanja|total)\s*[:\s]*rp\.?\s*([\d.,]+)/iu',
+            '/(?:subtotal\s*pesanan|subtotal)\s*[:\s]*rp\.?\s*([\d.,]+)/iu',
+        ];
+        $candidates = [];
+        foreach ($totalPatterns as $pat) {
+            if (preg_match_all($pat, $text, $m, PREG_OFFSET_CAPTURE)) {
+                foreach ($m[1] as $idx => $match) {
+                    $raw = $match[0];
+                    $offset = $match[1];
+                    $val = $this->parseEvidenceRawAmount($raw);
+                    if ($val !== null && $val >= 100) {
+                        // Simpan dengan offset untuk pilih yang terakhir (footer)
+                        $candidates[] = ['val' => $val, 'offset' => $offset, 'raw' => $raw];
+                    }
+                }
+            }
+        }
+        if (! empty($candidates)) {
+            // Pilih yang offset terbesar (paling bawah di struk) — biasanya Total final
+            usort($candidates, fn ($a, $b) => $b['offset'] <=> $a['offset']);
+
+            // Jika ada Total Pembayaran, prioritas itu (biasanya paling akhir)
+            return ['amount' => $candidates[0]['val'], 'useAllBalance' => $useAllBalance];
+        }
+
+        // 2. Prioritas: semua Rp di 5 baris terakhir / 300 char terakhir → ambil yang terbesar/terakhir
+        $rpCandidates = [];
+        if (preg_match_all('/rp\.?\s*([\d.,]+)/iu', $text, $matches, PREG_OFFSET_CAPTURE)) {
+            $textLen = mb_strlen($text);
+            foreach ($matches[1] as $m) {
+                $raw = $m[0];
+                $offset = $m[1];
+                // Blacklist konteks alamat/reference dalam 30 char sebelum Rp
+                $contextStart = max(0, $offset - 30);
+                $context = mb_substr($text, $contextStart, 30);
+                $lowerCtx = mb_strtolower($context);
+                if (str_contains($lowerCtx, 'alamat') || str_contains($lowerCtx, 'jalan') || str_contains($lowerCtx, 'id,') || str_contains($lowerCtx, 'kode') || str_contains($lowerCtx, 'phone') || str_contains($lowerCtx, 'handphone')) {
+                    // Skip Rp yang di alamat (mis. ID, 32362 tanpa Rp tapi dengan comma) — tapi ini sudah Rp, jarang di alamat
+                    // Tetap cek: jika raw adalah 5 digit tanpa separator dan konteks alamat → skip
+                    if (preg_match('/^\d{5}$/', str_replace(['.', ','], '', $raw))) {
+                        continue;
+                    }
+                }
+                $val = $this->parseEvidenceRawAmount($raw);
+                if ($val !== null && $val >= 100) {
+                    // Bobot: yang di akhir (offset besar) diprioritaskan
+                    $isNearEnd = $offset > ($textLen - 400);
+                    $rpCandidates[] = ['val' => $val, 'offset' => $offset, 'nearEnd' => $isNearEnd];
+                }
+            }
+        }
+        if (! empty($rpCandidates)) {
+            // Sort: nearEnd dulu, lalu offset terbesar
+            usort($rpCandidates, function ($a, $b) {
+                if ($a['nearEnd'] !== $b['nearEnd']) {
+                    return $b['nearEnd'] <=> $a['nearEnd'];
+                }
+
+                return $b['offset'] <=> $a['offset'];
+            });
+
+            return ['amount' => $rpCandidates[0]['val'], 'useAllBalance' => $useAllBalance];
+        }
+
+        return null;
+    }
+
+    private function parseEvidenceRawAmount(string $raw): ?float
+    {
+        $raw = trim($raw);
+        // Bersihkan non digit/., (mis. "39.100" dari "Rp39.100")
+        if (! preg_match('/[\d]/', $raw)) {
+            return null;
+        }
+        // Tolak reference/order id panjang tanpa separator (>8 digit tanpa . ,)
+        $digitsOnly = preg_replace('/[.,]/', '', $raw);
+        if (ctype_digit($digitsOnly) && strlen($digitsOnly) > 8) {
+            return null;
+        }
+        // Tolak kode pos 5 digit tanpa konteks Rp yang jelas di evidence like → sudah di handle, tapi jika raw murni 5 digit dan bukan Total, kemungkinan alamat
+        // Gunakan NumberParser logic untuk parse
+        try {
+            $val = NumberParser::parse($raw);
+            if ($val > 0) {
+                return $val;
+            }
+        } catch (\Throwable) {
+        }
+        // Fallback simple
+        $clean = str_replace([',', '.'], '', $raw);
+        // Jika ada separator, gunakan logic ribuan
+        if (str_contains($raw, '.') || str_contains($raw, ',')) {
+            $normalized = str_replace(',', '', $raw);
+            $normalized = str_replace('.', '', $normalized) !== $normalized ? str_replace('.', '', $raw) : $raw;
+            // Coba parse via float setelah hapus ribuan
+            $tmp = str_replace(['.', ','], '', $raw);
+            if (is_numeric($tmp)) {
+                return (float) $tmp;
+            }
         }
 
         return null;

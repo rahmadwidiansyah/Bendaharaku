@@ -386,6 +386,7 @@ readonly class UserMemoryService
             return false;
         }
         $escaped = preg_quote($k, '/');
+
         return (bool) preg_match('/(?<![\p{L}\p{N}_])'.$escaped.'(?![\p{L}\p{N}_])/iu', $textLower);
     }
 }

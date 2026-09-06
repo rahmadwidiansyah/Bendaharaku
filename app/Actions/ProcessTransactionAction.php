@@ -112,7 +112,9 @@ class ProcessTransactionAction
 
         // Unified activity log (7-day retention via prune command)
         $sourceLabel = $source->value ?? 'SYSTEM';
-        if ($sourceLabel === TransactionSource::WEB->value) $sourceLabel = 'WEB';
+        if ($sourceLabel === TransactionSource::WEB->value) {
+            $sourceLabel = 'WEB';
+        }
         ActivityLogger::log($userId, 'transaction', 'created', $transactionLog->subject !== '-' ? $transactionLog->subject : 'Transaksi ('.$sourceLabel.')', 'Transaksi Rp '.number_format((float) $transactionLog->amount, 0, ',', '.').' via '.$sourceLabel, [
             'source' => $sourceLabel,
             'transaction_id' => $transactionLog->id,

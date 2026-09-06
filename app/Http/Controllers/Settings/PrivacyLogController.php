@@ -44,6 +44,7 @@ class PrivacyLogController extends Controller
             if (is_string($ts)) {
                 return Carbon::parse($ts)->timestamp;
             }
+
             return 0;
         })->values();
 
@@ -83,6 +84,7 @@ class PrivacyLogController extends Controller
     private function userLocale($user): string
     {
         $loc = $user->locale ?? app()->getLocale();
+
         return $loc === 'en' ? 'en' : 'id';
     }
 
@@ -94,11 +96,13 @@ class PrivacyLogController extends Controller
         $locale = app()->getLocale() === 'en' ? 'en' : 'id';
         if ($page) {
             $label = str_replace(['settings.', '.'], ['', ' > '], $page);
+
             return ucwords(str_replace(['_', '-'], ' ', $label));
         }
         if ($key) {
             return ucwords(str_replace(['_', '-'], ' ', $key));
         }
+
         return $locale === 'en' ? 'Settings Changed' : 'Perubahan Pengaturan';
     }
 
@@ -118,16 +122,20 @@ class PrivacyLogController extends Controller
                 ? "New value: \"{$this->trimValue($new)}\""
                 : "Nilai baru: \"{$this->trimValue($new)}\"";
         }
+
         return $isEn ? 'Settings updated' : 'Pengaturan diperbarui';
     }
 
     private function trimValue(?string $v): string
     {
-        if ($v === null) return '-';
+        if ($v === null) {
+            return '-';
+        }
         $decoded = json_decode($v, true);
         if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
             return json_encode($decoded, JSON_UNESCAPED_UNICODE);
         }
+
         return mb_strimwidth($v, 0, 80, '...');
     }
 
@@ -144,6 +152,7 @@ class PrivacyLogController extends Controller
                 default => "Memory {$action} {$kw}",
             };
         }
+
         return match ($action) {
             'CREATED' => "Memory baru {$kw}",
             'REWARDED' => "Memory diperkuat {$kw}",
@@ -225,7 +234,9 @@ class PrivacyLogController extends Controller
                     'created_at_human' => $log->created_at?->diffForHumans() ?? '-',
                     'created_at_raw' => $log->created_at?->toIso8601String(),
                     'icon' => 'Database',
-                    'color' => match ($log->action) { 'CREATED' => 'green', 'REWARDED' => 'violet', 'REBUILT' => 'blue', 'PRUNED' => 'red', default => 'gray' },
+                    'color' => match ($log->action) {
+                        'CREATED' => 'green', 'REWARDED' => 'violet', 'REBUILT' => 'blue', 'PRUNED' => 'red', default => 'gray'
+                    },
                     'metadata' => ['action' => $log->action, 'memory_keyword' => $log->memory_keyword, 'raw_subject' => $log->raw_subject, 'source' => $log->source, 'old_weight' => $log->old_weight, 'new_weight' => $log->new_weight, 'transaction_id' => $log->transaction_id],
                 ]);
             }
@@ -305,6 +316,7 @@ class PrivacyLogController extends Controller
         $cat = $trx->category?->category_name ?? '-';
         $amt = number_format((float) $trx->amount, 0, ',', '.');
         $date = $trx->date?->format('d M Y') ?? '-';
+
         return "Rp {$amt} • {$cat} • {$date}";
     }
 
@@ -327,6 +339,7 @@ class PrivacyLogController extends Controller
                 default => ucfirst($type),
             };
         }
+
         return match ($type) {
             'transaction' => 'Transaksi',
             'wallet' => 'Dompet',
@@ -358,7 +371,10 @@ class PrivacyLogController extends Controller
 
     private function activityColor(string $type, string $action): string
     {
-        if (str_contains($action, 'delete') || $action === 'PRUNED') return 'red';
+        if (str_contains($action, 'delete') || $action === 'PRUNED') {
+            return 'red';
+        }
+
         return match ($type) {
             'transaction' => 'emerald',
             'wallet' => 'teal',

@@ -159,16 +159,27 @@ class TelegramFormatter implements ChatFormatterInterface
 
         // Wallet: tampilkan hanya yang relevan biar ga penuhi chat Telegram
         if ($typeLower === 'transfer') {
-            if ($srcName) $lines[] = "📤 *{$labelSrc}:* {$srcName}";
-            if ($dstName) $lines[] = "📥 *{$labelDst}:* {$dstName}";
+            if ($srcName) {
+                $lines[] = "📤 *{$labelSrc}:* {$srcName}";
+            }
+            if ($dstName) {
+                $lines[] = "📥 *{$labelDst}:* {$dstName}";
+            }
         } elseif ($typeLower === 'income') {
-            if ($dstName) $lines[] = "📥 *{$labelDst}:* {$dstName}";
-            elseif ($srcName) $lines[] = "📂 *{$labelSrc}:* {$srcName}";
+            if ($dstName) {
+                $lines[] = "📥 *{$labelDst}:* {$dstName}";
+            } elseif ($srcName) {
+                $lines[] = "📂 *{$labelSrc}:* {$srcName}";
+            }
         } else {
             // expense, debt, receivable, default — tampilkan sumber
-            if ($srcName) $lines[] = "📂 *{$labelSrc}:* {$srcName}";
+            if ($srcName) {
+                $lines[] = "📂 *{$labelSrc}:* {$srcName}";
+            }
             if ($typeLower === 'debt' || $typeLower === 'receivable') {
-                if ($dstName) $lines[] = "📥 *{$labelDst}:* {$dstName}";
+                if ($dstName) {
+                    $lines[] = "📥 *{$labelDst}:* {$dstName}";
+                }
             }
         }
 

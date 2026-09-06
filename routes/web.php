@@ -16,6 +16,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PushNotificationController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\Settings\AiSettingsController;
+use App\Http\Controllers\Settings\PrivacyLogController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\WebChatController;
@@ -315,7 +316,7 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('/data', fn () => Inertia::render('Settings/Privacy/Data'))->name('data');
         Route::get('/danger', fn () => Inertia::render('Settings/Privacy/Danger'))->name('danger');
-        Route::get('/logs', [\App\Http\Controllers\Settings\PrivacyLogController::class, 'index'])->name('logs');
+        Route::get('/logs', [PrivacyLogController::class, 'index'])->name('logs');
     });
 
     // API helpers used by frontend Settings (cache clear, account delete, account export)

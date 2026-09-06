@@ -7,10 +7,14 @@ namespace App\Http\Controllers;
 use App\Evidence\Events\EvidenceUploaded;
 use App\Evidence\Jobs\ProcessEvidenceJob;
 use App\Http\Requests\StoreEvidenceRequest;
+use App\Jobs\EvidenceLlmGroupingJob;
+use App\Models\ChatMessage;
+use App\Models\Conversation;
 use App\Models\Evidence;
 use App\Services\Evidence\EvidencePipelineService;
 use App\Services\Evidence\EvidenceUploadService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -84,7 +88,7 @@ class EvidenceController extends Controller
      * Serve private evidence file dengan auth check.
      * Dipakai ChatMessage imageUrl agar foto struk tampil di chat.
      */
-    public function image(\Illuminate\Http\Request $request, string $uuid): BinaryFileResponse|\Illuminate\Http\JsonResponse
+    public function image(Request $request, string $uuid): BinaryFileResponse|JsonResponse
     {
         $user = $request->user();
 
@@ -117,7 +121,7 @@ class EvidenceController extends Controller
      * Retry grouping LLM jika gagal (server LLM down) — chat turun seperti kirim lagi.
      * Cari bot message pending/failed untuk evidence ini, set jadi pending lagi & dispatch job.
      */
-    public function retry(\Illuminate\Http\Request $request, string $uuid): JsonResponse
+    public function retry(Request $request, string $uuid): JsonResponse
     {
         $user = $request->user();
 
@@ -130,7 +134,7 @@ class EvidenceController extends Controller
         }
 
         // Cari conversation & bot message terakhir untuk evidence ini
-        $conversation = \App\Models\Conversation::where('user_id', $user->id)
+        $conversation = Conversation::where('user_id', $user->id)
             ->where('is_active', true)
             ->latest()
             ->first();
@@ -139,7 +143,7 @@ class EvidenceController extends Controller
             return response()->json(['success' => false, 'message' => 'Conversation tidak ditemukan.'], 404);
         }
 
-        $botMessage = \App\Models\ChatMessage::where('conversation_id', $conversation->id)
+        $botMessage = ChatMessage::where('conversation_id', $conversation->id)
             ->where('role', 'assistant')
             ->where('status', '!=', 'completed')
             ->whereJsonContains('metadata->evidence_uuid', $uuid)
@@ -148,7 +152,7 @@ class EvidenceController extends Controller
 
         // Fallback: ambil bot terakhir dengan evidence_uuid apapun status
         if (! $botMessage) {
-            $botMessage = \App\Models\ChatMessage::where('conversation_id', $conversation->id)
+            $botMessage = ChatMessage::where('conversation_id', $conversation->id)
                 ->where('role', 'assistant')
                 ->whereJsonContains('metadata->evidence_uuid', $uuid)
                 ->latest('id')
@@ -160,7 +164,7 @@ class EvidenceController extends Controller
         }
 
         // Reset user bubble status jadi PROCESSING biar tidak stuck di FAILED
-        $userMessage = \App\Models\ChatMessage::where('conversation_id', $conversation->id)
+        $userMessage = ChatMessage::where('conversation_id', $conversation->id)
             ->where('role', 'user')
             ->latest('id')
             ->get()
@@ -170,6 +174,7 @@ class EvidenceController extends Controller
                         return true;
                     }
                 }
+
                 return false;
             });
 
@@ -184,7 +189,9 @@ class EvidenceController extends Controller
                 }
             }
             unset($c);
-            if ($changed) $userMessage->update(['content' => $content]);
+            if ($changed) {
+                $userMessage->update(['content' => $content]);
+            }
         }
 
         // Reset bot jadi pending & dispatch ulang
@@ -196,7 +203,7 @@ class EvidenceController extends Controller
             'metadata' => array_merge($botMessage->metadata ?? [], ['retry_at' => now()->toIso8601String()]),
         ]);
 
-        \App\Jobs\EvidenceLlmGroupingJob::dispatch($evidence->id, $user->id, $botMessage->id, $captionHint);
+        EvidenceLlmGroupingJob::dispatch($evidence->id, $user->id, $botMessage->id, $captionHint);
 
         Log::info('Evidence retry dispatched', ['evidence_id' => $evidence->id, 'uuid' => $uuid, 'bot_message_id' => $botMessage->id]);
 

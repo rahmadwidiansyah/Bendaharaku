@@ -143,20 +143,34 @@ class SummaryExtractor
 
     /**
      * Fallback: ekstrak total dari text menggunakan patterns.
+     * Prioritaskan Total Pembayaran/Total di footer, bukan Subtotal di tengah.
      */
     private function extractTotalFallback(string $text): ?float
     {
         $patterns = [
-            '/(?:grand\s*total|total\s*belanja|total|jumlah)[:\s]*(?:rp\.?\s*)?([\d.,]+)/i',
+            // Total Pembayaran paling spesifik (Shopee): "Total Pembayaran Rp29.588" di baris akhir
+            '/(?:total\s*pembayaran|grand\s*total|total\s*belanja|total)[:\s]*(?:rp\.?\s*)?([\d.,]+)/i',
+            '/jumlah[:\s]*(?:rp\.?\s*)?([\d.,]+)/i',
         ];
 
+        $candidates = [];
         foreach ($patterns as $pattern) {
-            if (preg_match($pattern, $text, $m)) {
-                $amount = $this->parseNumber($m[1]);
-                if ($amount > 0) {
-                    return $amount;
+            if (preg_match_all($pattern, $text, $matches, PREG_OFFSET_CAPTURE)) {
+                foreach ($matches[1] as $m) {
+                    $raw = $m[0];
+                    $offset = $m[1];
+                    $amount = $this->parseNumber($raw);
+                    if ($amount > 0) {
+                        $candidates[] = ['amount' => $amount, 'offset' => $offset];
+                    }
                 }
             }
+        }
+        if (! empty($candidates)) {
+            // Pilih yang offset terbesar (paling bawah, Total final)
+            usort($candidates, fn ($a, $b) => $b['offset'] <=> $a['offset']);
+
+            return $candidates[0]['amount'];
         }
 
         return null;
