@@ -124,7 +124,8 @@ jobs:
           echo "VERSION_NAME=$VERSION_NAME"
           if [ -f release.keystore ] && [ -n "$ANDROID_KEYSTORE_PASSWORD" ]; then
             echo "🔐 Building signed APK..."
-            printf "Y\n%s\n" "$VERSION_NAME" | bubblewrap build --skipPwaValidation || (printf "Y\n%s\n" "$VERSION_NAME" | bubblewrap update --skipPwaValidation && printf "Y\n%s\n" "$VERSION_NAME" | bubblewrap build --skipPwaValidation)
+            # Bubblewrap prompts: 1) regenerate? Y, 2) versionName, 3) keystore password, 4) key password
+            printf "Y\n%s\n%s\n%s\n" "$VERSION_NAME" "$ANDROID_KEYSTORE_PASSWORD" "$ANDROID_KEY_PASSWORD" | bubblewrap build --skipPwaValidation || (printf "Y\n%s\n%s\n%s\n" "$VERSION_NAME" "$ANDROID_KEYSTORE_PASSWORD" "$ANDROID_KEY_PASSWORD" | bubblewrap update --skipPwaValidation && printf "Y\n%s\n%s\n%s\n" "$VERSION_NAME" "$ANDROID_KEYSTORE_PASSWORD" "$ANDROID_KEY_PASSWORD" | bubblewrap build --skipPwaValidation)
           else
             echo "🔨 Building unsigned (debug) APK..."
             if command -v jq >/dev/null 2>&1; then
