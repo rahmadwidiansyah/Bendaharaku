@@ -122,6 +122,30 @@ onMounted(async () => {
     // Resume polling pesan bot yang masih diproses (dari sesi sebelumnya)
     resumePending()
     await scrollToBottom(false)
+
+    // Share Target / Push: jika URL ada ?evidence_uuid=xxx atau ?share=1, highlight dan scroll ke bubble evidence tersebut
+    try {
+        const params = new URLSearchParams(window.location.search)
+        const evUuid = params.get('evidence_uuid') || params.get('evidenceUuid')
+        if (evUuid) {
+            // Jika evidence bubble belum ada (share baru), tunggu polling selesai
+            let tries = 0
+            const highlight = () => {
+                const found = messages.value.find(m => (m.metadata?.evidence_uuid === evUuid) || m.content?.some(c => (c.evidenceUuid === evUuid || c.evidence_uuid === evUuid)))
+                if (found) scrollToBottom(true)
+                else if (tries++ < 10) setTimeout(highlight, 1000)
+            }
+            setTimeout(highlight, 500)
+            // Bersihkan query param setelah 3 detik agar tidak stuck highlight
+            setTimeout(() => {
+                const url = new URL(window.location.href)
+                url.searchParams.delete('evidence_uuid')
+                url.searchParams.delete('evidenceUuid')
+                url.searchParams.delete('share')
+                window.history.replaceState({}, '', url.pathname)
+            }, 3000)
+        }
+    } catch (_) {}
 })
 
 // Pantau jika bot mulai mengetik, otomatis scroll ke bawah agar indikator 3 titik terlihat

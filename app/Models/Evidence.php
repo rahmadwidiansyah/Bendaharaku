@@ -142,6 +142,8 @@ class Evidence extends Model
 
     const SOURCE_API = 'API';
 
+    const SOURCE_SHARE = 'SHARE_TARGET';
+
     // ── Relations ─────────────────────────────────────────────────────
 
     public function user(): BelongsTo

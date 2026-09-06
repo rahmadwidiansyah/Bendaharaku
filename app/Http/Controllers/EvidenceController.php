@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Chat\Adapters\WebAdapter;
 use App\Evidence\Events\EvidenceUploaded;
 use App\Evidence\Jobs\ProcessEvidenceJob;
 use App\Http\Requests\StoreEvidenceRequest;
@@ -14,6 +15,7 @@ use App\Models\Evidence;
 use App\Services\Evidence\EvidencePipelineService;
 use App\Services\Evidence\EvidenceUploadService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -24,18 +26,57 @@ class EvidenceController extends Controller
     public function __construct(
         private readonly EvidenceUploadService $uploadService,
         private readonly EvidencePipelineService $pipelineService,
+        private readonly WebAdapter $webAdapter,
     ) {}
 
     public function store(StoreEvidenceRequest $request): JsonResponse
     {
+        return $this->handleUpload($request, Evidence::SOURCE_CHAT_UPLOAD, false);
+    }
+
+    /**
+     * POST /chat/evidence/share — Web Share Target (PWA).
+     * Dipanggil saat user share foto dari Galeri / app Bank (BCA, SeaBank, dll).
+     * Membuat Evidence + ChatMessage (bubble) agar langsung muncul di /chat.
+     */
+    public function share(Request $request): JsonResponse|RedirectResponse
+    {
+        // Share Target dari OS kadang kirim `image` (sesuai manifest), kadang `file` atau array.
+        // Validasi longgar: terima file apapun dengan key image/file/files
+        $request->validate([
+            'image' => ['nullable', 'file', 'max:10240', 'mimes:jpg,jpeg,png,webp', 'dimensions:max_width=10000,max_height=10000'],
+            'file' => ['nullable', 'file', 'max:10240', 'mimes:jpg,jpeg,png,webp'],
+            'title' => ['nullable', 'string', 'max:500'],
+            'text' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        if (! $request->hasFile('image') && ! $request->hasFile('file') && empty($request->allFiles())) {
+            return $request->expectsJson() || $request->wantsJson()
+                ? response()->json(['success' => false, 'message' => 'File gambar wajib dipilih.'], 422)
+                : redirect()->route('chat.index')->with('error', 'File gambar wajib dipilih.');
+        }
+
+        // Build caption dari share_target params title + text
+        $caption = trim(($request->input('title') ?? '').' '.($request->input('text') ?? ''));
+
+        // Reuse handleUpload logic dengan caption → chat bubble
+        return $this->handleUpload($request, Evidence::SOURCE_SHARE, true, $caption);
+    }
+
+    private function handleUpload(Request $request, string $source, bool $isShare, string $captionHint = ''): JsonResponse|RedirectResponse
+    {
         try {
-            $file = $request->file('image');
+            $file = $request->file('image') ?? $request->file('file');
+            if (! $file) {
+                $all = collect($request->allFiles())->flatten()->filter();
+                $file = $all->first();
+            }
             $user = $request->user();
 
             $result = $this->uploadService->upload(
                 user: $user,
                 file: $file,
-                source: Evidence::SOURCE_CHAT_UPLOAD,
+                source: $source,
             );
 
             $evidence = $result['evidence'];
@@ -54,6 +95,35 @@ class EvidenceController extends Controller
 
             $this->pipelineService->queue($evidence);
             ProcessEvidenceJob::dispatch($evidence->id);
+
+            // Share Target (PWA): buat chat bubble agar foto langsung muncul di /chat
+            if ($isShare) {
+                try {
+                    $shareCaption = $captionHint !== '' ? $captionHint : trim((string) ($request->input('title') ?? '').' '.(string) ($request->input('text') ?? ''));
+                    $this->webAdapter->enqueueMessage($user, $shareCaption !== '' ? $shareCaption : '[Evidence]', null, $evidence->uuid);
+                } catch (\Throwable $e) {
+                    Log::warning('ShareTarget enqueueMessage failed: '.$e->getMessage(), ['evidence_id' => $evidence->id]);
+                }
+
+                if ($request->expectsJson() || $request->wantsJson()) {
+                    return response()->json([
+                        'success' => true,
+                        'evidence' => [
+                            'uuid' => $evidence->uuid,
+                            'url' => $url,
+                            'original_name' => $evidence->original_name,
+                            'mime_type' => $evidence->mime_type,
+                            'size' => $evidence->size,
+                            'formatted_size' => $evidence->formatted_size,
+                            'status' => $evidence->status->value,
+                            'processing' => ! $evidence->status->isTerminal(),
+                            'created_at' => $evidence->created_at->toIso8601String(),
+                        ],
+                    ]);
+                }
+
+                return redirect()->route('chat.index', ['evidence_uuid' => $evidence->uuid, 'share' => 1]);
+            }
 
             return response()->json([
                 'success' => true,

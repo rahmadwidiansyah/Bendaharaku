@@ -14,6 +14,8 @@ use App\Models\ChatMessage;
 use App\Models\Evidence;
 use App\Models\User;
 use App\Services\Evidence\LlmEvidenceGroupingService;
+use App\Services\Push\PushGate;
+use App\Services\Push\PushPayloadBuilder;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -69,6 +71,12 @@ class EvidenceLlmGroupingJob implements ShouldQueue
                 'content' => [['type' => 'error', 'message' => 'OCR belum selesai, coba buka Review manual.', 'severity' => 'error']],
                 'error_message' => 'OCR timeout',
             ]);
+            $evidence->refresh();
+            try {
+                PushGate::dispatch($user, PushPayloadBuilder::evidenceFailed($user, $evidence, 'OCR belum selesai'));
+            } catch (\Throwable $e) {
+                Log::warning('Evidence push failed (OCR timeout): '.$e->getMessage());
+            }
 
             return;
         }
@@ -89,6 +97,12 @@ class EvidenceLlmGroupingJob implements ShouldQueue
                 // Jika fail karena INVALID_AMOUNT (token abis, LLM gagal ekstrak nominal 0), coba fallback ke parsed amount evidence
                 if (($result['error_code'] ?? '') === 'INVALID_AMOUNT' || str_contains($result['message'] ?? '', 'Nominal tidak valid')) {
                     Log::warning('EvidenceLlmGroupingJob: fallback ke parsed amount karena LLM amount 0', ['evidence_id' => $evidence->id, 'parsed_amount' => $evidence->parsed_data?->amount ?? $evidence->amount ?? null]);
+                }
+                $evidence->refresh();
+                try {
+                    PushGate::dispatch($user, PushPayloadBuilder::evidenceFailed($user, $evidence, $result['message'] ?? ''));
+                } catch (\Throwable $e) {
+                    Log::warning('Evidence push failed (grouping): '.$e->getMessage());
                 }
 
                 return;
@@ -166,6 +180,13 @@ class EvidenceLlmGroupingJob implements ShouldQueue
                 'is_multi' => $result['is_multi'] ?? false,
                 'intent' => $chatResponse->intent->value,
             ]);
+            // Push grouping selesai (styling) — tampil walau user active & walau app tidak dibuka (SW)
+            $evidence->refresh();
+            try {
+                PushGate::dispatch($user, PushPayloadBuilder::evidenceReady($user, $evidence));
+            } catch (\Throwable $e) {
+                Log::warning('Evidence push failed (ready): '.$e->getMessage());
+            }
         } catch (\Throwable $e) {
             Log::error('EvidenceLlmGroupingJob: failed', [
                 'evidence_id' => $evidence->id,
@@ -177,6 +198,14 @@ class EvidenceLlmGroupingJob implements ShouldQueue
                 'error_message' => $e->getMessage(),
             ]);
             $this->updateUserImageStatus($botMessage->conversation_id, $evidence->uuid, 'FAILED');
+            try {
+                $freshEvidence = Evidence::find($evidence->id);
+                if ($freshEvidence) {
+                    PushGate::dispatch($user, PushPayloadBuilder::evidenceFailed($user, $freshEvidence, $e->getMessage()));
+                }
+            } catch (\Throwable $pe) {
+                Log::warning('Evidence push failed (exception): '.$pe->getMessage());
+            }
         }
     }
 

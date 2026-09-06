@@ -457,6 +457,9 @@ Route::middleware(['auth'])->group(function () {
         // ── Evidence (OCR Upload & Review) ────────────────────────
         // Upload gambar bukti transaksi, trigger OCR pipeline
         Route::post('/evidence', [EvidenceController::class, 'store'])->name('evidence.store');
+        // Web Share Target (PWA) — share foto dari Galeri / app Bank
+        Route::post('/evidence/share', [EvidenceController::class, 'share'])->name('evidence.share');
+        Route::get('/evidence/share', fn () => redirect()->route('chat.index'))->name('evidence.share.get');
         // Serve private image untuk Chat (foto harus tampil, bukan text [Evidence])
         Route::get('/evidence/{uuid}/image', [EvidenceController::class, 'image'])->name('evidence.image');
         // Retry grouping LLM jika gagal (server LLM down) — chat turun seperti kirim lagi
@@ -511,6 +514,31 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('transactions/{transaction}/confirm', [TransactionController::class, 'confirm'])->name('transactions.confirm');
     Route::resource('transactions', TransactionController::class);
     Route::get('/loans/{type}', [LoanController::class, 'index'])->name('loans.index');
+});
+
+// PWA — Digital Asset Links for TWA (env-based SHA256, fallback to file)
+Route::get('/.well-known/assetlinks.json', function () {
+    $envSha = env('ANDROID_ASSETLINKS_SHA256') ?: config('services.twa.sha256');
+    $path = public_path('.well-known/assetlinks.json');
+
+    if ($envSha && $envSha !== 'REPLACE_WITH_SHA256_FROM_KEYSTORE') {
+        return response()->json([
+            [
+                'relation' => ['delegate_permission/common.handle_all_urls'],
+                'target' => [
+                    'namespace' => 'android_app',
+                    'package_name' => config('services.twa.package', 'id.bendaharaku.twa'),
+                    'sha256_cert_fingerprints' => [$envSha],
+                ],
+            ],
+        ]);
+    }
+
+    if (! file_exists($path)) {
+        return response()->json([], 404);
+    }
+
+    return response()->file($path, ['Content-Type' => 'application/json']);
 });
 
 // Health check

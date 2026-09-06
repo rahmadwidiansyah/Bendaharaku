@@ -37,4 +37,11 @@ return [
         'type_debt' => 'hutang',
         'type_receivable' => 'piutang',
     ],
+
+    'evidence' => [
+        'ready_title' => 'Struk siap di-review',
+        'failed_title' => 'OCR struk gagal',
+        'failed_body' => 'Foto struk gagal diproses. Coba foto lebih jelas.',
+        'fallback_desc' => 'Struk belanja',
+    ],
 ];

@@ -1,6 +1,5 @@
 <script setup>
-// Mengganti emoji dengan URL logo dari repositori GitHub
-const appIcon = 'https://raw.githubusercontent.com/rahmadwidiansyah/script_pencatat_keuangan/refs/heads/main/logo.png';
+const appIcon = '/icons/icon-192.png';
 </script>
 
 <template>
