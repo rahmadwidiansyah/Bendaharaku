@@ -77,61 +77,72 @@ jobs:
 
       - name: Build TWA (APK)
         env:
+          # Bubblewrap reads these for non-interactive password handling (see Build.getPasswords)
+          BUBBLEWRAP_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          # Keep ANDROID_ vars for keytool verification and backward compat
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-          GITHUB_RUN_NUMBER: ${{ github.run_number }}
-          GITHUB_REF: ${{ github.ref }}
         run: |
           set -e
-          # Bubblewrap project dir is ./twa (avoid colliding with Laravel ./app)
           TWA_DIR="twa"
           mkdir -p "$TWA_DIR"
-          # Ensure signingKey path is absolute or relative to TWA dir
           if [ -f release.keystore ]; then cp release.keystore "$TWA_DIR/release.keystore"; fi
-          # Init if not exists
-          if [ ! -f "$TWA_DIR/twa-manifest.json" ]; then
+          # Sync bumped manifest to TWA dir and fix signing path
+          cp twa-manifest.json "$TWA_DIR/twa-manifest.json"
+          if command -v jq >/dev/null 2>&1; then
+            jq '.signingKey.path="./release.keystore"' "$TWA_DIR/twa-manifest.json" > /tmp/twa.json && mv /tmp/twa.json "$TWA_DIR/twa-manifest.json"
+          fi
+          # Pre-configure Bubblewrap JDK + Android SDK (non-interactive, no prompt)
+          mkdir -p ~/.bubblewrap
+          SDK_PATH="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          if [ -z "$SDK_PATH" ] || [ ! -d "$SDK_PATH" ]; then SDK_PATH="/usr/local/lib/android/sdk"; fi
+          printf '{"jdkPath":"%s","androidSdkPath":"%s"}\n' "$JAVA_HOME" "$SDK_PATH" > ~/.bubblewrap/config.json
+          echo "Bubblewrap config:"
+          cat ~/.bubblewrap/config.json
+          bubblewrap doctor 2>&1 | head -n 20 || true
+          # Generate checksum so build doesn't prompt "No checksum file..." 
+          # (build checks twa/manifest-checksum.txt vs current manifest)
+          node -e "
+            const fs=require('fs'), crypto=require('crypto'), path=require('path');
+            const manifestPath=path.join('$TWA_DIR','twa-manifest.json');
+            const checksumPath=path.join('$TWA_DIR','manifest-checksum.txt');
+            const data=fs.readFileSync(manifestPath);
+            const sum=crypto.createHash('sha1').update(data).digest('hex');
+            fs.writeFileSync(checksumPath, sum);
+            console.log('Generated checksum:', sum);
+          "
+          ls -lh "$TWA_DIR"/manifest-checksum.txt || true
+          # If TWA project not yet initialized (no app/build.gradle), init it non-interactively
+          if [ ! -f "$TWA_DIR/app/build.gradle" ]; then
+            echo "Initializing TWA project (non-interactive)..."
+            # init will use twa-manifest.json and already-configured jdk/sdk, no prompts
+            (cd "$TWA_DIR" && bubblewrap init --manifest ./twa-manifest.json --directory ./ 2>&1 | head -n 50) || echo "init finished or already initialized"
+            # Re-sync manifest after init (init may overwrite)
             cp twa-manifest.json "$TWA_DIR/twa-manifest.json"
-            # Adjust signingKey path inside TWA dir
             if command -v jq >/dev/null 2>&1; then
               jq '.signingKey.path="./release.keystore"' "$TWA_DIR/twa-manifest.json" > /tmp/twa.json && mv /tmp/twa.json "$TWA_DIR/twa-manifest.json"
             fi
-          else
-            # Sync version bump to TWA dir
-            cp twa-manifest.json "$TWA_DIR/twa-manifest.json"
+            # Regenerate checksum after init
+            node -e "
+              const fs=require('fs'), crypto=require('crypto'), path=require('path');
+              const p=path.join('$TWA_DIR','twa-manifest.json');
+              const c=path.join('$TWA_DIR','manifest-checksum.txt');
+              fs.writeFileSync(c, crypto.createHash('sha1').update(fs.readFileSync(p)).digest('hex'));
+            "
           fi
           cd "$TWA_DIR"
-          echo "JAVA_HOME=$JAVA_HOME"
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-          ls -d "$JAVA_HOME" 2>&1 | head
-          ls -d "$ANDROID_HOME" 2>&1 | head || ls -d "$ANDROID_SDK_ROOT" 2>&1 | head || true
-          # Pre-configure Bubblewrap JDK + Android SDK to avoid interactive prompts (exit 130)
-          mkdir -p ~/.bubblewrap
-          SDK_PATH="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
-          if [ -z "$SDK_PATH" ]; then SDK_PATH="$ANDROID_HOME"; fi
-          if [ -z "$SDK_PATH" ] || [ ! -d "$SDK_PATH" ]; then SDK_PATH="/usr/local/lib/android/sdk"; fi
-          printf '{"jdkPath":"%s","androidSdkPath":"%s"}\n' "$JAVA_HOME" "$SDK_PATH" > ~/.bubblewrap/config.json
-          cat ~/.bubblewrap/config.json
-          # Also ensure bubblewrap doctor passes
-          bubblewrap doctor 2>&1 | head -n 50 || true
-          # Prepare version for bubblewrap prompts
-          if [ "${GITHUB_REF#refs/tags/}" != "$GITHUB_REF" ]; then
-            TAG="${GITHUB_REF#refs/tags/}"; VERSION_NAME="${TAG#v}"
-          else
-            VERSION_NAME="1.0.${GITHUB_RUN_NUMBER:-0}"
-          fi
-          echo "VERSION_NAME=$VERSION_NAME"
-          # Bubblewrap may ask 3× checksum (fresh twa dir) + version + 2× password
-          if [ -f release.keystore ] && [ -n "$ANDROID_KEYSTORE_PASSWORD" ]; then
-            echo "🔐 Building signed APK..."
-            printf "Y\nY\nY\n%s\n%s\n%s\n" "$VERSION_NAME" "$ANDROID_KEYSTORE_PASSWORD" "$ANDROID_KEY_PASSWORD" | bubblewrap build --skipPwaValidation || (printf "Y\nY\nY\n%s\n%s\n%s\n" "$VERSION_NAME" "$ANDROID_KEYSTORE_PASSWORD" "$ANDROID_KEY_PASSWORD" | bubblewrap update --skipPwaValidation && printf "Y\nY\nY\n%s\n%s\n%s\n" "$VERSION_NAME" "$ANDROID_KEYSTORE_PASSWORD" "$ANDROID_KEY_PASSWORD" | bubblewrap build --skipPwaValidation)
+          if [ -f release.keystore ] && [ -n "$BUBBLEWRAP_KEYSTORE_PASSWORD" ]; then
+            echo "🔐 Building signed APK (non-interactive via BUBBLEWRAP env)..."
+            bubblewrap build --skipPwaValidation
           else
             echo "🔨 Building unsigned (debug) APK..."
             if command -v jq >/dev/null 2>&1; then
               jq 'del(.signingKey)' twa-manifest.json > /tmp/twa.json && mv /tmp/twa.json twa-manifest.json
+              node -e "const fs=require('fs'),c=require('crypto');const p='twa-manifest.json',d='manifest-checksum.txt';fs.writeFileSync(d,c.createHash('sha1').update(fs.readFileSync(p)).digest('hex'))"
             fi
-            printf "Y\nY\nY\n%s\n" "$VERSION_NAME" | bubblewrap build --skipPwaValidation || true
+            bubblewrap build --skipPwaValidation || true
           fi
           ls -lh app/build/outputs/apk/release/ app/build/outputs/bundle/release/ 2>&1 | head -n 50 || true
           find . -name "*.apk" -type f | head -n 20
