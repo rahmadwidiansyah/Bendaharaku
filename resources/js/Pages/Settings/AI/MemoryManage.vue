@@ -66,15 +66,15 @@ const links = ref(props.memories?.links || []);
         <div class="flex items-center gap-3">
           <Link
             :href="route('settings.ai.memory')"
-            class="flex items-center justify-center w-9 h-9 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors shrink-0"
+            class="flex items-center justify-center w-9 h-9 rounded-lg bg-[var(--color-surface-muted)] hover:bg-[var(--color-surface-muted)] transition-colors shrink-0"
           >
-            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4 text-[var(--color-text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
             </svg>
           </Link>
           <div class="flex-1 min-w-0">
-            <h2 class="text-2xl font-black text-white tracking-tight leading-none">{{ t('settings.ai.memory.manage.title') }}</h2>
-            <p class="text-2xs sm:text-sm text-gray-400 mt-1.5 font-medium">{{ t('settings.ai.memory.manage.description') }}</p>
+            <h2 class="text-2xl font-black text-[var(--color-text-primary)] tracking-tight leading-none">{{ t('settings.ai.memory.manage.title') }}</h2>
+            <p class="text-2xs sm:text-sm text-[var(--color-text-secondary)] mt-1.5 font-medium">{{ t('settings.ai.memory.manage.description') }}</p>
           </div>
         </div>
       </template>
@@ -82,13 +82,13 @@ const links = ref(props.memories?.links || []);
       <!-- Search & Filters -->
       <div class="space-y-3 mb-6">
         <div class="relative">
-          <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)] pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <input
             v-model="search"
             :placeholder="t('settings.ai.memory.manage.search_placeholder')"
-            class="w-full pl-10 pr-4 py-2.5 bg-gray-900 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+            class="w-full pl-10 pr-4 py-2.5 bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] rounded-lg text-sm text-[var(--color-text-primary)] placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)] focus:border-transparent transition-all"
           />
         </div>
 
@@ -100,8 +100,8 @@ const links = ref(props.memories?.links || []);
             :class="[
               'px-3.5 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-colors shrink-0',
               activeFilter === f.value
-                ? 'bg-purple-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700',
+                ? 'bg-[var(--color-brand)] text-[var(--color-text-primary)]'
+                : 'bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-muted)]',
             ]"
           >
             {{ f.label }}
@@ -114,13 +114,13 @@ const links = ref(props.memories?.links || []);
         <div
           v-for="item in data"
           :key="item.id"
-          class="bg-gray-900 border border-gray-800 rounded-xl p-4 hover:border-gray-700 transition-colors"
+          class="bg-[var(--color-surface-raised)] border border-[var(--color-border-subtle)] rounded-xl p-4 hover:border-[var(--color-border-default)] transition-colors"
         >
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0 flex-1">
-              <h3 class="text-xs sm:text-sm font-semibold text-white truncate">{{ item.keyword }}</h3>
-              <p v-if="item.normalized_subject && item.normalized_subject !== item.keyword" class="text-xs text-gray-500 truncate mt-0.5">{{ item.raw_subject }}</p>
-              <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs text-gray-400">
+              <h3 class="text-xs sm:text-sm font-semibold text-[var(--color-text-primary)] truncate">{{ item.keyword }}</h3>
+              <p v-if="item.normalized_subject && item.normalized_subject !== item.keyword" class="text-xs text-[var(--color-text-muted)] truncate mt-0.5">{{ item.raw_subject }}</p>
+              <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs text-[var(--color-text-secondary)]">
                 <span v-if="item.category">
                   <span class="text-gray-600">#</span> {{ item.category }}
                 </span>
@@ -141,15 +141,15 @@ const links = ref(props.memories?.links || []);
                 <div :class="['inline-block px-2 py-0.5 rounded text-xs font-medium', weightColor(item.weight)]">
                   {{ item.weight.toFixed(1) }}
                 </div>
-                <div class="text-[10px] text-gray-500 mt-0.5">
+                <div class="text-[10px] text-[var(--color-text-muted)] mt-0.5">
                   {{ item.hit_count }}×
                 </div>
               </div>
               <Link
                 :href="route('settings.ai.memory.detail', { id: item.id })"
-                class="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors"
+                class="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--color-surface-muted)] hover:bg-[var(--color-surface-muted)] transition-colors"
               >
-                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 text-[var(--color-text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                 </svg>
               </Link>
@@ -164,7 +164,7 @@ const links = ref(props.memories?.links || []);
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
         <h3 class="text-lg font-semibold text-gray-300">{{ t('settings.ai.memory.manage.empty_title') }}</h3>
-        <p class="text-sm text-gray-500 mt-2 max-w-sm mx-auto">{{ t('settings.ai.memory.manage.empty_description') }}</p>
+        <p class="text-sm text-[var(--color-text-muted)] mt-2 max-w-sm mx-auto">{{ t('settings.ai.memory.manage.empty_description') }}</p>
       </div>
 
       <!-- Pagination -->
@@ -174,9 +174,9 @@ const links = ref(props.memories?.links || []);
             v-if="link.url"
             :href="link.url"
             v-html="link.label"
-            :class="['px-3 py-1 text-sm rounded-md', link.active ? 'bg-purple-600 text-white font-bold' : 'bg-gray-800 text-gray-400 border border-white/10 hover:text-white']"
+            :class="['px-3 py-1 text-sm rounded-md', link.active ? 'bg-[var(--color-brand)] text-[var(--color-text-primary)] font-bold' : 'bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)] hover:text-[var(--color-text-primary)]']"
           />
-          <span v-else v-html="link.label" class="px-3 py-1 text-sm rounded-md bg-gray-800 text-gray-400 border border-white/10" />
+          <span v-else v-html="link.label" class="px-3 py-1 text-sm rounded-md bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)]" />
         </template>
       </div>
     </SettingsLayout>

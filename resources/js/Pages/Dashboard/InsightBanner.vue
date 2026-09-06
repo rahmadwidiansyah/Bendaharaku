@@ -68,12 +68,12 @@ const dismiss = () => {
     isVisible.value = false
 }
 
-// Color map berdasarkan insight type
+// Color map berdasarkan insight type — tokenized (expense/income/debt/secondary)
 const colorClasses = computed(() => ({
-    danger:  'bg-red-950/40    border-red-900/50    text-red-400',
-    success: 'bg-green-950/40  border-green-900/50  text-green-400',
-    warning: 'bg-yellow-950/40 border-yellow-900/50 text-yellow-400',
-    info:    'bg-gray-900/80   border-gray-900/50   text-gray-400',
+    danger:  'bg-[var(--color-expense-bg)]    border-[var(--color-expense-border)]    text-[var(--color-expense-text)]',
+    success: 'bg-[var(--color-income-bg)]  border-[var(--color-income-border)]  text-[var(--color-income-text)]',
+    warning: 'bg-[var(--color-debt-bg)] border-[var(--color-debt-border)] text-[var(--color-debt-text)]',
+    info:    'bg-[var(--color-surface-raised)]/80   border-[var(--color-border-default)]   text-[var(--color-text-secondary)]',
 }[insight.value.type]))
 </script>
 
@@ -89,7 +89,7 @@ const colorClasses = computed(() => ({
         <div
             v-if="isVisible"
             :class="[
-                'mb-6 p-3 rounded-xl border flex items-center justify-between gap-3',
+                'mb-3 sm:mb-6 p-2.5 sm:p-3 rounded-xl border flex items-center justify-between gap-2 sm:gap-3',
                 'animate-fade-in-up delay-100',
                 'text-2xs uppercase font-bold tracking-widest',
                 colorClasses,

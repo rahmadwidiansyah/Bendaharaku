@@ -6,7 +6,7 @@
  * Format: HH:mm (24 jam) dengan locale id-ID.
  *
  * Usage:
- *   <ChatTimestamp :datetime="message.created_at" class="text-white/40" />
+ *   <ChatTimestamp :datetime="message.created_at" class="text-[var(--color-text-primary)]/40" />
  */
 
 import { computed } from 'vue'

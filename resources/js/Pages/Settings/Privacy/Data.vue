@@ -48,7 +48,7 @@ const handleExport = async () => {
       :description="t('settings.privacy.data.description')"
     >
       <SettingsCard :title="t('settings.privacy.data.export.title')" :description="t('settings.privacy.data.export.description')">
-        <button @click="handleExport" :disabled="isExporting" class="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2.5 bg-purple-600 hover:bg-purple-700 disabled:bg-surface-muted disabled:cursor-not-allowed text-white rounded-lg sm:rounded-xl text-sm font-medium transition-colors">
+        <button @click="handleExport" :disabled="isExporting" class="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2.5 bg-[var(--color-brand)] hover:bg-[var(--color-brand-hover)] disabled:bg-surface-muted disabled:cursor-not-allowed text-[var(--color-text-primary)] rounded-lg sm:rounded-xl text-sm font-medium transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 11l5 5 5-5M12 4v12" />
           </svg>

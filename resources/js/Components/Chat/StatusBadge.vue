@@ -13,14 +13,14 @@ const props = defineProps({
 const config = computed(() => {
     if (props.loading) {
         return {
-            color: 'text-purple-400',
+            color: 'text-[var(--color-brand)]',
             bg: 'bg-purple-500/10',
             dot: 'bg-purple-400',
             key: props.progress > 0 ? t('chat.uploading') + ' ' + props.progress + '%' : t('chat.uploading'),
         }
     }
     const map = {
-        PENDING:    { color: 'text-gray-400', bg: 'bg-gray-500/10', dot: 'bg-gray-400', key: t('chat.status.pending') },
+        PENDING:    { color: 'text-[var(--color-text-secondary)]', bg: 'bg-gray-500/10', dot: 'bg-gray-400', key: t('chat.status.pending') },
         UPLOADING:  { color: 'text-transfer-text', bg: 'bg-transfer-bg', dot: 'bg-transfer-text', key: t('chat.status.uploading') },
         UPLOADED:   { color: 'text-income-text', bg: 'bg-income-bg', dot: 'bg-income-text', key: t('chat.status.uploaded') },
         PROCESSING: { color: 'text-debt-text', bg: 'bg-debt-bg', dot: 'bg-debt-text', key: t('chat.status.processing') },

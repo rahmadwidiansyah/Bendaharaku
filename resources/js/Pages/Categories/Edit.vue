@@ -66,14 +66,14 @@ const confirmDelete = () => {
 
             <header class="hidden lg:block mb-8 pt-4">
                 <p class="text-2xs text-gray-300 font-semibold mb-1 uppercase tracking-wider">Vault</p>
-                <h1 class="text-2xl font-bold text-white tracking-tight">{{ t('category.titleEdit') }}</h1>
+                <h1 class="text-2xl font-bold text-[var(--color-text-primary)] tracking-tight">{{ t('category.titleEdit') }}</h1>
             </header>
 
             <form @submit.prevent="submit" class="space-y-5 lg:space-y-6">
 
                 <div v-if="!isSystem">
                     <label class="block text-2xs lg:text-sm font-medium text-gray-300 mb-1.5 lg:mb-2 ml-1">{{ t('category.type') }}</label>
-                    <div class="p-1 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl shadow-inner flex gap-1">
+                    <div class="p-1 bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] rounded-xl shadow-inner flex gap-1">
                         <button
                             v-for="type in types"
                             :key="type.id"
@@ -82,7 +82,7 @@ const confirmDelete = () => {
                             class="flex-1 flex items-center justify-center gap-1.5 py-2.5 lg:py-3 rounded-lg text-2xs lg:text-xs font-bold uppercase tracking-widest transition-all"
                             :class="form.type_id === type.id
                                 ? (type.name === 'Income' ? 'bg-green-500/20 text-green-400 border border-green-500/40' : 'bg-red-500/20 text-red-400 border border-red-500/40')
-                                : 'text-gray-500 border border-transparent hover:text-gray-300'"
+                                : 'text-[var(--color-text-muted)] border border-transparent hover:text-gray-300'"
                         >
                             <svg v-if="type.name === 'Income'" class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M12 5v14m0 0l-7-7m7 7l7-7" />
@@ -95,8 +95,8 @@ const confirmDelete = () => {
                     </div>
                 </div>
                 <div v-else>
-                    <label class="block text-2xs lg:text-sm font-medium text-gray-400 mb-1.5 lg:mb-2 ml-1">{{ t('category.type') }}</label>
-                    <div class="h-[44px] lg:h-[50px] bg-gray-900/30 border border-white/5 rounded-xl px-4 lg:px-5 flex items-center text-gray-500 text-xs lg:text-sm font-medium select-none">
+                    <label class="block text-2xs lg:text-sm font-medium text-[var(--color-text-secondary)] mb-1.5 lg:mb-2 ml-1">{{ t('category.type') }}</label>
+                    <div class="h-[44px] lg:h-[50px] bg-[var(--color-surface-raised)]/30 border border-white/5 rounded-xl px-4 lg:px-5 flex items-center text-[var(--color-text-muted)] text-xs lg:text-sm font-medium select-none">
                         {{ category.type?.name }} (System Kategori)
                     </div>
                 </div>
@@ -106,22 +106,22 @@ const confirmDelete = () => {
 
                     <div class="flex-1 flex flex-col justify-end">
                         <label class="block text-2xs lg:text-sm font-medium text-gray-300 mb-1.5 lg:mb-2 ml-1">{{ t('category.name') }}</label>
-                        <div class="h-[52px] lg:h-[60px] bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl px-4 lg:px-5 flex items-center group focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all shadow-inner">
+                        <div class="h-[52px] lg:h-[60px] bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] rounded-xl px-4 lg:px-5 flex items-center group focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all shadow-inner">
                             <input type="text" v-model="form.category_name" required
                                 :placeholder="t('category.namePlaceholder')"
-                                class="w-full bg-transparent border-none text-white p-0 text-sm lg:text-base font-medium placeholder-gray-600 focus:ring-0 focus:outline-none">
+                                class="w-full bg-transparent border-none text-[var(--color-text-primary)] p-0 text-sm lg:text-base font-medium placeholder-gray-600 focus:ring-0 focus:outline-none">
                         </div>
                     </div>
                 </div>
 
                 <div class="flex flex-col">
                     <label class="block text-2xs lg:text-sm font-medium text-gray-300 mb-1.5 lg:mb-2 ml-1">{{ t('category.keyword') }}</label>
-                    <div class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl px-3 lg:px-4 py-3 group focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all shadow-inner min-h-[52px] lg:min-h-[60px] flex items-center">
+                    <div class="bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] rounded-xl px-3 lg:px-4 py-3 group focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all shadow-inner min-h-[52px] lg:min-h-[60px] flex items-center">
                         <textarea ref="keywordRef" v-model="form.keyword" :placeholder="t('category.keywordHint')" rows="1"
                             @input="autoResizeKeyword"
-                            class="w-full bg-transparent border-none text-white p-0 text-sm placeholder-gray-600 focus:ring-0 focus:outline-none resize-none overflow-hidden leading-5 min-h-[20px] max-h-[160px] break-words whitespace-pre-wrap"></textarea>
+                            class="w-full bg-transparent border-none text-[var(--color-text-primary)] p-0 text-sm placeholder-gray-600 focus:ring-0 focus:outline-none resize-none overflow-hidden leading-5 min-h-[20px] max-h-[160px] break-words whitespace-pre-wrap"></textarea>
                     </div>
-                    <p class="text-2xs text-gray-500 mt-1.5 lg:mt-2 ml-1 italic">{{ t('category.keywordHint') }}</p>
+                    <p class="text-2xs text-[var(--color-text-muted)] mt-1.5 lg:mt-2 ml-1 italic">{{ t('category.keywordHint') }}</p>
                 </div>
 
                 <div class="flex gap-3 pt-3 lg:pt-4">
@@ -131,7 +131,7 @@ const confirmDelete = () => {
                     </button>
                     <button type="submit" :disabled="form.processing"
                         :class="isSystem ? 'w-full' : 'flex-2'"
-                        class="bg-linear-to-br from-brand-deep to-brand-mid text-white font-bold text-sm tracking-wide py-3.5 lg:py-4 rounded-xl shadow-lg active:scale-95 transition-all hover:-translate-y-0.5">
+                        class="bg-linear-to-br from-brand-deep to-brand-mid text-[var(--color-text-primary)] font-bold text-sm tracking-wide py-3.5 lg:py-4 rounded-xl shadow-lg active:scale-95 transition-all hover:-translate-y-0.5">
                         {{ form.processing ? t('btn.saving') : t('btn.update') }}
                     </button>
                 </div>

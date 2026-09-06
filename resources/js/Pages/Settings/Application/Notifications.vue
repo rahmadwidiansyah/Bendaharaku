@@ -86,7 +86,7 @@ onUnmounted(() => {
           <span class="text-2xs sm:text-sm text-text-secondary">{{ t('settings.application.notifications.email.label') }}</span>
           <label class="relative inline-flex items-center cursor-pointer">
             <input v-model="emailEnabled" type="checkbox" class="sr-only peer" />
-            <div class="w-11 h-6 bg-surface-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+            <div class="w-11 h-6 bg-surface-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--color-brand)] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-brand)]"></div>
           </label>
         </div>
       </SettingsCard>
@@ -104,7 +104,7 @@ onUnmounted(() => {
               class="sr-only peer"
               :disabled="!push.isSupported || !props.vapidPublicKey"
             />
-            <div class="w-11 h-6 bg-surface-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+            <div class="w-11 h-6 bg-surface-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--color-brand)] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-brand)]"></div>
           </label>
         </div>
       </SettingsCard>
@@ -114,7 +114,7 @@ onUnmounted(() => {
         <button
           @click="handleSave"
           :disabled="saving"
-          class="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-surface-muted disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors"
+          class="px-4 py-2 bg-[var(--color-brand)] hover:bg-[var(--color-brand-hover)] disabled:bg-surface-muted disabled:cursor-not-allowed text-[var(--color-text-primary)] rounded-lg text-sm font-medium transition-colors"
         >
           {{ saving ? t('common.saving') : t('common.save') }}
         </button>

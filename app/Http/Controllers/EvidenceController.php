@@ -19,6 +19,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class EvidenceController extends Controller
@@ -58,7 +59,7 @@ class EvidenceController extends Controller
                 'title' => ['nullable', 'string', 'max:500'],
                 'text' => ['nullable', 'string', 'max:2000'],
             ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             Log::warning('ShareTarget validation failed', ['errors' => $e->errors(), 'allFiles' => $request->allFiles()]);
 
             return $request->expectsJson() || $request->wantsJson()

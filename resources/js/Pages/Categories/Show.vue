@@ -51,7 +51,7 @@ const getTypeColor = (typeName) => {
         'Transfer': 'text-blue-400 bg-blue-400/10 border-blue-400/20',
         'Debt': 'text-amber-400 bg-amber-400/10 border-amber-400/20',
         'Receivable': 'text-fuchsia-400 bg-fuchsia-400/10 border-fuchsia-400/20'
-    }[typeName] || 'text-gray-500';
+    }[typeName] || 'text-[var(--color-text-muted)]';
 };
 
 const formatDateRange = () => {
@@ -69,11 +69,11 @@ const formatDateRange = () => {
             <header class="hidden lg:flex justify-between items-center mb-8 pt-4 relative z-10">
                 <div>
                     <p class="text-2xs text-gray-300 font-semibold mb-1 uppercase tracking-wider">Vault</p>
-                    <h1 class="text-2xl font-bold text-white tracking-tight">{{ t('category.title') }}</h1>
+                    <h1 class="text-2xl font-bold text-[var(--color-text-primary)] tracking-tight">{{ t('category.title') }}</h1>
                 </div>
 
                 <Link :href="route('categories.edit', category.id)"
-                    class="w-10 h-10 rounded-full bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 flex items-center justify-center text-purple-500 active:scale-95 transition-all hover:border-purple-500/50">
+                    class="w-10 h-10 rounded-full bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] flex items-center justify-center text-purple-500 active:scale-95 transition-all hover:border-purple-500/50">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round"
                             d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -85,12 +85,12 @@ const formatDateRange = () => {
                 <AppIcon :icon="category.icon" fallback="folder" :class="['w-16 h-16 lg:w-20 lg:h-20 mb-4 lg:mb-5', getCategoryIconColor(category.type?.name)]" />
 
                 <div class="text-center">
-                    <h1 class="text-2xl lg:text-3xl font-black text-white tracking-tight leading-none mb-2">{{ category.category_name }}</h1>
+                    <h1 class="text-2xl lg:text-3xl font-black text-[var(--color-text-primary)] tracking-tight leading-none mb-2">{{ category.category_name }}</h1>
                     <div class="flex flex-col items-center gap-2">
-                        <div class="inline-flex items-center gap-2 px-3 lg:px-4 py-1 rounded-full bg-linear-to-br from-gray-900 to-gray-800 border border-white/10">
+                        <div class="inline-flex items-center gap-2 px-3 lg:px-4 py-1 rounded-full bg-[var(--color-surface-raised)] border border-[var(--color-border-default)]">
                             <span class="w-1.5 h-1.5 rounded-full"
                                 :class="getCategoryIconColor(category.type?.name)?.replace('text', 'bg')"></span>
-                            <p class="text-2xs font-bold text-gray-400 uppercase tracking-[0.2em]">{{ getTypeName(category.type.name) }}</p>
+                            <p class="text-2xs font-bold text-[var(--color-text-secondary)] uppercase tracking-[0.2em]">{{ getTypeName(category.type.name) }}</p>
                         </div>
                         <div v-if="isSystem"
                             class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30">
@@ -104,7 +104,7 @@ const formatDateRange = () => {
 
                 <!-- Mobile: edit button floating -->
                 <Link :href="route('categories.edit', category.id)"
-                    class="lg:hidden mt-4 w-10 h-10 rounded-full bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 flex items-center justify-center text-purple-500 active:scale-95 transition-all hover:border-purple-500/50">
+                    class="lg:hidden mt-4 w-10 h-10 rounded-full bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] flex items-center justify-center text-purple-500 active:scale-95 transition-all hover:border-purple-500/50">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round"
                             d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -112,34 +112,34 @@ const formatDateRange = () => {
                 </Link>
             </div>
 
-            <div class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-5 lg:p-6 text-center mb-8 lg:mb-10 shadow-2xl relative overflow-hidden group z-10">
+            <div class="bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] rounded-xl p-5 lg:p-6 text-center mb-8 lg:mb-10 shadow-2xl relative overflow-hidden group z-10">
                 <div class="absolute top-0 left-0 w-full h-1 bg-purple-500/20"></div>
                 <div class="flex items-center justify-between gap-3 mb-4 lg:mb-5">
                     <div class="text-left min-w-0">
-                        <p class="text-2xs font-bold text-white uppercase tracking-[0.2em] mb-1 opacity-60">{{ $t('common.total') + ' ' + $t('common.period') }}</p>
+                        <p class="text-2xs font-bold text-[var(--color-text-primary)] uppercase tracking-[0.2em] mb-1 opacity-60">{{ $t('common.total') + ' ' + $t('common.period') }}</p>
                         <p class="text-2xs font-bold text-purple-400 truncate">{{ formatDateRange() }}</p>
                     </div>
                     <DateModal :action="route('categories.show', category.id)" :start-date="startDate" :end-date="endDate" />
                 </div>
                 <div class="flex items-baseline justify-center gap-1.5">
                     <span class="text-xs lg:text-sm font-bold text-gray-600">Rp</span>
-                    <h2 class="text-2xl lg:text-3xl font-black text-white tracking-tight">{{ formatNumber(totalUsage) }}</h2>
+                    <h2 class="text-2xl lg:text-3xl font-black text-[var(--color-text-primary)] tracking-tight">{{ formatNumber(totalUsage) }}</h2>
                 </div>
             </div>
 
             <div class="space-y-4 relative z-10">
                 <div class="flex items-center justify-between px-1 mb-2">
-                    <h3 class="text-2xs font-bold text-gray-400 uppercase tracking-widest">{{ $t('category.show.transactions') }}</h3>
-                    <span class="text-2xs font-bold text-gray-400 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 px-2 py-0.5 rounded-xl">{{
+                    <h3 class="text-2xs font-bold text-[var(--color-text-secondary)] uppercase tracking-widest">{{ $t('category.show.transactions') }}</h3>
+                    <span class="text-2xs font-bold text-[var(--color-text-secondary)] bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] px-2 py-0.5 rounded-xl">{{
                         transactions.length }} {{ $t('category.transaction') }}</span>
                 </div>
 
                 <button v-for="trx in transactions" :key="trx.id" type="button" @click="openDetail(trx)"
-                    class="w-full text-left bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 p-3 lg:p-4 rounded-xl flex justify-between items-center active:scale-[0.98] transition-all shadow-sm relative overflow-hidden group">
+                    class="w-full text-left bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] p-3 lg:p-4 rounded-xl flex justify-between items-center active:scale-[0.98] transition-all shadow-sm relative overflow-hidden group">
 
                     <div class="flex-1 min-w-0 pr-3 relative z-10">
                         <div class="flex items-center gap-2 mb-1.5 lg:mb-2">
-                            <p class="text-2xs font-bold text-gray-500">
+                            <p class="text-2xs font-bold text-[var(--color-text-muted)]">
                                 {{ formatDate(trx.date) }}
                             </p>
                             <span class="w-1 h-1 bg-gray-500 rounded-full"></span>
@@ -149,7 +149,7 @@ const formatDateRange = () => {
                         </div>
 
                         <div class="mb-1.5 lg:mb-2">
-                            <p class="text-sm font-bold text-white truncate">{{ trx.notes ?? $t('transaction.detail.noNote') }}</p>
+                            <p class="text-sm font-bold text-[var(--color-text-primary)] truncate">{{ trx.notes ?? $t('transaction.detail.noNote') }}</p>
                             <p v-if="trx.subject && trx.subject !== '-'"
                                 class="text-2xs text-yellow-500 font-bold mt-0.5 flex items-center gap-1">
                                 <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"
@@ -162,23 +162,23 @@ const formatDateRange = () => {
                         </div>
 
                         <div class="flex items-center gap-2">
-                            <div class="flex items-center gap-1.5 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 p-1.5 lg:p-2 py-0.5 lg:py-1 rounded-xl">
-                                <span class="text-2xs font-bold text-gray-400 truncate max-w-[50px] lg:max-w-[60px]">{{ trx.source_wallet?.name }}</span>
+                            <div class="flex items-center gap-1.5 bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] p-1.5 lg:p-2 py-0.5 lg:py-1 rounded-xl">
+                                <span class="text-2xs font-bold text-[var(--color-text-secondary)] truncate max-w-[50px] lg:max-w-[60px]">{{ trx.source_wallet?.name }}</span>
                                 <svg class="w-2.5 h-2.5 text-purple-500" fill="none" viewBox="0 0 24 24"
                                     stroke="currentColor" stroke-width="3">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                                 </svg>
-                                <span class="text-2xs font-bold text-white truncate max-w-[50px] lg:max-w-[60px]">{{ trx.destination_wallet?.name }}</span>
+                                <span class="text-2xs font-bold text-[var(--color-text-primary)] truncate max-w-[50px] lg:max-w-[60px]">{{ trx.destination_wallet?.name }}</span>
                             </div>
                         </div>
                     </div>
 
                     <div class="text-right shrink-0 relative z-10">
                         <p class="text-sm lg:text-base font-black"
-                            :class="category.type.name === 'Income' ? 'text-green-400' : 'text-white'">
+                            :class="category.type.name === 'Income' ? 'text-green-400' : 'text-[var(--color-text-primary)]'">
                             {{ category.type.name === 'Income' ? '+' : '-' }}{{ formatNumber(trx.amount) }}
                         </p>
-                        <span class="inline-block text-2xs font-bold text-white uppercase px-1.5 py-0.5 rounded border"
+                        <span class="inline-block text-2xs font-bold text-[var(--color-text-primary)] uppercase px-1.5 py-0.5 rounded border"
                             :class="getTypeColor(trx.type.name)">
                             {{ getTypeName(trx.type.name) }}
                         </span>
@@ -186,8 +186,8 @@ const formatDateRange = () => {
                 </button>
 
                 <div v-if="transactions.length === 0"
-                    class="text-center py-12 lg:py-16 bg-linear-to-br from-gray-900 to-gray-800 rounded-xl border-2 border-dashed border-white/10">
-                    <p class="text-2xs font-bold text-gray-500 uppercase tracking-widest">{{ $t('category.show.noTransactions') }}</p>
+                    class="text-center py-12 lg:py-16 bg-[var(--color-surface-raised)] rounded-xl border-2 border-dashed border-[var(--color-border-default)]">
+                    <p class="text-2xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest">{{ $t('category.show.noTransactions') }}</p>
                 </div>
             </div>
         </div>

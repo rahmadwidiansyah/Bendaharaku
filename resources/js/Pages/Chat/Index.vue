@@ -371,18 +371,18 @@ async function handleRetryEvidence(uuid) {
                 <button
                     v-if="showJumpBtn"
                     @click="jumpToLatest"
-                    class="absolute bottom-[76px] right-4 z-20 flex items-center gap-1.5 pl-2.5 pr-3 py-2 rounded-full bg-gray-900 border border-white/12 shadow-xl shadow-black/40 hover:bg-gray-800 hover:border-white/20 active:scale-95 transition-all"
+                    class="absolute bottom-[76px] right-4 z-20 flex items-center gap-1.5 pl-2.5 pr-3 py-2 rounded-full bg-[var(--color-surface-raised)] border border-white/12 shadow-xl shadow-black/40 hover:bg-[var(--color-surface-muted)] hover:border-white/20 active:scale-95 transition-all"
                     :aria-label="t('chat.scrollToBottom')"
                     style="backdrop-filter: blur(12px);"
                 >
                     <!-- Arrow down icon -->
                     <span class="w-5 h-5 rounded-full bg-purple-600 flex items-center justify-center shrink-0">
-                        <svg class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                        <svg class="w-3 h-3 text-[var(--color-text-primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                         </svg>
                     </span>
                     <!-- Label + badge -->
-                    <span class="text-xs font-semibold text-white leading-none">
+                    <span class="text-xs font-semibold text-[var(--color-text-primary)] leading-none">
                         <template v-if="unreadCount > 0">
                             {{ unreadCount }} {{ t('chat.newMessages') }}
                         </template>

@@ -53,7 +53,7 @@ const handleToggle = async () => {
         <div class="flex items-center justify-between">
           <div>
             <span class="text-sm text-gray-300 font-medium">{{ t('settings.finance.defaults.transaction_logic.label') }}</span>
-            <p class="text-2xs text-gray-500 mt-0.5">
+            <p class="text-2xs text-[var(--color-text-muted)] mt-0.5">
               {{ allowNegativeBalance
                 ? t('settings.finance.defaults.transaction_logic.on')
                 : t('settings.finance.defaults.transaction_logic.off')
@@ -68,7 +68,7 @@ const handleToggle = async () => {
               :disabled="saving"
               @change="handleToggle"
             />
-            <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600 animate-transition"></div>
+            <div class="w-11 h-6 bg-[var(--color-surface-muted)] peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--color-brand)] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-brand)] animate-transition"></div>
           </label>
         </div>
       </SettingsCard>

@@ -33,12 +33,12 @@ defineProps({
 <template>
     <label
         :for="$props.for"
-        class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1"
+        class="block text-2xs font-bold text-[var(--color-text-secondary)] uppercase tracking-widest mb-1.5 ml-1"
     >
         <slot />
         <span
             v-if="required"
-            class="text-red-400 ml-0.5"
+            class="text-[var(--color-expense-text)] ml-0.5"
             aria-hidden="true"
         >*</span>
     </label>

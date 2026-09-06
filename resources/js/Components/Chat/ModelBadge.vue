@@ -49,7 +49,7 @@ const colorClass = computed(() => {
     case 'openai': return 'text-emerald-400 bg-emerald-500/8 border-emerald-500/20'
     case 'deepseek': return 'text-cyan-400 bg-cyan-500/8 border-cyan-500/20'
     case 'python': return 'text-yellow-400 bg-yellow-500/8 border-yellow-500/20'
-    default: return 'text-gray-400 bg-gray-500/8 border-gray-500/20'
+    default: return 'text-[var(--color-text-secondary)] bg-gray-500/8 border-gray-500/20'
   }
 })
 </script>

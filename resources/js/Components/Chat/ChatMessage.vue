@@ -65,7 +65,7 @@ const {
         </div>
 
         <!-- CONTAINER UTAMA BARU: Menggabungkan Card + Text + Footer -->
-        <div :class="['flex flex-col min-w-0 border rounded-2xl rounded-tl-md shadow-sm overflow-hidden', isErrorMessage ? 'bg-expense-bg border-expense-border' : 'bg-gray-800/90 border-white/8']" style="max-width: 80%">
+        <div :class="['flex flex-col min-w-0 border rounded-2xl rounded-tl-md shadow-sm overflow-hidden', isErrorMessage ? 'bg-expense-bg border-expense-border' : 'bg-[var(--color-surface-muted)]/90 border-[var(--color-border-subtle)]']" style="max-width: 80%">
 
             <!-- 1. Card components -->
             <template v-for="(comp, i) in cardComponents" :key="'card-' + i">
@@ -82,7 +82,7 @@ const {
             <!-- 3. Footer (Jam dan Response Time) -->
             <div class="flex items-center justify-between gap-2 px-3.5 py-1.5">
                 <ResponseMeta :metadata="message.metadata" :content="message.content ?? []" />
-                <ChatTimestamp :datetime="message.created_at" class="text-gray-500 select-none shrink-0" />
+                <ChatTimestamp :datetime="message.created_at" class="text-[var(--color-text-muted)] select-none shrink-0" />
             </div>
         </div>
 
@@ -97,7 +97,7 @@ const {
 
         <!-- Bubble user -->
         <div class="flex flex-col gap-1 min-w-0 items-end" style="max-width: 80%">
-            <div class="user-bubble bg-gradient-to-br from-brand-mid to-brand-soft text-white text-sm leading-relaxed px-3.5 pt-2 pb-1.5 rounded-2xl rounded-tr-md shadow-sm shadow-purple-500/20 break-words">
+            <div class="user-bubble bg-gradient-to-br from-brand-mid to-brand-soft text-[var(--color-text-primary)] text-sm leading-relaxed px-3.5 pt-2 pb-1.5 rounded-2xl rounded-tr-md shadow-sm shadow-purple-500/20 break-words">
                 <!-- Render semua inline components (text + image) -->
                 <template v-for="(comp, i) in filteredInline" :key="i">
                     <MessageRenderer
@@ -112,7 +112,7 @@ const {
                 <div class="flex justify-end mt-0.5">
                     <ChatTimestamp
                         :datetime="message.created_at"
-                        class="text-white/50 select-none"
+                        class="text-[var(--color-text-primary)]/50 select-none"
                     />
                 </div>
             </div>

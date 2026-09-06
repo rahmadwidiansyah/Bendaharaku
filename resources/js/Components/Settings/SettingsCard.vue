@@ -10,10 +10,10 @@ withDefaults(defineProps<Props>(), {
 </script>
 
 <template>
-  <div class="bg-gradient-to-br from-gray-900 to-gray-800 border border-white/5 rounded-xl sm:rounded-2xl p-4 sm:p-6 space-y-3 sm:space-y-4">
+  <div class="bg-[var(--color-surface-raised)] border border-[var(--color-border-subtle)] rounded-xl sm:rounded-2xl p-3 sm:p-6 space-y-3 sm:space-y-4 shadow-card">
     <div v-if="title || description">
-      <h3 class="text-xs sm:text-sm font-bold text-white">{{ title }}</h3>
-      <p v-if="description" class="text-2xs text-gray-500 mt-1">{{ description }}</p>
+      <h3 class="text-xs sm:text-sm font-bold text-[var(--color-text-primary)]">{{ title }}</h3>
+      <p v-if="description" class="text-2xs text-[var(--color-text-muted)] mt-1">{{ description }}</p>
     </div>
 
     <div class="pt-1 sm:pt-2">

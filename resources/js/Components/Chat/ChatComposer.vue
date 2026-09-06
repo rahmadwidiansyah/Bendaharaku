@@ -85,42 +85,42 @@ onBeforeUnmount(() => {
 
 <template>
   <div
-    class="z-10 shrink-0 bg-gray-950/96 backdrop-blur-xl border-t border-white/6"
+    class="z-10 shrink-0 bg-[var(--color-surface-overlay)]/96 backdrop-blur-xl border-t border-[var(--color-border-subtle)]"
     :style="{
       boxShadow: '0 -8px 24px rgba(0,0,0,0.4)',
       paddingBottom: 'max(10px, env(safe-area-inset-bottom, 10px))',
     }"
   >
     <!-- WA-style: preview foto struk + caption (tidak langsung kirim, tunggu tombol Send) -->
-    <div v-if="attachmentPreview" class="mx-3 mt-2.5 mb-1 rounded-2xl overflow-hidden border border-white/10 bg-gray-800/80 flex items-center gap-3 p-2">
-      <div class="relative w-14 h-14 rounded-xl overflow-hidden bg-gray-900 shrink-0">
+    <div v-if="attachmentPreview" class="mx-3 mt-2.5 mb-1 rounded-2xl overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-surface-muted)]/80 flex items-center gap-3 p-2">
+      <div class="relative w-14 h-14 rounded-xl overflow-hidden bg-[var(--color-surface-raised)] shrink-0">
         <img :src="attachmentPreview" alt="Preview" class="w-full h-full object-cover" />
         <div v-if="isUploading" class="absolute inset-0 bg-black/60 flex items-center justify-center">
-          <svg class="animate-spin w-5 h-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+          <svg class="animate-spin w-5 h-5 text-[var(--color-text-primary)]" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
         </div>
       </div>
       <div class="flex-1 min-w-0">
-        <p class="text-xs font-semibold text-white truncate">{{ attachmentName || t('chat.evidence') }}</p>
-        <p class="text-2xs truncate" :class="isUploading ? 'text-purple-400' : 'text-gray-500'">{{ isUploading ? t('chat.evidenceUploading') : t('chat.captionHint') }}</p>
+        <p class="text-xs font-semibold text-[var(--color-text-primary)] truncate">{{ attachmentName || t('chat.evidence') }}</p>
+        <p class="text-2xs truncate" :class="isUploading ? 'text-[var(--color-brand)]' : 'text-[var(--color-text-muted)]'">{{ isUploading ? t('chat.evidenceUploading') : t('chat.captionHint') }}</p>
       </div>
-      <button type="button" @click="$emit('removeAttachment')" :disabled="isUploading" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-gray-400 hover:text-white flex items-center justify-center shrink-0 transition-colors disabled:opacity-50" :aria-label="t('chat.removeAttachment')">
+      <button type="button" @click="$emit('removeAttachment')" :disabled="isUploading" class="w-7 h-7 rounded-full bg-[var(--color-surface-muted)] hover:bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] flex items-center justify-center shrink-0 transition-colors disabled:opacity-50" :aria-label="t('chat.removeAttachment')">
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
       </button>
     </div>
 
-    <div class="flex items-center gap-3 px-3 pt-2.5 pb-1.5">
+    <div class="flex items-center gap-2 sm:gap-3 px-2.5 sm:px-3 pt-2.5 pb-1.5">
 
       <button
         type="button"
         @click="$emit('openCommands')"
         :disabled="isLoading"
         :class="[
-          'shrink-0 w-11 h-11 rounded-2xl flex items-center justify-center',
+          'shrink-0 w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center',
           'border transition-all duration-200',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/50',
           isLoading
-            ? 'opacity-40 cursor-not-allowed bg-gray-800/60 border-white/8 text-gray-600'
-            : 'bg-gray-800/80 border-white/8 text-gray-400 hover:text-purple-400 hover:border-purple-500/30 hover:bg-gray-800 active:scale-95',
+            ? 'opacity-40 cursor-not-allowed bg-[var(--color-surface-muted)]/60 border-[var(--color-border-subtle)] text-[var(--color-text-muted)]'
+            : 'bg-[var(--color-surface-muted)]/80 border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:text-[var(--color-brand)] hover:border-[var(--color-brand-border)] hover:bg-[var(--color-surface-muted)] active:scale-95',
         ]"
         :aria-label="t('chat.commandButton')"
         :title="t('chat.commandTitle')"
@@ -136,12 +136,12 @@ onBeforeUnmount(() => {
         @click="$emit('openUpload')"
         :disabled="isLoading"
         :class="[
-          'shrink-0 w-11 h-11 rounded-2xl flex items-center justify-center',
+          'shrink-0 w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center',
           'border transition-all duration-200',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50',
           isLoading
-            ? 'opacity-40 cursor-not-allowed bg-gray-800/60 border-white/8 text-gray-600'
-            : 'bg-gray-800/80 border-white/8 text-gray-400 hover:text-transfer-text hover:border-transfer-border hover:bg-gray-800 active:scale-95',
+            ? 'opacity-40 cursor-not-allowed bg-[var(--color-surface-muted)]/60 border-[var(--color-border-subtle)] text-[var(--color-text-muted)]'
+            : 'bg-[var(--color-surface-muted)]/80 border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:text-[var(--color-transfer-text)] hover:border-[var(--color-transfer-border)] hover:bg-[var(--color-surface-muted)] active:scale-95',
         ]"
         :aria-label="t('chat.attachmentButton')"
         :title="t('chat.attachmentTitle')"
@@ -155,8 +155,8 @@ onBeforeUnmount(() => {
         :class="[
           'flex-1 relative rounded-2xl border transition-all duration-200',
           isFocused
-            ? 'border-purple-500/50 bg-gray-800 ring-2 ring-purple-500/15'
-            : 'border-white/10 bg-gray-800/70 hover:border-white/15 hover:bg-gray-800/90',
+            ? 'border-[var(--color-brand)]/50 bg-[var(--color-surface-muted)] ring-2 ring-[var(--color-brand)]/15'
+            : 'border-[var(--color-border-default)] bg-[var(--color-surface-muted)]/70 hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface-muted)]/90',
         ]"
       >
         <textarea
@@ -169,7 +169,7 @@ onBeforeUnmount(() => {
           @input="resize"
           @focus="isFocused = true"
           @blur="isFocused = false"
-          class="w-full resize-none bg-transparent px-4 py-[11px] text-sm text-white placeholder-gray-500 outline-none focus:outline-none border-0 ring-0 focus:ring-0 disabled:opacity-50 leading-[22px] block"
+          class="w-full resize-none bg-transparent px-3 sm:px-4 py-[11px] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none focus:outline-none border-0 ring-0 focus:ring-0 disabled:opacity-50 leading-[22px] block"
           style="min-height: 44px; overflow-y: hidden;"
           :aria-label="placeholderText"
           aria-multiline="true"
@@ -181,12 +181,12 @@ onBeforeUnmount(() => {
         @click="submit"
         :disabled="!canSend"
         :class="[
-          'shrink-0 w-11 h-11 rounded-2xl flex items-center justify-center',
+          'shrink-0 w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center',
           'transition-all duration-200',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/50',
           canSend
-            ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/25 hover:bg-purple-500 active:scale-95 active:shadow-none'
-            : 'bg-gray-800/80 border border-white/8 text-gray-600 cursor-not-allowed',
+            ? 'bg-[var(--color-brand)] text-[var(--color-text-primary)] shadow-lg shadow-[var(--color-brand)]/25 hover:bg-[var(--color-brand-hover)] active:scale-95 active:shadow-none'
+            : 'bg-[var(--color-surface-muted)]/80 border border-[var(--color-border-subtle)] text-[var(--color-text-muted)] cursor-not-allowed',
         ]"
         :aria-label="t('chat.sendButton')"
       >
@@ -200,7 +200,7 @@ onBeforeUnmount(() => {
         </svg>
         <svg
           v-else
-          class="animate-spin w-5 h-5 text-purple-400"
+          class="animate-spin w-5 h-5 text-[var(--color-brand)]"
           fill="none" viewBox="0 0 24 24"
         >
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
@@ -209,7 +209,7 @@ onBeforeUnmount(() => {
       </button>
     </div>
 
-    <p class="hidden lg:block text-center text-[11px] text-gray-700 pb-1.5 pt-0">
+    <p class="hidden lg:block text-center text-[11px] text-[var(--color-text-muted)] pb-1.5 pt-0">
       {{ t('chat.desktopHint') }}
     </p>
   </div>

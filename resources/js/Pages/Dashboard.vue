@@ -259,12 +259,12 @@ const calendarDayNames = computed(() => [
 						</div>
 						<div class="grid grid-cols-2 gap-1 p-1 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-raised)]/70 shadow-sm shadow-black/20">
 							<button @click="activeHistoryTab = 'detail'"
-								:class="activeHistoryTab === 'detail' ? 'text-white bg-[var(--color-brand)] shadow-sm' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-white/5'"
+								:class="activeHistoryTab === 'detail' ? 'text-white bg-[var(--color-brand)] shadow-sm' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-muted)]'"
 								class="px-3 py-2 rounded-lg text-2xs font-bold uppercase tracking-widest transition-all text-center">
 								{{ $t('dashboard.detailTab') }}
 							</button>
 							<button @click="activeHistoryTab = 'calendar'"
-								:class="activeHistoryTab === 'calendar' ? 'text-white bg-[var(--color-brand)] shadow-sm' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-white/5'"
+								:class="activeHistoryTab === 'calendar' ? 'text-white bg-[var(--color-brand)] shadow-sm' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-muted)]'"
 								class="px-3 py-2 rounded-lg text-2xs font-bold uppercase tracking-widest transition-all text-center">
 								{{ $t('dashboard.calendarTab') }}
 							</button>
@@ -274,7 +274,7 @@ const calendarDayNames = computed(() => [
 					<div class="grid grid-cols-[1fr_auto] gap-2 mb-3 sm:mb-4 animate-fade-in-up delay-500 px-1 items-center">
 						<div class="flex items-center justify-between gap-2 min-w-0 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-raised)]/70 px-2 py-1.5 shadow-sm shadow-black/20">
 							<button @click="prevMonth"
-								class="p-1.5 rounded-lg bg-white/5 border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors active:scale-95 shrink-0">
+								class="p-1.5 rounded-lg bg-[var(--color-surface-muted)]/50 border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors active:scale-95 shrink-0">
 								<svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" viewBox="0 0 24 24"
 									stroke="currentColor" stroke-width="2.5">
 									<path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
@@ -286,7 +286,7 @@ const calendarDayNames = computed(() => [
 							</p>
 							<button @click="nextMonth" :disabled="!canGoNextMonth"
 								class="p-1.5 rounded-lg border transition-colors active:scale-95 shrink-0"
-								:class="canGoNextMonth ? 'bg-white/5 border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]' : 'bg-white/[0.03] border-[var(--color-border-subtle)] text-[var(--color-text-muted)] cursor-not-allowed'">
+								:class="canGoNextMonth ? 'bg-[var(--color-surface-muted)]/50 border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]' : 'bg-[var(--color-surface-muted)]/20 border-[var(--color-border-subtle)] text-[var(--color-text-muted)] cursor-not-allowed'">
 								<svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" viewBox="0 0 24 24"
 									stroke="currentColor" stroke-width="2.5">
 									<path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
@@ -342,7 +342,7 @@ const calendarDayNames = computed(() => [
 									<button v-if="!day.empty" @click="selectDate(day.dateStr)"
 										class="w-full h-full rounded-md flex flex-col items-center justify-center p-0.5 border transition-all relative overflow-visible"
 										:class="[
-											selectedCalendarDate === day.dateStr ? 'bg-[var(--color-brand-subtle)] border-[var(--color-brand)] z-10' : 'bg-white/5 border-transparent hover:bg-white/10 z-0 hover:z-10',
+											selectedCalendarDate === day.dateStr ? 'bg-[var(--color-brand-subtle)] border-[var(--color-brand)] z-10' : 'bg-[var(--color-surface-muted)]/50 border-transparent hover:bg-[var(--color-surface-muted)] z-0 hover:z-10',
 											day.dateStr === todayYMD && selectedCalendarDate !== day.dateStr ? 'border-[var(--color-border-strong)]' : '',
 										]">
 										<span class="text-2xs font-bold leading-none mb-0.5"
@@ -407,7 +407,7 @@ const calendarDayNames = computed(() => [
 									:class="activeHistoryTab === 'detail' && collapsedDates[dateKey] ? 'opacity-0' : 'opacity-100'">
 									<div>
 										<button v-for="(trx, trxIdx) in group.transactions" :key="trx.id" @click="openModal(trx)"
-											class="w-full text-left flex items-center gap-2.5 sm:gap-3 py-2.5 sm:py-3 px-1 transition-colors hover:bg-white/[0.03] active:bg-white/[0.06] border-b border-[var(--color-border-subtle)] last:border-b-0">
+											class="w-full text-left flex items-center gap-2.5 sm:gap-3 py-2.5 sm:py-3 px-1 transition-colors hover:bg-[var(--color-surface-muted)]/40 active:bg-[var(--color-surface-muted)]/60 border-b border-[var(--color-border-subtle)] last:border-b-0">
 											<div class="relative shrink-0">
 												<AppIcon :icon="trx.category?.icon" fallback="file-text"
 													:class="['w-5 h-5', getCategoryIconColor(trx.type?.name)]" />

@@ -78,18 +78,18 @@ function handleCropped(blob) {
 <template>
     <div>
         <button type="button" @click="openModal"
-            class="w-[60px] h-[60px] flex items-center justify-center rounded-xl bg-gray-900 border border-white/10 hover:border-purple-500/50 transition-all overflow-hidden">
+            class="w-14 h-14 sm:w-[60px] sm:h-[60px] flex items-center justify-center rounded-xl bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] hover:border-[var(--color-brand-border)] transition-all overflow-hidden">
             <img v-if="hasCustomImage && previewUrl" :src="previewUrl" class="w-full h-full object-cover" alt="Icon" />
-            <AppIcon v-else :icon="modelValue || defaultIcon" class="w-8 h-8 text-purple-400" />
+            <AppIcon v-else :icon="modelValue || defaultIcon" class="w-8 h-8 text-[var(--color-brand)]" />
         </button>
 
         <BaseModal :show="isOpen" maxWidth="adaptive" :showCloseBtn="false" @close="closeModal">
             <template #header>
                 <div class="flex items-center justify-between w-full">
-                    <h3 class="text-sm font-black text-white uppercase tracking-widest truncate">{{ t('iconPicker.title') }}</h3>
+                    <h3 class="text-sm font-black text-[var(--color-text-primary)] uppercase tracking-widest truncate">{{ t('iconPicker.title') }}</h3>
                     <div class="flex items-center gap-1">
                         <button type="button" @click="openCropForUpload"
-                            class="w-8 h-8 shrink-0 flex items-center justify-center rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-purple-400 hover:border-purple-500/40 active:scale-90 transition-all"
+                            class="w-8 h-8 shrink-0 flex items-center justify-center rounded-full bg-[var(--color-surface-muted)]/50 border border-[var(--color-border-default)] text-[var(--color-text-muted)] hover:text-[var(--color-brand)] hover:border-[var(--color-brand-border)] active:scale-90 transition-all"
                             :title="t('iconPicker.upload')">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21zm16.5-13.5h-15" />
@@ -97,7 +97,7 @@ function handleCropped(blob) {
                             </svg>
                         </button>
                         <button type="button"
-                            class="w-8 h-8 shrink-0 flex items-center justify-center rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 active:scale-90 transition-all"
+                            class="w-8 h-8 shrink-0 flex items-center justify-center rounded-full bg-[var(--color-surface-muted)]/50 border border-[var(--color-border-default)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-muted)] active:scale-90 transition-all"
                             aria-label="Tutup" @click="closeModal">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -109,20 +109,20 @@ function handleCropped(blob) {
             <div class="flex flex-col gap-4">
                 <!-- Search bar -->
                 <div class="relative">
-                    <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-text-muted)] pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                     <input type="search" v-model="searchTerm" :placeholder="t('iconPicker.search')"
-                        class="w-full h-12 pl-12 pr-4 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 transition-all" />
+                        class="w-full h-11 sm:h-12 pl-12 pr-4 rounded-xl bg-[var(--color-surface-muted)]/50 border border-[var(--color-border-default)] text-[var(--color-text-primary)] text-sm placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-brand-border)] focus:ring-1 focus:ring-[var(--color-brand)]/20 transition-all" />
                 </div>
 
                 <!-- Category chips -->
                 <div class="flex gap-2 overflow-x-auto scrollbar-none pb-1 -mx-1 px-1 snap-x">
                     <button v-for="tab in tabNames" :key="tab" @click="activeTab = tab"
-                        class="shrink-0 snap-start px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap"
+                        class="shrink-0 snap-start px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap"
                         :class="activeTab === tab
-                            ? 'bg-purple-500/15 text-purple-400 border border-purple-500/30'
-                            : 'text-gray-500 hover:text-gray-300 border border-transparent hover:bg-white/5'">
+                            ? 'bg-[var(--color-brand-subtle)] text-[var(--color-brand)] border border-[var(--color-brand-border)]'
+                            : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] border border-transparent hover:bg-[var(--color-surface-muted)]'">
                         {{ t('iconPicker.tabs.' + tab) }}
                     </button>
                 </div>
@@ -130,12 +130,12 @@ function handleCropped(blob) {
                 <!-- Icon grid -->
                 <div class="grid grid-cols-5 gap-2 max-h-[50vh] overflow-y-auto scrollbar-thin py-1">
                     <div v-for="icon in filteredIcons" :key="icon" @click="selectIcon(icon)"
-                        class="aspect-square flex items-center justify-center cursor-pointer rounded-xl bg-white/5 border border-white/5 hover:border-purple-500/40 hover:bg-purple-500/10 active:scale-90 transition-all">
-                        <AppIcon :icon="icon" class="w-6 h-6 text-purple-400" />
+                        class="aspect-square flex items-center justify-center cursor-pointer rounded-xl bg-[var(--color-surface-muted)]/50 border border-[var(--color-border-subtle)] hover:border-[var(--color-brand-border)] hover:bg-[var(--color-brand-subtle)] active:scale-90 transition-all">
+                        <AppIcon :icon="icon" class="w-6 h-6 text-[var(--color-brand)]" />
                     </div>
                     <div v-if="filteredIcons.length === 0"
-                        class="col-span-full flex flex-col items-center justify-center py-10 text-gray-500">
-                        <AppIcon icon="search-x" class="w-8 h-8 mb-2 text-purple-400" />
+                        class="col-span-full flex flex-col items-center justify-center py-10 text-[var(--color-text-muted)]">
+                        <AppIcon icon="search-x" class="w-8 h-8 mb-2 text-[var(--color-brand)]" />
                         <p class="text-xs font-bold tracking-wider">{{ t('iconPicker.notFound') }}</p>
                     </div>
                 </div>

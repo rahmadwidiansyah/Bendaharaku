@@ -54,17 +54,17 @@ const displayAmount = computed({
             style="animation-delay: 50ms;">
 
             <header class="hidden lg:block mb-8 pt-4">
-                <h1 class="text-2xl font-bold text-white tracking-tight">{{ t('wallet.titleCreate') }}</h1>
+                <h1 class="text-2xl font-bold text-[var(--color-text-primary)] tracking-tight">{{ t('wallet.titleCreate') }}</h1>
             </header>
 
-            <div class="grid grid-cols-2 gap-2 mb-6 lg:mb-8 p-1 bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl animate-slide-up opacity-0"
+            <div class="grid grid-cols-2 gap-2 mb-6 lg:mb-8 p-1 bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] rounded-xl animate-slide-up opacity-0"
                 style="animation-delay: 100ms;">
                 <button type="button" @click="setGroup('Liquid')"
-                    :class="form.group_type === 'Liquid' ? 'w-full text-2xs font-semibold py-2.5 lg:py-3 rounded-lg bg-linear-to-br from-gray-800 to-gray-700 text-white shadow-sm transition-all border border-white/10' : 'w-full text-2xs font-semibold py-2.5 lg:py-3 rounded-lg text-gray-400 hover:text-white transition-all'">
+                    :class="form.group_type === 'Liquid' ? 'w-full text-2xs font-semibold py-2.5 lg:py-3 rounded-lg bg-linear-to-br from-gray-800 to-gray-700 text-[var(--color-text-primary)] shadow-sm transition-all border border-[var(--color-border-default)]' : 'w-full text-2xs font-semibold py-2.5 lg:py-3 rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all'">
                     {{ t('wallet.groupTypes.liquid') }}
                 </button>
                 <button type="button" @click="setGroup('Asset')"
-                    :class="form.group_type === 'Asset' ? 'w-full text-2xs font-semibold py-2.5 lg:py-3 rounded-lg bg-linear-to-br from-gray-800 to-gray-700 text-white shadow-sm transition-all border border-white/10' : 'w-full text-2xs font-semibold py-2.5 lg:py-3 rounded-lg text-gray-400 hover:text-white transition-all'">
+                    :class="form.group_type === 'Asset' ? 'w-full text-2xs font-semibold py-2.5 lg:py-3 rounded-lg bg-linear-to-br from-gray-800 to-gray-700 text-[var(--color-text-primary)] shadow-sm transition-all border border-[var(--color-border-default)]' : 'w-full text-2xs font-semibold py-2.5 lg:py-3 rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all'">
                     {{ t('wallet.groupTypes.asset') }}
                 </button>
             </div>
@@ -74,10 +74,10 @@ const displayAmount = computed({
                 <div class="flex flex-col animate-slide-up opacity-0 relative z-10" style="animation-delay: 150ms;">
                     <label class="block text-2xs lg:text-sm font-medium text-gray-300 mb-1.5 lg:mb-2 ml-1">{{ t('wallet.balance') }}</label>
                     <div
-                        class="h-[52px] lg:h-[60px] bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl px-4 lg:px-5 flex items-center group focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all">
+                        class="h-[52px] lg:h-[60px] bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] rounded-xl px-4 lg:px-5 flex items-center group focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all">
                         <span class="text-base font-bold text-purple-500 mr-3 opacity-80">Rp</span>
                         <input type="text" inputmode="numeric" required :placeholder="t('wallet.balancePlaceholder')" v-model="displayAmount"
-                            class="w-full bg-transparent border-none text-white p-0 text-lg lg:text-xl font-bold placeholder-gray-700 focus:ring-0 focus:outline-none caret-purple-500">
+                            class="w-full bg-transparent border-none text-[var(--color-text-primary)] p-0 text-lg lg:text-xl font-bold placeholder-gray-700 focus:ring-0 focus:outline-none caret-purple-500">
                     </div>
                     <div v-if="form.errors.balance" class="text-red-500 text-2xs mt-1">{{ form.errors.balance }}</div>
                 </div>
@@ -91,9 +91,9 @@ const displayAmount = computed({
                     <div class="flex-1 flex flex-col justify-end">
                         <label class="block text-2xs lg:text-sm font-medium text-gray-300 mb-1.5 lg:mb-2 ml-1">{{ t('wallet.name') }}</label>
                         <div
-                            class="h-[52px] lg:h-[60px] bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 rounded-xl px-4 lg:px-5 flex items-center group focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all caret-purple-500">
+                            class="h-[52px] lg:h-[60px] bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] rounded-xl px-4 lg:px-5 flex items-center group focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all caret-purple-500">
                             <input type="text" v-model="form.name" required :placeholder="t('wallet.namePlaceholder')"
-                                class="w-full bg-transparent border-none text-white p-0 text-sm lg:text-base font-medium placeholder-gray-600 focus:ring-0 focus:outline-none">
+                                class="w-full bg-transparent border-none text-[var(--color-text-primary)] p-0 text-sm lg:text-base font-medium placeholder-gray-600 focus:ring-0 focus:outline-none">
                         </div>
                         <div v-if="form.errors.name" class="text-red-500 text-2xs mt-1">{{ form.errors.name }}</div>
                     </div>
@@ -102,17 +102,17 @@ const displayAmount = computed({
                 <div class="flex flex-col animate-slide-up opacity-0 relative z-40" style="animation-delay: 250ms;">
                     <label class="block text-2xs lg:text-sm font-medium text-gray-300 mb-1.5 lg:mb-2 ml-1">{{ t('wallet.keyword') }}</label>
                     <div
-                        class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl px-3 lg:px-4 py-3 group focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all caret-purple-500 min-h-[52px] lg:min-h-[60px] flex items-center">
+                        class="bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] rounded-xl px-3 lg:px-4 py-3 group focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all caret-purple-500 min-h-[52px] lg:min-h-[60px] flex items-center">
                         <textarea ref="keywordRef" v-model="form.keyword" :placeholder="t('wallet.keywordHint')" rows="1"
                             @input="autoResizeKeyword"
-                            class="w-full bg-transparent border-none text-white p-0 text-sm placeholder-gray-600 focus:ring-0 focus:outline-none resize-none overflow-hidden leading-5 min-h-[20px] max-h-[160px] break-words whitespace-pre-wrap"></textarea>
+                            class="w-full bg-transparent border-none text-[var(--color-text-primary)] p-0 text-sm placeholder-gray-600 focus:ring-0 focus:outline-none resize-none overflow-hidden leading-5 min-h-[20px] max-h-[160px] break-words whitespace-pre-wrap"></textarea>
                     </div>
-                    <p class="text-2xs text-gray-500 mt-1.5 lg:mt-2 ml-1 italic">{{ t('wallet.keywordHint') }}</p>
+                    <p class="text-2xs text-[var(--color-text-muted)] mt-1.5 lg:mt-2 ml-1 italic">{{ t('wallet.keywordHint') }}</p>
                 </div>
 
                 <div class="pt-3 lg:pt-4 animate-slide-up opacity-0 relative z-30" style="animation-delay: 275ms;">
                     <button type="submit" :disabled="form.processing"
-                        class="w-full bg-linear-to-br from-brand-deep to-brand-mid text-white font-bold text-sm tracking-wide py-3.5 lg:py-4 rounded-xl hover:-translate-y-0.5 active:scale-95 transition-all duration-200">
+                        class="w-full bg-linear-to-br from-brand-deep to-brand-mid text-[var(--color-text-primary)] font-bold text-sm tracking-wide py-3.5 lg:py-4 rounded-xl hover:-translate-y-0.5 active:scale-95 transition-all duration-200">
                         {{ form.processing ? t('btn.saving') : t('btn.save') }}
                     </button>
                 </div>

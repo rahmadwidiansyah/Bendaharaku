@@ -201,17 +201,17 @@ const alignClasses = {
 
 const paddingClasses = {
     none: '',
-    sm: 'p-4',
-    md: 'p-5',
-    lg: 'p-6',
+    sm: 'p-3 sm:p-4',
+    md: 'p-4 sm:p-5',
+    lg: 'p-4 sm:p-6',
 }
 
 const panelClasses = computed(() => {
     const base = [
         'w-full shrink-0 relative',
-        'bg-gradient-to-b from-gray-900 to-gray-800',
-        'rounded-2xl border border-white/10',
-        'shadow-2xl shadow-black/50',
+        'bg-[var(--color-surface-raised)]',
+        'rounded-2xl border border-[var(--color-border-default)]',
+        'shadow-modal',
         maxWidthClasses[props.maxWidth],
     ]
     if (props.fullScreenOnMobile) {
@@ -268,7 +268,7 @@ const panelClasses = computed(() => {
                                     <h3
                                         v-if="title"
                                         id="modal-title"
-                                        class="text-sm font-black text-white uppercase tracking-widest truncate"
+                                        class="text-sm font-black text-[var(--color-text-primary)] uppercase tracking-widest truncate"
                                     >
                                         {{ title }}
                                     </h3>
@@ -279,7 +279,7 @@ const panelClasses = computed(() => {
                             <button
                                 v-if="showCloseBtn && closeable"
                                 type="button"
-                                class="ml-3 w-8 h-8 shrink-0 flex items-center justify-center rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 active:scale-90 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400"
+                                class="ml-3 w-8 h-8 shrink-0 flex items-center justify-center rounded-full bg-[var(--color-surface-muted)]/50 border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-muted)] active:scale-90 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]"
                                 aria-label="Tutup modal"
                                 @click="close"
                             >

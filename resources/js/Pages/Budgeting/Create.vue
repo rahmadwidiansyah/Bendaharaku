@@ -168,7 +168,7 @@ const submit = () => {
 
             <header class="hidden lg:block mb-8 pt-4">
                 <p class="text-2xs text-gray-300 font-semibold mb-1 uppercase tracking-wider">{{ t('budgeting.title') }}</p>
-                <h1 class="text-2xl font-bold text-white tracking-tight">{{ t('budgeting.titleCreate') }}</h1>
+                <h1 class="text-2xl font-bold text-[var(--color-text-primary)] tracking-tight">{{ t('budgeting.titleCreate') }}</h1>
             </header>
 
             <form @submit.prevent="submit" class="space-y-5 lg:space-y-6">
@@ -190,7 +190,7 @@ const submit = () => {
                 <!-- Replace AI checkbox -->
                 <label
                     v-if="isAiExisting"
-                    class="flex items-start gap-2.5 cursor-pointer select-none rounded-xl border border-white/10 bg-linear-to-br from-gray-900 to-gray-800 px-4 py-3 transition-colors hover:border-white/20"
+                    class="flex items-start gap-2.5 cursor-pointer select-none rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-raised)] px-4 py-3 transition-colors hover:border-white/20"
                 >
                     <input type="checkbox" v-model="form.delete_ai" class="mt-0.5 accent-purple-500 w-4 h-4 shrink-0">
                     <span class="text-2xs sm:text-xs font-semibold text-gray-300">{{ t('budgeting.replaceAi') }}</span>
@@ -201,9 +201,9 @@ const submit = () => {
                 <!-- Rows -->
                 <div class="space-y-3">
                     <div class="hidden lg:grid grid-cols-12 gap-3 px-1">
-                        <span class="col-span-4 text-2xs font-semibold text-gray-500 uppercase tracking-wider">{{ t('budgeting.categoryLabel') }}</span>
-                        <span class="col-span-3 text-2xs font-semibold text-gray-500 uppercase tracking-wider">{{ t('budgeting.groupLabel') }}</span>
-                        <span class="col-span-4 text-2xs font-semibold text-gray-500 uppercase tracking-wider">{{ t('budgeting.amountLabel') }}</span>
+                        <span class="col-span-4 text-2xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">{{ t('budgeting.categoryLabel') }}</span>
+                        <span class="col-span-3 text-2xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">{{ t('budgeting.groupLabel') }}</span>
+                        <span class="col-span-4 text-2xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">{{ t('budgeting.amountLabel') }}</span>
                     </div>
 
                     <div
@@ -213,10 +213,10 @@ const submit = () => {
                     >
                         <!-- Kategori -->
                         <div class="col-span-2 lg:col-span-4">
-                            <label class="block lg:hidden text-2xs font-semibold text-gray-500 mb-1 ml-1">{{ t('budgeting.categoryLabel') }}</label>
+                            <label class="block lg:hidden text-2xs font-semibold text-[var(--color-text-muted)] mb-1 ml-1">{{ t('budgeting.categoryLabel') }}</label>
                             <button
                                 type="button"
-                                class="w-full min-h-[44px] lg:h-[48px] px-3 flex items-center gap-2 rounded-xl bg-gray-900 border border-white/15 text-left transition-all hover:border-purple-500/50 focus:outline-none focus:border-purple-500 active:scale-[0.98]"
+                                class="w-full min-h-[44px] lg:h-[48px] px-3 flex items-center gap-2 rounded-xl bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] text-left transition-all hover:border-purple-500/50 focus:outline-none focus:border-purple-500 active:scale-[0.98]"
                                 :class="form.errors[`rows.${index}.category_id`] ? 'border-red-500' : ''"
                                 :aria-label="t('budgeting.categoryLabel')"
                                 @click="openCategoryPicker(index)"
@@ -233,10 +233,10 @@ const submit = () => {
                                         <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6" />
                                     </svg>
                                 </span>
-                                <span class="flex-1 min-w-0 truncate text-sm font-medium" :class="categoryLabelOf(index) ? 'text-white' : 'text-gray-500'">
+                                <span class="flex-1 min-w-0 truncate text-sm font-medium" :class="categoryLabelOf(index) ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-text-muted)]'">
                                     {{ categoryLabelOf(index) || t('budgeting.selectCategory') }}
                                 </span>
-                                <svg class="w-4 h-4 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <svg class="w-4 h-4 shrink-0 text-[var(--color-text-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                     <path d="M6 9l6 6 6-6" />
                                 </svg>
                             </button>
@@ -244,38 +244,38 @@ const submit = () => {
 
                         <!-- Tipe pengeluaran -->
                         <div class="col-span-1 lg:col-span-3">
-                            <label class="block lg:hidden text-2xs font-semibold text-gray-500 mb-1 ml-1">{{ t('budgeting.groupLabel') }}</label>
+                            <label class="block lg:hidden text-2xs font-semibold text-[var(--color-text-muted)] mb-1 ml-1">{{ t('budgeting.groupLabel') }}</label>
                             <button
                                 type="button"
-                                class="w-full min-h-[44px] lg:h-[48px] px-3 flex items-center gap-2 rounded-xl bg-gray-900 border border-white/15 text-left transition-all hover:border-purple-500/50 focus:outline-none focus:border-purple-500 active:scale-[0.98]"
+                                class="w-full min-h-[44px] lg:h-[48px] px-3 flex items-center gap-2 rounded-xl bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] text-left transition-all hover:border-purple-500/50 focus:outline-none focus:border-purple-500 active:scale-[0.98]"
                                 :class="form.errors[`rows.${index}.group_key`] ? 'border-red-500' : ''"
                                 :aria-label="t('budgeting.groupLabel')"
                                 @click="openGroupPicker(index)"
                             >
-                                <span class="flex-1 min-w-0 truncate text-sm font-medium" :class="groupLabelOf(index) ? 'text-white' : 'text-gray-500'">
+                                <span class="flex-1 min-w-0 truncate text-sm font-medium" :class="groupLabelOf(index) ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-text-muted)]'">
                                     {{ groupLabelOf(index) || t('budgeting.selectGroup') }}
                                 </span>
-                                <svg class="w-4 h-4 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <svg class="w-4 h-4 shrink-0 text-[var(--color-text-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                     <path d="M6 9l6 6 6-6" />
                                 </svg>
                             </button>
                             <div
                                 v-if="r.group_key === 'custom'"
-                                class="flex items-center gap-1.5 mt-2 h-[40px] lg:h-[44px] bg-gray-900 border border-white/15 rounded-xl px-3 focus-within:border-purple-500 transition-all"
+                                class="flex items-center gap-1.5 mt-2 h-[40px] lg:h-[44px] bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] rounded-xl px-3 focus-within:border-purple-500 transition-all"
                                 :class="form.errors[`rows.${index}.custom_group_name`] ? 'border-red-500' : ''"
                             >
                                 <input
                                     type="text"
                                     v-model="r.custom_group_name"
                                     :placeholder="t('budgeting.customGroupPlaceholder')"
-                                    class="w-full bg-transparent border-none text-white p-0 text-sm font-medium placeholder-gray-500 focus:ring-0 focus:outline-none"
+                                    class="w-full bg-transparent border-none text-[var(--color-text-primary)] p-0 text-sm font-medium placeholder-gray-500 focus:ring-0 focus:outline-none"
                                 >
                             </div>
                         </div>
 
                         <!-- Nominal — optimasi: tabular, clear, chips -->
                         <div class="col-span-1 lg:col-span-4">
-                            <label class="block lg:hidden text-2xs font-semibold tracking-widest uppercase text-gray-500 mb-1 ml-1">{{ t('budgeting.amountLabel') }}</label>
+                            <label class="block lg:hidden text-2xs font-semibold tracking-widest uppercase text-[var(--color-text-muted)] mb-1 ml-1">{{ t('budgeting.amountLabel') }}</label>
                             <div class="flex items-center gap-1.5 min-h-[44px] lg:h-[48px] bg-[var(--color-surface-raised)] border rounded-xl px-3 transition-all focus-within:border-[var(--color-brand)] focus-within:ring-2 focus-within:ring-[var(--color-brand)]/20" :class="form.errors[`rows.${index}.target_amount`] ? 'border-[var(--color-expense-text)]' : 'border-[var(--color-border-default)]'">
                                 <span class="text-xs font-black tracking-widest text-[var(--color-brand)] shrink-0">RP</span>
                                 <input
@@ -320,7 +320,7 @@ const submit = () => {
 
                     <button
                         type="button"
-                        class="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-gray-800/60 px-4 py-3 text-2xs sm:text-xs font-semibold text-gray-300 transition-colors hover:border-purple-500/40 hover:text-white active:scale-[0.98]"
+                        class="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-muted)]/60 px-4 py-3 text-2xs sm:text-xs font-semibold text-gray-300 transition-colors hover:border-purple-500/40 hover:text-[var(--color-text-primary)] active:scale-[0.98]"
                         @click="addRow"
                     >
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -341,7 +341,7 @@ const submit = () => {
 
                 <div class="pt-1 lg:pt-2">
                     <button type="submit" :disabled="form.processing || totalBudget===0"
-                        class="w-full bg-gradient-to-br from-[var(--color-brand-deep)] to-[var(--color-brand-mid)] text-white font-black text-sm tracking-wide py-3.5 lg:py-4 rounded-xl shadow-lg shadow-[var(--color-brand)]/20 hover:shadow-xl hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center gap-2">
+                        class="w-full bg-gradient-to-br from-[var(--color-brand-deep)] to-[var(--color-brand-mid)] text-[var(--color-text-primary)] font-black text-sm tracking-wide py-3.5 lg:py-4 rounded-xl shadow-lg shadow-[var(--color-brand)]/20 hover:shadow-xl hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center gap-2">
                         <AppIcon v-if="form.processing" icon="loader-2" class="w-4 h-4 animate-spin" />
                         <AppIcon v-else icon="check" class="w-4 h-4" />
                         {{ form.processing ? t('btn.saving') : t('btn.save') }}
@@ -353,8 +353,8 @@ const submit = () => {
             <!-- Picker: Kategori -->
             <BaseModal :show="picker === 'category'" max-width="sm" :show-close-btn="false" @close="closePicker">
                 <div class="py-1">
-                    <p class="text-sm font-bold text-white">{{ t('budgeting.categoryLabel') }}</p>
-                    <p class="text-2xs text-gray-500 mt-0.5">{{ t('budgeting.pickerHint') }}</p>
+                    <p class="text-sm font-bold text-[var(--color-text-primary)]">{{ t('budgeting.categoryLabel') }}</p>
+                    <p class="text-2xs text-[var(--color-text-muted)] mt-0.5">{{ t('budgeting.pickerHint') }}</p>
                 </div>
                 <div v-if="props.categories.length > 0" class="mt-3 max-h-72 overflow-y-auto -mx-1 px-1 space-y-1.5">
                     <button
@@ -363,23 +363,23 @@ const submit = () => {
                         type="button"
                         class="w-full flex items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition-all active:scale-[0.98]"
                         :class="usedCategoryIds.has(cat.id)
-                            ? 'border-white/10 bg-gray-800/50 opacity-40 cursor-not-allowed'
+                            ? 'border-[var(--color-border-default)] bg-[var(--color-surface-muted)]/50 opacity-40 cursor-not-allowed'
                             : row.category_id === cat.id
                                 ? 'border-purple-500/50 bg-purple-500/10'
-                                : 'border-white/10 bg-gray-800/70 hover:border-purple-500/40'"
+                                : 'border-[var(--color-border-default)] bg-[var(--color-surface-muted)]/70 hover:border-purple-500/40'"
                         :disabled="usedCategoryIds.has(cat.id)"
                         @click="selectCategory(cat)"
                     >
                         <AppIcon :icon="cat.icon" fallback="folder" class="w-5 h-5 shrink-0" :class="getCategoryIconColor('Expense')" />
-                        <span class="flex-1 min-w-0 truncate text-sm font-medium text-white">{{ cat.category_name }}</span>
+                        <span class="flex-1 min-w-0 truncate text-sm font-medium text-[var(--color-text-primary)]">{{ cat.category_name }}</span>
                         <svg v-if="row.category_id === cat.id" class="w-4 h-4 shrink-0 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M20 6L9 17l-5-5" />
                         </svg>
                     </button>
                 </div>
-                <p v-else class="mt-3 text-2xs text-gray-500 text-center py-4">{{ t('budgeting.noCategories') }}</p>
+                <p v-else class="mt-3 text-2xs text-[var(--color-text-muted)] text-center py-4">{{ t('budgeting.noCategories') }}</p>
                 <div class="mt-4 flex justify-center">
-                    <button type="button" class="px-4 py-2 rounded-xl border border-white/10 bg-gray-800/70 text-2xs font-semibold text-gray-300 transition-colors hover:text-white" @click="closePicker">
+                    <button type="button" class="px-4 py-2 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-muted)]/70 text-2xs font-semibold text-gray-300 transition-colors hover:text-[var(--color-text-primary)]" @click="closePicker">
                         {{ t('budgeting.close') }}
                     </button>
                 </div>
@@ -388,8 +388,8 @@ const submit = () => {
             <!-- Picker: Tipe pengeluaran -->
             <BaseModal :show="picker === 'group'" max-width="sm" :show-close-btn="false" @close="closePicker">
                 <div class="py-1">
-                    <p class="text-sm font-bold text-white">{{ t('budgeting.groupLabel') }}</p>
-                    <p class="text-2xs text-gray-500 mt-0.5">{{ t('budgeting.pickerHint') }}</p>
+                    <p class="text-sm font-bold text-[var(--color-text-primary)]">{{ t('budgeting.groupLabel') }}</p>
+                    <p class="text-2xs text-[var(--color-text-muted)] mt-0.5">{{ t('budgeting.pickerHint') }}</p>
                 </div>
                 <div class="mt-3 max-h-72 overflow-y-auto space-y-1.5">
                     <button
@@ -399,10 +399,10 @@ const submit = () => {
                         class="w-full flex items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition-all active:scale-[0.98]"
                         :class="row.group_key === key
                             ? 'border-purple-500/50 bg-purple-500/10'
-                            : 'border-white/10 bg-gray-800/70 hover:border-purple-500/40'"
+                            : 'border-[var(--color-border-default)] bg-[var(--color-surface-muted)]/70 hover:border-purple-500/40'"
                         @click="selectGroup(key)"
                     >
-                        <span class="flex-1 min-w-0 truncate text-sm font-medium text-white">{{ expenseGroups[key] }}</span>
+                        <span class="flex-1 min-w-0 truncate text-sm font-medium text-[var(--color-text-primary)]">{{ expenseGroups[key] }}</span>
                         <svg v-if="row.group_key === key" class="w-4 h-4 shrink-0 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M20 6L9 17l-5-5" />
                         </svg>
@@ -410,7 +410,7 @@ const submit = () => {
                 </div>
 
                 <!-- Custom type -->
-                <div class="mt-3 rounded-xl border border-white/10 bg-gray-800/70 p-3.5">
+                <div class="mt-3 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-muted)]/70 p-3.5">
                     <template v-if="!customInputShown">
                         <button
                             type="button"
@@ -424,19 +424,19 @@ const submit = () => {
                         </button>
                     </template>
                     <template v-else>
-                        <div class="flex items-center gap-1.5 h-[44px] bg-gray-900 border border-white/15 rounded-xl px-3 focus-within:border-purple-500 transition-all">
+                        <div class="flex items-center gap-1.5 h-[44px] bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] rounded-xl px-3 focus-within:border-purple-500 transition-all">
                             <input
                                 type="text"
                                 v-model="customName"
                                 :placeholder="t('budgeting.customGroupPlaceholder')"
-                                class="w-full bg-transparent border-none text-white p-0 text-sm font-medium placeholder-gray-500 focus:ring-0 focus:outline-none"
+                                class="w-full bg-transparent border-none text-[var(--color-text-primary)] p-0 text-sm font-medium placeholder-gray-500 focus:ring-0 focus:outline-none"
                                 @keydown.enter.prevent="addCustomGroup"
                             >
                         </div>
                         <div class="flex gap-2 mt-2.5">
                             <button
                                 type="button"
-                                class="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-linear-to-br from-brand-deep to-brand-mid px-3 py-2.5 text-2xs font-bold text-white transition-all hover:-translate-y-0.5 active:scale-95 disabled:opacity-50"
+                                class="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-linear-to-br from-brand-deep to-brand-mid px-3 py-2.5 text-2xs font-bold text-[var(--color-text-primary)] transition-all hover:-translate-y-0.5 active:scale-95 disabled:opacity-50"
                                 :disabled="!customName.trim()"
                                 @click="addCustomGroup"
                             >
@@ -444,7 +444,7 @@ const submit = () => {
                             </button>
                             <button
                                 type="button"
-                                class="px-3 py-2.5 rounded-xl border border-white/10 bg-gray-900 text-2xs font-semibold text-gray-300 transition-colors hover:text-white"
+                                class="px-3 py-2.5 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-raised)] text-2xs font-semibold text-gray-300 transition-colors hover:text-[var(--color-text-primary)]"
                                 @click="customInputShown = false"
                             >
                                 {{ t('budgeting.cancel') }}
@@ -454,7 +454,7 @@ const submit = () => {
                 </div>
 
                 <div class="mt-4 flex justify-center">
-                    <button type="button" class="px-4 py-2 rounded-xl border border-white/10 bg-gray-800/70 text-2xs font-semibold text-gray-300 transition-colors hover:text-white" @click="closePicker">
+                    <button type="button" class="px-4 py-2 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-muted)]/70 text-2xs font-semibold text-gray-300 transition-colors hover:text-[var(--color-text-primary)]" @click="closePicker">
                         {{ t('budgeting.close') }}
                     </button>
                 </div>

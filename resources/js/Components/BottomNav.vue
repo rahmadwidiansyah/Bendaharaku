@@ -60,8 +60,8 @@ defineEmits(['toggle'])
         :class="[
             'fixed z-50 transition-all duration-300',
             isDesktopLayout
-                ? 'lg:bottom-auto lg:top-0 lg:left-0 lg:translate-x-0 lg:h-screen lg:border-t-0 lg:border-r lg:rounded-none lg:bg-gray-800 lg:flex lg:flex-col lg:justify-start'
-                : 'bottom-[calc(0.75rem+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] sm:max-w-lg md:max-w-2xl bg-gray-800/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.85)]',
+                ? 'lg:bottom-auto lg:top-0 lg:left-0 lg:translate-x-0 lg:h-screen lg:border-t-0 lg:border-r lg:rounded-none lg:bg-[var(--color-surface-overlay)] lg:flex lg:flex-col lg:justify-start'
+                : 'bottom-[calc(0.75rem+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] sm:max-w-lg md:max-w-2xl bg-[var(--color-surface-overlay)]/95 backdrop-blur-2xl border border-[var(--color-border-default)] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.85)]',
             isDesktopLayout && isSidebarOpen ? 'lg:w-64' : (isDesktopLayout ? 'lg:w-20' : ''),
         ]"
         style="overflow: visible;"
@@ -87,7 +87,7 @@ defineEmits(['toggle'])
                 @click="$emit('toggle', !isSidebarOpen)"
                 :aria-expanded="isSidebarOpen"
                 :aria-label="isSidebarOpen ? $t('common.close') + ' sidebar' : $t('btn.back') + ' sidebar'"
-                :class="['ml-auto shrink-0 text-gray-500 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400', isSidebarOpen ? '' : 'mx-auto']"
+                :class="['ml-auto shrink-0 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors p-1.5 rounded-lg hover:bg-[var(--color-surface-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]', isSidebarOpen ? '' : 'mx-auto']"
             >
                 <svg v-if="isSidebarOpen" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
@@ -99,7 +99,7 @@ defineEmits(['toggle'])
         </div>
 
         <!-- Divider bawah brand area -->
-        <div :class="['mx-4 mb-4 border-t border-white/5', isDesktopLayout ? 'hidden lg:block' : 'hidden']" />
+        <div :class="['mx-4 mb-4 border-t border-[var(--color-border-subtle)]', isDesktopLayout ? 'hidden lg:block' : 'hidden']" />
 
         <!-- ── Quick Action Buttons (Desktop Only) ── -->
         <div :class="['w-full mb-4 flex-col gap-2 px-4', isDesktopLayout ? 'hidden lg:flex' : 'hidden']">
@@ -190,7 +190,7 @@ defineEmits(['toggle'])
                     :href="route('transactions.create')"
                     :aria-label="$t('nav.record')"
                     :aria-current="isActive(['transactions.*']) ? 'page' : undefined"
-                    class="flex items-center justify-center rounded-full border-[4px] border-gray-900 active:scale-95 hover:scale-105 active:translate-y-0.5 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 cursor-pointer"
+                    class="flex items-center justify-center rounded-full border-[4px] border-[var(--color-surface-base)] active:scale-95 hover:scale-105 active:translate-y-0.5 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)] cursor-pointer"
                     :class="[
                         'w-14 h-14 -mt-7 mb-1',
                         isActive(['transactions.*'])

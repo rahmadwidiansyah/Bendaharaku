@@ -35,12 +35,12 @@ const tint = computed(() => {
 
     <div class="flex items-stretch divide-x divide-white/[0.04]">
       <div v-for="(stat, si) in [
-        { label: t('common.total'), value: component.total, cls: 'text-white' },
+        { label: t('common.total'), value: component.total, cls: 'text-[var(--color-text-primary)]' },
         { label: t('common.success'), value: component.success, cls: 'text-income-text' },
         { label: t('common.error'), value: component.failed, cls: 'text-expense-text' },
       ]" :key="si" class="flex-1 flex flex-col items-center py-3 px-1">
         <span class="text-lg font-bold tabular-nums leading-none" :class="stat.cls">{{ stat.value }}</span>
-        <span class="text-2xs text-gray-500 mt-1">{{ stat.label }}</span>
+        <span class="text-2xs text-[var(--color-text-muted)] mt-1">{{ stat.label }}</span>
       </div>
     </div>
 

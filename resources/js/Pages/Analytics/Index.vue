@@ -761,7 +761,7 @@ onBeforeUnmount(() => {
 
             <!-- Date bar -->
             <div class="flex items-center justify-between pt-3 pb-1">
-<p class="text-xs text-white font-medium">
+<p class="text-xs text-[var(--color-text-primary)] font-medium">
     {{ $t('analytics.showingData') }}
     <span class="text-gray-300">{{ formatDate(startDate, { day: 'numeric', month: 'long' }) }} – {{ formatDate(endDate, { day: 'numeric', month: 'long' }) }}</span>
 </p>
@@ -775,24 +775,24 @@ onBeforeUnmount(() => {
 <p class="text-2xs text-purple-500 font-black mb-1.5 uppercase tracking-[0.2em] flex items-center gap-2">
     {{ $t('analytics.subtitle') }}
 </p>
-        <h1 class="text-3xl font-black text-white tracking-tight leading-none">{{ $t('analytics.title') }}</h1>
+        <h1 class="text-3xl font-black text-[var(--color-text-primary)] tracking-tight leading-none">{{ $t('analytics.title') }}</h1>
     </div>
 </header>
 
             <div class="grid grid-cols-2 gap-3 mb-5 lg:mb-6 animate-fade-in-up delay-100">
-                <div class="bg-linear-to-br from-success-deep to-success-mid/50 p-3 lg:p-4 rounded-xl border border-white/10 relative overflow-hidden group">
+                <div class="bg-linear-to-br from-success-deep to-success-mid/50 p-3 lg:p-4 rounded-xl border border-[var(--color-border-default)] relative overflow-hidden group">
                     <div class="flex items-center gap-1.5 mb-1 lg:mb-2">
                         <div class="w-1 h-1.5 lg:w-1.5 lg:h-1.5 rounded-full bg-green-400"></div>
-                        <p class="text-2xs font-bold text-gray-400 uppercase tracking-widest">{{ $t('types.income') }}</p>
+                        <p class="text-2xs font-bold text-[var(--color-text-secondary)] uppercase tracking-widest">{{ $t('types.income') }}</p>
                     </div>
                     <p class="text-sm lg:text-md font-black text-green-400 tracking-tighter wrap-break-words relative z-10 leading-tight">
                         <span class="text-2xs mr-0.5 opacity-70">+Rp</span>{{ formatNumber(totalIncome) }}
                     </p>
                 </div>
-                <div class="bg-linear-to-br from-danger-deep to-danger-mid/50 p-3 lg:p-4 rounded-xl border border-white/10 relative overflow-hidden group">
+                <div class="bg-linear-to-br from-danger-deep to-danger-mid/50 p-3 lg:p-4 rounded-xl border border-[var(--color-border-default)] relative overflow-hidden group">
                     <div class="flex items-center gap-1.5 mb-1 lg:mb-2">
                         <div class="w-1 h-1.5 lg:w-1.5 lg:h-1.5 rounded-full bg-red-400"></div>
-                        <p class="text-2xs font-bold text-gray-400 uppercase tracking-widest">{{ $t('types.expense') }}</p>
+                        <p class="text-2xs font-bold text-[var(--color-text-secondary)] uppercase tracking-widest">{{ $t('types.expense') }}</p>
                     </div>
                     <p class="text-sm lg:text-md font-black text-red-400 tracking-tighter wrap-break-words relative z-10 leading-tight">
                         <span class="text-red-400 text-2xs mr-0.5 opacity-70">-Rp</span>{{ formatNumber(totalExpense) }}
@@ -801,14 +801,14 @@ onBeforeUnmount(() => {
             </div>
 
             <!-- CUMULATIVE CHART -->
-            <div class="bg-linear-to-br from-gray-900 to-gray-800 border border-gray-500/10 p-4 lg:p-6 rounded-xl mb-5 lg:mb-8 animate-fade-in-up delay-200 relative overflow-hidden group">
+            <div class="bg-[var(--color-surface-raised)] border border-[var(--color-border-subtle)] p-4 lg:p-6 rounded-xl mb-5 lg:mb-8 animate-fade-in-up delay-200 relative overflow-hidden group">
                 <div class="flex justify-between items-start mb-4 lg:mb-6 relative z-10">
                     <div>
-                <p class="text-2xs lg:text-xs font-bold text-white uppercase tracking-[0.2em] mb-1">{{ $t('analytics.cumulativeBalance') }}</p>
-                        <p class="text-2xs text-gray-500 font-medium">{{ $t('analytics.cumulativeDesc') }}</p>
+                <p class="text-2xs lg:text-xs font-bold text-[var(--color-text-primary)] uppercase tracking-[0.2em] mb-1">{{ $t('analytics.cumulativeBalance') }}</p>
+                        <p class="text-2xs text-[var(--color-text-muted)] font-medium">{{ $t('analytics.cumulativeDesc') }}</p>
                     </div>
-                    <p class="text-base lg:text-lg font-black text-white tracking-tight px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-xl">
-                        <span class="text-2xs text-gray-500 mr-1">Rp</span>{{ formatNumber(cumulativeBalance) }}
+                    <p class="text-base lg:text-lg font-black text-[var(--color-text-primary)] tracking-tight px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-xl">
+                        <span class="text-2xs text-[var(--color-text-muted)] mr-1">Rp</span>{{ formatNumber(cumulativeBalance) }}
                     </p>
                 </div>
                 <div class="w-full h-[120px] lg:h-[140px] relative z-10" ref="cumulativeContainerRef">
@@ -817,18 +817,18 @@ onBeforeUnmount(() => {
             </div>
 
             <!-- BAR CHART -->
-            <div class="bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 p-4 lg:p-6 rounded-xl mb-5 lg:mb-8 animate-fade-in-up delay-300 relative overflow-hidden group">
+            <div class="bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] p-4 lg:p-6 rounded-xl mb-5 lg:mb-8 animate-fade-in-up delay-300 relative overflow-hidden group">
                 <div class="flex items-center justify-between gap-2 mb-3 relative z-10">
-                    <h2 class="text-2xs lg:text-sm font-bold text-white uppercase tracking-widest shrink-0">{{ $t('analytics.cashflow') }}</h2>
+                    <h2 class="text-2xs lg:text-sm font-bold text-[var(--color-text-primary)] uppercase tracking-widest shrink-0">{{ $t('analytics.cashflow') }}</h2>
 
                     <!-- Toggle tanpa sliding-indicator: styling langsung di tombol aktif -->
-                    <div class="flex bg-gray-900 border border-white/10 rounded-lg p-1 gap-1">
+                    <div class="flex bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] rounded-lg p-1 gap-1">
                         <button v-for="v in barViews" :key="v.key" @click="renderBarChart(v.key)"
                             :class="[
                                 'text-2xs font-bold uppercase tracking-widest px-2 lg:px-3 py-1.5 rounded-md transition-colors duration-200',
                                 barView === v.key
-                                    ? 'bg-linear-to-br from-brand-soft to-brand-deep text-white shadow-sm'
-                                    : 'text-gray-500 hover:text-white'
+                                    ? 'bg-linear-to-br from-brand-soft to-brand-deep text-[var(--color-text-primary)] shadow-sm'
+                                    : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'
                             ]">{{ v.label() }}</button>
                     </div>
                 </div>
@@ -837,19 +837,19 @@ onBeforeUnmount(() => {
                 <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mb-4 relative z-10">
                     <div class="flex items-center gap-1.5">
                         <span class="w-2 h-2 rounded-full" :style="{ backgroundColor: FLOW_COLORS.income }"></span>
-                        <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wide">{{ $t('analytics.chartLabels.income') }}</span>
+                        <span class="text-[10px] text-[var(--color-text-secondary)] font-bold uppercase tracking-wide">{{ $t('analytics.chartLabels.income') }}</span>
                     </div>
                     <div class="flex items-center gap-1.5">
                         <span class="w-2 h-2 rounded-full" :style="{ backgroundColor: FLOW_COLORS.expense }"></span>
-                        <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wide">{{ $t('analytics.chartLabels.expense') }}</span>
+                        <span class="text-[10px] text-[var(--color-text-secondary)] font-bold uppercase tracking-wide">{{ $t('analytics.chartLabels.expense') }}</span>
                     </div>
                     <div class="flex items-center gap-1.5">
                         <span class="w-2 h-2 rounded-full" :style="{ backgroundColor: FLOW_COLORS.debt }"></span>
-                        <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wide">{{ $t('analytics.chartLabels.debt') }}</span>
+                        <span class="text-[10px] text-[var(--color-text-secondary)] font-bold uppercase tracking-wide">{{ $t('analytics.chartLabels.debt') }}</span>
                     </div>
                     <div class="flex items-center gap-1.5">
                         <span class="w-2 h-2 rounded-full" :style="{ backgroundColor: FLOW_COLORS.receivable }"></span>
-                        <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wide">{{ $t('analytics.chartLabels.receivable') }}</span>
+                        <span class="text-[10px] text-[var(--color-text-secondary)] font-bold uppercase tracking-wide">{{ $t('analytics.chartLabels.receivable') }}</span>
                     </div>
                 </div>
 
@@ -863,30 +863,30 @@ onBeforeUnmount(() => {
 
             <!-- CATEGORY SECTION -->
             <div class="flex items-center gap-2 mb-3 lg:mb-4 px-1 animate-fade-in-up delay-400">
-                <h2 class="text-2xs font-bold text-white uppercase tracking-widest">{{ $t('analytics.categoryBreakdown') }}</h2>
+                <h2 class="text-2xs font-bold text-[var(--color-text-primary)] uppercase tracking-widest">{{ $t('analytics.categoryBreakdown') }}</h2>
                 <div class="flex-1 h-px bg-linear-to-r from-purple-500 to-transparent"></div>
             </div>
 
             <!-- Toggle tanpa sliding-indicator -->
-            <div class="grid grid-cols-4 gap-1 bg-gray-900 border border-white/10 rounded-xl p-1 mb-4 lg:mb-5 animate-fade-in-up delay-400">
+            <div class="grid grid-cols-4 gap-1 bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] rounded-xl p-1 mb-4 lg:mb-5 animate-fade-in-up delay-400">
                 <button v-for="c in categoryViews" :key="c.key" @click="switchCategory(c.key)"
                     :class="[
                         'text-2xs font-bold uppercase tracking-widest py-2 lg:py-3 rounded-lg transition-colors duration-200',
                         categoryView === c.key
-                            ? 'bg-linear-to-br from-brand-soft to-brand-deep text-white shadow-sm'
-                            : 'text-gray-500 hover:text-white'
+                            ? 'bg-linear-to-br from-brand-soft to-brand-deep text-[var(--color-text-primary)] shadow-sm'
+                            : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'
                     ]">{{ c.label() }}</button>
             </div>
 
             <!-- DOUGHNUT CHART -->
-            <div class="bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 p-4 lg:p-6 rounded-xl mb-5 lg:mb-8 animate-fade-in-up delay-500 relative overflow-hidden group">
+            <div class="bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] p-4 lg:p-6 rounded-xl mb-5 lg:mb-8 animate-fade-in-up delay-500 relative overflow-hidden group">
 
                 <!-- No data state -->
                 <div v-if="doughnutReady && !activeCategoryData.labels.length" class="flex flex-col items-center justify-center py-8 lg:py-10">
-                    <div class="w-10 h-10 lg:w-12 lg:h-12 bg-gray-800 rounded-xl flex items-center justify-center mb-3 border border-white/10">
-                        <InboxIcon class="w-5 h-5 lg:w-6 lg:h-6 text-gray-500" :stroke-width="1.5" />
+                    <div class="w-10 h-10 lg:w-12 lg:h-12 bg-[var(--color-surface-muted)] rounded-xl flex items-center justify-center mb-3 border border-[var(--color-border-default)]">
+                        <InboxIcon class="w-5 h-5 lg:w-6 lg:h-6 text-[var(--color-text-muted)]" :stroke-width="1.5" />
                     </div>
-                    <p class="text-2xs font-bold text-white uppercase tracking-widest">{{ $t('analytics.noData') }}</p>
+                    <p class="text-2xs font-bold text-[var(--color-text-primary)] uppercase tracking-widest">{{ $t('analytics.noData') }}</p>
                 </div>
 
                 <!-- Chart area: canvas selalu di DOM agar ref bisa diakses sebelum render -->
@@ -901,9 +901,9 @@ onBeforeUnmount(() => {
                         <canvas ref="doughnutChartRef" class="relative z-10 w-full h-full"></canvas>
                         <!-- Center label -->
                         <div v-if="doughnutReady && activeCategoryData.labels.length" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center pointer-events-none z-0">
-                            <div class="w-[100px] lg:w-[110px] h-[100px] lg:h-[110px] rounded-full bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 flex flex-col items-center justify-center text-center px-1">
-                                <span class="text-[10px] lg:text-2xs text-gray-500 font-bold uppercase tracking-widest mb-1">{{ activeCategoryData.labelName }}</span>
-                                <span class="text-2xs lg:text-2xs font-black text-white tracking-tighter leading-tight w-full wrap-break-word">Rp {{ formatNumber(activeCategoryData.total) }}</span>
+                            <div class="w-[100px] lg:w-[110px] h-[100px] lg:h-[110px] rounded-full bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] flex flex-col items-center justify-center text-center px-1">
+                                <span class="text-[10px] lg:text-2xs text-[var(--color-text-muted)] font-bold uppercase tracking-widest mb-1">{{ activeCategoryData.labelName }}</span>
+                                <span class="text-2xs lg:text-2xs font-black text-[var(--color-text-primary)] tracking-tighter leading-tight w-full wrap-break-word">Rp {{ formatNumber(activeCategoryData.total) }}</span>
                             </div>
                         </div>
                     </div>
@@ -917,30 +917,30 @@ onBeforeUnmount(() => {
                                     start_date: startDate,
                                     end_date: endDate,
                                 })"
-                                class="relative flex items-center justify-between bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 p-2.5 lg:p-3 rounded-xl overflow-hidden group hover:border-purple-500/30 transition-all duration-300">
+                                class="relative flex items-center justify-between bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] p-2.5 lg:p-3 rounded-xl overflow-hidden group hover:border-purple-500/30 transition-all duration-300">
                                 <div class="flex items-center gap-2.5 lg:gap-3 relative z-10 w-full">
                                     <div class="w-1 lg:w-1.5 h-5 lg:h-6 rounded-full" :style="{ backgroundColor: categoryColors[i] }"></div>
                                     <AppIcon :icon="activeCategoryData.icons[i]" :class="['w-5 h-5 lg:w-6 lg:h-6 shrink-0', iconColorClass]" />
                                     <div class="flex-1 min-w-0 pr-1 lg:pr-2">
                                         <p class="text-xs font-bold text-gray-200 truncate">{{ label }}</p>
-                                        <p class="text-2xs text-gray-500 font-bold">{{ activeCategoryData.total > 0 ? ((activeCategoryData.values[i] / activeCategoryData.total) * 100).toFixed(1) : 0 }}%</p>
+                                        <p class="text-2xs text-[var(--color-text-muted)] font-bold">{{ activeCategoryData.total > 0 ? ((activeCategoryData.values[i] / activeCategoryData.total) * 100).toFixed(1) : 0 }}%</p>
                                     </div>
                                     <div class="text-right shrink-0">
-                                        <span class="text-2xs lg:text-xs font-black text-white block">Rp {{ formatNumber(activeCategoryData.values[i]) }}</span>
+                                        <span class="text-2xs lg:text-xs font-black text-[var(--color-text-primary)] block">Rp {{ formatNumber(activeCategoryData.values[i]) }}</span>
                                     </div>
                                 </div>
                             </Link>
                             <div v-else
-                                class="relative flex items-center justify-between bg-linear-to-br from-gray-800 to-gray-900 border border-white/10 p-2.5 lg:p-3 rounded-xl overflow-hidden">
+                                class="relative flex items-center justify-between bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] p-2.5 lg:p-3 rounded-xl overflow-hidden">
                                 <div class="flex items-center gap-2.5 lg:gap-3 relative z-10 w-full">
                                     <div class="w-1 lg:w-1.5 h-5 lg:h-6 rounded-full" :style="{ backgroundColor: categoryColors[i] }"></div>
                                     <AppIcon :icon="activeCategoryData.icons[i]" :class="['w-5 h-5 lg:w-6 lg:h-6 shrink-0', iconColorClass]" />
                                     <div class="flex-1 min-w-0 pr-1 lg:pr-2">
                                         <p class="text-xs font-bold text-gray-200 truncate">{{ label }}</p>
-                                        <p class="text-2xs text-gray-500 font-bold">{{ activeCategoryData.total > 0 ? ((activeCategoryData.values[i] / activeCategoryData.total) * 100).toFixed(1) : 0 }}%</p>
+                                        <p class="text-2xs text-[var(--color-text-muted)] font-bold">{{ activeCategoryData.total > 0 ? ((activeCategoryData.values[i] / activeCategoryData.total) * 100).toFixed(1) : 0 }}%</p>
                                     </div>
                                     <div class="text-right shrink-0">
-                                        <span class="text-2xs lg:text-xs font-black text-white block">Rp {{ formatNumber(activeCategoryData.values[i]) }}</span>
+                                        <span class="text-2xs lg:text-xs font-black text-[var(--color-text-primary)] block">Rp {{ formatNumber(activeCategoryData.values[i]) }}</span>
                                     </div>
                                 </div>
                             </div>

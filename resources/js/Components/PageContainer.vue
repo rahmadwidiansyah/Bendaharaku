@@ -12,16 +12,19 @@
  *
  * Prop `size` mengontrol max-width pada breakpoint lg+:
  *   - 'full'       → w-full, tidak ada max-width. Untuk halaman yang benar-benar
- *                    memakai seluruh layar (Chat, Dashboard grid lebar).
+ *                    memakai seluruh layar (Chat fullscreen).
  *   - 'fluid'      → sm:max-w-2xl md:max-w-3xl lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl [DEFAULT]
- *                    Konten biasa: artikel, form, halaman daftar.
+ *                    Konten biasa: artikel, form, halaman daftar. Fluid scaling.
+ *   - 'wide'       → w-full md:max-w-3xl lg:max-w-6xl xl:max-w-7xl
+ *                    Halaman yang butuh ruang ekstra (Dashboard, Analytics, Wallets).
+ *                    Cap 1280px di 2xl, tidak overstretch di 1920+.
  *   - 'narrow'     → sm:max-w-xl md:max-w-2xl lg:max-w-3xl xl:max-w-4xl
  *                    Konten terbatas: halaman auth, halaman kosong, detail sempit.
  *
  * Prop `padding` mengontrol padding horizontal:
- *   - 'responsive' → px-4 sm:px-6 lg:px-8 [DEFAULT]
+ *   - 'responsive' → px-4 sm:px-6 lg:px-8 [DEFAULT] — clamp 16→32px
  *   - 'none'       → tanpa padding (untuk container yang punya padding sendiri)
- *   - 'compact'    → px-4 sm:px-6
+ *   - 'compact'    → px-4 sm:px-6 — compact mobile/tablet
  *
  * Usage:
  *   <!-- Halaman standar (Dashboard, Wallets, Categories, dst) -->
@@ -49,7 +52,7 @@ const props = defineProps({
     size: {
         type: String,
         default: 'fluid',
-        validator: (v) => ['full', 'fluid', 'narrow'].includes(v),
+        validator: (v) => ['full', 'fluid', 'narrow', 'wide'].includes(v),
     },
     padding: {
         type: String,
@@ -65,6 +68,7 @@ const props = defineProps({
 const sizeClasses = {
     full: 'w-full',
     fluid: 'w-full sm:max-w-2xl md:max-w-3xl lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl',
+    wide: 'w-full md:max-w-3xl lg:max-w-6xl xl:max-w-7xl',
     narrow: 'w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl xl:max-w-4xl',
 }
 

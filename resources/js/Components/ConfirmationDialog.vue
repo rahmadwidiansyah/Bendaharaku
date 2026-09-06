@@ -44,8 +44,8 @@ const emit = defineEmits(['close', 'confirm'])
 
 const variantClasses = {
     danger: {
-        icon: 'text-red-400 bg-red-500/10 border-red-500/20',
-        button: 'bg-red-600 hover:bg-red-500 disabled:bg-gray-700',
+        icon: 'text-[var(--color-expense-text)] bg-[var(--color-expense-bg)] border-[var(--color-expense-border)]',
+        button: 'bg-[var(--color-expense-text)] hover:bg-[var(--color-expense-text)] disabled:bg-gray-700',
         svg: '<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />',
     },
     warning: {
@@ -78,7 +78,7 @@ const variantClasses = {
                 ]"
                 v-html="variantClasses[variant].svg"
             />
-            <h3 class="text-base font-bold text-white leading-tight mb-1.5">
+            <h3 class="text-base font-bold text-[var(--color-text-primary)] leading-tight mb-1.5">
                 {{ title }}
             </h3>
             <p v-if="message" class="text-sm text-gray-400 leading-relaxed max-w-xs">
@@ -90,7 +90,7 @@ const variantClasses = {
             <button
                 type="button"
                 :disabled="loading"
-                class="flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest bg-gray-800 border border-white/10 text-gray-400 hover:text-white hover:border-white/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                class="flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] text-gray-400 hover:text-[var(--color-text-primary)] hover:border-white/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 @click="emit('close')"
             >
                 {{ cancelText || t('common.cancel') }}
@@ -99,7 +99,7 @@ const variantClasses = {
                 type="button"
                 :disabled="disabled || loading"
                 :class="[
-                    'flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest text-white transition-all flex items-center justify-center gap-2',
+                    'flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest text-[var(--color-text-primary)] transition-all flex items-center justify-center gap-2',
                     variantClasses[variant].button,
                     disabled || loading ? 'opacity-50 cursor-not-allowed' : '',
                 ]"

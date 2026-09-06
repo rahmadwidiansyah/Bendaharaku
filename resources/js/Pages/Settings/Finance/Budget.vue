@@ -66,7 +66,7 @@ onMounted(loadSettings);
             :disabled="isLoading || isSaving"
             @click="saveAutoBudget(!autoBudgetEnabled)"
             class="relative w-10 h-6 rounded-full transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500"
-            :class="autoBudgetEnabled ? 'bg-purple-600' : 'bg-gray-700'"
+            :class="autoBudgetEnabled ? 'bg-[var(--color-brand)]' : 'bg-[var(--color-surface-muted)]'"
           >
             <span
               class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform"

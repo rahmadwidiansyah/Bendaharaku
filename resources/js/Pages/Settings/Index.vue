@@ -279,7 +279,7 @@ const handleLogout = () => {
             <div class="relative shrink-0">
               <div class="w-14 h-14 rounded-xl overflow-hidden border border-[var(--color-brand)]/30 bg-gradient-to-br from-[var(--color-brand)] to-[var(--color-brand-pressed)] flex items-center justify-center">
                 <img v-if="avatarSrc" :src="avatarSrc" :alt="user.name" class="w-full h-full object-cover" />
-                <span v-else class="text-lg font-black text-white/80 select-none">{{ initials }}</span>
+                <span v-else class="text-lg font-black text-[var(--color-text-primary)]/80 select-none">{{ initials }}</span>
               </div>
               <span class="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-emerald-500 rounded-full border-2 border-[var(--color-surface-raised)]" />
             </div>
@@ -330,7 +330,7 @@ const handleLogout = () => {
               class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center shrink-0"
               :style="{ background: `linear-gradient(135deg, ${sec.gradientFrom}, ${sec.gradientTo})` }"
             >
-              <svg class="w-4 h-4 sm:w-4.5 sm:h-4.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+              <svg class="w-4 h-4 sm:w-4.5 sm:h-4.5 text-[var(--color-text-primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                 <path stroke-linecap="round" stroke-linejoin="round" :d="sec.svgPath" />
               </svg>
             </div>

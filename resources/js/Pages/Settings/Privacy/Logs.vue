@@ -32,7 +32,7 @@ const typeBadge = (type: string) => {
     case 'settings': return 'bg-blue-500/15 text-blue-400 border-blue-500/20';
     case 'ai': return 'bg-indigo-500/15 text-indigo-400 border-indigo-500/20';
     case 'chat': return 'bg-cyan-500/15 text-cyan-400 border-cyan-500/20';
-    default: return 'bg-gray-500/15 text-gray-400 border-gray-500/20';
+    default: return 'bg-gray-500/15 text-[var(--color-text-secondary)] border-gray-500/20';
   }
 };
 
@@ -74,11 +74,11 @@ const goPage = (p: number) => {
           :class="[
             'rounded-xl border p-3 text-left transition-all',
             activeFilter === opt.value
-              ? 'bg-violet-600 border-violet-500 text-white shadow-lg shadow-violet-600/20'
-              : 'bg-gray-900 border-white/5 hover:border-white/10 hover:bg-gray-800 text-gray-300'
+              ? 'bg-violet-600 border-violet-500 text-[var(--color-text-primary)] shadow-lg shadow-violet-600/20'
+              : 'bg-[var(--color-surface-raised)] border-white/5 hover:border-[var(--color-border-default)] hover:bg-[var(--color-surface-muted)] text-gray-300'
           ]"
         >
-          <p :class="['text-[10px] font-bold tracking-widest uppercase', activeFilter === opt.value ? 'text-violet-200' : 'text-gray-500']">{{ opt.label }}</p>
+          <p :class="['text-[10px] font-bold tracking-widest uppercase', activeFilter === opt.value ? 'text-violet-200' : 'text-[var(--color-text-muted)]']">{{ opt.label }}</p>
           <p class="text-lg font-black tabular-nums mt-1">{{ stats[opt.value] ?? 0 }}</p>
         </button>
       </div>
@@ -93,7 +93,7 @@ const goPage = (p: number) => {
             'inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold border whitespace-nowrap transition-colors shrink-0',
             activeFilter === opt.value
               ? 'bg-white text-gray-900 border-white'
-              : 'bg-gray-800 text-gray-400 border-white/10 hover:text-white hover:bg-gray-700'
+              : 'bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)] border-[var(--color-border-default)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-muted)]'
           ]"
         >
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -111,7 +111,7 @@ const goPage = (p: number) => {
           <div
             v-for="item in logs"
             :key="item.id"
-            class="relative bg-gray-900 border border-white/5 rounded-2xl p-4 hover:border-white/10 transition-colors sm:pl-10"
+            class="relative bg-[var(--color-surface-raised)] border border-white/5 rounded-2xl p-4 hover:border-[var(--color-border-default)] transition-colors sm:pl-10"
           >
             <!-- dot -->
             <span :class="['hidden sm:block absolute left-[11px] top-5 w-2 h-2 rounded-full ring-4 ring-gray-900', typeDot(item.type)]" />
@@ -122,22 +122,22 @@ const goPage = (p: number) => {
                   <span :class="['inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black tracking-widest uppercase border', typeBadge(item.type)]">
                     {{ item.type_label }}
                   </span>
-                  <span class="text-[11px] text-gray-500">{{ item.created_at_human }}</span>
-                  <span v-if="item.metadata?.amount" class="text-[11px] font-bold text-white">
+                  <span class="text-[11px] text-[var(--color-text-muted)]">{{ item.created_at_human }}</span>
+                  <span v-if="item.metadata?.amount" class="text-[11px] font-bold text-[var(--color-text-primary)]">
                     Rp {{ Number(item.metadata.amount).toLocaleString('id-ID') }}
                   </span>
                 </div>
-                <h3 class="text-sm font-bold text-white leading-tight truncate">{{ item.title }}</h3>
-                <p class="text-xs text-gray-400 mt-1 line-clamp-2">{{ item.description }}</p>
+                <h3 class="text-sm font-bold text-[var(--color-text-primary)] leading-tight truncate">{{ item.title }}</h3>
+                <p class="text-xs text-[var(--color-text-secondary)] mt-1 line-clamp-2">{{ item.description }}</p>
                 <div v-if="item.metadata" class="flex flex-wrap gap-1.5 mt-2">
                   <span v-if="item.metadata.category" class="px-2 py-0.5 bg-white/5 border border-white/5 rounded-full text-[11px] text-gray-300"># {{ item.metadata.category }}</span>
                   <span v-if="item.metadata.source_wallet" class="px-2 py-0.5 bg-white/5 border border-white/5 rounded-full text-[11px] text-gray-300">{{ item.metadata.source_wallet }}</span>
-                  <span v-if="item.metadata.source" class="px-2 py-0.5 bg-white/5 border border-white/5 rounded-full text-[11px] text-gray-500">src: {{ item.metadata.source }}</span>
+                  <span v-if="item.metadata.source" class="px-2 py-0.5 bg-white/5 border border-white/5 rounded-full text-[11px] text-[var(--color-text-muted)]">src: {{ item.metadata.source }}</span>
                   <span v-if="item.metadata.provider" class="px-2 py-0.5 bg-white/5 border border-white/5 rounded-full text-[11px] text-indigo-300">{{ item.metadata.provider }}</span>
                 </div>
               </div>
               <div class="shrink-0 text-right hidden sm:block">
-                <p class="text-[11px] text-gray-500 whitespace-nowrap">{{ new Date(item.created_at_raw).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) }}</p>
+                <p class="text-[11px] text-[var(--color-text-muted)] whitespace-nowrap">{{ new Date(item.created_at_raw).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) }}</p>
                 <p class="text-[11px] text-gray-600">{{ new Date(item.created_at_raw).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) }}</p>
               </div>
             </div>
@@ -146,32 +146,32 @@ const goPage = (p: number) => {
       </div>
 
       <!-- Empty -->
-      <div v-else class="text-center py-16 border border-dashed border-white/10 rounded-2xl bg-gray-900/50">
+      <div v-else class="text-center py-16 border border-dashed border-[var(--color-border-default)] rounded-2xl bg-[var(--color-surface-raised)]/50">
         <div class="w-12 h-12 mx-auto rounded-xl bg-white/5 flex items-center justify-center mb-3">
-          <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
+          <svg class="w-6 h-6 text-[var(--color-text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <p class="text-sm font-bold text-white">{{ t('settings.privacy.logs.empty_title') }}</p>
-        <p class="text-xs text-gray-500 mt-1 max-w-sm mx-auto">{{ t('settings.privacy.logs.empty_desc') }}</p>
-        <p v-if="activeFilter !== 'all'" class="text-xs text-gray-600 mt-3">{{ t('settings.privacy.logs.empty_filter') }} <span class="font-bold text-gray-400">{{ activeFilter }}</span> — <button @click="applyFilter('all')" class="underline hover:text-white">{{ t('settings.privacy.logs.show_all') }}</button></p>
+        <p class="text-sm font-bold text-[var(--color-text-primary)]">{{ t('settings.privacy.logs.empty_title') }}</p>
+        <p class="text-xs text-[var(--color-text-muted)] mt-1 max-w-sm mx-auto">{{ t('settings.privacy.logs.empty_desc') }}</p>
+        <p v-if="activeFilter !== 'all'" class="text-xs text-gray-600 mt-3">{{ t('settings.privacy.logs.empty_filter') }} <span class="font-bold text-[var(--color-text-secondary)]">{{ activeFilter }}</span> — <button @click="applyFilter('all')" class="underline hover:text-[var(--color-text-primary)]">{{ t('settings.privacy.logs.show_all') }}</button></p>
       </div>
 
       <!-- Pagination -->
       <div v-if="pagination.total_pages > 1" class="mt-6 flex items-center justify-between">
-        <p class="text-xs text-gray-500">{{ t('settings.privacy.logs.pagination.page') }} {{ pagination.current_page }} {{ t('settings.privacy.logs.pagination.of') }} {{ pagination.total_pages }} • {{ pagination.total }} {{ t('settings.privacy.logs.pagination.activities') }}</p>
+        <p class="text-xs text-[var(--color-text-muted)]">{{ t('settings.privacy.logs.pagination.page') }} {{ pagination.current_page }} {{ t('settings.privacy.logs.pagination.of') }} {{ pagination.total_pages }} • {{ pagination.total }} {{ t('settings.privacy.logs.pagination.activities') }}</p>
         <div class="flex gap-2">
           <button
             @click="goPage(pagination.current_page - 1)"
             :disabled="pagination.current_page <= 1"
-            class="px-3 py-1.5 rounded-lg bg-gray-800 border border-white/10 text-xs font-bold text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-700"
+            class="px-3 py-1.5 rounded-lg bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] text-xs font-bold text-[var(--color-text-primary)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--color-surface-muted)]"
           >
             Prev
           </button>
           <button
             @click="goPage(pagination.current_page + 1)"
             :disabled="!pagination.has_more"
-            class="px-3 py-1.5 rounded-lg bg-violet-600 border border-violet-500 text-xs font-bold text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-violet-700"
+            class="px-3 py-1.5 rounded-lg bg-violet-600 border border-violet-500 text-xs font-bold text-[var(--color-text-primary)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-violet-700"
           >
             Next
           </button>

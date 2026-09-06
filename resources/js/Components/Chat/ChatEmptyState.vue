@@ -40,8 +40,8 @@ const suggestions = [
         </div>
 
         <!-- Name + tagline -->
-        <h2 class="text-base font-bold text-white mb-0.5">{{ botName }}</h2>
-        <p class="text-xs text-gray-500 mb-8 leading-relaxed max-w-xs">
+        <h2 class="text-base font-bold text-[var(--color-text-primary)] mb-0.5">{{ botName }}</h2>
+        <p class="text-xs text-[var(--color-text-muted)] mb-8 leading-relaxed max-w-xs">
             {{ t('chat.emptyState') }}
         </p>
 
@@ -56,11 +56,11 @@ const suggestions = [
                         type="button"
                         @click="$emit('select', s.label)"
                         :title="t(s.hintKey)"
-                        class="w-full text-left px-3 py-2 rounded-xl bg-gray-900/85 border border-white/6 text-sm text-gray-200 font-semibold hover:border-white/12 hover:shadow-lg transition-all active:scale-98"
+                        class="w-full text-left px-3 py-2 rounded-xl bg-[var(--color-surface-raised)]/85 border border-[var(--color-border-subtle)] text-sm text-gray-200 font-semibold hover:border-white/12 hover:shadow-lg transition-all active:scale-98"
                     >
                         <div class="flex items-center justify-between">
                             <div class="truncate">{{ s.label }}</div>
-                            <div class="text-2xs text-gray-400 ml-3">{{ t(s.hintKey) }}</div>
+                            <div class="text-2xs text-[var(--color-text-secondary)] ml-3">{{ t(s.hintKey) }}</div>
                         </div>
                     </button>
                 </div>

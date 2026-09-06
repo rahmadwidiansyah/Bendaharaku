@@ -241,7 +241,7 @@ function onKeydown(e) {
                             <!-- Error message -->
                             <div
                                 v-if="errorMsg"
-                                class="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs"
+                                class="mb-4 px-4 py-3 rounded-xl bg-[var(--color-expense-bg)] border border-[var(--color-expense-border)] text-[var(--color-expense-text)] text-xs"
                             >
                                 {{ errorMsg }}
                             </div>
@@ -267,7 +267,7 @@ function onKeydown(e) {
                                     </svg>
                                 </div>
                                 <div class="text-center">
-                                    <p class="text-sm font-semibold text-white">
+                                    <p class="text-sm font-semibold text-[var(--color-text-primary)]">
                                         {{ isDragging ? 'Lepas untuk upload' : 'Pilih atau drag gambar' }}
                                     </p>
                                     <p class="text-2xs text-gray-500 mt-1">JPG, PNG, WebP — Maks. 10MB</p>
@@ -307,7 +307,7 @@ function onKeydown(e) {
                                 <button
                                     type="button"
                                     @click="close"
-                                    class="flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-widest bg-gray-800 border border-white/10 text-gray-400 hover:text-white hover:border-white/20 transition-all"
+                                    class="flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-widest bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] text-gray-400 hover:text-[var(--color-text-primary)] hover:border-white/20 transition-all"
                                 >
                                     Batal
                                 </button>
@@ -318,8 +318,8 @@ function onKeydown(e) {
                                     :class="[
                                         'flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2',
                                         imageSrc && !isProcessing
-                                            ? 'bg-gradient-to-br from-brand-deep to-brand-soft text-white shadow-lg shadow-purple-500/20 hover:from-brand-mid hover:to-brand-tint'
-                                            : 'bg-gray-800 text-gray-600 border border-white/5 cursor-not-allowed'
+                                            ? 'bg-gradient-to-br from-brand-deep to-brand-soft text-[var(--color-text-primary)] shadow-lg shadow-purple-500/20 hover:from-brand-mid hover:to-brand-tint'
+                                            : 'bg-[var(--color-surface-muted)] text-gray-600 border border-white/5 cursor-not-allowed'
                                     ]"
                                 >
                                     <svg

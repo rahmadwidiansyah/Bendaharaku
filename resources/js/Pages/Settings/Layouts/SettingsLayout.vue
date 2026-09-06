@@ -24,8 +24,8 @@ useScrollRestore();
 
     <!-- Page title -->
     <div v-if="title" class="mb-4 sm:mb-6">
-      <h1 class="text-lg sm:text-2xl font-black text-white tracking-tight leading-none">{{ title }}</h1>
-      <p v-if="description" class="text-xs sm:text-sm text-gray-400 mt-1 sm:mt-1.5 font-medium">{{ description }}</p>
+      <h1 class="text-lg sm:text-2xl font-black text-[var(--color-text-primary)] tracking-tight leading-none">{{ title }}</h1>
+      <p v-if="description" class="text-xs sm:text-sm text-[var(--color-text-secondary)] mt-1 sm:mt-1.5 font-medium">{{ description }}</p>
     </div>
 
     <!-- Page content -->

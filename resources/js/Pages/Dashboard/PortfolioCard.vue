@@ -45,7 +45,7 @@ const displayLocal = (n, visible) => visible ? formatNumber(n) : '••••�
 
 <template>
 <div class="relative bg-gradient-to-br from-[var(--color-surface-overlay)] to-[var(--color-surface-raised)] rounded-xl border border-[var(--color-border-default)] overflow-hidden mb-3 sm:mb-5 group animate-fade-in-up delay-200 shadow-card">
-    <div class="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" aria-hidden="true" />
+        <div class="absolute inset-0 bg-[var(--color-surface-muted)]/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" aria-hidden="true" />
 
         <div class="absolute inset-x-0 bottom-0 opacity-20 pointer-events-none h-24" aria-hidden="true">
             <svg viewBox="0 0 400 150" preserveAspectRatio="none" class="w-full h-full">
@@ -67,7 +67,7 @@ const displayLocal = (n, visible) => visible ? formatNumber(n) : '••••�
                 <p class="text-2xs text-[var(--color-text-secondary)] font-bold uppercase tracking-[0.18em]">{{ $t('portfolio.title') }}</p>
             </div>
         <button type="button" @click="$emit('toggle-visibility')"
-            class="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors p-1 -m-1 focus:outline-none focus-visible:ring-1 focus-visible:ring-purple-400 rounded"
+            class="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors p-1 -m-1 focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-brand)] rounded"
             :aria-label="$t('header.toggleBalance')">
                     <svg v-if="isVisible" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -110,7 +110,7 @@ const displayLocal = (n, visible) => visible ? formatNumber(n) : '••••�
                 <div class="space-y-2 pt-2 pb-1">
                     <Link v-for="wallet in wallets" :key="wallet.id"
                         :href="route('wallets.show', wallet.id)"
-                        class="flex items-center justify-between p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors active:scale-[0.98]">
+                        class="flex items-center justify-between p-2 rounded-lg bg-[var(--color-surface-muted)]/50 hover:bg-[var(--color-surface-muted)] transition-colors active:scale-[0.98]">
                         <div class="flex items-center gap-2 min-w-0">
                             <AppIcon :icon="wallet.icon" fallback="wallet"
                                 :class="['w-4 h-4 shrink-0', getWalletIconColor()]" />

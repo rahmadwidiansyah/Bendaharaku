@@ -381,17 +381,17 @@ onUnmounted(stopGenerationPolling);
                             >
                             <div
                                 v-else
-                                class="w-12 h-12 rounded-full bg-white/20 ring-2 ring-white/30 flex items-center justify-center text-base font-black text-white shrink-0"
+                                class="w-12 h-12 rounded-full bg-white/20 ring-2 ring-white/30 flex items-center justify-center text-base font-black text-[var(--color-text-primary)] shrink-0"
                             >
                                 {{ initials }}
                             </div>
                             <div class="min-w-0">
-                                <p class="text-sm font-bold text-white">{{ botName }}</p>
-                                <p class="text-2xs text-white/70">{{ t('budgeting.emptyDesc') }}</p>
+                                <p class="text-sm font-bold text-[var(--color-text-primary)]">{{ botName }}</p>
+                                <p class="text-2xs text-[var(--color-text-primary)]/70">{{ t('budgeting.emptyDesc') }}</p>
                             </div>
                         </div>
 
-                        <h2 class="text-lg sm:text-xl font-bold text-white mt-4">{{ t('budgeting.emptyTitle', { bot: botName }) }}</h2>
+                        <h2 class="text-lg sm:text-xl font-bold text-[var(--color-text-primary)] mt-4">{{ t('budgeting.emptyTitle', { bot: botName }) }}</h2>
 
                         <button
                             v-if="isCurrentPeriod"
@@ -409,7 +409,7 @@ onUnmounted(stopGenerationPolling);
                         </button>
                         <div
                             v-else
-                            class="mt-5 inline-flex items-start gap-2 rounded-lg bg-white/15 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white/90"
+                            class="mt-5 inline-flex items-start gap-2 rounded-lg bg-[var(--color-surface-muted)]/50 px-4 py-2.5 text-xs sm:text-sm font-semibold text-[var(--color-text-primary)]/90"
                         >
                             <AppIcon icon="lock" class="w-4 h-4 shrink-0 mt-px" />
                             <span>{{ t('budgeting.pastPeriod') }}</span>
@@ -417,9 +417,9 @@ onUnmounted(stopGenerationPolling);
 
                         <div
                             v-if="generateError"
-                            class="mt-4 flex items-center justify-between gap-3 rounded-xl border border-white/20 bg-white/10 px-4 py-3 animate-fade-in-up"
+                            class="mt-4 flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-muted)]/50 px-4 py-3 animate-fade-in-up"
                         >
-                            <p class="text-2xs sm:text-xs text-white/90 break-words">{{ generateError }}</p>
+                            <p class="text-2xs sm:text-xs text-[var(--color-text-primary)]/90 break-words">{{ generateError }}</p>
                             <Button variant="secondary" size="sm" class="shrink-0" @click="generateBudget">
                                 {{ t('budgeting.retry') }}
                             </Button>
@@ -540,9 +540,9 @@ onUnmounted(stopGenerationPolling);
                                         :class="isOver(row) ? 'bg-[var(--color-expense-text)]' : 'bg-gradient-to-r from-[var(--color-brand)] to-[var(--color-brand-mid)]'"
                                         :style="{ width: pct(row) + '%' }"
                                     >
-                                        <span class="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></span>
+                                        <span class="absolute inset-0 bg-[var(--color-surface-muted)]/50 opacity-0 group-hover:opacity-100 transition-opacity"></span>
                                     </div>
-                                    <span class="absolute inset-0 flex items-center justify-center text-[9px] font-black tracking-widest text-[var(--color-text-muted)] pointer-events-none" :class="pct(row) > 35 ? 'text-white/90' : ''">{{ pct(row) }}%</span>
+                                    <span class="absolute inset-0 flex items-center justify-center text-[9px] font-black tracking-widest text-[var(--color-text-muted)] pointer-events-none" :class="pct(row) > 35 ? 'text-[var(--color-text-primary)]/90' : ''">{{ pct(row) }}%</span>
                                 </div>
 
                                 <div class="grid grid-cols-2 gap-2 text-2xs">

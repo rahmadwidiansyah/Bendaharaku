@@ -103,7 +103,7 @@ const isFiltered = computed(() => {
     <!-- Trigger button — tampil di halaman sebagai pemicu -->
     <button
         type="button"
-        class="text-gray-400 hover:text-white bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-lg sm:rounded-xl px-3 py-1.5 sm:px-4 sm:py-2.5 active:scale-90 transition-all shrink-0 flex items-center justify-center"
+        class="text-gray-400 hover:text-[var(--color-text-primary)] bg-linear-to-br from-gray-900 to-gray-800 border border-[var(--color-border-default)] rounded-lg sm:rounded-xl px-3 py-1.5 sm:px-4 sm:py-2.5 active:scale-90 transition-all shrink-0 flex items-center justify-center"
         aria-label="Pilih rentang waktu"
         @click="toggleModal"
     >
@@ -132,7 +132,7 @@ const isFiltered = computed(() => {
                 <div class="space-y-1">
                     <label
                         for="date-start"
-                        class="text-2xs font-bold text-purple-500 uppercase tracking-widest pl-1"
+                        class="text-2xs font-bold text-[var(--color-brand)] uppercase tracking-widest pl-1"
                     >
                         {{ t('common.from') }}
                     </label>
@@ -140,13 +140,13 @@ const isFiltered = computed(() => {
                         id="date-start"
                         type="date"
                         v-model="form.start_date"
-                        class="w-full bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 text-white rounded-xl p-3 text-2xs focus:outline-none focus:ring-1 focus:border-purple-500 focus:ring-purple-500 transition-all [color-scheme:dark]"
+                        class="w-full bg-gradient-to-br from-gray-900 to-gray-800 border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-xl p-3 text-2xs focus:outline-none focus:ring-1 focus:border-purple-500 focus:ring-purple-500 transition-all [color-scheme:dark]"
                     />
                 </div>
                 <div class="space-y-1">
                     <label
                         for="date-end"
-                        class="text-2xs font-bold text-purple-500 uppercase tracking-widest pl-1"
+                        class="text-2xs font-bold text-[var(--color-brand)] uppercase tracking-widest pl-1"
                     >
                         {{ t('common.to') }}
                     </label>
@@ -156,10 +156,10 @@ const isFiltered = computed(() => {
                         v-model="form.end_date"
                         :min="form.start_date"
                         :class="[
-                            'w-full bg-gradient-to-br from-gray-900 to-gray-800 border text-white rounded-xl p-3 text-2xs focus:outline-none focus:ring-1 transition-all [color-scheme:dark]',
+                            'w-full bg-gradient-to-br from-gray-900 to-gray-800 border text-[var(--color-text-primary)] rounded-xl p-3 text-2xs focus:outline-none focus:ring-1 transition-all [color-scheme:dark]',
                             isInvalidRange
                                 ? 'border-red-500/60 focus:border-red-500 focus:ring-red-500'
-                                : 'border-white/10 focus:border-purple-500 focus:ring-purple-500',
+                                : 'border-[var(--color-border-default)] focus:border-purple-500 focus:ring-purple-500',
                         ]"
                     />
                 </div>
@@ -169,7 +169,7 @@ const isFiltered = computed(() => {
             <p
                 v-if="isInvalidRange"
                 role="alert"
-                class="text-2xs text-red-400 font-bold -mt-2"
+                class="text-2xs text-[var(--color-expense-text)] font-bold -mt-2"
             >
                 ⚠ {{ t('common.dateInvalidRange') }}
             </p>
@@ -181,8 +181,8 @@ const isFiltered = computed(() => {
                     :class="[
                         'text-2xs font-bold py-3 rounded-xl uppercase transition-all duration-150 active:scale-95',
                         activeQuickDate === 'thisYear'
-                            ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
-                            : 'bg-gradient-to-br from-gray-900 to-gray-800 text-gray-400 border border-white/10 hover:text-white hover:border-white/20',
+                            ? 'bg-purple-600 text-[var(--color-text-primary)] shadow-lg shadow-purple-500/20'
+                            : 'bg-gradient-to-br from-gray-900 to-gray-800 text-gray-400 border border-[var(--color-border-default)] hover:text-[var(--color-text-primary)] hover:border-white/20',
                     ]"
                     @click="setQuickDate('thisYear')"
                 >
@@ -193,8 +193,8 @@ const isFiltered = computed(() => {
                     :class="[
                         'text-2xs font-bold py-3 rounded-xl uppercase transition-all duration-150 active:scale-95',
                         activeQuickDate === 'thisMonth'
-                            ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
-                            : 'bg-gradient-to-br from-gray-900 to-gray-800 text-gray-400 border border-white/10 hover:text-white hover:border-white/20',
+                            ? 'bg-purple-600 text-[var(--color-text-primary)] shadow-lg shadow-purple-500/20'
+                            : 'bg-gradient-to-br from-gray-900 to-gray-800 text-gray-400 border border-[var(--color-border-default)] hover:text-[var(--color-text-primary)] hover:border-white/20',
                     ]"
                     @click="setQuickDate('thisMonth')"
                 >
@@ -205,8 +205,8 @@ const isFiltered = computed(() => {
                     :class="[
                         'text-2xs font-bold py-3 rounded-xl uppercase transition-all duration-150 active:scale-95',
                         activeQuickDate === 'lastMonth'
-                            ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
-                            : 'bg-gradient-to-br from-gray-900 to-gray-800 text-gray-400 border border-white/10 hover:text-white hover:border-white/20',
+                            ? 'bg-purple-600 text-[var(--color-text-primary)] shadow-lg shadow-purple-500/20'
+                            : 'bg-gradient-to-br from-gray-900 to-gray-800 text-gray-400 border border-[var(--color-border-default)] hover:text-[var(--color-text-primary)] hover:border-white/20',
                     ]"
                     @click="setQuickDate('lastMonth')"
                 >
@@ -218,7 +218,7 @@ const isFiltered = computed(() => {
             <button
                 type="submit"
                 :disabled="form.processing || isInvalidRange"
-                class="w-full bg-gradient-to-br from-brand-deep to-brand-soft text-white font-black text-2xs uppercase py-3.5 rounded-xl active:scale-95 transition-all shadow-lg shadow-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 flex items-center justify-center gap-2"
+                class="w-full bg-gradient-to-br from-brand-deep to-brand-soft text-[var(--color-text-primary)] font-black text-2xs uppercase py-3.5 rounded-xl active:scale-95 transition-all shadow-lg shadow-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 flex items-center justify-center gap-2"
             >
                 <svg
                     v-if="form.processing"

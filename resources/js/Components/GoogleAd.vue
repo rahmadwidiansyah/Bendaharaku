@@ -29,7 +29,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="my-6 overflow-hidden rounded-xl border border-white/5 bg-gray-900/50 min-h-[100px] flex items-center justify-center">
+    <div class="my-4 sm:my-6 overflow-hidden rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-raised)]/50 min-h-[100px] flex items-center justify-center">
         <!-- Google Ad Unit -->
         <ins class="adsbygoogle"
              style="display:block"

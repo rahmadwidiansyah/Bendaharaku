@@ -38,7 +38,7 @@ function toggleExpand() {
         >
             <MarkdownRenderer
                 :content="component.text ?? ''"
-                :class="component.bold ? '[&_strong]:text-white [&_b]:text-white font-semibold' : ''"
+                :class="component.bold ? '[&_strong]:text-[var(--color-text-primary)] [&_b]:text-[var(--color-text-primary)] font-semibold' : ''"
             />
             
             <!-- Fade-out overlay when collapsed -->
@@ -53,7 +53,7 @@ function toggleExpand() {
             <button 
                 type="button" 
                 @click="toggleExpand"
-                class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-600/10 border border-purple-500/20 text-xs font-semibold text-purple-300 hover:text-white hover:bg-purple-600/25 hover:border-purple-500/40 transition-all cursor-pointer active:scale-95 shadow-sm"
+                class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--color-brand)]/10 border border-purple-500/20 text-xs font-semibold text-purple-300 hover:text-[var(--color-text-primary)] hover:bg-[var(--color-brand)]/25 hover:border-purple-500/40 transition-all cursor-pointer active:scale-95 shadow-sm"
             >
                 <span>{{ isExpanded ? t('chat.collapse') : t('chat.showMore') }}</span>
                 <!-- Chevron Icon -->

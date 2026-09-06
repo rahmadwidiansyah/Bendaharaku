@@ -59,8 +59,8 @@ defineProps({
         <!-- Title -->
         <p
             :class="[
-                'font-bold text-white',
-                compact ? 'text-sm' : 'text-base',
+                'font-bold text-[var(--color-text-primary)]',
+                compact ? 'text-sm' : 'text-sm sm:text-base',
             ]"
         >
             {{ title }}
@@ -70,8 +70,8 @@ defineProps({
         <p
             v-if="message"
             :class="[
-                'text-gray-500 mt-1 leading-relaxed',
-                compact ? 'text-xs' : 'text-sm',
+                'text-[var(--color-text-muted)] mt-1 leading-relaxed',
+                compact ? 'text-xs' : 'text-xs sm:text-sm',
             ]"
         >
             {{ message }}

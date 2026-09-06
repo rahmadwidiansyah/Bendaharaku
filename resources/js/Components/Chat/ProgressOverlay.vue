@@ -7,7 +7,7 @@ const props = defineProps({
 
 <template>
     <div v-if="show" class="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-2">
-        <svg class="animate-spin w-6 h-6 text-purple-400" fill="none" viewBox="0 0 24 24">
+        <svg class="animate-spin w-6 h-6 text-[var(--color-brand)]" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
         </svg>

@@ -85,10 +85,10 @@ const props = defineProps({
 
 const paddingClasses = computed(() => ({
     none: '',
-    sm:   'p-4',
-    md:   'p-5',
-    lg:   'p-6',
-    xl:   'p-7',
+    sm:   'p-3 sm:p-4',
+    md:   'p-3 sm:p-5',
+    lg:   'p-4 sm:p-6',
+    xl:   'p-4 sm:p-6 lg:p-7',
 }[props.padding]))
 
 const radiusClasses = computed(() => ({
@@ -103,8 +103,7 @@ const overflowClasses = computed(() => ({
 }[props.overflow]))
 
 const cardClasses = computed(() => [
-    'bg-gradient-to-br from-gray-900 to-gray-800',
-    'border border-white/10',
+    'bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] shadow-card',
     'relative',
     props.hover ? 'group' : '',
     paddingClasses.value,

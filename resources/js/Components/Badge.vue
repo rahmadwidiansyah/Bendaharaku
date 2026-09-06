@@ -49,29 +49,29 @@ const props = defineProps({
 })
 
 const variantClasses = computed(() => ({
-    income:     'text-green-400  bg-green-400/10  border-green-400/20',
-    expense:    'text-red-400    bg-red-400/10    border-red-400/20',
-    transfer:   'text-blue-400   bg-blue-400/10   border-blue-400/20',
-    debt:       'text-yellow-400 bg-yellow-400/10 border-yellow-400/20',
-    receivable: 'text-fuchsia-400 bg-fuchsia-400/10 border-fuchsia-400/20',
-    brand:      'text-purple-400 bg-purple-400/10 border-purple-400/20',
-    neutral:    'text-gray-400   bg-gray-400/10   border-gray-400/20',
-    success:    'text-green-400  bg-green-400/10  border-green-400/20',
-    warning:    'text-yellow-400 bg-yellow-400/10 border-yellow-400/20',
-    danger:     'text-red-400    bg-red-400/10    border-red-400/20',
+    income:     'text-[var(--color-income-text)] bg-[var(--color-income-bg)] border-[var(--color-income-border)]',
+    expense:    'text-[var(--color-expense-text)] bg-[var(--color-expense-bg)] border-[var(--color-expense-border)]',
+    transfer:   'text-[var(--color-transfer-text)] bg-[var(--color-transfer-bg)] border-[var(--color-transfer-border)]',
+    debt:       'text-[var(--color-debt-text)] bg-[var(--color-debt-bg)] border-[var(--color-debt-border)]',
+    receivable: 'text-[var(--color-receivable-text)] bg-[var(--color-receivable-bg)] border-[var(--color-receivable-border)]',
+    brand:      'text-[var(--color-brand)] bg-[var(--color-brand-subtle)] border-[var(--color-brand-border)]',
+    neutral:    'text-[var(--color-text-muted)] bg-[var(--color-surface-muted)] border-[var(--color-border-default)]',
+    success:    'text-[var(--color-income-text)] bg-[var(--color-income-bg)] border-[var(--color-income-border)]',
+    warning:    'text-[var(--color-debt-text)] bg-[var(--color-debt-bg)] border-[var(--color-debt-border)]',
+    danger:     'text-[var(--color-expense-text)] bg-[var(--color-expense-bg)] border-[var(--color-expense-border)]',
 }[props.variant]))
 
 const dotColorClasses = computed(() => ({
-    income:     'bg-green-400',
-    expense:    'bg-red-400',
-    transfer:   'bg-blue-400',
-    debt:       'bg-yellow-400',
-    receivable: 'bg-fuchsia-400',
-    brand:      'bg-purple-400',
-    neutral:    'bg-gray-400',
-    success:    'bg-green-400',
-    warning:    'bg-yellow-400',
-    danger:     'bg-red-400',
+    income:     'bg-[var(--color-income-text)]',
+    expense:    'bg-[var(--color-expense-text)]',
+    transfer:   'bg-[var(--color-transfer-text)]',
+    debt:       'bg-[var(--color-debt-text)]',
+    receivable: 'bg-[var(--color-receivable-text)]',
+    brand:      'bg-[var(--color-brand)]',
+    neutral:    'bg-[var(--color-text-muted)]',
+    success:    'bg-[var(--color-income-text)]',
+    warning:    'bg-[var(--color-debt-text)]',
+    danger:     'bg-[var(--color-expense-text)]',
 }[props.variant]))
 
 const sizeClasses = computed(() => ({
