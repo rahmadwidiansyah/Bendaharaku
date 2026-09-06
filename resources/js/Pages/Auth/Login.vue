@@ -29,15 +29,15 @@ const submit = () => {
     <Head title="Log in" />
 
     <div
-        class="antialiased selection:bg-gray-600 relative flex justify-center min-h-screen bg-gray-800 text-white font-sans overflow-x-hidden">
+        class="antialiased selection:bg-[var(--color-brand)] relative flex justify-center min-h-screen bg-[var(--color-surface-base)] text-[var(--color-text-primary)] font-sans overflow-x-hidden">
 
-        <div class="w-full min-w-0 flex-1 relative z-10 flex flex-col justify-center min-h-screen bg-gray-800 px-4 sm:px-6 lg:px-8 py-10">
+        <div class="w-full min-w-0 flex-1 relative z-10 flex flex-col justify-center min-h-screen bg-[var(--color-surface-base)] px-4 sm:px-6 lg:px-8 py-10">
 
             <div class="animate-slide-up w-full max-w-md mx-auto">
                 <div class="text-center mb-10">
                     <ApplicationLogo class="w-20 h-20 rounded-xl mx-auto mb-5" />
-                    <h1 class="text-3xl font-bold text-white tracking-tight">Bendaharaku</h1>
-                    <p class="text-2xs text-gray-500 uppercase tracking-widest mt-2 font-bold">Sign in to continue</p>
+                    <h1 class="text-3xl font-bold text-[var(--color-text-primary)] tracking-tight">Bendaharaku</h1>
+                    <p class="text-2xs text-[var(--color-text-muted)] uppercase tracking-widest mt-2 font-bold">Sign in to continue</p>
                 </div>
 
                 <div v-if="status" role="alert" class="mb-5 p-3 rounded-xl bg-green-500/10 text-green-300 border border-green-500/20 text-xs font-medium">
@@ -47,7 +47,7 @@ const submit = () => {
                 <form @submit.prevent="submit" class="space-y-5">
                     <div>
                         <label for="login-email"
-                            class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">
+                            class="block text-2xs font-bold text-[var(--color-text-secondary)] uppercase tracking-widest mb-1.5 ml-1">
                             Email
                         </label>
                         <input
@@ -59,8 +59,8 @@ const submit = () => {
                             autocomplete="email"
                             :aria-invalid="!!form.errors.email"
                             aria-describedby="login-email-error"
-                            class="w-full bg-gradient-to-br from-gray-900 to-gray-800 border text-white rounded-xl p-4 text-sm focus:outline-none focus:ring-1 transition-all"
-                            :class="form.errors.email ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-white/10 focus:border-purple-500 focus:ring-[#FCA5FF]'" />
+                            class="w-full bg-[var(--color-surface-raised)] border text-[var(--color-text-primary)] rounded-xl p-4 text-sm focus:outline-none focus:ring-1 transition-all"
+                            :class="form.errors.email ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-[var(--color-border-default)] focus:border-[var(--color-brand)] focus:ring-[var(--color-brand)]'" />
                         <div v-if="form.errors.email" id="login-email-error" role="alert"
                             class="text-2xs text-red-400 mt-1 block font-bold">
                             {{ form.errors.email }}
@@ -69,7 +69,7 @@ const submit = () => {
 
                     <div>
                         <label for="login-password"
-                            class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">
+                            class="block text-2xs font-bold text-[var(--color-text-secondary)] uppercase tracking-widest mb-1.5 ml-1">
                             Password
                         </label>
                         <input
@@ -80,8 +80,8 @@ const submit = () => {
                             autocomplete="current-password"
                             :aria-invalid="!!form.errors.password"
                             aria-describedby="login-password-error"
-                            class="w-full bg-gradient-to-br from-gray-800 to-gray-900 border text-white rounded-xl p-4 text-sm focus:outline-none focus:ring-1 transition-all"
-                            :class="form.errors.password ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-white/10 focus:border-purple-500 focus:ring-[#FCA5FF]'" />
+                            class="w-full bg-[var(--color-surface-raised)] border text-[var(--color-text-primary)] rounded-xl p-4 text-sm focus:outline-none focus:ring-1 transition-all"
+                            :class="form.errors.password ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-[var(--color-border-default)] focus:border-[var(--color-brand)] focus:ring-[var(--color-brand)]'" />
                         <div v-if="form.errors.password" id="login-password-error" role="alert"
                             class="text-2xs text-red-400 mt-1 block font-bold">
                             {{ form.errors.password }}
@@ -94,13 +94,13 @@ const submit = () => {
                                 id="login-remember"
                                 type="checkbox"
                                 v-model="form.remember"
-                                class="w-4 h-4 rounded bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10 text-purple-500 focus:ring-0 focus:ring-offset-0 cursor-pointer" />
-                            <span class="text-2xs font-bold text-gray-500 group-hover:text-gray-300 transition-colors">
+                                class="w-4 h-4 rounded bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] text-[var(--color-brand)] focus:ring-0 focus:ring-offset-0 cursor-pointer" />
+                            <span class="text-2xs font-bold text-[var(--color-text-muted)] group-hover:text-gray-300 transition-colors">
                                 Ingat Saya
                             </span>
                         </label>
                         <Link v-if="canResetPassword" :href="route('password.request')"
-                            class="text-2xs font-bold text-purple-500 hover:text-white transition-colors">
+                            class="text-2xs font-bold text-[var(--color-brand)] hover:text-[var(--color-text-primary)] transition-colors">
                             Lupa Password?
                         </Link>
                     </div>
@@ -108,7 +108,7 @@ const submit = () => {
                     <button
                         type="submit"
                         :disabled="form.processing"
-                        class="w-full bg-gradient-to-br from-brand-deep to-brand-soft text-white font-bold text-sm uppercase tracking-widest py-4 rounded-xl active:scale-95 transition-all mt-4 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:active:scale-100">
+                        class="w-full bg-gradient-to-br from-brand-deep to-brand-soft text-[var(--color-text-primary)] font-bold text-sm uppercase tracking-widest py-4 rounded-xl active:scale-95 transition-all mt-4 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:active:scale-100">
                         <svg v-if="form.processing" class="animate-spin w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
@@ -119,15 +119,15 @@ const submit = () => {
 
                 <div class="relative flex items-center justify-center mt-8 mb-6">
                     <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t border-gray-400"></div>
+                        <div class="w-full border-t border-[var(--color-border-default)]"></div>
                     </div>
                     <div class="relative flex justify-center text-2xs uppercase font-bold tracking-widest">
-                        <span class="bg-gray-800 px-4">Atau</span>
+                        <span class="bg-[var(--color-surface-base)] px-4">Atau</span>
                     </div>
                 </div>
 
                 <a :href="route('google.login')"
-                    class="w-full flex items-center justify-center gap-3 bg-gradient-to-br from-gray-900 to-gray-800 text-white border border-white/10 font-bold text-2xs uppercase tracking-widest py-4 rounded-xl active:scale-95 transition-all hover:border-[#FCA5FF] hover:text-white">
+                    class="w-full flex items-center justify-center gap-3 bg-[var(--color-surface-raised)] text-[var(--color-text-primary)] border border-[var(--color-border-default)] font-bold text-2xs uppercase tracking-widest py-4 rounded-xl active:scale-95 transition-all hover:border-[var(--color-brand-border)] hover:text-[var(--color-text-primary)]">
                     <!-- Google 'G' logo inline SVG — tidak bergantung CDN eksternal -->
                     <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
                         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -138,9 +138,9 @@ const submit = () => {
                     Lanjut dengan Google
                 </a>
 
-                <p class="text-center text-[11px] font-bold text-gray-500 mt-10">
+                <p class="text-center text-[11px] font-bold text-[var(--color-text-muted)] mt-10">
                     Belum punya akun?
-                    <Link :href="route('register')" class="text-purple-500 hover:text-white transition-colors">
+                    <Link :href="route('register')" class="text-[var(--color-brand)] hover:text-[var(--color-text-primary)] transition-colors">
                         Daftar di sini
                     </Link>
                 </p>

@@ -147,13 +147,13 @@ const showReviewBtn = computed(() =>
 // Status label + warna — semua via i18n (audit fix)
 const statusMeta = computed(() => {
     const map = {
-        PENDING:    { label: t('chat.evidenceStatus.pending'),   color: 'text-gray-400',       dot: 'bg-gray-400' },
+        PENDING:    { label: t('chat.evidenceStatus.pending'),   color: 'text-[var(--color-text-secondary)]',       dot: 'bg-gray-400' },
         UPLOADING:  { label: t('chat.evidenceStatus.uploading'), color: 'text-transfer-text', dot: 'bg-transfer-text',   spin: true },
         UPLOADED:   { label: t('chat.evidenceStatus.processing'),color: 'text-debt-text',     dot: 'bg-debt-text', spin: true },
         PROCESSING: { label: t('chat.evidenceStatus.processing'),color: 'text-debt-text',     dot: 'bg-debt-text', spin: true },
         READY:      { label: t('chat.evidenceStatus.ready'),     color: 'text-income-text',   dot: 'bg-income-text' },
         RESOLVED:   { label: t('chat.evidenceStatus.ready'),     color: 'text-income-text',   dot: 'bg-income-text' },
-        COMMITTED:  { label: t('chat.evidenceStatus.committed'), color: 'text-purple-400',    dot: 'bg-purple-400' },
+        COMMITTED:  { label: t('chat.evidenceStatus.committed'), color: 'text-[var(--color-brand)]',    dot: 'bg-purple-400' },
         FAILED:     { label: t('chat.evidenceStatus.failed'),    color: 'text-expense-text',  dot: 'bg-expense-text' },
     }
     return map[status.value] ?? map.UPLOADED
@@ -165,7 +165,7 @@ const statusMeta = computed(() => {
         <!-- WA-style: gambar sesuai rasio asli, tidak 1:1 / 4:3, max seperti WhatsApp -->
         <button
             type="button"
-            class="relative max-w-[280px] max-h-[360px] w-auto h-auto rounded-xl overflow-hidden border border-white/10 bg-gray-800 hover:border-white/20 active:scale-[0.98] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50 group inline-block"
+            class="relative max-w-[280px] max-h-[360px] w-auto h-auto rounded-xl overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-surface-muted)] hover:border-white/20 active:scale-[0.98] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/50 group inline-block"
             :aria-label="t('chat.openFullscreen')"
             @click="isPreviewOpen = true"
         >
@@ -178,14 +178,14 @@ const statusMeta = computed(() => {
             />
             <!-- Hint zoom -->
             <span class="absolute bottom-2 right-2 w-6 h-6 rounded-full bg-black/60 backdrop-blur flex items-center justify-center opacity-80 group-hover:opacity-100 transition-opacity">
-                <AppIcon icon="maximize-2" class="w-3 h-3 text-white" />
+                <AppIcon icon="maximize-2" class="w-3 h-3 text-[var(--color-text-primary)]" />
             </span>
             <!-- Overlay saat loading -->
             <div
                 v-if="statusMeta.spin"
                 class="absolute inset-0 bg-black/50 flex items-center justify-center"
             >
-                <svg class="animate-spin w-5 h-5 text-white/70" fill="none" viewBox="0 0 24 24">
+                <svg class="animate-spin w-5 h-5 text-[var(--color-text-primary)]/70" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                 </svg>
@@ -193,9 +193,9 @@ const statusMeta = computed(() => {
             <!-- Committed checkmark -->
             <div
                 v-else-if="committed"
-                class="absolute inset-0 bg-purple-600/30 flex items-center justify-center pointer-events-none"
+                class="absolute inset-0 bg-[var(--color-brand)]/30 flex items-center justify-center pointer-events-none"
             >
-                <svg class="w-6 h-6 text-white drop-shadow" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <svg class="w-6 h-6 text-[var(--color-text-primary)] drop-shadow" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
             </div>
@@ -213,7 +213,7 @@ const statusMeta = computed(() => {
                     {{ statusMeta.label }}
                 </span>
             </div>
-            <span class="text-2xs text-white/50 truncate">{{ t('chat.evidenceLabel') }}</span>
+            <span class="text-2xs text-[var(--color-text-primary)]/50 truncate">{{ t('chat.evidenceLabel') }}</span>
         </div>
 
         <!-- Tombol Review — di bawah status, full width jika ada -->
@@ -229,7 +229,7 @@ const statusMeta = computed(() => {
             {{ t('chat.reviewBtn') }}
         </button>
 
-        <p v-else-if="committed" class="text-2xs text-purple-400 font-semibold inline-flex items-center gap-1 px-1">
+        <p v-else-if="committed" class="text-2xs text-[var(--color-brand)] font-semibold inline-flex items-center gap-1 px-1">
             <AppIcon icon="check" class="w-3 h-3 shrink-0" />
             {{ t('chat.committed') }}
         </p>
@@ -266,18 +266,18 @@ const statusMeta = computed(() => {
                 @click.self="closePreview"
             >
                 <!-- Top bar WA -->
-                <header class="shrink-0 flex items-center gap-3 px-3 sm:px-4 py-3 bg-black/60 backdrop-blur border-b border-white/10">
-                    <button type="button" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors" :aria-label="t('common.close')" @click="closePreview">
+                <header class="shrink-0 flex items-center gap-3 px-3 sm:px-4 py-3 bg-black/60 backdrop-blur border-b border-[var(--color-border-default)]">
+                    <button type="button" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-[var(--color-text-primary)] flex items-center justify-center transition-colors" :aria-label="t('common.close')" @click="closePreview">
                         <AppIcon icon="arrow-left" class="w-5 h-5" />
                     </button>
                     <div class="min-w-0">
-                        <p class="text-sm font-semibold text-white leading-tight truncate">{{ t('chat.evidencePreview') }}</p>
-                        <p class="text-2xs text-white/60 truncate">Pinch/scroll untuk zoom • double-tap • drag saat zoom</p>
+                        <p class="text-sm font-semibold text-[var(--color-text-primary)] leading-tight truncate">{{ t('chat.evidencePreview') }}</p>
+                        <p class="text-2xs text-[var(--color-text-primary)]/60 truncate">Pinch/scroll untuk zoom • double-tap • drag saat zoom</p>
                     </div>
-                    <a v-if="src" :href="src" target="_blank" rel="noopener" class="ml-auto w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center" :title="t('chat.openFullscreen')">
+                    <a v-if="src" :href="src" target="_blank" rel="noopener" class="ml-auto w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-[var(--color-text-primary)] flex items-center justify-center" :title="t('chat.openFullscreen')">
                         <AppIcon icon="external-link" class="w-4 h-4" />
                     </a>
-                    <button type="button" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center" @click="closePreview">
+                    <button type="button" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-[var(--color-text-primary)] flex items-center justify-center" @click="closePreview">
                         <AppIcon icon="x" class="w-5 h-5" />
                     </button>
                 </header>
@@ -307,18 +307,18 @@ const statusMeta = computed(() => {
                         }"
                         draggable="false"
                     />
-                    <p v-else class="text-sm text-white/60">{{ t('common.noData') }}</p>
+                    <p v-else class="text-sm text-[var(--color-text-primary)]/60">{{ t('common.noData') }}</p>
                     <!-- hint -->
-                    <p v-if="scale === 1" class="absolute bottom-4 left-1/2 -translate-x-1/2 text-2xs text-white/50 bg-black/50 px-2.5 py-1 rounded-full pointer-events-none">Scroll untuk zoom • double-tap</p>
+                    <p v-if="scale === 1" class="absolute bottom-4 left-1/2 -translate-x-1/2 text-2xs text-[var(--color-text-primary)]/50 bg-black/50 px-2.5 py-1 rounded-full pointer-events-none">Scroll untuk zoom • double-tap</p>
                 </div>
 
                 <!-- Bottom controls -->
-                <div class="shrink-0 flex items-center justify-center gap-2 px-4 py-3 bg-black/60 backdrop-blur border-t border-white/10">
-                    <button type="button" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center disabled:opacity-30" :disabled="scale<=1" @click="scale = clampScale(scale - 0.25)">
+                <div class="shrink-0 flex items-center justify-center gap-2 px-4 py-3 bg-black/60 backdrop-blur border-t border-[var(--color-border-default)]">
+                    <button type="button" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-[var(--color-text-primary)] flex items-center justify-center disabled:opacity-30" :disabled="scale<=1" @click="scale = clampScale(scale - 0.25)">
                         <AppIcon icon="zoom-out" class="w-4 h-4" />
                     </button>
-                    <span class="min-w-[56px] text-center text-xs font-bold tabular-nums text-white bg-white/10 px-2.5 py-1 rounded-full">{{ Math.round(scale*100) }}%</span>
-                    <button type="button" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center disabled:opacity-30" :disabled="scale>=4" @click="scale = clampScale(scale + 0.25)">
+                    <span class="min-w-[56px] text-center text-xs font-bold tabular-nums text-[var(--color-text-primary)] bg-white/10 px-2.5 py-1 rounded-full">{{ Math.round(scale*100) }}%</span>
+                    <button type="button" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-[var(--color-text-primary)] flex items-center justify-center disabled:opacity-30" :disabled="scale>=4" @click="scale = clampScale(scale + 0.25)">
                         <AppIcon icon="zoom-in" class="w-4 h-4" />
                     </button>
                     <span class="w-px h-6 bg-white/10 mx-1"></span>

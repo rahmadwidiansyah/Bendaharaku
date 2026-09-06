@@ -48,8 +48,8 @@ const handleClick = (event) => {
         type="button"
         class="relative flex items-center justify-center shrink-0 rounded-2xl
                active:scale-90 transition-transform duration-150
-               focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400
-               focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900"
+               focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]
+               focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface-base)]"
         style="width: 44px; height: 44px;"
         :aria-label="count > 0 ? `Notifikasi, ${count} belum dibaca` : 'Notifikasi'"
         @click="handleClick"
@@ -93,7 +93,7 @@ const handleClick = (event) => {
         >
             <span
                 v-if="count > 0"
-                class="absolute top-1 right-1 min-w-[16px] h-4 px-0.5 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center leading-none border border-gray-900 z-20"
+                class="absolute top-1 right-1 min-w-[16px] h-4 px-0.5 rounded-full bg-red-500 text-[var(--color-text-primary)] text-[9px] font-black flex items-center justify-center leading-none border border-[var(--color-border-strong)] z-20"
                 aria-hidden="true"
             >
                 {{ badgeLabel(count) }}

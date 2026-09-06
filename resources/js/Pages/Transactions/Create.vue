@@ -102,8 +102,8 @@ watch(selectedSourceWallet, () => {
 })
 
 const TYPE_ITEMS = computed(() => [
-    { tab: 'Expense',    label: t('types.expense'),    desc: t('types.expenseDesc'),    icon: 'arrow-up-from-line', color: 'from-red-500/20 to-red-900/10',     border: 'border-red-500/40',    text: 'text-red-400'    },
-    { tab: 'Income',     label: t('types.income'),     desc: t('types.incomeDesc'),     icon: 'arrow-down-to-line', color: 'from-green-500/20 to-green-900/10',  border: 'border-green-500/40',  text: 'text-green-400'  },
+    { tab: 'Expense',    label: t('types.expense'),    desc: t('types.expenseDesc'),    icon: 'arrow-up-from-line', color: 'from-[var(--color-expense-bg)] to-[var(--color-expense-bg-hover)]',     border: 'border-[var(--color-expense-border)]',    text: 'text-[var(--color-expense-text)]'    },
+    { tab: 'Income',     label: t('types.income'),     desc: t('types.incomeDesc'),     icon: 'arrow-down-to-line', color: 'from-[var(--color-income-bg)] to-[var(--color-income-bg-hover)]',  border: 'border-[var(--color-income-border)]',  text: 'text-[var(--color-income-text)]'  },
     { tab: 'Transfer',   label: t('types.transfer'),   desc: t('types.transferDesc'),   icon: 'arrow-left-right',   color: 'from-blue-500/20 to-blue-900/10',    border: 'border-blue-500/40',   text: 'text-blue-400'   },
     { tab: 'Debt',       label: t('types.debt'),       desc: t('types.debtDesc'),       icon: 'circle-dollar-sign', color: 'from-amber-500/20 to-amber-900/10', border: 'border-amber-500/40', text: 'text-amber-400' },
     { tab: 'Receivable', label: t('types.receivable'), desc: t('types.receivableDesc'), icon: 'hand-coins',         color: 'from-fuchsia-500/20 to-fuchsia-900/10', border: 'border-fuchsia-500/40', text: 'text-fuchsia-400' },
@@ -118,32 +118,32 @@ const typeTheme = computed(() => {
     const isReceivable = type === 'Receivable'
 
     if (isIncome) return {
-        stepLabel: 'text-green-500', btnActive: 'bg-green-600 text-white shadow',
-        btnSolid: 'bg-green-600', accentText: 'text-green-400',
-        accentBorder: 'border-green-500/40', focusBorder: 'focus:border-green-500',
-        focusRing: 'focus:ring-green-600', bgActive: 'bg-green-600 text-white',
-        activePill: 'bg-green-600/20 text-green-400 border-green-500/50',
-        keypadToggle: 'text-green-400 border-green-500/30',
-        walletHover: 'hover:border-green-500/30', dateSelected: 'bg-green-600 text-white',
-        chipStep: 'bg-green-500/20 text-green-300 border-green-500/40',
-        selected: 'bg-green-500/15 border-green-500 shadow-lg shadow-green-500/10',
-        hover: 'hover:border-green-500/40', check: 'bg-green-500',
-        add: 'border-green-500/40 bg-green-500/5 text-green-400',
-        categoryLink: 'text-green-400',
+        stepLabel: 'text-[var(--color-income-text)]', btnActive: 'bg-[var(--color-income-text)] text-white shadow',
+        btnSolid: 'bg-[var(--color-income-text)]', accentText: 'text-[var(--color-income-text)]',
+        accentBorder: 'border-[var(--color-income-border)]', focusBorder: 'focus:border-green-500',
+        focusRing: 'focus:ring-[var(--color-income-text)]', bgActive: 'bg-[var(--color-income-text)] text-white',
+        activePill: 'bg-[var(--color-income-text)]/20 text-[var(--color-income-text)] border-[var(--color-income-border)]',
+        keypadToggle: 'text-[var(--color-income-text)] border-[var(--color-income-border)]',
+        walletHover: 'hover:border-[var(--color-income-border)]', dateSelected: 'bg-[var(--color-income-text)] text-white',
+        chipStep: 'bg-[var(--color-income-bg)] text-[var(--color-income-text)] border-[var(--color-income-border)]',
+        selected: 'bg-[var(--color-income-bg)] border-green-500 shadow-lg shadow-green-500/10',
+        hover: 'hover:border-[var(--color-income-border)]', check: 'bg-green-500',
+        add: 'border-[var(--color-income-border)] bg-green-500/5 text-[var(--color-income-text)]',
+        categoryLink: 'text-[var(--color-income-text)]',
     }
     if (isExpense) return {
         stepLabel: 'text-red-500', btnActive: 'bg-red-600 text-white shadow',
-        btnSolid: 'bg-red-600', accentText: 'text-red-400',
-        accentBorder: 'border-red-500/40', focusBorder: 'focus:border-red-500',
+        btnSolid: 'bg-red-600', accentText: 'text-[var(--color-expense-text)]',
+        accentBorder: 'border-[var(--color-expense-border)]', focusBorder: 'focus:border-red-500',
         focusRing: 'focus:ring-red-600', bgActive: 'bg-red-600 text-white',
-        activePill: 'bg-red-600/20 text-red-400 border-red-500/50',
-        keypadToggle: 'text-red-400 border-red-500/30',
+        activePill: 'bg-red-600/20 text-[var(--color-expense-text)] border-red-500/50',
+        keypadToggle: 'text-[var(--color-expense-text)] border-red-500/30',
         walletHover: 'hover:border-red-500/30', dateSelected: 'bg-red-600 text-white',
-        chipStep: 'bg-red-500/20 text-red-300 border-red-500/40',
+        chipStep: 'bg-red-500/20 text-red-300 border-[var(--color-expense-border)]',
         selected: 'bg-red-500/15 border-red-500 shadow-lg shadow-red-500/10',
-        hover: 'hover:border-red-500/40', check: 'bg-red-500',
-        add: 'border-red-500/40 bg-red-500/5 text-red-400',
-        categoryLink: 'text-red-400',
+        hover: 'hover:border-[var(--color-expense-border)]', check: 'bg-red-500',
+        add: 'border-[var(--color-expense-border)] bg-red-500/5 text-[var(--color-expense-text)]',
+        categoryLink: 'text-[var(--color-expense-text)]',
     }
     if (isTransfer) return {
         stepLabel: 'text-blue-500', btnActive: 'bg-blue-600 text-white shadow',
@@ -355,7 +355,7 @@ const handleBack = () => router.visit(route('dashboard'))
                     <button
                         type="button"
                         @click="goBack"
-                        class="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-gray-800 border border-white/10 text-gray-400 hover:text-red-400 hover:border-red-500/30 active:scale-90 transition-all"
+                        class="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-gray-800 border border-white/10 text-gray-400 hover:text-[var(--color-expense-text)] hover:border-red-500/30 active:scale-90 transition-all"
                         :aria-label="t('common.close')"
                     >
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -493,7 +493,7 @@ const handleBack = () => router.visit(route('dashboard'))
                             <div v-if="Object.keys(transferErrors).length || Object.keys(form.errors).length"
                                 class="p-3 bg-red-500/10 border border-red-500/30 rounded-xl">
                                 <p v-for="(err, key) in {...transferErrors, ...form.errors}" :key="key"
-                                    class="text-red-400 text-2xs font-bold">{{ err }}</p>
+                                    class="text-[var(--color-expense-text)] text-2xs font-bold">{{ err }}</p>
                             </div>
 
                             <!-- ── Wallet Picker dengan tombol Swap ── -->
@@ -571,7 +571,7 @@ const handleBack = () => router.visit(route('dashboard'))
                             <div class="text-center py-2">
                                 <p class="text-2xs font-black text-gray-600 uppercase tracking-widest mb-0.5">{{ t('transaction.amount') }}</p>
                                 <p class="text-3xl font-black tracking-tight"
-                                    :class="transferErrors.amount ? 'text-red-400' : 'text-white'">
+                                    :class="transferErrors.amount ? 'text-[var(--color-expense-text)]' : 'text-white'">
                                     <span class="text-lg text-gray-500 mr-1">Rp</span>{{ parseInt(rawAmount || 0).toLocaleString('id-ID') }}
                                 </p>
                             </div>
@@ -716,7 +716,7 @@ const handleBack = () => router.visit(route('dashboard'))
                     <div v-if="Object.keys(form.errors).length"
                         class="shrink-0 mx-4 mt-3 p-3 bg-red-500/10 border border-red-500/30 rounded-xl">
                         <p v-for="(err, key) in form.errors" :key="key"
-                            class="text-red-400 text-2xs font-bold">{{ err }}</p>
+                            class="text-[var(--color-expense-text)] text-2xs font-bold">{{ err }}</p>
                     </div>
 
                     <!-- Scrollable area: catatan + dompet -->
@@ -779,11 +779,11 @@ const handleBack = () => router.visit(route('dashboard'))
                             <button type="button" @click="submitAndStay"
                                 class="w-12 h-12 bg-gray-800 border border-white/8 rounded-xl flex items-center justify-center shrink-0 active:scale-95 transition-transform"
                                 title="Simpan & tambah lagi">
-                                <div class="w-6 h-6 rounded-full border-2 border-green-400 flex items-center justify-center text-green-400 text-base font-black">+</div>
+                                <div class="w-6 h-6 rounded-full border-2 border-green-400 flex items-center justify-center text-[var(--color-income-text)] text-base font-black">+</div>
                             </button>
                             <!-- Simpan & tutup -->
                             <button type="submit" :disabled="form.processing"
-                                class="flex-1 h-12 bg-green-600 hover:bg-green-500 rounded-xl flex items-center justify-center gap-2 text-white font-black text-sm uppercase tracking-wider active:scale-95 transition-all shadow-lg shadow-green-600/30 disabled:opacity-50">
+                                class="flex-1 h-12 bg-[var(--color-income-text)] hover:bg-green-500 rounded-xl flex items-center justify-center gap-2 text-white font-black text-sm uppercase tracking-wider active:scale-95 transition-all shadow-lg shadow-green-600/30 disabled:opacity-50">
                                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                                 {{ t('common.save') }}
                             </button>

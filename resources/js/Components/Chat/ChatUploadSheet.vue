@@ -66,13 +66,13 @@ function onFileSelected(event) {
         <!-- Header -->
         <template #header>
             <div>
-                <h2 class="text-sm font-bold text-white">{{ t('chat.uploadSheetTitle') }}</h2>
-                <p class="text-2xs text-gray-500 mt-0.5">{{ t('chat.uploadSheetDesc') }}</p>
+                <h2 class="text-sm font-bold text-[var(--color-text-primary)]">{{ t('chat.uploadSheetTitle') }}</h2>
+                <p class="text-2xs text-[var(--color-text-muted)] mt-0.5">{{ t('chat.uploadSheetDesc') }}</p>
             </div>
         </template>
 
         <!-- Options -->
-        <div class="border-t border-white/10" style="padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0.75rem));">
+        <div class="border-t border-[var(--color-border-default)]" style="padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0.75rem));">
             <!-- Ambil Foto -->
             <button
                 type="button"
@@ -80,14 +80,14 @@ function onFileSelected(event) {
                 class="w-full flex items-center gap-4 py-3.5 hover:bg-white/5 active:bg-white/8 transition-colors text-left"
             >
                 <div class="w-11 h-11 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
-                    <svg class="w-5 h-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <svg class="w-5 h-5 text-[var(--color-brand)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                 </div>
                 <div>
-                    <p class="text-sm font-bold text-white">{{ t('chat.uploadCamera') }}</p>
-                    <p class="text-2xs text-gray-500 mt-0.5">{{ t('chat.uploadCameraDesc') }}</p>
+                    <p class="text-sm font-bold text-[var(--color-text-primary)]">{{ t('chat.uploadCamera') }}</p>
+                    <p class="text-2xs text-[var(--color-text-muted)] mt-0.5">{{ t('chat.uploadCameraDesc') }}</p>
                 </div>
             </button>
 
@@ -103,8 +103,8 @@ function onFileSelected(event) {
                     </svg>
                 </div>
                 <div>
-                    <p class="text-sm font-bold text-white">{{ t('chat.uploadGallery') }}</p>
-                    <p class="text-2xs text-gray-500 mt-0.5">{{ t('chat.uploadGalleryDesc') }}</p>
+                    <p class="text-sm font-bold text-[var(--color-text-primary)]">{{ t('chat.uploadGallery') }}</p>
+                    <p class="text-2xs text-[var(--color-text-muted)] mt-0.5">{{ t('chat.uploadGalleryDesc') }}</p>
                 </div>
             </button>
 
@@ -113,7 +113,7 @@ function onFileSelected(event) {
                 <button
                     type="button"
                     @click="close"
-                    class="w-full py-2.5 rounded-xl bg-white/5 border border-white/10 text-sm font-semibold text-gray-400 hover:text-white hover:bg-white/8 active:scale-[0.98] transition-all"
+                    class="w-full py-2.5 rounded-xl bg-white/5 border border-[var(--color-border-default)] text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-white/8 active:scale-[0.98] transition-all"
                 >
                     {{ t('common.cancel') }}
                 </button>

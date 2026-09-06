@@ -49,7 +49,7 @@ async function handleCopy() {
                 'w-6 h-6 flex items-center justify-center rounded-lg transition-all',
                 copied
                     ? 'text-income-text'
-                    : 'text-gray-600 hover:text-gray-300 hover:bg-white/8',
+                    : 'text-[var(--color-text-muted)] hover:text-gray-300 hover:bg-white/8',
             ]"
             :title="copied ? t('chatTransaction.copied') : t('chatTransaction.copyMessage')"
             :aria-label="t('chatTransaction.copyMessage')"
@@ -66,7 +66,7 @@ async function handleCopy() {
         <button
             v-if="canRegenerate && !isError"
             @click.stop="$emit('regenerate', message)"
-            class="w-6 h-6 flex items-center justify-center rounded-lg text-gray-600 hover:text-purple-400 hover:bg-purple-500/10 transition-all"
+            class="w-6 h-6 flex items-center justify-center rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-brand)] hover:bg-purple-500/10 transition-all"
             :title="t('chatTransaction.regenerateAnswer')"
             :aria-label="t('chatTransaction.regenerate')"
         >

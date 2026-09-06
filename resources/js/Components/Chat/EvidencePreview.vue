@@ -53,9 +53,9 @@ function onFullscreen() {
     <div
         class="relative flex items-center gap-3 px-3 py-2.5 rounded-2xl border transition-all duration-200"
         :class="[
-            state === 'FAILED' ? 'bg-red-950/30 border-red-900/40' :
-            state === 'UPLOADING' ? 'bg-gray-800/60 border-purple-500/30' :
-            'bg-gray-800/80 border-white/10 hover:border-white/15',
+            state === 'FAILED' ? 'bg-[var(--color-expense-bg)] border-[var(--color-expense-border)]' :
+            state === 'UPLOADING' ? 'bg-[var(--color-surface-muted)]/60 border-[var(--color-brand-border)]' :
+            'bg-[var(--color-surface-muted)]/80 border-[var(--color-border-default)] hover:border-[var(--color-border-strong)]',
         ]"
         style="max-width: 300px;"
         role="status"
@@ -64,7 +64,7 @@ function onFullscreen() {
         <!-- Thumbnail -->
         <button
             @click="onFullscreen"
-            class="relative w-14 h-14 rounded-xl overflow-hidden shrink-0 border border-white/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50 cursor-pointer"
+            class="relative w-14 h-14 rounded-xl overflow-hidden shrink-0 border border-[var(--color-border-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/50 cursor-pointer"
             :aria-label="t('chat.openFullscreen')"
         >
             <ImagePreview
@@ -77,8 +77,8 @@ function onFullscreen() {
 
         <!-- Info -->
         <div class="flex-1 min-w-0">
-            <p class="text-xs font-semibold text-white truncate">{{ fileName || t('chat.evidence') }}</p>
-            <p class="text-2xs text-gray-500 mt-0.5">{{ fileSize }}</p>
+            <p class="text-xs font-semibold text-[var(--color-text-primary)] truncate">{{ fileName || t('chat.evidence') }}</p>
+            <p class="text-2xs text-[var(--color-text-muted)] mt-0.5">{{ fileSize }}</p>
             <div class="mt-1">
                 <StatusBadge :status="state" :loading="isLoading" :progress="progress" />
             </div>
@@ -90,7 +90,7 @@ function onFullscreen() {
                 v-if="showReviewBtn"
                 type="button"
                 @click="emit('review', evidence?.uuid)"
-                class="w-7 h-7 rounded-lg flex items-center justify-center text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 transition-colors"
+                class="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--color-brand)] hover:text-[var(--color-brand-hover)] hover:bg-[var(--color-brand-subtle)] transition-colors"
                 :aria-label="t('chat.reviewEvidence')"
             >
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -102,7 +102,7 @@ function onFullscreen() {
                 v-if="showActions"
                 type="button"
                 @click="emit('remove')"
-                class="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-expense-text hover:bg-expense-bg-hover transition-colors"
+                class="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--color-text-muted)] hover:text-expense-text hover:bg-expense-bg-hover transition-colors"
                 :aria-label="t('chat.removeEvidence')"
             >
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">

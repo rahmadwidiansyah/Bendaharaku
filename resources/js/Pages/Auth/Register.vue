@@ -27,15 +27,15 @@ const submit = () => {
     <Head title="Daftar" />
 
     <div
-        class="antialiased selection:text-black relative flex justify-center min-h-screen bg-gray-800 text-white font-sans overflow-x-hidden">
+        class="antialiased selection:text-black relative flex justify-center min-h-screen bg-[var(--color-surface-base)] text-[var(--color-text-primary)] font-sans overflow-x-hidden">
 
-        <div class="w-full min-w-0 flex-1 relative z-10 flex flex-col justify-center min-h-screen bg-gray-800 px-4 sm:px-6 lg:px-8 py-10">
+        <div class="w-full min-w-0 flex-1 relative z-10 flex flex-col justify-center min-h-screen bg-[var(--color-surface-base)] px-4 sm:px-6 lg:px-8 py-10">
 
             <div class="animate-slide-up w-full max-w-md mx-auto">
                 <div class="text-center mb-10">
                     <ApplicationLogo class="w-20 h-20 rounded-xl mx-auto mb-5" />
-                    <h1 class="text-3xl font-bold text-white tracking-tight">Buat Akun</h1>
-                    <p class="text-2xs text-gray-500 uppercase tracking-widest mt-2 font-bold">
+                    <h1 class="text-3xl font-bold text-[var(--color-text-primary)] tracking-tight">Buat Akun</h1>
+                    <p class="text-2xs text-[var(--color-text-muted)] uppercase tracking-widest mt-2 font-bold">
                         Mulai kelola keuanganmu
                     </p>
                 </div>
@@ -44,7 +44,7 @@ const submit = () => {
                     <!-- Nama Lengkap -->
                     <div>
                         <label for="reg-name"
-                            class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">
+                            class="block text-2xs font-bold text-[var(--color-text-secondary)] uppercase tracking-widest mb-1.5 ml-1">
                             Nama Lengkap
                         </label>
                         <input
@@ -57,8 +57,8 @@ const submit = () => {
                             :aria-invalid="!!form.errors.name"
                             aria-describedby="reg-name-error"
                             placeholder="John Doe"
-                            class="w-full bg-gradient-to-br from-gray-900 to-gray-800 border text-white rounded-xl p-4 text-sm focus:outline-none focus:ring-1 transition-all"
-                            :class="form.errors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-white/10 focus:border-purple-500 focus:ring-purple-500'" />
+                            class="w-full bg-[var(--color-surface-raised)] border text-[var(--color-text-primary)] rounded-xl p-4 text-sm focus:outline-none focus:ring-1 transition-all"
+                            :class="form.errors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-[var(--color-border-default)] focus:border-[var(--color-brand)] focus:ring-[var(--color-brand)]'" />
                         <div v-if="form.errors.name" id="reg-name-error" role="alert"
                             class="text-2xs text-red-400 mt-1 block font-bold">
                             {{ form.errors.name }}
@@ -68,7 +68,7 @@ const submit = () => {
                     <!-- Email -->
                     <div>
                         <label for="reg-email"
-                            class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">
+                            class="block text-2xs font-bold text-[var(--color-text-secondary)] uppercase tracking-widest mb-1.5 ml-1">
                             Email
                         </label>
                         <input
@@ -80,8 +80,8 @@ const submit = () => {
                             :aria-invalid="!!form.errors.email"
                             aria-describedby="reg-email-error"
                             placeholder="email@contoh.com"
-                            class="w-full bg-gradient-to-br from-gray-800 to-gray-900 border text-white rounded-xl p-4 text-sm focus:outline-none focus:ring-1 transition-all"
-                            :class="form.errors.email ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-white/10 focus:border-purple-500 focus:ring-purple-500'" />
+                            class="w-full bg-[var(--color-surface-raised)] border text-[var(--color-text-primary)] rounded-xl p-4 text-sm focus:outline-none focus:ring-1 transition-all"
+                            :class="form.errors.email ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-[var(--color-border-default)] focus:border-[var(--color-brand)] focus:ring-[var(--color-brand)]'" />
                         <div v-if="form.errors.email" id="reg-email-error" role="alert"
                             class="text-2xs text-red-400 mt-1 block font-bold">
                             {{ form.errors.email }}
@@ -91,7 +91,7 @@ const submit = () => {
                     <!-- Password -->
                     <div>
                         <label for="reg-password"
-                            class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">
+                            class="block text-2xs font-bold text-[var(--color-text-secondary)] uppercase tracking-widest mb-1.5 ml-1">
                             Password
                         </label>
                         <input
@@ -103,8 +103,8 @@ const submit = () => {
                             :aria-invalid="!!form.errors.password"
                             aria-describedby="reg-password-error reg-password-hint"
                             placeholder="Minimal 8 karakter"
-                            class="w-full bg-gradient-to-br from-gray-900 to-gray-800 border text-white rounded-xl p-4 text-sm focus:outline-none focus:ring-1 transition-all"
-                            :class="form.errors.password ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-white/10 focus:border-purple-500 focus:ring-purple-500'" />
+                            class="w-full bg-[var(--color-surface-raised)] border text-[var(--color-text-primary)] rounded-xl p-4 text-sm focus:outline-none focus:ring-1 transition-all"
+                            :class="form.errors.password ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-[var(--color-border-default)] focus:border-[var(--color-brand)] focus:ring-[var(--color-brand)]'" />
                         <p id="reg-password-hint" class="text-2xs text-gray-600 mt-1 ml-1">Minimal 8 karakter</p>
                         <div v-if="form.errors.password" id="reg-password-error" role="alert"
                             class="text-2xs text-red-400 mt-1 block font-bold">
@@ -115,7 +115,7 @@ const submit = () => {
                     <!-- Konfirmasi Password -->
                     <div>
                         <label for="reg-password-confirm"
-                            class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">
+                            class="block text-2xs font-bold text-[var(--color-text-secondary)] uppercase tracking-widest mb-1.5 ml-1">
                             Konfirmasi Password
                         </label>
                         <input
@@ -127,12 +127,12 @@ const submit = () => {
                             :aria-invalid="!!form.errors.password_confirmation"
                             aria-describedby="reg-password-confirm-error"
                             placeholder="Ulangi password"
-                            class="w-full bg-gradient-to-br from-gray-800 to-gray-900 border text-white rounded-xl p-4 text-sm focus:outline-none focus:ring-1 transition-all"
+                            class="w-full bg-[var(--color-surface-raised)] border text-[var(--color-text-primary)] rounded-xl p-4 text-sm focus:outline-none focus:ring-1 transition-all"
                             :class="(form.errors.password_confirmation || (form.password_confirmation && form.password !== form.password_confirmation))
                                 ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
                                 : (form.password_confirmation && form.password === form.password_confirmation)
                                     ? 'border-green-500/50 focus:border-green-500 focus:ring-green-500'
-                                    : 'border-white/10 focus:border-purple-500 focus:ring-purple-500'" />
+                                    : 'border-[var(--color-border-default)] focus:border-[var(--color-brand)] focus:ring-[var(--color-brand)]'" />
                         <!-- Realtime mismatch hint (sebelum submit) -->
                         <p v-if="form.password_confirmation && form.password !== form.password_confirmation && !form.errors.password_confirmation"
                             class="text-2xs text-amber-400 mt-1 ml-1 font-bold">
@@ -147,7 +147,7 @@ const submit = () => {
                     <button
                         type="submit"
                         :disabled="form.processing"
-                        class="w-full bg-gradient-to-br from-brand-deep to-brand-soft text-white font-bold text-sm uppercase tracking-widest py-4 rounded-xl active:scale-95 transition-all mt-6 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:active:scale-100">
+                        class="w-full bg-gradient-to-br from-brand-deep to-brand-soft text-[var(--color-text-primary)] font-bold text-sm uppercase tracking-widest py-4 rounded-xl active:scale-95 transition-all mt-6 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:active:scale-100">
                         <svg v-if="form.processing" class="animate-spin w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
@@ -161,12 +161,12 @@ const submit = () => {
                         <div class="w-full border-t border-gray-500"></div>
                     </div>
                     <div class="relative flex justify-center text-2xs uppercase font-bold tracking-widest">
-                        <span class="bg-gray-800 px-4 text-gray-500">Atau</span>
+                        <span class="bg-[var(--color-surface-base)] px-4 text-[var(--color-text-muted)]">Atau</span>
                     </div>
                 </div>
 
                 <a :href="route('google.login')"
-                    class="w-full flex items-center justify-center gap-3 bg-gradient-to-br from-gray-900 to-gray-800 text-white border border-white/10 font-bold text-2xs uppercase tracking-widest py-4 rounded-xl active:scale-95 transition-all hover:border-purple-500 hover:text-white">
+                    class="w-full flex items-center justify-center gap-3 bg-[var(--color-surface-raised)] text-[var(--color-text-primary)] border border-[var(--color-border-default)] font-bold text-2xs uppercase tracking-widest py-4 rounded-xl active:scale-95 transition-all hover:border-[var(--color-brand-border)] hover:text-[var(--color-text-primary)]">
                     <!-- Google 'G' logo inline SVG — tidak bergantung CDN eksternal -->
                     <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
                         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -177,9 +177,9 @@ const submit = () => {
                     Daftar dengan Google
                 </a>
 
-                <p class="text-center text-2xs font-bold text-gray-500 mt-10">
+                <p class="text-center text-2xs font-bold text-[var(--color-text-muted)] mt-10">
                     Sudah punya akun?
-                    <Link :href="route('login')" class="text-purple-500 hover:text-white transition-colors">
+                    <Link :href="route('login')" class="text-[var(--color-brand)] hover:text-[var(--color-text-primary)] transition-colors">
                         Masuk di sini
                     </Link>
                 </p>

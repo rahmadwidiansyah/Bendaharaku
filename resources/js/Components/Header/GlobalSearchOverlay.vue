@@ -185,19 +185,19 @@ const typeBadgeColors = {
             >
                 <!-- Backdrop -->
                 <div
-                    class="absolute inset-0 bg-gray-950/80 backdrop-blur-md"
+                    class="absolute inset-0 bg-black/60 backdrop-blur-md"
                     @click="close"
                 />
 
                 <!-- Search panel -->
-                <div class="relative z-10 w-full lg:max-w-4xl mx-auto mt-16 sm:mt-24 px-4">
+                <div class="relative z-10 w-full max-w-xl sm:max-w-2xl lg:max-w-3xl xl:max-w-4xl mx-auto mt-12 sm:mt-16 lg:mt-24 px-3 sm:px-4">
                     <!-- Input bar -->
                     <div
-                        class="flex items-center gap-3 bg-gray-900 border border-white/15 rounded-2xl px-4 py-3 shadow-2xl shadow-black/50"
+                        class="flex items-center gap-3 bg-[var(--color-surface-overlay)] border border-[var(--color-border-default)] rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 shadow-modal"
                     >
                         <!-- Search icon -->
                         <svg
-                            class="w-5 h-5 text-gray-400 shrink-0"
+                            class="w-5 h-5 text-[var(--color-text-muted)] shrink-0"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -213,7 +213,7 @@ const typeBadgeColors = {
                             v-model="query"
                             type="search"
                             :placeholder="t('search.placeholder')"
-                            class="flex-1 bg-transparent text-white text-base placeholder-gray-500 outline-none caret-purple-400"
+                            class="flex-1 bg-transparent text-[var(--color-text-primary)] text-sm sm:text-base placeholder:text-[var(--color-text-muted)] outline-none caret-[var(--color-brand)]"
                             autocomplete="off"
                             autocorrect="off"
                             spellcheck="false"
@@ -223,17 +223,17 @@ const typeBadgeColors = {
                         <button
                             v-if="query"
                             type="button"
-                            class="shrink-0 w-6 h-6 rounded-full bg-gray-700 flex items-center justify-center hover:bg-gray-600 transition-colors"
+                            class="shrink-0 w-6 h-6 rounded-full bg-[var(--color-surface-muted)] flex items-center justify-center hover:bg-[var(--color-surface-subtle)] transition-colors"
                             :aria-label="t('search.clear')"
                             @click="query = ''"
                         >
-                            <svg class="w-3 h-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                            <svg class="w-3 h-3 text-[var(--color-text-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
 
                         <!-- ESC hint -->
-                        <kbd class="hidden sm:flex items-center gap-1 shrink-0 px-2 py-0.5 rounded-lg bg-gray-800 text-gray-500 text-2xs font-mono border border-white/10">
+                        <kbd class="hidden sm:flex items-center gap-1 shrink-0 px-2 py-0.5 rounded-lg bg-[var(--color-surface-muted)] text-[var(--color-text-muted)] text-2xs font-mono border border-[var(--color-border-default)]">
                             ESC
                         </kbd>
                     </div>
@@ -246,11 +246,11 @@ const typeBadgeColors = {
                     >
                         <div
                             v-if="suggestions.length || query.trim()"
-                            class="mt-2 bg-gray-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl shadow-black/60"
+                            class="mt-2 bg-[var(--color-surface-overlay)] border border-[var(--color-border-default)] rounded-2xl overflow-hidden shadow-modal"
                         >
                             <!-- Section label -->
                             <div class="px-4 pt-3 pb-1">
-                                <p class="text-2xs font-bold text-gray-500 uppercase tracking-widest">
+                                <p class="text-2xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest">
                                     {{ query.trim() ? (loading ? 'Mencari...' : searchResults.length + ' hasil') : t('search.shortcuts') }}
                                 </p>
                             </div>
@@ -266,19 +266,19 @@ const typeBadgeColors = {
                                         type="button"
                                         class="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors group"
                                         :class="selectedIndex === idx
-                                            ? 'bg-purple-600/20'
-                                            : 'hover:bg-white/5'"
+                                            ? 'bg-[var(--color-brand-subtle)]'
+                                            : 'hover:bg-[var(--color-surface-muted)]/50'"
                                         @click="navigate(item)"
                                         @mouseenter="selectedIndex = idx"
                                     >
                                         <!-- Icon -->
                                         <span
                                             class="shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-colors"
-                                            :class="selectedIndex === idx ? 'bg-purple-600/30' : (typeColors[item.type] || 'bg-white/5')"
+                                            :class="selectedIndex === idx ? 'bg-[var(--color-brand-subtle)]' : (typeColors[item.type] || 'bg-[var(--color-surface-muted)]')"
                                         >
                                             <svg
                                                 class="w-4 h-4"
-                                                :class="selectedIndex === idx ? 'text-purple-400' : (item.type ? (typeColors[item.type]?.split(' ')[0] || 'text-gray-400') : 'text-gray-400')"
+                                                :class="selectedIndex === idx ? 'text-[var(--color-brand)]' : (item.type ? (typeColors[item.type]?.split(' ')[0] || 'text-[var(--color-text-muted)]') : 'text-[var(--color-text-muted)]')"
                                                 fill="none"
                                                 viewBox="0 0 24 24"
                                                 stroke="currentColor"
@@ -291,11 +291,11 @@ const typeBadgeColors = {
 
                                         <!-- Text -->
                                         <div class="flex-1 min-w-0">
-                                            <p class="text-sm font-semibold text-gray-200 truncate group-hover:text-white transition-colors"
-                                               :class="selectedIndex === idx ? 'text-white' : ''">
+                                            <p class="text-sm font-semibold text-[var(--color-text-primary)] truncate group-hover:text-[var(--color-text-primary)] transition-colors"
+                                               :class="selectedIndex === idx ? 'text-[var(--color-text-primary)]' : ''">
                                                 {{ item.label }}
                                             </p>
-                                            <p v-if="item.description" class="text-2xs text-gray-500 truncate mt-0.5">
+                                            <p v-if="item.description" class="text-2xs text-[var(--color-text-muted)] truncate mt-0.5">
                                                 {{ item.description }}
                                             </p>
                                         </div>
@@ -311,8 +311,8 @@ const typeBadgeColors = {
 
                                         <!-- Arrow -->
                                         <svg
-                                            class="shrink-0 w-4 h-4 text-gray-600 group-hover:text-gray-400 transition-colors"
-                                            :class="selectedIndex === idx ? 'text-purple-400' : ''"
+                                            class="shrink-0 w-4 h-4 text-[var(--color-text-muted)] group-hover:text-[var(--color-text-secondary)] transition-colors"
+                                            :class="selectedIndex === idx ? 'text-[var(--color-brand)]' : ''"
                                             fill="none"
                                             viewBox="0 0 24 24"
                                             stroke="currentColor"
@@ -327,7 +327,7 @@ const typeBadgeColors = {
 
                             <!-- Loading -->
                             <div v-if="query.trim() && loading" class="px-4 py-6 text-center">
-                                <svg class="w-5 h-5 text-purple-400 animate-spin mx-auto" fill="none" viewBox="0 0 24 24">
+                                <svg class="w-5 h-5 text-[var(--color-brand)] animate-spin mx-auto" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                                 </svg>
@@ -335,13 +335,13 @@ const typeBadgeColors = {
 
                             <!-- No results -->
                             <div v-if="query.trim() && !loading && searchResults.length === 0" class="px-4 py-6 text-center">
-                                <p class="text-sm text-gray-500">{{ t('search.noResults') }} "<span class="text-gray-300">{{ query }}</span>"</p>
+                                <p class="text-sm text-[var(--color-text-muted)]">{{ t('search.noResults') }} "<span class="text-[var(--color-text-primary)]">{{ query }}</span>"</p>
                             </div>
 
                             <!-- Footer -->
-                            <div v-if="query.trim()" class="px-4 py-3 border-t border-white/5 flex justify-center">
+                            <div v-if="query.trim()" class="px-4 py-3 border-t border-[var(--color-border-subtle)] flex justify-center">
                                 <button @click="goToSearchPage"
-                                    class="flex items-center gap-1.5 text-2xs text-purple-400 hover:text-purple-300 font-bold uppercase tracking-widest transition-colors">
+                                    class="flex items-center gap-1.5 text-2xs text-[var(--color-brand)] hover:text-[var(--color-brand-hover)] font-bold uppercase tracking-widest transition-colors">
                                     Lihat semua hasil
                                     <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />

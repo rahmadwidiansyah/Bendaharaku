@@ -22,7 +22,7 @@ const config = computed(() => isWarning.value ? { text: 'text-debt-text', raw: '
         <div class="flex-1 min-w-0">
             <!-- Index label -->
             <p v-if="component.index !== null && component.index !== undefined"
-                class="text-2xs font-bold text-gray-600 mb-1">{{ t('chat.errorItem') }}{{ component.index }}</p>
+                class="text-2xs font-bold text-[var(--color-text-muted)] mb-1">{{ t('chat.errorItem') }}{{ component.index }}</p>
 
             <!-- Raw input -->
             <p v-if="component.raw" :class="['text-xs font-mono mb-1 truncate', config.raw]">

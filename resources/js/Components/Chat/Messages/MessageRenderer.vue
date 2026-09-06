@@ -64,7 +64,7 @@ const componentMap = {
         @retry="emit('retry', $event)"
     />
     <!-- Fallback: tipe tidak dikenal, tampilkan teks mentah (debug only) -->
-    <div v-else class="text-2xs text-gray-600 font-mono px-2 py-1">
+    <div v-else class="text-2xs text-[var(--color-text-muted)] font-mono px-2 py-1">
         [{{ component.type }}]
     </div>
 </template>

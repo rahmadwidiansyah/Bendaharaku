@@ -184,8 +184,8 @@ const saveSettings = async () => {
                 :class="[
                   'inline-flex items-center justify-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-semibold text-xs sm:text-sm transition-all select-none',
                   selectedProvider === provider
-                    ? 'bg-purple-600 text-white shadow-md'
-                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700',
+                    ? 'bg-[var(--color-brand)] text-[var(--color-text-primary)] shadow-md'
+                    : 'bg-[var(--color-surface-muted)] text-gray-300 hover:bg-[var(--color-surface-muted)]',
                 ]"
               >
                 <span
@@ -198,7 +198,7 @@ const saveSettings = async () => {
           </div>
 
           <!-- Status Indicator -->
-          <div class="flex items-center gap-2 p-2.5 sm:p-3 bg-gray-900 rounded-lg border border-white/5">
+          <div class="flex items-center gap-2 p-2.5 sm:p-3 bg-[var(--color-surface-raised)] rounded-lg border border-white/5">
             <span
               :class="[
                 'w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full shrink-0',
@@ -207,7 +207,7 @@ const saveSettings = async () => {
             />
             <span class="text-xs sm:text-sm text-gray-300">
               {{ t('settings.ai.models.status') }}:
-              <span :class="currentStatus === 'Connected' ? 'text-emerald-400' : 'text-gray-400'">
+              <span :class="currentStatus === 'Connected' ? 'text-emerald-400' : 'text-[var(--color-text-secondary)]'">
                 {{ currentStatus }}
               </span>
             </span>
@@ -216,7 +216,7 @@ const saveSettings = async () => {
             <button
               @click="testConnection"
               :disabled="isTesting"
-              class="ml-auto px-2.5 py-1 sm:px-3 sm:py-1.5 text-2xs sm:text-xs bg-gray-700 hover:bg-gray-600 text-white rounded-lg disabled:opacity-50 transition-colors font-semibold"
+              class="ml-auto px-2.5 py-1 sm:px-3 sm:py-1.5 text-2xs sm:text-xs bg-[var(--color-surface-muted)] hover:bg-gray-600 text-[var(--color-text-primary)] rounded-lg disabled:opacity-50 transition-colors font-semibold"
             >
               {{ isTesting ? t('settings.ai.models.testing') : t('settings.ai.models.test_button') }}
             </button>
@@ -244,14 +244,14 @@ const saveSettings = async () => {
       >
         <select
           v-model="form.selected_model"
-          class="w-full px-3 py-1.5 sm:px-4 sm:py-2.5 bg-gray-800 border border-gray-700 rounded-lg sm:rounded-xl text-white focus:outline-none focus:border-purple-500 transition-all text-sm"
+          class="w-full px-3 py-1.5 sm:px-4 sm:py-2.5 bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-lg sm:rounded-xl text-[var(--color-text-primary)] focus:outline-none focus:border-purple-500 transition-all text-sm"
         >
           <option value="">{{ t('settings.ai.models.select_model') }}</option>
           <option v-for="model in currentModels" :key="model" :value="model">
             {{ model }}
           </option>
         </select>
-        <p class="mt-2 text-2xs text-gray-400">{{ t('settings.ai.models.model.hint') }}</p>
+        <p class="mt-2 text-2xs text-[var(--color-text-secondary)]">{{ t('settings.ai.models.model.hint') }}</p>
       </SettingsCard>
 
       <!-- API Key -->
@@ -264,9 +264,9 @@ const saveSettings = async () => {
           type="password"
           :placeholder="t('settings.ai.models.api_key.placeholder')"
           autocomplete="new-password"
-          class="w-full px-3 py-1.5 sm:px-4 sm:py-2.5 bg-gray-800 border border-gray-700 rounded-lg sm:rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-all text-sm"
+          class="w-full px-3 py-1.5 sm:px-4 sm:py-2.5 bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-lg sm:rounded-xl text-[var(--color-text-primary)] placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-all text-sm"
         />
-        <p class="mt-2 text-2xs text-gray-400">
+        <p class="mt-2 text-2xs text-[var(--color-text-secondary)]">
           {{ t('settings.ai.models.api_key.warning') }}
         </p>
       </SettingsCard>
@@ -283,7 +283,7 @@ const saveSettings = async () => {
               type="checkbox"
               class="sr-only peer"
             />
-            <div class="w-9 h-5 sm:w-10 sm:h-6 bg-gray-700 rounded-full peer peer-checked:bg-purple-600 transition-colors" />
+            <div class="w-9 h-5 sm:w-10 sm:h-6 bg-[var(--color-surface-muted)] rounded-full peer peer-checked:bg-[var(--color-brand)] transition-colors" />
             <div class="absolute top-0.5 sm:top-1 left-0.5 sm:left-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4 sm:peer-checked:translate-x-4" />
           </div>
           <span class="text-xs sm:text-sm text-gray-300">
@@ -304,7 +304,7 @@ const saveSettings = async () => {
         <button
           @click="saveSettings"
           :disabled="saving || !hasChanges"
-          class="px-4 py-2 sm:px-5 sm:py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-lg sm:rounded-xl text-xs font-bold uppercase tracking-wider transition-all inline-flex items-center gap-2 shadow-lg shadow-purple-900/20"
+          class="px-4 py-2 sm:px-5 sm:py-3 bg-[var(--color-brand)] hover:bg-[var(--color-brand-hover)] disabled:bg-[var(--color-surface-muted)] disabled:cursor-not-allowed text-[var(--color-text-primary)] rounded-lg sm:rounded-xl text-xs font-bold uppercase tracking-wider transition-all inline-flex items-center gap-2 shadow-lg shadow-purple-900/20"
         >
           <svg
             v-if="saving"

@@ -45,23 +45,23 @@ const getHeaderText = (typeName) => {
 
         <Head :title="$t('category.title')" />
 
-        <div class="px-4 sm:px-5 pb-40 w-full lg:max-w-7xl mx-auto lg:px-8 relative z-10">
+        <div class="px-3 sm:px-5 pb-40 w-full lg:max-w-7xl mx-auto lg:px-8 relative z-10">
 
-            <header class="mb-8 lg:mb-12 pt-3 lg:pt-4 animate-fade-in-up">
+            <header class="mb-6 sm:mb-8 lg:mb-12 pt-3 lg:pt-4 animate-fade-in-up">
                 <div class="hidden lg:flex justify-between items-end mb-8 px-1">
                     <div>
-                        <p class="text-2xs text-gray-300 font-bold uppercase tracking-[0.3em] mb-1 opacity-80">✨
+                        <p class="text-2xs text-[var(--color-text-secondary)] font-bold uppercase tracking-[0.3em] mb-1 opacity-80">✨
                             {{ $t('category.collection') }}</p>
-                        <h1 class="text-3xl font-bold text-white tracking-tighter leading-none">Vault <span
-                                class="text-gray-500">{{ $t('nav.label') }}</span></h1>
+                        <h1 class="text-3xl font-bold text-[var(--color-text-primary)] tracking-tighter leading-none">Vault <span
+                                class="text-[var(--color-text-muted)]">{{ $t('nav.label') }}</span></h1>
                     </div>
 
                     <div class="flex flex-col items-end">
                         <span
-                            class="text-2xs text-gray-500 font-bold uppercase tracking-[0.2em] leading-none">{{ $t('category.totalLabel') }}</span>
+                            class="text-2xs text-[var(--color-text-muted)] font-bold uppercase tracking-[0.2em] leading-none">{{ $t('category.totalLabel') }}</span>
                         <div class="flex items-center gap-1.5 my-1">
-                            <div class="w-1.5 h-1.5 rounded-full bg-purple-500 shadow-[0_0_8px_purple] mr-0.5"></div>
-                            <span class="text-lg font-bold text-white leading-none">{{ totalCategories }}</span>
+                            <div class="w-1.5 h-1.5 rounded-full bg-[var(--color-brand)] shadow-[0_0_8px_var(--color-brand)] mr-0.5"></div>
+                            <span class="text-lg font-bold text-[var(--color-text-primary)] leading-none">{{ totalCategories }}</span>
                         </div>
                     </div>
                 </div>
@@ -75,7 +75,7 @@ const getHeaderText = (typeName) => {
 
                         <div class="relative z-10 flex items-center gap-3 sm:gap-4 w-full pr-10">
                             <div
-                                class="w-10 h-10 lg:w-11 lg:h-11 shrink-0 rounded-xl bg-purple-500 flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
+                                class="w-10 h-10 lg:w-11 lg:h-11 shrink-0 rounded-xl bg-[var(--color-brand)] flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
                                 <svg class="hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path
@@ -87,16 +87,16 @@ const getHeaderText = (typeName) => {
                             </div>
                             <div class="flex flex-col min-w-0">
                                 <span
-                                    class="text-sm lg:text-base font-bold text-white uppercase tracking-wide truncate">{{ $t('category.addNew') }}</span>
+                                    class="text-sm lg:text-base font-bold text-[var(--color-text-primary)] uppercase tracking-wide truncate">{{ $t('category.addNew') }}</span>
                                 <span
-                                    class="text-2xs text-purple-400 font-bold uppercase tracking-widest mt-0.5 leading-tight">{{ $t('category.titleCreate') }}</span>
+                                    class="text-2xs text-[var(--color-brand)] font-bold uppercase tracking-widest mt-0.5 leading-tight">{{ $t('category.titleCreate') }}</span>
                             </div>
                         </div>
 
                         <div class="absolute right-4 sm:right-6 z-10 flex items-center top-1/2 -translate-y-1/2">
                             <div
-                                class="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center group-hover:border-purple-500/50 transition-colors">
-                                <svg class="w-4 h-4 text-gray-500 group-hover:text-purple-400 group-hover:translate-x-0.5 transition-all"
+                                class="w-8 h-8 rounded-full border border-[var(--color-border-default)] flex items-center justify-center group-hover:border-[var(--color-brand-border)] transition-colors">
+                                <svg class="w-4 h-4 text-[var(--color-text-muted)] group-hover:text-[var(--color-brand)] group-hover:translate-x-0.5 transition-all"
                                     fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
                                     <path d="M9 5l7 7-7 7" />
                                 </svg>
@@ -113,14 +113,14 @@ const getHeaderText = (typeName) => {
                     <h2 class="text-[11px] font-bold uppercase tracking-[0.2em]" :class="getTheme(typeName).text">
                         {{ getHeaderText(typeName) }}
                     </h2>
-                    <div class="flex-1 h-px bg-linear-to-r from-purple-500 to-transparent"></div>
+                    <div class="flex-1 h-px bg-linear-to-r from-[var(--color-brand)] to-transparent"></div>
                 </div>
 
-                <div :class="['grid grid-cols-3 gap-3 lg:gap-4', isDesktopLayout ? 'sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6' : '']">
+                <div :class="['grid grid-cols-3 gap-2 sm:gap-3 lg:gap-4', isDesktopLayout ? 'sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6' : '']">
                 <Link v-for="category in categories" :key="category.id"
                     :href="route('categories.show', category.id)"
                     :title="category.category_name"
-                    class="relative group bg-linear-to-br from-gray-900 to-gray-800 border border-white/10 rounded-xl p-3 lg:p-4 flex flex-col items-center justify-center text-center active:scale-[0.97] transition-all duration-300 hover:shadow-lg"
+                    class="relative group bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] rounded-xl p-3 lg:p-4 flex flex-col items-center justify-center text-center active:scale-[0.97] transition-all duration-300 hover:shadow-lg"
                     :class="[getTheme(typeName).glow, getTheme(typeName).border]">
 
                         <!-- System category lock badge -->
@@ -134,7 +134,7 @@ const getHeaderText = (typeName) => {
                         <AppIcon :icon="category.icon" fallback="folder" :class="['w-9 h-9 lg:w-11 lg:h-11 mb-2 lg:mb-3 transition-transform duration-300 group-hover:scale-125 group-hover:-translate-y-1.5', getCategoryIconColor(category.type?.name)]" />
 
                         <p
-                            class="text-2xs lg:text-xs font-bold text-gray-300 tracking-wide line-clamp-2 leading-tight group-hover:text-white transition-colors px-1">
+                            class="text-2xs lg:text-xs font-bold text-[var(--color-text-secondary)] tracking-wide line-clamp-2 leading-tight group-hover:text-[var(--color-text-primary)] transition-colors px-1">
                             {{ category.category_name }}
                         </p>
                     </Link>
@@ -142,9 +142,9 @@ const getHeaderText = (typeName) => {
             </div>
 
             <div v-if="Object.keys(groupedCategories).length === 0"
-                class="text-center py-10 bg-linear-to-br from-gray-900 to-gray-800 backdrop-blur-sm rounded-xl border border-white/10 mt-8 animate-fade-in-up flex flex-col items-center relative overflow-hidden group">
-                <p class="text-2xs font-bold text-white uppercase tracking-widest relative z-10">{{ $t('empty.category') }}</p>
-                <p class="text-2xs font-medium text-gray-500 mt-2 max-w-[200px] leading-relaxed relative z-10">{{ $t('empty.categoryMsg') }}</p>
+                class="text-center py-8 sm:py-10 bg-[var(--color-surface-raised)] backdrop-blur-sm rounded-xl border border-[var(--color-border-default)] mt-8 animate-fade-in-up flex flex-col items-center relative overflow-hidden group">
+                <p class="text-2xs font-bold text-[var(--color-text-primary)] uppercase tracking-widest relative z-10">{{ $t('empty.category') }}</p>
+                <p class="text-2xs font-medium text-[var(--color-text-muted)] mt-2 max-w-[200px] leading-relaxed relative z-10">{{ $t('empty.categoryMsg') }}</p>
             </div>
         </div>
     </AuthenticatedLayout>

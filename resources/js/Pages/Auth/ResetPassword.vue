@@ -32,28 +32,28 @@ const submit = () => {
     <Head title="Reset Password" />
 
     <div
-        class="antialiased selection:bg-[#FCA5FF] selection:text-black relative flex justify-center min-h-screen bg-[#121212] text-white font-sans overflow-x-hidden">
+        class="antialiased selection:bg-[var(--color-brand)] selection:text-black relative flex justify-center min-h-screen bg-[var(--color-surface-base)] text-[var(--color-text-primary)] font-sans overflow-x-hidden">
 
         <div
             class="fixed top-[20%] left-[50%] -translate-x-1/2 w-[300px] h-[300px] bg-[#FCA5FF] blur-[120px] opacity-[0.15] rounded-full pointer-events-none z-0">
         </div>
 
         <div
-            class="w-full min-w-0 flex-1 relative z-10 flex flex-col justify-center min-h-screen border-x border-[#262626]/50 bg-[#121212]/80 backdrop-blur-xl px-4 sm:px-6 lg:px-8 py-10">
+            class="w-full min-w-0 flex-1 relative z-10 flex flex-col justify-center min-h-screen border-x border-[#262626]/50 bg-[var(--color-surface-base)]/80 backdrop-blur-xl px-4 sm:px-6 lg:px-8 py-10">
 
             <div class="animate-slide-up w-full max-w-md mx-auto">
                 <div class="text-center mb-10">
                     <ApplicationLogo class="w-20 h-20 rounded-xl mx-auto mb-5" />
-                    <h1 class="text-3xl font-bold text-white tracking-tight">Reset Password</h1>
-                    <p class="text-2xs text-gray-500 uppercase tracking-widest mt-2 font-bold">Buat sandi baru Anda</p>
+                    <h1 class="text-3xl font-bold text-[var(--color-text-primary)] tracking-tight">Reset Password</h1>
+                    <p class="text-2xs text-[var(--color-text-muted)] uppercase tracking-widest mt-2 font-bold">Buat sandi baru Anda</p>
                 </div>
 
                 <form @submit.prevent="submit" class="space-y-5">
                     <div>
                         <label
-                            class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Email</label>
+                            class="block text-2xs font-bold text-[var(--color-text-secondary)] uppercase tracking-widest mb-1.5 ml-1">Email</label>
                         <input type="email" v-model="form.email" required autocomplete="username"
-                            class="w-full bg-[#1A1A1A] border border-[#333] text-white rounded-xl p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[#FCA5FF] transition-all shadow-inner" />
+                            class="w-full bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-xl p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)] transition-all shadow-inner" />
                         <div v-if="form.errors.email" class="text-2xs text-red-500 mt-1 block font-bold">
                             {{ form.errors.email }}
                         </div>
@@ -61,10 +61,10 @@ const submit = () => {
 
                     <div>
                         <label
-                            class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Password
+                            class="block text-2xs font-bold text-[var(--color-text-secondary)] uppercase tracking-widest mb-1.5 ml-1">Password
                             Baru</label>
                         <input type="password" v-model="form.password" required autocomplete="new-password" autofocus
-                            class="w-full bg-[#1A1A1A] border border-[#333] text-white rounded-xl p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[#FCA5FF] transition-all shadow-inner" />
+                            class="w-full bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-xl p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)] transition-all shadow-inner" />
                         <div v-if="form.errors.password" class="text-2xs text-red-500 mt-1 block font-bold">
                             {{ form.errors.password }}
                         </div>
@@ -72,10 +72,10 @@ const submit = () => {
 
                     <div>
                         <label
-                            class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Konfirmasi
+                            class="block text-2xs font-bold text-[var(--color-text-secondary)] uppercase tracking-widest mb-1.5 ml-1">Konfirmasi
                             Password</label>
                         <input type="password" v-model="form.password_confirmation" required autocomplete="new-password"
-                            class="w-full bg-[#1A1A1A] border border-[#333] text-white rounded-xl p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[#FCA5FF] transition-all shadow-inner" />
+                            class="w-full bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-xl p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)] transition-all shadow-inner" />
                         <div v-if="form.errors.password_confirmation"
                             class="text-2xs text-red-500 mt-1 block font-bold">
                             {{ form.errors.password_confirmation }}

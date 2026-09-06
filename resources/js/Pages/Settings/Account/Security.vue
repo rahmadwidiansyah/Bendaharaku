@@ -115,14 +115,14 @@ const handleUpdatePassword = () => {
         <form @submit.prevent="handleUpdatePassword" class="space-y-3">
           <!-- Current Password -->
           <div>
-            <label class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1 ml-1">
+            <label class="block text-2xs font-bold text-[var(--color-text-secondary)] uppercase tracking-widest mb-1 ml-1">
               {{ t('profile.currentPassword') }}
             </label>
             <input
               v-model="form.current_password"
               type="password"
               required
-              class="w-full px-3 py-1.5 sm:px-4 sm:py-2.5 bg-gray-800 border border-gray-700 rounded-lg sm:rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-all text-sm"
+              class="w-full px-3 py-1.5 sm:px-4 sm:py-2.5 bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-lg sm:rounded-xl text-[var(--color-text-primary)] placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-all text-sm"
               :placeholder="t('profile.currentPassword')"
             />
             <p v-if="form.errors.current_password" class="mt-1 text-2xs text-red-500 font-semibold ml-1">{{ form.errors.current_password }}</p>
@@ -130,14 +130,14 @@ const handleUpdatePassword = () => {
 
           <!-- New Password -->
           <div>
-            <label class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1 ml-1">
+            <label class="block text-2xs font-bold text-[var(--color-text-secondary)] uppercase tracking-widest mb-1 ml-1">
               {{ t('profile.newPassword') }}
             </label>
             <input
               v-model="form.password"
               type="password"
               required
-              class="w-full px-3 py-1.5 sm:px-4 sm:py-2.5 bg-gray-800 border border-gray-700 rounded-lg sm:rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-all text-sm"
+              class="w-full px-3 py-1.5 sm:px-4 sm:py-2.5 bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-lg sm:rounded-xl text-[var(--color-text-primary)] placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-all text-sm"
               :placeholder="t('profile.newPassword')"
             />
             <p v-if="form.errors.password" class="mt-1 text-2xs text-red-500 font-semibold ml-1">{{ form.errors.password }}</p>
@@ -145,14 +145,14 @@ const handleUpdatePassword = () => {
 
           <!-- Confirm New Password -->
           <div>
-            <label class="block text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1 ml-1">
+            <label class="block text-2xs font-bold text-[var(--color-text-secondary)] uppercase tracking-widest mb-1 ml-1">
               {{ t('profile.confirmPassword') }}
             </label>
             <input
               v-model="form.password_confirmation"
               type="password"
               required
-              class="w-full px-3 py-1.5 sm:px-4 sm:py-2.5 bg-gray-800 border border-gray-700 rounded-lg sm:rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-all text-sm"
+              class="w-full px-3 py-1.5 sm:px-4 sm:py-2.5 bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-lg sm:rounded-xl text-[var(--color-text-primary)] placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-all text-sm"
               :placeholder="t('profile.confirmPassword')"
             />
             <p v-if="form.errors.password_confirmation" class="mt-1 text-2xs text-red-500 font-semibold ml-1">{{ form.errors.password_confirmation }}</p>
@@ -163,7 +163,7 @@ const handleUpdatePassword = () => {
             <button
               type="submit"
               :disabled="form.processing"
-              class="w-full sm:w-auto px-4 py-2 sm:px-5 sm:py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-lg sm:rounded-xl text-xs font-bold uppercase tracking-wider transition-all"
+              class="w-full sm:w-auto px-4 py-2 sm:px-5 sm:py-3 bg-[var(--color-brand)] hover:bg-[var(--color-brand-hover)] disabled:bg-[var(--color-surface-muted)] disabled:cursor-not-allowed text-[var(--color-text-primary)] rounded-lg sm:rounded-xl text-xs font-bold uppercase tracking-wider transition-all"
             >
               {{ form.processing ? t('common.saving') : t('settings.account.security.password.change_button') }}
             </button>
@@ -174,7 +174,7 @@ const handleUpdatePassword = () => {
       <!-- Active Sessions -->
       <SettingsCard :title="t('settings.account.security.login_activity.title')" :description="t('settings.account.security.login_activity.description')">
         <div class="space-y-2">
-          <div v-if="sessions.length === 0" class="text-2xs sm:text-sm text-gray-400 py-2 text-center">{{ t('common.noData') }}</div>
+          <div v-if="sessions.length === 0" class="text-2xs sm:text-sm text-[var(--color-text-secondary)] py-2 text-center">{{ t('common.noData') }}</div>
 
           <div
             v-for="(session, index) in sessions"
@@ -183,23 +183,23 @@ const handleUpdatePassword = () => {
               'flex items-start gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-lg sm:rounded-xl border transition-colors',
               session.is_current
                 ? 'bg-green-500/5 border-green-500/20'
-                : 'bg-gray-800/50 border-white/5',
+                : 'bg-[var(--color-surface-muted)]/50 border-white/5',
             ]"
           >
-            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center shrink-0 bg-gray-800 border border-white/5">
-              <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center shrink-0 bg-[var(--color-surface-muted)] border border-white/5">
+              <svg class="w-4 h-4 text-[var(--color-text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex flex-wrap items-center gap-1.5">
-                <p class="text-xs sm:text-sm font-semibold text-white">{{ parseBrowser(session.user_agent) }}</p>
+                <p class="text-xs sm:text-sm font-semibold text-[var(--color-text-primary)]">{{ parseBrowser(session.user_agent) }}</p>
                 <span v-if="session.is_current" class="px-1.5 py-0.5 rounded-full text-2xs font-bold bg-green-500/20 text-green-400 border border-green-500/30">
                   {{ t('settings.account.security.login_activity.current') }}
                 </span>
               </div>
-              <p class="text-2xs text-gray-400 mt-0.5">{{ session.ip }}</p>
-              <p v-if="session.last_activity" class="text-2xs text-gray-500 mt-0.5">
+              <p class="text-2xs text-[var(--color-text-secondary)] mt-0.5">{{ session.ip }}</p>
+              <p v-if="session.last_activity" class="text-2xs text-[var(--color-text-muted)] mt-0.5">
                 {{ formatActivity(session.last_activity) }}
               </p>
             </div>

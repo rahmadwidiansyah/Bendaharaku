@@ -65,24 +65,24 @@ const urgencyKey = (daysUntil) => {
 }
 
 const badgeClasses = {
-    overdue: 'bg-red-500/20    text-red-400',
-    today:   'bg-red-500/20    text-red-400',
-    soon:    'bg-red-500/20    text-red-400',
-    normal:  'bg-yellow-500/20 text-yellow-400',
+    overdue: 'bg-[var(--color-expense-bg)]    text-[var(--color-expense-text)] border border-[var(--color-expense-border)]',
+    today:   'bg-[var(--color-expense-bg)]    text-[var(--color-expense-text)] border border-[var(--color-expense-border)]',
+    soon:    'bg-[var(--color-expense-bg)]    text-[var(--color-expense-text)] border border-[var(--color-expense-border)]',
+    normal:  'bg-[var(--color-debt-bg)] text-[var(--color-debt-text)] border border-[var(--color-debt-border)]',
 }
 
 const cardClasses = {
-    overdue: 'bg-gradient-to-br from-red-900/30    to-gray-800 border-red-500/50',
-    today:   'bg-gradient-to-br from-red-900/30    to-gray-800 border-red-500/50',
-    soon:    'bg-gradient-to-br from-red-900/30    to-gray-800 border-red-500/50',
-    normal:  'bg-gradient-to-br from-yellow-900/30 to-gray-800 border-yellow-500/30',
+    overdue: 'bg-[var(--color-surface-raised)] border-[var(--color-expense-border)]',
+    today:   'bg-[var(--color-surface-raised)] border-[var(--color-expense-border)]',
+    soon:    'bg-[var(--color-surface-raised)] border-[var(--color-expense-border)]',
+    normal:  'bg-[var(--color-surface-raised)] border-[var(--color-debt-border)]',
 }
 
 const amountClasses = {
-    overdue: 'text-red-400',
-    today:   'text-red-400',
-    soon:    'text-red-400',
-    normal:  'text-yellow-400',
+    overdue: 'text-[var(--color-expense-text)]',
+    today:   'text-[var(--color-expense-text)]',
+    soon:    'text-[var(--color-expense-text)]',
+    normal:  'text-[var(--color-debt-text)]',
 }
 
 const badgeLabel = (daysUntil) => {
@@ -106,17 +106,17 @@ const typeLabel = (type) => {
     >
         <!-- Section header -->
         <div class="flex items-center mb-2 sm:mb-3 px-1 gap-2 sm:gap-3">
-            <h2 class="text-2xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 shrink-0">
-                <svg class="w-3 h-3 text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+            <h2 class="text-2xs font-bold text-[var(--color-text-secondary)] uppercase tracking-widest flex items-center gap-2 shrink-0">
+                <svg class="w-3 h-3 text-[var(--color-expense-text)] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 {{ $t('upcomingDebts.title') }}
             </h2>
-            <div class="flex-1 h-px bg-gradient-to-r from-red-500/20 to-transparent" aria-hidden="true" />
+            <div class="flex-1 h-px bg-gradient-to-r from-[var(--color-expense-border)] to-transparent" aria-hidden="true" />
         </div>
 
         <!-- Subtitle -->
-        <p class="text-2xs text-gray-500 px-1 mb-2 sm:mb-3">{{ $t('upcomingDebts.subtitle') }}</p>
+        <p class="text-2xs text-[var(--color-text-muted)] px-1 mb-2 sm:mb-3">{{ $t('upcomingDebts.subtitle') }}</p>
 
         <!-- Debt items -->
         <div class="flex flex-col gap-2 sm:gap-3" role="list" :aria-label="$t('upcomingDebts.title')">
@@ -128,7 +128,7 @@ const typeLabel = (type) => {
             >
                 <!-- Row atas: nama + badge + dismiss -->
                 <div class="flex justify-between items-start mb-1">
-                    <h3 class="text-2xs font-bold text-white tracking-widest truncate mr-2">
+                    <h3 class="text-2xs font-bold text-[var(--color-text-primary)] tracking-widest truncate mr-2">
                         {{ typeLabel(debt.type) }} — {{ debt.subject }}
                     </h3>
                     <div class="flex items-center gap-2 shrink-0">
@@ -141,7 +141,7 @@ const typeLabel = (type) => {
                         <button
                             type="button"
                             @click.stop.prevent="dismiss(debt.subject + debt.type)"
-                            class="text-gray-500 hover:text-white shrink-0 p-1 bg-white/5 rounded-full transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-white"
+                            class="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] shrink-0 p-1 bg-[var(--color-surface-muted)]/50 rounded-full transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-brand)]"
                             aria-label="Sembunyikan notifikasi ini"
                         >
                             <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -157,7 +157,7 @@ const typeLabel = (type) => {
                         <span class="text-2xs mr-1 opacity-70">Rp</span>
                         {{ isVisible ? formatNumber(debt.remaining) : '••••' }}
                     </p>
-                    <p class="text-2xs text-gray-400 font-medium">
+                    <p class="text-2xs text-[var(--color-text-secondary)] font-medium">
                         {{ debt.next_due_date }}
                     </p>
                 </div>

@@ -34,7 +34,7 @@ onMounted(() => {
             ]">
                 <div :class="[
                     'w-8 h-8 rounded-full flex items-center justify-center shrink-0',
-                    toastType === 'success' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                    toastType === 'success' ? 'bg-[var(--color-income-bg)] text-[var(--color-income-text)]' : 'bg-[var(--color-expense-bg)] text-[var(--color-expense-text)]'
                 ]">
                     <svg v-if="toastType === 'success'" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
@@ -43,7 +43,7 @@ onMounted(() => {
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </div>
-                <p class="text-sm font-bold text-white tracking-tight">{{ message }}</p>
+                <p class="text-sm font-bold text-[var(--color-text-primary)] tracking-tight">{{ message }}</p>
             </div>
         </div>
     </transition>

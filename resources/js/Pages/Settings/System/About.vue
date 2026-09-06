@@ -27,21 +27,21 @@ const props = withDefaults(defineProps<{
       <SettingsCard :title="t('settings.system.about.app_name')" :description="t('settings.system.about.app_description')">
         <div class="space-y-4">
           <div class="flex justify-between">
-            <span class="text-2xs sm:text-sm text-gray-400">{{ t('settings.system.about.version') }}</span>
-            <span class="text-sm text-white font-medium">{{ appVersion }}</span>
+            <span class="text-2xs sm:text-sm text-[var(--color-text-secondary)]">{{ t('settings.system.about.version') }}</span>
+            <span class="text-sm text-[var(--color-text-primary)] font-medium">{{ appVersion }}</span>
           </div>
-          <div class="border-t border-gray-700 pt-4">
-            <p class="text-2xs text-gray-500">{{ t('settings.system.about.app_description') }}</p>
+          <div class="border-t border-[var(--color-border-default)] pt-4">
+            <p class="text-2xs text-[var(--color-text-muted)]">{{ t('settings.system.about.app_description') }}</p>
           </div>
         </div>
       </SettingsCard>
 
       <SettingsCard :title="t('settings.system.about.license.title')" :description="t('settings.system.about.license.description')">
-        <p class="text-2xs sm:text-sm text-gray-400">{{ t('settings.system.about.license.type') }}</p>
+        <p class="text-2xs sm:text-sm text-[var(--color-text-secondary)]">{{ t('settings.system.about.license.type') }}</p>
       </SettingsCard>
 
       <SettingsCard :title="t('settings.system.about.credits.title')" :description="t('settings.system.about.credits.description')">
-        <div class="space-y-2 text-2xs text-gray-400">
+        <div class="space-y-2 text-2xs text-[var(--color-text-secondary)]">
           <p>• {{ t('settings.system.about.credits.laravel') }}</p>
           <p>• {{ t('settings.system.about.credits.vue') }}</p>
           <p>• {{ t('settings.system.about.credits.inertia') }}</p>

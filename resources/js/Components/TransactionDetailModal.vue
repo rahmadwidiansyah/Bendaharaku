@@ -82,12 +82,12 @@ const getTypeName = (name) => ({
 }[name] ?? name)
 
 const amountColor = (trx) => {
-    if (!trx?.type) return 'text-white'
+    if (!trx?.type) return 'text-[var(--color-text-primary)]'
     const name = trx.type.name
-    if (name === 'Income') return 'text-green-400'
-    if (name === 'Transfer') return 'text-blue-400'
-    if (['Debt', 'Receivable'].includes(name) && trx.source_wallet?.group_type === 'System') return 'text-green-400'
-    return 'text-red-400'
+    if (name === 'Income') return 'text-[var(--color-income-text)]'
+    if (name === 'Transfer') return 'text-[var(--color-transfer-text)]'
+    if (['Debt', 'Receivable'].includes(name) && trx.source_wallet?.group_type === 'System') return 'text-[var(--color-income-text)]'
+    return 'text-[var(--color-expense-text)]'
 }
 
 const amountPrefix = (trx) => {
@@ -118,12 +118,12 @@ const dueDateText = (trx) => {
     >
         <!-- ===== Slot #default: Header + Hero + Metadata ===== -->
         <template #default>
-            <div v-if="transaction" class="w-full font-mono text-gray-200">
+            <div v-if="transaction" class="w-full font-mono text-[var(--color-text-secondary)]">
                 <div class="overflow-y-auto w-full max-h-[calc(100dvh-260px)]">
                     <!-- ── Header: Icon + Title + Badge ─────────────────── -->
                     <div class="flex flex-col items-center mt-2 mb-6">
                         <AppIcon :icon="transaction.category?.icon" fallback="file-text" :class="['w-11 h-11 mb-3', getCategoryIconColor(transaction.type?.name)]" />
-                        <h2 class="text-xl font-bold tracking-wide text-white mb-2 text-center break-words leading-tight">
+                        <h2 class="text-lg sm:text-xl font-bold tracking-wide text-[var(--color-text-primary)] mb-2 text-center break-words leading-tight">
                             {{ transaction.category?.category_name || 'Transfer' }}
                         </h2>
                         <div class="flex flex-wrap items-center justify-center gap-2">
@@ -137,54 +137,54 @@ const dueDateText = (trx) => {
                     </div>
 
                     <!-- ===== Amount — Hero Section ===== -->
-                    <div class="border border-white/10 bg-white/5 rounded-2xl px-4 py-5 mb-6 text-center">
-                        <p class="text-2xs font-bold text-gray-400 uppercase tracking-[0.2em] mb-2">{{ $t('transaction.amount') }}</p>
-                        <p :class="['text-3xl font-bold tracking-tight tabular-nums', amountColor(transaction)]">
+                    <div class="border border-[var(--color-border-default)] bg-[var(--color-surface-muted)]/40 rounded-2xl px-3 sm:px-4 py-4 sm:py-5 mb-4 sm:mb-6 text-center">
+                        <p class="text-2xs font-bold text-[var(--color-text-muted)] uppercase tracking-[0.2em] mb-2">{{ $t('transaction.amount') }}</p>
+                        <p :class="['text-2xl sm:text-3xl font-bold tracking-tight tabular-nums', amountColor(transaction)]">
                             <span class="flex items-center justify-center gap-2">
                                 <span>{{ amountPrefix(transaction) }}</span>
                                 <span class="whitespace-nowrap">
-                                    <span class="text-lg text-gray-500 mr-1 font-semibold">Rp</span>{{ formatNumber(transaction.amount) }}
+                                    <span class="text-base sm:text-lg text-[var(--color-text-muted)] mr-1 font-semibold">Rp</span>{{ formatNumber(transaction.amount) }}
                                 </span>
                             </span>
                         </p>
                     </div>
 
                     <!-- ===== Metadata Section (tanpa box, garis membentang penuh) ===== -->
-                    <div class="flex flex-col text-sm divide-y divide-white/10 border-t border-white/10">
+                    <div class="flex flex-col text-sm divide-y divide-[var(--color-border-subtle)] border-t border-[var(--color-border-default)]">
                         <!-- Tanggal & waktu -->
                         <DetailRow :label="$t('transaction.detail.date')">
-                            <span class="font-semibold text-gray-300">{{ transaction.date }} • {{ transaction.time }}</span>
+                            <span class="font-semibold text-[var(--color-text-primary)]">{{ transaction.date }} • {{ transaction.time }}</span>
                         </DetailRow>
 
                         <!-- Dompet -->
                         <DetailRow :label="$t('transaction.detail.wallet')">
                             <div class="flex items-center justify-end gap-1.5 min-w-0">
-                                <span class="truncate font-semibold text-gray-300">{{ transaction.source_wallet?.name }}</span>
-                                <svg v-if="transaction.destination_wallet?.name" class="w-3.5 h-3.5 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <span class="truncate font-semibold text-[var(--color-text-primary)]">{{ transaction.source_wallet?.name }}</span>
+                                <svg v-if="transaction.destination_wallet?.name" class="w-3.5 h-3.5 text-[var(--color-text-muted)] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                                 </svg>
-                                <span v-if="transaction.destination_wallet?.name" class="truncate font-semibold text-gray-300">{{ transaction.destination_wallet.name }}</span>
+                                <span v-if="transaction.destination_wallet?.name" class="truncate font-semibold text-[var(--color-text-primary)]">{{ transaction.destination_wallet.name }}</span>
                             </div>
                         </DetailRow>
 
                         <!-- Pelaku (subject) -->
                         <DetailRow v-if="transaction.subject && transaction.subject !== '-'" :label="$t('transaction.detail.party')">
-                            <span class="font-semibold text-gray-300">{{ transaction.subject }}</span>
+                            <span class="font-semibold text-[var(--color-text-primary)]">{{ transaction.subject }}</span>
                         </DetailRow>
 
                         <!-- Jatuh tempo -->
                         <DetailRow v-if="transaction.due_date_type" :label="$t('transaction.detail.dueDate')">
-                            <span class="font-bold text-yellow-400">{{ dueDateText(transaction) }}</span>
+                            <span class="font-bold text-[var(--color-debt-text)]">{{ dueDateText(transaction) }}</span>
                         </DetailRow>
 
                         <!-- Catatan -->
                         <DetailRow :label="$t('transaction.detail.note')">
-                            <span class="font-medium text-gray-400 italic truncate">{{ transaction.notes || $t('transaction.detail.noNote') }}</span>
+                            <span class="font-medium text-[var(--color-text-secondary)] italic truncate">{{ transaction.notes || $t('transaction.detail.noNote') }}</span>
                         </DetailRow>
 
                         <!-- ID transaksi -->
                         <DetailRow :label="$t('transaction.detail.transactionId')">
-                            <span class="font-semibold text-gray-300">#{{ transaction.id }}</span>
+                            <span class="font-semibold text-[var(--color-text-primary)]">#{{ transaction.id }}</span>
                         </DetailRow>
                     </div>
                 </div>
@@ -193,13 +193,13 @@ const dueDateText = (trx) => {
 
         <!-- ===== Slot #footer: Action Buttons (selalu terlihat) ===== -->
         <template #footer>
-            <div v-if="transaction" class="flex flex-col gap-3 w-full border-t border-white/10 font-mono">
+            <div v-if="transaction" class="flex flex-col gap-3 w-full border-t border-[var(--color-border-default)] font-mono">
                 <!-- Konfirmasi Draft -->
                 <button
                     v-if="!transaction.is_cleared"
                     type="button"
                     @click="showConfirmDraft = true"
-                    class="w-full py-3.5 rounded-2xl border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-widest hover:bg-amber-500/10 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                    class="w-full py-3 sm:py-3.5 rounded-2xl border border-[var(--color-debt-border)] text-[var(--color-debt-text)] text-xs font-bold uppercase tracking-widest hover:bg-[var(--color-debt-bg)] transition-all active:scale-[0.98] flex items-center justify-center gap-2">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -210,7 +210,7 @@ const dueDateText = (trx) => {
                 <div class="flex gap-3">
                     <Link
                         :href="route('transactions.edit', { transaction: transaction.id, is_draft: transaction.is_draft })"
-                        class="flex-1 py-3.5 rounded-2xl border border-white/10 text-gray-300 text-xs font-bold uppercase tracking-widest hover:bg-white/5 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                        class="flex-1 py-3 sm:py-3.5 rounded-2xl border border-[var(--color-border-default)] text-[var(--color-text-secondary)] text-xs font-bold uppercase tracking-widest hover:bg-[var(--color-surface-muted)] transition-all active:scale-[0.98] flex items-center justify-center gap-2">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" />
                         </svg>
@@ -219,7 +219,7 @@ const dueDateText = (trx) => {
                     <button
                         type="button"
                         @click="showDeleteConfirm = true"
-                        class="flex-1 py-3.5 rounded-2xl border border-red-500/15 text-red-500 text-xs font-bold uppercase tracking-widest hover:bg-red-500/10 hover:border-red-500/30 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                        class="flex-1 py-3 sm:py-3.5 rounded-2xl border border-[var(--color-expense-border)] text-[var(--color-expense-text)] text-xs font-bold uppercase tracking-widest hover:bg-[var(--color-expense-bg)] hover:border-[var(--color-expense-border)] transition-all active:scale-[0.98] flex items-center justify-center gap-2">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
@@ -239,16 +239,16 @@ const dueDateText = (trx) => {
         @close="showConfirmDraft = false"
     >
         <div class="text-center px-1">
-            <div class="w-14 h-14 rounded-full bg-amber-500/15 text-amber-400 mx-auto flex items-center justify-center mb-4 border border-amber-500/20">
+            <div class="w-14 h-14 rounded-full bg-[var(--color-debt-bg)] text-[var(--color-debt-text)] mx-auto flex items-center justify-center mb-4 border border-[var(--color-debt-border)]">
                 <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
             </div>
-            <h3 class="text-base font-black text-white mb-2 tracking-tight">{{ $t('transaction.confirmDraftQ') }}</h3>
-            <p class="text-2xs text-gray-400 leading-relaxed mb-1">
+            <h3 class="text-base font-black text-[var(--color-text-primary)] mb-2 tracking-tight">{{ $t('transaction.confirmDraftQ') }}</h3>
+            <p class="text-2xs text-[var(--color-text-secondary)] leading-relaxed mb-1">
                 {{ $t('transaction.confirmDraftDetail') }}
             </p>
-            <p class="text-2xs text-amber-400/80 mb-6">
+            <p class="text-2xs text-[var(--color-debt-text)]/80 mb-6">
                 {{ $t('transaction.confirmDraftWarn') }}
             </p>
         </div>
@@ -258,14 +258,14 @@ const dueDateText = (trx) => {
                 type="button"
                 :disabled="isConfirming"
                 @click="showConfirmDraft = false"
-                class="flex-1 py-3 rounded-xl bg-gray-800 border border-white/10 text-gray-300 text-2xs font-bold uppercase tracking-widest hover:border-white/20 transition-all disabled:opacity-50">
+                class="flex-1 py-3 rounded-xl bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] text-[var(--color-text-secondary)] text-2xs font-bold uppercase tracking-widest hover:border-[var(--color-border-strong)] transition-all disabled:opacity-50">
                 {{ $t('btn.no') }}
             </button>
             <button
                 type="button"
                 :disabled="isConfirming"
                 @click="confirmDraft"
-                class="flex-1 py-3 rounded-xl bg-amber-500 text-gray-900 text-2xs font-black uppercase tracking-widest hover:bg-amber-400 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2">
+                class="flex-1 py-3 rounded-xl bg-[var(--color-debt-chart)] text-white text-2xs font-black uppercase tracking-widest hover:opacity-90 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2">
                 <svg v-if="isConfirming" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
@@ -284,15 +284,15 @@ const dueDateText = (trx) => {
         @close="showDeleteConfirm = false"
     >
         <div class="text-center px-1">
-            <div class="w-14 h-14 rounded-full bg-red-500/15 text-red-400 mx-auto flex items-center justify-center mb-4 border border-red-500/20">
+            <div class="w-14 h-14 rounded-full bg-[var(--color-expense-bg)] text-[var(--color-expense-text)] mx-auto flex items-center justify-center mb-4 border border-[var(--color-expense-border)]">
                 <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
             </div>
-            <h3 class="text-base font-black text-white mb-2 tracking-tight">
+            <h3 class="text-base font-black text-[var(--color-text-primary)] mb-2 tracking-tight">
                 {{ transaction.is_draft ? 'Batalkan Draft Transaksi' : $t('transaction.deleteTitle') }}
             </h3>
-            <p class="text-sm text-red-200/80 leading-relaxed mb-6">
+            <p class="text-sm text-[var(--color-expense-text)]/80 leading-relaxed mb-6">
                 {{ transaction.is_draft ? 'Apakah Anda yakin ingin membatalkan draft transaksi ini?' : $t('transaction.deleteWarn') }}
             </p>
         </div>
@@ -302,14 +302,14 @@ const dueDateText = (trx) => {
                 type="button"
                 :disabled="isDeleting"
                 @click="showDeleteConfirm = false"
-                class="flex-1 py-3 rounded-xl bg-gray-800 border border-white/10 text-gray-300 text-2xs font-bold uppercase tracking-widest hover:border-white/20 transition-all disabled:opacity-50">
+                class="flex-1 py-3 rounded-xl bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] text-[var(--color-text-secondary)] text-2xs font-bold uppercase tracking-widest hover:border-[var(--color-border-strong)] transition-all disabled:opacity-50">
                 {{ $t('btn.no') }}
             </button>
             <button
                 type="button"
                 :disabled="isDeleting"
                 @click="deleteTransaction"
-                class="flex-1 py-3 rounded-xl bg-red-600 text-white text-2xs font-black uppercase tracking-widest hover:bg-red-500 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2">
+                class="flex-1 py-3 rounded-xl bg-[var(--color-expense-chart)] text-white text-2xs font-black uppercase tracking-widest hover:opacity-90 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2">
                 <svg v-if="isDeleting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>

@@ -36,8 +36,8 @@ function selectCommand(cmd) {
         <!-- Header: judul + deskripsi -->
         <template #header>
             <div>
-                <h2 class="text-sm font-bold text-white">{{ t('chat.sheetTitle') }}</h2>
-                <p class="text-2xs text-gray-500 mt-0.5">{{ t('chat.sheetDesc') }}</p>
+                <h2 class="text-sm font-bold text-[var(--color-text-primary)]">{{ t('chat.sheetTitle') }}</h2>
+                <p class="text-2xs text-[var(--color-text-muted)] mt-0.5">{{ t('chat.sheetDesc') }}</p>
             </div>
         </template>
 
@@ -49,7 +49,7 @@ function selectCommand(cmd) {
             <template v-for="cat in categories" :key="cat">
                 <!-- Category heading -->
                 <div class="px-1 pt-3 pb-1.5">
-                    <p class="text-2xs font-black text-gray-600 uppercase tracking-[0.15em]">
+                    <p class="text-2xs font-black text-[var(--color-text-muted)] uppercase tracking-[0.15em]">
                         {{ categoryLabels[cat] ?? cat }}
                     </p>
                 </div>
@@ -64,18 +64,18 @@ function selectCommand(cmd) {
                         class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 active:bg-white/8 transition-colors text-left group"
                     >
                         <!-- Icon -->
-                        <AppIcon :icon="toLucide(cmd.icon)" class="w-5 h-5 shrink-0 text-purple-400" fallback="circle-help" />
+                        <AppIcon :icon="toLucide(cmd.icon)" class="w-5 h-5 shrink-0 text-[var(--color-brand)]" fallback="circle-help" />
 
                         <!-- Command + description -->
                         <div class="flex-1 min-w-0">
-                            <p class="text-sm font-bold text-white font-mono">{{ cmd.command }}</p>
-                            <p v-if="cmd.description" class="text-2xs text-gray-500 truncate mt-0.5">
+                            <p class="text-sm font-bold text-[var(--color-text-primary)] font-mono">{{ cmd.command }}</p>
+                            <p v-if="cmd.description" class="text-2xs text-[var(--color-text-muted)] truncate mt-0.5">
                                 {{ cmd.description }}
                             </p>
                         </div>
 
                         <!-- Arrow hint -->
-                        <svg class="w-4 h-4 text-gray-700 group-hover:text-gray-400 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <svg class="w-4 h-4 text-gray-700 group-hover:text-[var(--color-text-secondary)] transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
                         </svg>
                     </button>

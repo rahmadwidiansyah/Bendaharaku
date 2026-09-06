@@ -76,11 +76,11 @@ function select(wallet) {
                 :key="wallet.id"
                 type="button"
                 :disabled="loading || !!selectedId"
-                class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 focus:outline-none focus-visible:ring-1 focus-visible:ring-purple-400 disabled:opacity-50"
+                class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-brand)] disabled:opacity-50"
                 :class="[
                     selectedId === wallet.id
-                        ? 'bg-purple-600/40 text-purple-200 border border-purple-500/60 scale-95'
-                        : 'bg-white/6 text-gray-300 hover:bg-white/12 hover:text-white border border-white/8 hover:border-white/20'
+                        ? 'bg-[var(--color-brand)]/40 text-purple-200 border border-purple-500/60 scale-95'
+                        : 'bg-white/6 text-gray-300 hover:bg-white/12 hover:text-[var(--color-text-primary)] border border-[var(--color-border-subtle)] hover:border-white/20'
                 ]"
                 @click="select(wallet)"
             >

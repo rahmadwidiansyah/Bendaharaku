@@ -59,7 +59,7 @@ const handleSave = () => {
       >
         <Link
           :href="route('settings.ai.memory.manage')"
-          class="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2.5 bg-purple-600 text-white rounded-lg sm:rounded-xl hover:bg-purple-700 transition-colors font-medium text-sm"
+          class="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2.5 bg-[var(--color-brand)] text-[var(--color-text-primary)] rounded-lg sm:rounded-xl hover:bg-[var(--color-brand-hover)] transition-colors font-medium text-sm"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
@@ -73,7 +73,7 @@ const handleSave = () => {
         :title="t('settings.ai.memory.conversation_history.label')"
         :description="t('settings.ai.memory.conversation_history.description')"
       >
-        <div class="flex items-center justify-between px-3 py-1.5 sm:px-4 sm:py-2.5 bg-gray-900 rounded-lg sm:rounded-xl border border-gray-700">
+        <div class="flex items-center justify-between px-3 py-1.5 sm:px-4 sm:py-2.5 bg-[var(--color-surface-raised)] rounded-lg sm:rounded-xl border border-[var(--color-border-default)]">
           <span class="text-sm text-gray-300">
             {{ t('settings.ai.memory.conversation_history.enable') }}
           </span>
@@ -84,7 +84,7 @@ const handleSave = () => {
               class="sr-only peer"
               @change="handleSave"
             />
-            <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600" />
+            <div class="w-11 h-6 bg-[var(--color-surface-muted)] peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--color-brand)] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-brand)]" />
           </label>
         </div>
       </SettingsCard>

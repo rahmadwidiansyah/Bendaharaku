@@ -122,21 +122,21 @@ const ariaDescribedBy = computed(() => {
 })
 
 const baseInputClasses = computed(() => [
-    'w-full bg-gradient-to-br from-gray-900 to-gray-800',
-    'text-white rounded-xl transition-all duration-200',
+    'w-full bg-[var(--color-surface-raised)]',
+    'text-[var(--color-text-primary)] rounded-xl transition-all duration-200',
     'focus:outline-none focus:ring-1',
-    'placeholder-gray-600',
+    'placeholder:text-[var(--color-text-muted)]',
     'disabled:opacity-50 disabled:cursor-not-allowed',
     // Padding — date pakai py lebih kecil karena browser menambah native chrome
-    isDate.value ? 'px-4 py-3 text-sm' : 'p-4 text-sm',
+    isDate.value ? 'px-3 sm:px-4 py-2.5 sm:py-3 text-sm' : 'p-3 sm:p-4 text-sm',
     // Date input butuh color-scheme dark agar calendar picker dark
     isDate.value ? '[color-scheme:dark]' : '',
     // Padding kiri tambahan jika ada icon kiri
     props.$slots?.['icon-left'] ? 'pl-10' : '',
     // Error vs Normal border
     props.error
-        ? 'border border-red-500 focus:border-red-500 focus:ring-red-500'
-        : 'border border-white/10 focus:border-purple-500 focus:ring-purple-500',
+        ? 'border border-[var(--color-expense-text)] focus:border-[var(--color-expense-text)] focus:ring-[var(--color-expense-text)]'
+        : 'border border-[var(--color-border-default)] focus:border-[var(--color-brand)] focus:ring-[var(--color-brand)]',
 ].filter(Boolean).join(' '))
 
 const hasIconLeft = computed(() => false) // dihandle via slot check di template
@@ -150,7 +150,7 @@ const hasIconRight = computed(() => false)
             <!-- Icon kiri -->
             <div
                 v-if="$slots['icon-left']"
-                class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-500"
+                class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-[var(--color-text-muted)]"
                 aria-hidden="true"
             >
                 <slot name="icon-left" />
@@ -169,16 +169,16 @@ const hasIconRight = computed(() => false)
                 :aria-describedby="ariaDescribedBy"
                 :aria-required="required ? 'true' : undefined"
                 :class="[
-                    'w-full bg-gradient-to-br from-gray-900 to-gray-800',
-                    'text-white rounded-xl transition-all duration-200 resize-none',
+                    'w-full bg-[var(--color-surface-raised)]',
+                    'text-[var(--color-text-primary)] rounded-xl transition-all duration-200 resize-none',
                     'focus:outline-none focus:ring-1',
-                    'placeholder-gray-600',
+                    'placeholder:text-[var(--color-text-muted)]',
                     'disabled:opacity-50 disabled:cursor-not-allowed',
-                    'p-4 text-sm',
+                    'p-3 sm:p-4 text-sm',
                     $slots['icon-left'] ? 'pl-10' : '',
                     error
-                        ? 'border border-red-500 focus:border-red-500 focus:ring-red-500'
-                        : 'border border-white/10 focus:border-purple-500 focus:ring-purple-500',
+                        ? 'border border-[var(--color-expense-text)] focus:border-[var(--color-expense-text)] focus:ring-[var(--color-expense-text)]'
+                        : 'border border-[var(--color-border-default)] focus:border-[var(--color-brand)] focus:ring-[var(--color-brand)]',
                 ].filter(Boolean).join(' ')"
                 @input="$emit('update:modelValue', $event.target.value)"
                 v-bind="$attrs"
@@ -198,17 +198,17 @@ const hasIconRight = computed(() => false)
                 :aria-describedby="ariaDescribedBy"
                 :aria-required="required ? 'true' : undefined"
                 :class="[
-                    'w-full bg-gradient-to-br from-gray-900 to-gray-800',
-                    'text-white rounded-xl transition-all duration-200',
+                    'w-full bg-[var(--color-surface-raised)]',
+                    'text-[var(--color-text-primary)] rounded-xl transition-all duration-200',
                     'focus:outline-none focus:ring-1',
-                    'placeholder-gray-600',
+                    'placeholder:text-[var(--color-text-muted)]',
                     'disabled:opacity-50 disabled:cursor-not-allowed',
-                    type === 'date' ? 'px-4 py-3 text-sm [color-scheme:dark]' : 'p-4 text-sm',
+                    type === 'date' ? 'px-3 sm:px-4 py-2.5 sm:py-3 text-sm [color-scheme:dark]' : 'p-3 sm:p-4 text-sm',
                     $slots['icon-left'] ? 'pl-10' : '',
                     $slots['icon-right'] ? 'pr-10' : '',
                     error
-                        ? 'border border-red-500 focus:border-red-500 focus:ring-red-500'
-                        : 'border border-white/10 focus:border-purple-500 focus:ring-purple-500',
+                        ? 'border border-[var(--color-expense-text)] focus:border-[var(--color-expense-text)] focus:ring-[var(--color-expense-text)]'
+                        : 'border border-[var(--color-border-default)] focus:border-[var(--color-brand)] focus:ring-[var(--color-brand)]',
                 ].filter(Boolean).join(' ')"
                 @input="$emit('update:modelValue', $event.target.value)"
                 v-bind="$attrs"
@@ -217,7 +217,7 @@ const hasIconRight = computed(() => false)
             <!-- Icon kanan -->
             <div
                 v-if="$slots['icon-right']"
-                class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-gray-500"
+                class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-[var(--color-text-muted)]"
                 aria-hidden="true"
             >
                 <slot name="icon-right" />
@@ -228,7 +228,7 @@ const hasIconRight = computed(() => false)
         <p
             v-if="hint && !error"
             :id="hintId"
-            class="text-2xs text-gray-600 mt-1 ml-1"
+            class="text-2xs text-[var(--color-text-muted)] mt-1 ml-1"
         >
             {{ hint }}
         </p>
@@ -238,7 +238,7 @@ const hasIconRight = computed(() => false)
             v-if="error"
             :id="errorId"
             role="alert"
-            class="text-2xs text-red-400 mt-1 ml-1 font-bold"
+            class="text-2xs text-[var(--color-expense-text)] mt-1 ml-1 font-bold"
         >
             {{ error }}
         </p>

@@ -32,7 +32,7 @@ const hasAny = computed(() => latencyLabel.value || tokens.value !== null || mod
 <template>
   <div v-if="hasAny" class="flex items-center gap-1 flex-wrap min-w-0">
     <!-- Latency -->
-    <span v-if="latencyLabel" class="text-2xs text-gray-600 tabular-nums">{{ latencyLabel }}</span>
+    <span v-if="latencyLabel" class="text-2xs text-[var(--color-text-muted)] tabular-nums">{{ latencyLabel }}</span>
     
     <!-- Titik pemisah jika ada token & latency -->
     <span v-if="latencyLabel && tokens !== null" class="text-2xs text-gray-700">&bull;</span>

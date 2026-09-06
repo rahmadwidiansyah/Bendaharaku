@@ -199,19 +199,19 @@ watch(() => props.modelValue, (v) => {
         <!-- Header -->
         <template #header>
             <div>
-                <h2 class="text-sm font-bold text-white">{{ t('chat.evidenceReview.title') }}</h2>
-                <p class="text-2xs text-gray-500 mt-0.5">{{ t('chat.evidenceReview.subtitle') }}</p>
+                <h2 class="text-sm font-bold text-[var(--color-text-primary)]">{{ t('chat.evidenceReview.title') }}</h2>
+                <p class="text-2xs text-[var(--color-text-muted)] mt-0.5">{{ t('chat.evidenceReview.subtitle') }}</p>
             </div>
         </template>
 
         <!-- Content (scrollable) -->
         <div
-            class="overflow-y-auto w-full max-h-[calc(100dvh-240px)] border-t border-white/10 pt-3 space-y-4"
+            class="overflow-y-auto w-full max-h-[calc(100dvh-240px)] border-t border-[var(--color-border-default)] pt-3 space-y-4"
             style="padding-bottom: max(1rem, env(safe-area-inset-bottom, 1rem));"
         >
             <!-- Loading -->
             <div v-if="isLoading" class="flex items-center justify-center py-8">
-                <svg class="animate-spin w-6 h-6 text-purple-400" fill="none" viewBox="0 0 24 24">
+                <svg class="animate-spin w-6 h-6 text-[var(--color-brand)]" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                 </svg>
@@ -220,7 +220,7 @@ watch(() => props.modelValue, (v) => {
             <!-- Error -->
             <div v-else-if="error" class="text-center py-8">
                 <p class="text-expense-text text-sm">{{ error }}</p>
-                <button @click="fetchDraft" class="mt-3 text-purple-400 text-sm hover:underline">{{ t('chat.evidenceReview.retry') }}</button>
+                <button @click="fetchDraft" class="mt-3 text-[var(--color-brand)] text-sm hover:underline">{{ t('chat.evidenceReview.retry') }}</button>
             </div>
 
             <!-- Draft form -->
@@ -231,7 +231,7 @@ watch(() => props.modelValue, (v) => {
                         <span class="w-1.5 h-1.5 rounded-full" :class="getBadge(draft.confidence).text.replace('text-', 'bg-')" />
                         {{ confidenceLabel }} {{ Math.round(draft.confidence * 100) }}%
                     </span>
-                    <span v-if="evidence?.document_type" class="text-xs text-gray-500">{{ evidence.document_type }}</span>
+                    <span v-if="evidence?.document_type" class="text-xs text-[var(--color-text-muted)]">{{ evidence.document_type }}</span>
                 </div>
 
                 <!-- Warnings -->
@@ -242,7 +242,7 @@ watch(() => props.modelValue, (v) => {
                 <!-- Amount -->
                 <div>
                     <label class="flex items-center justify-between mb-1.5">
-                        <span class="text-xs font-semibold text-gray-400">{{ t('chat.evidenceReview.amount') }}</span>
+                        <span class="text-xs font-semibold text-[var(--color-text-secondary)]">{{ t('chat.evidenceReview.amount') }}</span>
                         <span :class="['text-2xs px-1.5 py-0.5 rounded', getBadge(draft.amount_confidence).bg, getBadge(draft.amount_confidence).text]">
                             {{ Math.round(draft.amount_confidence * 100) }}%
                         </span>
@@ -251,19 +251,19 @@ watch(() => props.modelValue, (v) => {
                         v-model.number="editForm.amount"
                         type="number"
                         @input="onFieldChange"
-                        class="w-full bg-gray-800 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/15"
+                        class="w-full bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-xl px-3 py-2.5 text-sm text-[var(--color-text-primary)] outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/15"
                     />
                 </div>
 
                 <!-- Transaction Type -->
                 <div>
                     <label class="flex items-center justify-between mb-1.5">
-                        <span class="text-xs font-semibold text-gray-400">{{ t('chat.evidenceReview.transactionType') }}</span>
+                        <span class="text-xs font-semibold text-[var(--color-text-secondary)]">{{ t('chat.evidenceReview.transactionType') }}</span>
                     </label>
                     <select
                         v-model="editForm.transaction_type"
                         @change="onFieldChange"
-                        class="w-full bg-gray-800 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/15"
+                        class="w-full bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-xl px-3 py-2.5 text-sm text-[var(--color-text-primary)] outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/15"
                     >
                         <option value="EXPENSE">{{ t('chat.evidenceReview.typeExpense') }}</option>
                         <option value="INCOME">{{ t('chat.evidenceReview.typeIncome') }}</option>
@@ -274,7 +274,7 @@ watch(() => props.modelValue, (v) => {
                 <!-- Wallet -->
                 <div>
                     <label class="flex items-center justify-between mb-1.5">
-                        <span class="text-xs font-semibold text-gray-400">{{ t('chat.evidenceReview.sourceWallet') }}</span>
+                        <span class="text-xs font-semibold text-[var(--color-text-secondary)]">{{ t('chat.evidenceReview.sourceWallet') }}</span>
                         <span :class="['text-2xs px-1.5 py-0.5 rounded', getBadge(draft.wallet_confidence).bg, getBadge(draft.wallet_confidence).text]">
                             {{ Math.round(draft.wallet_confidence * 100) }}%
                         </span>
@@ -282,7 +282,7 @@ watch(() => props.modelValue, (v) => {
                     <select
                         v-model="editForm.wallet_id"
                         @change="onFieldChange"
-                        class="w-full bg-gray-800 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/15"
+                        class="w-full bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-xl px-3 py-2.5 text-sm text-[var(--color-text-primary)] outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/15"
                     >
                         <option :value="null">{{ t('chat.evidenceReview.selectWallet') }}</option>
                         <option v-for="w in wallets" :key="w.id" :value="w.id">{{ w.name }}</option>
@@ -292,7 +292,7 @@ watch(() => props.modelValue, (v) => {
                 <!-- Date -->
                 <div>
                     <label class="flex items-center justify-between mb-1.5">
-                        <span class="text-xs font-semibold text-gray-400">{{ t('chat.evidenceReview.date') }}</span>
+                        <span class="text-xs font-semibold text-[var(--color-text-secondary)]">{{ t('chat.evidenceReview.date') }}</span>
                         <span :class="['text-2xs px-1.5 py-0.5 rounded', getBadge(draft.date_confidence).bg, getBadge(draft.date_confidence).text]">
                             {{ Math.round(draft.date_confidence * 100) }}%
                         </span>
@@ -302,20 +302,20 @@ watch(() => props.modelValue, (v) => {
                         type="text"
                         @input="onFieldChange"
                         placeholder="YYYY-MM-DD HH:mm"
-                        class="w-full bg-gray-800 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/15"
+                        class="w-full bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-xl px-3 py-2.5 text-sm text-[var(--color-text-primary)] placeholder-gray-600 outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/15"
                     />
                 </div>
 
                 <!-- Description -->
                 <div>
                     <label class="flex items-center justify-between mb-1.5">
-                        <span class="text-xs font-semibold text-gray-400">{{ t('chat.evidenceReview.description') }}</span>
+                        <span class="text-xs font-semibold text-[var(--color-text-secondary)]">{{ t('chat.evidenceReview.description') }}</span>
                     </label>
                     <input
                         v-model="editForm.description"
                         type="text"
                         @input="onFieldChange"
-                        class="w-full bg-gray-800 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/15"
+                        class="w-full bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-xl px-3 py-2.5 text-sm text-[var(--color-text-primary)] placeholder-gray-600 outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/15"
                     />
                 </div>
 
@@ -323,7 +323,7 @@ watch(() => props.modelValue, (v) => {
                 <template v-if="editForm.transaction_type === 'TRANSFER' || editForm.transaction_type === 'INTERNAL_TRANSFER'">
                     <div>
                         <label class="flex items-center justify-between mb-1.5">
-                            <span class="text-xs font-semibold text-gray-400">{{ t('chat.evidenceReview.destinationName') }}</span>
+                            <span class="text-xs font-semibold text-[var(--color-text-secondary)]">{{ t('chat.evidenceReview.destinationName') }}</span>
                             <span :class="['text-2xs px-1.5 py-0.5 rounded', getBadge(draft.destination_name_confidence).bg, getBadge(draft.destination_name_confidence).text]">
                                 {{ Math.round(draft.destination_name_confidence * 100) }}%
                             </span>
@@ -332,12 +332,12 @@ watch(() => props.modelValue, (v) => {
                             v-model="editForm.destination_name"
                             type="text"
                             @input="onFieldChange"
-                            class="w-full bg-gray-800 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/15"
+                            class="w-full bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-xl px-3 py-2.5 text-sm text-[var(--color-text-primary)] placeholder-gray-600 outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/15"
                         />
                     </div>
                     <div>
                         <label class="flex items-center justify-between mb-1.5">
-                            <span class="text-xs font-semibold text-gray-400">{{ t('chat.evidenceReview.destinationAccount') }}</span>
+                            <span class="text-xs font-semibold text-[var(--color-text-secondary)]">{{ t('chat.evidenceReview.destinationAccount') }}</span>
                             <span :class="['text-2xs px-1.5 py-0.5 rounded', getBadge(draft.destination_account_confidence).bg, getBadge(draft.destination_account_confidence).text]">
                                 {{ Math.round(draft.destination_account_confidence * 100) }}%
                             </span>
@@ -346,7 +346,7 @@ watch(() => props.modelValue, (v) => {
                             v-model="editForm.destination_account"
                             type="text"
                             @input="onFieldChange"
-                            class="w-full bg-gray-800 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/15"
+                            class="w-full bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-xl px-3 py-2.5 text-sm text-[var(--color-text-primary)] placeholder-gray-600 outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/15"
                         />
                     </div>
                 </template>
@@ -354,7 +354,7 @@ watch(() => props.modelValue, (v) => {
                 <!-- Reference Number (read-only) -->
                 <div v-if="draft.reference_number">
                     <label class="flex items-center justify-between mb-1.5">
-                        <span class="text-xs font-semibold text-gray-400">{{ t('chat.evidenceReview.referenceNumber') }}</span>
+                        <span class="text-xs font-semibold text-[var(--color-text-secondary)]">{{ t('chat.evidenceReview.referenceNumber') }}</span>
                         <span :class="['text-2xs px-1.5 py-0.5 rounded', getBadge(draft.reference_confidence).bg, getBadge(draft.reference_confidence).text]">
                             {{ Math.round(draft.reference_confidence * 100) }}%
                         </span>
@@ -363,7 +363,7 @@ watch(() => props.modelValue, (v) => {
                         :value="draft.reference_number"
                         type="text"
                         readonly
-                        class="w-full bg-gray-800/50 border border-white/5 rounded-xl px-3 py-2.5 text-sm text-gray-500 cursor-not-allowed"
+                        class="w-full bg-[var(--color-surface-muted)]/50 border border-white/5 rounded-xl px-3 py-2.5 text-sm text-[var(--color-text-muted)] cursor-not-allowed"
                     />
                 </div>
             </template>
@@ -375,7 +375,7 @@ watch(() => props.modelValue, (v) => {
                 <button
                     @click="cancelDraft"
                     :disabled="isCommitting"
-                    class="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-400 bg-gray-800 border border-white/10 hover:bg-gray-700 transition-colors disabled:opacity-50"
+                    class="flex-1 py-2.5 rounded-xl text-sm font-semibold text-[var(--color-text-secondary)] bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] hover:bg-gray-700 transition-colors disabled:opacity-50"
                 >
                     {{ t('chat.evidenceReview.cancel') }}
                 </button>
@@ -383,14 +383,14 @@ watch(() => props.modelValue, (v) => {
                     v-if="isDirty"
                     @click="saveDraft"
                     :disabled="isSaving"
-                    class="flex-1 py-2.5 rounded-xl text-sm font-bold text-purple-400 bg-purple-500/10 border border-purple-500/30 hover:bg-purple-500/20 transition-colors disabled:opacity-50"
+                    class="flex-1 py-2.5 rounded-xl text-sm font-bold text-[var(--color-brand)] bg-purple-500/10 border border-[var(--color-brand-border)] hover:bg-purple-500/20 transition-colors disabled:opacity-50"
                 >
                     {{ isSaving ? t('chat.evidenceReview.saving') : t('chat.evidenceReview.save') }}
                 </button>
                 <button
                     @click="commitTransaction"
                     :disabled="isCommitting"
-                    class="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-purple-600 hover:bg-purple-500 shadow-lg shadow-purple-600/25 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    class="flex-1 py-2.5 rounded-xl text-sm font-bold text-[var(--color-text-primary)] bg-[var(--color-brand)] hover:bg-purple-500 shadow-lg shadow-purple-600/25 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                     <svg v-if="isCommitting" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>

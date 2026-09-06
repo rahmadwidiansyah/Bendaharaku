@@ -67,8 +67,8 @@ onUnmounted(() => document.removeEventListener('keydown', handleGlobalKey))
             type="button"
             class="relative flex items-center justify-center shrink-0 rounded-2xl
                    active:scale-90 transition-transform duration-150
-                   focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400
-                   focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900"
+                   focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]
+                   focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface-base)]"
             style="width: 44px; height: 44px;"
             aria-label="Cari (Ctrl+K)"
             @click="openSearch"

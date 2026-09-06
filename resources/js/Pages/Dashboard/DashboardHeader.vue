@@ -63,10 +63,10 @@ const closeOnEscape = (e) => {
     <header class="flex justify-between items-center mb-6 pt-4 animate-fade-in-up">
         <!-- Greeting + nama user -->
         <div>
-            <p class="text-2xs text-purple-500 font-black uppercase tracking-[0.3em] mb-0.5 opacity-80">
+            <p class="text-2xs text-[var(--color-brand)] font-black uppercase tracking-[0.3em] mb-0.5 opacity-80">
                 Hello
             </p>
-            <h1 class="text-2xl font-black text-white tracking-tight leading-none">
+            <h1 class="text-2xl font-black text-[var(--color-text-primary)] tracking-tight leading-none">
                 {{ user?.name }}
             </h1>
             <div class="flex items-center gap-2 mt-1">
@@ -108,11 +108,11 @@ const closeOnEscape = (e) => {
             <div
                 role="menu"
                 :style="{ top: `${profileMenuPosition.top}px`, right: `${profileMenuPosition.right}px` }"
-                class="absolute w-[calc(100vw-2rem)] max-w-72 overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-gray-900 to-gray-800 p-1.5 shadow-2xl shadow-black/70 animate-pop-in sm:w-64"
+                class="absolute w-[calc(100vw-2rem)] max-w-72 overflow-hidden rounded-xl border border-[var(--color-border-default)] bg-gradient-to-br from-gray-900 to-gray-800 p-1.5 shadow-2xl shadow-black/70 animate-pop-in sm:w-64"
             >
                 <!-- User info -->
-                <div class="px-3 py-2.5 border-b border-white/10 mb-1">
-                    <p class="text-sm font-bold text-white truncate">{{ user?.name }}</p>
+                <div class="px-3 py-2.5 border-b border-[var(--color-border-default)] mb-1">
+                    <p class="text-sm font-bold text-[var(--color-text-primary)] truncate">{{ user?.name }}</p>
                     <p class="text-2xs text-gray-500 truncate">{{ user?.email }}</p>
                 </div>
 
@@ -120,7 +120,7 @@ const closeOnEscape = (e) => {
                 <Link
                     :href="route('settings.account.profile')"
                     role="menuitem"
-                    class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-bold text-gray-300 transition-colors hover:bg-white/5 hover:text-white focus:outline-none focus-visible:ring-1 focus-visible:ring-purple-400"
+                    class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-bold text-gray-300 transition-colors hover:bg-white/5 hover:text-[var(--color-text-primary)] focus:outline-none focus-visible:ring-1 focus-visible:ring-purple-400"
                     @click="showProfileMenu = false"
                 >
                     <svg class="w-4 h-4 text-purple-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -132,7 +132,7 @@ const closeOnEscape = (e) => {
                 <Link
                     :href="route('settings.index')"
                     role="menuitem"
-                    class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-bold text-gray-300 transition-colors hover:bg-white/5 hover:text-white focus:outline-none focus-visible:ring-1 focus-visible:ring-purple-400"
+                    class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-bold text-gray-300 transition-colors hover:bg-white/5 hover:text-[var(--color-text-primary)] focus:outline-none focus-visible:ring-1 focus-visible:ring-purple-400"
                     @click="showProfileMenu = false"
                 >
                     <svg class="w-4 h-4 text-blue-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">

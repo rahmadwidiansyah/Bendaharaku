@@ -19,8 +19,8 @@ defineProps({
 </script>
 
 <template>
-    <div class="flex items-center justify-between gap-4 py-4">
-        <span class="shrink-0 text-2xs font-bold text-gray-500 uppercase tracking-[0.2em]">{{ label }}</span>
+    <div class="flex items-center justify-between gap-3 sm:gap-4 py-3 sm:py-4">
+        <span class="shrink-0 text-2xs font-bold text-[var(--color-text-muted)] uppercase tracking-[0.2em]">{{ label }}</span>
         <div class="min-w-0 text-right">
             <slot />
         </div>

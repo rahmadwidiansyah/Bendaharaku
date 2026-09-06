@@ -48,7 +48,7 @@ const props = defineProps({
 })
 
 const linkClasses = computed(() => {
-    const base = 'flex items-center gap-1 transition-all duration-300 group focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900 rounded-xl'
+    const base = 'flex items-center gap-1 transition-all duration-300 group focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface-base)] rounded-xl'
 
     if (props.isDesktop) {
         const desktopBase = 'flex-row w-full px-3 py-2.5'

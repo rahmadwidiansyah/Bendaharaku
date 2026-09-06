@@ -89,8 +89,8 @@ defineExpose({ el: containerRef })
                 <button
                     type="button"
                     class="flex items-center gap-2 px-4 py-2 rounded-full
-                           bg-gray-800/80 border border-white/10 text-xs font-semibold
-                           text-gray-400 hover:text-white hover:bg-gray-700/80
+                           bg-[var(--color-surface-muted)]/80 border border-[var(--color-border-default)] text-xs font-semibold
+                           text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-gray-700/80
                            hover:border-white/20 active:scale-95
                            transition-all duration-150 shadow-sm"
                     @click="emit('loadMore')"
@@ -107,7 +107,7 @@ defineExpose({ el: containerRef })
 
         <!-- Loading indicator saat sedang fetch -->
         <div v-if="isLoadingMore" class="flex justify-center py-3">
-            <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-800/60 border border-white/8 text-2xs text-gray-500">
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-surface-muted)]/60 border border-[var(--color-border-subtle)] text-2xs text-[var(--color-text-muted)]">
                 <svg class="animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>

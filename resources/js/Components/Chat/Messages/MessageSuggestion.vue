@@ -30,7 +30,7 @@ function handleClick() {
     <button
         type="button"
         @click="handleClick"
-        class="w-full text-left px-3 py-2 mt-0.5 rounded-xl bg-white/4 border border-white/8 text-sm text-gray-300 hover:text-white hover:border-white/16 hover:bg-white/8 transition-all active:scale-[0.98] cursor-pointer"
+        class="w-full text-left px-3 py-2 mt-0.5 rounded-xl bg-white/4 border border-[var(--color-border-subtle)] text-sm text-gray-300 hover:text-[var(--color-text-primary)] hover:border-white/16 hover:bg-white/8 transition-all active:scale-[0.98] cursor-pointer"
     >
         {{ component.message }}
     </button>

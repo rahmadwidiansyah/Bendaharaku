@@ -125,7 +125,7 @@ onUnmounted(() => document.removeEventListener('click', closePhotoMenu));
         <div class="flex flex-col items-center py-2 sm:py-4">
           <div ref="photoMenuRef" class="relative">
             <button type="button" @click="togglePhotoMenu" class="outline-none">
-              <div class="w-28 h-28 sm:w-36 sm:h-36 rounded-full ring-2 ring-purple-500/30 shadow-lg shadow-purple-900/20 overflow-hidden transition-all hover:ring-purple-500/70 active:scale-95 bg-gray-800 flex items-center justify-center">
+              <div class="w-28 h-28 sm:w-36 sm:h-36 rounded-full ring-2 ring-purple-500/30 shadow-lg shadow-purple-900/20 overflow-hidden transition-all hover:ring-purple-500/70 active:scale-95 bg-[var(--color-surface-muted)] flex items-center justify-center">
                 <img
                   v-if="botAvatarUrl"
                   :src="botAvatarUrl"
@@ -137,9 +137,9 @@ onUnmounted(() => document.removeEventListener('click', closePhotoMenu));
             </button>
             <div
               v-if="showPhotoMenu"
-              class="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-44 bg-gray-800 border border-white/10 rounded-xl shadow-xl shadow-black/50 overflow-hidden z-10"
+              class="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-44 bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-xl shadow-xl shadow-black/50 overflow-hidden z-10"
             >
-              <button type="button" @click="openCropModal" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-white hover:bg-white/10 transition-colors">
+              <button type="button" @click="openCropModal" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-[var(--color-text-primary)] hover:bg-white/10 transition-colors">
                 <svg class="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
@@ -165,26 +165,26 @@ onUnmounted(() => document.removeEventListener('click', closePhotoMenu));
               v-model="form.bot_name"
               type="text"
               :placeholder="t('settings.ai.bot.name.placeholder')"
-              class="w-full px-3 py-1.5 sm:px-4 sm:py-2.5 bg-gray-800 border border-gray-700 rounded-lg sm:rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-all text-sm"
+              class="w-full px-3 py-1.5 sm:px-4 sm:py-2.5 bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-lg sm:rounded-xl text-[var(--color-text-primary)] placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-all text-sm"
             />
 
             <!-- Name Suggestion Chips -->
             <div class="space-y-2">
-              <p class="text-2xs text-gray-500 font-medium">{{ t('settings.ai.bot.name.suggestions') }}</p>
+              <p class="text-2xs text-[var(--color-text-muted)] font-medium">{{ t('settings.ai.bot.name.suggestions') }}</p>
               <div class="flex flex-wrap gap-1.5">
                 <button
                   v-for="name in suggestedNames"
                   :key="name"
                   type="button"
                   @click="form.bot_name = name"
-                  class="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-gray-800 border border-white/8 text-2xs sm:text-xs text-gray-300 hover:text-white hover:border-purple-500/50 hover:bg-purple-500/10 transition-all cursor-pointer"
+                  class="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-[var(--color-surface-muted)] border border-white/8 text-2xs sm:text-xs text-gray-300 hover:text-[var(--color-text-primary)] hover:border-purple-500/50 hover:bg-purple-500/10 transition-all cursor-pointer"
                 >
                   {{ name }}
                 </button>
               </div>
             </div>
 
-            <p class="text-2xs text-gray-400">
+            <p class="text-2xs text-[var(--color-text-secondary)]">
               {{ t('settings.ai.bot.name.hint') }}
             </p>
           </div>
@@ -195,7 +195,7 @@ onUnmounted(() => document.removeEventListener('click', closePhotoMenu));
           <button
             type="submit"
             :disabled="form.processing"
-            class="px-4 py-2 sm:px-6 sm:py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-lg sm:rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-purple-900/20"
+            class="px-4 py-2 sm:px-6 sm:py-3 bg-[var(--color-brand)] hover:bg-[var(--color-brand-hover)] disabled:bg-[var(--color-surface-muted)] disabled:cursor-not-allowed text-[var(--color-text-primary)] rounded-lg sm:rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-purple-900/20"
           >
             <span v-if="form.processing" class="flex items-center gap-2">
               <svg class="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">

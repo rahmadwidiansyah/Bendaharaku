@@ -52,15 +52,15 @@ const sourceInfo = computed(() => {
     const ref = props.transaction?.reference_number ?? ''
     const prefix = ref.split('-')[0] ?? ''
     const map = {
-        'WEB': { label: t('chat.source.web'),       icon: 'message-circle', color: 'text-purple-400' },
+        'WEB': { label: t('chat.source.web'),       icon: 'message-circle', color: 'text-[var(--color-brand)]' },
         'TEL': { label: t('chat.source.telegram'),  icon: 'send',           color: 'text-blue-400' },
         'WA':  { label: t('chat.source.whatsapp'),  icon: 'smartphone',     color: 'text-emerald-400' },
         'DSC': { label: t('chat.source.discord'),   icon: 'gamepad-2',      color: 'text-indigo-400' },
         'API': { label: t('chat.source.api'),       icon: 'zap',            color: 'text-yellow-400' },
         'IMP': { label: t('chat.source.import'),    icon: 'folder-down',    color: 'text-orange-400' },
-        'MNL': { label: t('chat.source.manual'),    icon: 'pencil',         color: 'text-gray-400' },
+        'MNL': { label: t('chat.source.manual'),    icon: 'pencil',         color: 'text-[var(--color-text-secondary)]' },
     }
-    return map[prefix] ?? { label: t('chat.source.dashboard'), icon: 'globe', color: 'text-gray-400' }
+    return map[prefix] ?? { label: t('chat.source.dashboard'), icon: 'globe', color: 'text-[var(--color-text-secondary)]' }
 })
 
 function formatDateTime(dt) {
@@ -112,7 +112,7 @@ const intentLabel = computed(() => {
 
 const parseStatus = computed(() =>
     props.transaction?.is_cancelled
-        ? { label: t('transaction.cancelled'), color: 'text-gray-400' }
+        ? { label: t('transaction.cancelled'), color: 'text-[var(--color-text-secondary)]' }
         : props.transaction?.is_cleared
         ? { label: t('chatTransaction.aiParsed'), color: 'text-income-text' }
         : { label: t('transaction.draft'), color: 'text-debt-text' }
@@ -160,19 +160,19 @@ async function confirmDeleteTransaction() {
         <!-- Header -->
         <template #header>
             <div>
-                <h2 class="text-sm font-bold text-white">{{ $t('transaction.detail.title') }}</h2>
-                <p class="text-2xs text-gray-500 mt-0.5">{{ parseStatus.label }}</p>
+                <h2 class="text-sm font-bold text-[var(--color-text-primary)]">{{ $t('transaction.detail.title') }}</h2>
+                <p class="text-2xs text-[var(--color-text-muted)] mt-0.5">{{ parseStatus.label }}</p>
             </div>
         </template>
 
         <!-- Scrollable content -->
-        <div class="overflow-y-auto w-full max-h-[calc(100dvh-240px)] border-t border-white/10">
+        <div class="overflow-y-auto w-full max-h-[calc(100dvh-240px)] border-t border-[var(--color-border-default)]">
 
             <!-- ID Transaksi -->
             <div class="py-3">
-                <p class="text-2xs text-gray-500 mb-1">{{ $t('transaction.detail.transactionId') }}</p>
+                <p class="text-2xs text-[var(--color-text-muted)] mb-1">{{ $t('transaction.detail.transactionId') }}</p>
                 <div class="flex items-center gap-2">
-                    <code class="text-xs font-mono text-white bg-gray-800 px-2.5 py-1 rounded-lg border border-white/10 flex-1 truncate">
+                    <code class="text-xs font-mono text-[var(--color-text-primary)] bg-[var(--color-surface-muted)] px-2.5 py-1 rounded-lg border border-[var(--color-border-default)] flex-1 truncate">
                         {{ transaction.reference_number ?? transaction.id ?? '-' }}
                     </code>
                     <button
@@ -180,7 +180,7 @@ async function confirmDeleteTransaction() {
                         class="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-lg text-2xs border transition-all"
                         :class="copySuccess
                             ? 'bg-income-bg border-income-border text-income-text'
-                            : 'bg-gray-800 border-white/10 text-gray-400 hover:text-white hover:border-white/20'"
+                            : 'bg-[var(--color-surface-muted)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-white/20'"
                     >
                         <svg v-if="!copySuccess" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
@@ -199,7 +199,7 @@ async function confirmDeleteTransaction() {
                 <div class="flex items-center gap-3 py-2.5">
                     <AppIcon :icon="sourceInfo.icon" class="w-5 h-5 shrink-0" :class="sourceInfo.color" />
                     <div class="flex-1">
-                        <p class="text-2xs text-gray-500">{{ $t('chatTransaction.recordedFrom') }}</p>
+                        <p class="text-2xs text-[var(--color-text-muted)]">{{ $t('chatTransaction.recordedFrom') }}</p>
                         <p :class="['text-sm font-medium', sourceInfo.color]">{{ sourceInfo.label }}</p>
                     </div>
                 </div>
@@ -207,31 +207,31 @@ async function confirmDeleteTransaction() {
                 <div v-if="intentLabel" class="flex items-center gap-3 py-2.5">
                     <AppIcon icon="target" class="w-5 h-5 shrink-0 text-violet-400" />
                     <div class="flex-1">
-                        <p class="text-2xs text-gray-500">{{ $t('chatTransaction.intent.label') }}</p>
-                        <p class="text-sm font-medium text-white">{{ intentLabel }}</p>
+                        <p class="text-2xs text-[var(--color-text-muted)]">{{ $t('chatTransaction.intent.label') }}</p>
+                        <p class="text-sm font-medium text-[var(--color-text-primary)]">{{ intentLabel }}</p>
                     </div>
                 </div>
 
                 <div v-if="modelLabel" class="flex items-center gap-3 py-2.5">
                     <AppIcon icon="bot" class="w-5 h-5 shrink-0 text-sky-400" />
                     <div class="flex-1">
-                        <p class="text-2xs text-gray-500">{{ $t('chatTransaction.processedBy') }}</p>
-                        <p class="text-sm font-medium text-white">{{ modelLabel }}</p>
+                        <p class="text-2xs text-[var(--color-text-muted)]">{{ $t('chatTransaction.processedBy') }}</p>
+                        <p class="text-sm font-medium text-[var(--color-text-primary)]">{{ modelLabel }}</p>
                     </div>
                 </div>
 
                 <div v-if="latencyLabel" class="flex items-center gap-3 py-2.5">
                     <AppIcon icon="clock-3" class="w-5 h-5 shrink-0 text-amber-400" />
                     <div class="flex-1">
-                        <p class="text-2xs text-gray-500">{{ $t('chatTransaction.processingDuration') }}</p>
-                        <p class="text-sm font-medium text-white">{{ latencyLabel }}</p>
+                        <p class="text-2xs text-[var(--color-text-muted)]">{{ $t('chatTransaction.processingDuration') }}</p>
+                        <p class="text-sm font-medium text-[var(--color-text-primary)]">{{ latencyLabel }}</p>
                     </div>
                 </div>
 
                 <div v-if="confidenceLabel" class="flex items-center gap-3 py-2.5">
-                    <AppIcon icon="bar-chart-3" class="w-5 h-5 shrink-0 text-purple-400" />
+                    <AppIcon icon="bar-chart-3" class="w-5 h-5 shrink-0 text-[var(--color-brand)]" />
                     <div class="flex-1">
-                        <p class="text-2xs text-gray-500">{{ $t('chatTransaction.aiConfidence') }}</p>
+                        <p class="text-2xs text-[var(--color-text-muted)]">{{ $t('chatTransaction.aiConfidence') }}</p>
                         <p :class="['text-sm font-medium', confidenceLabel.color]">
                             {{ confidenceLabel.pct }}% &mdash; {{ confidenceLabel.level }}
                         </p>
@@ -241,7 +241,7 @@ async function confirmDeleteTransaction() {
                 <div class="flex items-center gap-3 py-2.5">
                     <AppIcon icon="check" class="w-5 h-5 shrink-0 text-emerald-400" />
                     <div class="flex-1">
-                        <p class="text-2xs text-gray-500">{{ $t('common.status') }}</p>
+                        <p class="text-2xs text-[var(--color-text-muted)]">{{ $t('common.status') }}</p>
                         <p :class="['text-sm font-medium', parseStatus.color]">{{ parseStatus.label }}</p>
                     </div>
                 </div>
@@ -249,8 +249,8 @@ async function confirmDeleteTransaction() {
                 <div v-if="transaction.date || transaction.created_at" class="flex items-center gap-3 py-2.5">
                     <AppIcon icon="calendar" class="w-5 h-5 shrink-0 text-blue-400" />
                     <div class="flex-1">
-                        <p class="text-2xs text-gray-500">{{ $t('chatTransaction.transactionTime') }}</p>
-                        <p class="text-sm font-medium text-white">
+                        <p class="text-2xs text-[var(--color-text-muted)]">{{ $t('chatTransaction.transactionTime') }}</p>
+                        <p class="text-sm font-medium text-[var(--color-text-primary)]">
                             {{ formatDateTime(transaction.created_at ?? transaction.date) }}
                         </p>
                     </div>
@@ -258,7 +258,7 @@ async function confirmDeleteTransaction() {
             </div>
 
             <!-- Accordions -->
-            <div class="border-t border-white/10 mt-1">
+            <div class="border-t border-[var(--color-border-default)] mt-1">
 
                 <!-- Raw Prompt -->
                 <div v-if="metadata?.raw_prompt" class="border-b border-white/5">
@@ -267,15 +267,15 @@ async function confirmDeleteTransaction() {
                         class="w-full flex items-center justify-between py-3 text-left hover:bg-white/3 transition-colors"
                     >
                         <div class="flex items-center gap-2">
-                            <AppIcon icon="message-square" class="w-4 h-4 shrink-0 text-gray-500" />
-                            <span class="text-sm text-gray-400 font-medium">{{ $t('chatTransaction.rawPrompt') }}</span>
+                            <AppIcon icon="message-square" class="w-4 h-4 shrink-0 text-[var(--color-text-muted)]" />
+                            <span class="text-sm text-[var(--color-text-secondary)] font-medium">{{ $t('chatTransaction.rawPrompt') }}</span>
                         </div>
-                        <svg :class="['w-4 h-4 text-gray-600 transition-transform', openAccordion === 'prompt' ? 'rotate-180' : '']" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <svg :class="['w-4 h-4 text-[var(--color-text-muted)] transition-transform', openAccordion === 'prompt' ? 'rotate-180' : '']" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
                         </svg>
                     </button>
                     <div v-if="openAccordion === 'prompt'" class="pb-4">
-                        <div class="text-xs text-gray-300 bg-gray-950 rounded-xl p-3 border border-white/10 whitespace-pre-wrap break-words leading-relaxed">{{ metadata.raw_prompt }}</div>
+                        <div class="text-xs text-gray-300 bg-[var(--color-surface-overlay)] rounded-xl p-3 border border-[var(--color-border-default)] whitespace-pre-wrap break-words leading-relaxed">{{ metadata.raw_prompt }}</div>
                     </div>
                 </div>
 
@@ -286,15 +286,15 @@ async function confirmDeleteTransaction() {
                         class="w-full flex items-center justify-between py-3 text-left hover:bg-white/3 transition-colors"
                     >
                         <div class="flex items-center gap-2">
-                            <AppIcon icon="code-2" class="w-4 h-4 shrink-0 text-gray-500" />
-                            <span class="text-sm text-gray-400 font-medium">JSON Metadata</span>
+                            <AppIcon icon="code-2" class="w-4 h-4 shrink-0 text-[var(--color-text-muted)]" />
+                            <span class="text-sm text-[var(--color-text-secondary)] font-medium">JSON Metadata</span>
                         </div>
-                        <svg :class="['w-4 h-4 text-gray-600 transition-transform', openAccordion === 'json' ? 'rotate-180' : '']" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <svg :class="['w-4 h-4 text-[var(--color-text-muted)] transition-transform', openAccordion === 'json' ? 'rotate-180' : '']" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
                         </svg>
                     </button>
                     <div v-if="openAccordion === 'json'" class="pb-4">
-                        <pre class="text-2xs font-mono text-gray-400 bg-gray-950 rounded-xl p-3 overflow-x-auto border border-white/10 max-h-48 overflow-y-auto">{{ jsonMeta }}</pre>
+                        <pre class="text-2xs font-mono text-[var(--color-text-secondary)] bg-[var(--color-surface-overlay)] rounded-xl p-3 overflow-x-auto border border-[var(--color-border-default)] max-h-48 overflow-y-auto">{{ jsonMeta }}</pre>
                     </div>
                 </div>
             </div>
@@ -305,7 +305,7 @@ async function confirmDeleteTransaction() {
             <Link
                 v-if="!transaction.is_cancelled"
                 :href="route('transactions.edit', { transaction: transaction.id })"
-                class="w-9 h-9 rounded-xl bg-gray-800 border border-white/10 text-gray-400 hover:text-white hover:bg-gray-700 transition-all flex items-center justify-center"
+                class="w-9 h-9 rounded-xl bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-gray-700 transition-all flex items-center justify-center"
                 :title="$t('common.edit')"
             >
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.3">
@@ -317,7 +317,7 @@ async function confirmDeleteTransaction() {
                 type="button"
                 :disabled="isDeleting"
                 @click="deleteTransaction"
-                class="w-9 h-9 rounded-xl bg-gray-800 border border-white/10 text-gray-400 hover:text-expense-text hover:bg-expense-bg-hover hover:border-expense-border transition-all flex items-center justify-center disabled:opacity-50"
+                class="w-9 h-9 rounded-xl bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-expense-text hover:bg-expense-bg-hover hover:border-expense-border transition-all flex items-center justify-center disabled:opacity-50"
                 :title="$t('common.delete')"
             >
                 <svg v-if="!isDeleting" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.3">
@@ -330,7 +330,7 @@ async function confirmDeleteTransaction() {
             </button>
             <button
                 @click="close"
-                class="flex-1 py-2.5 rounded-xl bg-gray-800 border border-white/10 text-sm text-gray-300 hover:text-white hover:bg-gray-700 transition-all font-medium"
+                class="flex-1 py-2.5 rounded-xl bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] text-sm text-gray-300 hover:text-[var(--color-text-primary)] hover:bg-gray-700 transition-all font-medium"
             >
                 {{ $t('common.close') }}
             </button>

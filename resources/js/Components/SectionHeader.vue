@@ -77,9 +77,9 @@ const props = defineProps({
 })
 
 const headingSizeClasses = computed(() => ({
-    sm: 'text-xl  font-black text-white tracking-tight leading-none',
-    md: 'text-2xl font-black text-white tracking-tight leading-none',
-    lg: 'text-3xl font-black text-white tracking-tighter leading-none',
+    sm: 'text-lg sm:text-xl font-black text-[var(--color-text-primary)] tracking-tight leading-none',
+    md: 'text-xl sm:text-2xl font-black text-[var(--color-text-primary)] tracking-tight leading-none',
+    lg: 'text-2xl sm:text-3xl font-black text-[var(--color-text-primary)] tracking-tighter leading-none',
 }[props.size]))
 </script>
 
@@ -90,11 +90,11 @@ const headingSizeClasses = computed(() => ({
             <!-- Subtitle -->
             <p
                 v-if="subtitle"
-                class="flex items-center gap-1.5 text-2xs text-purple-500 font-black uppercase tracking-[0.3em] mb-1 opacity-80"
+                class="flex items-center gap-1.5 text-2xs text-[var(--color-brand)] font-black uppercase tracking-[0.3em] mb-1 opacity-80"
             >
                 <span
                     v-if="dot"
-                    class="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0"
+                    class="w-1.5 h-1.5 rounded-full bg-[var(--color-brand)] shrink-0"
                     aria-hidden="true"
                 />
                 {{ subtitle }}

@@ -25,7 +25,7 @@ const label = computed(() => {
 <template>
     <span
         v-if="label"
-        class="text-2xs text-gray-600 tabular-nums"
+        class="text-2xs text-[var(--color-text-muted)] tabular-nums"
         :title="`${tokens} token`"
     >{{ label }}</span>
 </template>

@@ -25,7 +25,7 @@ const close  = () => { isOpen.value = false }
     -->
     <div
         :class="[
-            'fixed bottom-[4.5rem] left-1/2 -translate-x-1/2 w-full max-w-md px-4 z-40 pointer-events-none',
+            'fixed bottom-[4.5rem] sm:bottom-20 left-1/2 -translate-x-1/2 w-full max-w-sm sm:max-w-md px-3 sm:px-4 z-40 pointer-events-none',
             isDesktopLayout ? 'lg:hidden' : '',
         ]"
     >
@@ -66,10 +66,9 @@ const close  = () => { isOpen.value = false }
                     rel="noopener noreferrer"
                     @click="close"
                     aria-label="Catat via Telegram AI Bot"
-                    class="pointer-events-auto w-full flex items-center gap-4 px-5 py-4 rounded-2xl active:scale-95 transition-transform"
+                    class="pointer-events-auto w-full flex items-center gap-4 px-4 sm:px-5 py-3.5 sm:py-4 rounded-2xl active:scale-95 transition-transform"
                     style="background-color: #2AABEE; box-shadow: 0 8px 24px rgba(42,171,238,0.35);"
                     >
-                >
                     <span class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(255,255,255,0.2);">
                         <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.223-.548.223l.188-2.85 5.18-4.68c.223-.198-.054-.31-.346-.11l-6.4 4.02-2.76-.89c-.6-.188-.612-.6.126-.89l10.814-4.17c.5-.188.948.116.822.885z" />
@@ -99,7 +98,7 @@ const close  = () => { isOpen.value = false }
                     :href="route('transactions.create')"
                     @click="close"
                     aria-label="Catat transaksi manual"
-                    class="pointer-events-auto w-full flex items-center gap-4 px-5 py-4 rounded-2xl active:scale-95 transition-transform bg-gradient-to-br from-brand-deep to-brand-soft shadow-lg shadow-purple-500/30"
+                    class="pointer-events-auto w-full flex items-center gap-4 px-4 sm:px-5 py-3.5 sm:py-4 rounded-2xl active:scale-95 transition-transform bg-gradient-to-br from-brand-deep to-brand-soft shadow-lg shadow-purple-500/30"
                 >
                     <span class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(255,255,255,0.2);">
                         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5" aria-hidden="true">
@@ -124,9 +123,9 @@ const close  = () => { isOpen.value = false }
             :aria-expanded="isOpen"
             aria-haspopup="true"
             :aria-label="isOpen ? 'Tutup menu catat transaksi' : 'Catat transaksi'"
-            class="pointer-events-auto w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl relative overflow-hidden active:scale-95 transition-transform focus:outline-none"
+            class="pointer-events-auto w-full flex items-center justify-center gap-3 py-3.5 sm:py-4 px-5 sm:px-6 rounded-2xl relative overflow-hidden active:scale-95 transition-transform focus:outline-none"
             :class="isOpen
-                ? 'bg-gray-800 border border-white/10 shadow-lg shadow-black/40'
+                ? 'bg-[var(--color-surface-overlay)] border border-[var(--color-border-default)] shadow-modal'
                 : 'bg-gradient-to-br from-brand-deep via-brand-mid to-brand-soft shadow-lg shadow-purple-500/40 border border-purple-300/20'"
         >
             <!-- Shimmer sweep (hanya saat closed) -->
@@ -151,7 +150,7 @@ const close  = () => { isOpen.value = false }
             <!-- Label -->
             <span
                 class="text-sm font-black uppercase tracking-widest"
-                :class="isOpen ? 'text-gray-400' : 'text-white'"
+                :class="isOpen ? 'text-[var(--color-text-muted)]' : 'text-white'"
             >
                 {{ isOpen ? 'Tutup' : 'Catat Transaksi' }}
             </span>

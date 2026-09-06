@@ -74,8 +74,8 @@ const handleClick = (event) => {
         aria-haspopup="menu"
         :aria-label="`Menu akun${user?.name ? ': ' + user.name : ''}`"
         class="relative shrink-0 flex items-center justify-center rounded-full
-               focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400
-               focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900
+               focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]
+               focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface-base)]
                transition-transform duration-150 active:scale-90"
         style="width: 44px; height: 44px;"
         @click="handleClick"

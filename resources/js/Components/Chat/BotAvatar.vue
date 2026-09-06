@@ -82,12 +82,12 @@ const initialsSize = {
 }
 
 const initialsColor = {
-    bot:  'text-purple-400',
+    bot:  'text-[var(--color-brand)]',
     user: 'text-gray-300',
 }
 
 const bgColor = {
-    bot:  'bg-gray-800',
+    bot:  'bg-[var(--color-surface-muted)]',
     user: 'bg-gray-700',
 }
 
@@ -102,7 +102,7 @@ const onlineDotSize = {
     <div class="relative shrink-0 inline-flex">
         <div
             :class="[
-                'overflow-hidden border border-white/10 flex items-center justify-center',
+                'overflow-hidden border border-[var(--color-border-default)] flex items-center justify-center',
                 sizeClass[size] ?? sizeClass.sm,
                 shapeClass[shape] ?? shapeClass.circle,
                 bgColor[variant] ?? bgColor.bot,

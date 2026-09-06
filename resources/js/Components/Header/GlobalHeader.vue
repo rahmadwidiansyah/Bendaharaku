@@ -203,10 +203,10 @@ const routeLabel = computed(() => {
     }
 })
 
-// ─── Tinggi header ────────────────────────────────────────────────
-// Dashboard expanded → h-14; collapsed atau halaman lain → h-12
+// ─── Tinggi header (responsive, compact on 320px) ───────────────
+// Dashboard expanded → h-12 sm:h-14; collapsed atau halaman lain → h-11 sm:h-12
 const headerHeight = computed(() =>
-    shouldShowGreeting.value && !isCollapsed.value ? 'h-14' : 'h-12'
+    shouldShowGreeting.value && !isCollapsed.value ? 'h-12 sm:h-14' : 'h-11 sm:h-12'
 )
 
 // ─── Profile menu ─────────────────────────────────────────────────
@@ -308,7 +308,7 @@ const handleOpenNotif = () => { /* TODO: notification center */ }
             <button
                 v-if="effectiveShowBackButton"
                 type="button"
-                class="shrink-0 w-11 h-11 flex items-center justify-center rounded-2xl text-gray-400 hover:text-white hover:bg-white/8 active:scale-90 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 mr-0.5"
+                class="shrink-0 w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-2xl text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-muted)] active:scale-90 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)] mr-0.5"
                 :aria-label="$t('btn.back')"
                 @click="handleBack"
             >

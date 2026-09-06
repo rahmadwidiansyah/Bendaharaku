@@ -51,8 +51,8 @@ const typeConfig = computed(() => ({
     transfer: { label: t('types.transfer'),    icon: 'arrow-left-right', color: 'text-transfer-text', bg: 'bg-transfer-bg',  border: 'border-transfer-border',  badge: 'bg-transfer-bg text-transfer-text border-transfer-border' },
     debt:     { label: t('types.debt'),        icon: 'hand-coins',      color: 'text-debt-text',   bg: 'bg-debt-bg',        border: 'border-debt-border',      badge: 'bg-debt-bg text-debt-text border-debt-border' },
     receivable: { label: t('types.receivable'), icon: 'handshake',       color: 'text-receivable-text', bg: 'bg-receivable-bg', border: 'border-receivable-border', badge: 'bg-receivable-bg text-receivable-text border-receivable-border' },
-    other:    { label: t('transaction.title'), icon: 'file-text',       color: 'text-gray-400',    bg: 'bg-gray-500/8',     border: 'border-gray-500/15',    badge: 'bg-gray-500/12 text-gray-400 border-gray-500/20' },
-}[localTrx.value.type_key ?? 'other'] ?? { label: t('transaction.title'), icon: 'file-text', color: 'text-gray-400', bg: 'bg-gray-500/8', border: 'border-gray-500/15', badge: 'bg-gray-500/12 text-gray-400 border-gray-500/20' }))
+    other:    { label: t('transaction.title'), icon: 'file-text',       color: 'text-[var(--color-text-secondary)]',    bg: 'bg-gray-500/8',     border: 'border-gray-500/15',    badge: 'bg-gray-500/12 text-[var(--color-text-secondary)] border-gray-500/20' },
+}[localTrx.value.type_key ?? 'other'] ?? { label: t('transaction.title'), icon: 'file-text', color: 'text-[var(--color-text-secondary)]', bg: 'bg-gray-500/8', border: 'border-gray-500/15', badge: 'bg-gray-500/12 text-[var(--color-text-secondary)] border-gray-500/20' }))
 
 const needsWallet = computed(() =>
     !localTrx.value.is_cancelled
@@ -179,12 +179,12 @@ onMounted(checkStatus)
 </script>
 
 <template>
-    <div class="overflow-hidden cursor-pointer transition-all active:scale-98 hover:bg-white/5 border-b border-white/10 last:border-none" @click="!localTrx.is_cancelled && (showDetail = true)" role="button" :aria-label="`${typeConfig.label} ${localTrx.amount_formatted}`">
+    <div class="overflow-hidden cursor-pointer transition-all active:scale-98 hover:bg-white/5 border-b border-[var(--color-border-default)] last:border-none" @click="!localTrx.is_cancelled && (showDetail = true)" role="button" :aria-label="`${typeConfig.label} ${localTrx.amount_formatted}`">
         <!-- Header: badge + status di kanan -->
         <div class="flex items-center justify-between px-3.5 pt-3 pb-2 bg-white/5 border-b border-white/5">
             <div class="flex items-center gap-2">
                 <span v-if="component.index !== null && component.index !== undefined"
-                    class="text-2xs font-black text-gray-600 tabular-nums">#{{ component.index }}</span>
+                    class="text-2xs font-black text-[var(--color-text-muted)] tabular-nums">#{{ component.index }}</span>
                 <span class="text-xs font-semibold px-2 py-0.5 rounded-full border inline-flex items-center gap-1" :class="typeConfig.badge">
                     <AppIcon :icon="typeConfig.icon" class="w-3 h-3 shrink-0" />
                     {{ localTrx.type_label ?? typeConfig.label }}
@@ -193,7 +193,7 @@ onMounted(checkStatus)
             <span :class="[
                 'text-2xs font-bold px-1.5 py-0.5 rounded-full border inline-flex items-center gap-1',
                 localTrx.is_cancelled
-                    ? 'text-gray-400 bg-gray-500/10 border-gray-500/20'
+                    ? 'text-[var(--color-text-secondary)] bg-gray-500/10 border-gray-500/20'
                     : localTrx.is_cleared
                     ? 'text-income-text bg-income-bg border-income-border'
                     : 'text-debt-text bg-debt-bg border-debt-border'
@@ -207,38 +207,38 @@ onMounted(checkStatus)
 
         <!-- Amount -->
         <div class="px-3.5 py-2.5 border-t border-white/5">
-            <p class="text-xl font-black text-white tabular-nums tracking-tight leading-tight">
+            <p class="text-xl font-black text-[var(--color-text-primary)] tabular-nums tracking-tight leading-tight">
                 {{ localTrx.amount_formatted }}
             </p>
-            <p v-if="localTrx.notes" class="text-2xs text-gray-500 mt-0.5 truncate">{{ localTrx.notes }}</p>
+            <p v-if="localTrx.notes" class="text-2xs text-[var(--color-text-muted)] mt-0.5 truncate">{{ localTrx.notes }}</p>
         </div>
 
         <!-- Detail rows (show_details mode) -->
         <template v-if="component.show_details">
             <div class="border-t border-white/5 divide-y divide-white/5">
                 <div v-if="localTrx.category" class="flex items-center gap-2.5 px-3.5 py-2">
-                    <AppIcon icon="folder" class="w-4 h-4 shrink-0 text-gray-500" />
-                    <span class="text-2xs text-gray-500 w-16 shrink-0">{{ $t('transaction.detail.category') }}</span>
+                    <AppIcon icon="folder" class="w-4 h-4 shrink-0 text-[var(--color-text-muted)]" />
+                    <span class="text-2xs text-[var(--color-text-muted)] w-16 shrink-0">{{ $t('transaction.detail.category') }}</span>
                     <span class="text-xs text-gray-200 font-medium truncate">{{ localTrx.category }}</span>
                 </div>
                 <div v-if="localTrx.source_wallet" class="flex items-center gap-2.5 px-3.5 py-2">
-                    <AppIcon icon="wallet" class="w-4 h-4 shrink-0 text-gray-500" />
-                    <span class="text-2xs text-gray-500 w-16 shrink-0">{{ $t('transaction.detail.wallet') }}</span>
+                    <AppIcon icon="wallet" class="w-4 h-4 shrink-0 text-[var(--color-text-muted)]" />
+                    <span class="text-2xs text-[var(--color-text-muted)] w-16 shrink-0">{{ $t('transaction.detail.wallet') }}</span>
                     <span class="text-xs text-gray-200 font-medium truncate">{{ localTrx.source_wallet }}</span>
                 </div>
                 <div v-if="localTrx.dest_wallet" class="flex items-center gap-2.5 px-3.5 py-2">
-                    <AppIcon icon="arrow-down-to-line" class="w-4 h-4 shrink-0 text-gray-500" />
-                    <span class="text-2xs text-gray-500 w-16 shrink-0">{{ $t('transaction.detail.to') }} {{ $t('transaction.detail.wallet') }}</span>
+                    <AppIcon icon="arrow-down-to-line" class="w-4 h-4 shrink-0 text-[var(--color-text-muted)]" />
+                    <span class="text-2xs text-[var(--color-text-muted)] w-16 shrink-0">{{ $t('transaction.detail.to') }} {{ $t('transaction.detail.wallet') }}</span>
                     <span class="text-xs text-gray-200 font-medium truncate">{{ localTrx.dest_wallet }}</span>
                 </div>
                 <div v-if="localTrx.subject" class="flex items-center gap-2.5 px-3.5 py-2">
-                    <AppIcon icon="user" class="w-4 h-4 shrink-0 text-gray-500" />
-                    <span class="text-2xs text-gray-500 w-16 shrink-0">{{ $t('transaction.detail.party') }}</span>
+                    <AppIcon icon="user" class="w-4 h-4 shrink-0 text-[var(--color-text-muted)]" />
+                    <span class="text-2xs text-[var(--color-text-muted)] w-16 shrink-0">{{ $t('transaction.detail.party') }}</span>
                     <span class="text-xs text-gray-200 font-medium truncate">{{ localTrx.subject }}</span>
                 </div>
                 <div v-if="localTrx.date" class="flex items-center gap-2.5 px-3.5 py-2">
-                    <AppIcon icon="calendar" class="w-4 h-4 shrink-0 text-gray-500" />
-                    <span class="text-2xs text-gray-500 w-16 shrink-0">{{ $t('transaction.detail.date') }}</span>
+                    <AppIcon icon="calendar" class="w-4 h-4 shrink-0 text-[var(--color-text-muted)]" />
+                    <span class="text-2xs text-[var(--color-text-muted)] w-16 shrink-0">{{ $t('transaction.detail.date') }}</span>
                     <span class="text-xs text-gray-200 font-medium">{{ localTrx.date }}</span>
                 </div>
             </div>
@@ -247,9 +247,9 @@ onMounted(checkStatus)
         <!-- Compact mode (multi-transaction list item) -->
         <template v-else>
             <div class="flex items-center gap-1.5 px-3.5 pb-2.5 border-t border-white/5 pt-1.5">
-                <span v-if="localTrx.category" class="text-2xs text-gray-500">{{ localTrx.category }}</span>
+                <span v-if="localTrx.category" class="text-2xs text-[var(--color-text-muted)]">{{ localTrx.category }}</span>
                 <span v-if="localTrx.source_wallet && localTrx.category" class="text-2xs text-gray-700">·</span>
-                <span v-if="localTrx.source_wallet" class="text-2xs text-gray-500">{{ localTrx.source_wallet }}</span>
+                <span v-if="localTrx.source_wallet" class="text-2xs text-[var(--color-text-muted)]">{{ localTrx.source_wallet }}</span>
                 <!-- Tap to detail hint -->
                 <span class="ml-auto text-2xs text-gray-700">{{ $t('transaction.detail.title') }} →</span>
             </div>

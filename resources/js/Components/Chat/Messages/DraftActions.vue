@@ -47,7 +47,7 @@ async function handleCancel() {
         <!-- Edit —→ buka halaman edit yang sudah ada -->
         <Link
             :href="editUrl"
-            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-gray-300 bg-white/6 hover:bg-white/10 border border-white/8 hover:border-white/15 transition-all active:scale-95 focus:outline-none focus-visible:ring-1 focus-visible:ring-purple-400"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-gray-300 bg-white/6 hover:bg-white/10 border border-[var(--color-border-subtle)] hover:border-white/15 transition-all active:scale-95 focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-brand)]"
         >
             <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -74,7 +74,7 @@ async function handleCancel() {
             type="button"
             :disabled="isCancelling"
             class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 focus:outline-none focus-visible:ring-1 focus-visible:ring-red-400 disabled:opacity-50"
-            :class="isCancelling ? 'bg-expense-bg text-expense-text border border-expense-border' : 'bg-transparent text-gray-500 hover:text-expense-text hover:bg-expense-bg-hover border border-transparent hover:border-expense-border'"
+            :class="isCancelling ? 'bg-expense-bg text-expense-text border border-expense-border' : 'bg-transparent text-[var(--color-text-muted)] hover:text-expense-text hover:bg-expense-bg-hover border border-transparent hover:border-expense-border'"
             @click="handleCancel"
         >
             <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
