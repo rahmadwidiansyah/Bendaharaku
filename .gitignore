@@ -42,3 +42,9 @@ __pycache__/
 !README.md
 /PLAN-HUTANG-PIUTANG.md
 /AI-MEMORY-IMPLEMENTATION-CHECKLIST.md
+
+# TWA signing
+/release.keystore
+/twa-manifest.json.bak
+/twa/
+/twa-manifest.json.bak

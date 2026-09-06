@@ -195,7 +195,7 @@ class OCRClient
     {
         $start = microtime(true);
         $tmpFile = tempnam(sys_get_temp_dir(), 'ocr_tess_');
-        $tmpOut = $tmpFile . '.txt';
+        $tmpOut = $tmpFile.'.txt';
 
         try {
             file_put_contents($tmpFile, $fileContents);
@@ -217,7 +217,7 @@ class OCRClient
                     $langArg
                 );
                 $output = shell_exec($cmd);
-                if ($output !== null && ! str_contains($output, 'Failed loading language') && ! str_contains($output, "Could not initialize")) {
+                if ($output !== null && ! str_contains($output, 'Failed loading language') && ! str_contains($output, 'Could not initialize')) {
                     $usedLang = $langTry ?: 'default';
                     break;
                 }
@@ -227,6 +227,7 @@ class OCRClient
 
             if ($output === null) {
                 Log::warning('Tesseract shell_exec returned null after lang fallback', ['evidence_id' => $evidence->id]);
+
                 return null;
             }
 
@@ -247,6 +248,7 @@ class OCRClient
             ];
         } catch (\Throwable $e) {
             Log::warning('Tesseract OCR failed: '.$e->getMessage(), ['evidence_id' => $evidence->id]);
+
             return null;
         } finally {
             @unlink($tmpFile);
@@ -267,6 +269,7 @@ class OCRClient
 
             if (! $response->successful()) {
                 Log::warning('RapidOCR HTTP error', ['status' => $response->status(), 'body' => $response->body()]);
+
                 return null;
             }
 
@@ -283,6 +286,7 @@ class OCRClient
             ];
         } catch (\Throwable $e) {
             Log::warning('RapidOCR request failed: '.$e->getMessage(), ['evidence_id' => $evidence->id]);
+
             return null;
         }
     }
@@ -290,76 +294,122 @@ class OCRClient
     private function estimateTesseractConfidence(string $text): float
     {
         $len = mb_strlen(trim($text));
-        if ($len === 0) return 0.0;
+        if ($len === 0) {
+            return 0.0;
+        }
         // Heuristik: panjang + ada digit + ada kata kunci struk
         $hasDigit = (bool) preg_match('/\d/', $text);
         $hasKeyword = (bool) preg_match('/\b(total|nominal|jumlah|bayar|transfer|rp|idr)\b/iu', $text);
         $score = 0.5;
-        if ($len >= $this->minTextLen) $score += 0.2;
-        if ($hasDigit) $score += 0.15;
-        if ($hasKeyword) $score += 0.1;
-        if ($len > 100) $score += 0.05;
+        if ($len >= $this->minTextLen) {
+            $score += 0.2;
+        }
+        if ($hasDigit) {
+            $score += 0.15;
+        }
+        if ($hasKeyword) {
+            $score += 0.1;
+        }
+        if ($len > 100) {
+            $score += 0.05;
+        }
+
         return min(0.95, $score);
     }
 
     private function needsFallback(?array $tessResult): bool
     {
-        if ($tessResult === null) return true;
+        if ($tessResult === null) {
+            return true;
+        }
         $text = trim($tessResult['text'] ?? '');
         $conf = (float) ($tessResult['confidence'] ?? 0);
-        if ($conf < $this->confidenceThreshold) return true;
-        if (mb_strlen($text) < $this->minTextLen) return true;
-        if (! preg_match('/\d/', $text)) return true;
+        if ($conf < $this->confidenceThreshold) {
+            return true;
+        }
+        if (mb_strlen($text) < $this->minTextLen) {
+            return true;
+        }
+        if (! preg_match('/\d/', $text)) {
+            return true;
+        }
+
         return false;
     }
 
     private function fallbackReason(?array $tessResult): string
     {
-        if ($tessResult === null) return 'tesseract_null';
+        if ($tessResult === null) {
+            return 'tesseract_null';
+        }
         $text = trim($tessResult['text'] ?? '');
         $conf = (float) ($tessResult['confidence'] ?? 0);
-        if ($conf < $this->confidenceThreshold) return 'tesseract_low_conf_'.number_format($conf, 2);
-        if (mb_strlen($text) < $this->minTextLen) return 'tesseract_too_short_'.mb_strlen($text);
-        if (! preg_match('/\d/', $text)) return 'tesseract_no_digit';
+        if ($conf < $this->confidenceThreshold) {
+            return 'tesseract_low_conf_'.number_format($conf, 2);
+        }
+        if (mb_strlen($text) < $this->minTextLen) {
+            return 'tesseract_too_short_'.mb_strlen($text);
+        }
+        if (! preg_match('/\d/', $text)) {
+            return 'tesseract_no_digit';
+        }
+
         return 'unknown';
     }
 
     private function validateUrl(string $url): string
     {
         $url = trim($url);
-        if ($url === '') throw new InvalidArgumentException('OCR host is not configured.');
+        if ($url === '') {
+            throw new InvalidArgumentException('OCR host is not configured.');
+        }
         if (! filter_var($url, FILTER_VALIDATE_URL) && ! str_starts_with($url, 'http://') && ! str_starts_with($url, 'https://')) {
             $url = "http://{$url}";
         }
-        if (! filter_var($url, FILTER_VALIDATE_URL)) throw new InvalidArgumentException("OCR URL is invalid: {$url}");
+        if (! filter_var($url, FILTER_VALIDATE_URL)) {
+            throw new InvalidArgumentException("OCR URL is invalid: {$url}");
+        }
+
         return $url;
     }
 
     private function validatePositiveInt(mixed $value, string $label): int
     {
         $int = (int) $value;
-        if ($int <= 0) throw new InvalidArgumentException("{$label} must be greater than zero, got {$int}");
+        if ($int <= 0) {
+            throw new InvalidArgumentException("{$label} must be greater than zero, got {$int}");
+        }
+
         return $int;
     }
 
     private function validateNonNegativeInt(mixed $value, string $label): int
     {
         $int = (int) $value;
-        if ($int < 0) throw new InvalidArgumentException("{$label} must not be negative, got {$int}");
+        if ($int < 0) {
+            throw new InvalidArgumentException("{$label} must not be negative, got {$int}");
+        }
+
         return $int;
     }
 
     private function validatePositiveFloat(mixed $value, string $label): float
     {
         $float = (float) $value;
-        if ($float <= 0) throw new InvalidArgumentException("{$label} must be greater than zero, got {$float}");
+        if ($float <= 0) {
+            throw new InvalidArgumentException("{$label} must be greater than zero, got {$float}");
+        }
+
         return $float;
     }
 
     private function validateConfidence(mixed $value): float
     {
         $float = (float) $value;
-        if ($float < 0 || $float > 1) throw new InvalidArgumentException("OCR confidence threshold must be between 0 and 1, got {$float}");
+        if ($float < 0 || $float > 1) {
+            throw new InvalidArgumentException("OCR confidence threshold must be between 0 and 1, got {$float}");
+        }
+
         return $float;
     }
 }

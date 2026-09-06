@@ -3,6 +3,7 @@
 namespace App\Services\Push;
 
 use App\Models\BudgetGroup;
+use App\Models\Evidence;
 use App\Models\User;
 use App\Support\MoneyFormatter;
 use Illuminate\Support\Carbon;
@@ -117,6 +118,36 @@ class PushPayloadBuilder
             'url' => $loanType === 'debt' ? '/loans/hutang' : '/loans/piutang',
             'tag' => 'loan-'.$loanType,
             'data' => ['kind' => 'loan', 'loan_type' => $loanType],
+        ];
+    }
+
+    public static function evidenceReady(User $user, Evidence $evidence): array
+    {
+        $amount = $evidence->parsed_data?->amount ?? $evidence->resolved_data?->amount ?? null;
+        $desc = trim((string) ($evidence->parsed_data?->description ?? $evidence->parsed_data?->merchantName ?? $evidence->resolved_data?->description ?? ''));
+        $preview = $desc !== '' ? $desc : self::t('push.evidence.fallback_desc', $user);
+        $body = $amount ? $preview.' — '.MoneyFormatter::rupiah((float) $amount) : $preview;
+        $body = mb_substr($body, 0, 80);
+
+        return [
+            'title' => self::t('push.evidence.ready_title', $user),
+            'body' => $body,
+            'url' => '/chat?evidence_uuid='.$evidence->uuid,
+            'tag' => 'evidence-'.$evidence->uuid,
+            'data' => ['kind' => 'evidence', 'uuid' => $evidence->uuid, 'status' => 'ready'],
+        ];
+    }
+
+    public static function evidenceFailed(User $user, Evidence $evidence, string $reason = ''): array
+    {
+        $body = $reason !== '' ? $reason : self::t('push.evidence.failed_body', $user);
+
+        return [
+            'title' => self::t('push.evidence.failed_title', $user),
+            'body' => mb_substr($body, 0, 80),
+            'url' => '/chat?evidence_uuid='.$evidence->uuid,
+            'tag' => 'evidence-'.$evidence->uuid,
+            'data' => ['kind' => 'evidence', 'uuid' => $evidence->uuid, 'status' => 'failed'],
         ];
     }
 

@@ -4,7 +4,11 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title inertia>{{ config('app.name', 'Laravel') }}</title>
-    <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/rahmadwidiansyah/script_pencatat_keuangan/refs/heads/main/logo.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#f59e0b">
+    <link rel="icon" type="image/png" href="/icons/favicon-32.png">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 
     <!-- Google AdSense Account Verification -->
     <meta name="google-adsense-account" content="ca-pub-1031540480419431">

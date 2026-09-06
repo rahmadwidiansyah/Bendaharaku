@@ -6,7 +6,6 @@ namespace App\Console\Commands;
 
 use App\Services\Evidence\OCRClient;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Storage;
 
 class TestOcrSamplesCommand extends Command
 {
@@ -32,13 +31,14 @@ class TestOcrSamplesCommand extends Command
         $refReason->setAccessible(true);
 
         $this->info("Samples dir: {$base}");
-        $this->info("OCR threshold: ".config('ocr.confidence_threshold', 0.6)." | Tesseract PSN: ".config('ocr.tesseract.psm', 6));
+        $this->info('OCR threshold: '.config('ocr.confidence_threshold', 0.6).' | Tesseract PSN: '.config('ocr.tesseract.psm', 6));
         $this->newLine();
 
         foreach ($samples as $file => $desc) {
             $path = "{$base}/{$file}";
             if (! file_exists($path)) {
                 $this->error("Missing: {$path}");
+
                 continue;
             }
             $content = file_get_contents($path);
@@ -64,18 +64,18 @@ class TestOcrSamplesCommand extends Command
 
             $this->line("=== {$file} ===");
             $this->line("Desc: {$desc}");
-            $this->line("Text: ".mb_strimwidth(str_replace("\n", " | ", $text), 0, 80, "..."));
-            $this->line("Conf: ".number_format($conf,2)." | Len: ".mb_strlen($text)." | HasDigit: ".(preg_match('/\d/', $text) ? 'yes' : 'no'));
-            $this->line("NeedsFallback: ".($needs ? 'YES → Rapid' : 'NO → Tesseract')." | Reason: {$reason}");
-            $this->line("Engine final: ".($needs ? 'RapidOCR (fallback)' : 'Tesseract'));
+            $this->line('Text: '.mb_strimwidth(str_replace("\n", ' | ', $text), 0, 80, '...'));
+            $this->line('Conf: '.number_format($conf, 2).' | Len: '.mb_strlen($text).' | HasDigit: '.(preg_match('/\d/', $text) ? 'yes' : 'no'));
+            $this->line('NeedsFallback: '.($needs ? 'YES → Rapid' : 'NO → Tesseract')." | Reason: {$reason}");
+            $this->line('Engine final: '.($needs ? 'RapidOCR (fallback)' : 'Tesseract'));
             // Simulate AI decision (kirim ke AI Parser)
             $aiNote = $needs ? 'OCR blur/no-digit → Rapid fallback, lalu AI parser putuskan transaksi' : 'OCR jelas → langsung AI parser putuskan transaksi';
             $this->line("AI: {$aiNote}");
             $this->newLine();
         }
 
-        $this->info("Done. Samples di storage/app/test_struk_samples/ dan public/samples/");
-        $this->info("Cek log: evidence_processing_logs (stage=ocr) atau docker compose logs ocr-service");
+        $this->info('Done. Samples di storage/app/test_struk_samples/ dan public/samples/');
+        $this->info('Cek log: evidence_processing_logs (stage=ocr) atau docker compose logs ocr-service');
 
         return self::SUCCESS;
     }

@@ -53,4 +53,9 @@ return [
         'url' => env('AI_PARSER_URL', 'http://ai-parser:3987'),
     ],
 
+    'twa' => [
+        'package' => env('TWA_PACKAGE', 'id.bendaharaku.twa'),
+        'sha256' => env('ANDROID_ASSETLINKS_SHA256'),
+    ],
+
 ];

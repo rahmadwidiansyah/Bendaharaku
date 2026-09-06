@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace App\Services\Evidence;
 
+use App\Chat\Services\DraftViewModelBuilder;
+use App\DTO\MultiTransactionItem;
+use App\DTO\MultiTransactionResult;
 use App\Models\Evidence;
+use App\Models\TransactionDraft;
 use App\Models\User;
+use App\Models\Wallet;
 use App\Services\Chat\ChatTransactionOrchestrator;
 use App\Services\Wallet\WalletResolutionService;
 use Illuminate\Support\Facades\Log;
@@ -23,45 +28,56 @@ class LlmEvidenceGroupingService
      * - Wallet prioritas: 1 caption_hint (name/keyword), 2 label wallet di OCR, 3 null → QuickWalletPicker
      * - Nama barang → notes = description (disamakan)
      *
-     * @return array{success: bool, is_multi?: bool, multi_result?: \App\DTO\MultiTransactionResult, message?: string, error_code?: string}
+     * @return array{success: bool, is_multi?: bool, multi_result?: MultiTransactionResult, message?: string, error_code?: string}
      */
     public function group(Evidence $evidence, User $user, string $captionHint = ''): array
     {
         $ocrText = $evidence->ocr_text ?? $evidence->normalized_text ?? '';
         if (blank($ocrText)) {
             Log::warning('LlmEvidenceGroupingService: OCR text kosong', ['evidence_id' => $evidence->id]);
+
             return ['success' => false, 'error_code' => 'OCR_EMPTY', 'message' => 'OCR belum selesai, coba lagi.'];
         }
 
-        // Build text untuk LLM: OCR + wallet hint + item filter hint
+        // Build text untuk LLM: OCR + wallet hint + item filter hint (flex per user, tidak hardcode)
         $text = $ocrText;
         $captionHint = trim($captionHint);
         $isFilterCaption = $captionHint !== '' && preg_match('/\b(punyaku|cuma|hanya|punya saya|milikku|yang saya)\b/iu', $captionHint);
-        $isWalletCaption = false;
         $hintWallet = null;
+        $isWalletCaption = false;
+
+        // Ekstrak wallet hint dari caption secara independen (flex: cek semua caption, tidak eksklusif dengan filter)
+        if ($captionHint !== '' && $captionHint !== '[Evidence]') {
+            $hintWallet = $this->resolveHintWallet($captionHint, $user);
+            if ($hintWallet) {
+                $isWalletCaption = true;
+            }
+        }
 
         if ($captionHint !== '' && $captionHint !== '[Evidence]') {
             if ($isFilterCaption) {
-                // Caption adalah filter item (mis. "punyaku cuma ayam goreng dan es jeruk") → jangan jadi wallet hint, tapi jadi filter hint
+                // Caption filter + wallet hint bisa bersamaan (mis. "punyaku magelangan rendang dan es kopi abc ya bayar pakai dana")
                 $text .= "\n\n[User filter: hanya simpan item yang disebutkan di: \"{$captionHint}\" — abaikan item lain di struk]";
                 Log::info('Evidence LLM: caption as item filter', ['evidence_id' => $evidence->id, 'hint' => $captionHint]);
+                if ($hintWallet) {
+                    $text .= "\n\n[Wallet hint: {$hintWallet->name}]";
+                    Log::info('Evidence LLM: caption hint wallet resolved (filter+wallet)', ['evidence_id' => $evidence->id, 'hint' => $captionHint, 'wallet' => $hintWallet->name]);
+                }
             } else {
-                // Cek apakah caption adalah wallet
-                $hintWallet = $this->resolveHintWallet($captionHint, $user);
                 if ($hintWallet) {
                     $text .= "\n\n[Wallet hint: {$hintWallet->name}]";
                     Log::info('Evidence LLM: caption hint wallet resolved', ['evidence_id' => $evidence->id, 'hint' => $captionHint, 'wallet' => $hintWallet->name]);
-                    $isWalletCaption = true;
                 } else {
-                    // Caption bukan wallet valid dan bukan filter eksplisit → treat sebagai catatan user (mis. penjelasan order) + bisa jadi filter implisit
+                    // Caption bukan wallet valid dan bukan filter eksplisit → treat sebagai catatan user
                     $text .= "\n\n[User note: {$captionHint} — gunakan sebagai konteks tambahan untuk grouping, jika ada nama barang spesifik di note, prioritaskan yang disebut]";
                     Log::info('Evidence LLM: caption generic note', ['evidence_id' => $evidence->id, 'hint' => $captionHint]);
                 }
             }
         }
 
-        if (!$isWalletCaption && !$isFilterCaption) {
-            // Caption kosong atau bukan wallet/filter → coba deteksi wallet label di OCR text
+        if (! $isWalletCaption) {
+            // Jika caption tidak memberi wallet hint (atau hanya filter tanpa wallet), coba deteksi wallet label di OCR text
+            // Fleksibel: tidak skip ketika isFilterCaption true, tetap cek OCR wallet jika caption wallet tidak ada
             $ocrWallet = $this->detectWalletInOcr($ocrText, $user);
             if ($ocrWallet) {
                 $text .= "\n\n[Wallet hint: {$ocrWallet->name}]";
@@ -81,14 +97,14 @@ class LlmEvidenceGroupingService
         // Ini untuk struk kertas yang OCR-nya jelek (244 char) tapi TransferReceiptParser sudah benar 5029
         $parsedData = $evidence->parsed_data; // EvidenceData DTO (atau null)
         $fallbackAmount = $parsedData?->amount ?? $evidence->amount ?? null;
-        if (!empty($result['is_multi']) && isset($result['multi_result'])) {
+        if (! empty($result['is_multi']) && isset($result['multi_result'])) {
             $hasZeroAmount = false;
             foreach ($result['multi_result']->results as $it) {
                 if ($it->isSuccess() && ($it->transaction?->amount ?? $it->draft?->payload['amount'] ?? 0) == 0) {
                     $hasZeroAmount = true;
                     break;
                 }
-                if (!$it->isSuccess() && ($it->errorCode?->value ?? '') === 'INVALID_AMOUNT') {
+                if (! $it->isSuccess() && ($it->errorCode?->value ?? '') === 'INVALID_AMOUNT') {
                     $hasZeroAmount = true;
                     break;
                 }
@@ -97,7 +113,7 @@ class LlmEvidenceGroupingService
             if ($hasZeroAmount && $fallbackAmount && $fallbackAmount > 0) {
                 Log::warning('Evidence LLM: amount 0 fallback ke parsed amount', ['evidence_id' => $evidence->id, 'fallback' => $fallbackAmount, 'caption' => $captionHint]);
                 $totalItems = count($result['multi_result']->results);
-                $failedItems = array_filter($result['multi_result']->results, fn($it) => !$it->isSuccess() && ($it->errorCode?->value ?? '') === 'INVALID_AMOUNT');
+                $failedItems = array_filter($result['multi_result']->results, fn ($it) => ! $it->isSuccess() && ($it->errorCode?->value ?? '') === 'INVALID_AMOUNT');
                 $successCount = $result['multi_result']->successCount();
                 // Hitung perItem berdasarkan jumlah item yang filter minta (jika ada filter, hitung dari failed+success yang terfilter)
                 $targetCount = $successCount > 0 ? $successCount : count($failedItems);
@@ -108,20 +124,22 @@ class LlmEvidenceGroupingService
                     // Jangan buat single, tapi perbaiki tiap failed item jadi draft dengan amount perItem
                     $newResults = [];
                     foreach ($result['multi_result']->results as $it) {
-                        if (!$it->isSuccess() && ($it->errorCode?->value ?? '') === 'INVALID_AMOUNT') {
+                        if (! $it->isSuccess() && ($it->errorCode?->value ?? '') === 'INVALID_AMOUNT') {
                             // Buat draft baru untuk item yang gagal, pakai raw text sebagai notes
                             $raw = $it->raw ?? 'Item';
                             // Coba resolve kategori & wallet dari raw + fallback
-                            $fallbackText = $raw . ' ' . $perItem . ' dana';
+                            $fallbackText = $raw.' '.$perItem.' dana';
                             $fb = $this->orchestrator->process($user, $fallbackText, 'WEB');
-                            if (!empty($fb['success']) && isset($fb['transaction'])) {
-                                $newResults[] = \App\DTO\MultiTransactionItem::success(index: $it->index, transaction: $fb['transaction'], raw: $raw);
-                            } elseif (!empty($fb['success']) && isset($fb['draft'])) {
-                                $newResults[] = \App\DTO\MultiTransactionItem::successDraft(index: $it->index, draft: $fb['draft'], raw: $raw);
+                            if (! empty($fb['success']) && isset($fb['transaction'])) {
+                                $newResults[] = MultiTransactionItem::success(index: $it->index, transaction: $fb['transaction'], raw: $raw);
+                            } elseif (! empty($fb['success']) && isset($fb['draft'])) {
+                                $newResults[] = MultiTransactionItem::successDraft(index: $it->index, draft: $fb['draft'], raw: $raw);
                             } else {
                                 // Jika masih gagal, paksa buat draft manual dengan perItem
-                                $cat = $user->categories()->where('type_id', function($q){ $q->select('id')->from('transaction_types')->where('name','Expense')->limit(1); })->first();
-                                $wallet = $this->resolveHintWallet($captionHint, $user) ?? $this->detectWalletInOcr($ocrText, $user) ?? $user->wallets()->where('group_type','!=','System')->first();
+                                $cat = $user->categories()->where('type_id', function ($q) {
+                                    $q->select('id')->from('transaction_types')->where('name', 'Expense')->limit(1);
+                                })->first();
+                                $wallet = $this->resolveHintWallet($captionHint, $user) ?? $this->detectWalletInOcr($ocrText, $user) ?? $user->wallets()->where('group_type', '!=', 'System')->first();
                                 $payload = [
                                     'amount' => $perItem,
                                     'category_id' => $cat?->id,
@@ -133,7 +151,7 @@ class LlmEvidenceGroupingService
                                     'type_key' => 'expense',
                                     'needs_wallet' => false,
                                 ];
-                                $draft = \App\Models\TransactionDraft::create([
+                                $draft = TransactionDraft::create([
                                     'user_id' => $user->id,
                                     'conversation_id' => $user->conversations()->where('is_active', true)->latest()->value('id'),
                                     'ai_provider' => 'fallback',
@@ -145,17 +163,18 @@ class LlmEvidenceGroupingService
                                     'expires_at' => now()->addHours(24),
                                     'payload' => $payload,
                                 ]);
-                                $fakeTrx = app(\App\Chat\Services\DraftViewModelBuilder::class)->buildFakeTransactionFromPayload($payload, null);
-                                $newResults[] = \App\DTO\MultiTransactionItem::successDraft(index: $it->index, draft: $draft, raw: $raw);
+                                $fakeTrx = app(DraftViewModelBuilder::class)->buildFakeTransactionFromPayload($payload, null);
+                                $newResults[] = MultiTransactionItem::successDraft(index: $it->index, draft: $draft, raw: $raw);
                             }
                         } else {
                             $newResults[] = $it;
                         }
                     }
                     // Ganti results dengan yang sudah diperbaiki
-                    $result['multi_result'] = new \App\DTO\MultiTransactionResult(results: $newResults, provider: $result['multi_result']->provider ?? 'fallback', model: $result['multi_result']->model ?? 'fallback', confidence: 0.6);
+                    $result['multi_result'] = new MultiTransactionResult(results: $newResults, provider: $result['multi_result']->provider ?? 'fallback', model: $result['multi_result']->model ?? 'fallback', confidence: 0.6);
                     $result['success'] = true;
                     $result['is_multi'] = true;
+
                     return $result;
                 } else {
                     // Patch amount 0 jadi perItem untuk yang sukses tapi 0
@@ -173,16 +192,16 @@ class LlmEvidenceGroupingService
 
         // Post-process: samakan notes = description (jika LLM isi notes tapi description kosong, atau sebaliknya)
         // Dan pastikan wallet null → biar QuickWalletPicker muncul (jangan default ke Dompet Cash)
-        if (!empty($result['is_multi']) && isset($result['multi_result'])) {
+        if (! empty($result['is_multi']) && isset($result['multi_result'])) {
             foreach ($result['multi_result']->results as $item) {
                 if ($item->isSuccess() && $item->transaction) {
                     $trx = $item->transaction;
                     // Samakan notes & description
-                    if (blank($trx->notes) && !blank($trx->subject)) {
+                    if (blank($trx->notes) && ! blank($trx->subject)) {
                         $trx->notes = $trx->subject;
-                    } elseif (!blank($trx->notes) && blank($trx->subject)) {
+                    } elseif (! blank($trx->notes) && blank($trx->subject)) {
                         $trx->subject = $trx->notes;
-                    } elseif (!blank($trx->notes)) {
+                    } elseif (! blank($trx->notes)) {
                         $trx->subject = $trx->notes;
                     }
                 }
@@ -190,20 +209,20 @@ class LlmEvidenceGroupingService
                     $draft = $item->draft;
                     $payload = $draft->payload ?? [];
                     // Samakan notes/description di payload
-                    if (!empty($payload['notes']) && empty($payload['subject'])) {
+                    if (! empty($payload['notes']) && empty($payload['subject'])) {
                         $payload['subject'] = $payload['notes'];
-                    } elseif (empty($payload['notes']) && !empty($payload['subject'])) {
+                    } elseif (empty($payload['notes']) && ! empty($payload['subject'])) {
                         $payload['notes'] = $payload['subject'];
                     }
                     $draft->payload = $payload;
                     // Jika draft masih needs_wallet, biarkan → QuickWalletPicker akan handle
                 }
             }
-        } elseif (!empty($result['success']) && isset($result['transaction'])) {
+        } elseif (! empty($result['success']) && isset($result['transaction'])) {
             $trx = $result['transaction'];
-            if (!blank($trx->notes) && blank($trx->subject)) {
+            if (! blank($trx->notes) && blank($trx->subject)) {
                 $trx->subject = $trx->notes;
-            } elseif (blank($trx->notes) && !blank($trx->subject)) {
+            } elseif (blank($trx->notes) && ! blank($trx->subject)) {
                 $trx->notes = $trx->subject;
             }
         }
@@ -211,14 +230,18 @@ class LlmEvidenceGroupingService
         return $result;
     }
 
-    private function resolveHintWallet(string $hint, User $user): ?\App\Models\Wallet
+    private function resolveHintWallet(string $hint, User $user): ?Wallet
     {
         $hint = trim($hint);
-        if ($hint === '') return null;
+        if ($hint === '') {
+            return null;
+        }
 
         // Coba exact name
         $wallet = $user->wallets()->where('name', $hint)->first();
-        if ($wallet) return $wallet;
+        if ($wallet) {
+            return $wallet;
+        }
 
         // Coba keyword
         $wallets = $user->wallets()->where('group_type', '!=', 'System')->get();
@@ -240,13 +263,16 @@ class LlmEvidenceGroupingService
         // Fallback via WalletResolutionService
         try {
             $found = $this->walletResolution->findWalletByText($hint, $user->id);
-            if ($found) return $found;
-        } catch (\Throwable $e) {}
+            if ($found) {
+                return $found;
+            }
+        } catch (\Throwable $e) {
+        }
 
         return null;
     }
 
-    private function detectWalletInOcr(string $ocrText, User $user): ?\App\Models\Wallet
+    private function detectWalletInOcr(string $ocrText, User $user): ?Wallet
     {
         $wallets = $user->wallets()->where('group_type', '!=', 'System')->get();
         $lowerOcr = mb_strtolower($ocrText);
@@ -261,6 +287,7 @@ class LlmEvidenceGroupingService
                 }
             }
         }
+
         return null;
     }
 }

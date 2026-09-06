@@ -37,4 +37,11 @@ return [
         'type_debt' => 'debt',
         'type_receivable' => 'receivable',
     ],
+
+    'evidence' => [
+        'ready_title' => 'Receipt ready to review',
+        'failed_title' => 'Receipt OCR failed',
+        'failed_body' => 'Photo failed to process. Try a clearer photo.',
+        'fallback_desc' => 'Shopping receipt',
+    ],
 ];

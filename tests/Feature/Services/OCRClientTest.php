@@ -20,6 +20,7 @@ class OCRClientTest extends TestCase
         config([
             'ocr.url' => 'http://ocr-service:8000',
             'ocr.extract_endpoint' => '/ocr/extract',
+            'ocr.engine' => 'rapid',
             'filesystems.disks.evidence' => [
                 'driver' => 'local',
                 'root' => '/tmp/opencode/ocr-client-test',
@@ -44,7 +45,7 @@ class OCRClientTest extends TestCase
                 'ocr_text' => 'OCR OK',
                 'ocr_engine' => 'PaddleOCR',
                 'ocr_duration_ms' => 123,
-                'ocr_version' => '1.0',
+                'ocr_version' => '2.0-tess-rapid',
             ])
             ->andReturnTrue();
 

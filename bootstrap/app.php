@@ -22,6 +22,9 @@ return Application::configure(basePath: dirname(__DIR__))
             EnsureFrontendRequestsAreStateful::class,
         ]);
         $middleware->trustProxies(at: '*');
+        $middleware->validateCsrfTokens(except: [
+            'chat/evidence/share',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

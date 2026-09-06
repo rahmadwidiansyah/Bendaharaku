@@ -24,6 +24,7 @@ class OcrFallbackSampleTest extends TestCase
     {
         $ref = new \ReflectionMethod(OCRClient::class, 'estimateTesseractConfidence');
         $ref->setAccessible(true);
+
         return $ref->invoke($this->client, $text);
     }
 
@@ -31,6 +32,7 @@ class OcrFallbackSampleTest extends TestCase
     {
         $ref = new \ReflectionMethod(OCRClient::class, 'needsFallback');
         $ref->setAccessible(true);
+
         return $ref->invoke($this->client, $tess);
     }
 
@@ -38,6 +40,7 @@ class OcrFallbackSampleTest extends TestCase
     {
         $ref = new \ReflectionMethod(OCRClient::class, 'fallbackReason');
         $ref->setAccessible(true);
+
         return $ref->invoke($this->client, $tess);
     }
 
@@ -77,7 +80,7 @@ class OcrFallbackSampleTest extends TestCase
 
         // confidence mungkin 0.6+ tapi tanpa digit → tetap fallback
         $needs = $this->needsFallback($tess);
-        $this->assertTrue($needs, 'Tanpa digit harus fallback walau conf '.number_format($conf,2));
+        $this->assertTrue($needs, 'Tanpa digit harus fallback walau conf '.number_format($conf, 2));
         $reason = $this->fallbackReason($tess);
         $this->assertTrue(str_contains($reason, 'no_digit') || str_contains($reason, 'too_short') || str_contains($reason, 'low_conf'));
     }

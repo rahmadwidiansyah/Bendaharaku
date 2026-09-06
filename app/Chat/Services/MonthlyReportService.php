@@ -293,6 +293,7 @@ class MonthlyReportService
             return false;
         }
         $escaped = preg_quote($k, '/');
+
         return (bool) preg_match('/(?<![\p{L}\p{N}_])'.$escaped.'(?![\p{L}\p{N}_])/iu', mb_strtolower($text));
     }
 

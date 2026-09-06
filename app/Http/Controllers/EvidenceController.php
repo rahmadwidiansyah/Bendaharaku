@@ -4,13 +4,19 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Chat\Adapters\WebAdapter;
 use App\Evidence\Events\EvidenceUploaded;
 use App\Evidence\Jobs\ProcessEvidenceJob;
 use App\Http\Requests\StoreEvidenceRequest;
+use App\Jobs\EvidenceLlmGroupingJob;
+use App\Models\ChatMessage;
+use App\Models\Conversation;
 use App\Models\Evidence;
 use App\Services\Evidence\EvidencePipelineService;
 use App\Services\Evidence\EvidenceUploadService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -20,18 +26,57 @@ class EvidenceController extends Controller
     public function __construct(
         private readonly EvidenceUploadService $uploadService,
         private readonly EvidencePipelineService $pipelineService,
+        private readonly WebAdapter $webAdapter,
     ) {}
 
     public function store(StoreEvidenceRequest $request): JsonResponse
     {
+        return $this->handleUpload($request, Evidence::SOURCE_CHAT_UPLOAD, false);
+    }
+
+    /**
+     * POST /chat/evidence/share — Web Share Target (PWA).
+     * Dipanggil saat user share foto dari Galeri / app Bank (BCA, SeaBank, dll).
+     * Membuat Evidence + ChatMessage (bubble) agar langsung muncul di /chat.
+     */
+    public function share(Request $request): JsonResponse|RedirectResponse
+    {
+        // Share Target dari OS kadang kirim `image` (sesuai manifest), kadang `file` atau array.
+        // Validasi longgar: terima file apapun dengan key image/file/files
+        $request->validate([
+            'image' => ['nullable', 'file', 'max:10240', 'mimes:jpg,jpeg,png,webp', 'dimensions:max_width=10000,max_height=10000'],
+            'file' => ['nullable', 'file', 'max:10240', 'mimes:jpg,jpeg,png,webp'],
+            'title' => ['nullable', 'string', 'max:500'],
+            'text' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        if (! $request->hasFile('image') && ! $request->hasFile('file') && empty($request->allFiles())) {
+            return $request->expectsJson() || $request->wantsJson()
+                ? response()->json(['success' => false, 'message' => 'File gambar wajib dipilih.'], 422)
+                : redirect()->route('chat.index')->with('error', 'File gambar wajib dipilih.');
+        }
+
+        // Build caption dari share_target params title + text
+        $caption = trim(($request->input('title') ?? '').' '.($request->input('text') ?? ''));
+
+        // Reuse handleUpload logic dengan caption → chat bubble
+        return $this->handleUpload($request, Evidence::SOURCE_SHARE, true, $caption);
+    }
+
+    private function handleUpload(Request $request, string $source, bool $isShare, string $captionHint = ''): JsonResponse|RedirectResponse
+    {
         try {
-            $file = $request->file('image');
+            $file = $request->file('image') ?? $request->file('file');
+            if (! $file) {
+                $all = collect($request->allFiles())->flatten()->filter();
+                $file = $all->first();
+            }
             $user = $request->user();
 
             $result = $this->uploadService->upload(
                 user: $user,
                 file: $file,
-                source: Evidence::SOURCE_CHAT_UPLOAD,
+                source: $source,
             );
 
             $evidence = $result['evidence'];
@@ -50,6 +95,35 @@ class EvidenceController extends Controller
 
             $this->pipelineService->queue($evidence);
             ProcessEvidenceJob::dispatch($evidence->id);
+
+            // Share Target (PWA): buat chat bubble agar foto langsung muncul di /chat
+            if ($isShare) {
+                try {
+                    $shareCaption = $captionHint !== '' ? $captionHint : trim((string) ($request->input('title') ?? '').' '.(string) ($request->input('text') ?? ''));
+                    $this->webAdapter->enqueueMessage($user, $shareCaption !== '' ? $shareCaption : '[Evidence]', null, $evidence->uuid);
+                } catch (\Throwable $e) {
+                    Log::warning('ShareTarget enqueueMessage failed: '.$e->getMessage(), ['evidence_id' => $evidence->id]);
+                }
+
+                if ($request->expectsJson() || $request->wantsJson()) {
+                    return response()->json([
+                        'success' => true,
+                        'evidence' => [
+                            'uuid' => $evidence->uuid,
+                            'url' => $url,
+                            'original_name' => $evidence->original_name,
+                            'mime_type' => $evidence->mime_type,
+                            'size' => $evidence->size,
+                            'formatted_size' => $evidence->formatted_size,
+                            'status' => $evidence->status->value,
+                            'processing' => ! $evidence->status->isTerminal(),
+                            'created_at' => $evidence->created_at->toIso8601String(),
+                        ],
+                    ]);
+                }
+
+                return redirect()->route('chat.index', ['evidence_uuid' => $evidence->uuid, 'share' => 1]);
+            }
 
             return response()->json([
                 'success' => true,
@@ -84,7 +158,7 @@ class EvidenceController extends Controller
      * Serve private evidence file dengan auth check.
      * Dipakai ChatMessage imageUrl agar foto struk tampil di chat.
      */
-    public function image(\Illuminate\Http\Request $request, string $uuid): BinaryFileResponse|\Illuminate\Http\JsonResponse
+    public function image(Request $request, string $uuid): BinaryFileResponse|JsonResponse
     {
         $user = $request->user();
 
@@ -117,7 +191,7 @@ class EvidenceController extends Controller
      * Retry grouping LLM jika gagal (server LLM down) — chat turun seperti kirim lagi.
      * Cari bot message pending/failed untuk evidence ini, set jadi pending lagi & dispatch job.
      */
-    public function retry(\Illuminate\Http\Request $request, string $uuid): JsonResponse
+    public function retry(Request $request, string $uuid): JsonResponse
     {
         $user = $request->user();
 
@@ -130,7 +204,7 @@ class EvidenceController extends Controller
         }
 
         // Cari conversation & bot message terakhir untuk evidence ini
-        $conversation = \App\Models\Conversation::where('user_id', $user->id)
+        $conversation = Conversation::where('user_id', $user->id)
             ->where('is_active', true)
             ->latest()
             ->first();
@@ -139,7 +213,7 @@ class EvidenceController extends Controller
             return response()->json(['success' => false, 'message' => 'Conversation tidak ditemukan.'], 404);
         }
 
-        $botMessage = \App\Models\ChatMessage::where('conversation_id', $conversation->id)
+        $botMessage = ChatMessage::where('conversation_id', $conversation->id)
             ->where('role', 'assistant')
             ->where('status', '!=', 'completed')
             ->whereJsonContains('metadata->evidence_uuid', $uuid)
@@ -148,7 +222,7 @@ class EvidenceController extends Controller
 
         // Fallback: ambil bot terakhir dengan evidence_uuid apapun status
         if (! $botMessage) {
-            $botMessage = \App\Models\ChatMessage::where('conversation_id', $conversation->id)
+            $botMessage = ChatMessage::where('conversation_id', $conversation->id)
                 ->where('role', 'assistant')
                 ->whereJsonContains('metadata->evidence_uuid', $uuid)
                 ->latest('id')
@@ -160,7 +234,7 @@ class EvidenceController extends Controller
         }
 
         // Reset user bubble status jadi PROCESSING biar tidak stuck di FAILED
-        $userMessage = \App\Models\ChatMessage::where('conversation_id', $conversation->id)
+        $userMessage = ChatMessage::where('conversation_id', $conversation->id)
             ->where('role', 'user')
             ->latest('id')
             ->get()
@@ -170,6 +244,7 @@ class EvidenceController extends Controller
                         return true;
                     }
                 }
+
                 return false;
             });
 
@@ -184,7 +259,9 @@ class EvidenceController extends Controller
                 }
             }
             unset($c);
-            if ($changed) $userMessage->update(['content' => $content]);
+            if ($changed) {
+                $userMessage->update(['content' => $content]);
+            }
         }
 
         // Reset bot jadi pending & dispatch ulang
@@ -196,7 +273,7 @@ class EvidenceController extends Controller
             'metadata' => array_merge($botMessage->metadata ?? [], ['retry_at' => now()->toIso8601String()]),
         ]);
 
-        \App\Jobs\EvidenceLlmGroupingJob::dispatch($evidence->id, $user->id, $botMessage->id, $captionHint);
+        EvidenceLlmGroupingJob::dispatch($evidence->id, $user->id, $botMessage->id, $captionHint);
 
         Log::info('Evidence retry dispatched', ['evidence_id' => $evidence->id, 'uuid' => $uuid, 'bot_message_id' => $botMessage->id]);
 

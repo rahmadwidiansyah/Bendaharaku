@@ -1,0 +1,38 @@
+{
+  "packageId": "id.bendaharaku.twa",
+  "host": "bendaharaku.widihhh.my.id",
+  "name": "Bendaharaku",
+  "launcherName": "Bendaharaku",
+  "display": "standalone",
+  "themeColor": "#f59e0b",
+  "navigationColor": "#0f172a",
+  "backgroundColor": "#0f172a",
+  "startUrl": "/chat",
+  "iconUrl": "https://bendaharaku.widihhh.my.id/icons/icon-512.png",
+  "maskableIconUrl": "https://bendaharaku.widihhh.my.id/icons/icon-512-maskable.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./release.keystore",
+    "alias": "bendaharaku"
+  },
+  "appVersion": "1.0.0",
+  "appVersionCode": 1,
+  "fallbackType": "customtabs",
+  "features": {
+    "playBilling": {
+      "enabled": false
+    },
+    "locationDelegation": {
+      "enabled": false
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableNotifications": true,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://bendaharaku.widihhh.my.id/manifest.json",
+  "fullScopeUrl": "https://bendaharaku.widihhh.my.id/",
+  "minSdkVersion": 21
+}

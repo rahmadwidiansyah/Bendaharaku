@@ -30,6 +30,7 @@ class LlmEvidenceParser
 
         if (! config('evidence.llm.enabled', true)) {
             Log::info('LlmEvidenceParser: LLM disabled via config', ['evidence_id' => $evidence->id]);
+
             return null;
         }
 
@@ -70,6 +71,7 @@ class LlmEvidenceParser
                     'error' => $result->error,
                     'provider' => $result->provider,
                 ]);
+
                 return null;
             }
 
@@ -118,6 +120,7 @@ class LlmEvidenceParser
                 'evidence_id' => $evidence->id,
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return null;
         }
     }
