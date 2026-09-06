@@ -161,11 +161,11 @@ const statusMeta = computed(() => {
 </script>
 
 <template>
-    <div class="flex flex-col gap-1.5 py-0.5 w-full max-w-[280px]">
-        <!-- WA-style: gambar di atas, full width bubble -->
+    <div class="flex flex-col gap-1.5 py-0.5 w-auto max-w-[280px]">
+        <!-- WA-style: gambar sesuai rasio asli, tidak 1:1 / 4:3, max seperti WhatsApp -->
         <button
             type="button"
-            class="relative w-full aspect-[4/3] rounded-xl overflow-hidden border border-white/10 bg-gray-800 hover:border-white/20 active:scale-[0.98] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50 group"
+            class="relative max-w-[280px] max-h-[360px] w-auto h-auto rounded-xl overflow-hidden border border-white/10 bg-gray-800 hover:border-white/20 active:scale-[0.98] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50 group inline-block"
             :aria-label="t('chat.openFullscreen')"
             @click="isPreviewOpen = true"
         >
@@ -173,7 +173,7 @@ const statusMeta = computed(() => {
                 v-if="src"
                 :src="src"
                 :alt="t('chat.evidence')"
-                class="w-full h-full object-cover"
+                class="max-w-[280px] max-h-[360px] w-auto h-auto object-contain block"
                 loading="lazy"
             />
             <!-- Hint zoom -->

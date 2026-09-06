@@ -74,10 +74,10 @@ class EvidenceController extends Controller
                 : redirect()->route('chat.index')->with('error', 'File gambar wajib dipilih. Coba share ulang dari Gallery.');
         }
 
-        // Build caption dari share_target params title + text
-        $caption = trim(($request->input('title') ?? '').' '.($request->input('text') ?? ''));
+        // Hold in composer: jangan prefill caption dari Gallery title/text, biar user ketik dari nol
+        $caption = '';
 
-        // Reuse handleUpload logic dengan caption → chat bubble
+        // Reuse handleUpload logic tapi hold (jangan auto enqueue)
         return $this->handleUpload($request, Evidence::SOURCE_SHARE, true, $caption);
     }
 
@@ -114,14 +114,13 @@ class EvidenceController extends Controller
             $this->pipelineService->queue($evidence);
             ProcessEvidenceJob::dispatch($evidence->id);
 
-            // Share Target (PWA): buat chat bubble agar foto langsung muncul di /chat
+            // Share Target (PWA): hold di composer, jangan auto-send
             if ($isShare) {
-                try {
-                    $shareCaption = $captionHint !== '' ? $captionHint : trim((string) ($request->input('title') ?? '').' '.(string) ($request->input('text') ?? ''));
-                    $this->webAdapter->enqueueMessage($user, $shareCaption !== '' ? $shareCaption : '[Evidence]', null, $evidence->uuid);
-                } catch (\Throwable $e) {
-                    Log::warning('ShareTarget enqueueMessage failed: '.$e->getMessage(), ['evidence_id' => $evidence->id]);
-                }
+                Log::info('ShareTarget hold', [
+                    'evidence_id' => $evidence->id,
+                    'uuid' => $evidence->uuid,
+                    'user_id' => $user->id,
+                ]);
 
                 if ($request->expectsJson() || $request->wantsJson()) {
                     return response()->json([
@@ -140,7 +139,7 @@ class EvidenceController extends Controller
                     ]);
                 }
 
-                return redirect()->route('chat.index', ['evidence_uuid' => $evidence->uuid, 'share' => 1]);
+                return redirect()->route('chat.index', ['share_evidence_uuid' => $evidence->uuid, 'share_hold' => 1]);
             }
 
             return response()->json([

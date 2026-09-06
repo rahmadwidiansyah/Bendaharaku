@@ -86,6 +86,18 @@ export function useEvidenceUpload() {
         upload()
     }
 
+    function setEvidenceFromShare(evidenceData) {
+        if (localPreviewUrl.value) {
+            URL.revokeObjectURL(localPreviewUrl.value)
+        }
+        evidence.value = evidenceData
+        localPreviewUrl.value = evidenceData.url ?? null
+        uploadedFile.value = null
+        state.value = UploadState.UPLOADED
+        progress.value = 100
+        error.value = null
+    }
+
     function reset() {
         if (localPreviewUrl.value) {
             URL.revokeObjectURL(localPreviewUrl.value)
@@ -119,6 +131,7 @@ export function useEvidenceUpload() {
         isFailed,
         isDone,
         setFile,
+        setEvidenceFromShare,
         upload,
         retry,
         reset,
