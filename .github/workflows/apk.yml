@@ -99,15 +99,17 @@ jobs:
             cp twa-manifest.json "$TWA_DIR/twa-manifest.json"
           fi
           cd "$TWA_DIR"
+          echo "JAVA_HOME=$JAVA_HOME"
+          ls -d "$JAVA_HOME" 2>&1 | head
           if [ -f release.keystore ] && [ -n "$ANDROID_KEYSTORE_PASSWORD" ]; then
             echo "🔐 Building signed APK..."
-            printf "n\n" | bubblewrap build --skipPwaValidation || (printf "n\n" | bubblewrap update --skipPwaValidation && printf "n\n" | bubblewrap build --skipPwaValidation)
+            printf "n\n%s\n" "$JAVA_HOME" | bubblewrap build --skipPwaValidation || (printf "n\n%s\n" "$JAVA_HOME" | bubblewrap update --skipPwaValidation && printf "n\n%s\n" "$JAVA_HOME" | bubblewrap build --skipPwaValidation)
           else
             echo "🔨 Building unsigned (debug) APK..."
             if command -v jq >/dev/null 2>&1; then
               jq 'del(.signingKey)' twa-manifest.json > /tmp/twa.json && mv /tmp/twa.json twa-manifest.json
             fi
-            printf "n\n" | bubblewrap build --skipPwaValidation || true
+            printf "n\n%s\n" "$JAVA_HOME" | bubblewrap build --skipPwaValidation || true
           fi
           ls -lh app/build/outputs/apk/release/ app/build/outputs/bundle/release/ 2>&1 | head -n 50 || true
           find . -name "*.apk" -type f | head -n 20
