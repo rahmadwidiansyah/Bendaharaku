@@ -4,8 +4,6 @@ on:
   push:
     branches: [main]
     tags: ['v*']
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
 concurrency:
@@ -17,6 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    # Run only after deploy so icons/manifest are live on https://bendaharaku.widihhh.my.id
+    # For PRs, use workflow_dispatch manually
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
 
     steps:
       - uses: actions/checkout@v4
@@ -115,16 +116,18 @@ jobs:
           cat ~/.bubblewrap/config.json
           # Also ensure bubblewrap doctor passes
           bubblewrap doctor 2>&1 | head -n 50 || true
-          # Prepare version for bubblewrap prompts
+          # Prepare version for bubblewrap prompts — also set via updateConfig to avoid interactive version prompt
           if [ "${GITHUB_REF#refs/tags/}" != "$GITHUB_REF" ]; then
             TAG="${GITHUB_REF#refs/tags/}"; VERSION_NAME="${TAG#v}"
           else
             VERSION_NAME="1.0.${GITHUB_RUN_NUMBER:-0}"
           fi
           echo "VERSION_NAME=$VERSION_NAME"
+          # Try to set version non-interactively via updateConfig (if available) to avoid prompts
+          bubblewrap updateConfig --appVersion "$VERSION_NAME" --appVersionCode "$GITHUB_RUN_NUMBER" 2>&1 | head -n 20 || true
           if [ -f release.keystore ] && [ -n "$ANDROID_KEYSTORE_PASSWORD" ]; then
             echo "🔐 Building signed APK..."
-            # Bubblewrap prompts: 1) regenerate? Y, 2) versionName, 3) keystore password, 4) key password
+            # Bubblewrap prompts: 1) regenerate? Y, 2) versionName (fallback), 3) keystore password, 4) key password
             printf "Y\n%s\n%s\n%s\n" "$VERSION_NAME" "$ANDROID_KEYSTORE_PASSWORD" "$ANDROID_KEY_PASSWORD" | bubblewrap build --skipPwaValidation || (printf "Y\n%s\n%s\n%s\n" "$VERSION_NAME" "$ANDROID_KEYSTORE_PASSWORD" "$ANDROID_KEY_PASSWORD" | bubblewrap update --skipPwaValidation && printf "Y\n%s\n%s\n%s\n" "$VERSION_NAME" "$ANDROID_KEYSTORE_PASSWORD" "$ANDROID_KEY_PASSWORD" | bubblewrap build --skipPwaValidation)
           else
             echo "🔨 Building unsigned (debug) APK..."
