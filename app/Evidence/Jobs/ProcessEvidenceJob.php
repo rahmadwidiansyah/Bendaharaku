@@ -110,7 +110,7 @@ class ProcessEvidenceJob implements ShouldQueue
         }
 
         if ($context->parsedData !== null) {
-            $engine = match ($context->documentType) {
+            $engine = $context->metadata['parser_engine'] ?? match ($context->documentType) {
                 DocumentType::QrisReceipt => 'QrisReceiptParser',
                 DocumentType::ShoppingReceipt => 'ShoppingReceiptParser',
                 default => 'TransferReceiptParser',
