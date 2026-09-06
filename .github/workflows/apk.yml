@@ -75,6 +75,20 @@ jobs:
           echo "Checking icons with padding..."
           ls -lh public/icons/ || true
 
+      - name: Validate TWA manifest
+        run: |
+          set -e
+          echo "🔍 Validating twa-manifest.json URLs (no secrets printed)..."
+          node scripts/validate-twa-manifest.js twa-manifest.json
+          echo "🔍 Also validating public/manifest.json..."
+          node -e "
+            const m=require('./public/manifest.json');
+            console.log('public/manifest start_url:', m.start_url, 'scope:', m.scope);
+            if (!m.start_url || !m.scope) { console.error('❌ public/manifest missing start_url/scope'); process.exit(1); }
+            console.log('✅ public/manifest.json looks ok');
+          "
+          echo "✅ All manifest validation passed"
+
       - name: Build TWA (APK)
         env:
           # Bubblewrap reads these for non-interactive password handling (see Build.getPasswords)
@@ -94,6 +108,10 @@ jobs:
           if command -v jq >/dev/null 2>&1; then
             jq '.signingKey.path="./release.keystore"' "$TWA_DIR/twa-manifest.json" > /tmp/twa.json && mv /tmp/twa.json "$TWA_DIR/twa-manifest.json"
           fi
+          echo "📄 TWA manifest to be used:"
+          cat "$TWA_DIR/twa-manifest.json"
+          # Validate the synced manifest as well (ensures URLs still absolute after jq)
+          node scripts/validate-twa-manifest.js "$TWA_DIR/twa-manifest.json"
           # Pre-configure Bubblewrap JDK + Android SDK (non-interactive, no prompt)
           mkdir -p ~/.bubblewrap
           SDK_PATH="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
@@ -101,8 +119,8 @@ jobs:
           printf '{"jdkPath":"%s","androidSdkPath":"%s"}\n' "$JAVA_HOME" "$SDK_PATH" > ~/.bubblewrap/config.json
           echo "Bubblewrap config:"
           cat ~/.bubblewrap/config.json
-          bubblewrap doctor 2>&1 | head -n 20 || true
-          # Generate checksum so build doesn't prompt "No checksum file..." 
+          bubblewrap doctor 2>&1 | head -n 30 || true
+          # Generate checksum so build doesn't prompt "No checksum file..."
           # (build checks twa/manifest-checksum.txt vs current manifest)
           node -e "
             const fs=require('fs'), crypto=require('crypto'), path=require('path');
@@ -117,22 +135,39 @@ jobs:
           # If TWA project not yet initialized (no app/build.gradle), init it non-interactively
           if [ ! -f "$TWA_DIR/app/build.gradle" ]; then
             echo "Initializing TWA project (non-interactive)..."
-            # init will use twa-manifest.json and already-configured jdk/sdk, no prompts
-            (cd "$TWA_DIR" && bubblewrap init --manifest ./twa-manifest.json --directory ./ 2>&1 | head -n 50) || echo "init finished or already initialized"
-            # Re-sync manifest after init (init may overwrite)
-            cp twa-manifest.json "$TWA_DIR/twa-manifest.json"
-            if command -v jq >/dev/null 2>&1; then
-              jq '.signingKey.path="./release.keystore"' "$TWA_DIR/twa-manifest.json" > /tmp/twa.json && mv /tmp/twa.json "$TWA_DIR/twa-manifest.json"
+            # Validate again before init — fail fast on Invalid URL
+            node scripts/validate-twa-manifest.js "$TWA_DIR/twa-manifest.json"
+            # Use our non-interactive generator instead of `bubblewrap init` which requires web URL + prompts
+            # This creates Android project + gradlew without needing `bubblewrap init --manifest <URL>`
+            export NODE_PATH=$(npm root -g):$NODE_PATH
+            node scripts/generate-twa-project.js "$TWA_DIR" "$TWA_DIR/twa-manifest.json"
+            if [ ! -f "$TWA_DIR/app/build.gradle" ]; then
+              echo "❌ Failed to generate Android project (app/build.gradle missing)"
+              ls -la "$TWA_DIR" || true
+              exit 1
             fi
-            # Regenerate checksum after init
-            node -e "
-              const fs=require('fs'), crypto=require('crypto'), path=require('path');
-              const p=path.join('$TWA_DIR','twa-manifest.json');
-              const c=path.join('$TWA_DIR','manifest-checksum.txt');
-              fs.writeFileSync(c, crypto.createHash('sha1').update(fs.readFileSync(p)).digest('hex'));
-            "
+            if [ ! -f "$TWA_DIR/gradlew" ]; then
+              echo "❌ gradlew not found after project generation"
+              ls -la "$TWA_DIR" || true
+              exit 1
+            fi
+            echo "✅ Project initialized successfully"
+            ls -lh "$TWA_DIR/gradlew" "$TWA_DIR/app/build.gradle" || true
+          else
+            echo "✅ TWA project already exists, skipping init"
           fi
           cd "$TWA_DIR"
+          # Ensure checksum is up-to-date after init (generate script already does, but re-sync for safety)
+          node -e "
+            const fs=require('fs'), crypto=require('crypto');
+            const p='twa-manifest.json';
+            const c='manifest-checksum.txt';
+            const sum=crypto.createHash('sha1').update(fs.readFileSync(p)).digest('hex');
+            fs.writeFileSync(c, sum);
+            console.log('Checksum synced:', sum);
+          "
+          echo "Current manifest checksum:"
+          cat manifest-checksum.txt || true
           if [ -f release.keystore ] && [ -n "$BUBBLEWRAP_KEYSTORE_PASSWORD" ]; then
             echo "🔐 Building signed APK (non-interactive via BUBBLEWRAP env)..."
             bubblewrap build --skipPwaValidation
@@ -140,10 +175,11 @@ jobs:
             echo "🔨 Building unsigned (debug) APK..."
             if command -v jq >/dev/null 2>&1; then
               jq 'del(.signingKey)' twa-manifest.json > /tmp/twa.json && mv /tmp/twa.json twa-manifest.json
-              node -e "const fs=require('fs'),c=require('crypto');const p='twa-manifest.json',d='manifest-checksum.txt';fs.writeFileSync(d,c.createHash('sha1').update(fs.readFileSync(p)).digest('hex'))"
+              node -e "const fs=require('fs'),c=require('crypto');const p='twa-manifest.json',d='manifest-checksum.txt';fs.writeFileSync(d,c.createHash('sha1').update(fs.readFileSync(p)).digest('hex')); console.log('Regenerated checksum for unsigned:', fs.readFileSync(d,'utf8'))"
             fi
-            bubblewrap build --skipPwaValidation || true
+            bubblewrap build --skipPwaValidation
           fi
+          echo "=== Build outputs ==="
           ls -lh app/build/outputs/apk/release/ app/build/outputs/bundle/release/ 2>&1 | head -n 50 || true
           find . -name "*.apk" -type f | head -n 20
           cd ..
