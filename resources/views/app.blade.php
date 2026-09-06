@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title inertia>{{ config('app.name', 'Laravel') }}</title>
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#f59e0b">
+    <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#F5F7FB" media="(prefers-color-scheme: light)">
     <link rel="icon" type="image/png" href="/icons/favicon-32.png">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">

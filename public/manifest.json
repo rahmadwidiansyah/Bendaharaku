@@ -2,7 +2,7 @@
   "name": "Bendaharaku",
   "short_name": "Bendaharaku",
   "description": "Solusi cerdas pencatatan keuangan pribadi — Bendaharaku",
-  "start_url": "/dashboard",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",

@@ -87,6 +87,7 @@ const { height: viewportHeight } = useVisualViewport()
 // User bisa tambah caption lalu klik Send (seperti WA/Tele)
 const {
     setFile,
+    setEvidenceFromShare,
     upload,
     localPreviewUrl,
     evidence,
@@ -123,27 +124,58 @@ onMounted(async () => {
     resumePending()
     await scrollToBottom(false)
 
-    // Share Target / Push: jika URL ada ?evidence_uuid=xxx atau ?share=1, highlight dan scroll ke bubble evidence tersebut
+    // Share Target hold: jika ada ?share_evidence_uuid=xxx&share_hold=1, tampilkan preview di composer (hold, tidak auto-send)
     try {
         const params = new URLSearchParams(window.location.search)
-        const evUuid = params.get('evidence_uuid') || params.get('evidenceUuid')
-        if (evUuid) {
-            // Jika evidence bubble belum ada (share baru), tunggu polling selesai
-            let tries = 0
-            const highlight = () => {
-                const found = messages.value.find(m => (m.metadata?.evidence_uuid === evUuid) || m.content?.some(c => (c.evidenceUuid === evUuid || c.evidence_uuid === evUuid)))
-                if (found) scrollToBottom(true)
-                else if (tries++ < 10) setTimeout(highlight, 1000)
+        const shareUuid = params.get('share_evidence_uuid')
+        const shareHold = params.get('share_hold')
+        if (shareUuid && shareHold) {
+            // Hold: evidence sudah di-upload server, tampilkan di composer sebagai preview
+            // Caption dikosongkan biar user ketik dari nol (sesuai request)
+            const shareEvidence = {
+                uuid: shareUuid,
+                url: route('chat.evidence.image', { uuid: shareUuid }),
+                original_name: 'Shared image',
             }
-            setTimeout(highlight, 500)
-            // Bersihkan query param setelah 3 detik agar tidak stuck highlight
+            setEvidenceFromShare(shareEvidence)
+            // Back dari share harus ke dashboard, bukan keluar app (gallery)
+            // Sisipkan /dashboard di history sebelum /chat
+            try {
+                const currentShareUrl = window.location.href
+                window.history.replaceState({}, '', route('dashboard'))
+                window.history.pushState({}, '', currentShareUrl)
+            } catch (_) {}
+            nextTick(() => {
+                composerRef.value?.$el?.querySelector('textarea')?.focus()
+            })
+            // Bersihkan query param tapi tetap biarkan /dashboard di history
             setTimeout(() => {
                 const url = new URL(window.location.href)
-                url.searchParams.delete('evidence_uuid')
-                url.searchParams.delete('evidenceUuid')
-                url.searchParams.delete('share')
+                url.searchParams.delete('share_evidence_uuid')
+                url.searchParams.delete('share_hold')
+                url.searchParams.delete('share_caption')
+                // Ganti URL saat ini jadi /chat tanpa param, tapi history tetap: gallery -> /dashboard -> /chat
                 window.history.replaceState({}, '', url.pathname)
-            }, 3000)
+            }, 500)
+        } else {
+            // Legacy: jika URL ada ?evidence_uuid=xxx atau ?share=1, highlight dan scroll ke bubble evidence tersebut
+            const evUuid = params.get('evidence_uuid') || params.get('evidenceUuid')
+            if (evUuid) {
+                let tries = 0
+                const highlight = () => {
+                    const found = messages.value.find(m => (m.metadata?.evidence_uuid === evUuid) || m.content?.some(c => (c.evidenceUuid === evUuid || c.evidence_uuid === evUuid)))
+                    if (found) scrollToBottom(true)
+                    else if (tries++ < 10) setTimeout(highlight, 1000)
+                }
+                setTimeout(highlight, 500)
+                setTimeout(() => {
+                    const url = new URL(window.location.href)
+                    url.searchParams.delete('evidence_uuid')
+                    url.searchParams.delete('evidenceUuid')
+                    url.searchParams.delete('share')
+                    window.history.replaceState({}, '', url.pathname)
+                }, 3000)
+            }
         }
     } catch (_) {}
 })
@@ -172,18 +204,19 @@ async function handleSend(text) {
     }
 
     const trimmed = (text ?? '').trim()
-    const hasFile = !!uploadedFile.value
+    const hasAttachmentSend = !!uploadedFile.value || !!evidence.value?.uuid
 
     // Tidak ada teks & tidak ada foto → ignore
-    if (!trimmed && !hasFile) return
+    if (!trimmed && !hasAttachmentSend) return
 
     // Jika ada foto: upload dulu (jika belum), lalu kirim sebagai 1 bubble image+caption
-    if (hasFile) {
+    if (hasAttachmentSend) {
         // Keep blob valid sampai optimistic bubble terganti server data
         // upload() sekarang TIDAK revoke, jadi preview tetap valid
         const previewBefore = localPreviewUrl.value
 
-        // Upload jika belum punya evidence.uuid
+        // Upload jika belum punya evidence.uuid (manual upload)
+        // Jika sudah punya (share hold), skip upload
         if (!evidence.value?.uuid) {
             await upload()
         }

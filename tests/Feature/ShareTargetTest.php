@@ -78,23 +78,22 @@ class ShareTargetTest extends TestCase
         ]);
 
         $resp->assertRedirect();
-        // Should redirect to /chat?evidence_uuid=xxx&share=1
+        // Should redirect to /chat?share_evidence_uuid=xxx&share_hold=1 (hold, not auto-send)
         $this->assertStringContainsString('/chat', $resp->headers->get('Location'));
-        $this->assertStringContainsString('evidence_uuid', $resp->headers->get('Location'));
+        $this->assertStringContainsString('share_evidence_uuid', $resp->headers->get('Location'));
+        $this->assertStringContainsString('share_hold', $resp->headers->get('Location'));
 
         $this->assertDatabaseHas('evidence', [
             'user_id' => $user->id,
             'source' => 'SHARE_TARGET',
         ]);
 
-        $this->assertDatabaseHas('chat_messages', [
+        // Hold: no chat bubble yet, user will type caption then send
+        $this->assertDatabaseMissing('chat_messages', [
             'role' => 'user',
         ]);
-        $this->assertDatabaseHas('chat_messages', [
-            'role' => 'assistant',
-        ]);
         Queue::assertPushed(ProcessEvidenceJob::class);
-        Queue::assertPushed(EvidenceLlmGroupingJob::class);
+        Queue::assertNotPushed(EvidenceLlmGroupingJob::class);
     }
 
     /** @test */
