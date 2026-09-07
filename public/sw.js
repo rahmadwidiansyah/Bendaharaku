@@ -22,7 +22,7 @@ self.addEventListener('push', (event) => {
     data: { url: data.url },
     tag: data.tag || 'bendaharaku',
     renotify: true,
-    icon: '/favicon.ico',
+    icon: '/icons/icon-192.png',
     badge: '/favicon.ico',
   };
 

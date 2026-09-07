@@ -20,6 +20,7 @@ class CommandRouter
         private readonly CategoryReportService $categoryReport,
         private readonly TransactionReportService $transactionReport,
         private readonly MonthlyReportService $monthlyReport,
+        private readonly StatistikService $statistikService,
     ) {}
 
     public function route(
@@ -86,6 +87,14 @@ class CommandRouter
             return $this->monthlyReport->buildMonthlyReportResponse($user, $metadata, $text);
         }
 
+        if ($command === '/transfer') {
+            return $this->transactionReport->buildTransferSummaryResponse($user, $metadata);
+        }
+
+        if ($command === '/statistik') {
+            return $this->statistikService->build($user, $metadata);
+        }
+
         if ($command === '/web') {
             return $this->buildWebLinkResponse($locale, $metadata);
         }
@@ -112,8 +121,9 @@ class CommandRouter
     private function normalizeCommand(string $lower): ?string
     {
         $command = strtok($lower, " \t\n\r\0\x0B") ?: $lower;
+        $isSlash = str_starts_with($command, '/');
 
-        return match ($command) {
+        $matched = match ($command) {
             '/saldo', 'saldo' => '/saldo',
             '/wallet', 'wallet', '/walet', 'walet', 'dompet', '/dompet' => '/wallet',
             '/kategori', 'kategori' => '/kategori',
@@ -123,10 +133,39 @@ class CommandRouter
             '/pengeluaran', 'pengeluaran' => '/pengeluaran',
             '/laporan', 'laporan' => '/laporan',
             '/ringkasan', 'ringkasan' => '/ringkasan',
+            '/transfer', 'transfer', 'tf', 'pindah', 'mutasi' => '/transfer',
+            '/statistik', 'statistik' => '/statistik',
             '/help', 'help', '/start' => $command,
             '/web', 'web' => '/web',
             default => str_starts_with($command, '/') ? $command : null,
         };
+
+        // Guard: bare word + payload (nominal/wallet) → transaksi, bukan report
+        // Bare "pemasukan" + nominal/wallet → transaksi; "/pemasukan" selalu report (slash = eksplisit)
+        if ($matched !== null && ! $isSlash) {
+            $trailing = trim(substr($lower, strlen($command)));
+            if ($trailing !== '' && $this->hasTransactionPayload($trailing)) {
+                if (in_array($matched, ['/pemasukan', '/pengeluaran', '/saldo', '/wallet', '/kategori', '/aset', '/transaksi', '/laporan', '/ringkasan', '/statistik', '/transfer'], true)) {
+                    return null;
+                }
+            }
+        }
+
+        return $matched;
+    }
+
+    private function hasTransactionPayload(string $trailing): bool
+    {
+        // Ada nominal (digit) → indikasi transaksi, bukan report kosong
+        if (preg_match('/\d/', $trailing)) {
+            return true;
+        }
+        // Ada keyword wallet umum (spay, dana, cash, bca, bri, dll) juga indikasi transaksi
+        if (preg_match('/\b(spay|shopeepay|dana|ovo|gopay|cash|tunai|bca|bri|mandiri|dompet|transfer|tf)\b/i', $trailing)) {
+            return true;
+        }
+
+        return false;
     }
 
     private function buildHelpResponse(User $user, string $locale, array $metadata): ChatResponse

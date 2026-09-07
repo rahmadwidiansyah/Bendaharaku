@@ -14,6 +14,11 @@ return [
 
     'chat' => [
         'reply_failed' => 'Your chat reply failed to process. Try again later.',
+        'token_limit' => 'Token limit reached — try a shorter message.',
+        'rate_limit' => 'API quota exhausted — try again later or top up.',
+        'timeout' => 'AI server busy — retry in 1-2 minutes.',
+        'not_configured' => 'AI not configured — check Settings.',
+        'provider_error' => 'AI error — try again later.',
     ],
 
     'budget' => [

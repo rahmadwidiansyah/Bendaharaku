@@ -73,12 +73,12 @@ class TransactionReportService
         $items = [];
         foreach ($transactions->take(10) as $transaction) {
             $items[] = [
-                'date' => $transaction->date?->format('d/m') ?? '-',
+                'date' => $transaction->date?->format('d/m'),
                 'type' => strtolower($transaction->type?->name ?? 'transaksi'),
-                'category' => $transaction->category?->category_name ?? '-',
+                'category' => $transaction->category?->category_name,
                 'category_icon' => $transaction->category?->icon ?? '📄',
                 'amount' => MoneyFormatter::rupiah((float) $transaction->amount),
-                'wallet' => $transaction->sourceWallet?->name ?? $transaction->destinationWallet?->name ?? '-',
+                'wallet' => $transaction->sourceWallet?->name ?? $transaction->destinationWallet?->name,
             ];
         }
 
@@ -98,14 +98,64 @@ class TransactionReportService
         return ChatResponse::command($components, $metadata);
     }
 
+    public function buildTransferSummaryResponse(User $user, array $metadata): ChatResponse
+    {
+        $monthStart = now()->startOfMonth();
+        $monthEnd = now()->endOfMonth();
+
+        $transactions = $user->transactionLogs()
+            ->with(['category', 'sourceWallet', 'destinationWallet'])
+            ->whereBetween('date', [$monthStart->toDateString(), $monthEnd->toDateString()])
+            ->whereHas('type', fn ($q) => $q->where('name', 'Transfer'))
+            ->latest('date')
+            ->latest('id')
+            ->get();
+
+        if ($transactions->isEmpty()) {
+            return ChatResponse::command([
+                new TextComponent(translationKey: 'chat.command.transfer_empty', bold: true),
+            ], $metadata);
+        }
+
+        $total = (float) $transactions->sum('amount');
+        $items = [];
+        foreach ($transactions->take(10) as $t) {
+            $items[] = [
+                'date' => $t->date?->format('d/m'),
+                'source' => $t->sourceWallet?->name,
+                'dest' => $t->destinationWallet?->name,
+                'amount' => MoneyFormatter::rupiah((float) $t->amount),
+            ];
+        }
+
+        $components = [
+            new ReportSectionComponent(
+                title: '',
+                emoji: 'arrow-left-right',
+                items: $items,
+                translationKey: 'chat.command.transfer_title',
+                total: MoneyFormatter::rupiah($total),
+                count: $transactions->count(),
+            ),
+        ];
+
+        return ChatResponse::command($components, $metadata);
+    }
+
     private function formatTransactionLine(TransactionLog $transaction): string
     {
         $type = $transaction->type?->name ?? 'Transaksi';
-        $category = $transaction->category?->category_name ?? '-';
-        $wallet = $transaction->sourceWallet?->name ?? $transaction->destinationWallet?->name ?? '-';
+        $category = $transaction->category?->category_name;
+        $wallet = $transaction->sourceWallet?->name ?? $transaction->destinationWallet?->name;
         $amount = MoneyFormatter::rupiah((float) $transaction->amount);
-        $date = $transaction->date?->format('d/m') ?? '-';
+        $date = $transaction->date?->format('d/m');
 
-        return "{$date} — {$type} — {$category} — {$amount} — {$wallet}";
+        $parts = array_filter([$date, $type, $category, $amount, $wallet], fn ($v) => $v !== null && $v !== '' && $v !== '-');
+        // Fallback jika semua null (harusnya tidak terjadi)
+        if (empty($parts)) {
+            return "{$amount} — {$type}";
+        }
+
+        return implode(' — ', $parts);
     }
 }

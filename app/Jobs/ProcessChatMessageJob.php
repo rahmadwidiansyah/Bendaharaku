@@ -102,10 +102,27 @@ class ProcessChatMessageJob implements ShouldQueue
                 ]);
             }
 
-            PushGate::dispatch(
-                $user,
-                PushPayloadBuilder::chatReplyReady($user, (string) $botMessage->raw_text)
-            );
+            // Push: jika error AI (token habis / rate limit / timeout dll) kirim push failed ringkas 80 char, bukan ready
+            if (! $response->success && $response->hasErrors()) {
+                $first = $response->firstError();
+                $reasonKey = match ($first->code ?? '') {
+                    'AI_TOKEN_LIMIT' => 'push.chat.token_limit',
+                    'AI_RATE_LIMIT' => 'push.chat.rate_limit',
+                    'AI_TIMEOUT' => 'push.chat.timeout',
+                    'AI_NOT_CONFIGURED' => 'push.chat.not_configured',
+                    'AI_PROVIDER_ERROR' => 'push.chat.provider_error',
+                    default => null,
+                };
+                $reason = $reasonKey ? __($reasonKey, [], $user->locale ?? 'id') : ($first ? __($first->messageKey, $first->params, $user->locale ?? 'id') : null);
+                $reason = $reason ? mb_substr(trim(preg_replace('/\s+/', ' ', strip_tags($reason))), 0, 80) : null;
+
+                PushGate::dispatch($user, PushPayloadBuilder::chatReplyFailed($user, $reason));
+            } else {
+                PushGate::dispatch(
+                    $user,
+                    PushPayloadBuilder::chatReplyReady($user, (string) $botMessage->raw_text)
+                );
+            }
 
             Log::info('ProcessChatMessageJob: message processed', [
                 'trace_id' => $context->traceId,

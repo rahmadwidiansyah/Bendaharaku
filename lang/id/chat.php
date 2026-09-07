@@ -203,6 +203,12 @@ return [
         'report_comparison_income' => ':emoji Pendapatan: :amount (vs bulan lalu)',
         'report_comparison_expense' => ':emoji Pengeluaran: :amount (vs bulan lalu)',
         'report_gemini_unavailable' => 'Gemini belum siap dipakai, jadi aku tampilkan ringkasan lokal dulu.',
+        'transfer_title' => '**Transfer Bulan Ini**',
+        'transfer_empty' => 'Belum ada transfer bulan ini.',
+        'statistik_title' => '**Statistik 7 Hari**',
+        'statistik_income' => 'Pemasukan 7 hari: :amount',
+        'statistik_expense' => 'Pengeluaran 7 hari: :amount',
+        'statistik_net' => 'Selisih: :amount',
         'not_yet_implemented' => '🚧 Perintah `:command` belum tersedia di Web Chat. Coba lagi nanti!',
         'web_link_msg' => implode("\n", [
             '🌐 *Akses Bendaharaku V4*',

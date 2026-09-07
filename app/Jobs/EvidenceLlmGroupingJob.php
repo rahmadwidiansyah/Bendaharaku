@@ -31,6 +31,8 @@ class EvidenceLlmGroupingJob implements ShouldQueue
 
     public int $timeout = 120;
 
+    private float $jobStartedAt = 0.0;
+
     public function __construct(
         public int $evidenceId,
         public int $userId,
@@ -82,6 +84,7 @@ class EvidenceLlmGroupingJob implements ShouldQueue
         }
 
         $botMessage->update(['status' => 'processing']);
+        $this->jobStartedAt = microtime(true);
 
         try {
             $result = $groupingService->group($evidence, $user, $this->captionHint);
@@ -244,17 +247,25 @@ class EvidenceLlmGroupingJob implements ShouldQueue
 
     private function buildChatResponseFromResult(array $result, ChatContext $context): ChatResponse
     {
-        // Jika result sudah berupa ChatResponse (dari orchestrator), kembalikan langsung
-        // Tapi orchestrator mengembalikan array, bukan ChatResponse untuk multi
-        // Kita perlu convert via ChatResponseConverter
         $converter = app(ChatResponseConverter::class);
+        $multi = $result['multi_result'] ?? null;
+        $usage = $result['usage'] ?? ($multi?->usage ?? []);
+        $totalTokens = $usage['total'] ?? null;
+        // Extract provider/model/confidence dari top-level atau dari multi_result (untuk struk multi-item)
+        $provider = $result['provider'] ?? $multi?->provider ?? null;
+        $model = $result['model'] ?? $multi?->model ?? null;
+        $confidence = $result['confidence'] ?? $multi?->confidence ?? null;
+        $latency = $this->jobStartedAt > 0 ? (int) round((microtime(true) - $this->jobStartedAt) * 1000) : 0;
+
         $metadata = [
             'trace_id' => $context->traceId,
             'platform' => $context->platform->value,
-            'provider' => $result['provider'] ?? null,
-            'model' => $result['model'] ?? null,
-            'confidence' => $result['confidence'] ?? null,
-            'latency_ms' => 0,
+            'provider' => $provider,
+            'model' => $model,
+            'confidence' => $confidence,
+            'latency_ms' => $latency,
+            'total_tokens' => $totalTokens,
+            'usage' => $usage,
             'evidence_uuid' => $context->metadata['evidence_uuid'] ?? null,
         ];
 

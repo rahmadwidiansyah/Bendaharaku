@@ -12,8 +12,8 @@
   "navigationDividerColorDark": "#0f172a",
   "backgroundColor": "#0f172a",
   "startUrl": "/",
-  "iconUrl": "https://raw.githubusercontent.com/rahmadwidiansyah/script_pencatat_keuangan/refs/heads/main/logo.png",
-  "maskableIconUrl": "https://raw.githubusercontent.com/rahmadwidiansyah/script_pencatat_keuangan/refs/heads/main/logo.png",
+  "iconUrl": "https://bendaharaku.widihhh.my.id/icons/icon-512.png",
+  "maskableIconUrl": "https://bendaharaku.widihhh.my.id/icons/icon-512-maskable.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "./release.keystore",

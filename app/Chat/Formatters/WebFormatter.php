@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Chat\Formatters;
 
+use App\Chat\Components\BarChartComponent;
 use App\Chat\Components\ChatComponentInterface;
 use App\Chat\Components\ErrorComponent;
 use App\Chat\Components\QuickReplyComponent;
@@ -104,6 +105,7 @@ class WebFormatter implements ChatFormatterInterface
             'suggestion' => $this->renderSuggestion($component, $locale),
             'quick_reply' => $this->renderQuickReply($component, $locale),
             'report_section' => $this->renderReportSection($component, $locale),
+            'bar_chart' => $this->renderBarChart($component, $locale),
             default => null,
         };
     }
@@ -154,7 +156,7 @@ class WebFormatter implements ChatFormatterInterface
                     || $trx->destinationWallet?->group_type === 'System'
                 ),
                 'type_key' => $typeKey,
-                'type_label' => trans("chat.transaction.type_{$typeKey}", [], $locale),
+                'type_label' => $this->stripForWeb(trans("chat.transaction.type_{$typeKey}", [], $locale)),
                 'category' => $trx->category?->category_name,
                 'source_wallet' => $trx->sourceWallet?->name,
                 'dest_wallet' => $trx->destinationWallet?->name,
@@ -168,6 +170,13 @@ class WebFormatter implements ChatFormatterInterface
 
     private function renderSummaryCard(SummaryCardComponent $c, string $locale): array
     {
+        $rawLabel = $c->allSuccess()
+            ? trans('chat.multi.all_success', ['count' => $c->total], $locale)
+            : ($c->allFailed()
+                ? trans('chat.multi.all_failed', ['count' => $c->total], $locale)
+                : trans('chat.multi.partial', ['success' => $c->success, 'failed' => $c->failed], $locale));
+        $label = $this->stripForWeb($rawLabel);
+
         return [
             'type' => 'summary_card',
             'total' => $c->total,
@@ -176,12 +185,17 @@ class WebFormatter implements ChatFormatterInterface
             'confidence' => round($c->confidence * 100),
             'all_success' => $c->allSuccess(),
             'all_failed' => $c->allFailed(),
-            'label' => $c->allSuccess()
-                ? trans('chat.multi.all_success', ['count' => $c->total], $locale)
-                : ($c->allFailed()
-                    ? trans('chat.multi.all_failed', ['count' => $c->total], $locale)
-                    : trans('chat.multi.partial', ['success' => $c->success, 'failed' => $c->failed], $locale)),
+            'label' => $label,
         ];
+    }
+
+    private function stripForWeb(string $text): string
+    {
+        // Hapus emoji leading (✅ ❌ 📄 🔴 🟢 dll) dan markdown ** * untuk web (sudah ada warna via CSS)
+        $text = preg_replace('/^[^\p{L}\p{N}\s]+/u', '', trim($text));
+        $text = str_replace(['**', '*'], '', $text);
+
+        return trim($text);
     }
 
     private function renderErrorComponent(ErrorComponent $c, string $locale): array
@@ -236,11 +250,16 @@ class WebFormatter implements ChatFormatterInterface
     private function renderReportSection(ReportSectionComponent $c, string $locale): array
     {
         $title = $c->title ?: ($c->translationKey ? trans($c->translationKey, [], $locale) : '');
+        // Strip markdown ** dari translation (Telegram butuh, Web tidak)
+        $title = trim($title, '*');
+        $title = str_replace('**', '', $title);
+        $title = trim($title);
 
         // Web harus pakai lucide — konversi emoji legacy → lucide kebab
         $emojiLucide = $c->emoji !== '' ? ChatIconMap::toLucide($c->emoji) : '';
 
         // Konversi icon di dalam items (category_icon, type_icon, icon) dari emoji → lucide
+        // + filter '-' placeholder jadi null agar frontend bisa hide baris
         $items = array_values($c->items);
         foreach ($items as &$item) {
             if (is_array($item)) {
@@ -249,7 +268,14 @@ class WebFormatter implements ChatFormatterInterface
                         $item[$key] = ChatIconMap::toLucide($item[$key]);
                     }
                 }
+                foreach (['category', 'wallet', 'source', 'dest', 'name', 'date', 'amount'] as $k) {
+                    if (isset($item[$k]) && $item[$k] === '-') {
+                        $item[$k] = null;
+                    }
+                }
                 // Saldo list items: icon field sudah dihandle di atas
+            } elseif (is_string($item) && $item === '-') {
+                $item = '';
             }
         }
         unset($item);
@@ -262,6 +288,29 @@ class WebFormatter implements ChatFormatterInterface
             'translationKey' => $c->translationKey,
             'total' => $c->total,
             'count' => $c->count,
+        ];
+    }
+
+    private function renderBarChart(BarChartComponent $c, string $locale): array
+    {
+        $title = $c->title ?: ($c->translationKey ? trans($c->translationKey, [], $locale) : '');
+        // Strip markdown bold markers from backend translations (e.g. **Statistik 7 Hari**)
+        // Handle any ** occurrence, not only wrap, to be safe for old persisted data.
+        $title = trim($title);
+        $title = trim($title, '*');
+        $title = str_replace('**', '', $title);
+        $title = trim($title);
+
+        return [
+            'type' => 'bar_chart',
+            'title' => $title,
+            'emoji' => $c->emoji !== '' ? ChatIconMap::toLucide($c->emoji) : '',
+            'labels' => $c->labels,
+            'incomeData' => $c->incomeData,
+            'expenseData' => $c->expenseData,
+            'translationKey' => $c->translationKey,
+            'totalIncome' => $c->totalIncome,
+            'totalExpense' => $c->totalExpense,
         ];
     }
 
