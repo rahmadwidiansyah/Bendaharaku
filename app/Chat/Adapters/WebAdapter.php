@@ -520,8 +520,9 @@ class WebAdapter
     private function tryHandleEvidenceFilter(User $user, Conversation $conversation, string $rawMessage, ChatMessage $userMessage): ?array
     {
         $lower = mb_strtolower(trim($rawMessage));
-        // Deteksi filter: harus mengandung kata filter + minimal 3 char
-        $isFilter = str_contains($lower, 'punyaku') || str_contains($lower, 'cuma') || str_contains($lower, 'hanya') || str_contains($lower, 'punya saya') || str_contains($lower, 'milikku') || str_contains($lower, 'yang saya');
+        $lowerNorm = str_replace(['punya ku', 'milik ku'], ['punyaku', 'milikku'], preg_replace('/\s+/', ' ', $lower));
+        // Deteksi filter: harus mengandung kata filter + minimal 3 char (flexible: support "punya ku" spasi)
+        $isFilter = str_contains($lowerNorm, 'punyaku') || str_contains($lowerNorm, 'cuma') || str_contains($lowerNorm, 'cuman') || str_contains($lowerNorm, 'hanya') || str_contains($lowerNorm, 'punya saya') || str_contains($lowerNorm, 'punya aku') || str_contains($lowerNorm, 'milikku') || str_contains($lowerNorm, 'milik saya') || str_contains($lowerNorm, 'yang saya');
         if (! $isFilter || mb_strlen($lower) < 5) {
             return null;
         }
@@ -555,19 +556,19 @@ class WebAdapter
             return null;
         }
 
-        // Filter: keep card jika notes/category-nya disebut di filter text
-        $filtered = $prevCards->filter(function ($card) use ($lower) {
+        // Filter: keep card jika notes/category-nya disebut di filter text (pakai lowerNorm agar "punya ku" -> "punyaku" konsisten)
+        $filtered = $prevCards->filter(function ($card) use ($lower, $lowerNorm) {
             $notes = mb_strtolower($card['transaction']['notes'] ?? $card['transaction']['category'] ?? '');
             $category = mb_strtolower($card['transaction']['category'] ?? '');
             // Cek apakah notes atau category muncul di filter text
-            if ($notes !== '' && str_contains($lower, $notes)) {
+            if ($notes !== '' && (str_contains($lower, $notes) || str_contains($lowerNorm, $notes))) {
                 return true;
             }
             // Cek per kata (mis. "ayam goreng" → cek "ayam" dan "goreng")
             $words = preg_split('/\s+/', $notes, -1, PREG_SPLIT_NO_EMPTY);
             $matchedWords = 0;
             foreach ($words as $w) {
-                if (mb_strlen($w) >= 3 && str_contains($lower, $w)) {
+                if (mb_strlen($w) >= 3 && (str_contains($lower, $w) || str_contains($lowerNorm, $w))) {
                     $matchedWords++;
                 }
             }
@@ -577,7 +578,7 @@ class WebAdapter
             if ($matchedWords >= 2) {
                 return true;
             }
-            if ($category !== '' && str_contains($lower, $category)) {
+            if ($category !== '' && (str_contains($lower, $category) || str_contains($lowerNorm, $category))) {
                 return true;
             }
 

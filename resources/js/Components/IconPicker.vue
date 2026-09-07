@@ -80,7 +80,7 @@ function handleCropped(blob) {
         <button type="button" @click="openModal"
             class="w-14 h-14 sm:w-[60px] sm:h-[60px] flex items-center justify-center rounded-xl bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] hover:border-[var(--color-brand-border)] transition-all overflow-hidden">
             <img v-if="hasCustomImage && previewUrl" :src="previewUrl" class="w-full h-full object-cover" alt="Icon" />
-            <AppIcon v-else :icon="modelValue || defaultIcon" class="w-8 h-8 text-[var(--color-brand)]" />
+            <AppIcon v-else :icon="modelValue || defaultIcon" iconClass="w-8 h-8 text-[var(--color-brand)]" />
         </button>
 
         <BaseModal :show="isOpen" maxWidth="adaptive" :showCloseBtn="false" @close="closeModal">
@@ -131,11 +131,11 @@ function handleCropped(blob) {
                 <div class="grid grid-cols-5 gap-2 max-h-[50vh] overflow-y-auto scrollbar-thin py-1">
                     <div v-for="icon in filteredIcons" :key="icon" @click="selectIcon(icon)"
                         class="aspect-square flex items-center justify-center cursor-pointer rounded-xl bg-[var(--color-surface-muted)]/50 border border-[var(--color-border-subtle)] hover:border-[var(--color-brand-border)] hover:bg-[var(--color-brand-subtle)] active:scale-90 transition-all">
-                        <AppIcon :icon="icon" class="w-6 h-6 text-[var(--color-brand)]" />
+                        <AppIcon :icon="icon" iconClass="w-6 h-6 text-[var(--color-brand)]" />
                     </div>
                     <div v-if="filteredIcons.length === 0"
                         class="col-span-full flex flex-col items-center justify-center py-10 text-[var(--color-text-muted)]">
-                        <AppIcon icon="search-x" class="w-8 h-8 mb-2 text-[var(--color-brand)]" />
+                        <AppIcon icon="search-x" iconClass="w-8 h-8 mb-2 text-[var(--color-brand)]" />
                         <p class="text-xs font-bold tracking-wider">{{ t('iconPicker.notFound') }}</p>
                     </div>
                 </div>

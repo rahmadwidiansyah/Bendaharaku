@@ -24,7 +24,7 @@ function isString(item) {
     <!-- Header -->
     <div class="px-3.5 pt-3 pb-2">
       <div class="flex items-center gap-2 mb-1">
-        <AppIcon :icon="toLucide(emoji)" class="w-4 h-4 shrink-0 text-[var(--color-brand)]" fallback="bar-chart-3" />
+        <AppIcon :icon="toLucide(emoji)" iconClass="w-4 h-4 shrink-0 text-[var(--color-brand)]" fallback="bar-chart-3" />
         <h3 class="text-sm font-bold text-[var(--color-text-primary)] leading-tight truncate">
           <MarkdownRenderer :content="title" inline />
         </h3>

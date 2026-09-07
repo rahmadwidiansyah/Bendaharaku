@@ -110,7 +110,7 @@ function onImgError(e, fallback) {
   <div v-if="isSaldoHeader" class="mx-2 my-1.5 rounded-xl overflow-hidden bg-white/[0.015] border border-white/[0.06]">
     <div class="px-3.5 pt-3 pb-2">
       <div class="flex items-center gap-2 mb-1">
-        <AppIcon v-if="component.emoji" :icon="toLucide(component.emoji)" class="w-4 h-4 shrink-0 text-[var(--color-brand)]" fallback="wallet" />
+        <AppIcon v-if="component.emoji" :icon="toLucide(component.emoji)" iconClass="w-4 h-4 shrink-0 text-[var(--color-brand)]" fallback="wallet" />
         <h3 class="text-sm font-bold text-[var(--color-text-primary)] leading-tight truncate">
           <MarkdownRenderer :content="titleText" inline />
         </h3>
@@ -173,7 +173,7 @@ function onImgError(e, fallback) {
     <div class="px-3.5 py-2.5 border-b border-white/[0.04]">
       <div class="flex items-center justify-between min-w-0">
         <div class="flex items-center gap-2 min-w-0">
-          <AppIcon v-if="component.emoji" :icon="toLucide(component.emoji)" class="w-4 h-4 shrink-0 text-[var(--color-brand)]" fallback="bar-chart-3" />
+          <AppIcon v-if="component.emoji" :icon="toLucide(component.emoji)" iconClass="w-4 h-4 shrink-0 text-[var(--color-brand)]" fallback="bar-chart-3" />
           <h3 class="text-sm font-semibold text-[var(--color-text-primary)] leading-tight truncate">
             <MarkdownRenderer :content="titleText" inline />
           </h3>
@@ -211,7 +211,7 @@ function onImgError(e, fallback) {
         <div v-if="hasStructuredCategorySections" class="px-3.5 pt-3 pb-2">
           <div v-for="(section, sIdx) in component.items" :key="sIdx" class="mb-4 last:mb-0">
             <div class="flex items-center gap-2 mb-2">
-              <AppIcon :icon="toLucide(section.type_icon)" class="w-4 h-4 shrink-0 text-violet-400" fallback="folder" />
+              <AppIcon :icon="toLucide(section.type_icon)" iconClass="w-4 h-4 shrink-0 text-violet-400" fallback="folder" />
               <h4 class="text-xs font-bold text-[var(--color-text-primary)] leading-tight">
                 {{ section.label_key ? t(section.label_key) : section.type_name }}
               </h4>
@@ -220,7 +220,7 @@ function onImgError(e, fallback) {
             <div class="pl-5 space-y-1">
               <div v-for="(cat, cIdx) in section.categories" :key="cIdx"
                 class="flex items-center gap-2 text-xs text-gray-300">
-                <AppIcon icon="dot" class="w-3 h-3 shrink-0 text-[var(--color-text-muted)]" />
+                <AppIcon icon="dot" iconClass="w-3 h-3 shrink-0 text-[var(--color-text-muted)]" />
                 <span>{{ cat }}</span>
               </div>
             </div>
@@ -256,7 +256,7 @@ function onImgError(e, fallback) {
             </span>
           </div>
           <div v-else class="flex items-start gap-2 px-3.5 py-2 text-xs text-[var(--color-text-secondary)]">
-            <AppIcon icon="sparkles" class="w-3.5 h-3.5 shrink-0 text-[var(--color-brand)]/60" />
+            <AppIcon icon="sparkles" iconClass="w-3.5 h-3.5 shrink-0 text-[var(--color-brand)]/60" />
             <span class="leading-relaxed">{{ item }}</span>
           </div>
         </div>

@@ -130,30 +130,9 @@ onBeforeUnmount(() => {
         </svg>
       </button>
 
-      <!-- Attachment button -->
-      <button
-        type="button"
-        @click="$emit('openUpload')"
-        :disabled="isLoading"
-        :class="[
-          'shrink-0 w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center',
-          'border transition-all duration-200',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50',
-          isLoading
-            ? 'opacity-40 cursor-not-allowed bg-[var(--color-surface-muted)]/60 border-[var(--color-border-subtle)] text-[var(--color-text-muted)]'
-            : 'bg-[var(--color-surface-muted)]/80 border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:text-[var(--color-transfer-text)] hover:border-[var(--color-transfer-border)] hover:bg-[var(--color-surface-muted)] active:scale-95',
-        ]"
-        :aria-label="t('chat.attachmentButton')"
-        :title="t('chat.attachmentTitle')"
-      >
-        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-        </svg>
-      </button>
-
       <div
         :class="[
-          'flex-1 relative rounded-2xl border transition-all duration-200',
+          'flex-1 relative rounded-2xl border transition-all duration-200 flex items-center',
           isFocused
             ? 'border-[var(--color-brand)]/50 bg-[var(--color-surface-muted)] ring-2 ring-[var(--color-brand)]/15'
             : 'border-[var(--color-border-default)] bg-[var(--color-surface-muted)]/70 hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface-muted)]/90',
@@ -169,11 +148,31 @@ onBeforeUnmount(() => {
           @input="resize"
           @focus="isFocused = true"
           @blur="isFocused = false"
-          class="w-full resize-none bg-transparent px-3 sm:px-4 py-[11px] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none focus:outline-none border-0 ring-0 focus:ring-0 disabled:opacity-50 leading-[22px] block"
+          class="flex-1 w-full resize-none bg-transparent pl-3 sm:pl-4 pr-10 sm:pr-11 py-[11px] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none focus:outline-none border-0 ring-0 focus:ring-0 disabled:opacity-50 leading-[22px] block"
           style="min-height: 44px; overflow-y: hidden;"
           :aria-label="placeholderText"
           aria-multiline="true"
         ></textarea>
+        <!-- Struk / receipt button inside form, kiri tombol send ala WA/Tele -->
+        <button
+          type="button"
+          @click="$emit('openUpload')"
+          :disabled="isLoading"
+          :class="[
+            'absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all duration-200',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/50',
+            isLoading
+              ? 'opacity-40 cursor-not-allowed text-[var(--color-text-muted)]'
+              : 'text-[var(--color-text-secondary)] hover:text-[var(--color-brand)] hover:bg-[var(--color-surface-raised)] active:scale-95',
+          ]"
+          :aria-label="t('chat.attachmentButton')"
+          :title="t('chat.attachmentTitle')"
+        >
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14 2v6h6M8 13h8M8 17h8M10 9H8" />
+          </svg>
+        </button>
       </div>
 
       <button

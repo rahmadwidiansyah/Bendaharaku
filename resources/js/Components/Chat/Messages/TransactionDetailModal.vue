@@ -3,18 +3,21 @@
  * TransactionDetailModal.vue
  *
  * Bottom sheet / modal detail transaksi yang dibuat via AI.
- * Menampilkan: ID, sumber, intent, model AI, confidence, latency, raw prompt, JSON metadata.
+ * Tab Detail: nominal, kategori, wallet, tanggal, catatan (financial).
+ * Tab Stats (!): sumber, intent, model AI, tokens, confidence, latency, raw prompt, JSON metadata.
  *
  * Pakai useClipboard untuk copy ID.
  */
 
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useClipboard }  from '@/Composables/useClipboard.js'
 import { Link } from '@inertiajs/vue3'
 import axios from 'axios'
 import { useI18n } from 'vue-i18n'
 import { useToast } from '@/Composables/useToast'
 import AppIcon from '@/Components/AppIcon.vue'
+import Badge from '@/Components/Badge.vue'
+import DetailRow from '@/Components/DetailRow.vue'
 import ConfirmationDialog from '@/Components/ConfirmationDialog.vue'
 import BaseModal from '@/Components/BaseModal.vue'
 
@@ -25,6 +28,7 @@ const props = defineProps({
     modelValue:  { type: Boolean, default: false },
     transaction: { type: Object,  default: null },
     metadata:    { type: Object,  default: () => ({}) },
+    initialTab:  { type: String, default: 'detail' },
 })
 
 const emit = defineEmits(['update:modelValue', 'deleted'])
@@ -33,6 +37,13 @@ function close() { emit('update:modelValue', false) }
 
 const isDeleting = ref(false)
 const showDeleteConfirm = ref(false)
+const activeTab = ref(props.initialTab)
+watch(() => props.modelValue, (open) => {
+    if (open) activeTab.value = props.initialTab || 'detail'
+})
+watch(() => props.initialTab, (v) => {
+    if (props.modelValue) activeTab.value = v
+})
 
 // Accordion
 const openAccordion = ref(null)
@@ -118,6 +129,23 @@ const parseStatus = computed(() =>
         : { label: t('transaction.draft'), color: 'text-debt-text' }
 )
 
+const tokens = computed(() => props.metadata?.total_tokens ?? props.metadata?.tokens ?? props.metadata?.usage?.total_tokens ?? null)
+const isRegexFallback = computed(() => (props.metadata?.model === 'regex' || props.metadata?.provider === 'local-rules'))
+
+const detailTypeConfig = computed(() => {
+    const map = {
+        income:   { label: t('types.income'), icon: 'trending-up', variant: 'income', color: 'text-income-text' },
+        expense:  { label: t('types.expense'), icon: 'trending-down', variant: 'expense', color: 'text-expense-text' },
+        transfer: { label: t('types.transfer'), icon: 'arrow-left-right', variant: 'transfer', color: 'text-transfer-text' },
+        debt:     { label: t('types.debt'), icon: 'hand-coins', variant: 'debt', color: 'text-debt-text' },
+        receivable: { label: t('types.receivable'), icon: 'handshake', variant: 'receivable', color: 'text-receivable-text' },
+        other:    { label: t('transaction.title'), icon: 'file-text', variant: 'neutral', color: 'text-[var(--color-text-secondary)]' },
+    }
+    return map[props.transaction?.type_key ?? 'other'] ?? map.other
+})
+const detailAmountColor = computed(() => detailTypeConfig.value.color)
+const detailBadgeVariant = computed(() => detailTypeConfig.value.variant)
+
 const jsonMeta = computed(() => JSON.stringify(props.metadata ?? {}, null, 2))
 
 function deleteTransaction() {
@@ -157,18 +185,107 @@ async function confirmDeleteTransaction() {
         align="bottom-sheet"
         @close="close"
     >
-        <!-- Header -->
+        <!-- Header + Tabs -->
         <template #header>
-            <div>
-                <h2 class="text-sm font-bold text-[var(--color-text-primary)]">{{ $t('transaction.detail.title') }}</h2>
-                <p class="text-2xs text-[var(--color-text-muted)] mt-0.5">{{ parseStatus.label }}</p>
+            <div class="w-full">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-sm font-bold text-[var(--color-text-primary)]">{{ $t('transaction.detail.title') }}</h2>
+                        <p class="text-2xs text-[var(--color-text-muted)] mt-0.5">{{ parseStatus.label }}</p>
+                    </div>
+                    <Badge :variant="detailBadgeVariant" size="sm" pill>
+                        <AppIcon :icon="detailTypeConfig.icon" iconClass="w-3 h-3" />
+                        {{ transaction.type_label ?? detailTypeConfig.label }}
+                    </Badge>
+                </div>
+                <div class="flex gap-1 mt-3 p-1 rounded-full bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] w-fit">
+                    <button
+                        type="button"
+                        @click="activeTab = 'detail'"
+                        :class="['px-3 py-1 rounded-full text-2xs font-bold transition-all', activeTab === 'detail' ? 'bg-[var(--color-surface-raised)] text-[var(--color-text-primary)] shadow-sm border border-white/10' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]']"
+                    >
+                        Detail
+                    </button>
+                    <button
+                        type="button"
+                        @click="activeTab = 'stats'"
+                        :class="['px-3 py-1 rounded-full text-2xs font-bold transition-all inline-flex items-center gap-1', activeTab === 'stats' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/20 shadow-sm' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]']"
+                    >
+                        <AppIcon icon="info" iconClass="w-3 h-3" />
+                        AI Stats
+                    </button>
+                </div>
             </div>
         </template>
 
         <!-- Scrollable content -->
         <div class="overflow-y-auto w-full max-h-[calc(100dvh-240px)] border-t border-[var(--color-border-default)]">
 
-            <!-- ID Transaksi -->
+            <!-- ===== Detail Tab ===== -->
+            <template v-if="activeTab === 'detail'">
+                <!-- Amount hero -->
+                <div class="border border-[var(--color-border-default)] bg-[var(--color-surface-muted)]/40 rounded-2xl px-4 py-4 text-center mt-3">
+                    <p class="text-2xs font-bold text-[var(--color-text-muted)] uppercase tracking-[0.2em] mb-2">{{ $t('transaction.amount') }}</p>
+                    <p :class="['text-2xl font-black tracking-tight tabular-nums', detailAmountColor]">
+                        {{ transaction.amount_formatted ?? transaction.amount ?? '-' }}
+                    </p>
+                    <p v-if="transaction.notes" class="text-2xs text-[var(--color-text-muted)] mt-1 truncate">{{ transaction.notes }}</p>
+                </div>
+
+                <!-- ID Transaksi -->
+                <div class="py-3">
+                    <p class="text-2xs text-[var(--color-text-muted)] mb-1">{{ $t('transaction.detail.transactionId') }}</p>
+                    <div class="flex items-center gap-2">
+                        <code class="text-xs font-mono text-[var(--color-text-primary)] bg-[var(--color-surface-muted)] px-2.5 py-1 rounded-lg border border-[var(--color-border-default)] flex-1 truncate">
+                            {{ transaction.reference_number ?? transaction.id ?? '-' }}
+                        </code>
+                        <button
+                            @click="copyId"
+                            class="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-lg text-2xs border transition-all"
+                            :class="copySuccess
+                                ? 'bg-income-bg border-income-border text-income-text'
+                                : 'bg-[var(--color-surface-muted)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-white/20'"
+                        >
+                            <svg v-if="!copySuccess" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                            <svg v-else class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            {{ copySuccess ? $t('chatTransaction.copied') : $t('chatTransaction.copy') }}
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Detail rows -->
+                <div class="flex flex-col divide-y divide-[var(--color-border-subtle)] border-t border-[var(--color-border-default)]">
+                    <DetailRow v-if="transaction.category" :label="$t('transaction.detail.category')">
+                        <span class="font-semibold text-[var(--color-text-primary)]">{{ transaction.category }}</span>
+                    </DetailRow>
+                    <DetailRow v-if="transaction.source_wallet" :label="$t('transaction.detail.wallet')">
+                        <span class="font-semibold text-[var(--color-text-primary)]">{{ transaction.source_wallet }}</span>
+                    </DetailRow>
+                    <DetailRow v-if="transaction.dest_wallet" :label="$t('transaction.detail.to') + ' ' + $t('transaction.detail.wallet')">
+                        <span class="font-semibold text-[var(--color-text-primary)]">{{ transaction.dest_wallet }}</span>
+                    </DetailRow>
+                    <DetailRow v-if="transaction.subject" :label="$t('transaction.detail.party')">
+                        <span class="font-semibold text-[var(--color-text-primary)]">{{ transaction.subject }}</span>
+                    </DetailRow>
+                    <DetailRow v-if="transaction.date || transaction.created_at" :label="$t('transaction.detail.date')">
+                        <span class="font-semibold text-[var(--color-text-primary)]">{{ formatDateTime(transaction.created_at ?? transaction.date) }}</span>
+                    </DetailRow>
+                    <DetailRow :label="$t('transaction.detail.note')">
+                        <span class="font-medium text-[var(--color-text-secondary)] italic">{{ transaction.notes || $t('transaction.detail.noNote') }}</span>
+                    </DetailRow>
+                    <DetailRow :label="$t('common.status')">
+                        <span :class="['text-sm font-bold', parseStatus.color]">{{ parseStatus.label }}</span>
+                    </DetailRow>
+                </div>
+            </template>
+
+            <!-- ===== Stats Tab ===== -->
+            <template v-else>
+            <!-- ID Transaksi (compact) -->
             <div class="py-3">
                 <p class="text-2xs text-[var(--color-text-muted)] mb-1">{{ $t('transaction.detail.transactionId') }}</p>
                 <div class="flex items-center gap-2">
@@ -197,7 +314,7 @@ async function confirmDeleteTransaction() {
             <div class="divide-y divide-white/5">
 
                 <div class="flex items-center gap-3 py-2.5">
-                    <AppIcon :icon="sourceInfo.icon" class="w-5 h-5 shrink-0" :class="sourceInfo.color" />
+                    <AppIcon :icon="sourceInfo.icon" iconClass="w-5 h-5 shrink-0" :class="sourceInfo.color" />
                     <div class="flex-1">
                         <p class="text-2xs text-[var(--color-text-muted)]">{{ $t('chatTransaction.recordedFrom') }}</p>
                         <p :class="['text-sm font-medium', sourceInfo.color]">{{ sourceInfo.label }}</p>
@@ -205,7 +322,7 @@ async function confirmDeleteTransaction() {
                 </div>
 
                 <div v-if="intentLabel" class="flex items-center gap-3 py-2.5">
-                    <AppIcon icon="target" class="w-5 h-5 shrink-0 text-violet-400" />
+                    <AppIcon icon="target" iconClass="w-5 h-5 shrink-0 text-violet-400" />
                     <div class="flex-1">
                         <p class="text-2xs text-[var(--color-text-muted)]">{{ $t('chatTransaction.intent.label') }}</p>
                         <p class="text-sm font-medium text-[var(--color-text-primary)]">{{ intentLabel }}</p>
@@ -213,15 +330,23 @@ async function confirmDeleteTransaction() {
                 </div>
 
                 <div v-if="modelLabel" class="flex items-center gap-3 py-2.5">
-                    <AppIcon icon="bot" class="w-5 h-5 shrink-0 text-sky-400" />
+                    <AppIcon icon="bot" iconClass="w-5 h-5 shrink-0 text-sky-400" />
                     <div class="flex-1">
                         <p class="text-2xs text-[var(--color-text-muted)]">{{ $t('chatTransaction.processedBy') }}</p>
-                        <p class="text-sm font-medium text-[var(--color-text-primary)]">{{ modelLabel }}</p>
+                        <p class="text-sm font-medium text-[var(--color-text-primary)]">{{ modelLabel }}<span v-if="isRegexFallback" class="ml-2 text-2xs text-debt-text">(regex)</span></p>
+                    </div>
+                </div>
+
+                <div v-if="tokens !== null" class="flex items-center gap-3 py-2.5">
+                    <AppIcon icon="hash" iconClass="w-5 h-5 shrink-0 text-violet-400" />
+                    <div class="flex-1">
+                        <p class="text-2xs text-[var(--color-text-muted)]">Tokens</p>
+                        <p class="text-sm font-medium text-[var(--color-text-primary)]">{{ tokens }}<span v-if="isRegexFallback" class="ml-2 text-2xs text-[var(--color-text-muted)]">0 (fallback)</span></p>
                     </div>
                 </div>
 
                 <div v-if="latencyLabel" class="flex items-center gap-3 py-2.5">
-                    <AppIcon icon="clock-3" class="w-5 h-5 shrink-0 text-amber-400" />
+                    <AppIcon icon="clock-3" iconClass="w-5 h-5 shrink-0 text-amber-400" />
                     <div class="flex-1">
                         <p class="text-2xs text-[var(--color-text-muted)]">{{ $t('chatTransaction.processingDuration') }}</p>
                         <p class="text-sm font-medium text-[var(--color-text-primary)]">{{ latencyLabel }}</p>
@@ -229,7 +354,7 @@ async function confirmDeleteTransaction() {
                 </div>
 
                 <div v-if="confidenceLabel" class="flex items-center gap-3 py-2.5">
-                    <AppIcon icon="bar-chart-3" class="w-5 h-5 shrink-0 text-[var(--color-brand)]" />
+                    <AppIcon icon="bar-chart-3" iconClass="w-5 h-5 shrink-0 text-[var(--color-brand)]" />
                     <div class="flex-1">
                         <p class="text-2xs text-[var(--color-text-muted)]">{{ $t('chatTransaction.aiConfidence') }}</p>
                         <p :class="['text-sm font-medium', confidenceLabel.color]">
@@ -239,7 +364,7 @@ async function confirmDeleteTransaction() {
                 </div>
 
                 <div class="flex items-center gap-3 py-2.5">
-                    <AppIcon icon="check" class="w-5 h-5 shrink-0 text-emerald-400" />
+                    <AppIcon icon="check" iconClass="w-5 h-5 shrink-0 text-emerald-400" />
                     <div class="flex-1">
                         <p class="text-2xs text-[var(--color-text-muted)]">{{ $t('common.status') }}</p>
                         <p :class="['text-sm font-medium', parseStatus.color]">{{ parseStatus.label }}</p>
@@ -247,7 +372,7 @@ async function confirmDeleteTransaction() {
                 </div>
 
                 <div v-if="transaction.date || transaction.created_at" class="flex items-center gap-3 py-2.5">
-                    <AppIcon icon="calendar" class="w-5 h-5 shrink-0 text-blue-400" />
+                    <AppIcon icon="calendar" iconClass="w-5 h-5 shrink-0 text-blue-400" />
                     <div class="flex-1">
                         <p class="text-2xs text-[var(--color-text-muted)]">{{ $t('chatTransaction.transactionTime') }}</p>
                         <p class="text-sm font-medium text-[var(--color-text-primary)]">
@@ -267,7 +392,7 @@ async function confirmDeleteTransaction() {
                         class="w-full flex items-center justify-between py-3 text-left hover:bg-white/3 transition-colors"
                     >
                         <div class="flex items-center gap-2">
-                            <AppIcon icon="message-square" class="w-4 h-4 shrink-0 text-[var(--color-text-muted)]" />
+                            <AppIcon icon="message-square" iconClass="w-4 h-4 shrink-0 text-[var(--color-text-muted)]" />
                             <span class="text-sm text-[var(--color-text-secondary)] font-medium">{{ $t('chatTransaction.rawPrompt') }}</span>
                         </div>
                         <svg :class="['w-4 h-4 text-[var(--color-text-muted)] transition-transform', openAccordion === 'prompt' ? 'rotate-180' : '']" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -286,7 +411,7 @@ async function confirmDeleteTransaction() {
                         class="w-full flex items-center justify-between py-3 text-left hover:bg-white/3 transition-colors"
                     >
                         <div class="flex items-center gap-2">
-                            <AppIcon icon="code-2" class="w-4 h-4 shrink-0 text-[var(--color-text-muted)]" />
+                            <AppIcon icon="code-2" iconClass="w-4 h-4 shrink-0 text-[var(--color-text-muted)]" />
                             <span class="text-sm text-[var(--color-text-secondary)] font-medium">JSON Metadata</span>
                         </div>
                         <svg :class="['w-4 h-4 text-[var(--color-text-muted)] transition-transform', openAccordion === 'json' ? 'rotate-180' : '']" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -298,6 +423,7 @@ async function confirmDeleteTransaction() {
                     </div>
                 </div>
             </div>
+            </template>
         </div>
 
         <!-- Footer -->

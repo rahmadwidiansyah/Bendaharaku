@@ -14,12 +14,16 @@ use App\Models\UserAiMemory;
 use App\Models\UserAiMemoryLog;
 use App\Services\AI\AiCredentialManager;
 use App\Services\AI\AiPreferenceManager;
+use App\Services\AI\Memory\MemoryDecayEngine;
 use App\Services\AI\PlaceholderConnectionTester;
 use App\Support\ActivityLogger;
 use App\Support\SettingsChangeLogger;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -313,7 +317,37 @@ class AiSettingsController extends Controller
 
         $memory = UserAiMemory::where('user_id', $user->id)
             ->with(['category:id,category_name', 'wallet:id,name'])
+            ->withCount('activeContributions')
             ->findOrFail($memoryId);
+
+        // Hitung effective weight via decay
+        $effectiveWeight = $memory->weight;
+        $daysSince = null;
+        try {
+            $effectiveWeight = app(MemoryDecayEngine::class)->calculateDecayedWeight((float) $memory->weight, $memory->last_applied_at ?? $memory->created_at);
+            $ref = $memory->last_applied_at ?? $memory->created_at;
+            if ($ref) {
+                $daysSince = (int) $ref->diffInDays(now());
+            }
+        } catch (\Throwable $e) {
+        }
+
+        $contributions = $memory->activeContributions()
+            ->orderByDesc('created_at')
+            ->limit(20)
+            ->get()
+            ->map(fn ($c) => [
+                'id' => $c->id,
+                'transaction_id' => $c->transaction_id,
+                'source' => $c->source,
+                'keyword' => $c->keyword,
+                'target_type' => $c->target_type,
+                'target_name' => $c->target_name,
+                'weight_delta' => (float) $c->weight_delta,
+                'is_active' => (bool) $c->is_active,
+                'created_at' => $c->created_at->toIso8601String(),
+                'created_at_diff' => $c->created_at->diffForHumans(),
+            ]);
 
         $logs = UserAiMemoryLog::where('memory_id', $memoryId)
             ->orderByDesc('created_at')
@@ -332,6 +366,7 @@ class AiSettingsController extends Controller
                 'reason' => $log->reason,
                 'metadata' => $log->metadata,
                 'algorithm_version' => $log->algorithm_version,
+                'transaction_id' => $log->transaction_id,
                 'created_at' => $log->created_at->toIso8601String(),
                 'created_at_diff' => $log->created_at->diffForHumans(),
             ]);
@@ -340,19 +375,69 @@ class AiSettingsController extends Controller
             'memory' => [
                 'id' => $memory->id,
                 'keyword' => $memory->memory_keyword ?? $memory->keyword_pattern,
+                'keyword_pattern' => $memory->keyword_pattern,
+                'memory_keyword' => $memory->memory_keyword,
                 'raw_subject' => $memory->raw_subject,
                 'normalized_subject' => $memory->normalized_subject,
+                'target_type' => $memory->target_type,
                 'category' => $memory->category?->category_name,
                 'wallet' => $memory->wallet?->name,
                 'weight' => (float) $memory->weight,
+                'effective_weight' => (float) $effectiveWeight,
                 'hit_count' => $memory->hit_count,
+                'contributions_count' => $memory->active_contributions_count,
+                'contributions' => $contributions,
+                'days_since' => $daysSince,
                 'last_applied_at' => $memory->last_applied_at?->diffForHumans(),
                 'last_applied_at_raw' => $memory->last_applied_at?->toIso8601String(),
                 'created_at' => $memory->created_at?->diffForHumans(),
                 'created_at_raw' => $memory->created_at?->toIso8601String(),
-                'algorithm_version' => 'v1-keyword',
+                'algorithm_version' => 'v2-provenance',
             ],
             'logs' => $logs,
         ]);
+    }
+
+    public function destroy(int $memoryId, Request $request): RedirectResponse|JsonResponse
+    {
+        $user = $request->user();
+        $memory = UserAiMemory::where('user_id', $user->id)->findOrFail($memoryId);
+
+        DB::transaction(function () use ($memory, $user) {
+            try {
+                UserAiMemoryLog::create([
+                    'memory_id' => $memory->id,
+                    'user_id' => $user->id,
+                    'action' => 'DELETED',
+                    'raw_subject' => $memory->raw_subject,
+                    'normalized_subject' => $memory->normalized_subject,
+                    'memory_keyword' => $memory->memory_keyword ?? $memory->keyword_pattern,
+                    'old_weight' => $memory->weight,
+                    'new_weight' => null,
+                    'old_hit_count' => $memory->hit_count,
+                    'new_hit_count' => null,
+                    'reason' => 'User deleted via settings',
+                    'metadata' => ['source' => 'user_delete', 'keyword' => $memory->memory_keyword ?? $memory->keyword_pattern, 'target_type' => $memory->target_type],
+                    'algorithm_version' => 'v2-provenance',
+                ]);
+            } catch (\Throwable $e) {
+            }
+
+            $memory->delete();
+        });
+
+        try {
+            Cache::forget("ai-mem-v2-{$user->id}");
+            Cache::forget("ai-mem-resolve-{$user->id}");
+        } catch (\Throwable $e) {
+        }
+
+        ActivityLogger::forUser($user, 'ai_memory', 'deleted', 'Memory dihapus: '.($memory->memory_keyword ?? $memory->keyword_pattern), null, ['memory_id' => $memoryId]);
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true]);
+        }
+
+        return redirect()->route('settings.ai.memory.manage')->with('success', __('settings.ai.memory.deleted'));
     }
 }

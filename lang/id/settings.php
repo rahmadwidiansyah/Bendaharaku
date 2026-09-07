@@ -257,6 +257,7 @@ return [
         ],
 
         'memory' => [
+            'deleted' => 'Memory berhasil dihapus',
             'title' => 'Manajemen Memori',
             'description' => 'Konfigurasi riwayat percakapan dan pembelajaran',
             'retention' => [

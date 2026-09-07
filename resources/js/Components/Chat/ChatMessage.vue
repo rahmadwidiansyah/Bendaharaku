@@ -50,6 +50,10 @@ const {
     filteredInline,
     cardComponents,
 } = useMessageContent(() => props.message)
+
+const userImageComponents = computed(() => filteredInline.value.filter(c => c.type === 'image'))
+const userTextComponents = computed(() => filteredInline.value.filter(c => c.type !== 'image'))
+const hasUserImage = computed(() => userImageComponents.value.length > 0)
 </script>
 
 <template>
@@ -95,27 +99,62 @@ const {
     <!-- ── USER MESSAGE ────────────────────────────────────────── -->
     <div v-else-if="isUser" class="flex items-end justify-end gap-1.5 px-3 py-0.5 animate-fade-in">
 
-        <!-- Bubble user -->
-        <div class="flex flex-col gap-1 min-w-0 items-end" style="max-width: 80%">
-            <div class="user-bubble bg-gradient-to-br from-brand-mid to-brand-soft text-[var(--color-text-primary)] text-sm leading-relaxed px-3.5 pt-2 pb-1.5 rounded-2xl rounded-tr-md shadow-sm shadow-purple-500/20 break-words">
-                <!-- Render semua inline components (text + image) -->
-                <template v-for="(comp, i) in filteredInline" :key="i">
-                    <MessageRenderer
-                        :component="comp"
-                        @suggest="emit('suggest', $event)"
-                        @review="emit('review', $event)"
-                        @retry="emit('retryEvidence', $event)"
-                    />
-                </template>
-                <!-- Fallback: hanya teks (backward compat untuk pesan lama tanpa filteredInline) -->
-                <p v-if="filteredInline.length === 0 && userText" class="whitespace-pre-wrap break-words">{{ userText }}</p>
-                <div class="flex justify-end mt-0.5">
-                    <ChatTimestamp
-                        :datetime="message.created_at"
-                        class="text-[var(--color-text-primary)]/50 select-none"
-                    />
+        <!-- Bubble user - gabung foto+caption WA style (single bubble) -->
+        <div class="flex flex-col gap-1 min-w-0 items-end" :style="hasUserImage ? 'max-width: min(280px, 80%)' : 'max-width: 80%'">
+            <template v-if="hasUserImage">
+                <div class="user-bubble overflow-hidden rounded-2xl rounded-tr-md shadow-sm shadow-purple-500/20 w-full max-w-[280px] bg-gradient-to-br from-brand-mid to-brand-soft border border-white/10">
+                    <!-- Foto di atas -->
+                    <div v-for="(comp, i) in userImageComponents" :key="'img-'+i" class="w-full">
+                        <MessageRenderer
+                            :component="comp"
+                            @suggest="emit('suggest', $event)"
+                            @review="emit('review', $event)"
+                            @retry="emit('retryEvidence', $event)"
+                        />
+                    </div>
+                    <!-- Caption di bawah foto, dalam bubble yang sama -->
+                    <div v-if="userTextComponents.length > 0" class="px-3.5 pt-2 pb-1.5 text-sm leading-relaxed break-words">
+                        <template v-for="(comp, i) in userTextComponents" :key="'txt-'+i">
+                            <MessageRenderer
+                                :component="comp"
+                                @suggest="emit('suggest', $event)"
+                                @review="emit('review', $event)"
+                                @retry="emit('retryEvidence', $event)"
+                            />
+                        </template>
+                        <div class="flex justify-end mt-1">
+                            <ChatTimestamp :datetime="message.created_at" class="text-[var(--color-text-primary)]/60 select-none" />
+                        </div>
+                    </div>
+                    <!-- Foto saja tanpa caption: timestamp overlay style -->
+                    <div v-else class="px-2.5 py-1 flex justify-end">
+                        <ChatTimestamp :datetime="message.created_at" class="text-[var(--color-text-primary)]/70 select-none text-2xs" />
+                    </div>
                 </div>
-            </div>
+                <!-- Fallback text tanpa filteredInline (backward compat) -->
+                <div v-if="filteredInline.length === 0 && userText" class="user-bubble bg-gradient-to-br from-brand-mid to-brand-soft text-[var(--color-text-primary)] text-sm leading-relaxed px-3.5 pt-2 pb-1.5 rounded-2xl rounded-tr-md shadow-sm shadow-purple-500/20 break-words w-full max-w-[280px] border border-white/10">
+                    <p class="whitespace-pre-wrap break-words">{{ userText }}</p>
+                    <div class="flex justify-end mt-0.5">
+                        <ChatTimestamp :datetime="message.created_at" class="text-[var(--color-text-primary)]/50 select-none" />
+                    </div>
+                </div>
+            </template>
+            <template v-else>
+                <div class="user-bubble bg-gradient-to-br from-brand-mid to-brand-soft text-[var(--color-text-primary)] text-sm leading-relaxed px-3.5 pt-2 pb-1.5 rounded-2xl rounded-tr-md shadow-sm shadow-purple-500/20 break-words w-full">
+                    <template v-for="(comp, i) in filteredInline" :key="i">
+                        <MessageRenderer
+                            :component="comp"
+                            @suggest="emit('suggest', $event)"
+                            @review="emit('review', $event)"
+                            @retry="emit('retryEvidence', $event)"
+                        />
+                    </template>
+                    <p v-if="filteredInline.length === 0 && userText" class="whitespace-pre-wrap break-words">{{ userText }}</p>
+                    <div class="flex justify-end mt-0.5">
+                        <ChatTimestamp :datetime="message.created_at" class="text-[var(--color-text-primary)]/50 select-none" />
+                    </div>
+                </div>
+            </template>
         </div>
 
         <!-- Avatar user -->

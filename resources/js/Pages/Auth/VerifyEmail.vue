@@ -1,94 +1,41 @@
 <script setup>
-import ApplicationLogo from '@/Components/ApplicationLogo.vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import GuestLayout from '@/Layouts/GuestLayout.vue';
+import Button from '@/Components/Button.vue';
+import AppIcon from '@/Components/AppIcon.vue';
+import { useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
-const props = defineProps({
-    status: {
-        type: String,
-    },
-});
-
+const props = defineProps({ status: String });
 const form = useForm({});
-
-const submit = () => {
-    form.post(route('verification.send'));
-};
-
+const submit = () => form.post(route('verification.send'));
 const verificationLinkSent = computed(() => props.status === 'verification-link-sent');
+const logout = () => useForm().post(route('logout'));
 </script>
 
 <template>
+    <GuestLayout title="Verifikasi Email">
+        <template #header>
+            <h1 class="text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">Cek Email Anda</h1>
+            <p class="text-xs font-medium text-[var(--color-text-secondary)] mt-1.5">Verifikasi untuk melanjutkan</p>
+        </template>
 
-    <Head title="Verifikasi Email" />
+        <p class="text-xs text-[var(--color-text-secondary)] text-center mb-6 leading-relaxed">
+            Terima kasih telah mendaftar! Silakan verifikasi email Anda melalui tautan yang kami kirim. Jika belum menerima, kami bisa kirim ulang.
+        </p>
 
-    <div
-        class="antialiased selection:bg-[var(--color-brand)] selection:text-black relative flex justify-center min-h-screen bg-[var(--color-surface-base)] text-[var(--color-text-primary)] font-sans overflow-x-hidden">
-
-        <div
-            class="fixed top-[20%] left-[50%] -translate-x-1/2 w-[300px] h-[300px] bg-[#FCA5FF] blur-[120px] opacity-[0.15] rounded-full pointer-events-none z-0">
+        <div v-if="verificationLinkSent" role="alert" class="mb-5 p-3 rounded-xl bg-[var(--color-income-bg)] text-[var(--color-income-text)] border border-[var(--color-income-border)] text-xs font-medium text-center">
+            Link verifikasi baru telah dikirim ke email Anda.
         </div>
 
-        <div
-            class="w-full min-w-0 flex-1 relative z-10 flex flex-col justify-center min-h-screen border-x border-[#262626]/50 bg-[var(--color-surface-base)]/80 backdrop-blur-xl px-4 sm:px-6 lg:px-8 py-10">
+        <form @submit.prevent="submit" class="space-y-4">
+            <Button type="submit" variant="primary" size="lg" fullWidth :loading="form.processing">
+                <template #icon-left><AppIcon icon="mail" iconClass="w-4 h-4" /></template>
+                Kirim Ulang Email
+            </Button>
+        </form>
 
-            <div class="animate-slide-up w-full max-w-md mx-auto">
-                <div class="text-center mb-8">
-                    <ApplicationLogo class="w-20 h-20 rounded-xl mx-auto mb-5" />
-                    <h1 class="text-3xl font-bold text-[var(--color-text-primary)] tracking-tight">Cek Email Anda</h1>
-                    <p class="text-2xs text-[var(--color-text-muted)] uppercase tracking-widest mt-2 font-bold">Verifikasi untuk
-                        melanjutkan</p>
-                </div>
-
-                <p class="text-[11px] text-[var(--color-text-secondary)] text-center mb-6 leading-relaxed px-2">
-                    Terima kasih telah mendaftar! Sebelum memulai, bisakah Anda memverifikasi alamat email Anda dengan
-                    mengklik tautan yang baru saja kami kirimkan? Jika tidak menerimanya, kami akan mengirim ulang.
-                </p>
-
-                <div v-if="verificationLinkSent"
-                    class="mb-6 p-4 rounded-xl bg-[var(--color-surface-raised)] border border-green-500/30 text-[11px] font-bold text-green-400 text-center shadow-sm">
-                    Link verifikasi baru telah dikirim ke alamat email yang Anda daftarkan.
-                </div>
-
-                <div class="space-y-4 mt-8">
-                    <form @submit.prevent="submit">
-                        <button type="submit" :class="{ 'opacity-25': form.processing }" :disabled="form.processing"
-                            class="w-full bg-[#FCA5FF] text-[#121212] font-bold text-sm uppercase tracking-widest py-4 rounded-xl shadow-[0_0_20px_rgba(252,165,255,0.2)] active:scale-95 transition-transform">
-                            Kirim Ulang Email
-                        </button>
-                    </form>
-
-                    <form @submit.prevent="useForm().post(route('logout'))" class="text-center mt-6">
-                        <button type="submit"
-                            class="text-[11px] font-bold text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors uppercase tracking-widest">
-                            Keluar Akun
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
+        <button @click="logout" class="w-full mt-3 text-xs font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] uppercase tracking-widest py-3 transition-colors">
+            Keluar Akun
+        </button>
+    </GuestLayout>
 </template>
-
-<style scoped>
-@keyframes slide-up {
-    from {
-        transform: translateY(20px);
-        opacity: 0;
-    }
-
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-.animate-slide-up {
-    animation: slide-up 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-::-webkit-scrollbar {
-    width: 0px;
-    background: transparent;
-}
-</style>
