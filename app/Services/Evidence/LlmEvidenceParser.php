@@ -229,15 +229,17 @@ class LlmEvidenceParser
                 return null;
             }
 
-            $amount = $this->normalizeAmount($data['amount']);
-            if ($amount === null || $amount <= 0) {
+            // P0-D: amount=null is VALID semantic state (not found), not an error requiring fallback to regex
+            $amount = $data['amount'] === null ? null : $this->normalizeAmount($data['amount']);
+            if ($amount !== null && $amount <= 0) {
                 Log::warning('LlmEvidenceParser[shopping]: amount invalid after normalization', ['evidence_id' => $evidence->id, 'raw_amount' => $data['amount']]);
 
                 return null;
             }
 
             $docTypeRaw = strtoupper(trim((string) ($data['document_type'] ?? 'SHOPPING_RECEIPT')));
-            $docType = DocumentType::tryFrom($docTypeRaw) ?? DocumentType::ShoppingReceipt;
+            // P0-C: Use DocumentType::normalize for alias handling (BANK_RECEIPT etc.)
+            $docType = DocumentType::normalize($docTypeRaw) ?? DocumentType::ShoppingReceipt;
 
             // Enforce SHOPPING_RECEIPT for this parser; if LLM says otherwise but text is shopping-like, coerce
             if ($docType !== DocumentType::ShoppingReceipt) {
@@ -282,7 +284,7 @@ class LlmEvidenceParser
                 destinationName: $destWallet,
                 referenceNumber: $reference,
                 amount: $amount,
-                currency: 'IDR',
+                currency: $amount !== null && $amount > 0 ? 'IDR' : null,
                 transactionType: $intent,
                 description: $merchant ?? $category ?? 'Shopping receipt',
                 confidence: round($confidence, 4),
@@ -432,9 +434,382 @@ Return ONLY valid JSON object dengan field:
   "confidence": number 0.0-1.0
 }
 
-JANGAN tambahkan field lain. JANGAN bungkus dengan markdown. Response HARUS bisa di-json_decode.
+        JANGAN tambahkan field lain. JANGAN bungkus dengan markdown. Response HARUS bisa di-json_decode.
 
 PROMPT;
+    }
+
+    /**
+     * Build UNIFIED evidence extraction prompt per SPEC §6-8.
+     * Single LLM request covering ALL evidence fields with STRICT rules.
+     * Handles bank receipt, transfer receipt, shopping receipt, QRIS, e-wallet, etc.
+     */
+    private function buildUnifiedEvidencePrompt(string $ocrText, array $wallets, array $categories): string
+    {
+        $walletsJson = json_encode($wallets, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $categoriesJson = json_encode($categories, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        // SPEC §8: Strict semantic extraction prompt (25 rules)
+        return <<<PROMPT
+You are a financial transaction evidence extraction engine.
+
+Your task is to analyze RAW OCR TEXT extracted from a financial document.
+
+The OCR text may contain:
+- OCR mistakes
+- duplicated characters
+- missing characters
+- incorrect characters
+- numbers unrelated to money
+- dates
+- years
+- transaction IDs
+- reference IDs
+- account numbers
+- phone numbers
+- timestamps
+- order numbers
+- promotional text
+
+Your job is to identify the actual financial transaction represented by the document.
+
+IMPORTANT RULES:
+
+1. Do not blindly trust numbers.
+
+2. A number is NOT an amount merely because it contains digits.
+
+3. NEVER interpret a year as an amount.
+
+   Example:
+   "06 Sept 2026"
+   means the year is 2026, NOT amount 2026.
+
+4. NEVER interpret transaction IDs as amounts.
+
+5. NEVER interpret reference numbers as amounts.
+
+6. NEVER interpret account numbers as amounts.
+
+7. NEVER interpret timestamps as amounts.
+
+8. NEVER infer an amount from the first number, last number, largest number, or most frequent number.
+
+9. Prefer monetary values explicitly associated with semantic labels such as:
+   - Total
+   - Amount
+   - Nominal
+   - Jumlah
+   - Total Payment
+   - Total Pembayaran
+   - Jumlah Transfer
+   - Jumlah Setor
+   - Jumlah Penarikan
+   - Rp
+   - IDR
+
+10. Indonesian currency formatting must be understood correctly.
+
+Examples:
+
+Rp 100.000 → 100000
+
+Rp100.000 → 100000
+
+Rp 49.000 → 49000
+
+49.000 → 49000 only when the surrounding context clearly indicates money.
+
+11. If multiple monetary values exist, determine which one represents the actual transaction amount.
+
+12. Do not use promotional amounts as the transaction amount.
+
+Example:
+
+"Cashback up to Rp100.000"
+
+must NOT become the transaction amount unless the document explicitly states that it is the transaction amount.
+
+13. If the transaction amount cannot be determined reliably, return:
+
+"amount": null
+
+Do NOT guess.
+
+14. Document type must be determined from the semantic meaning and structure of the OCR text.
+
+15. Transaction type must be one of:
+
+EXPENSE
+INCOME
+TRANSFER
+
+16. A bank/e-wallet receipt may represent a transfer, deposit, withdrawal, payment, or other financial operation. Determine this from the document content.
+
+17. Wallet names should be extracted from explicit evidence.
+
+18. Do not confuse the bank/e-wallet provider with the transaction amount.
+
+19. Reference numbers and transaction IDs must remain separate from amount.
+
+20. Confidence represents confidence in the extracted transaction facts, not OCR quality.
+
+21. If the evidence is ambiguous, lower confidence and add a warning.
+
+22. Never fabricate missing information.
+
+23. Return valid JSON only.
+
+24. Do not include markdown.
+
+25. Do not include explanations outside JSON.
+
+=== RAW OCR TEXT ===
+"""
+{$ocrText}
+"""
+
+=== CONTEXT ===
+Available wallets: {$walletsJson}
+Available categories: {$categoriesJson}
+
+=== OUTPUT SCHEMA ===
+Return ONLY valid JSON object with fields:
+{
+  "document_type": "BANK_RECEIPT" | "TRANSFER_RECEIPT" | "DEPOSIT_RECEIPT" | "WITHDRAWAL_RECEIPT" | "SHOPPING_RECEIPT" | "QRIS_RECEIPT" | "E_WALLET_RECEIPT" | "INVOICE" | "BILL" | "UNKNOWN",
+  "transaction_type": "EXPENSE" | "INCOME" | "TRANSFER",
+  "amount": number | null (integer IDR, without separators, e.g. 100000, or null if not reliably determinable),
+  "currency": "IDR" | null,
+  "merchant": string | null,
+  "source_wallet": string | null,
+  "destination_wallet": string | null,
+  "reference": string | null,
+  "transaction_id": string | null,
+  "transaction_date": "YYYY-MM-DD" | null,
+  "transaction_time": "HH:MM" | null,
+  "counterparty": string | null,
+  "description": string | null,
+  "confidence": number 0.0-1.0,
+  "warnings": string[]
+}
+
+All fields not found must be null, not fabricated. Convert Rp 100.000 to 100000. Keep reference numbers and transaction IDs as strings, never as amount.
+
+PROMPT;
+    }
+
+    /**
+     * UNIFIED evidence semantic extraction — ONE LLM request per evidence (SPEC §6).
+     * Handles ANY document type via strict JSON validation and alias normalization.
+     * LLM is source of truth; regex fallback is NOT applied if LLM returns valid JSON even with amount null.
+     *
+     * @return EvidenceData|null Valid EvidenceData (with amount nullable) or null if LLM unavailable/invalid
+     */
+    public function parseUnifiedEvidence(Evidence $evidence, string $ocrText): ?EvidenceData
+    {
+        if (blank($ocrText)) {
+            return null;
+        }
+
+        if (! config('evidence.llm.enabled', true)) {
+            Log::info('LlmEvidenceParser[unified]: LLM disabled via config', ['evidence_id' => $evidence->id]);
+
+            return null;
+        }
+
+        $user = User::find($evidence->user_id);
+        if (! $user) {
+            return null;
+        }
+
+        $wallets = $user->wallets()->where('group_type', '!=', 'System')->get()->map(fn ($w) => [
+            'name' => $w->name,
+            'keyword' => $w->keyword,
+            'group_type' => $w->group_type,
+        ])->toArray();
+
+        $categories = $user->categories()->with('type')->get()->map(fn ($c) => [
+            'category_name' => $c->category_name,
+            'keyword' => $c->keyword,
+            'type' => $c->type?->name,
+        ])->toArray();
+
+        $prompt = $this->buildUnifiedEvidencePrompt($ocrText, $wallets, $categories);
+
+        try {
+            $preference = $this->prefManager()->resolveActivePreference($user);
+            if (! $preference) {
+                Log::info('LlmEvidenceParser[unified]: no LLM preference', ['evidence_id' => $evidence->id]);
+
+                return null;
+            }
+
+            $credential = $this->credManager()->getCredential($user, $preference->provider);
+            if (! $credential || blank($credential->api_key) || ! $credential->is_valid) {
+                Log::info('LlmEvidenceParser[unified]: credential invalid', ['evidence_id' => $evidence->id, 'provider' => $preference->provider->value]);
+
+                return null;
+            }
+
+            $adapter = $this->factory()->make($preference->provider);
+            $model = $preference->selected_model ?? $preference->provider->defaultModel();
+
+            $rawJson = $adapter->generateText($prompt, $credential->api_key, $model);
+
+            $data = $this->decodeJsonStrict($rawJson);
+            if ($data === null) {
+                Log::warning('LlmEvidenceParser[unified]: JSON decode failed', ['evidence_id' => $evidence->id, 'raw' => substr($rawJson, 0, 1000)]);
+
+                return null;
+            }
+
+            $validation = $this->validateUnifiedEvidenceResponse($data);
+            if ($validation !== true) {
+                Log::warning('LlmEvidenceParser[unified]: validation failed', ['evidence_id' => $evidence->id, 'error' => $validation, 'data' => $data]);
+
+                return null;
+            }
+
+            // P0-D: amount null is VALID — do not fabricate
+            $amount = $data['amount'] === null ? null : $this->normalizeAmount($data['amount']);
+            // If LLM gave numeric amount but no valid normalization, treat as null (prefer null over wrong number)
+            if ($data['amount'] !== null && $amount === null) {
+                Log::warning('LlmEvidenceParser[unified]: amount normalization failed, treating as null', ['evidence_id' => $evidence->id, 'raw_amount' => $data['amount']]);
+                $amount = null;
+            }
+            if ($amount !== null && $amount <= 0) {
+                Log::warning('LlmEvidenceParser[unified]: amount <=0, treating as null', ['evidence_id' => $evidence->id, 'amount' => $amount]);
+                $amount = null;
+            }
+
+            $docTypeRaw = strtoupper(trim((string) ($data['document_type'] ?? 'UNKNOWN')));
+            $docType = DocumentType::normalize($docTypeRaw) ?? DocumentType::Unknown;
+
+            $trxTypeRaw = strtoupper(trim((string) ($data['transaction_type'] ?? 'EXPENSE')));
+            $trxType = in_array($trxTypeRaw, ['EXPENSE', 'INCOME', 'TRANSFER'], true) ? $trxTypeRaw : 'EXPENSE';
+
+            $confidence = isset($data['confidence']) ? (float) $data['confidence'] : 0.85;
+            $confidence = max(0.0, min(1.0, $confidence));
+
+            // Resolve reference/transaction_id: LLM may provide either reference or transaction_id
+            $reference = $data['reference'] ?? null;
+            $transactionId = $data['transaction_id'] ?? null;
+            // If both exist, keep reference as primary referenceNumber, transactionId in metadata
+            $merchantName = $data['merchant'] ?? null;
+            $counterparty = $data['counterparty'] ?? null;
+            // Use merchant or counterparty as merchantName fallback
+            $resolvedMerchant = $merchantName ?? $counterparty;
+
+            Log::info('Evidence semantic extraction completed', [
+                'evidence_id' => $evidence->id,
+                'engine' => 'Gemini',
+                'document_type' => $docType->value,
+                'transaction_type' => $trxType,
+                'amount' => $amount,
+                'confidence' => $confidence,
+                'warnings' => $data['warnings'] ?? [],
+                'provider' => $preference->provider->value,
+                'model' => $model,
+            ]);
+
+            if ($amount === null) {
+                Log::info('Evidence semantic extraction amount null', [
+                    'evidence_id' => $evidence->id,
+                    'warning' => 'AMOUNT_NOT_FOUND',
+                    'warnings' => $data['warnings'] ?? [],
+                ]);
+            }
+
+            return new EvidenceData(
+                documentType: $docType,
+                rawText: $ocrText,
+                walletName: $data['source_wallet'] ?? null,
+                bankName: null,
+                merchantName: $resolvedMerchant,
+                merchantCity: null,
+                destinationName: $data['destination_wallet'] ?? $counterparty,
+                destinationAccount: null,
+                referenceNumber: $reference ?? $transactionId,
+                transactionType: $trxType,
+                amount: $amount,
+                currency: $amount !== null && $amount > 0 ? ($data['currency'] ?? 'IDR') : null,
+                transactionTime: $data['transaction_date'] ?? null ? (($data['transaction_date'] ?? '').' '.($data['transaction_time'] ?? '')) : ($data['transaction_time'] ?? null),
+                description: $data['description'] ?? $resolvedMerchant ?? 'Evidence',
+                confidence: round($confidence, 4),
+                metadata: [
+                    'engine' => 'LLM_UNIFIED_SEMANTIC',
+                    'provider' => $preference->provider->value,
+                    'model' => $model,
+                    'llm_confidence' => $confidence,
+                    'transaction_type' => $trxType,
+                    'source_wallet' => $data['source_wallet'] ?? null,
+                    'destination_wallet' => $data['destination_wallet'] ?? null,
+                    'reference' => $reference,
+                    'transaction_id' => $transactionId,
+                    'transaction_date' => $data['transaction_date'] ?? null,
+                    'transaction_time' => $data['transaction_time'] ?? null,
+                    'counterparty' => $counterparty,
+                    'warnings' => $data['warnings'] ?? [],
+                    'via' => 'ocr_llm_unified',
+                    'raw_llm_json' => $data,
+                ],
+                date: $data['transaction_date'] ?? null,
+                time: $data['transaction_time'] ?? null,
+            );
+        } catch (\Throwable $e) {
+            Log::warning('LlmEvidenceParser[unified] failed: '.$e->getMessage(), [
+                'evidence_id' => $evidence->id,
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return null;
+        }
+    }
+
+    private function validateUnifiedEvidenceResponse(array $data): bool|string
+    {
+        // Required fields per SPEC §7 schema
+        $required = ['document_type', 'transaction_type', 'amount', 'confidence'];
+        foreach ($required as $f) {
+            if (! array_key_exists($f, $data)) {
+                return "missing field {$f}";
+            }
+        }
+
+        // document_type normalization (allow aliases)
+        $doc = strtoupper(trim((string) $data['document_type']));
+        if (DocumentType::normalize($doc) === null) {
+            return "invalid document_type {$doc}";
+        }
+
+        // transaction_type must be one of EXPENSE/INCOME/TRANSFER per SPEC §8 rule 15
+        $tt = strtoupper(trim((string) $data['transaction_type']));
+        if (! in_array($tt, ['EXPENSE', 'INCOME', 'TRANSFER'], true)) {
+            return "invalid transaction_type {$tt}";
+        }
+
+        // amount may be number or null (SPEC §9, rule 13)
+        if ($data['amount'] !== null) {
+            if (! is_numeric($data['amount']) && ! is_string($data['amount'])) {
+                return 'amount must be numeric or null (got '.json_encode($data['amount']).')';
+            }
+            // If numeric, will be normalized later — allow formatted strings like "100.000"
+        }
+
+        if (isset($data['confidence'])) {
+            $c = (float) $data['confidence'];
+            if ($c < 0 || $c > 1) {
+                return 'confidence must be 0.0-1.0';
+            }
+        }
+
+        foreach (['merchant', 'source_wallet', 'destination_wallet', 'reference', 'transaction_id', 'counterparty', 'description'] as $opt) {
+            if (array_key_exists($opt, $data) && $data[$opt] !== null && ! is_string($data[$opt]) && ! is_numeric($data[$opt])) {
+                return "{$opt} must be string or null";
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -465,15 +840,25 @@ PROMPT;
                 return "missing field {$f}";
             }
         }
-        // Amount may be numeric or formatted string like "49,000" / "Rp29.588"
-        $norm = $this->normalizeAmount($data['amount']);
-        if ($norm === null || $norm <= 0) {
-            return 'amount must be numeric >0 (got '.json_encode($data['amount']).')';
+        // Amount may be numeric, formatted string, or null (P0-D: null is valid means not found)
+        // Do NOT strictly require >0 here — null means ambiguous amount, not fabrication trigger
+        if ($data['amount'] !== null) {
+            $norm = $this->normalizeAmount($data['amount']);
+            if ($norm !== null && $norm <= 0) {
+                return 'amount must be numeric >0 or null (got '.json_encode($data['amount']).')';
+            }
+            // If normalization fails but raw is not null, it is invalid format — log but allow null fallback?
+            // We allow non-normalizable amount to be treated as null? No, fail validation to trigger fallback/null.
+            if ($norm === null && $data['amount'] !== null) {
+                // If raw amount is present but not normalizable, fail strict validation
+                // Caller will handle fallback to null via explicit check? Keep failure to avoid regex fabrication.
+                return 'amount must be numeric >0 or null (got '.json_encode($data['amount']).')';
+            }
         }
         // Allow amount with decimal but must be positive; will normalize
         $doc = strtoupper(trim((string) $data['document_type']));
-        $validDocs = ['SHOPPING_RECEIPT', 'TRANSFER_RECEIPT', 'QRIS_RECEIPT', 'UNKNOWN'];
-        if (! in_array($doc, $validDocs, true)) {
+        // P0-C: Use DocumentType::normalize to allow BANK_RECEIPT etc. instead of hardcoded list
+        if (DocumentType::normalize($doc) === null) {
             return "invalid document_type {$doc}";
         }
         if (isset($data['intent'])) {

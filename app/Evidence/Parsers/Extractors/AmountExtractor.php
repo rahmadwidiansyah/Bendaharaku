@@ -18,38 +18,65 @@ class AmountExtractor
 {
     /**
      * Regex patterns untuk amount (dalam urutan prioritas).
+     *
+     * SPEC §2-3: OCR pure extraction — only amounts with explicit monetary semantic label
+     * are valid. Bare numbers (years, transaction IDs, reference numbers, timestamps)
+     * MUST NOT be treated as amounts.
+     *
+     * Removed fallback patterns:
+     * - '/\b(\d{1,3}(?:[.,]\d{3})+(?:[.,]\d{2})?)\b/' would capture years (2026), IDs (2026082443508344935851979)
+     * - '/\b(\d{4,})\b/' would capture reference (168776804212), time fragments, account numbers
+     *
+     * Only patterns with explicit "Rp"/"IDR" or label (nominal/jumlah/total/amount/value/nilai) are allowed.
      */
     private const PATTERNS = [
-        // "Nominal: Rp 25.000" atau "Jumlah: Rp 1.250.000"
-        '/(?:nominal|jumlah|total|amount|value|nilai)[:\s]*rp\.?\s*([\d.,]+)/i',
-        // "Rp 25.000" atau "Rp25.000"
+        // "Nominal: Rp 25.000" atau "Jumlah: Rp 1.250.000" / "Jumlah Setor Tunai Rp 100.000"
+        '/(?:nominal|jumlah|total|amount|value|nilai)[^\n]{0,40}?rp\.?\s*([\d.,]+)/i',
+        // "Rp 25.000" atau "Rp25.000" — requires Rp/IDR prefix (explicit monetary label)
         '/rp\.?\s*([\d.,]+)/i',
         // "IDR 50000" atau "IDR 50.000"
         '/idr\.?\s*([\d.,]+)/i',
-        // Standalone large numbers (>= 4 digits) as fallback — grouped thousands
-        '/\b(\d{1,3}(?:[.,]\d{3})+(?:[.,]\d{2})?)\b/',
-        // Plain 4+ digits without separator (e.g. Rp50000)
-        '/\b(\d{4,})\b/',
     ];
 
     /**
      * Ekstrak amount dari text.
+     * SPEC §3, §8 rule 12: Promotional amounts ("Cashback up to Rp100.000") MUST NOT become amount
+     * unless another explicit transaction amount exists. We skip Rp amounts that are in promotional context.
      *
      * @return array{amount: float|null, confidence: float, raw: string|null}
      */
     public function extract(string $text): array
     {
         foreach (self::PATTERNS as $pattern) {
-            if (preg_match($pattern, $text, $matches)) {
-                $raw = $matches[1];
-                $amount = $this->parseAmount($raw);
+            // Use preg_match_all to allow skipping promotional matches
+            if (preg_match_all($pattern, $text, $allMatches, PREG_OFFSET_CAPTURE)) {
+                foreach ($allMatches[1] as $idx => $match) {
+                    $raw = $match[0];
+                    $offset = $match[1];
 
-                if ($amount !== null && $amount > 0) {
-                    return [
-                        'amount' => $amount,
-                        'confidence' => 1.0,
-                        'raw' => $raw,
-                    ];
+                    // SPEC §8 rule 12: Skip promotional context — only if Rp is on same line as promotional keywords
+                    // Find the line containing this Rp match
+                    $lineStart = strrpos(substr($text, 0, $offset), "\n");
+                    $lineStart = $lineStart === false ? 0 : $lineStart + 1;
+                    $lineEnd = strpos($text, "\n", $offset);
+                    $lineEnd = $lineEnd === false ? strlen($text) : $lineEnd;
+                    $line = mb_substr($text, $lineStart, $lineEnd - $lineStart);
+                    $lowerLine = mb_strtolower($line);
+                    if (preg_match('/\b(cashback|promo|hadiah|bonus|up\s*to|hingga)\b/iu', $lowerLine)) {
+                        // This Rp is promotional on same line (e.g., "Cashback up to Rp100.000") — skip
+                        // Total Pembayaran on separate line will not be skipped
+                        continue;
+                    }
+
+                    $amount = $this->parseAmount($raw);
+
+                    if ($amount !== null && $amount > 0) {
+                        return [
+                            'amount' => $amount,
+                            'confidence' => 1.0,
+                            'raw' => $raw,
+                        ];
+                    }
                 }
             }
         }
