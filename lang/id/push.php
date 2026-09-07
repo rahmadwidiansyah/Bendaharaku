@@ -14,6 +14,11 @@ return [
 
     'chat' => [
         'reply_failed' => 'Balasan chat kamu gagal diproses. Coba lagi nanti.',
+        'token_limit' => 'Token habis — pesan kepanjangan, coba lebih singkat.',
+        'rate_limit' => 'Kuota API habis — coba lagi nanti atau topup.',
+        'timeout' => 'Server AI sibuk — coba kirim ulang 1-2 menit lagi.',
+        'not_configured' => 'AI belum dikonfigurasi — cek Pengaturan.',
+        'provider_error' => 'AI error — coba lagi nanti.',
     ],
 
     'budget' => [

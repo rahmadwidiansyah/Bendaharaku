@@ -21,6 +21,7 @@ import MessageErrorCard       from './MessageErrorCard.vue'
 import MessageSuggestion      from './MessageSuggestion.vue'
 import MessageReportSection   from './MessageReportSection.vue'
 import MessageImage           from './MessageImage.vue'
+import MessageBarChart        from './MessageBarChart.vue'
 
 defineProps({
     component: {
@@ -49,6 +50,7 @@ const componentMap = {
     suggestion:       MessageSuggestion,
     report_section:   MessageReportSection,
     image:            MessageImage,
+    bar_chart:        MessageBarChart,
 }
 </script>
 

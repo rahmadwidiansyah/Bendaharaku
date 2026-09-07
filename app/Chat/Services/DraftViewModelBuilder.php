@@ -12,7 +12,7 @@ use Illuminate\Support\Carbon;
 
 class DraftViewModelBuilder
 {
-    public function buildFakeTransactionFromPayload(array $payload, ?string $missingWalletSide = null): TransactionLog
+    public function buildFakeTransactionFromPayload(array $payload, ?string $missingWalletSide = null, ?float $fallbackConfidence = null): TransactionLog
     {
         $fakeTrx = new TransactionLog;
         $fakeTrx->amount = $payload['amount'] ?? 0;
@@ -65,6 +65,12 @@ class DraftViewModelBuilder
         $type = new TransactionType;
         $type->name = $typeName;
         $fakeTrx->setRelation('type', $type);
+
+        // Carry over AI confidence untuk modal AI Stats (OCR perlu tampil lengkap seperti chat biasa)
+        $confidence = $payload['confidence'] ?? $payload['ai_confidence'] ?? $fallbackConfidence;
+        if ($confidence !== null) {
+            $fakeTrx->setAttribute('confidence', (float) $confidence);
+        }
 
         return $fakeTrx;
     }

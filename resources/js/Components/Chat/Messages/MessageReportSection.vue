@@ -29,9 +29,14 @@ const variant = computed(() => {
 const stripLeadingEmoji = (text) =>
   String(text ?? '').replace(/^(\p{Extended_Pictographic}[\u{FE0F}\u{200D}\u{20E3}]*)[\s]*/u, '')
 
+const stripMarkdownStars = (text) => String(text ?? '').replace(/\*\*/g, '').trim()
+
+const isMeaningful = (v) => v !== null && v !== undefined && String(v).trim() !== '' && String(v).trim() !== '-'
+
 const titleText = computed(() => {
-  const title = props.component.title || (props.component.translationKey ? t(props.component.translationKey) : '')
-  return props.component.emoji ? stripLeadingEmoji(title) : title
+  const raw = props.component.title || (props.component.translationKey ? t(props.component.translationKey) : '')
+  const cleaned = stripMarkdownStars(raw)
+  return props.component.emoji ? stripLeadingEmoji(cleaned) : cleaned
 })
 
 const hasStructuredItems = computed(() =>
@@ -67,7 +72,12 @@ function parseItem(item) {
   if (!item.includes(' — ')) return null
   const parts = item.split(' — ')
   if (parts.length < 4) return null
-  return { date: parts[0], type: parts[1], category: parts[2], amount: parts[3], wallet: parts[4] || '' }
+  const parsed = { date: parts[0], type: parts[1], category: parts[2], amount: parts[3], wallet: parts[4] || '' }
+  // Hide '-' placeholders
+  if (!isMeaningful(parsed.date)) parsed.date = ''
+  if (!isMeaningful(parsed.category)) parsed.category = ''
+  if (!isMeaningful(parsed.wallet)) parsed.wallet = ''
+  return parsed
 }
 
 // Render wallet type badge
@@ -241,12 +251,12 @@ function onImgError(e, fallback) {
         <div v-for="(item, idx) in component.items" :key="idx" class="hover:bg-white/[0.02] transition-colors">
           <div v-if="parseItem(item)" class="flex items-center justify-between px-3.5 py-2 gap-2">
             <div class="flex items-center gap-2 min-w-0 flex-1">
-              <span class="text-3xs text-[var(--color-text-muted)] tabular-nums shrink-0 w-9">{{ parseItem(item).date }}</span>
+              <span v-if="parseItem(item).date" class="text-3xs text-[var(--color-text-muted)] tabular-nums shrink-0 w-9">{{ parseItem(item).date }}</span>
               <span class="w-1.5 h-1.5 rounded-full shrink-0"
                 :class="parseItem(item).type.toLowerCase() === 'income' ? 'bg-income-text' :
                   parseItem(item).type.toLowerCase() === 'expense' ? 'bg-expense-text' : 'bg-transfer-text'">
               </span>
-              <span class="text-xs text-gray-200 font-medium truncate">{{ parseItem(item).category }}</span>
+              <span v-if="parseItem(item).category" class="text-xs text-gray-200 font-medium truncate">{{ parseItem(item).category }}</span>
               <span v-if="parseItem(item).wallet" class="text-3xs text-[var(--color-text-muted)] truncate max-w-[60px]">{{ parseItem(item).wallet }}</span>
             </div>
             <span class="text-xs font-semibold tabular-nums shrink-0 ml-1"

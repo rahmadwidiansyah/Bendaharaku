@@ -230,6 +230,11 @@ class TelegramFormatter implements ChatFormatterInterface
     private function renderReportSection(ReportSectionComponent $c, string $locale): string
     {
         $title = $c->title ?: ($c->translationKey ? trans($c->translationKey, [], $locale) : '');
+        // Strip ** dulu (translation punya **), baru bungkus * untuk Telegram MarkdownV1
+        // Tanpa strip, **Judul** jadi ***Judul*** (double bintang)
+        $title = trim($title, '*');
+        $title = str_replace('**', '', $title);
+        $title = trim($title);
         $emoji = $c->emoji ? $c->emoji.' ' : '';
         $header = "{$emoji}*{$title}*";
 

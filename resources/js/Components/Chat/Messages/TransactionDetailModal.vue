@@ -100,8 +100,10 @@ const confidenceLabel = computed(() => {
 
 const latencyLabel = computed(() => {
     const ms = props.metadata?.latency_ms
-    if (!ms) return null
-    return ms >= 1000 ? `${(ms / 1000).toFixed(2)} ${t('chatTransaction.seconds')}` : `${ms} ms`
+    if (ms === null || ms === undefined || ms === '') return null
+    const num = Number(ms)
+    if (Number.isNaN(num)) return null
+    return num >= 1000 ? `${(num / 1000).toFixed(2)} ${t('chatTransaction.seconds')}` : `${num} ms`
 })
 
 const modelLabel = computed(() => {

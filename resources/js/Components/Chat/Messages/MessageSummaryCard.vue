@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import AppIcon from '@/Components/AppIcon.vue'
 
 const { t } = useI18n()
 
@@ -19,13 +20,19 @@ const tint = computed(() => {
   if (allFailed.value) return { fg: 'text-expense-text', bg: 'bg-expense-bg', dot: 'bg-expense-text' }
   return { fg: 'text-debt-text', bg: 'bg-debt-bg', dot: 'bg-debt-text' }
 })
+
+const strippedLabel = computed(() => {
+  const raw = props.component.label ?? ''
+  return String(raw).replace(/^[✅❌]\s*/u, '').replace(/\*\*/g, '').replace(/\*/g, '').trim()
+})
 </script>
 
 <template>
   <div class="mx-2 my-1.5 rounded-xl bg-white/[0.03] overflow-hidden">
     <div class="flex items-center justify-between px-3.5 py-2.5 border-b border-white/[0.04]">
       <div class="flex items-center gap-2">
-        <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="tint.dot"></span>
+        <AppIcon v-if="isEvidence" icon="file-text" iconClass="w-4 h-4 shrink-0 text-[var(--color-brand)]" />
+        <span v-else class="w-1.5 h-1.5 rounded-full shrink-0" :class="tint.dot"></span>
         <span class="text-xs font-semibold text-gray-200">{{ isEvidence ? t('chat.evidence.summaryTitle', { count: component.total }) : t('chat.multi.result') }}</span>
       </div>
       <span class="text-2xs font-medium px-2 py-0.5 rounded-full" :class="[tint.bg, tint.fg]">
@@ -44,8 +51,8 @@ const tint = computed(() => {
       </div>
     </div>
 
-    <p v-if="component.label" class="px-3.5 pb-2.5 pt-1 text-2xs" :class="tint.fg + '/70'">
-      {{ component.label }}
+    <p v-if="strippedLabel" class="px-3.5 pb-2.5 pt-1 text-2xs" :class="tint.fg + '/70'">
+      {{ strippedLabel }}
     </p>
   </div>
 </template>

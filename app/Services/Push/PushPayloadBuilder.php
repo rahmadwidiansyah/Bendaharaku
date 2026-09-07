@@ -27,14 +27,18 @@ class PushPayloadBuilder
         ];
     }
 
-    public static function chatReplyFailed(User $user): array
+    public static function chatReplyFailed(User $user, ?string $reason = null): array
     {
+        $body = $reason !== null && trim($reason) !== ''
+            ? mb_substr(trim($reason), 0, 80)
+            : self::t('push.chat.reply_failed', $user);
+
         return [
             'title' => $user->botDisplayName,
-            'body' => self::t('push.chat.reply_failed', $user),
+            'body' => $body,
             'url' => '/chat',
             'tag' => 'chat-reply',
-            'data' => ['kind' => 'chat'],
+            'data' => ['kind' => 'chat', 'error' => true],
         ];
     }
 

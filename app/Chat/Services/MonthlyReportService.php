@@ -108,7 +108,7 @@ class MonthlyReportService
             'net' => $income - $expense,
             'top_expense_categories' => $transactions
                 ->filter(fn ($trx) => strtolower($trx->type?->name ?? '') === 'expense')
-                ->groupBy(fn ($trx) => $trx->category?->category_name ?? '-')
+                ->groupBy(fn ($trx) => $trx->category?->category_name ?? 'Tanpa Kategori')
                 ->map(fn ($items) => (float) $items->sum('amount'))
                 ->sortDesc()
                 ->take(5)
@@ -318,7 +318,7 @@ class MonthlyReportService
 
         $topCategories = $transactions
             ->filter(fn ($trx) => strtolower($trx->type?->name ?? '') === 'expense')
-            ->groupBy(fn ($trx) => $trx->category?->category_name ?? '-')
+            ->groupBy(fn ($trx) => $trx->category?->category_name ?? 'Tanpa Kategori')
             ->map(fn ($items) => (float) $items->sum('amount'))
             ->sortDesc()
             ->take(5)

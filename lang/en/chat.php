@@ -197,6 +197,12 @@ return [
         'report_comparison_income' => ':emoji Income: :amount (vs last month)',
         'report_comparison_expense' => ':emoji Expense: :amount (vs last month)',
         'report_gemini_unavailable' => 'Gemini is not ready, so I showed a local summary for now.',
+        'transfer_title' => '**Transfers This Month**',
+        'transfer_empty' => 'No transfers this month.',
+        'statistik_title' => '**7-Day Statistics**',
+        'statistik_income' => '7-day Income: :amount',
+        'statistik_expense' => '7-day Expense: :amount',
+        'statistik_net' => 'Net: :amount',
         'not_yet_implemented' => '🚧 Command `:command` is not yet available in Web Chat. Check back later!',
         'web_link_msg' => implode("\n", [
             '🌐 *Access Bendaharaku V4*',

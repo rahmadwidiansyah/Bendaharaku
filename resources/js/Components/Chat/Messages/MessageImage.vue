@@ -135,13 +135,15 @@ const src = computed(() =>
     props.component.localPreviewUrl || props.component.imageUrl || null
 )
 
-const status = computed(() => props.component.evidenceStatus ?? 'UPLOADED')
+const rawStatus = computed(() => props.component.evidenceStatus ?? 'UPLOADED')
+const status = computed(() => String(rawStatus.value).toUpperCase())
 const committed = computed(() => !!props.component.committed)
 const uuid = computed(() => props.component.evidenceUuid ?? null)
 
-// Hanya tampilkan tombol Review jika OCR sudah selesai & belum di-commit
+const isDoneStatus = computed(() => ['COMMITTED', 'COMPLETED', 'DONE', 'SUCCESS'].includes(status.value))
+// Hanya tampilkan tombol Review jika OCR sudah selesai & belum di-commit/selesai
 const showReviewBtn = computed(() =>
-    !committed.value && uuid.value && (status.value === 'READY' || status.value === 'RESOLVED')
+    !committed.value && !isDoneStatus.value && uuid.value && (status.value === 'READY' || status.value === 'RESOLVED')
 )
 
 // Status label + warna — semua via i18n (audit fix)
@@ -154,6 +156,7 @@ const statusMeta = computed(() => {
         READY:      { label: t('chat.evidenceStatus.ready'),     color: 'text-income-text',   dot: 'bg-income-text' },
         RESOLVED:   { label: t('chat.evidenceStatus.ready'),     color: 'text-income-text',   dot: 'bg-income-text' },
         COMMITTED:  { label: t('chat.evidenceStatus.committed'), color: 'text-[var(--color-brand)]',    dot: 'bg-purple-400' },
+        COMPLETED:  { label: t('chat.evidenceStatus.committed'), color: 'text-[var(--color-brand)]',    dot: 'bg-purple-400' },
         FAILED:     { label: t('chat.evidenceStatus.failed'),    color: 'text-expense-text',  dot: 'bg-expense-text' },
     }
     return map[status.value] ?? map.UPLOADED
@@ -229,7 +232,7 @@ const statusMeta = computed(() => {
             {{ t('chat.reviewBtn') }}
         </button>
 
-        <p v-else-if="committed" class="text-2xs text-[var(--color-brand)] font-semibold inline-flex items-center gap-1 px-1">
+        <p v-else-if="committed || isDoneStatus" class="text-2xs text-[var(--color-brand)] font-semibold inline-flex items-center gap-1 px-1">
             <AppIcon icon="check" iconClass="w-3 h-3 shrink-0" />
             {{ t('chat.committed') }}
         </p>

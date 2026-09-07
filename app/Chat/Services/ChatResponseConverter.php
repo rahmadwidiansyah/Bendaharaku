@@ -77,7 +77,7 @@ class ChatResponseConverter
         $draft = $result['draft'];
         $payload = $draft->payload ?? [];
 
-        $fakeTrx = $this->draftViewModelBuilder->buildFakeTransactionFromPayload($payload, $draft->missing_wallet_side);
+        $fakeTrx = $this->draftViewModelBuilder->buildFakeTransactionFromPayload($payload, $draft->missing_wallet_side, $draft->ai_confidence ?? null);
 
         $needsWallet = (bool) ($payload['needs_wallet'] ?? false);
 
@@ -160,7 +160,7 @@ class ChatResponseConverter
                 if ($item->isDraft()) {
                     $draft = $item->draft;
                     $payload = $draft->payload ?? [];
-                    $fakeTrx = $this->draftViewModelBuilder->buildFakeTransactionFromPayload($payload, $draft->missing_wallet_side);
+                    $fakeTrx = $this->draftViewModelBuilder->buildFakeTransactionFromPayload($payload, $draft->missing_wallet_side, $draft->ai_confidence ?? null);
 
                     $components[] = new TransactionCardComponent(
                         transaction: $fakeTrx,
