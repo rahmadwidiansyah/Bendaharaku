@@ -459,26 +459,32 @@ onUnmounted(stopGenerationPolling);
                             </div>
                         </div>
 
-                        <!-- Stats — hierarki nominal diperjelas: tabular, compact untuk mobile -->
-                        <div class="grid grid-cols-3 gap-2 sm:gap-3 mt-5">
-                            <div class="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-overlay)] p-2.5 sm:p-4 text-center group hover:border-[var(--color-brand-border)] transition-colors">
-                                <p class="text-[11px] font-bold tracking-widest uppercase text-[var(--color-text-muted)]">{{ t('budgeting.totalBudget') }}</p>
-                                <p class="text-sm sm:text-base lg:text-lg font-black leading-none tracking-tight tabular-nums text-[var(--color-text-primary)] mt-1 truncate" :title="formatRupiah(totalBudget)">{{ formatRupiah(totalBudget) }}</p>
-                                <p class="hidden sm:block text-2xs text-[var(--color-text-muted)] mt-1 tabular-nums">{{ formatRupiah(totalBudget) }}</p>
-                            </div>
-                            <div class="rounded-xl border border-[var(--color-expense-border)] bg-[var(--color-expense-bg)] p-2.5 sm:p-4 text-center">
-                                <p class="text-[11px] font-bold tracking-widest uppercase text-[var(--color-expense-text)]/70">{{ t('budgeting.totalSpent') }}</p>
-                                <p class="text-sm sm:text-base lg:text-lg font-black leading-none tracking-tight tabular-nums text-[var(--color-expense-text)] mt-1 truncate" :title="formatRupiah(totalSpent)">{{ formatRupiah(totalSpent) }}</p>
-                                <div class="mt-1.5 h-1 rounded-full bg-[var(--color-expense-text)]/15 overflow-hidden hidden sm:block">
-                                    <div class="h-full bg-[var(--color-expense-text)] transition-all" :style="{ width: Math.min(100, totalBudget>0 ? (totalSpent/totalBudget)*100 : 0) + '%' }"></div>
+                        <!-- Stats — mobile: stack vertikal agar nominal tidak overlap, desktop: 3 kolom -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5">
+                            <div class="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-overlay)] p-4 text-left sm:text-center group hover:border-[var(--color-brand-border)] transition-colors flex sm:flex-col items-center sm:items-center justify-between sm:justify-center gap-3">
+                                <div class="min-w-0">
+                                    <p class="text-[11px] font-bold tracking-widest uppercase text-[var(--color-text-muted)]">{{ t('budgeting.totalBudget') }}</p>
+                                    <p class="hidden sm:block text-2xs text-[var(--color-text-muted)] mt-1 tabular-nums">{{ formatRupiah(totalBudget) }}</p>
                                 </div>
+                                <p class="text-base sm:text-base lg:text-lg font-black leading-tight tracking-tight tabular-nums text-[var(--color-text-primary)] break-words text-right sm:text-center flex-1 sm:flex-none" :title="formatRupiah(totalBudget)">{{ formatRupiah(totalBudget) }}</p>
                             </div>
-                            <div class="rounded-xl border p-2.5 sm:p-4 text-center transition-colors" :class="totalRemaining < 0 ? 'border-[var(--color-expense-border)] bg-[var(--color-expense-bg)]' : 'border-[var(--color-border-default)] bg-[var(--color-surface-overlay)] hover:border-[var(--color-brand-border)]'">
-                                <p class="text-[11px] font-bold tracking-widest uppercase" :class="totalRemaining < 0 ? 'text-[var(--color-expense-text)]/70' : 'text-[var(--color-text-muted)]'">{{ t('budgeting.totalRemaining') }}</p>
-                                <p class="text-sm sm:text-base lg:text-lg font-black leading-none tracking-tight tabular-nums mt-1 truncate" :class="totalRemaining < 0 ? 'text-[var(--color-expense-text)]' : 'text-[var(--color-brand)]'" :title="formatRupiah(totalRemaining)">{{ formatRupiah(totalRemaining) }}</p>
-                                <p class="text-2xs font-semibold mt-1" :class="totalRemaining < 0 ? 'text-[var(--color-expense-text)]' : 'text-[var(--color-income-text)]'">
-                                    {{ totalRemaining < 0 ? 'Over ' + formatRupiah(Math.abs(totalRemaining)) : (totalBudget>0 ? Math.round((totalRemaining/totalBudget)*100)+' % sisa' : '') }}
-                                </p>
+                            <div class="rounded-xl border border-[var(--color-expense-border)] bg-[var(--color-expense-bg)] p-4 flex sm:flex-col items-center sm:items-center justify-between sm:justify-center gap-3 sm:text-center">
+                                <div class="min-w-0">
+                                    <p class="text-[11px] font-bold tracking-widest uppercase text-[var(--color-expense-text)]/70">{{ t('budgeting.totalSpent') }}</p>
+                                    <div class="mt-1.5 h-1.5 rounded-full bg-[var(--color-expense-text)]/15 overflow-hidden w-16 sm:w-full sm:mt-1.5">
+                                        <div class="h-full bg-[var(--color-expense-text)] transition-all" :style="{ width: Math.min(100, totalBudget>0 ? (totalSpent/totalBudget)*100 : 0) + '%' }"></div>
+                                    </div>
+                                </div>
+                                <p class="text-base sm:text-base lg:text-lg font-black leading-tight tracking-tight tabular-nums text-[var(--color-expense-text)] break-words text-right sm:text-center flex-1 sm:flex-none" :title="formatRupiah(totalSpent)">{{ formatRupiah(totalSpent) }}</p>
+                            </div>
+                            <div class="rounded-xl border p-4 flex sm:flex-col items-center sm:items-center justify-between sm:justify-center gap-3 sm:text-center transition-colors" :class="totalRemaining < 0 ? 'border-[var(--color-expense-border)] bg-[var(--color-expense-bg)]' : 'border-[var(--color-border-default)] bg-[var(--color-surface-overlay)] hover:border-[var(--color-brand-border)]'">
+                                <div class="min-w-0 text-left sm:text-center">
+                                    <p class="text-[11px] font-bold tracking-widest uppercase" :class="totalRemaining < 0 ? 'text-[var(--color-expense-text)]/70' : 'text-[var(--color-text-muted)]'">{{ t('budgeting.totalRemaining') }}</p>
+                                    <p class="text-2xs font-semibold mt-1" :class="totalRemaining < 0 ? 'text-[var(--color-expense-text)]' : 'text-[var(--color-income-text)]'">
+                                        {{ totalRemaining < 0 ? 'Over ' + formatRupiah(Math.abs(totalRemaining)) : (totalBudget>0 ? Math.round((totalRemaining/totalBudget)*100)+' % sisa' : '') }}
+                                    </p>
+                                </div>
+                                <p class="text-base sm:text-base lg:text-lg font-black leading-tight tracking-tight tabular-nums break-words text-right sm:text-center flex-1 sm:flex-none" :class="totalRemaining < 0 ? 'text-[var(--color-expense-text)]' : 'text-[var(--color-brand)]'" :title="formatRupiah(totalRemaining)">{{ formatRupiah(totalRemaining) }}</p>
                             </div>
                         </div>
 
