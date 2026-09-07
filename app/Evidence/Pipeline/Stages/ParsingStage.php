@@ -54,8 +54,27 @@ class ParsingStage implements EvidenceStage
         $parsedData = null;
         $engineUsed = null;
 
-        // ── SHOPPING_RECEIPT: LLM semantic primary ──────────────────
-        if ($context->documentType === DocumentType::ShoppingReceipt) {
+        // ── UNIFIED LLM SEMANTIC PRIMARY (SPEC §6): ONE request per evidence, source of truth
+        // LLM is primary for ALL document types. If LLM returns valid JSON even with amount null, it is source of truth (P0-D).
+        // Do NOT fallback to regex merely because amount is null — null is valid semantic state.
+        if ($llmEnabled && ! blank($ocrText)) {
+            $unified = $this->tryUnifiedLlm($context, $ocrText);
+            if ($this->isValidParsedData($unified)) {
+                $parsedData = $unified;
+                $engineUsed = 'LLM_UNIFIED';
+                Log::channel('evidence')->info('Parsing via LLM unified semantic primary', ['evidence_id' => $context->evidence->id, 'document_type' => $parsedData->documentType->value, 'amount' => $parsedData->amount, 'confidence' => $parsedData->confidence]);
+                if ($parsedData->amount === null) {
+                    Log::channel('evidence')->info('Parsing LLM unified amount null - valid, no regex fallback', ['evidence_id' => $context->evidence->id]);
+                }
+            } elseif ($unified !== null) {
+                Log::channel('evidence')->warning('Unified LLM returned invalid, will try legacy path', ['evidence_id' => $context->evidence->id]);
+            }
+        }
+
+        if ($parsedData !== null) {
+            // Unified LLM already succeeded — skip legacy shopping/transfer branching and regex fallback
+            // (LLM is source of truth per SPEC §4)
+        } elseif ($context->documentType === DocumentType::ShoppingReceipt) {
             if ($llmEnabled && ! blank($ocrText)) {
                 Log::channel('evidence')->info('Parsing SHOPPING_RECEIPT via LLM semantic primary', ['evidence_id' => $context->evidence->id]);
                 $llmData = $this->tryShoppingLlm($context, $ocrText);
@@ -177,33 +196,53 @@ class ParsingStage implements EvidenceStage
 
     /**
      * Backend validation per spec:
-     * - amount numeric and >0
-     * - document type valid
-     * - amount must be consistent (non-zero)
+     * SPEC §9: amount=null is VALID (means not reliably determinable) — must NOT trigger regex fallback.
+     * LLM is source of truth; even with amount null, LLM result is valid if document_type is normalized and confidence 0-1.
+     * Regex fallback MUST NOT fabricate 2026 / transaction ID / reference as amount.
      */
     private function isValidParsedData(?EvidenceData $data): bool
     {
         if ($data === null) {
             return false;
         }
-        if ($data->amount === null) {
-            return false;
+        // P0-D: amount null is valid semantic state — do not fail validation
+        if ($data->amount !== null) {
+            if (! is_numeric($data->amount)) {
+                return false;
+            }
+            if ((float) $data->amount <= 0) {
+                return false;
+            }
         }
-        if (! is_numeric($data->amount)) {
-            return false;
-        }
-        if ((float) $data->amount <= 0) {
-            return false;
-        }
-        // document type must be valid enum (already typed)
+        // document type must be valid enum (already typed, DocumentType::normalize ensures alias mapping)
         // confidence should be 0-1
         if ($data->confidence < 0 || $data->confidence > 1) {
             return false;
         }
 
         // For shopping, amount should not be suspicious postcode-like without context? Already validated via LLM prompt.
-        // Allow any positive amount.
+        // Allow any positive amount or null.
         return true;
+    }
+
+    /**
+     * SPEC §6: Unified LLM semantic extraction — ONE request per evidence.
+     * Tries unified prompt first, before shopping-specific or generic fallback.
+     */
+    private function tryUnifiedLlm(EvidenceContext $context, string $ocrText): ?EvidenceData
+    {
+        // Check if unified method exists (backward compat if not yet deployed)
+        if (! method_exists($this->llmParser, 'parseUnifiedEvidence')) {
+            return null;
+        }
+
+        try {
+            return $this->llmParser->parseUnifiedEvidence($context->evidence, $ocrText);
+        } catch (\Throwable $e) {
+            Log::channel('evidence')->warning('Unified LLM parse exception: '.$e->getMessage(), ['evidence_id' => $context->evidence->id]);
+
+            return null;
+        }
     }
 
     private function parseTransferReceipt(EvidenceContext $context): ?EvidenceData

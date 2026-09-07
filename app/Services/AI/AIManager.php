@@ -27,29 +27,27 @@ class AIManager
 
     public function parseTransaction(User $user, string $text, array $wallets = [], array $categories = [], array $activeMemories = [], string $prompt = ''): AIParseResult
     {
-        // 0. LOCAL RULE ENGINE (ZERO-LATENCY REGEX & KEYWORDS)
+        // SPEC §4: LLM is source of truth; LocalRuleEngine MUST NOT override valid LLM result.
+        // Priority: 1) LLM valid result 2) Deterministic fallback if LLM unavailable 3) null
+        // Keep LRE result for fallback comparison, but do NOT return immediately — try LLM first.
         $ruleEngineResult = $this->ruleEngine->parse($user, $text);
         if ($ruleEngineResult !== null && $ruleEngineResult->success) {
-            Log::debug('AIManager: [LRE] Circuit breaker returning rule engine result', [
+            Log::debug('AIManager: [LRE] Parsed but holding as fallback (will try LLM first)', [
                 'user_id' => $user->id,
-                'text' => $text,
-                'success' => $ruleEngineResult->success,
+                'text' => mb_substr($text, 0, 100),
                 'intent' => $ruleEngineResult->transaction?->transactionType?->value,
+                'amount' => $ruleEngineResult->transaction?->amount,
                 'source_wallet' => $ruleEngineResult->transaction?->sourceWallet,
-                'is_cleared' => $ruleEngineResult->transaction?->isCleared,
-                'category' => $ruleEngineResult->transaction?->category,
             ]);
-
-            return $ruleEngineResult;
+        } else {
+            Log::debug('AIManager: [LRE] Rule engine returned null or failed, proceeding to LLM', [
+                'user_id' => $user->id,
+                'text' => mb_substr($text, 0, 100),
+                'rule_engine_result' => $ruleEngineResult !== null ? 'exists' : 'null',
+            ]);
         }
 
-        Log::debug('AIManager: [LRE] Rule engine returned null or failed, proceeding to fallbacks', [
-            'user_id' => $user->id,
-            'text' => $text,
-            'rule_engine_result' => $ruleEngineResult !== null ? 'exists' : 'null',
-        ]);
-
-        // 1. CIRCUIT BREAKER 1: PYTHON NLP LOKAL (TANPA BIAYA)
+        // 1. CIRCUIT BREAKER 1: PYTHON NLP LOKAL (TANPA BIAYA) — low confidence only
         $pythonCategories = $categories;
         foreach ($activeMemories as $memory) {
             if (! empty($memory['category']) && ! empty($memory['keyword'])) {
@@ -72,11 +70,28 @@ class AIManager
 
                 return $pythonResult;
             }
+            // SPEC §4: Fallback to LRE only if LLM unavailable and LRE valid, else null (no fabrication)
+            if ($ruleEngineResult !== null && $ruleEngineResult->success) {
+                Log::info("AIManager: No LLM preference, fallback to LRE as deterministic fallback for user #{$user->id}");
+
+                return $ruleEngineResult;
+            }
             throw new AiConfigurationException('Sistem AI gagal memproses transaksi. Python service offline dan LLM (Gemini/OpenAI) belum dikonfigurasi. Sila setup AI di tetapan akaun.');
         }
 
         $credential = $this->credentialManager->getCredential($user, $preference->provider);
         if (! $credential || blank($credential->api_key) || ! $credential->is_valid) {
+            // Before throwing, try deterministic fallback (Python then LRE) per SPEC §4 priority 2
+            if ($pythonResult !== null && $pythonResult->success) {
+                Log::info("AIManager: Credential invalid, fallback to Python for user #{$user->id}");
+
+                return $pythonResult;
+            }
+            if ($ruleEngineResult !== null && $ruleEngineResult->success) {
+                Log::info("AIManager: Credential invalid, fallback to LRE for user #{$user->id}");
+
+                return $ruleEngineResult;
+            }
             throw new AiConfigurationException("API Key untuk '{$preference->provider->value}' bermasalah.");
         }
 
@@ -108,6 +123,24 @@ class AIManager
             return $llmResult;
 
         } catch (AiRateLimitException|AiTimeoutException|AiProviderException $e) {
+            // SPEC §16: On Gemini timeout, DO NOT fabricate amount — fallback with LLM_UNAVAILABLE warning
+            // Try deterministic fallback (Python then LRE) before rethrowing
+            if ($pythonResult !== null && $pythonResult->success) {
+                Log::warning("AIManager: LLM {$e->getMessage()} fallback to Python for user #{$user->id}");
+
+                return $pythonResult;
+            }
+            if ($ruleEngineResult !== null && $ruleEngineResult->success) {
+                // Validate LRE amount not suspicious (not year/ID) before fallback — AmountExtractor already tightened
+                $lreAmount = $ruleEngineResult->transaction?->amount;
+                if ($lreAmount !== null && $lreAmount >= 1900 && $lreAmount <= 2100) {
+                    Log::warning("AIManager: LRE amount {$lreAmount} looks like year, NOT using as fallback (return null for manual review)");
+                    throw $e;
+                }
+                Log::warning("AIManager: LLM {$e->getMessage()} fallback to LRE for user #{$user->id}");
+
+                return $ruleEngineResult;
+            }
             throw $e;
         } catch (\Throwable $e) {
             Log::error('LLM Provider Crash', [
@@ -118,6 +151,13 @@ class AIManager
                 'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString(),
             ]);
+            // Try fallback before throwing
+            if ($pythonResult !== null && $pythonResult->success) {
+                return $pythonResult;
+            }
+            if ($ruleEngineResult !== null && $ruleEngineResult->success) {
+                return $ruleEngineResult;
+            }
             throw new AiProviderException($preference->provider->value, $e->getMessage());
         }
     }

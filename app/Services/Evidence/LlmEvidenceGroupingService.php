@@ -190,6 +190,41 @@ class LlmEvidenceGroupingService
             }
         }
 
+        // SPEC §10-12: Caption is CONTEXT, not OCR replacement. If evidence has amount and LLM grouping returns amount 0, keep evidence amount (do not fabricate 0).
+        // Handle single transaction with amount 0 fallback (parallel to multi fallback above)
+        if (! empty($result['success']) && isset($result['transaction']) && ($result['transaction']->amount ?? 0) == 0 && $fallbackAmount && $fallbackAmount > 0) {
+            Log::warning('Evidence LLM: single amount 0 fallback ke parsed amount', ['evidence_id' => $evidence->id, 'fallback' => $fallbackAmount, 'caption' => $captionHint]);
+            $result['transaction']->amount = $fallbackAmount;
+            // Also update draft if exists? For single, no draft, but ensure is_cleared logic re-evaluated
+        }
+        if (! empty($result['success']) && isset($result['draft']) && ($result['draft']->payload['amount'] ?? 0) == 0 && $fallbackAmount && $fallbackAmount > 0) {
+            Log::warning('Evidence LLM: single draft amount 0 fallback', ['evidence_id' => $evidence->id, 'fallback' => $fallbackAmount]);
+            $result['draft']->payload['amount'] = $fallbackAmount;
+        }
+
+        // SPEC §10-11: Caption wallet enrichment — if LLM didn't extract wallet but hintWallet exists, enrich it
+        if (! empty($result['success']) && isset($result['transaction']) && empty($result['transaction']->sourceWallet) && $hintWallet) {
+            $result['transaction']->sourceWallet = $hintWallet->name;
+            Log::info('Evidence LLM: enriched single wallet from caption hint', ['evidence_id' => $evidence->id, 'wallet' => $hintWallet->name]);
+        }
+        if (! empty($result['success']) && isset($result['draft']) && empty($result['draft']->payload['source_wallet_name'] ?? $result['draft']->payload['source_wallet'] ?? null) && $hintWallet) {
+            $result['draft']->payload['source_wallet_name'] = $hintWallet->name;
+            $result['draft']->payload['source_wallet_id'] = $hintWallet->id;
+            Log::info('Evidence LLM: enriched draft wallet from caption hint', ['evidence_id' => $evidence->id, 'wallet' => $hintWallet->name]);
+        }
+        // Multi wallet enrichment: if multi items have null wallet but hintWallet exists, enrich each
+        if (! empty($result['is_multi']) && isset($result['multi_result']) && $hintWallet) {
+            foreach ($result['multi_result']->results as $it) {
+                if ($it->isSuccess() && $it->transaction && empty($it->transaction->sourceWallet)) {
+                    $it->transaction->sourceWallet = $hintWallet->name;
+                }
+                if ($it->isSuccess() && $it->draft && empty($it->draft->payload['source_wallet_name'] ?? $it->draft->payload['source_wallet'] ?? null)) {
+                    $it->draft->payload['source_wallet_name'] = $hintWallet->name;
+                    $it->draft->payload['source_wallet_id'] = $hintWallet->id;
+                }
+            }
+        }
+
         // Post-process: samakan notes = description (jika LLM isi notes tapi description kosong, atau sebaliknya)
         // Dan pastikan wallet null → biar QuickWalletPicker muncul (jangan default ke Dompet Cash)
         if (! empty($result['is_multi']) && isset($result['multi_result'])) {

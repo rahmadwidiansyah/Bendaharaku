@@ -23,6 +23,10 @@ enum DocumentType: string
     case DepositReceipt = 'DEPOSIT_RECEIPT';
     case Invoice = 'INVOICE';
     case Other = 'OTHER';
+    // P0 Fix: Add missing canonical types for LLM output aliases
+    case BankReceipt = 'BANK_RECEIPT';
+    case EWalletReceipt = 'E_WALLET_RECEIPT';
+    case Bill = 'BILL';
 
     /**
      * Label untuk ditampilkan di UI.
@@ -41,6 +45,9 @@ enum DocumentType: string
             self::DepositReceipt => 'Deposit Receipt',
             self::Invoice => 'Invoice',
             self::Other => 'Other',
+            self::BankReceipt => 'Bank Receipt',
+            self::EWalletReceipt => 'E-Wallet Receipt',
+            self::Bill => 'Bill',
         };
     }
 
@@ -61,6 +68,9 @@ enum DocumentType: string
             self::DepositReceipt => 'teal',
             self::Invoice => 'violet',
             self::Other => 'slate',
+            self::BankReceipt => 'indigo',
+            self::EWalletReceipt => 'violet',
+            self::Bill => 'amber',
         };
     }
 
@@ -81,6 +91,58 @@ enum DocumentType: string
             self::DepositReceipt => '📥',
             self::Invoice => '🧾',
             self::Other => '📄',
+            self::BankReceipt => '🏦',
+            self::EWalletReceipt => '📱',
+            self::Bill => '🧾',
         };
+    }
+
+    /**
+     * Normalize LLM alias to canonical DocumentType.
+     * Handles BANK_RECEIPT family, aliases, canonical mapping.
+     * Used for validation before DocumentType::tryFrom.
+     *
+     * @return self|null Returns canonical type or null if no mapping exists.
+     */
+    public static function normalize(string $raw): ?self
+    {
+        $upper = strtoupper(trim($raw));
+        // Direct match first
+        $direct = self::tryFrom($upper);
+        if ($direct !== null) {
+            return $direct;
+        }
+
+        // Alias normalization map: LLM semantic alias => canonical internal
+        $aliasMap = [
+            // Bank receipt family -> canonical
+            'BANK_RECEIPT' => self::BankReceipt,
+            'BANK_TRANSFER_RECEIPT' => self::TransferReceipt,
+            'BANK_STATEMENT' => self::BankStatement,
+            // Transfer receipt aliases
+            'TRANSFER_RECEIPT' => self::TransferReceipt,
+            // Deposit/withdrawal aliases
+            'DEPOSIT_RECEIPT' => self::DepositReceipt,
+            'WITHDRAWAL_RECEIPT' => self::WithdrawReceipt,
+            'WITHDRAW_RECEIPT' => self::WithdrawReceipt,
+            'TOPUP_RECEIPT' => self::TopupReceipt,
+            'TOP_UP_RECEIPT' => self::TopupReceipt,
+            // Shopping aliases
+            'SHOPPING_RECEIPT' => self::ShoppingReceipt,
+            'RETAIL_RECEIPT' => self::ShoppingReceipt,
+            'PURCHASE_RECEIPT' => self::ShoppingReceipt,
+            // QRIS aliases
+            'QRIS_RECEIPT' => self::QrisReceipt,
+            'QRIS_PAYMENT_RECEIPT' => self::QrisReceipt,
+            'E_WALLET_RECEIPT' => self::EWalletReceipt,
+            'EWALLET_RECEIPT' => self::EWalletReceipt,
+            // Invoice/Bill aliases
+            'INVOICE' => self::Invoice,
+            'BILL' => self::Bill,
+            'UNKNOWN' => self::Unknown,
+            'OTHER' => self::Other,
+        ];
+
+        return $aliasMap[$upper] ?? null;
     }
 }

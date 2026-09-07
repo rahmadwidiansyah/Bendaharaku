@@ -117,8 +117,9 @@ class EvidenceResolver
         }
 
         // ── Guard: amount absurd (81M) — jangan auto-resolved ────────────
+        // SPEC §9: amount null is valid, do not treat as suspicious
         $amountGuardThreshold = 100_000_000; // 100jt
-        if (($data->amount ?? 0) > $amountGuardThreshold) {
+        if ($data->amount !== null && $data->amount > $amountGuardThreshold) {
             Log::warning('Evidence resolver: amount suspicious, force review', [
                 'evidence_id' => $evidence->id,
                 'amount' => $data->amount,
@@ -126,6 +127,12 @@ class EvidenceResolver
             ]);
             $warnings[] = 'amount_suspicious';
             $confidences[] = 0.2;
+        }
+
+        // SPEC §9: amount null valid — add warning for unresolved amount
+        if ($data->amount === null) {
+            $warnings[] = 'amount_not_found';
+            $confidences[] = 0.3; // low confidence, needs manual review
         }
 
         // ── Guard: merchant "Pendapatan Lain-lain" di shopping receipt → kategori tidak reliable ──
@@ -145,6 +152,7 @@ class EvidenceResolver
             : 0.0;
 
         // ── Build TransactionDraft ───────────────────────────────────
+        // SPEC §9,14: Resolver MUST NOT change amount; keep LLM facts (null is valid)
         $draft = new TransactionDraft(
             transactionType: $transactionType,
             walletId: $sourceWallet['wallet_id'],
@@ -152,7 +160,7 @@ class EvidenceResolver
             categoryId: $category['category_id'],
             categoryName: $category['category_name'],
             merchantName: $merchant['merchant_name'],
-            amount: $data->amount ?? 0.0,
+            amount: $data->amount,
             currency: $data->currency,
             description: $data->description,
             transactionDate: $data->transactionTime,
@@ -163,9 +171,9 @@ class EvidenceResolver
             confidence: round($overallConfidence, 4),
             warnings: $warnings,
             metadata: $metadata,
-            resolved: $overallConfidence >= 0.5 && ! $duplicate['is_duplicate'],
+            resolved: $overallConfidence >= 0.5 && ! $duplicate['is_duplicate'] && $data->amount !== null,
             // Per-field confidence
-            amountConfidence: $data->amount > 0 ? 0.95 : 0.0,
+            amountConfidence: $data->amount !== null && $data->amount > 0 ? 0.95 : 0.0,
             walletConfidence: $sourceWallet['confidence'],
             categoryConfidence: $category['confidence'],
             destinationNameConfidence: $transferResult['destination_wallet_id'] ? $transferResult['confidence'] : ($data->destinationName ? 0.6 : 0.0),

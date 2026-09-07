@@ -36,6 +36,8 @@ class GeminiAdapter extends BaseAdapter
 
         $start = microtime(true);
         $status = null;
+        // SPEC §19: Redact API key from logs
+        $redactedUrl = $url.'?key=[REDACTED]';
 
         try {
             $response = Http::connectTimeout($connectTimeout)
@@ -49,6 +51,7 @@ class GeminiAdapter extends BaseAdapter
                         Log::warning('Gemini Connection Retrying', [
                             'attempt' => $attempt,
                             'delay_ms' => $delayMs,
+                            // Do not log URL with key
                         ]);
 
                         return $delayMs;
@@ -71,7 +74,9 @@ class GeminiAdapter extends BaseAdapter
                 'success' => $status !== null && $status >= 200 && $status < 300,
                 'timeout' => $timeout,
                 'elapsed_ms' => round((microtime(true) - $start) * 1000),
+                'url' => $redactedUrl,
             ]);
+            // Ensure no apiKey leakage in exception traces — already stripped
         }
     }
 
