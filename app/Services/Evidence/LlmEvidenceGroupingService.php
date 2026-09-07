@@ -42,7 +42,9 @@ class LlmEvidenceGroupingService
         // Build text untuk LLM: OCR + wallet hint + item filter hint (flex per user, tidak hardcode)
         $text = $ocrText;
         $captionHint = trim($captionHint);
-        $isFilterCaption = $captionHint !== '' && preg_match('/\b(punyaku|cuma|hanya|punya saya|milikku|yang saya)\b/iu', $captionHint);
+        $normalizedCaption = preg_replace('/\s+/', ' ', mb_strtolower($captionHint));
+        $normalizedCaption = str_replace(['punya ku', 'milik ku'], ['punyaku', 'milikku'], $normalizedCaption);
+        $isFilterCaption = $captionHint !== '' && $captionHint !== '[Evidence]' && preg_match('/\b(punyaku|cuma|cuman|hanya|punya saya|punya aku|milikku|milik saya|yang saya)\b/iu', $normalizedCaption);
         $hintWallet = null;
         $isWalletCaption = false;
 
@@ -55,34 +57,41 @@ class LlmEvidenceGroupingService
         }
 
         if ($captionHint !== '' && $captionHint !== '[Evidence]') {
+            // SELALU kirim full caption ke LLM (flexible, tidak hardcode) — prioritas caption > OCR
+            $text .= "\n\n[User caption (full): \"{$captionHint}\"]";
+            Log::info('Evidence LLM: caption full included', ['evidence_id' => $evidence->id, 'hint' => $captionHint, 'is_filter' => (bool) $isFilterCaption, 'wallet' => $hintWallet?->name]);
+
             if ($isFilterCaption) {
                 // Caption filter + wallet hint bisa bersamaan (mis. "punyaku magelangan rendang dan es kopi abc ya bayar pakai dana")
-                $text .= "\n\n[User filter: hanya simpan item yang disebutkan di: \"{$captionHint}\" — abaikan item lain di struk]";
+                $text .= "\n[User filter: hanya simpan item yang disebutkan di caption di atas — abaikan item lain di struk]";
                 Log::info('Evidence LLM: caption as item filter', ['evidence_id' => $evidence->id, 'hint' => $captionHint]);
                 if ($hintWallet) {
-                    $text .= "\n\n[Wallet hint: {$hintWallet->name}]";
+                    $text .= "\n[Wallet hint: {$hintWallet->name}]";
                     Log::info('Evidence LLM: caption hint wallet resolved (filter+wallet)', ['evidence_id' => $evidence->id, 'hint' => $captionHint, 'wallet' => $hintWallet->name]);
                 }
             } else {
                 if ($hintWallet) {
-                    $text .= "\n\n[Wallet hint: {$hintWallet->name}]";
+                    $text .= "\n[Wallet hint: {$hintWallet->name}]";
                     Log::info('Evidence LLM: caption hint wallet resolved', ['evidence_id' => $evidence->id, 'hint' => $captionHint, 'wallet' => $hintWallet->name]);
                 } else {
                     // Caption bukan wallet valid dan bukan filter eksplisit → treat sebagai catatan user
-                    $text .= "\n\n[User note: {$captionHint} — gunakan sebagai konteks tambahan untuk grouping, jika ada nama barang spesifik di note, prioritaskan yang disebut]";
+                    $text .= "\n[User note: gunakan caption di atas sebagai konteks tambahan untuk grouping, jika ada nama barang spesifik di caption, prioritaskan yang disebut]";
                     Log::info('Evidence LLM: caption generic note', ['evidence_id' => $evidence->id, 'hint' => $captionHint]);
                 }
             }
         }
 
+        // Fallback wallet dari OCR jika caption tidak memberi hint (prioritas caption > OCR, OCR candidate tetap dilog)
+        $ocrWalletCandidate = $this->detectWalletInOcr($ocrText, $user);
         if (! $isWalletCaption) {
             // Jika caption tidak memberi wallet hint (atau hanya filter tanpa wallet), coba deteksi wallet label di OCR text
-            // Fleksibel: tidak skip ketika isFilterCaption true, tetap cek OCR wallet jika caption wallet tidak ada
-            $ocrWallet = $this->detectWalletInOcr($ocrText, $user);
-            if ($ocrWallet) {
-                $text .= "\n\n[Wallet hint: {$ocrWallet->name}]";
-                Log::info('Evidence LLM: OCR wallet label detected', ['evidence_id' => $evidence->id, 'wallet' => $ocrWallet->name]);
+            if ($ocrWalletCandidate) {
+                $text .= "\n[Wallet hint (from OCR): {$ocrWalletCandidate->name}]";
+                Log::info('Evidence LLM: OCR wallet fallback', ['evidence_id' => $evidence->id, 'wallet' => $ocrWalletCandidate->name]);
             }
+        } elseif ($ocrWalletCandidate) {
+            // Caption sudah ada wallet, tetap log OCR candidate untuk debug (prioritas caption)
+            Log::info('Evidence LLM: OCR wallet candidate ignored (caption priority)', ['evidence_id' => $evidence->id, 'ocr_wallet' => $ocrWalletCandidate->name, 'caption_wallet' => $hintWallet?->name]);
         }
 
         // Instruksi PENTING: kelompok per kategori, jangan gabung semua jadi 1 (bug 5 item jadi 1)
@@ -293,15 +302,6 @@ class LlmEvidenceGroupingService
             if (str_contains(mb_strtolower($hint), mb_strtolower($w->name))) {
                 return $w;
             }
-        }
-
-        // Fallback via WalletResolutionService
-        try {
-            $found = $this->walletResolution->findWalletByText($hint, $user->id);
-            if ($found) {
-                return $found;
-            }
-        } catch (\Throwable $e) {
         }
 
         return null;

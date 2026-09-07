@@ -43,7 +43,7 @@ const maskedAmount = '••••••';
                                 ? 'bg-linear-to-br from-[var(--color-debt-bg)] to-[var(--color-debt-bg-hover)] text-[var(--color-text-primary)] shadow-sm'
                                 : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'
                         ]">
-                        <AppIcon icon="circle-dollar-sign" class="w-3.5 h-3.5" />
+                        <AppIcon icon="circle-dollar-sign" iconClass="w-3.5 h-3.5" />
                         {{ $t('types.debt') }}
                     </Link>
                     <Link :href="route('loans.index', { type: 'piutang' })"
@@ -53,7 +53,7 @@ const maskedAmount = '••••••';
                                 ? 'bg-linear-to-br from-[var(--color-brand)] to-[var(--color-brand-hover)] text-[var(--color-text-primary)] shadow-sm'
                                 : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'
                         ]">
-                        <AppIcon icon="hand-coins" class="w-3.5 h-3.5" />
+                        <AppIcon icon="hand-coins" iconClass="w-3.5 h-3.5" />
                         {{ $t('types.receivable') }}
                     </Link>
                 </div>

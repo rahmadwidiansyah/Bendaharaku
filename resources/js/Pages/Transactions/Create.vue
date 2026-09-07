@@ -375,7 +375,7 @@ const handleBack = () => router.visit(route('dashboard'))
                                 : 'bg-gray-800/50 text-gray-600 border border-white/5 cursor-default'"
                     >
                         <span v-if="typeConfirmed" class="inline-flex items-center gap-1">
-                            <AppIcon :icon="activeTypeItem?.icon" class="w-3.5 h-3.5" />
+                            <AppIcon :icon="activeTypeItem?.icon" iconClass="w-3.5 h-3.5" />
                             {{ activeTypeItem?.label }}
                         </span>
                         <span v-else>1 · {{ t('transaction.selectType') }}</span>
@@ -445,7 +445,7 @@ const handleBack = () => router.visit(route('dashboard'))
                             class="w-full flex items-center gap-4 px-5 py-4 rounded-2xl border transition-all active:scale-95 text-left"
                             :class="['bg-gradient-to-r ' + item.color, item.border]"
                         >
-                            <AppIcon :icon="item.icon" class="w-8 h-8 shrink-0" />
+                            <AppIcon :icon="item.icon" iconClass="w-8 h-8 shrink-0" />
                             <div class="flex-1 min-w-0">
                                 <p class="text-sm font-black text-white">{{ item.label }}</p>
                                 <p class="text-xs mt-0.5" :class="item.text">{{ item.desc }}</p>
@@ -504,7 +504,7 @@ const handleBack = () => router.visit(route('dashboard'))
                                 <button type="button" @click="openWalletModal('source')"
                                     class="w-full flex items-center gap-3 bg-gray-900/80 border rounded-xl px-4 py-3 active:scale-[0.98] transition-transform text-left"
                                     :class="transferErrors.source ? 'border-red-500/60' : selectedSourceWallet ? 'border-blue-500/40' : 'border-white/10 border-dashed'">
-                                    <AppIcon :icon="selectedSourceWallet?.icon" :fallback="selectedSourceWallet ? 'wallet' : 'circle-plus'" class="w-7 h-7 shrink-0" :class="selectedSourceWallet ? typeTheme.accentText : 'text-gray-600'" />
+                                    <AppIcon :icon="selectedSourceWallet?.icon" :fallback="selectedSourceWallet ? 'wallet' : 'circle-plus'" iconClass="w-7 h-7 shrink-0" :class="selectedSourceWallet ? typeTheme.accentText : 'text-gray-600'" />
                                     <div class="flex-1 min-w-0">
                                         <p class="text-2xs font-black text-blue-400 uppercase tracking-widest">{{ t('transaction.detail.from') }}</p>
                                         <p class="text-sm font-bold truncate" :class="selectedSourceWallet ? 'text-white' : 'text-gray-600'">
@@ -542,7 +542,7 @@ const handleBack = () => router.visit(route('dashboard'))
                                 <button type="button" @click="openWalletModal('dest')"
                                     class="w-full flex items-center gap-3 bg-gray-900/80 border rounded-xl px-4 py-3 active:scale-[0.98] transition-transform text-left"
                                     :class="transferErrors.dest ? 'border-red-500/60' : selectedDestWallet ? typeTheme.accentBorder : 'border-white/10 border-dashed'">
-                                    <AppIcon :icon="selectedDestWallet?.icon" :fallback="selectedDestWallet ? 'wallet' : 'circle-plus'" class="w-7 h-7 shrink-0" :class="selectedDestWallet ? typeTheme.accentText : 'text-gray-600'" />
+                                    <AppIcon :icon="selectedDestWallet?.icon" :fallback="selectedDestWallet ? 'wallet' : 'circle-plus'" iconClass="w-7 h-7 shrink-0" :class="selectedDestWallet ? typeTheme.accentText : 'text-gray-600'" />
                                     <div class="flex-1 min-w-0">
                                         <p class="text-2xs font-black uppercase tracking-widest" :class="typeTheme.accentText">{{ t('transaction.detail.to') }}</p>
                                         <p class="text-sm font-bold truncate" :class="selectedDestWallet ? 'text-white' : 'text-gray-600'">
@@ -731,7 +731,7 @@ const handleBack = () => router.visit(route('dashboard'))
                         <!-- Pilih Dompet -->
                         <button type="button" @click="openWalletModal(isMoneyIn ? 'dest' : 'source')"
                             class="w-full flex items-center gap-3 bg-gray-800 border border-white/8 rounded-xl px-4 py-3 active:scale-95 transition-transform text-left">
-                            <AppIcon :icon="(isMoneyIn ? selectedDestWallet : selectedSourceWallet)?.icon" :fallback="(isMoneyIn ? selectedDestWallet : selectedSourceWallet) ? 'wallet' : 'circle-plus'" class="w-7 h-7 shrink-0" :class="(isMoneyIn ? selectedDestWallet : selectedSourceWallet) ? typeTheme.accentText : 'text-gray-600'" />
+                            <AppIcon :icon="(isMoneyIn ? selectedDestWallet : selectedSourceWallet)?.icon" :fallback="(isMoneyIn ? selectedDestWallet : selectedSourceWallet) ? 'wallet' : 'circle-plus'" iconClass="w-7 h-7 shrink-0" :class="(isMoneyIn ? selectedDestWallet : selectedSourceWallet) ? typeTheme.accentText : 'text-gray-600'" />
                             <div class="flex-1 min-w-0">
                                 <p class="text-2xs font-black text-gray-500 uppercase tracking-widest">{{ t('transaction.wallet') }}</p>
                                 <p class="text-sm font-bold text-white truncate">{{ (isMoneyIn ? selectedDestWallet : selectedSourceWallet)?.name || t('transaction.chooseWallet') }}</p>
@@ -844,7 +844,7 @@ const handleBack = () => router.visit(route('dashboard'))
                         <div class="overflow-y-auto no-scrollbar space-y-2 max-h-[55vh]">
                             <div v-for="w in availableWallets" :key="w.id" @click="selectWallet(w)"
                                 class="bg-gray-800 border border-white/8 p-4 rounded-xl flex items-center gap-4 cursor-pointer active:scale-95 transition-all" :class="typeTheme.walletHover">
-                                <AppIcon :icon="w.icon" fallback="wallet" class="w-8 h-8 shrink-0" :class="typeTheme.accentText" />
+                                <AppIcon :icon="w.icon" fallback="wallet" iconClass="w-8 h-8 shrink-0" :class="typeTheme.accentText" />
                                 <div class="flex-1 min-w-0">
                                     <p class="text-sm font-bold text-white truncate">{{ w.name }}</p>
                                     <p class="text-2xs font-bold mt-0.5" :class="typeTheme.accentText">Rp {{ new Intl.NumberFormat('id-ID').format(w.balance) }}</p>

@@ -1,17 +1,19 @@
 
 <script setup>
-import { computed, ref, shallowRef } from 'vue';
+import { computed, ref, shallowRef, useAttrs } from 'vue';
 import * as lucideIcons from 'lucide-vue-next';
 import { detectIconType, isImageIcon, resolveImageUrl, kebabToPascal } from '@/Composables/useIcon.js';
+
+defineOptions({ inheritAttrs: false });
 
 const props = defineProps({
     icon: {
         type: String,
         default: null,
     },
-    class: {
+    iconClass: {
         type: String,
-        default: 'w-6 h-6',
+        default: '',
     },
     imgClass: {
         type: String,
@@ -21,6 +23,21 @@ const props = defineProps({
         type: String,
         default: 'circle-help',
     },
+});
+
+const attrs = useAttrs();
+const sizeClass = computed(() => {
+    const raw = attrs.class;
+    let attrClass = '';
+    if (Array.isArray(raw)) {
+        attrClass = raw.filter(Boolean).join(' ');
+    } else if (raw && typeof raw === 'object') {
+        attrClass = Object.entries(raw).filter(([, v]) => v).map(([k]) => k).join(' ');
+    } else if (typeof raw === 'string') {
+        attrClass = raw;
+    }
+    if (props.iconClass && attrClass) return `${props.iconClass} ${attrClass}`;
+    return props.iconClass || attrClass || 'w-6 h-6';
 });
 
 const iconType = computed(() => detectIconType(props.icon));
@@ -70,17 +87,17 @@ const handleError = () => {
     <img
         v-if="isImage"
         :src="imageUrl"
-        :class="[props.class, imgClass]"
+        :class="[sizeClass, imgClass]"
         @error="handleError"
         alt="Icon"
     />
     <component
         v-else-if="lucideComponent"
         :is="lucideComponent"
-        :class="props.class"
+        :class="sizeClass"
         aria-hidden="true"
     />
-    <span v-else-if="renderAsText" :class="props.class">
+    <span v-else-if="renderAsText" :class="sizeClass">
         {{ effectiveIcon.length > 1 ? fallbackText : effectiveIcon }}
     </span>
 </template>

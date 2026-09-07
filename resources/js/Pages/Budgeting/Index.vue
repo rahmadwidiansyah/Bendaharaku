@@ -294,12 +294,12 @@ onUnmounted(stopGenerationPolling);
                         :aria-label="t('btn.prev')"
                         @click="shiftMonth(-1)"
                     >
-                        <AppIcon icon="chevron-left" class="w-4 h-4" />
+                        <AppIcon icon="chevron-left" iconClass="w-4 h-4" />
                     </button>
 
                     <div class="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-raised)] shadow-card backdrop-blur">
                         <span class="w-7 h-7 rounded-lg bg-[var(--color-brand-subtle)] border border-[var(--color-brand-border)] flex items-center justify-center shrink-0">
-                            <AppIcon icon="calendar" class="w-3.5 h-3.5 text-[var(--color-brand)]" />
+                            <AppIcon icon="calendar" iconClass="w-3.5 h-3.5 text-[var(--color-brand)]" />
                         </span>
                         <span class="text-sm font-bold tracking-tight text-[var(--color-text-primary)] tabular-nums">{{ periodLabel }}</span>
                     </div>
@@ -310,7 +310,7 @@ onUnmounted(stopGenerationPolling);
                         :aria-label="t('btn.next')"
                         @click="shiftMonth(1)"
                     >
-                        <AppIcon icon="chevron-right" class="w-4 h-4" />
+                        <AppIcon icon="chevron-right" iconClass="w-4 h-4" />
                     </button>
                 </div>
 
@@ -324,7 +324,7 @@ onUnmounted(stopGenerationPolling);
                         class="w-9 h-9 sm:w-auto sm:px-3 sm:py-2 shrink-0 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-raised)] flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-brand)] hover:border-[var(--color-brand-border)] hover:bg-[var(--color-brand-subtle)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/30 transition-all active:scale-95"
                         :aria-label="t('budgeting.createManual')"
                     >
-                        <template #icon-left><AppIcon icon="plus" class="w-4 h-4" /></template>
+                        <template #icon-left><AppIcon icon="plus" iconClass="w-4 h-4" /></template>
                         <span class="hidden sm:inline text-xs font-semibold ml-1">{{ t('budgeting.createManual') }}</span>
                     </Button>
                     <Button
@@ -337,7 +337,7 @@ onUnmounted(stopGenerationPolling);
                         :aria-label="t('budgeting.edit')"
                         :title="t('budgeting.edit')"
                     >
-                        <template #icon-left><AppIcon icon="pencil" class="w-4 h-4" /></template>
+                        <template #icon-left><AppIcon icon="pencil" iconClass="w-4 h-4" /></template>
                         <span class="hidden sm:inline text-xs font-semibold ml-1">{{ t('budgeting.edit') }}</span>
                     </Button>
                     <Button
@@ -361,7 +361,7 @@ onUnmounted(stopGenerationPolling);
 
             <!-- Error state -->
             <div v-else-if="loadError" class="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-raised)] shadow-card p-6 text-center">
-                <AppIcon icon="alert-triangle" class="w-8 h-8 mx-auto text-[var(--color-expense-text)] mb-3" />
+                <AppIcon icon="triangle-alert" iconClass="w-8 h-8 mx-auto text-[var(--color-expense-text)] mb-3" />
                 <p class="text-sm font-semibold text-[var(--color-text-primary)]">{{ t('budgeting.loadError') }}</p>
                 <Button variant="secondary" size="sm" class="mt-4" @click="fetchBudget">{{ t('budgeting.retry') }}</Button>
             </div>
@@ -400,7 +400,7 @@ onUnmounted(stopGenerationPolling);
                             class="mt-5 inline-flex items-center gap-2 rounded-lg bg-white px-4 sm:px-5 py-2.5 text-sm font-semibold text-[var(--color-brand-pressed)] disabled:opacity-60 disabled:cursor-not-allowed transition-colors hover:bg-white/90 active:scale-[0.98]"
                             @click="generateBudget"
                         >
-                            <AppIcon v-if="!isGenerating" icon="sparkles" class="w-4 h-4" />
+                            <AppIcon v-if="!isGenerating" icon="sparkles" iconClass="w-4 h-4" />
                             <svg v-else class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
@@ -411,7 +411,7 @@ onUnmounted(stopGenerationPolling);
                             v-else
                             class="mt-5 inline-flex items-start gap-2 rounded-lg bg-[var(--color-surface-muted)]/50 px-4 py-2.5 text-xs sm:text-sm font-semibold text-[var(--color-text-primary)]/90"
                         >
-                            <AppIcon icon="lock" class="w-4 h-4 shrink-0 mt-px" />
+                            <AppIcon icon="lock" iconClass="w-4 h-4 shrink-0 mt-px" />
                             <span>{{ t('budgeting.pastPeriod') }}</span>
                         </div>
 
@@ -454,7 +454,7 @@ onUnmounted(stopGenerationPolling);
                             </div>
                             <div class="flex items-center gap-2 shrink-0">
                                 <Button variant="secondary" size="xs" :aria-label="t('budgeting.aiNotes')" @click="showAiNotes = true">
-                                    <template #icon-left><AppIcon icon="lightbulb" class="w-3.5 h-3.5" /></template>
+                                    <template #icon-left><AppIcon icon="lightbulb" iconClass="w-3.5 h-3.5" /></template>
                                 </Button>
                             </div>
                         </div>
@@ -512,7 +512,7 @@ onUnmounted(stopGenerationPolling);
                                 @keydown.enter="toggleGroup(row.key)"
                                 @keydown.space.prevent="toggleGroup(row.key)"
                             >
-                                <AppIcon icon="layers" class="w-6 h-6 lg:w-7 lg:h-7 shrink-0 text-[var(--color-brand)]" />
+                                <AppIcon icon="layers" iconClass="w-6 h-6 lg:w-7 lg:h-7 shrink-0 text-[var(--color-brand)]" />
                                 <div class="min-w-0 flex-1">
                                     <p class="text-2xs lg:text-xs font-bold text-[var(--color-text-primary)] truncate">{{ row.name }}</p>
                                     <p class="text-2xs text-[var(--color-text-muted)]">
@@ -557,7 +557,7 @@ onUnmounted(stopGenerationPolling);
                                 </div>
 
                                 <p v-if="isOver(row)" class="inline-flex items-center gap-1 rounded-full bg-[var(--color-expense-bg)] border border-[var(--color-expense-border)] px-2.5 py-1 text-2xs font-bold text-[var(--color-expense-text)]">
-                                    <AppIcon icon="alert-triangle" class="w-3 h-3" /> {{ t('budgeting.overBudget') }} {{ formatRupiah(row.spent - row.target) }}
+                                    <AppIcon icon="triangle-alert" iconClass="w-3 h-3" /> {{ t('budgeting.overBudget') }} {{ formatRupiah(row.spent - row.target) }}
                                 </p>
                             </div>
 

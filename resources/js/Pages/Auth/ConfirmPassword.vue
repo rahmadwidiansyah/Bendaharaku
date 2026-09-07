@@ -1,87 +1,39 @@
 <script setup>
-import ApplicationLogo from '@/Components/ApplicationLogo.vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { ref } from 'vue';
+import GuestLayout from '@/Layouts/GuestLayout.vue';
+import TextInput from '@/Components/TextInput.vue';
+import FormLabel from '@/Components/FormLabel.vue';
+import Button from '@/Components/Button.vue';
+import AppIcon from '@/Components/AppIcon.vue';
+import { useForm } from '@inertiajs/vue3';
 
-const form = useForm({
-    password: '',
-});
-
-const submit = () => {
-    form.post(route('password.confirm'), {
-        onFinish: () => form.reset(),
-    });
-};
+const form = useForm({ password: '' });
+const showPassword = ref(false);
+const submit = () => form.post(route('password.confirm'), { onFinish: () => form.reset() });
 </script>
 
 <template>
+    <GuestLayout title="Konfirmasi Password">
+        <template #header>
+            <h1 class="text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">Area Aman</h1>
+            <p class="text-xs font-medium text-[var(--color-text-secondary)] mt-1.5">Verifikasi identitas Anda</p>
+        </template>
 
-    <Head title="Konfirmasi Password" />
+        <p class="text-xs text-[var(--color-text-secondary)] text-center mb-6 leading-relaxed">
+            Area aman memerlukan konfirmasi password sebelum melanjutkan.
+        </p>
 
-    <div
-        class="antialiased selection:bg-[var(--color-brand)] selection:text-black relative flex justify-center min-h-screen bg-[var(--color-surface-base)] text-[var(--color-text-primary)] font-sans overflow-x-hidden">
-
-        <div
-            class="fixed top-[20%] left-[50%] -translate-x-1/2 w-[300px] h-[300px] bg-[#FCA5FF] blur-[120px] opacity-[0.15] rounded-full pointer-events-none z-0">
-        </div>
-
-        <div
-            class="w-full min-w-0 flex-1 relative z-10 flex flex-col justify-center min-h-screen border-x border-[#262626]/50 bg-[var(--color-surface-base)]/80 backdrop-blur-xl px-4 sm:px-6 lg:px-8 py-10">
-
-            <div class="animate-slide-up w-full max-w-md mx-auto">
-                <div class="text-center mb-8">
-                    <ApplicationLogo class="w-20 h-20 rounded-xl mx-auto mb-5" />
-                    <h1 class="text-3xl font-bold text-[var(--color-text-primary)] tracking-tight">Area Aman</h1>
-                    <p class="text-2xs text-[var(--color-text-muted)] uppercase tracking-widest mt-2 font-bold">Verifikasi Identitas Anda
-                    </p>
-                </div>
-
-                <p class="text-[11px] text-[var(--color-text-secondary)] text-center mb-8 leading-relaxed px-2">
-                    Ini adalah area aplikasi yang aman. Harap konfirmasi password Anda sebelum melanjutkan ke halaman
-                    berikutnya.
-                </p>
-
-                <form @submit.prevent="submit" class="space-y-5">
-                    <div>
-                        <label
-                            class="block text-2xs font-bold text-[var(--color-text-secondary)] uppercase tracking-widest mb-1.5 ml-1">Password
-                            Anda</label>
-                        <input type="password" v-model="form.password" required autocomplete="current-password"
-                            autofocus
-                            class="w-full bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-xl p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)] transition-all shadow-inner" />
-                        <div v-if="form.errors.password" class="text-2xs text-red-500 mt-1 block font-bold">
-                            {{ form.errors.password }}
-                        </div>
-                    </div>
-
-                    <button type="submit" :class="{ 'opacity-25': form.processing }" :disabled="form.processing"
-                        class="w-full bg-[#FCA5FF] text-[#121212] font-bold text-sm uppercase tracking-widest py-4 rounded-xl shadow-[0_0_20px_rgba(252,165,255,0.2)] active:scale-95 transition-transform mt-6">
-                        Konfirmasi Akses
-                    </button>
-                </form>
+        <form @submit.prevent="submit" class="space-y-4">
+            <div>
+                <FormLabel for="confirm-password" required>Password Anda</FormLabel>
+                <TextInput id="confirm-password" v-model="form.password" :type="showPassword ? 'text' : 'password'" :error="form.errors.password" required autocomplete="current-password" autofocus>
+                    <template #icon-left><AppIcon icon="lock" iconClass="w-4 h-4" /></template>
+                    <template #icon-right>
+                        <button type="button" @click="showPassword = !showPassword" class="text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] p-1 -mr-1" tabindex="-1"><AppIcon :icon="showPassword ? 'eye-off' : 'eye'" iconClass="w-4 h-4" /></button>
+                    </template>
+                </TextInput>
             </div>
-        </div>
-    </div>
+            <Button type="submit" variant="primary" size="lg" fullWidth :loading="form.processing" class="mt-2">Konfirmasi Akses</Button>
+        </form>
+    </GuestLayout>
 </template>
-
-<style scoped>
-@keyframes slide-up {
-    from {
-        transform: translateY(20px);
-        opacity: 0;
-    }
-
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-.animate-slide-up {
-    animation: slide-up 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-::-webkit-scrollbar {
-    width: 0px;
-    background: transparent;
-}
-</style>

@@ -128,11 +128,12 @@ const baseInputClasses = computed(() => [
     'placeholder:text-[var(--color-text-muted)]',
     'disabled:opacity-50 disabled:cursor-not-allowed',
     // Padding — date pakai py lebih kecil karena browser menambah native chrome
-    isDate.value ? 'px-3 sm:px-4 py-2.5 sm:py-3 text-sm' : 'p-3 sm:p-4 text-sm',
+    isDate.value ? 'px-3 sm:px-4 py-2.5 sm:py-3 text-sm' : 'py-3 sm:py-4 px-3 sm:px-4 text-sm',
     // Date input butuh color-scheme dark agar calendar picker dark
     isDate.value ? '[color-scheme:dark]' : '',
-    // Padding kiri tambahan jika ada icon kiri
-    props.$slots?.['icon-left'] ? 'pl-10' : '',
+    // Padding kiri/kanan tambahan jika ada icon (pakai !important agar tidak tertimpa p-3)
+    props.$slots?.['icon-left'] ? '!pl-11' : '',
+    props.$slots?.['icon-right'] ? '!pr-11' : '',
     // Error vs Normal border
     props.error
         ? 'border border-[var(--color-expense-text)] focus:border-[var(--color-expense-text)] focus:ring-[var(--color-expense-text)]'
@@ -174,8 +175,9 @@ const hasIconRight = computed(() => false)
                     'focus:outline-none focus:ring-1',
                     'placeholder:text-[var(--color-text-muted)]',
                     'disabled:opacity-50 disabled:cursor-not-allowed',
-                    'p-3 sm:p-4 text-sm',
-                    $slots['icon-left'] ? 'pl-10' : '',
+                    'py-3 sm:py-4 px-3 sm:px-4 text-sm',
+                    $slots['icon-left'] ? '!pl-11' : '',
+                    $slots['icon-right'] ? '!pr-11' : '',
                     error
                         ? 'border border-[var(--color-expense-text)] focus:border-[var(--color-expense-text)] focus:ring-[var(--color-expense-text)]'
                         : 'border border-[var(--color-border-default)] focus:border-[var(--color-brand)] focus:ring-[var(--color-brand)]',
@@ -203,9 +205,9 @@ const hasIconRight = computed(() => false)
                     'focus:outline-none focus:ring-1',
                     'placeholder:text-[var(--color-text-muted)]',
                     'disabled:opacity-50 disabled:cursor-not-allowed',
-                    type === 'date' ? 'px-3 sm:px-4 py-2.5 sm:py-3 text-sm [color-scheme:dark]' : 'p-3 sm:p-4 text-sm',
-                    $slots['icon-left'] ? 'pl-10' : '',
-                    $slots['icon-right'] ? 'pr-10' : '',
+                    type === 'date' ? 'px-3 sm:px-4 py-2.5 sm:py-3 text-sm [color-scheme:dark]' : 'py-3 sm:py-4 px-3 sm:px-4 text-sm',
+                    $slots['icon-left'] ? '!pl-11' : '',
+                    $slots['icon-right'] ? '!pr-11' : '',
                     error
                         ? 'border border-[var(--color-expense-text)] focus:border-[var(--color-expense-text)] focus:ring-[var(--color-expense-text)]'
                         : 'border border-[var(--color-border-default)] focus:border-[var(--color-brand)] focus:ring-[var(--color-brand)]',
@@ -217,7 +219,7 @@ const hasIconRight = computed(() => false)
             <!-- Icon kanan -->
             <div
                 v-if="$slots['icon-right']"
-                class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-[var(--color-text-muted)]"
+                class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-[var(--color-text-muted)]"
                 aria-hidden="true"
             >
                 <slot name="icon-right" />

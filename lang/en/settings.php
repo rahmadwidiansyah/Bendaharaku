@@ -257,6 +257,7 @@ return [
         ],
 
         'memory' => [
+            'deleted' => 'Memory deleted successfully',
             'title' => 'Memory Management',
             'description' => 'Configure conversation history and learning',
             'retention' => [

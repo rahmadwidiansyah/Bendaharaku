@@ -174,7 +174,58 @@ class CaptionWalletFilterTest extends TestCase
         $service->group($evidence, $this->user, $caption);
 
         // Because caption wallet is null, OCR wallet DANA should be detected (even with filter)
-        $this->assertStringContainsString('[Wallet hint: DANA]', $capturedText, 'Should fallback to OCR wallet detection');
+        $this->assertStringContainsString('[Wallet hint (from OCR): DANA]', $capturedText, 'Should fallback to OCR wallet detection');
+    }
+
+    /** @test */
+    public function test_punya_ku_spasi_flexible(): void
+    {
+        // Regression untuk bug "Punya ku" (spasi) vs "punyaku" (rapat) — harus tetap jadi filter
+        $ocr = "Burjo Mabar\nNasi Ayam Bali Crisp 15.000\nMagelangan Rendang 15.000\nKopi ABC 6.000\nTotal Rp 49.000";
+        $evidence = $this->makeEvidence($ocr);
+        $caption = 'Punya ku yang magelangan rendang dan kopi abc ya ku bayar pakai dana';
+
+        $capturedText = null;
+        $service = $this->makeServiceWithCapture($capturedText);
+        $service->group($evidence, $this->user, $caption);
+
+        $this->assertStringContainsString('[User caption (full):', $capturedText, 'Full caption harus selalu dikirim ke LLM');
+        $this->assertStringContainsString('Punya ku yang magelangan rendang', $capturedText);
+        $this->assertStringContainsString('[User filter:', $capturedText, 'Punya ku spasi harus tetap trigger filter (normalisasi)');
+        $this->assertStringContainsString('[Wallet hint: DANA]', $capturedText, 'Wallet DANA tetap terdeteksi walau filter spasi');
+    }
+
+    /** @test */
+    public function test_full_caption_always_included(): void
+    {
+        // Bahkan caption generic tanpa filter/wallet pun harus ada [User caption (full): ...]
+        $ocr = "Burjo Mabar\nTotal Rp 49.000";
+        $evidence = $this->makeEvidence($ocr);
+        $caption = 'tolong catat yang bener ya';
+
+        $capturedText = null;
+        $service = $this->makeServiceWithCapture($capturedText);
+        $service->group($evidence, $this->user, $caption);
+
+        $this->assertStringContainsString('[User caption (full): "tolong catat yang bener ya"]', $capturedText);
+        $this->assertStringContainsString('[User note:', $capturedText);
+    }
+
+    /** @test */
+    public function test_ocr_wallet_fallback_with_full_caption(): void
+    {
+        // Caption tanpa wallet + OCR ada DANA → harus fallback ke OCR dengan label baru
+        $ocr = "Burjo Mabar\nPayment via DANA\nTotal Rp 49.000";
+        $evidence = $this->makeEvidence($ocr);
+        $caption = 'cuma magelangan rendang aja';
+
+        $capturedText = null;
+        $service = $this->makeServiceWithCapture($capturedText);
+        $service->group($evidence, $this->user, $caption);
+
+        $this->assertStringContainsString('[User caption (full):', $capturedText);
+        $this->assertStringContainsString('[User filter:', $capturedText);
+        $this->assertStringContainsString('[Wallet hint (from OCR): DANA]', $capturedText, 'Harus fallback ke OCR wallet dengan label baru');
     }
 
     protected function tearDown(): void

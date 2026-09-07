@@ -11,7 +11,7 @@
  * dan tidak menutupi bubble/card.
  */
 
-import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { Head, usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import axios from 'axios'
@@ -114,6 +114,21 @@ const containerStyle = computed(() => ({
 const composerRef  = ref(null)
 const chatAreaComp = ref(null)
 
+// ── FAB offset adaptif composer height (fix overlapping) ─────────
+const composerHeight = ref(76)
+let fabObserver = null
+function syncComposerHeight() {
+    const el = composerRef.value?.$el ?? composerRef.value
+    if (el && el.offsetHeight) {
+        composerHeight.value = el.offsetHeight + 16
+    } else if (composerRef.value?.$el) {
+        composerHeight.value = composerRef.value.$el.offsetHeight + 16
+    }
+}
+const fabStyle = computed(() => ({
+    bottom: composerHeight.value + 'px',
+}))
+
 // ── Lifecycle ─────────────────────────────────────────────────────
 onMounted(async () => {
     await nextTick()
@@ -178,6 +193,23 @@ onMounted(async () => {
             }
         }
     } catch (_) {}
+
+    // FAB: observe composer height agar tidak menimpa text area saat membesar (attachment preview / textarea 5 baris)
+    await nextTick()
+    syncComposerHeight()
+    try {
+        const target = composerRef.value?.$el
+        if (target && typeof ResizeObserver !== 'undefined') {
+            fabObserver = new ResizeObserver(() => syncComposerHeight())
+            fabObserver.observe(target)
+        }
+        window.addEventListener('resize', syncComposerHeight)
+    } catch (_) {}
+})
+
+onBeforeUnmount(() => {
+    try { fabObserver?.disconnect() } catch (_) {}
+    window.removeEventListener('resize', syncComposerHeight)
 })
 
 // Pantau jika bot mulai mengetik, otomatis scroll ke bawah agar indikator 3 titik terlihat
@@ -188,6 +220,10 @@ watch(isTyping, async (isNowTyping) => {
             await scrollToBottom()
         }
     }
+})
+watch([attachmentPreview, () => attachmentName.value], async () => {
+    await nextTick()
+    syncComposerHeight()
 })
 
 // ── Handlers ──────────────────────────────────────────────────────
@@ -371,9 +407,9 @@ async function handleRetryEvidence(uuid) {
                 <button
                     v-if="showJumpBtn"
                     @click="jumpToLatest"
-                    class="absolute bottom-[76px] right-4 z-20 flex items-center gap-1.5 pl-2.5 pr-3 py-2 rounded-full bg-[var(--color-surface-raised)] border border-white/12 shadow-xl shadow-black/40 hover:bg-[var(--color-surface-muted)] hover:border-white/20 active:scale-95 transition-all"
+                    class="absolute right-4 z-20 flex items-center gap-1.5 pl-2.5 pr-3 py-2 rounded-full bg-[var(--color-surface-raised)] border border-white/12 shadow-xl shadow-black/40 hover:bg-[var(--color-surface-muted)] hover:border-white/20 active:scale-95 transition-all"
                     :aria-label="t('chat.scrollToBottom')"
-                    style="backdrop-filter: blur(12px);"
+                    :style="{ bottom: fabStyle.bottom, backdropFilter: 'blur(12px)' }"
                 >
                     <!-- Arrow down icon -->
                     <span class="w-5 h-5 rounded-full bg-purple-600 flex items-center justify-center shrink-0">

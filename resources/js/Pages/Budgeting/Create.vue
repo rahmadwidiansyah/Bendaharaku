@@ -288,7 +288,7 @@ const submit = () => {
                                     :aria-label="t('budgeting.amountLabel')"
                                 >
                                 <button v-if="r.target_amount" type="button" class="w-6 h-6 shrink-0 rounded-full bg-[var(--color-surface-muted)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] flex items-center justify-center transition-colors" @click="form.rows[index].target_amount=''" aria-label="Clear">
-                                    <AppIcon icon="x" class="w-3 h-3" />
+                                    <AppIcon icon="x" iconClass="w-3 h-3" />
                                 </button>
                             </div>
                             <!-- Quick chips + helper -->
@@ -342,8 +342,8 @@ const submit = () => {
                 <div class="pt-1 lg:pt-2">
                     <button type="submit" :disabled="form.processing || totalBudget===0"
                         class="w-full bg-gradient-to-br from-[var(--color-brand-deep)] to-[var(--color-brand-mid)] text-[var(--color-text-primary)] font-black text-sm tracking-wide py-3.5 lg:py-4 rounded-xl shadow-lg shadow-[var(--color-brand)]/20 hover:shadow-xl hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center gap-2">
-                        <AppIcon v-if="form.processing" icon="loader-2" class="w-4 h-4 animate-spin" />
-                        <AppIcon v-else icon="check" class="w-4 h-4" />
+                        <AppIcon v-if="form.processing" icon="loader-2" iconClass="w-4 h-4 animate-spin" />
+                        <AppIcon v-else icon="check" iconClass="w-4 h-4" />
                         {{ form.processing ? t('btn.saving') : t('btn.save') }}
                     </button>
                     <p v-if="totalBudget===0" class="text-center text-2xs text-[var(--color-text-muted)] mt-2">Isi minimal 1 nominal untuk simpan</p>
@@ -370,7 +370,7 @@ const submit = () => {
                         :disabled="usedCategoryIds.has(cat.id)"
                         @click="selectCategory(cat)"
                     >
-                        <AppIcon :icon="cat.icon" fallback="folder" class="w-5 h-5 shrink-0" :class="getCategoryIconColor('Expense')" />
+                        <AppIcon :icon="cat.icon" fallback="folder" iconClass="w-5 h-5 shrink-0" :class="getCategoryIconColor('Expense')" />
                         <span class="flex-1 min-w-0 truncate text-sm font-medium text-[var(--color-text-primary)]">{{ cat.category_name }}</span>
                         <svg v-if="row.category_id === cat.id" class="w-4 h-4 shrink-0 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M20 6L9 17l-5-5" />

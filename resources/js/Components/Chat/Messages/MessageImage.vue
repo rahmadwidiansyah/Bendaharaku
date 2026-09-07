@@ -161,11 +161,11 @@ const statusMeta = computed(() => {
 </script>
 
 <template>
-    <div class="flex flex-col gap-1.5 py-0.5 w-auto max-w-[280px]">
-        <!-- WA-style: gambar sesuai rasio asli, tidak 1:1 / 4:3, max seperti WhatsApp -->
+    <div class="flex flex-col gap-1.5 w-full">
+        <!-- WA-style: gambar fill bubble (w-full), max seperti WhatsApp, caption width = foto -->
         <button
             type="button"
-            class="relative max-w-[280px] max-h-[360px] w-auto h-auto rounded-xl overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-surface-muted)] hover:border-white/20 active:scale-[0.98] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/50 group inline-block"
+            class="relative w-full max-h-[360px] rounded-xl overflow-hidden bg-[var(--color-surface-muted)] active:scale-[0.98] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/50 group block"
             :aria-label="t('chat.openFullscreen')"
             @click="isPreviewOpen = true"
         >
@@ -173,12 +173,12 @@ const statusMeta = computed(() => {
                 v-if="src"
                 :src="src"
                 :alt="t('chat.evidence')"
-                class="max-w-[280px] max-h-[360px] w-auto h-auto object-contain block"
+                class="w-full h-auto max-h-[360px] object-cover block"
                 loading="lazy"
             />
             <!-- Hint zoom -->
             <span class="absolute bottom-2 right-2 w-6 h-6 rounded-full bg-black/60 backdrop-blur flex items-center justify-center opacity-80 group-hover:opacity-100 transition-opacity">
-                <AppIcon icon="maximize-2" class="w-3 h-3 text-[var(--color-text-primary)]" />
+                <AppIcon icon="maximize-2" iconClass="w-3 h-3 text-[var(--color-text-primary)]" />
             </span>
             <!-- Overlay saat loading -->
             <div
@@ -225,12 +225,12 @@ const statusMeta = computed(() => {
                    bg-white text-black
                    hover:bg-white/90 active:scale-[0.98] transition-all"
         >
-            <AppIcon icon="eye" class="w-3.5 h-3.5" />
+            <AppIcon icon="eye" iconClass="w-3.5 h-3.5" />
             {{ t('chat.reviewBtn') }}
         </button>
 
         <p v-else-if="committed" class="text-2xs text-[var(--color-brand)] font-semibold inline-flex items-center gap-1 px-1">
-            <AppIcon icon="check" class="w-3 h-3 shrink-0" />
+            <AppIcon icon="check" iconClass="w-3 h-3 shrink-0" />
             {{ t('chat.committed') }}
         </p>
 
@@ -243,7 +243,7 @@ const statusMeta = computed(() => {
                    bg-expense-bg text-expense-text border border-expense-border
                    hover:bg-expense-bg-hover active:scale-[0.98] transition-all"
         >
-            <AppIcon icon="refresh-cw" class="w-3.5 h-3.5" />
+            <AppIcon icon="refresh-cw" iconClass="w-3.5 h-3.5" />
             {{ t('chat.retry') }}
         </button>
     </div>
@@ -268,17 +268,17 @@ const statusMeta = computed(() => {
                 <!-- Top bar WA -->
                 <header class="shrink-0 flex items-center gap-3 px-3 sm:px-4 py-3 bg-black/60 backdrop-blur border-b border-[var(--color-border-default)]">
                     <button type="button" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-[var(--color-text-primary)] flex items-center justify-center transition-colors" :aria-label="t('common.close')" @click="closePreview">
-                        <AppIcon icon="arrow-left" class="w-5 h-5" />
+                        <AppIcon icon="arrow-left" iconClass="w-5 h-5" />
                     </button>
                     <div class="min-w-0">
                         <p class="text-sm font-semibold text-[var(--color-text-primary)] leading-tight truncate">{{ t('chat.evidencePreview') }}</p>
                         <p class="text-2xs text-[var(--color-text-primary)]/60 truncate">Pinch/scroll untuk zoom • double-tap • drag saat zoom</p>
                     </div>
                     <a v-if="src" :href="src" target="_blank" rel="noopener" class="ml-auto w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-[var(--color-text-primary)] flex items-center justify-center" :title="t('chat.openFullscreen')">
-                        <AppIcon icon="external-link" class="w-4 h-4" />
+                        <AppIcon icon="external-link" iconClass="w-4 h-4" />
                     </a>
                     <button type="button" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-[var(--color-text-primary)] flex items-center justify-center" @click="closePreview">
-                        <AppIcon icon="x" class="w-5 h-5" />
+                        <AppIcon icon="x" iconClass="w-5 h-5" />
                     </button>
                 </header>
 
@@ -315,11 +315,11 @@ const statusMeta = computed(() => {
                 <!-- Bottom controls -->
                 <div class="shrink-0 flex items-center justify-center gap-2 px-4 py-3 bg-black/60 backdrop-blur border-t border-[var(--color-border-default)]">
                     <button type="button" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-[var(--color-text-primary)] flex items-center justify-center disabled:opacity-30" :disabled="scale<=1" @click="scale = clampScale(scale - 0.25)">
-                        <AppIcon icon="zoom-out" class="w-4 h-4" />
+                        <AppIcon icon="zoom-out" iconClass="w-4 h-4" />
                     </button>
                     <span class="min-w-[56px] text-center text-xs font-bold tabular-nums text-[var(--color-text-primary)] bg-white/10 px-2.5 py-1 rounded-full">{{ Math.round(scale*100) }}%</span>
                     <button type="button" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-[var(--color-text-primary)] flex items-center justify-center disabled:opacity-30" :disabled="scale>=4" @click="scale = clampScale(scale + 0.25)">
-                        <AppIcon icon="zoom-in" class="w-4 h-4" />
+                        <AppIcon icon="zoom-in" iconClass="w-4 h-4" />
                     </button>
                     <span class="w-px h-6 bg-white/10 mx-1"></span>
                     <button type="button" class="px-3 py-1.5 rounded-full bg-white text-black text-xs font-bold hover:bg-white/90 disabled:opacity-50" :disabled="scale===1 && translate.x===0 && translate.y===0" @click="resetZoom">Reset</button>

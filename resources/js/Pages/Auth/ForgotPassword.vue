@@ -1,101 +1,44 @@
 <script setup>
-import ApplicationLogo from '@/Components/ApplicationLogo.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import GuestLayout from '@/Layouts/GuestLayout.vue';
+import TextInput from '@/Components/TextInput.vue';
+import FormLabel from '@/Components/FormLabel.vue';
+import Button from '@/Components/Button.vue';
+import AppIcon from '@/Components/AppIcon.vue';
+import { Link, useForm } from '@inertiajs/vue3';
 
-defineProps({
-    status: {
-        type: String,
-    },
-});
-
-const form = useForm({
-    email: '',
-});
-
-const submit = () => {
-    form.post(route('password.email'));
-};
+defineProps({ status: String });
+const form = useForm({ email: '' });
+const submit = () => form.post(route('password.email'));
 </script>
 
 <template>
+    <GuestLayout title="Lupa Password">
+        <template #header>
+            <h1 class="text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">Lupa Password?</h1>
+            <p class="text-xs font-medium text-[var(--color-text-secondary)] mt-1.5">Kami bantu meresetnya</p>
+        </template>
 
-    <Head title="Lupa Password" />
+        <p class="text-xs text-[var(--color-text-secondary)] text-center mb-6 leading-relaxed">
+            Masukkan email Anda, kami akan mengirim tautan reset password.
+        </p>
 
-    <div
-        class="antialiased selection:bg-[var(--color-brand)] selection:text-black relative flex justify-center min-h-screen bg-[var(--color-surface-base)] text-[var(--color-text-primary)] font-sans overflow-x-hidden">
-
-        <div
-            class="fixed top-[20%] left-[50%] -translate-x-1/2 w-[300px] h-[300px] bg-[#FCA5FF] blur-[120px] opacity-[0.15] rounded-full pointer-events-none z-0">
+        <div v-if="status" role="alert" class="mb-5 p-3 rounded-xl bg-[var(--color-income-bg)] text-[var(--color-income-text)] border border-[var(--color-income-border)] text-xs font-medium text-center">
+            {{ status }}
         </div>
 
-        <div
-            class="w-full min-w-0 flex-1 relative z-10 flex flex-col justify-center min-h-screen border-x border-[#262626]/50 bg-[var(--color-surface-base)]/80 backdrop-blur-xl px-4 sm:px-6 lg:px-8 py-10">
-
-            <div class="animate-slide-up w-full max-w-md mx-auto">
-                <div class="text-center mb-8">
-                    <ApplicationLogo class="w-20 h-20 rounded-xl mx-auto mb-5" />
-                    <h1 class="text-3xl font-bold text-[var(--color-text-primary)] tracking-tight">Lupa Password?</h1>
-                    <p class="text-2xs text-[var(--color-text-muted)] uppercase tracking-widest mt-2 font-bold">Kami bantu meresetnya</p>
-                </div>
-
-                <p class="text-[11px] text-[var(--color-text-secondary)] text-center mb-6 leading-relaxed px-2">
-                    Tidak masalah. Beri tahu kami alamat email Anda, dan kami akan mengirimi Anda tautan untuk menyetel
-                    ulang kata sandi.
-                </p>
-
-                <div v-if="status"
-                    class="mb-6 p-4 rounded-xl bg-[var(--color-surface-raised)] border border-green-500/30 text-[11px] font-bold text-green-400 text-center shadow-sm">
-                    {{ status }}
-                </div>
-
-                <form @submit.prevent="submit" class="space-y-5">
-                    <div>
-                        <label
-                            class="block text-2xs font-bold text-[var(--color-text-secondary)] uppercase tracking-widest mb-1.5 ml-1">Email
-                            Anda</label>
-                        <input type="email" v-model="form.email" required autofocus
-                            class="w-full bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-xl p-4 text-sm focus:border-[#FCA5FF] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)] transition-all shadow-inner" />
-                        <div v-if="form.errors.email" class="text-2xs text-red-500 mt-1 block font-bold">
-                            {{ form.errors.email }}
-                        </div>
-                    </div>
-
-                    <button type="submit" :class="{ 'opacity-25': form.processing }" :disabled="form.processing"
-                        class="w-full bg-[#FCA5FF] text-[#121212] font-bold text-sm uppercase tracking-widest py-4 rounded-xl shadow-[0_0_20px_rgba(252,165,255,0.2)] active:scale-95 transition-transform mt-4">
-                        Kirim Link Reset
-                    </button>
-                </form>
-
-                <p class="text-center text-[11px] font-bold text-[var(--color-text-muted)] mt-8">
-                    Ingat password Anda?
-                    <Link :href="route('login')" class="text-[var(--color-brand)] hover:text-[var(--color-text-primary)] transition-colors">
-                        Masuk di sini
-                    </Link>
-                </p>
+        <form @submit.prevent="submit" class="space-y-4">
+            <div>
+                <FormLabel for="forgot-email" required>Email</FormLabel>
+                <TextInput id="forgot-email" v-model="form.email" type="email" placeholder="email@contoh.com" :error="form.errors.email" required autofocus autocomplete="email">
+                    <template #icon-left><AppIcon icon="mail" iconClass="w-4 h-4" /></template>
+                </TextInput>
             </div>
-        </div>
-    </div>
+            <Button type="submit" variant="primary" size="lg" fullWidth :loading="form.processing" class="mt-2">Kirim Link Reset</Button>
+        </form>
+
+        <p class="text-center text-xs text-[var(--color-text-muted)] mt-6">
+            Ingat password?
+            <Link :href="route('login')" class="font-semibold text-[var(--color-brand)] hover:text-[var(--color-brand-hover)]">Masuk di sini</Link>
+        </p>
+    </GuestLayout>
 </template>
-
-<style scoped>
-@keyframes slide-up {
-    from {
-        transform: translateY(20px);
-        opacity: 0;
-    }
-
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-.animate-slide-up {
-    animation: slide-up 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-::-webkit-scrollbar {
-    width: 0px;
-    background: transparent;
-}
-</style>

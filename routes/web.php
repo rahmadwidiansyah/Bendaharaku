@@ -412,6 +412,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/memory', fn () => Inertia::render('Settings/AI/Memory'))->name('memory');
         Route::get('/memory/manage', [AiSettingsController::class, 'memories'])->name('memory.manage');
         Route::get('/memory/{id}', [AiSettingsController::class, 'memoryLogs'])->name('memory.detail');
+        Route::delete('/memory/{id}', [AiSettingsController::class, 'destroy'])->name('memory.destroy');
         Route::get('/integrations', fn () => Inertia::render('Settings/AI/Integration'))->name('integrations');
 
         // Legacy endpoints (for backward compatibility)
