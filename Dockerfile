@@ -80,7 +80,9 @@ RUN a2enmod rewrite
 # Matikan mod_autoindex Debian: Alias /icons/ bawaannya menimpa
 # public/icons milik Laravel sehingga PWA icons 404.
 # Directory listing memang sudah mati (-Indexes), jadi aman dimatikan.
-RUN a2dismod autoindex || true
+# PENTING: pakai -f karena Debian menganggap autoindex "essential"
+# dan a2dismod biasa akan abort (pernah lolos diam-diam via || true).
+RUN a2dismod -f autoindex && rm -f /etc/apache2/mods-enabled/autoindex.*
 
 # --- 5. Copy build artifacts from previous stages ---
 WORKDIR /var/www
