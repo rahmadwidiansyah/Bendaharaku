@@ -165,27 +165,30 @@ class User extends Authenticatable
         static::created(function (User $user) {
 
             // 1. Buatkan Dompet (Terintegrasi dengan Config SSOT)
+            // Icon memakai slug lucide (selaras IconPicker, WalletSeeder, dan chatIcons)
+            // agar konsisten dengan design system (bukan emoji).
             $user->wallets()->createMany([
-                ['name' => config('bendaharaku.system_wallets.debt', 'System Hutang'), 'balance' => 0, 'group_type' => 'System', 'icon' => '🏦', 'keyword' => 'sistem hutang'],
-                ['name' => config('bendaharaku.system_wallets.receivable', 'System Piutang'), 'balance' => 0, 'group_type' => 'System', 'icon' => '🏦', 'keyword' => 'sistem piutang'],
-                ['name' => config('bendaharaku.system_wallets.external', 'External System'), 'balance' => 0, 'group_type' => 'System', 'icon' => '🌐', 'keyword' => 'external'],
-                ['name' => config('bendaharaku.system_wallets.merchant', 'Merchant System'), 'balance' => 0, 'group_type' => 'System', 'icon' => '🏪', 'keyword' => 'merchant'],
-                ['name' => 'Dompet Cash', 'balance' => 0, 'group_type' => 'Liquid', 'icon' => '💵', 'keyword' => 'cash, tunai, dompet'],
+                ['name' => config('bendaharaku.system_wallets.debt', 'System Hutang'), 'balance' => 0, 'group_type' => 'System', 'icon' => 'hand-coins', 'keyword' => 'sistem hutang'],
+                ['name' => config('bendaharaku.system_wallets.receivable', 'System Piutang'), 'balance' => 0, 'group_type' => 'System', 'icon' => 'receipt', 'keyword' => 'sistem piutang'],
+                ['name' => config('bendaharaku.system_wallets.external', 'External System'), 'balance' => 0, 'group_type' => 'System', 'icon' => 'globe', 'keyword' => 'external'],
+                ['name' => config('bendaharaku.system_wallets.merchant', 'Merchant System'), 'balance' => 0, 'group_type' => 'System', 'icon' => 'store', 'keyword' => 'merchant'],
+                ['name' => 'Dompet Cash', 'balance' => 0, 'group_type' => 'Liquid', 'icon' => 'wallet', 'keyword' => 'cash, tunai, dompet'],
             ]);
 
-            // 2. Ambil semua ID tipe transaksi yang sudah kita buat di Seeder
-            $incomeType = TransactionType::where('name', 'Income')->first();
-            $expenseType = TransactionType::where('name', 'Expense')->first();
-            $transferType = TransactionType::where('name', 'Transfer')->first();
-            $debtType = TransactionType::where('name', 'Debt')->first();
-            $receivableType = TransactionType::where('name', 'Receivable')->first();
+            // 2. Ambil semua ID tipe transaksi. Buat bila belum ada agar user baru
+            // selalu dapat kategori lengkap meski TransactionTypeSeeder belum dijalankan.
+            $incomeType = TransactionType::firstOrCreate(['name' => 'Income'], ['keyword' => 'in, +']);
+            $expenseType = TransactionType::firstOrCreate(['name' => 'Expense'], ['keyword' => 'out, -']);
+            $transferType = TransactionType::firstOrCreate(['name' => 'Transfer'], ['keyword' => 'trf']);
+            $debtType = TransactionType::firstOrCreate(['name' => 'Debt'], ['keyword' => 'debt']);
+            $receivableType = TransactionType::firstOrCreate(['name' => 'Receivable'], ['keyword' => 'rec']);
 
             // 3. Buatkan Kategori Murni Transfer (Pindah Saldo)
             if ($transferType) {
                 $user->categories()->create([
                     'category_name' => 'Pindah Saldo',
                     'type_id' => $transferType->id,
-                    'icon' => '🔄',
+                    'icon' => 'arrow-left-right',
                     'keyword' => 'transfer, pindah uang, pindahkan saldo, kirim saldo, kirim uang, pindah semua saldo, transfer semua saldo, mutasi, pindah saldo',
                     'system_key' => 'TRANSFER',
                 ]);
@@ -194,104 +197,105 @@ class User extends Authenticatable
             // 4. Buatkan Kategori Khusus Hutang (Debt)
             if ($debtType) {
                 $user->categories()->createMany([
-                    ['category_name' => 'Dapat Hutangan', 'type_id' => $debtType->id, 'icon' => '📥', 'keyword' => 'dapat hutangan, ngutang, pinjam duit, ditalangin, kasbon, pinjol, minjem uang, pinjam uang, dapet pinjeman, hutang, utang, pinjam, minjam, pinjem, berhutang, berutang', 'system_key' => 'LOAN'],
-                    ['category_name' => 'Bayar Cicilan Hutang', 'type_id' => $debtType->id, 'icon' => '💸', 'keyword' => 'bayar utang, bayar hutang, lunasin, nyicil, cicilan, balikin duit, balikin uang, ganti duit, nutup utang, bayar kasbon, bayar pinjol, lunasi hutang, lunasin utang, balikin pinjaman, melunasi pinjaman, kembalikan hutang', 'system_key' => 'DEBT_PAYMENT'],
+                    ['category_name' => 'Dapat Hutangan', 'type_id' => $debtType->id, 'icon' => 'hand-coins', 'keyword' => 'dapat hutangan, ngutang, pinjam duit, ditalangin, kasbon, pinjol, minjem uang, pinjam uang, dapet pinjeman, hutang, utang, pinjam, minjam, pinjem, berhutang, berutang', 'system_key' => 'LOAN'],
+                    ['category_name' => 'Bayar Cicilan Hutang', 'type_id' => $debtType->id, 'icon' => 'circle-dollar-sign', 'keyword' => 'bayar utang, bayar hutang, lunasin, nyicil, cicilan, balikin duit, balikin uang, ganti duit, nutup utang, bayar kasbon, bayar pinjol, lunasi hutang, lunasin utang, balikin pinjaman, melunasi pinjaman, kembalikan hutang', 'system_key' => 'DEBT_PAYMENT'],
                 ]);
             }
 
             // 5. Buatkan Kategori Khusus Piutang (Receivable)
             if ($receivableType) {
                 $user->categories()->createMany([
-                    ['category_name' => 'Ngasih Piutang', 'type_id' => $receivableType->id, 'icon' => '📤', 'keyword' => 'ngasih piutang, minjemin, ngutangin, dipinjem, dipinjam, nalangin, kasih utang, pinjemin, ngasih pinjaman, kasih pinjam, meminjamkan, memberi pinjaman', 'system_key' => 'RECEIVABLE'],
-                    ['category_name' => 'Terima Bayar Piutang', 'type_id' => $receivableType->id, 'icon' => '🤑', 'keyword' => 'terima bayar piutang, dibayar, utang dibayar, utang lunas, ditagih, nagih utang, teman balikin, uang kembali, pelunasan teman, piutang dibayar, dibayar hutang, dibayar utang, balikin uang, balikin pinjaman, mengembalikan pinjaman, menerima pembayaran hutang, menerima pembayaran piutang', 'system_key' => 'RECEIVABLE_PAYMENT'],
+                    ['category_name' => 'Ngasih Piutang', 'type_id' => $receivableType->id, 'icon' => 'file-text', 'keyword' => 'ngasih piutang, minjemin, ngutangin, dipinjem, dipinjam, nalangin, kasih utang, pinjemin, ngasih pinjaman, kasih pinjam, meminjamkan, memberi pinjaman', 'system_key' => 'RECEIVABLE'],
+                    ['category_name' => 'Terima Bayar Piutang', 'type_id' => $receivableType->id, 'icon' => 'banknote', 'keyword' => 'terima bayar piutang, dibayar, utang dibayar, utang lunas, ditagih, nagih utang, teman balikin, uang kembali, pelunasan teman, piutang dibayar, dibayar hutang, dibayar utang, balikin uang, balikin pinjaman, mengembalikan pinjaman, menerima pembayaran hutang, menerima pembayaran piutang', 'system_key' => 'RECEIVABLE_PAYMENT'],
                 ]);
             }
 
             // 6. Kategori Starter Expense (Pengeluaran)
+            // Icon memakai slug lucide (selaras IconPicker & DummyDataSeeder).
             if ($expenseType) {
                 $user->categories()->createMany([
                     [
                         'category_name' => 'Makan & Minum',
                         'type_id' => $expenseType->id,
-                        'icon' => '🍔',
+                        'icon' => 'utensils',
                         'keyword' => 'makan, minum, gofood, kfc, warkop, warteg, resto, kantin, kuliner, bekal',
                     ],
                     [
                         'category_name' => 'Transportasi',
                         'type_id' => $expenseType->id,
-                        'icon' => '🚗',
+                        'icon' => 'car',
                         'keyword' => 'bensin, gojek, grab, parkir, pertalite, pertamax, tol, bus, kereta, travel',
                     ],
                     [
                         'category_name' => 'Pendidikan & Kuliah',
                         'type_id' => $expenseType->id,
-                        'icon' => '📚',
+                        'icon' => 'book-open',
                         'keyword' => 'ukt, spp, buku, fotocopy, print, alat tulis, kursus, seminar, skripsi, pendaftaran',
                     ],
                     [
                         'category_name' => 'Kos & Tempat Tinggal',
                         'type_id' => $expenseType->id,
-                        'icon' => '🏠',
+                        'icon' => 'house',
                         'keyword' => 'bayar kos, kontrakan, iuran, kebersihan, keamanan, sampah, listrik kos, air, laundry, sewa',
                     ],
                     [
                         'category_name' => 'Belanja Dapur & Groceries',
                         'type_id' => $expenseType->id,
-                        'icon' => '🛒',
+                        'icon' => 'shopping-cart',
                         'keyword' => 'beras, galon, gas, sayur, minyak goreng, bumbu, telur, mie instan, sabun cuci, tisu',
                     ],
                     [
                         'category_name' => 'Jajan & Nongkrong',
                         'type_id' => $expenseType->id,
-                        'icon' => '☕',
+                        'icon' => 'coffee',
                         'keyword' => 'kopi, cemilan, snack, es krim, boba, kafe, bioskop, chill, hangout',
                     ],
                     [
                         'category_name' => 'Perawatan Diri',
                         'type_id' => $expenseType->id,
-                        'icon' => '🧴',
+                        'icon' => 'droplets',
                         'keyword' => 'skincare, sabun, sampo, potong rambut, vitamin, obat, klinik, parfum, handbody, facial',
                     ],
                     [
                         'category_name' => 'Pakaian & Aksesoris',
                         'type_id' => $expenseType->id,
-                        'icon' => '👕',
+                        'icon' => 'shirt',
                         'keyword' => 'baju, celana, sepatu, tas, jaket, kaos kaki, jam tangan, topi, hijab, kacamata',
                     ],
                     [
                         'category_name' => 'Servis & Perbaikan',
                         'type_id' => $expenseType->id,
-                        'icon' => '🛠️',
+                        'icon' => 'wrench',
                         'keyword' => 'bengkel, servis motor, servis laptop, flash hp, ganti oli, ban bocor, sparepart, benerin pc, mekanik, perbaikan',
                     ],
                     [
                         'category_name' => 'Pajak & Legalitas',
                         'type_id' => $expenseType->id,
-                        'icon' => '📄',
+                        'icon' => 'file-text',
                         'keyword' => 'pajak motor, stnk, sim, pbb, materai, legalisir, administrasi, denda, paspor, npwp',
                     ],
                     [
                         'category_name' => 'Sosial & Hadiah',
                         'type_id' => $expenseType->id,
-                        'icon' => '🎁',
+                        'icon' => 'gift',
                         'keyword' => 'sedekah, zakat, kado, sumbangan, kondangan, donasi, infaq, hampers, traktiran, amal',
                     ],
                     [
                         'category_name' => 'Pulsa & Internet',
                         'type_id' => $expenseType->id,
-                        'icon' => '📱',
+                        'icon' => 'smartphone',
                         'keyword' => 'kuota, pulsa, paket data, wifi, indihome, langganan, top up, voucher, kartu perdana, roaming',
                     ],
                     [
                         'category_name' => 'Langganan Digital',
                         'type_id' => $expenseType->id,
-                        'icon' => '💳',
+                        'icon' => 'credit-card',
                         'keyword' => 'spotify, youtube premium, netflix, langganan, auto debit, gemini, ai, aplikasi, cloud, hosting, disney, zoom',
                     ],
                     [
                         'category_name' => 'Tagihan & Utilitas',
                         'type_id' => $expenseType->id,
-                        'icon' => '⚡',
+                        'icon' => 'zap',
                         'keyword' => 'listrik, air, pln, pdam, token, pascabayar, prabayar, pam, iuran, meteran, bpjs, iuran sampah',
                     ],
                 ]);
@@ -303,25 +307,25 @@ class User extends Authenticatable
                     [
                         'category_name' => 'Gaji / Pendapatan',
                         'type_id' => $incomeType->id,
-                        'icon' => '💰',
+                        'icon' => 'banknote',
                         'keyword' => 'gaji, bonus, thr, upah, komisi, insentif, lembur, bayaran, tunjangan, pendapatan tetap',
                     ],
                     [
                         'category_name' => 'Pendapatan Sampingan',
                         'type_id' => $incomeType->id,
-                        'icon' => '🚀',
+                        'icon' => 'rocket',
                         'keyword' => 'freelance, proyek, jualan, dagang, side hustle, jasa, desain, koding, cuan, bisnis kecil',
                     ],
                     [
                         'category_name' => 'Bunga & Hasil Aset',
                         'type_id' => $incomeType->id,
-                        'icon' => '📈',
+                        'icon' => 'trending-up',
                         'keyword' => 'bunga bank, bagi hasil, dividen, profit, saham, reksadana, investasi, kripto, kupon, imbal hasil',
                     ],
                     [
                         'category_name' => 'Pendapatan Lain-lain',
                         'type_id' => $incomeType->id,
-                        'icon' => '🍃',
+                        'icon' => 'leaf',
                         'keyword' => 'refund, nemu duit, hadiah, cashback, kembalian, hibah, angpao, warisan, klaim, temuan',
                     ],
                 ]);
