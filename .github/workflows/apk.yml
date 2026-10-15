@@ -51,8 +51,14 @@ jobs:
           SDM="$SDK_PATH/cmdline-tools/latest/bin/sdkmanager"
           # Terima lisensi agar Bubblewrap/Gradle tidak pernah prompt
           yes | "$SDM" --licenses > /dev/null 2>&1 || true
-          # Pastikan paket inti ada (best effort, image biasanya sudah lengkap)
-          "$SDM" "platform-tools" "platforms;android-35" "platforms;android-34" "build-tools;35.0.0" "build-tools;34.0.0" || true
+          # Pastikan paket inti ada (best effort, image biasanya sudah lengkap).
+          # build-tools 36.1.0 WAJIB: dipakai Bubblewrap 1.25 untuk apksigner.
+          "$SDM" "platform-tools" "platforms;android-36" "platforms;android-35" "platforms;android-34" "build-tools;36.1.0" "build-tools;35.0.0" "build-tools;34.0.0" || true
+          # Marker layout lawas: validatePath() Bubblewrap 1.25 menolak SDK
+          # modern kecuali ada dir $SDK/tools atau $SDK/bin (verifikasi:
+          # hanya fs.existsSync, tidak dipakai untuk hal lain di alur ini).
+          mkdir -p "$SDK_PATH/tools"
+          test -d "$SDK_PATH/tools" || { echo "❌ Gagal membuat marker tools/"; exit 1; }
 
       - name: Verify Bubblewrap dependencies
         run: |
