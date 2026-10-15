@@ -14,7 +14,9 @@ jobs:
   apk:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      # write dibutuhkan step Create GitHub Release (on tag);
+      # checkout dan langkah lain tetap aman dengan write.
+      contents: write
     # Raw icon allows PR builds; main/tag builds use prod icons after deploy
     if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
 
