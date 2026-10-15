@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\Wallet;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -44,24 +43,9 @@ class RegisteredUserController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        Wallet::create([
-            'user_id' => $user->id,
-            'name' => 'External System',
-            'group_type' => 'System',
-            'balance' => 0,
-            'icon' => 'globe',
-            'is_active' => true,
-        ]);
-
-        // 2. Wallet untuk Pengeluaran (Merchant)
-        Wallet::create([
-            'user_id' => $user->id,
-            'name' => 'Merchant System',
-            'group_type' => 'System',
-            'balance' => 0,
-            'icon' => 'store',
-            'is_active' => true,
-        ]);
+        // Wallet & kategori default (termasuk External/Merchant System)
+        // sudah dibuat otomatis oleh User::booted. Jangan buat lagi di sini
+        // agar tidak terjadi duplikat.
 
         event(new Registered($user));
 

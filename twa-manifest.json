@@ -1,6 +1,6 @@
 {
   "packageId": "id.bendaharaku.twa",
-  "host": "bendaharaku.widihhh.my.id",
+  "host": "bendaharaku.sanding.online",
   "name": "Bendaharaku",
   "launcherName": "Bendaharaku",
   "display": "standalone",
@@ -12,8 +12,8 @@
   "navigationDividerColorDark": "#0f172a",
   "backgroundColor": "#0f172a",
   "startUrl": "/",
-  "iconUrl": "https://bendaharaku.widihhh.my.id/icons/icon-512.png",
-  "maskableIconUrl": "https://bendaharaku.widihhh.my.id/icons/icon-512-maskable.png",
+  "iconUrl": "https://bendaharaku.sanding.online/icons/icon-512.png",
+  "maskableIconUrl": "https://bendaharaku.sanding.online/icons/icon-512-maskable.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "./release.keystore",
@@ -36,7 +36,7 @@
   "enableNotifications": true,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
-  "webManifestUrl": "https://bendaharaku.widihhh.my.id/manifest.json",
-  "fullScopeUrl": "https://bendaharaku.widihhh.my.id/",
+  "webManifestUrl": "https://bendaharaku.sanding.online/manifest.json",
+  "fullScopeUrl": "https://bendaharaku.sanding.online/",
   "minSdkVersion": 21
 }

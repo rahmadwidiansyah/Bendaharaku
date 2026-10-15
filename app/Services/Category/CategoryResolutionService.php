@@ -144,7 +144,7 @@ class CategoryResolutionService
                 'user_id' => $userId,
                 'type_id' => $transferType->id,
                 'category_name' => 'Transfer Saldo',
-                'icon' => '🔄',
+                'icon' => 'arrow-left-right',
                 'keyword' => 'trf, transfer',
                 'is_active' => true,
                 'system_key' => 'TRANSFER',

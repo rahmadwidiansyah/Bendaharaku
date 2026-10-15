@@ -78,6 +78,14 @@ const fallbackText = computed(() => {
     return props.fallback?.substring(0, 1) || '?';
 });
 
+// Emoji (mis. surrogate pair, .length > 1) harus dirender apa adanya,
+// bukan jatuh ke fallback. String.length tidak aman untuk emoji.
+const textToRender = computed(() => {
+    if (effectiveIconType.value === 'emoji') return effectiveIcon.value;
+    if ((effectiveIcon.value?.length ?? 0) <= 1) return effectiveIcon.value;
+    return fallbackText.value;
+});
+
 const handleError = () => {
     hasError.value = true;
 };
@@ -98,6 +106,6 @@ const handleError = () => {
         aria-hidden="true"
     />
     <span v-else-if="renderAsText" :class="sizeClass">
-        {{ effectiveIcon.length > 1 ? fallbackText : effectiveIcon }}
+        {{ textToRender }}
     </span>
 </template>
