@@ -77,6 +77,11 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
 
 RUN a2enmod rewrite
 
+# Matikan mod_autoindex Debian: Alias /icons/ bawaannya menimpa
+# public/icons milik Laravel sehingga PWA icons 404.
+# Directory listing memang sudah mati (-Indexes), jadi aman dimatikan.
+RUN a2dismod autoindex || true
+
 # --- 5. Copy build artifacts from previous stages ---
 WORKDIR /var/www
 
