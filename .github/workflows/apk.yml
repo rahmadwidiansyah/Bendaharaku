@@ -249,4 +249,5 @@ jobs:
           files: |
             twa/app/build/outputs/apk/**/*.apk
             twa/app/build/outputs/bundle/**/*.aab
+            twa/app-release-signed.apk
           generate_release_notes: true
