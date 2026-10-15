@@ -77,12 +77,16 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
 
 RUN a2enmod rewrite
 
-# Matikan mod_autoindex Debian: Alias /icons/ bawaannya menimpa
-# public/icons milik Laravel sehingga PWA icons 404.
-# Directory listing memang sudah mati (-Indexes), jadi aman dimatikan.
-# PENTING: pakai -f karena Debian menganggap autoindex "essential"
-# dan a2dismod biasa akan abort (pernah lolos diam-diam via || true).
+# Matikan mod_autoindex Debian (tidak dibutuhkan; listing sudah -Indexes).
+# PENTING: pakai -f karena Debian menganggap autoindex "essential".
 RUN a2dismod -f autoindex && rm -f /etc/apache2/mods-enabled/autoindex.*
+
+# Hapus Alias /icons/ bawaan Debian (mods-available/alias.conf): Alias ini
+# mengalihkan SEMUA request /icons/* ke /usr/share/apache2/icons sehingga
+# public/icons milik Laravel selalu 404 (biang kerok PWA icons + gagal APK).
+# mod_alias sendiri tetap aktif (essential, dibutuhkan ScriptAlias).
+RUN sed -ri -e 's!^(\s*Alias /icons/)!#\1!' /etc/apache2/mods-available/alias.conf \
+    && ! grep -q "^[[:space:]]*Alias /icons/" /etc/apache2/mods-available/alias.conf
 
 # --- 5. Copy build artifacts from previous stages ---
 WORKDIR /var/www
