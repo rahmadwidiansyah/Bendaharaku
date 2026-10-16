@@ -10,12 +10,15 @@ use App\DTO\MultiTransactionItem;
 use App\DTO\MultiTransactionResult;
 use App\DTO\ParsedTransaction;
 use App\DTO\ResolvedTransaction;
+use App\Enums\AiProvider;
 use App\Enums\MultiTransactionErrorCode;
 use App\Enums\TransactionSource;
 use App\Enums\WalletSide;
 use App\Exceptions\AiConfigurationException;
+use App\Exceptions\AiProviderException;
 use App\Exceptions\CategoryNotFoundException;
 use App\Exceptions\WalletNotFoundException;
+use App\Models\AiRoutingPreference;
 use App\Models\AiUsageLog;
 use App\Models\TransactionDraft;
 use App\Models\User;
@@ -23,6 +26,7 @@ use App\Services\AI\AiCredentialManager;
 use App\Services\AI\AiParseLogService;
 use App\Services\AI\AiPreferenceManager;
 use App\Services\AI\AiProviderFactory;
+use App\Services\AI\Routing\AiRoutingExecutor;
 use App\Services\AI\TransactionResolver;
 use App\Services\Wallet\WalletResolutionService;
 use Illuminate\Support\Facades\Log;
@@ -32,6 +36,8 @@ use Throwable;
 
 class MultiTransactionProcessor
 {
+    private AiRoutingExecutor $executor;
+
     public function __construct(
         private readonly AiPreferenceManager $preferenceManager,
         private readonly AiCredentialManager $credentialManager,
@@ -41,7 +47,10 @@ class MultiTransactionProcessor
         private readonly WalletResolutionService $walletResolution,
         private readonly ProcessTransactionAction $transactionAction,
         private readonly DraftPayloadBuilder $draftBuilder,
-    ) {}
+        ?AiRoutingExecutor $executor = null,
+    ) {
+        $this->executor = $executor ?? app(AiRoutingExecutor::class);
+    }
 
     public function process(
         User $user, string $text,
@@ -49,18 +58,38 @@ class MultiTransactionProcessor
         string $source,
         string $prompt = '',
     ): array {
-        $context = $this->resolveMultiContext($user, $text, $wallets, $categories, $activeMemories, $source, $prompt);
-        if ($context === null) {
+        // Routing pool lintas akun/provider; fallback ke single jika tak ada kandidat.
+        try {
+            $routingPref = AiRoutingPreference::where('user_id', $user->id)->first();
+            $out = $this->executor->executeMulti($user, function ($account, string $model, AiProvider $provider) use ($prompt, $text) {
+                $apiKey = (string) ($account->id > 0 ? $account->api_key : config('bendaharaku.ai.openai_compatible.api_key'));
+                if (blank($apiKey)) {
+                    throw new AiConfigurationException("API Key untuk '{$provider->value}' kosong.");
+                }
+                if ($provider === AiProvider::OpenAiCompatible && ! empty($account->base_url)) {
+                    config()->set('bendaharaku.ai.openai_compatible.base_url', $account->base_url);
+                }
+                $adapter = $this->providerFactory->make($provider);
+
+                return $adapter->parseMultiTransaction(prompt: $prompt, apiKey: $apiKey, model: $model, fallbackText: $text);
+            }, $routingPref);
+            $multiResult = $out['result'];
+            $multiRouting = $out['routing'];
+            $preferenceProvider = $multiRouting['selected_provider'] ?? $multiResult->provider;
+            $preferenceModel = $multiRouting['selected_model'] ?? $multiResult->model;
+        } catch (AiConfigurationException $e) {
+            return ['__fallback_to_single' => true];
+        } catch (AiProviderException $e) {
+            // Pool habis: fallback ke single (yang masih punya Python/LRE) alih-alih gagal langsung.
+            // Ini menyamakan semantik single vs multi (sebelumnya multi langsung throw).
+            Log::warning('MultiTx: pool exhausted, fallback to single', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+
+            return ['__fallback_to_single' => true];
+        } catch (Throwable $e) {
+            Log::warning('MultiTx: pool crash, fallback to single', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+
             return ['__fallback_to_single' => true];
         }
-        [$preference, $adapter, $credential, $model, $resolvedPrompt] = $context;
-
-        $multiResult = $adapter->parseMultiTransaction(
-            prompt: $resolvedPrompt,
-            apiKey: $credential->api_key,
-            model: $model,
-            fallbackText: $text,
-        );
 
         if (! $multiResult->success || empty($multiResult->transactions)) {
             if ($multiResult->isOutOfScope) {
@@ -84,8 +113,12 @@ class MultiTransactionProcessor
         if ($totalTokens > 0) {
             AiUsageLog::create([
                 'user_id' => $user->id,
-                'provider' => $preference->provider->value,
-                'model' => $model,
+                'provider' => $preferenceProvider ?? $multiResult->provider,
+                'model' => $preferenceModel ?? $multiResult->model,
+                'account_id' => ($multiRouting['selected_account_id'] ?? 0) > 0 ? $multiRouting['selected_account_id'] : null,
+                'trace_id' => $multiRouting['trace_id'] ?? null,
+                'attempt_count' => $multiRouting['attempt_count'] ?? 1,
+                'selection_method' => $multiRouting['selection_method'] ?? null,
                 'prompt_tokens' => $usage['prompt'] ?? 0,
                 'completion_tokens' => $usage['completion'] ?? 0,
                 'total_tokens' => $totalTokens,

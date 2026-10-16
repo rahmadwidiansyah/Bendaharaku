@@ -2,9 +2,11 @@
 
 namespace App\Services\Budgeting;
 
+use App\Enums\AiProvider;
 use App\Exceptions\AiProviderException;
 use App\Exceptions\AiRateLimitException;
 use App\Exceptions\AiTimeoutException;
+use App\Models\AiRoutingPreference;
 use App\Models\BudgetGroup;
 use App\Models\Category;
 use App\Models\TransactionLog;
@@ -13,6 +15,7 @@ use App\Models\User;
 use App\Services\AI\AiCredentialManager;
 use App\Services\AI\AiPreferenceManager;
 use App\Services\AI\AiProviderFactory;
+use App\Services\AI\Routing\AiRoutingExecutor;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -20,11 +23,16 @@ use RuntimeException;
 
 class AIBudgetService implements BudgetingServiceInterface
 {
+    private AiRoutingExecutor $executor;
+
     public function __construct(
         private AiProviderFactory $aiProviderFactory,
         private AiPreferenceManager $aiPreferenceManager,
         private AiCredentialManager $aiCredentialManager,
-    ) {}
+        ?AiRoutingExecutor $executor = null,
+    ) {
+        $this->executor = $executor ?? app(AiRoutingExecutor::class);
+    }
 
     public function generate(User $user, int $month, int $year): BudgetGroup
     {
@@ -49,32 +57,67 @@ class AIBudgetService implements BudgetingServiceInterface
 
         $prompt = $this->constructPrompt($categories, $spendingByCategory);
 
-        $aiPreference = $this->aiPreferenceManager->resolveActivePreference($user);
-        if ($aiPreference === null) {
-            throw new RuntimeException('Tidak ada preferensi AI aktif. Silakan atur model AI di pengaturan.');
-        }
-
-        $credential = $this->aiCredentialManager->getCredential($user, $aiPreference->provider);
-        if ($credential === null || blank($credential->api_key)) {
-            throw new RuntimeException('API Key AI tidak ditemukan atau tidak valid.');
-        }
-
-        $adapter = $this->aiProviderFactory->make($aiPreference->provider);
-
+        $routingPref = AiRoutingPreference::where('user_id', $user->id)->first();
+        $response = null;
+        $poolExhaustedMessage = null;
         try {
-            $response = $adapter->generateText(
-                prompt: $prompt,
-                apiKey: $credential->api_key,
-                model: $aiPreference->selected_model ?? $aiPreference->provider->defaultModel(),
-            );
-        } catch (AiTimeoutException|AiRateLimitException|AiProviderException $e) {
-            Log::error('Budget AI generate gagal', [
+            $out = $this->executor->executeText($user, function ($account, string $model, AiProvider $provider) use ($prompt) {
+                $apiKey = (string) ($account->id > 0 ? $account->api_key : config('bendaharaku.ai.openai_compatible.api_key'));
+                if (blank($apiKey)) {
+                    throw new RuntimeException('API Key AI tidak ditemukan atau tidak valid.');
+                }
+                if ($provider === AiProvider::OpenAiCompatible && ! empty($account->base_url)) {
+                    config()->set('bendaharaku.ai.openai_compatible.base_url', $account->base_url);
+                }
+                $adapter = $this->aiProviderFactory->make($provider);
+
+                return $adapter->generateText(prompt: $prompt, apiKey: $apiKey, model: $model);
+            }, $routingPref);
+            $response = $out['text'];
+            Log::info('Budget AI generate via pool', [
                 'user_id' => $user->id,
-                'provider' => $aiPreference->provider->value,
-                'model' => $aiPreference->selected_model ?? $aiPreference->provider->defaultModel(),
-                'error' => $e->getMessage(),
+                'selected' => ($out['routing']['selected_provider'] ?? '?').'/'.($out['routing']['selected_model'] ?? '?'),
+                'attempts' => $out['routing']['attempt_count'] ?? 1,
             ]);
+        } catch (AiProviderException $e) {
+            // BC: instalasi/test lama tanpa ai_provider_accounts → fallback ke single-provider legacy.
+            if (str_contains($e->getMessage(), 'Tidak ada kandidat')) {
+                $poolExhaustedMessage = $e->getMessage();
+            } else {
+                Log::error('Budget AI generate gagal', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+                throw $e;
+            }
+        } catch (AiTimeoutException|AiRateLimitException|RuntimeException $e) {
+            Log::error('Budget AI generate gagal', ['user_id' => $user->id, 'error' => $e->getMessage()]);
             throw $e;
+        }
+
+        if ($response === null) {
+            // Legacy single-provider (dipakai saat pool kosong + unit test lama dengan mock factory).
+            $aiPreference = $this->aiPreferenceManager->resolveActivePreference($user);
+            if ($aiPreference === null) {
+                throw new RuntimeException('Tidak ada preferensi AI aktif. Silakan atur model AI di pengaturan.');
+            }
+            $credential = $this->aiCredentialManager->getCredential($user, $aiPreference->provider);
+            if ($credential === null || blank($credential->api_key)) {
+                throw new RuntimeException('API Key AI tidak ditemukan atau tidak valid.');
+            }
+            $adapter = $this->aiProviderFactory->make($aiPreference->provider);
+            try {
+                $response = $adapter->generateText(
+                    prompt: $prompt,
+                    apiKey: $credential->api_key,
+                    model: $aiPreference->selected_model ?? $aiPreference->provider->defaultModel(),
+                );
+            } catch (AiTimeoutException|AiRateLimitException|AiProviderException $e) {
+                Log::error('Budget AI generate gagal', [
+                    'user_id' => $user->id,
+                    'provider' => $aiPreference->provider->value,
+                    'model' => $aiPreference->selected_model ?? $aiPreference->provider->defaultModel(),
+                    'error' => $e->getMessage(),
+                ]);
+                throw $e;
+            }
         }
 
         $budgetData = json_decode($response, true);

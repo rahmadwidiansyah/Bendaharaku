@@ -419,6 +419,15 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/', fn () => redirect()->route('settings.ai.models'))->name('index');
         Route::patch('/models', [AiSettingsController::class, 'store'])->name('store');
         Route::post('/test', [AiSettingsController::class, 'testConnection'])->name('test');
+        // ── Provider pool: multi-account + discovery + routing ──
+        Route::get('/accounts', [\App\Http\Controllers\Settings\AiProviderAccountController::class, 'index'])->name('accounts.index');
+        Route::post('/accounts', [\App\Http\Controllers\Settings\AiProviderAccountController::class, 'store'])->name('accounts.store');
+        Route::patch('/accounts/{id}', [\App\Http\Controllers\Settings\AiProviderAccountController::class, 'update'])->name('accounts.update');
+        Route::delete('/accounts/{id}', [\App\Http\Controllers\Settings\AiProviderAccountController::class, 'destroy'])->name('accounts.destroy');
+        Route::post('/accounts/{id}/test', [\App\Http\Controllers\Settings\AiProviderAccountController::class, 'test'])->name('accounts.test');
+        Route::post('/accounts/{id}/refresh', [\App\Http\Controllers\Settings\AiProviderAccountController::class, 'refresh'])->name('accounts.refresh');
+        Route::get('/accounts/{id}/models', [\App\Http\Controllers\Settings\AiProviderAccountController::class, 'models'])->name('accounts.models');
+        Route::put('/routing', [\App\Http\Controllers\Settings\AiProviderAccountController::class, 'storeRouting'])->name('routing.store');
         Route::get('/integration', fn () => Inertia::render('Settings/AI/Integration'))->name('integration');
 
         // API untuk Dashboard (not in settings, but for reference)
@@ -447,7 +456,8 @@ Route::middleware(['auth'])->group(function () {
     // ── Chat ──────────────────────────────────────────────────────
     Route::prefix('chat')->name('chat.')->group(function () {
         Route::get('/', [WebChatController::class, 'index'])->name('index');
-        Route::post('/message', [WebChatController::class, 'sendMessage'])->name('message');
+        // Throttle kirim pesan agar retry/fallback pool tidak bisa di-spam untuk menghabiskan kuota LLM.
+        Route::post('/message', [WebChatController::class, 'sendMessage'])->middleware('throttle:30,1')->name('message');
         Route::get('/message/{id}/status', [WebChatController::class, 'messageStatus'])->name('message.status');
         Route::get('/history', [WebChatController::class, 'history'])->name('history');
         Route::get('/commands', [WebChatController::class, 'commands'])->name('commands');

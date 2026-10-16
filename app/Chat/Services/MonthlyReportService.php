@@ -10,9 +10,11 @@ use App\Chat\Components\TextComponent;
 use App\Chat\Components\WarningComponent;
 use App\Chat\DTOs\ChatResponse;
 use App\Enums\AiProvider;
+use App\Models\AiRoutingPreference;
 use App\Models\MonthlyReport;
 use App\Models\User;
-use App\Models\UserAiCredential;
+use App\Services\AI\AiProviderFactory;
+use App\Services\AI\Routing\AiRoutingExecutor;
 use App\Support\MoneyFormatter;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -20,9 +22,18 @@ use Illuminate\Support\Facades\Log;
 
 class MonthlyReportService
 {
+    private AiRoutingExecutor $executor;
+
+    private AiProviderFactory $factory;
+
     public function __construct(
         private readonly AiReportClient $aiReportClient,
-    ) {}
+        ?AiRoutingExecutor $executor = null,
+        ?AiProviderFactory $factory = null,
+    ) {
+        $this->executor = $executor ?? app(AiRoutingExecutor::class);
+        $this->factory = $factory ?? app(AiProviderFactory::class);
+    }
 
     public function buildMonthlyReportResponse(User $user, array $metadata, string $rawText): ChatResponse
     {
@@ -74,7 +85,7 @@ class MonthlyReportService
                 'metrics' => $metrics,
                 'previous_month_summary' => $previousReport?->final_summary,
                 'comparison_metrics' => $comparisonMetrics,
-                'provider' => $geminiReport ? 'gemini' : 'local',
+                'provider' => $geminiReport ? ($geminiResult['provider'] ?? 'ai-pool') : 'local',
                 'model' => $geminiResult['model'] ?? null,
                 'status' => 'completed',
             ],
@@ -383,19 +394,9 @@ class MonthlyReportService
         Carbon $period,
         ?MonthlyReport $previousReport = null,
     ): ?array {
-        $credential = UserAiCredential::where('user_id', $user->id)
-            ->where('provider', AiProvider::Gemini->value)
-            ->where('is_valid', true)
-            ->first();
-
-        if (! $credential || blank($credential->api_key)) {
-            return null;
-        }
-
-        $preference = $user->aiPreferences()
-            ->where('provider', AiProvider::Gemini->value)
-            ->first();
-        $model = $preference?->selected_model ?: AiProvider::Gemini->defaultModel();
+        // Konsisten dengan routing pool (tidak hardcode Gemini). Nama method dipertahankan agar BC,
+        // tapi provider/model mengikuti preferensi routing pengguna.
+        $routingPref = AiRoutingPreference::where('user_id', $user->id)->first();
 
         $transactionsCollection = Collection::make($transactions);
         $transactionsForPayload = $transactionsCollection->take(50);
@@ -452,21 +453,36 @@ class MonthlyReportService
         ]);
 
         try {
-            $text = $this->aiReportClient->sendPrompt($prompt, $credential->api_key, $model);
+            $out = $this->executor->executeText($user, function ($account, string $model, AiProvider $provider) use ($prompt) {
+                $apiKey = (string) ($account->id > 0 ? $account->api_key : config('bendaharaku.ai.openai_compatible.api_key'));
+                if (blank($apiKey)) {
+                    throw new \RuntimeException('API key kosong.');
+                }
+                if ($provider === AiProvider::OpenAiCompatible && ! empty($account->base_url)) {
+                    config()->set('bendaharaku.ai.openai_compatible.base_url', $account->base_url);
+                }
+                $adapter = $this->factory->make($provider);
 
-            if ($text === null) {
+                return $adapter->generateText($prompt, $apiKey, $model);
+            }, $routingPref);
+            $text = $out['text'];
+            $model = $out['routing']['selected_model'] ?? 'unknown';
+            $providerValue = $out['routing']['selected_provider'] ?? 'unknown';
+
+            if ($text === null || trim((string) $text) === '') {
                 return null;
             }
 
-            Log::info('Gemini response received', [
+            Log::info('Monthly report response received via pool', [
                 'user_id' => $user->id,
+                'provider' => $providerValue,
                 'model' => $model,
-                'text_snippet' => substr($text, 0, 300),
+                'text_snippet' => substr((string) $text, 0, 300),
             ]);
 
-            return ['summary' => $text, 'model' => $model];
+            return ['summary' => $text, 'model' => $model, 'provider' => $providerValue];
         } catch (\Throwable $e) {
-            Log::warning('Gemini monthly report exception', [
+            Log::warning('Monthly report pool exception (fallback to local)', [
                 'user_id' => $user->id,
                 'message' => $e->getMessage(),
             ]);

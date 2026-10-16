@@ -15,12 +15,20 @@ interface Props {
   providerStatuses?: Record<string, any>;
   availableProviders?: string[];
   modelsByProvider?: Record<string, string[]>;
+  aiAccounts?: Record<string, any>[];
+  aiRouting?: Record<string, any>;
+  aiCandidates?: Record<string, any>[];
+  aiSkipped?: Record<string, any>[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
   providerStatuses: () => ({}),
   availableProviders: () => [],
   modelsByProvider: () => ({}),
+  aiAccounts: () => [],
+  aiRouting: () => ({}),
+  aiCandidates: () => [],
+  aiSkipped: () => [],
 });
 
 const selectedProvider = ref(props.availableProviders?.[0] || 'gemini');
@@ -158,6 +166,126 @@ const saveSettings = async () => {
     saving.value = false;
   }
 };
+
+// ── Provider pool: multi-akun + routing (tanpa pernah tampilkan secret) ──
+const poolAccounts = ref<Record<string, any>[]>([...(props.aiAccounts || [])]);
+const poolCandidates = ref<Record<string, any>[]>([...(props.aiCandidates || [])]);
+const poolSkipped = ref<Record<string, any>[]>([...(props.aiSkipped || [])]);
+const newAccount = ref({ provider: 'gemini', alias: '', api_key: '', base_url: '', priority: 1 });
+const addingAccount = ref(false);
+const routingForm = ref({
+  mode: (props.aiRouting as any)?.mode || 'automatic',
+  primary_provider: (props.aiRouting as any)?.primary_provider || '',
+  primary_model: (props.aiRouting as any)?.primary_model || '',
+  free_policy: (props.aiRouting as any)?.free_policy || 'free_first',
+  allow_paid_fallback: !!(props.aiRouting as any)?.allow_paid_fallback,
+});
+const savingRouting = ref(false);
+const busyAccountId = ref<number | null>(null);
+
+async function refreshPool() {
+  try {
+    const { data } = await axios.get(route('settings.ai.accounts.index'));
+    poolAccounts.value = data.accounts || [];
+    poolCandidates.value = (data.candidates || []).slice(0, 8);
+    poolSkipped.value = (data.skipped || []).slice(0, 20);
+    if (data.routing) {
+      routingForm.value.mode = data.routing.mode || 'automatic';
+      routingForm.value.primary_provider = data.routing.primary_provider || '';
+      routingForm.value.primary_model = data.routing.primary_model || '';
+      routingForm.value.free_policy = data.routing.free_policy || 'free_first';
+      routingForm.value.allow_paid_fallback = !!data.routing.allow_paid_fallback;
+    }
+  } catch (err: any) {
+    showToast(err.response?.data?.message || 'Gagal memuat akun AI.', 'error');
+  }
+}
+
+async function addAccount() {
+  if (addingAccount.value || !newAccount.value.api_key) return;
+  addingAccount.value = true;
+  try {
+    await axios.post(route('settings.ai.accounts.store'), { ...newAccount.value });
+    showToast('Akun AI ditambahkan. Discovery model berjalan otomatis.', 'success');
+    newAccount.value = { provider: 'gemini', alias: '', api_key: '', base_url: '', priority: 1 };
+    await refreshPool();
+  } catch (err: any) {
+    showToast(err.response?.data?.message || 'Gagal menambah akun.', 'error');
+  } finally {
+    addingAccount.value = false;
+  }
+}
+
+async function testAccount(id: number) {
+  busyAccountId.value = id;
+  try {
+    const { data } = await axios.post(route('settings.ai.accounts.test', { id }));
+    showToast(data.message || 'Koneksi berhasil.', 'success');
+    await refreshPool();
+  } catch (err: any) {
+    showToast(err.response?.data?.message || 'Koneksi gagal.', 'error');
+    await refreshPool();
+  } finally {
+    busyAccountId.value = null;
+  }
+}
+
+async function refreshDiscovery(id: number) {
+  busyAccountId.value = id;
+  try {
+    const { data } = await axios.post(route('settings.ai.accounts.refresh', { id }));
+    showToast(data.discovery?.error || `Discovery: ${data.discovery?.source} (${data.discovery?.eligible} layak).`, data.discovery?.source === 'error' ? 'error' : 'success');
+    await refreshPool();
+  } catch (err: any) {
+    showToast(err.response?.data?.message || 'Discovery gagal.', 'error');
+  } finally {
+    busyAccountId.value = null;
+  }
+}
+
+async function toggleAccountActive(acc: Record<string, any>) {
+  try {
+    await axios.patch(route('settings.ai.accounts.update', { id: acc.id }), { is_active: !acc.is_active });
+    await refreshPool();
+  } catch (err: any) {
+    showToast(err.response?.data?.message || 'Gagal mengubah status akun.', 'error');
+  }
+}
+
+async function deleteAccount(id: number) {
+  if (!confirm('Hapus akun API ini? Katalog modelnya ikut terhapus.')) return;
+  try {
+    await axios.delete(route('settings.ai.accounts.destroy', { id }));
+    showToast('Akun dihapus.', 'success');
+    await refreshPool();
+  } catch (err: any) {
+    showToast(err.response?.data?.message || 'Gagal menghapus akun.', 'error');
+  }
+}
+
+async function saveRouting() {
+  if (savingRouting.value) return;
+  savingRouting.value = true;
+  try {
+    const payload: Record<string, any> = {
+      mode: routingForm.value.mode,
+      primary_provider: routingForm.value.primary_provider || null,
+      primary_model: routingForm.value.primary_model || null,
+      fallback_models: [],
+      provider_priority: ['gemini', 'openai', 'deepseek', 'openai-compatible'],
+      free_policy: routingForm.value.free_policy,
+      allow_paid_fallback: routingForm.value.allow_paid_fallback,
+    };
+    const { data } = await axios.put(route('settings.ai.routing.store'), payload);
+    showToast('Preferensi routing disimpan.', 'success');
+    if (data.warnings?.length) showToast(data.warnings[0], 'error');
+    await refreshPool();
+  } catch (err: any) {
+    showToast(err.response?.data?.message || 'Gagal menyimpan routing.', 'error');
+  } finally {
+    savingRouting.value = false;
+  }
+}
 </script>
 
 <template>
@@ -322,6 +450,101 @@ const saveSettings = async () => {
           ✓ {{ t('settings.ai.models.active') }}
         </span>
       </div>
+
+      <!-- Provider pool: multi-akun -->
+      <SettingsCard
+        title="Akun API per provider (multi-key)"
+        description="Satu provider bisa punya beberapa API key. Status jujur berdasarkan pemeriksaan nyata, bukan label. Key tidak pernah ditampilkan utuh."
+      >
+        <div class="space-y-3">
+          <div v-if="!poolAccounts.length" class="text-xs text-[var(--color-text-secondary)]">
+            Belum ada akun pool. Tambahkan di bawah atau gunakan pengaturan lama di atas (tetap kompatibel).
+          </div>
+          <div v-for="acc in poolAccounts" :key="acc.id" class="p-3 rounded-lg border border-white/5 bg-[var(--color-surface-raised)]">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-xs font-bold text-[var(--color-text-primary)]">{{ String(acc.provider).toUpperCase() }} · {{ acc.alias }}</span>
+              <span class="text-2xs px-2 py-0.5 rounded-full bg-[var(--color-surface-muted)] text-gray-300">···{{ acc.key_suffix }}</span>
+              <span class="text-2xs px-2 py-0.5 rounded-full" :class="acc.health_status === 'healthy' ? 'bg-emerald-900/30 text-emerald-300' : acc.health_status === 'invalid' ? 'bg-red-900/30 text-red-300' : 'bg-[var(--color-surface-muted)] text-gray-300'">
+                {{ acc.health_status }}{{ acc.in_cooldown ? ' · cooldown' : '' }}
+              </span>
+              <span v-if="!acc.is_active" class="text-2xs px-2 py-0.5 rounded-full bg-[var(--color-surface-muted)] text-gray-400">nonaktif</span>
+              <span class="ml-auto flex gap-2">
+                <button @click="testAccount(acc.id)" :disabled="busyAccountId === acc.id || acc.id === 0" class="text-2xs px-2 py-1 rounded-lg bg-[var(--color-surface-muted)] hover:bg-gray-600 disabled:opacity-50">Uji</button>
+                <button @click="refreshDiscovery(acc.id)" :disabled="busyAccountId === acc.id || acc.id === 0" class="text-2xs px-2 py-1 rounded-lg bg-[var(--color-surface-muted)] hover:bg-gray-600 disabled:opacity-50">Refresh model</button>
+                <button v-if="acc.id !== 0" @click="toggleAccountActive(acc)" class="text-2xs px-2 py-1 rounded-lg bg-[var(--color-surface-muted)] hover:bg-gray-600">{{ acc.is_active ? 'Nonaktifkan' : 'Aktifkan' }}</button>
+                <button v-if="acc.id !== 0" @click="deleteAccount(acc.id)" class="text-2xs px-2 py-1 rounded-lg bg-red-900/30 text-red-300 hover:bg-red-900/50">Hapus</button>
+              </span>
+            </div>
+            <div class="mt-1 text-2xs text-[var(--color-text-secondary)]">
+              Prioritas {{ acc.priority }} · {{ acc.model_count }} model · {{ acc.last_test_status || 'belum diuji' }}{{ acc.last_discovery_at ? ' · discovery ' + acc.last_discovery_at : '' }}
+              <span v-if="acc.last_test_message"> · {{ acc.last_test_message }}</span>
+            </div>
+          </div>
+
+          <div class="p-3 rounded-lg border border-dashed border-white/10 space-y-2">
+            <div class="text-xs font-semibold text-[var(--color-text-primary)]">Tambah akun baru</div>
+            <div class="grid grid-cols-2 gap-2">
+              <select v-model="newAccount.provider" class="px-3 py-2 bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-lg text-sm">
+                <option value="gemini">gemini</option>
+                <option value="openai">openai</option>
+                <option value="deepseek">deepseek</option>
+                <option value="openai-compatible">openai-compatible</option>
+              </select>
+              <input v-model="newAccount.alias" placeholder="Alias (mis. Akun 2)" class="px-3 py-2 bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-lg text-sm" />
+            </div>
+            <input v-model="newAccount.api_key" type="password" placeholder="Tempel API key (tidak ditampilkan lagi setelah disimpan)" autocomplete="new-password" class="w-full px-3 py-2 bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-lg text-sm" />
+            <input v-if="newAccount.provider === 'openai-compatible'" v-model="newAccount.base_url" placeholder="Base URL (mis. https://api.contoh.com/v1/chat/completions)" class="w-full px-3 py-2 bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-lg text-sm" />
+            <button @click="addAccount" :disabled="addingAccount || !newAccount.api_key" class="px-3 py-2 bg-[var(--color-brand)] rounded-lg text-xs font-bold uppercase tracking-wider disabled:opacity-50">Tambah & discovery otomatis</button>
+          </div>
+        </div>
+      </SettingsCard>
+
+      <!-- Routing & kandidat -->
+      <SettingsCard
+        title="Routing cerdas & kandidat utama"
+        description="Otomatis menyusun 3–4 kandidat dari model ter-discovery. Manual tidak diubah diam-diam saat mode otomatis mati."
+      >
+        <div class="space-y-3">
+          <div class="grid grid-cols-2 gap-2">
+            <label class="text-xs text-gray-300">Mode
+              <select v-model="routingForm.mode" class="mt-1 w-full px-3 py-2 bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-lg text-sm">
+                <option value="automatic">Otomatis</option>
+                <option value="manual">Manual</option>
+              </select>
+            </label>
+            <label class="text-xs text-gray-300">Kebijakan biaya
+              <select v-model="routingForm.free_policy" class="mt-1 w-full px-3 py-2 bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-lg text-sm">
+                <option value="free_only">Hanya gratis</option>
+                <option value="free_first">Gratis dulu</option>
+                <option value="paid_allowed">Berbayar diizinkan</option>
+              </select>
+            </label>
+          </div>
+          <label class="flex items-center gap-2 text-xs text-gray-300">
+            <input v-model="routingForm.allow_paid_fallback" type="checkbox" class="w-4 h-4" />
+            Izinkan fallback berbayar (wajib untuk free-first → berbayar & paid-allowed)
+          </label>
+          <div v-if="routingForm.mode === 'manual'" class="grid grid-cols-2 gap-2">
+            <input v-model="routingForm.primary_provider" placeholder="provider utama (gemini/openai/...)" class="px-3 py-2 bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-lg text-sm" />
+            <input v-model="routingForm.primary_model" placeholder="model utama (ID resmi)" class="px-3 py-2 bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-lg text-sm" />
+          </div>
+          <button @click="saveRouting" :disabled="savingRouting" class="px-3 py-2 bg-[var(--color-brand)] rounded-lg text-xs font-bold uppercase tracking-wider disabled:opacity-50">Simpan routing</button>
+
+          <div>
+            <div class="text-xs font-semibold text-[var(--color-text-primary)] mb-1">Kandidat utama (maks 8 ditampilkan)</div>
+            <div v-if="!poolCandidates.length" class="text-2xs text-[var(--color-text-secondary)]">Belum ada kandidat layak. Cek akun/cooldown/kebijakan gratis.</div>
+            <div v-for="(c, i) in poolCandidates" :key="i" class="text-2xs text-gray-300 py-1 border-b border-white/5">
+              {{ i + 1 }}. {{ c.provider }}/{{ c.model }} <span class="text-gray-500">· akun #{{ c.account_id }} {{ c.account_alias }} · {{ c.source }}</span>
+            </div>
+          </div>
+          <div v-if="poolSkipped.length">
+            <div class="text-xs font-semibold text-[var(--color-text-primary)] mb-1">Dilewati (alasan jujur)</div>
+            <div v-for="(s, i) in poolSkipped.slice(0, 8)" :key="i" class="text-2xs text-[var(--color-text-secondary)] py-0.5">
+              {{ s.provider }}/{{ s.model }} — {{ s.reason }}
+            </div>
+          </div>
+        </div>
+      </SettingsCard>
     </SettingsLayout>
   </AuthenticatedLayout>
 </template>

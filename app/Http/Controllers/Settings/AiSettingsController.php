@@ -12,10 +12,12 @@ use App\Models\AiUsageLog;
 use App\Models\UserAiCredential;
 use App\Models\UserAiMemory;
 use App\Models\UserAiMemoryLog;
+use App\Services\AI\AiAccountManager;
 use App\Services\AI\AiCredentialManager;
 use App\Services\AI\AiPreferenceManager;
 use App\Services\AI\Memory\MemoryDecayEngine;
 use App\Services\AI\PlaceholderConnectionTester;
+use App\Services\AI\Routing\ModelResolver;
 use App\Support\ActivityLogger;
 use App\Support\SettingsChangeLogger;
 use Illuminate\Http\JsonResponse;
@@ -105,6 +107,11 @@ class AiSettingsController extends Controller
                 ];
             });
 
+        // Pool baru: akun multi-key + katalog discovery + routing (tanpa secret).
+        $accountManager = app(AiAccountManager::class);
+        $routing = $accountManager->getOrCreateRouting($user);
+        $resolved = app(ModelResolver::class)->resolve($user, $routing);
+
         return Inertia::render('Settings/AI/Models', [
             'providerStatuses' => $providerStatuses,
             'availableProviders' => array_map(
@@ -114,6 +121,16 @@ class AiSettingsController extends Controller
             'modelsByProvider' => $modelsByProvider,
             'usageStats' => $usageStats,
             'recentLogs' => $recentLogs,
+            'aiAccounts' => $accountManager->listFor($user),
+            'aiRouting' => $routing,
+            'aiCandidates' => array_map(fn ($c) => [
+                'provider' => $c['provider']->value ?? (string) $c['provider'],
+                'model' => $c['model_id'],
+                'account_id' => $c['account']->id,
+                'account_alias' => $c['account']->alias ?? null,
+                'source' => $c['source'] ?? null,
+            ], array_slice($resolved['candidates'], 0, 8)),
+            'aiSkipped' => array_slice($resolved['skipped'] ?? [], 0, 20),
         ]);
     }
 
@@ -187,6 +204,7 @@ class AiSettingsController extends Controller
         $request->validate([
             'provider' => ['required', 'string'],
             'api_key' => ['nullable', 'string'],
+            'model' => ['nullable', 'string', 'max:150'],
         ]);
 
         $provider = AiProvider::tryFrom((string) $request->input('provider'));
@@ -220,13 +238,13 @@ class AiSettingsController extends Controller
             ], 422);
         }
 
-        $result = $tester->test($provider, $apiKey);
+        $result = $tester->test($provider, $apiKey, $request->input('model'));
 
         if ($result['success'] && $storedCredential) {
             $storedCredential->update(['is_valid' => true]);
         }
 
-        return response()->json($result);
+        return response()->json($result, $result['success'] ? 200 : 422);
     }
 
     /**

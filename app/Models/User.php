@@ -77,6 +77,16 @@ class User extends Authenticatable
         return $this->hasOne(UserAiPreference::class)->where('is_active_provider', true);
     }
 
+    public function aiProviderAccounts(): HasMany
+    {
+        return $this->hasMany(AiProviderAccount::class);
+    }
+
+    public function aiRoutingPreference(): HasOne
+    {
+        return $this->hasOne(AiRoutingPreference::class);
+    }
+
     public function conversations(): HasMany
     {
         return $this->hasMany(Conversation::class);
