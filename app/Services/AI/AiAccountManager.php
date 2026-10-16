@@ -76,12 +76,17 @@ class AiAccountManager
     public function create(User $user, AiProvider $provider, string $alias, string $apiKey, ?string $baseUrl = null, int $priority = 1): AiProviderAccount
     {
         $alias = trim($alias) === '' ? 'Utama' : mb_substr(trim($alias), 0, 100);
+        // Defense in depth: normalisasi + tolak SSRF walau validasi request lolos/dilewati.
+        $safeBaseUrl = null;
+        if ($provider === AiProvider::OpenAiCompatible && is_string($baseUrl) && trim($baseUrl) !== '') {
+            $safeBaseUrl = \App\Services\AI\Security\SafeEndpointValidator::normalizeBaseUrl($baseUrl);
+        }
         $account = AiProviderAccount::create([
             'user_id' => $user->id,
             'provider' => $provider->value,
             'alias' => $alias,
             'api_key' => $apiKey,
-            'base_url' => $provider === AiProvider::OpenAiCompatible ? $baseUrl : null,
+            'base_url' => $safeBaseUrl,
             'is_active' => true,
             'is_valid' => true,
             'priority' => max(1, $priority),
@@ -117,7 +122,9 @@ class AiAccountManager
             'last_test_status' => null,
         ];
         if ($account->provider === AiProvider::OpenAiCompatible && $baseUrl !== null) {
-            $patch['base_url'] = $baseUrl;
+            $patch['base_url'] = trim($baseUrl) === ''
+                ? null
+                : \App\Services\AI\Security\SafeEndpointValidator::normalizeBaseUrl($baseUrl);
         }
         $account->update($patch);
 

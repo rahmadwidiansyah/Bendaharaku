@@ -126,8 +126,8 @@ class AIManager
             }
         } else {
             // Tidak ada kandidat layak: coba legacy single-provider sekali (BC untuk instalasi lama),
-            // lalu fallback lokal. Ini menjaga perilaku lama saat tabel pool kosong.
-            $legacy = $this->tryLegacySingle($user, $text, $prompt);
+            // lalu fallback lokal. Legacy TETAP tunduk pada kebijakan gratis (unknown ≠ gratis terverifikasi).
+            $legacy = $this->tryLegacySingle($user, $text, $prompt, $routing);
             if ($legacy) {
                 return $legacy;
             }
@@ -158,10 +158,21 @@ class AIManager
         throw $this->wrapPoolError($poolError ?? new AiProviderException('ai-router', 'AI gagal memproses.'));
     }
 
-    /** Jalur legacy satu-provider (BC). Return null jika tidak ada preferensi/kredensial. */
-    private function tryLegacySingle(User $user, string $text, string $prompt): ?AIParseResult
+    /** Jalur legacy satu-provider (BC). Return null jika tidak ada preferensi/kredensial ATAU kebijakan gratis melarang tier unknown. */
+    private function tryLegacySingle(User $user, string $text, string $prompt, ?AiRoutingPreference $routing = null): ?AIParseResult
     {
         try {
+            // Tier legacy tidak terverifikasi (unknown): free_only selalu tolak (unknown ≠ gratis).
+            // free_first/paid: konfigurasi legacy eksplisit milik user dianggap persetujuan
+            // (BC untuk instalasi lama); dicatat agar dapat dimigrasikan ke pool.
+            $freePolicy = (string) ($routing?->free_policy ?? 'free_first');
+            if ($freePolicy === 'free_only') {
+                Log::info('AIManager: legacy single ditolak free-only (tier unknown tak terverifikasi)', [
+                    'user_id' => $user->id,
+                ]);
+
+                return null;
+            }
             $preference = $this->preferenceManager->resolveActivePreference($user);
             if (! $preference) {
                 return null;

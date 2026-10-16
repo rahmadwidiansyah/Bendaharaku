@@ -45,7 +45,9 @@ class OpenAiCompatibleAdapter extends BaseAdapter
 
     protected function sendRequest(string $url, string $apiKey, array $body, int $timeout): Response
     {
-        $request = Http::timeout($timeout)->withToken($apiKey);
+        // Fail-closed terhadap redirect (base_url milik pengguna; cegah 302 ke internal/metadata).
+        // Endpoint API sah merespons 200 langsung; jika provider me-redirect, user perbaiki base_url.
+        $request = Http::timeout($timeout)->withoutRedirecting()->withToken($apiKey);
 
         $headerName = (string) config('bendaharaku.ai.openai_compatible.secret_header_name');
         $headerValue = (string) config('bendaharaku.ai.openai_compatible.secret_header_value');

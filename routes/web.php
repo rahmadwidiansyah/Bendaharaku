@@ -427,6 +427,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/accounts/{id}/test', [\App\Http\Controllers\Settings\AiProviderAccountController::class, 'test'])->name('accounts.test');
         Route::post('/accounts/{id}/refresh', [\App\Http\Controllers\Settings\AiProviderAccountController::class, 'refresh'])->name('accounts.refresh');
         Route::get('/accounts/{id}/models', [\App\Http\Controllers\Settings\AiProviderAccountController::class, 'models'])->name('accounts.models');
+        Route::patch('/accounts/{id}/models/{model}', [\App\Http\Controllers\Settings\AiProviderAccountController::class, 'toggleModel'])->where('model', '[A-Za-z0-9._:-]+')->name('accounts.models.toggle');
         Route::put('/routing', [\App\Http\Controllers\Settings\AiProviderAccountController::class, 'storeRouting'])->name('routing.store');
         Route::get('/integration', fn () => Inertia::render('Settings/AI/Integration'))->name('integration');
 

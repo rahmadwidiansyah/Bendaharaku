@@ -20,6 +20,12 @@ Schedule::command('ai:aggregate-metrics')->dailyAt('00:30')->withoutOverlapping(
 // Prune AI Memories (dari sprint sebelumnya)
 Schedule::command('ai:prune-memories')->dailyAt('01:00')->withoutOverlapping();
 
+// Refresh katalog model AI per akun (discovery Gemini/OpenAI/DeepSeek/compatible).
+// withoutOverlapping mencegah eksekusi tumpang tindih antar worker scheduler.
+// Dijalankan via `php artisan schedule:run` setiap menit (lihat docker-compose.yml).
+// Untuk server tanpa scheduler daemon: tambahkan cron `* * * * * php artisan schedule:run`.
+Schedule::command('ai:discover-models')->dailyAt('02:00')->withoutOverlapping(60);
+
 // Generate anggaran otomatis setiap tanggal 1 untuk user yang mengaktifkan auto-budget
 Artisan::command('budget:auto-generate', function () {
     $users = User::where('auto_budget_enabled', true)->get();

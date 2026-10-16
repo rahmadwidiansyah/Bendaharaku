@@ -13,6 +13,7 @@ use App\Models\AiProviderAccount;
 use App\Models\AiRoutingPreference;
 use App\Services\AI\AiAccountManager;
 use App\Services\AI\Routing\ModelResolver;
+use App\Services\AI\Security\SafeEndpointValidator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -60,14 +61,18 @@ class AiProviderAccountController extends Controller
             return response()->json(['success' => false, 'message' => 'Alias sudah dipakai untuk provider ini. Gunakan alias lain.'], 422);
         }
 
-        $account = $this->accounts->create(
-            $user,
-            $provider,
-            $alias,
-            (string) $request->validated('api_key'),
-            $request->validated('base_url'),
-            (int) ($request->validated('priority') ?? 1),
-        );
+        try {
+            $account = $this->accounts->create(
+                $user,
+                $provider,
+                $alias,
+                (string) $request->validated('api_key'),
+                $request->validated('base_url'),
+                (int) ($request->validated('priority') ?? 1),
+            );
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
 
         return response()->json(['success' => true, 'account' => $account->fresh()->toSafeArray()], 201);
     }
@@ -92,7 +97,14 @@ class AiProviderAccountController extends Controller
         if ($request->filled('api_key')) {
             $this->accounts->replaceKey($account->fresh(), (string) $request->validated('api_key'), $request->validated('base_url'));
         } elseif ($request->has('base_url') && $account->provider === AiProvider::OpenAiCompatible) {
-            $account->update(['base_url' => $request->validated('base_url')]);
+            $rawBase = $request->validated('base_url');
+            try {
+                $account->update(['base_url' => is_string($rawBase) && trim($rawBase) !== ''
+                    ? SafeEndpointValidator::normalizeBaseUrl($rawBase)
+                    : null]);
+            } catch (\InvalidArgumentException $e) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            }
         }
         if ($request->has('priority')) {
             $account->update(['priority' => max(1, (int) $request->validated('priority'))]);
@@ -149,6 +161,23 @@ class AiProviderAccountController extends Controller
             'account' => $account->toSafeArray(),
             'models' => $account->models()->orderBy('model_id')->get()->map->toSafeArray(),
         ]);
+    }
+
+    /** Aktif/nonaktifkan kembali satu model katalog (mis. setelah 404/context auto-disable). */
+    public function toggleModel(Request $request, int $id, string $model): JsonResponse
+    {
+        $validated = $request->validate(['is_enabled' => ['required', 'boolean']]);
+        $account = AiProviderAccount::where('user_id', $request->user()->id)->findOrFail($id);
+        $catalog = $account->models()->where('model_id', $model)->firstOrFail();
+        $enabled = (bool) $validated['is_enabled'];
+        $catalog->update([
+            'is_enabled' => $enabled,
+            // Pengaktifan manual me-reset penalti agar model langsung bisa dipilih lagi.
+            'failure_count' => $enabled ? 0 : $catalog->failure_count,
+            'last_error' => $enabled ? null : $catalog->last_error,
+        ]);
+
+        return response()->json(['success' => true, 'model' => $catalog->fresh()->toSafeArray()]);
     }
 
     /** Simpan preferensi routing (manual/auto, free policy, prioritas). */

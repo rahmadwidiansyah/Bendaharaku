@@ -179,7 +179,10 @@ const routingForm = ref({
   primary_model: (props.aiRouting as any)?.primary_model || '',
   free_policy: (props.aiRouting as any)?.free_policy || 'free_first',
   allow_paid_fallback: !!(props.aiRouting as any)?.allow_paid_fallback,
+  fallback_models: ([...((props.aiRouting as any)?.fallback_models || [])] as Record<string, any>[]).slice(0, 3),
 });
+const accountModels = ref<Record<number, Record<string, any>[]>>({});
+const loadingModelsFor = ref<number | null>(null);
 const savingRouting = ref(false);
 const busyAccountId = ref<number | null>(null);
 
@@ -195,6 +198,7 @@ async function refreshPool() {
       routingForm.value.primary_model = data.routing.primary_model || '';
       routingForm.value.free_policy = data.routing.free_policy || 'free_first';
       routingForm.value.allow_paid_fallback = !!data.routing.allow_paid_fallback;
+      routingForm.value.fallback_models = ([...(data.routing.fallback_models || [])] as Record<string, any>[]).slice(0, 3);
     }
   } catch (err: any) {
     showToast(err.response?.data?.message || 'Gagal memuat akun AI.', 'error');
@@ -263,15 +267,60 @@ async function deleteAccount(id: number) {
   }
 }
 
+function moveFallback(index: number, dir: -1 | 1) {
+  const list = [...routingForm.value.fallback_models];
+  const j = index + dir;
+  if (j < 0 || j >= list.length) return;
+  [list[index], list[j]] = [list[j], list[index]];
+  routingForm.value.fallback_models = list;
+}
+
+function addFallbackRow() {
+  if (routingForm.value.fallback_models.length >= 3) return;
+  routingForm.value.fallback_models = [...routingForm.value.fallback_models, { provider: 'gemini', model: '' }];
+}
+
+function removeFallbackRow(index: number) {
+  routingForm.value.fallback_models = routingForm.value.fallback_models.filter((_, i) => i !== index);
+}
+
+async function loadAccountModels(accId: number) {
+  if (loadingModelsFor.value === accId) return;
+  loadingModelsFor.value = accId;
+  try {
+    const { data } = await axios.get(route('settings.ai.accounts.models', { id: accId }));
+    accountModels.value = { ...accountModels.value, [accId]: data.models || [] };
+  } catch (err: any) {
+    showToast(err.response?.data?.message || 'Gagal memuat model akun.', 'error');
+  } finally {
+    loadingModelsFor.value = null;
+  }
+}
+
+async function toggleModelEnabled(accId: number, modelId: string, enable: boolean) {
+  try {
+    await axios.patch(route('settings.ai.accounts.models.toggle', { id: accId, model: modelId }), { is_enabled: enable });
+    showToast(enable ? `Model ${modelId} diaktifkan kembali.` : `Model ${modelId} dinonaktifkan.`, 'success');
+    await loadAccountModels(accId);
+    await refreshPool();
+  } catch (err: any) {
+    showToast(err.response?.data?.message || 'Gagal mengubah status model.', 'error');
+  }
+}
+
 async function saveRouting() {
   if (savingRouting.value) return;
   savingRouting.value = true;
   try {
+    const fallbacks = routingForm.value.fallback_models
+      .filter((f) => f?.provider && f?.model?.trim())
+      .slice(0, 3)
+      .map((f) => ({ provider: f.provider, model: f.model.trim() }));
     const payload: Record<string, any> = {
       mode: routingForm.value.mode,
       primary_provider: routingForm.value.primary_provider || null,
       primary_model: routingForm.value.primary_model || null,
-      fallback_models: [],
+      fallback_models: fallbacks,
       provider_priority: ['gemini', 'openai', 'deepseek', 'openai-compatible'],
       free_policy: routingForm.value.free_policy,
       allow_paid_fallback: routingForm.value.allow_paid_fallback,
@@ -479,6 +528,22 @@ async function saveRouting() {
               Prioritas {{ acc.priority }} · {{ acc.model_count }} model · {{ acc.last_test_status || 'belum diuji' }}{{ acc.last_discovery_at ? ' · discovery ' + acc.last_discovery_at : '' }}
               <span v-if="acc.last_test_message"> · {{ acc.last_test_message }}</span>
             </div>
+            <div v-if="acc.id !== 0" class="mt-2">
+              <button @click="loadAccountModels(acc.id)" :disabled="loadingModelsFor === acc.id" class="text-2xs px-2 py-1 rounded-lg bg-[var(--color-surface-muted)] hover:bg-gray-600 disabled:opacity-50">
+                {{ accountModels[acc.id] ? 'Muat ulang daftar model' : 'Lihat model ter-discovery' }}
+              </button>
+              <div v-if="accountModels[acc.id]" class="mt-2 space-y-1 max-h-48 overflow-y-auto">
+                <div v-for="m in accountModels[acc.id]" :key="m.model_id" class="flex items-center gap-2 text-2xs py-1 border-b border-white/5">
+                  <span class="text-gray-300 font-semibold">{{ m.model_id }}</span>
+                  <span class="text-gray-500">{{ m.free_tier }} · {{ m.category }}</span>
+                  <span v-if="!m.is_enabled" class="px-1.5 py-0.5 rounded bg-red-900/30 text-red-300">nonaktif{{ m.last_error ? ' · ' + m.last_error : '' }}</span>
+                  <span class="ml-auto">
+                    <button v-if="!m.is_enabled" @click="toggleModelEnabled(acc.id, m.model_id, true)" class="px-2 py-0.5 rounded-lg bg-emerald-900/30 text-emerald-300 hover:bg-emerald-900/50">Aktifkan lagi</button>
+                    <button v-else @click="toggleModelEnabled(acc.id, m.model_id, false)" class="px-2 py-0.5 rounded-lg bg-[var(--color-surface-muted)] hover:bg-gray-600">Nonaktifkan</button>
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="p-3 rounded-lg border border-dashed border-white/10 space-y-2">
@@ -524,9 +589,27 @@ async function saveRouting() {
             <input v-model="routingForm.allow_paid_fallback" type="checkbox" class="w-4 h-4" />
             Izinkan fallback berbayar (wajib untuk free-first → berbayar & paid-allowed)
           </label>
-          <div v-if="routingForm.mode === 'manual'" class="grid grid-cols-2 gap-2">
-            <input v-model="routingForm.primary_provider" placeholder="provider utama (gemini/openai/...)" class="px-3 py-2 bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-lg text-sm" />
-            <input v-model="routingForm.primary_model" placeholder="model utama (ID resmi)" class="px-3 py-2 bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-lg text-sm" />
+          <div v-if="routingForm.mode === 'manual'" class="space-y-2">
+            <div class="grid grid-cols-2 gap-2">
+              <input v-model="routingForm.primary_provider" placeholder="provider utama (gemini/openai/...)" class="px-3 py-2 bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-lg text-sm" />
+              <input v-model="routingForm.primary_model" placeholder="model utama (ID resmi)" class="px-3 py-2 bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-lg text-sm" />
+            </div>
+            <div class="text-xs font-semibold text-[var(--color-text-primary)]">Urutan fallback manual (maks 3, bisa digeser)</div>
+            <div v-for="(fb, i) in routingForm.fallback_models" :key="i" class="grid grid-cols-[1fr_2fr_auto] gap-2 items-center">
+              <select v-model="fb.provider" class="px-2 py-1.5 bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-lg text-xs">
+                <option value="gemini">gemini</option>
+                <option value="openai">openai</option>
+                <option value="deepseek">deepseek</option>
+                <option value="openai-compatible">openai-compatible</option>
+              </select>
+              <input v-model="fb.model" placeholder="model ID resmi" class="px-2 py-1.5 bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-lg text-xs" />
+              <span class="flex gap-1">
+                <button @click="moveFallback(i, -1)" :disabled="i === 0" class="px-1.5 py-1 rounded bg-[var(--color-surface-muted)] text-xs disabled:opacity-40">▲</button>
+                <button @click="moveFallback(i, 1)" :disabled="i === routingForm.fallback_models.length - 1" class="px-1.5 py-1 rounded bg-[var(--color-surface-muted)] text-xs disabled:opacity-40">▼</button>
+                <button @click="removeFallbackRow(i)" class="px-1.5 py-1 rounded bg-red-900/30 text-red-300 text-xs">✕</button>
+              </span>
+            </div>
+            <button v-if="routingForm.fallback_models.length < 3" @click="addFallbackRow" class="text-2xs px-2 py-1 rounded-lg bg-[var(--color-surface-muted)] hover:bg-gray-600">+ Tambah fallback</button>
           </div>
           <button @click="saveRouting" :disabled="savingRouting" class="px-3 py-2 bg-[var(--color-brand)] rounded-lg text-xs font-bold uppercase tracking-wider disabled:opacity-50">Simpan routing</button>
 

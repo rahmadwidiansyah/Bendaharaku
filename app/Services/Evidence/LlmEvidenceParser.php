@@ -648,24 +648,32 @@ PROMPT;
         $prompt = $this->buildUnifiedEvidencePrompt($ocrText, $wallets, $categories);
 
         try {
-            $preference = $this->prefManager()->resolveActivePreference($user);
-            if (! $preference) {
-                Log::info('LlmEvidenceParser[unified]: no LLM preference', ['evidence_id' => $evidence->id]);
+            $routingPref = AiRoutingPreference::where('user_id', $user->id)->first();
+            $executor = app(AiRoutingExecutor::class);
+            $factory = $this->factory();
+            try {
+                $out = $executor->executeText($user, function ($account, string $model, AiProvider $provider) use ($prompt, $factory) {
+                    $apiKey = (string) ($account->id > 0 ? $account->api_key : config('bendaharaku.ai.openai_compatible.api_key'));
+                    if (blank($apiKey)) {
+                        throw new \RuntimeException('API key kosong.');
+                    }
+                    if ($provider === AiProvider::OpenAiCompatible && ! empty($account->base_url)) {
+                        config()->set('bendaharaku.ai.openai_compatible.base_url', $account->base_url);
+                    }
+
+                    return $factory->make($provider)->generateText($prompt, $apiKey, $model);
+                }, $routingPref);
+            } catch (\Throwable $e) {
+                Log::info('LlmEvidenceParser[unified]: pool exhausted', ['evidence_id' => $evidence->id, 'error' => $e->getMessage()]);
 
                 return null;
             }
 
-            $credential = $this->credManager()->getCredential($user, $preference->provider);
-            if (! $credential || blank($credential->api_key) || ! $credential->is_valid) {
-                Log::info('LlmEvidenceParser[unified]: credential invalid', ['evidence_id' => $evidence->id, 'provider' => $preference->provider->value]);
-
-                return null;
-            }
-
-            $adapter = $this->factory()->make($preference->provider);
-            $model = $preference->selected_model ?? $preference->provider->defaultModel();
-
-            $rawJson = $adapter->generateText($prompt, $credential->api_key, $model);
+            $rawJson = $out['text'];
+            Log::info('LlmEvidenceParser[unified]: pool success', [
+                'evidence_id' => $evidence->id,
+                'selected' => ($out['routing']['selected_provider'] ?? '?').'/'.($out['routing']['selected_model'] ?? '?'),
+            ]);
 
             $data = $this->decodeJsonStrict($rawJson);
             if ($data === null) {

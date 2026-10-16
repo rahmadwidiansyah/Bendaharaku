@@ -94,6 +94,12 @@ class AIBudgetService implements BudgetingServiceInterface
 
         if ($response === null) {
             // Legacy single-provider (dipakai saat pool kosong + unit test lama dengan mock factory).
+            // free_only menolak tier unknown yang tak terverifikasi; selain itu konfigurasi
+            // legacy eksplisit dianggap persetujuan (BC), konsisten dengan AIManager.
+            $freePolicy = (string) ($routingPref?->free_policy ?? 'free_first');
+            if ($freePolicy === 'free_only') {
+                throw new RuntimeException('Tidak ada kandidat gratis terverifikasi sesuai kebijakan free-only. Jalankan discovery atau pilih model gratis.');
+            }
             $aiPreference = $this->aiPreferenceManager->resolveActivePreference($user);
             if ($aiPreference === null) {
                 throw new RuntimeException('Tidak ada preferensi AI aktif. Silakan atur model AI di pengaturan.');

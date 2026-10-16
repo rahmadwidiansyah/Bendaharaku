@@ -108,7 +108,7 @@ class ModelDiscoveryService
                 $query['pageToken'] = $pageToken;
             }
             try {
-                $response = Http::timeout($timeout)
+                $response = Http::timeout($timeout)->withoutRedirecting()
                     ->withHeaders(['x-goog-api-key' => $apiKey])
                     ->get('https://generativelanguage.googleapis.com/v1beta/models', $query);
             } catch (ConnectionException $e) {
@@ -154,7 +154,7 @@ class ModelDiscoveryService
             throw new DiscoveryAuthException('API key kosong.');
         }
         try {
-            $response = Http::timeout($timeout)->withToken($apiKey)->get($url);
+            $response = Http::timeout($timeout)->withoutRedirecting()->withToken($apiKey)->get($url);
         } catch (ConnectionException $e) {
             throw new \RuntimeException('Models API tidak terjangkau.');
         }
@@ -191,17 +191,12 @@ class ModelDiscoveryService
         if (blank($base)) {
             throw new \RuntimeException('Base URL OpenAI-compatible belum dikonfigurasi (gunakan konfigurasi manual).');
         }
-        $candidate = $base;
-        // Hilangkan suffix umum untuk dapatkan root.
-        foreach (['/chat/completions', '/chat/completion', '/v1/chat/completions'] as $suffix) {
-            if (str_ends_with($candidate, $suffix)) {
-                $candidate = substr($candidate, 0, -strlen($suffix));
-                break;
-            }
+        try {
+            $base = \App\Services\AI\Security\SafeEndpointValidator::normalizeBaseUrl($base);
+        } catch (\InvalidArgumentException $e) {
+            throw new \RuntimeException('Base URL tidak aman: '.$e->getMessage());
         }
-        $candidate = rtrim($candidate, '/');
-        // Jika base sudah .../v1, models = .../v1/models; jika bukan, coba .../models.
-        $urls = [$candidate.'/models'];
+        $url = \App\Services\AI\Security\SafeEndpointValidator::deriveModelsUrl($base);
         $apiKey = (string) $account->api_key;
         if (blank($apiKey)) {
             $apiKey = (string) config('bendaharaku.ai.openai_compatible.api_key');
@@ -210,11 +205,17 @@ class ModelDiscoveryService
             throw new DiscoveryAuthException('API key kosong.');
         }
         $lastError = null;
-        foreach ($urls as $url) {
+        foreach ([$url] as $url) {
             try {
-                $response = Http::timeout($timeout)->withToken($apiKey)->get($url);
+                // Fail-closed terhadap redirect (mencegah SSRF via 302 ke metadata/internal).
+                $response = Http::timeout($timeout)->withoutRedirecting()->withToken($apiKey)->get($url);
             } catch (ConnectionException $e) {
                 $lastError = 'Models API tidak terjangkau.';
+
+                continue;
+            }
+            if ($response->redirect()) {
+                $lastError = 'Endpoint me-redirect (ditolak demi keamanan); gunakan URL final langsung.';
 
                 continue;
             }

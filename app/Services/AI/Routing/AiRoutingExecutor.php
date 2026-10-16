@@ -289,14 +289,6 @@ class AiRoutingExecutor
      */
     public function executeText(User $user, callable $attempt, ?AiRoutingPreference $routing = null, ?callable $sleepFn = null): array
     {
-        $wrap = function (AiProviderAccount $account, string $model, AiProvider $provider) use ($attempt) {
-            $text = $attempt($account, $model, $provider);
-
-            // Bungkus sebagai AIParseResult-like minimal agar executor seragam.
-            return new AIParseResult(success: true, confidence: 1.0, error: null, transaction: null, usage: ['prompt' => 0, 'completion' => 0, 'total' => 0], provider: $provider->value, model: $model, rawText: $text);
-        };
-        // Simpan teks mentah di rawText via DTO kustom? AIParseResult tidak punya rawText — gunakan closure di bawah.
-        // Untuk menyederhanakan, panggil ulang dengan adaptor langsung dan tangkap string.
         $resolved = $this->resolver->resolve($user, $routing);
         $candidates = $resolved['candidates'];
         $traceId = (string) \Str::uuid();

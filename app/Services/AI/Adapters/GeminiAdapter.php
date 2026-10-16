@@ -47,8 +47,12 @@ class GeminiAdapter extends BaseAdapter
                 ->timeout($timeout)
                 ->acceptJson()
                 ->asJson()
+                // Satu retry adapter saja: executor sudah menangani 1x retry same-pair dengan
+                // backoff+jitter untuk timeout/server/network. Total per kandidat ≤2 HTTP calls,
+                // total per pesan ≤ max_attempts(8)×2 dalam budget 70 dtk. Jangan naikkan tanpa
+                // meninjau ulang batas biaya (429/5xx TIDAK di-retry di sini, hanya ConnectionException).
                 ->retry(
-                    2,
+                    1,
                     function (int $attempt) {
                         $delayMs = 2000 * (2 ** ($attempt - 1));
                         Log::warning('Gemini Connection Retrying', [
