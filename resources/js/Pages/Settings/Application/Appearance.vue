@@ -3,7 +3,7 @@ import { Head } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import SettingsLayout from '../Layouts/SettingsLayout.vue';
 import SettingsCard from '@/Components/Settings/SettingsCard.vue';
-import { ref, watch, onMounted, computed } from 'vue';
+import { ref, watch, onMounted, computed, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import axios from 'axios';
 import { applyAccentColor, saveAccentColor, ACCENT_PALETTES, isCustomColor, isValidHex, getColorValue } from '@/Composables/useAccentColor.js';
@@ -18,6 +18,7 @@ const props = defineProps<{
   userAccentColor: string;
   userTheme: string;
   categoryIconColored: boolean;
+  userUiTheme: string;
 }>();
 
 const { theme: currentTheme, setTheme } = useTheme();
@@ -27,6 +28,9 @@ const customHex = ref('');
 const showCustomPicker = ref(false);
 const saving = ref(false);
 const iconColored = ref(props.categoryIconColored);
+// Multi-UI: pilihan UI tersimpan; dipakai untuk deteksi perubahan + revert saat gagal.
+const uiTheme = ref(props.userUiTheme ?? 'default');
+const savedUiTheme = ref(uiTheme.value);
 
 
 const isCustom = computed(() => isCustomColor(accentColor.value));
@@ -68,6 +72,13 @@ watch(iconColored, () => {
   saveAppearance();
 });
 
+let revertingUiTheme = false;
+watch(uiTheme, () => {
+  // Lewati save saat revert otomatis pasca-gagal (hindari PATCH ganda).
+  if (revertingUiTheme) return;
+  saveAppearance();
+});
+
 onMounted(() => {
   applyAccentColor(accentColor.value);
   if (isCustom.value) {
@@ -85,11 +96,23 @@ const saveAppearance = () => {
         theme: theme.value,
         accent_color: accentColor.value,
         category_icon_colored: iconColored.value,
+        ui_theme: uiTheme.value,
       });
       saveAccentColor(accentColor.value);
       setCategoryIconColored(iconColored.value);
       showToast(t('toast.updated'), 'success');
+      // Komponen halaman Dashboard berubah sesuai ui_theme — reload penuh
+      // hanya bila pilihan UI benar-benar berubah dan berhasil disimpan.
+      if (uiTheme.value !== savedUiTheme.value) {
+        savedUiTheme.value = uiTheme.value;
+        window.location.reload();
+      }
     } catch (error: any) {
+      // Gagal: kembalikan pilihan UI ke nilai tersimpan, tanpa reload.
+      // Watcher berjalan async — flag direset setelah watcher terpanggil.
+      revertingUiTheme = true;
+      uiTheme.value = savedUiTheme.value;
+      nextTick(() => { revertingUiTheme = false; });
       showToast(error.response?.data?.message || t('errors.generic'), 'error');
     } finally {
       saving.value = false;
@@ -106,6 +129,31 @@ const saveAppearance = () => {
       :title="t('settings.application.appearance.title')"
       :description="t('settings.application.appearance.description')"
     >
+      <!-- UI Theme (Multi-UI Phase 1: Dashboard saja) -->
+      <SettingsCard
+        :title="t('settings.application.appearance.ui_theme.title')"
+        :description="t('settings.application.appearance.ui_theme.description')"
+      >
+        <div class="space-y-3">
+          <label
+            v-for="value in ['default', 'm3']"
+            :key="value"
+            class="flex items-start gap-3 p-3 border border-border-default rounded-lg cursor-pointer hover:bg-surface-muted transition-colors"
+            :class="uiTheme === value && 'border-purple-500 bg-purple-500/10'"
+          >
+            <input v-model="uiTheme" type="radio" :value="value" class="w-4 h-4 mt-0.5" />
+            <span>
+              <span class="block text-sm text-text-primary">
+                {{ t(`settings.application.appearance.ui_theme.${value}`) }}
+              </span>
+              <span class="block text-2xs text-text-muted mt-0.5">
+                {{ t(`settings.application.appearance.ui_theme.${value}_desc`) }}
+              </span>
+            </span>
+          </label>
+        </div>
+      </SettingsCard>
+
       <!-- Theme -->
       <SettingsCard
         :title="t('settings.application.appearance.theme.title')"

@@ -161,7 +161,11 @@ class DashboardController extends Controller
             'total_receivable' => $activeCycles['total_receivable'] ?? 0,
         ];
 
-        return Inertia::render('Dashboard', [
+        // Multi-UI Phase 1: pilih komponen halaman sesuai preferensi user.
+        // Pengumpulan data & payload props identik untuk kedua tampilan.
+        $view = $request->user()->ui_theme === 'm3' ? 'Material/Dashboard' : 'Dashboard';
+
+        return Inertia::render($view, [
             'totalPortfolio' => (int) $walletStats->total_portfolio,
             'totalLiquid' => (int) $walletStats->total_liquid,
             'totalInvest' => (int) $walletStats->total_invest,

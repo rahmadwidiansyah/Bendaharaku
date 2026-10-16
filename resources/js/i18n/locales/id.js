@@ -43,6 +43,7 @@ export default {
         confirm:        'Konfirmasi',
         close:          'Tutup',
         back:           'Kembali',
+        next:           'Berikutnya',
         loading:        'Memuat...',
         loadMore:      'Muat lebih banyak',
         loadMoreFailed: 'Gagal memuat data. Coba lagi.',
@@ -702,6 +703,14 @@ categoryTab: {
                     description:    'Pilih warna aksen utama',
                     custom:         'Warna Kustom...',
                     setAccent:      'Set {name} sebagai warna aksen',
+                },
+                ui_theme: {
+                    title:          'Tema UI',
+                    description:    'Pilih tampilan antarmuka aplikasi',
+                    default:        'Default',
+                    default_desc:   'Tampilan saat ini',
+                    m3:             'Material Design 3',
+                    m3_desc:        'Desain Material 3 Expressive (Beta — Dashboard saja untuk saat ini)',
                 },
             },
             

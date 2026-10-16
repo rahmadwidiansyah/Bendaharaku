@@ -204,6 +204,7 @@ Route::middleware(['auth'])->group(function () {
                 'userAccentColor' => $user->accent_color ?? 'teal',
                 'userTheme' => $user->theme ?? 'dark',
                 'categoryIconColored' => $user->category_icon_colored ?? true,
+                'userUiTheme' => $user->ui_theme ?? 'default',
             ]);
         })->name('appearance');
         Route::patch('/appearance', function (Request $request) {
@@ -211,6 +212,7 @@ Route::middleware(['auth'])->group(function () {
                 'theme' => ['required', 'string', 'in:light,dark,system'],
                 'accent_color' => ['required', 'string', 'regex:/^(teal|blue|indigo|pink|cyan|rose|custom:#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3}))$/'],
                 'category_icon_colored' => ['boolean'],
+                'ui_theme' => ['nullable', 'string', 'in:default,m3'],
             ]);
 
             $user = $request->user();
@@ -218,6 +220,8 @@ Route::middleware(['auth'])->group(function () {
                 'theme' => $validated['theme'],
                 'accent_color' => $validated['accent_color'],
                 'category_icon_colored' => $validated['category_icon_colored'] ?? $user->category_icon_colored,
+                // Permintaan lama tanpa ui_theme mempertahankan preferensi tersimpan.
+                'ui_theme' => $validated['ui_theme'] ?? $user->ui_theme ?? 'default',
             ]);
 
             SettingsChangeLogger::logChange(
@@ -416,10 +420,7 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/memory/{id}', [AiSettingsController::class, 'destroy'])->name('memory.destroy');
         Route::get('/integrations', fn () => Inertia::render('Settings/AI/Integration'))->name('integrations');
 
-        // Legacy endpoints (for backward compatibility)
         Route::get('/', fn () => redirect()->route('settings.ai.models'))->name('index');
-        Route::patch('/models', [AiSettingsController::class, 'store'])->name('store');
-        Route::post('/test', [AiSettingsController::class, 'testConnection'])->name('test');
         // ── Provider pool: multi-account + discovery + routing ──
         Route::get('/accounts', [\App\Http\Controllers\Settings\AiProviderAccountController::class, 'index'])->name('accounts.index');
         Route::post('/accounts', [\App\Http\Controllers\Settings\AiProviderAccountController::class, 'store'])->name('accounts.store');

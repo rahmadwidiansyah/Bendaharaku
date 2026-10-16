@@ -45,6 +45,7 @@ class HandleInertiaRequests extends Middleware
                     'avatar_url' => $request->user()->avatar_url,
                     'theme' => $request->user()->theme ?? 'system',
                     'category_icon_colored' => $request->user()->category_icon_colored,
+                    'ui_theme' => $request->user()->ui_theme ?? 'default',
                 ] : null,
             ],
             'flash' => [

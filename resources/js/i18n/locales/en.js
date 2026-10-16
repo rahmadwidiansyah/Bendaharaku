@@ -43,6 +43,7 @@ export default {
         confirm:        'Confirm',
         close:          'Close',
         back:           'Back',
+        next:           'Next',
         loading:        'Loading...',
         loadMore:      'Load more',
         loadMoreFailed: 'Failed to load data. Try again.',
@@ -684,6 +685,14 @@ export default {
                     description:    'Choose primary accent color',
                     custom:         'Custom Color...',
                     setAccent:      'Set {name} as accent color',
+                },
+                ui_theme: {
+                    title:          'UI Theme',
+                    description:    'Choose the app interface style',
+                    default:        'Default',
+                    default_desc:   'Current appearance',
+                    m3:             'Material Design 3',
+                    m3_desc:        'Material 3 Expressive design (Beta — Dashboard only for now)',
                 },
             },
             

@@ -28,6 +28,21 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800,900&display=swap" rel="stylesheet" />
 
+    <!-- Multi-UI: preferensi ui_theme user (default | m3). Dibaca oleh
+         useUiTheme.js. Nilai hanya dari database, tidak ada state kedua. -->
+    <meta name="ui-theme" content="{{ auth()->user()?->ui_theme ?? 'default' }}">
+    <script>
+        // ── Anti-FOUC: UI Theme ───────────────────────────────────────
+        // Applies `.ui-m3` synchronously BEFORE first paint — no flash.
+        // Mirrors useUiTheme.js normalize logic.
+        (function () {
+            var u = document.querySelector('meta[name="ui-theme"]');
+            var v = u ? u.getAttribute('content') : 'default';
+            if (v !== 'default' && v !== 'm3') v = 'default';
+            if (v === 'm3') document.documentElement.classList.add('ui-m3');
+        })();
+    </script>
+
     <script>
         // ── Anti-FOUC: Theme ──────────────────────────────────────────
         // Mirrors useTheme.js resolve + AuthenticatedLayout init logic.
