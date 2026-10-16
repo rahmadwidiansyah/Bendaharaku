@@ -42,12 +42,16 @@ class EvidenceController extends Controller
      */
     public function share(Request $request): JsonResponse|RedirectResponse
     {
+        // Keamanan log: JANGAN mencatat nilai header (Cookie, Authorization,
+        // CSRF, dsb). Hanya metadata yang diperlukan + ID korelasi.
         Log::info('ShareTarget hit', [
             'hasFile_image' => $request->hasFile('image'),
             'hasFile_file' => $request->hasFile('file'),
-            'allFiles' => array_keys($request->allFiles()),
-            'input' => $request->only(['title', 'text']),
-            'headers' => $request->headers->all(),
+            'file_keys' => array_keys($request->allFiles()),
+            'has_title' => $request->filled('title'),
+            'has_text' => $request->filled('text'),
+            'content_type' => $request->headers->get('Content-Type'),
+            'content_length' => $request->headers->get('Content-Length'),
         ]);
 
         // Share Target dari OS kadang kirim `image` (sesuai manifest), kadang `file` atau array.
@@ -60,7 +64,10 @@ class EvidenceController extends Controller
                 'text' => ['nullable', 'string', 'max:2000'],
             ]);
         } catch (ValidationException $e) {
-            Log::warning('ShareTarget validation failed', ['errors' => $e->errors(), 'allFiles' => $request->allFiles()]);
+            Log::warning('ShareTarget validation failed', [
+                'errors' => $e->errors(),
+                'file_keys' => array_keys($request->allFiles()),
+            ]);
 
             return $request->expectsJson() || $request->wantsJson()
                 ? response()->json(['success' => false, 'message' => 'File tidak valid.', 'errors' => $e->errors()], 422)
@@ -68,7 +75,10 @@ class EvidenceController extends Controller
         }
 
         if (! $request->hasFile('image') && ! $request->hasFile('file') && empty($request->allFiles())) {
-            Log::warning('ShareTarget no file', ['all' => $request->all(), 'files' => $request->allFiles()]);
+            Log::warning('ShareTarget no file', [
+                'input_keys' => array_keys($request->except(array_keys($request->allFiles()))),
+                'file_keys' => array_keys($request->allFiles()),
+            ]);
 
             return $request->expectsJson() || $request->wantsJson()
                 ? response()->json(['success' => false, 'message' => 'File gambar wajib dipilih.'], 422)

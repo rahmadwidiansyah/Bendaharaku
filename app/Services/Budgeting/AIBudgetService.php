@@ -224,20 +224,41 @@ class AIBudgetService implements BudgetingServiceInterface
             throw new RuntimeException('Tipe transaksi "Expense" tidak ditemukan.');
         }
 
+        // Satu agregat GROUP BY per dimensi (kategori/tipe) menggantikan
+        // N query SUM per item. Filter identik dengan versi per-item:
+        // user + rentang tanggal + tipe Expense untuk item kategori.
+        $categoryIds = $budgetGroup->items
+            ->where('budgetable_type', Category::class)
+            ->pluck('budgetable_id')->unique()->values();
+        $spentByCategory = $categoryIds->isEmpty() ? collect() : TransactionLog::where('user_id', $budgetGroup->user_id)
+            ->where('type_id', $expenseTypeId)
+            ->whereBetween('date', [$startDate, $endDate])
+            ->whereIn('category_id', $categoryIds)
+            ->groupBy('category_id')
+            ->selectRaw('category_id, SUM(amount) as total')
+            ->pluck('total', 'category_id');
+
+        // Item bertipe TransactionType memakai filter type_id = id item
+        // (tanpa batasan tipe Expense) — dipertahankan persis seperti semula.
+        $typeIds = $budgetGroup->items
+            ->where('budgetable_type', TransactionType::class)
+            ->pluck('budgetable_id')->unique()->values();
+        $spentByType = $typeIds->isEmpty() ? collect() : TransactionLog::where('user_id', $budgetGroup->user_id)
+            ->whereBetween('date', [$startDate, $endDate])
+            ->whereIn('type_id', $typeIds)
+            ->groupBy('type_id')
+            ->selectRaw('type_id, SUM(amount) as total')
+            ->pluck('total', 'type_id');
+
         foreach ($budgetGroup->items as $item) {
-            $spentQuery = TransactionLog::where('user_id', $budgetGroup->user_id)
-                ->where('type_id', $expenseTypeId)
-                ->whereBetween('date', [$startDate, $endDate]);
-
             if ($item->budgetable_type === Category::class) {
-                $spentQuery->where('category_id', $item->budgetable_id);
+                $spent = (float) ($spentByCategory[$item->budgetable_id] ?? 0);
             } elseif ($item->budgetable_type === TransactionType::class) {
-                $spentQuery->where('type_id', $item->budgetable_id);
+                $spent = (float) ($spentByType[$item->budgetable_id] ?? 0);
             } else {
-                $spentQuery->whereRaw('1 = 0');
+                // Tipe tak dikenal: dulu whereRaw('1 = 0') → 0. Dipertahankan.
+                $spent = 0.0;
             }
-
-            $spent = (float) $spentQuery->sum('amount');
             $target = (float) $item->target_amount;
 
             $summary[$item->id] = [

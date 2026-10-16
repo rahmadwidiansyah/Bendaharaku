@@ -48,6 +48,7 @@ Route::middleware(['auth'])->group(function () {
     // Dashboard & Main Analytics
     Route::get('/dashboard', [DashboardController::class, 'index'])->middleware('verified')->name('dashboard');
     Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
+    Route::get('/analytics/history', [AnalyticsController::class, 'history'])->name('analytics.history');
 
     // Budgeting
     Route::get('/budgeting', function (Request $request) {
@@ -371,7 +372,7 @@ Route::middleware(['auth'])->group(function () {
             ],
             'wallets' => DB::table('wallets')->where('user_id', $user->id)->get(),
             'categories' => DB::table('categories')->where('user_id', $user->id)->get(),
-            'transactions' => DB::table('transactions')->where('user_id', $user->id)->limit(1000)->get(),
+            'transactions' => DB::table('transaction_logs')->where('user_id', $user->id)->limit(1000)->get(),
         ];
 
         $json = json_encode($export, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
@@ -472,21 +473,21 @@ Route::middleware(['auth'])->group(function () {
 
         // ── Evidence (OCR Upload & Review) ────────────────────────
         // Upload gambar bukti transaksi, trigger OCR pipeline
-        Route::post('/evidence', [EvidenceController::class, 'store'])->name('evidence.store');
+        Route::post('/evidence', [EvidenceController::class, 'store'])->middleware('throttle:30,1')->name('evidence.store');
         // Web Share Target (PWA) — share foto dari Galeri / app Bank
-        Route::post('/evidence/share', [EvidenceController::class, 'share'])->name('evidence.share');
+        Route::post('/evidence/share', [EvidenceController::class, 'share'])->middleware('throttle:30,1')->name('evidence.share');
         Route::get('/evidence/share', fn () => redirect()->route('chat.index'))->name('evidence.share.get');
         // Serve private image untuk Chat (foto harus tampil, bukan text [Evidence])
         Route::get('/evidence/{uuid}/image', [EvidenceController::class, 'image'])->name('evidence.image');
         // Retry grouping LLM jika gagal (server LLM down) — chat turun seperti kirim lagi
-        Route::post('/evidence/{uuid}/retry', [EvidenceController::class, 'retry'])->name('evidence.retry');
+        Route::post('/evidence/{uuid}/retry', [EvidenceController::class, 'retry'])->middleware('throttle:30,1')->name('evidence.retry');
 
         // Review & edit draft hasil OCR
         Route::get('/evidence/{uuid}/draft', [EvidenceReviewController::class, 'show'])->name('evidence.draft.show');
-        Route::patch('/evidence/{uuid}/draft', [EvidenceReviewController::class, 'update'])->name('evidence.draft.update');
+        Route::patch('/evidence/{uuid}/draft', [EvidenceReviewController::class, 'update'])->middleware('throttle:60,1')->name('evidence.draft.update');
 
         // Commit draft menjadi transaksi nyata
-        Route::post('/evidence/{uuid}/commit', [EvidenceReviewController::class, 'commit'])->name('evidence.commit');
+        Route::post('/evidence/{uuid}/commit', [EvidenceReviewController::class, 'commit'])->middleware('throttle:30,1')->name('evidence.commit');
 
         // Debug & monitoring pipeline
         Route::get('/evidence/{uuid}/timeline', [EvidenceDebugController::class, 'timeline'])->name('evidence.timeline');
@@ -503,13 +504,13 @@ Route::middleware(['auth'])->group(function () {
 
     // ── Global search ─────────────────────────────────────────────
     Route::get('/search', [SearchController::class, 'index'])->name('search.page');
-    Route::get('/api/search', [SearchController::class, 'search'])->name('search.global');
+    Route::get('/api/search', [SearchController::class, 'search'])->middleware('throttle:120,1')->name('search.global');
 
     // ── Budgeting API (session auth, sama seperti Chat) ─────────────
     Route::prefix('api/v1/budget')->name('budget.')->group(function () {
         Route::get('/settings', [BudgetController::class, 'settings'])->name('settings');
         Route::post('/settings', [BudgetController::class, 'updateSettings'])->name('settings.update');
-        Route::post('/generate', [BudgetController::class, 'generate'])->name('generate');
+        Route::post('/generate', [BudgetController::class, 'generate'])->middleware('throttle:10,60')->name('generate');
         Route::get('/generate/status', [BudgetController::class, 'generationStatus'])->name('generate.status');
         Route::get('/{year}/{month}', [BudgetController::class, 'show'])->name('show');
         Route::put('/{budgetGroup}', [BudgetController::class, 'update'])->name('update');
@@ -528,6 +529,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('wallets', WalletController::class);
     Route::resource('categories', CategoryController::class);
     Route::patch('transactions/{transaction}/confirm', [TransactionController::class, 'confirm'])->name('transactions.confirm');
+    Route::get('transactions/page', [TransactionController::class, 'page'])->name('transactions.page');
     Route::resource('transactions', TransactionController::class);
     Route::get('/loans/{type}', [LoanController::class, 'index'])->name('loans.index');
 });

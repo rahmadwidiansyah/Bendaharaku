@@ -44,6 +44,8 @@ export default {
         close:          'Tutup',
         back:           'Kembali',
         loading:        'Memuat...',
+        loadMore:      'Muat lebih banyak',
+        loadMoreFailed: 'Gagal memuat data. Coba lagi.',
         search:         'Cari...',
         filter:         'Filter',
         all:            'Semua',

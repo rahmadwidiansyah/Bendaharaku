@@ -10,6 +10,7 @@ use App\Services\Evidence\EvidenceCommitService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 
 /**
  * EvidenceReviewController — HTTP layer untuk review & edit draft transaksi dari evidence.
@@ -101,10 +102,11 @@ class EvidenceReviewController extends Controller
             ], 422);
         }
 
+        // exists: dibatasi pemilik (422 konsisten, tanpa oracle data orang lain).
         $validated = $request->validate([
             'transaction_type' => 'nullable|string|in:EXPENSE,INCOME,TRANSFER,INTERNAL_TRANSFER',
-            'wallet_id' => 'nullable|integer|exists:wallets,id',
-            'category_id' => 'nullable|integer|exists:categories,id',
+            'wallet_id' => ['nullable', 'integer', Rule::exists('wallets', 'id')->where('user_id', $user->id)],
+            'category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('user_id', $user->id)],
             'amount' => 'nullable|numeric|min:0',
             'description' => 'nullable|string|max:500',
             'transaction_date' => 'nullable|string',
@@ -200,8 +202,8 @@ class EvidenceReviewController extends Controller
 
         $overrides = $request->validate([
             'transaction_type' => 'nullable|string|in:EXPENSE,INCOME,TRANSFER,INTERNAL_TRANSFER',
-            'wallet_id' => 'nullable|integer|exists:wallets,id',
-            'category_id' => 'nullable|integer|exists:categories,id',
+            'wallet_id' => ['nullable', 'integer', Rule::exists('wallets', 'id')->where('user_id', $user->id)],
+            'category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('user_id', $user->id)],
             'amount' => 'nullable|numeric|min:0',
             'description' => 'nullable|string|max:500',
             'transaction_date' => 'nullable|string',

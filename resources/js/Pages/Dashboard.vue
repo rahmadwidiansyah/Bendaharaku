@@ -3,7 +3,8 @@ import TransactionDetailModal from '@/Components/TransactionDetailModal.vue'
 import PortfolioCard from '@/Pages/Dashboard/PortfolioCard.vue'
 import UpcomingDebts from '@/Pages/Dashboard/UpcomingDebts.vue'
 import { Head, router } from '@inertiajs/vue3'
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
+import axios from 'axios'
 import { useI18n } from 'vue-i18n'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { useBalanceVisibility } from '@/Composables/useBalanceVisibility'
@@ -37,6 +38,9 @@ const props = defineProps({
 	thisMonthIncome: Number,
 	thisMonthExpense: Number,
 	transactions: Object,
+	dailyTotals: Object,
+	calendarMarkers: Array,
+	listLimit: Number,
 	pinnedWallets: Array,
 	wallets: Array,
 	startDate: String,
@@ -79,30 +83,93 @@ const toggleDate = (dateKey) => {
 	collapsedDates.value[dateKey] = !collapsedDates.value[dateKey]
 }
 
+// ─── State halaman daftar (halaman 1 dari server + append) ─────────────
+// Subtotal grup diambil dari dailyTotals server (mencakup SELURUH rentang,
+// bukan hanya baris yang sudah dimuat) agar benar saat dipaginasi.
+const rows = ref([...(props.transactions?.data || [])])
+const nextCursor = ref(props.transactions?.next_cursor || null)
+const hasMore = ref(!!props.transactions?.has_more)
+const totals = ref({ ...(props.dailyTotals || {}) })
+const isLoadingMore = ref(false)
+const loadError = ref(null)
+let loadAbort = null
+
+const resetListFromProps = () => {
+	rows.value = [...(props.transactions?.data || [])]
+	nextCursor.value = props.transactions?.next_cursor || null
+	hasMore.value = !!props.transactions?.has_more
+	totals.value = { ...(props.dailyTotals || {}) }
+	fullyLoadedDates.value = new Set()
+	loadError.value = null
+}
+watch(() => [props.startDate, props.endDate, props.filters, props.transactions?.data], resetListFromProps)
+onUnmounted(() => loadAbort?.abort())
+
+const rowKey = (trx) => `${trx.is_draft ? 'd' : 't'}:${trx.id}`
+const loadMore = async () => {
+	if (isLoadingMore.value || !hasMore.value || !nextCursor.value) return
+	isLoadingMore.value = true
+	loadError.value = null
+	loadAbort?.abort()
+	loadAbort = new AbortController()
+	try {
+		const { data } = await axios.get(route('transactions.page'), {
+			params: {
+				start_date: props.startDate,
+				end_date: props.endDate,
+				type: type.value || undefined,
+				cursor: nextCursor.value,
+				limit: props.listLimit || 50,
+			},
+			signal: loadAbort.signal,
+		})
+		const seen = new Set(rows.value.map(rowKey))
+		for (const row of data.data || []) {
+			if (!seen.has(rowKey(row))) {
+				seen.add(rowKey(row))
+				rows.value.push(row)
+			}
+		}
+		nextCursor.value = data.next_cursor || null
+		hasMore.value = !!data.has_more
+	} catch (err) {
+		if (!axios.isCancel(err)) loadError.value = t('common.loadMoreFailed')
+	} finally {
+		isLoadingMore.value = false
+	}
+}
+
 // ─── Transactions grouping ────────────────────────────────────────
-// SESUDAH
 const groupedTransactions = computed(() => {
 	const groups = {}
-	if (!props.transactions?.data) return groups
-	props.transactions.data.forEach((trx) => {
+	for (const trx of rows.value) {
 		// Normalisasi: ambil 10 karakter pertama ("YYYY-MM-DD") supaya konsisten
 		// walau raw_date kebawa format ISO dengan jam (mis. dari serialisasi Carbon).
 		const dateKey = typeof trx.raw_date === 'string' ? trx.raw_date.slice(0, 10) : trx.raw_date
 
-		if (!groups[dateKey])
-			groups[dateKey] = { date: trx.date, transactions: [], income: 0, expense: 0 }
-		groups[dateKey].transactions.push(trx)
-
-		let isIncome  = trx.type.name === 'Income'
-		let isExpense = trx.type.name === 'Expense'
-		if (['Debt', 'Receivable'].includes(trx.type.name)) {
-			if (trx.source_wallet?.group_type === 'System') isIncome  = true
-			else                                             isExpense = true
+		if (!groups[dateKey]) {
+			const server = totals.value[dateKey] || { income: 0, expense: 0 }
+			groups[dateKey] = { date: trx.date, transactions: [], income: server.income || 0, expense: server.expense || 0 }
 		}
-		if (isIncome)  groups[dateKey].income  += trx.amount
-		if (isExpense) groups[dateKey].expense += trx.amount
-	})
+		groups[dateKey].transactions.push(trx)
+	}
 	return groups
+})
+
+// ─── Grup kalender: gabungkan baris termuat + total server seluruh rentang ──
+// useCalendar hanya membaca [tanggal].income/.expense untuk badge & marker,
+// sehingga tanggal di luar halaman termuat tetap bertanda dengan benar.
+const calendarGroups = computed(() => {
+	const merged = {}
+	for (const [dateKey, t] of Object.entries(totals.value || {})) {
+		merged[dateKey] = { date: dateKey, transactions: [], income: t.income || 0, expense: t.expense || 0 }
+	}
+	for (const [dateKey, g] of Object.entries(groupedTransactions.value)) {
+		if (!merged[dateKey]) merged[dateKey] = { date: g.date, transactions: [], income: 0, expense: 0 }
+		merged[dateKey].transactions = g.transactions
+		if (merged[dateKey].date === dateKey) merged[dateKey].date = g.date
+	}
+	return merged
 })
 
 // ─── Calendar composable ──────────────────────────────────────────
@@ -120,7 +187,7 @@ const {
 	selectDate,
 } = useCalendar({
 	initialDate: computed(() => props.startDate),
-	groupedTransactions,
+	groupedTransactions: calendarGroups,
 	onNavigate: (startDate, endDate) => {
 		router.get(
 			route('dashboard'),
@@ -137,6 +204,43 @@ const todayYMD = computed(() => getLocalYMD(new Date()))
 const selectedDateTransactions = computed(() => {
 	const grp = groupedTransactions.value[selectedCalendarDate.value]
 	return grp ? { [selectedCalendarDate.value]: grp } : {}
+})
+
+// Tab kalender: pastikan baris tanggal terpilih termuat penuh (satu hari murah).
+// Dijalankan saat tanggal dipilih; hasil digabung dengan dedupe agar tak ganda.
+const fullyLoadedDates = ref(new Set())
+const ensureSelectedDateLoaded = async (dateStr) => {
+	if (activeHistoryTab.value !== 'calendar' || !dateStr) return
+	if (fullyLoadedDates.value.has(dateStr)) return
+	try {
+		let cursor = null
+		for (let i = 0; i < 20; i++) {
+			const { data } = await axios.get(route('transactions.page'), {
+				params: {
+					start_date: dateStr,
+					end_date: dateStr,
+					type: type.value || undefined,
+					cursor: cursor || undefined,
+					limit: 100,
+				},
+			})
+			const seen = new Set(rows.value.map(rowKey))
+			for (const row of data.data || []) {
+				if (!seen.has(rowKey(row))) {
+					seen.add(rowKey(row))
+					rows.value.push(row)
+				}
+			}
+			if (!data.has_more || !data.next_cursor) break
+			cursor = data.next_cursor
+		}
+		fullyLoadedDates.value.add(dateStr)
+	} catch (err) {
+		// Gagal melengkapi: tampilkan yang sudah termuat (perilaku aman, tanpa blokir UI).
+	}
+}
+watch([selectedCalendarDate, activeHistoryTab], ([d, tab]) => {
+	if (tab === 'calendar') ensureSelectedDateLoaded(d)
 })
 
 const visibleTransactions = computed(() =>
@@ -406,7 +510,7 @@ const calendarDayNames = computed(() => [
 								<div class="overflow-hidden transition-all duration-300"
 									:class="activeHistoryTab === 'detail' && collapsedDates[dateKey] ? 'opacity-0' : 'opacity-100'">
 									<div>
-										<button v-for="(trx, trxIdx) in group.transactions" :key="trx.id" @click="openModal(trx)"
+										<button v-for="(trx, trxIdx) in group.transactions" :key="(trx.is_draft ? 'd' : 't') + ':' + trx.id" @click="openModal(trx)"
 											class="w-full text-left flex items-center gap-2.5 sm:gap-3 py-2.5 sm:py-3 px-1 transition-colors hover:bg-[var(--color-surface-muted)]/40 active:bg-[var(--color-surface-muted)]/60 border-b border-[var(--color-border-subtle)] last:border-b-0">
 											<div class="relative shrink-0">
 												<AppIcon :icon="trx.category?.icon" fallback="file-text"
@@ -448,6 +552,15 @@ const calendarDayNames = computed(() => [
 									</div>
 								</div>
 							</div>
+						</div>
+
+						<!-- Muat lebih banyak -->
+						<div v-if="hasMore && activeHistoryTab === 'detail'" class="flex flex-col items-center gap-2 py-3">
+							<button @click="loadMore" :disabled="isLoadingMore"
+								class="px-5 py-2.5 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-raised)] text-xs font-bold uppercase tracking-widest text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] disabled:opacity-50 active:scale-95 transition-all">
+								{{ isLoadingMore ? $t('common.loading') : $t('common.loadMore') }}
+							</button>
+							<p v-if="loadError" class="text-2xs text-[var(--color-expense-text)]">{{ loadError }}</p>
 						</div>
 
 						<!-- Empty state -->

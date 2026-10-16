@@ -44,9 +44,13 @@ class DraftConfirmationService
      */
     public function confirm(TransactionDraft $draft, User $user): TransactionLog
     {
+        if ($draft->user_id !== $user->id) {
+            throw new InvalidArgumentException("Draft #{$draft->id} bukan milik pengguna.");
+        }
+
         if ($draft->isConfirmed() && ! empty($draft->confirmed_transaction_ids)) {
             $logId = $draft->confirmed_transaction_ids[0];
-            $existingLog = TransactionLog::find($logId);
+            $existingLog = TransactionLog::where('user_id', $user->id)->find($logId);
             if ($existingLog) {
                 return $existingLog->load(['category', 'sourceWallet', 'destinationWallet', 'type']);
             }
@@ -163,6 +167,10 @@ class DraftConfirmationService
      */
     public function cancel(TransactionDraft $draft, User $user): void
     {
+        if ($draft->user_id !== $user->id) {
+            throw new InvalidArgumentException("Draft #{$draft->id} bukan milik pengguna.");
+        }
+
         if ($draft->isConfirmed()) {
             throw new InvalidArgumentException(
                 "Draft #{$draft->id} sudah dikonfirmasi dan tidak dapat dibatalkan."

@@ -6,6 +6,7 @@ use App\Jobs\BuildNetWorthSnapshotsJob;
 use App\Traits\CalculatesDebtAndReceivable;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -76,6 +77,13 @@ class AnalyticsController extends Controller
 
         $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->format('Y-m-d'));
         $endDate = $request->input('end_date', Carbon::now()->format('Y-m-d'));
+        // Lazy history: 'range' melewati 3 agregat full-history (bagian 5)
+        // dan mengirim array kosong + openingBalance; chart mengambilnya
+        // on-demand via analytics.history. Default 'full' = perilaku lama.
+        $historyMode = $request->input('history', 'full');
+        if (! in_array($historyMode, ['full', 'range'], true)) {
+            $historyMode = 'full';
+        }
 
         // Get consistent, subject-based net balances for summary cards
         $allBalances = $this->calculateAllBalances();
@@ -105,6 +113,10 @@ class AnalyticsController extends Controller
             ->where('transaction_logs.date', '<', $startDate)
             ->whereIn('transaction_logs.type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE, self::TYPE_DEBT, self::TYPE_RECEIVABLE])
             ->sum(DB::raw($this->signedCashCase()));
+
+        // Saldo awal sebelum rentang (untuk lazy history: chart kumulatif
+        // dapat dimulai dari angka ini tanpa seluruh histori).
+        $openingBalance = $runningBalance;
 
         // 2b. Net cash change per hari
         $dailyNetRaw = DB::table('transaction_logs')
@@ -185,67 +197,18 @@ class AnalyticsController extends Controller
         $debtsByCategory = $categoriesRaw->where('type_id', self::TYPE_DEBT)->map($formatCategory)->values()->toArray();
         $receivablesByCategory = $categoriesRaw->where('type_id', self::TYPE_RECEIVABLE)->map($formatCategory)->values()->toArray();
 
-        // 5. Full history — Income/Expense gross, Debt/Receivable NET per hari
-        $allLabels = [];
-        $allDates = [];
-        $allIncome = [];
-        $allExpense = [];
-        $allDebt = [];
-        $allReceivable = [];
-
-        // Income & Expense per day (gross by type_id)
-        $allHistoryRaw = DB::table('transaction_logs')
-            ->selectRaw('date, type_id, SUM(amount) as total')
-            ->where('user_id', $userId)
-            ->where('is_cleared', true)
-            ->whereNull('deleted_at')
-            ->whereIn('type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE])
-            ->groupBy('date', 'type_id')
-            ->orderBy('date', 'asc')
-            ->get()
-            ->groupBy('date');
-
-        // Debt & Receivable NET per day
-        $allDebtRaw = DB::table('transaction_logs')
-            ->join('categories', 'transaction_logs.category_id', '=', 'categories.id')
-            ->selectRaw('transaction_logs.date, SUM('.$this->debtNetCase().') as net')
-            ->where('transaction_logs.user_id', $userId)
-            ->where('transaction_logs.is_cleared', true)
-            ->whereNull('transaction_logs.deleted_at')
-            ->whereIn('categories.system_key', ['LOAN', 'DEBT_PAYMENT'])
-            ->groupBy('transaction_logs.date')
-            ->orderBy('transaction_logs.date', 'asc')
-            ->pluck('net', 'date');
-
-        $allReceivableRaw = DB::table('transaction_logs')
-            ->join('categories', 'transaction_logs.category_id', '=', 'categories.id')
-            ->selectRaw('transaction_logs.date, SUM('.$this->receivableNetCase().') as net')
-            ->where('transaction_logs.user_id', $userId)
-            ->where('transaction_logs.is_cleared', true)
-            ->whereNull('transaction_logs.deleted_at')
-            ->whereIn('categories.system_key', ['RECEIVABLE', 'RECEIVABLE_PAYMENT'])
-            ->groupBy('transaction_logs.date')
-            ->orderBy('transaction_logs.date', 'asc')
-            ->pluck('net', 'date');
-
-        // Gabung semua tanggal yang muncul di salah satu query
-        $allDateKeys = collect(array_keys($allHistoryRaw->toArray()))
-            ->merge(array_keys($allDebtRaw->toArray()))
-            ->merge(array_keys($allReceivableRaw->toArray()))
-            ->unique()
-            ->sort()
-            ->values();
-
-        foreach ($allDateKeys as $date) {
-            $allLabels[] = Carbon::parse($date)->format('d M Y');
-            $allDates[] = Carbon::parse($date)->format('Y-m-d');
-
-            $dayTx = $allHistoryRaw->get($date, collect());
-            $allIncome[] = (float) ($dayTx->firstWhere('type_id', self::TYPE_INCOME)?->total ?? 0);
-            $allExpense[] = (float) ($dayTx->firstWhere('type_id', self::TYPE_EXPENSE)?->total ?? 0);
-            $allDebt[] = (float) ($allDebtRaw[$date] ?? 0);
-            $allReceivable[] = (float) ($allReceivableRaw[$date] ?? 0);
-        }
+        // 5. Full history — Income/Expense gross, Debt/Receivable NET per hari.
+        // Dilewati bila history=range (lazy): klien mengambil on-demand via
+        // analytics.history. Bentuk dan urutan array identik di kedua jalur.
+        $fullHistory = $historyMode === 'full'
+            ? $this->fullHistoryArrays($userId)
+            : ['labels' => [], 'dates' => [], 'income' => [], 'expense' => [], 'debt' => [], 'receivable' => []];
+        $allLabels = $fullHistory['labels'];
+        $allDates = $fullHistory['dates'];
+        $allIncome = $fullHistory['income'];
+        $allExpense = $fullHistory['expense'];
+        $allDebt = $fullHistory['debt'];
+        $allReceivable = $fullHistory['receivable'];
 
         // 6. Rebuild snapshot di background untuk dipakai kunjungan berikutnya
         BuildNetWorthSnapshotsJob::dispatch($userId, $startDate, $endDate);
@@ -267,6 +230,8 @@ class AnalyticsController extends Controller
             'dailyExpense' => $dailyExpense,
             'cumulativeData' => $cumulativeData,
             'todayIndex' => $todayIndex,
+            'historyMode' => $historyMode,
+            'openingBalance' => $openingBalance,
             'allDailyLabels' => $allLabels,
             'allDailyDates' => $allDates,
             'allDailyIncome' => $allIncome,
@@ -274,5 +239,92 @@ class AnalyticsController extends Controller
             'allDailyDebt' => $allDebt,
             'allDailyReceivable' => $allReceivable,
         ]);
+    }
+
+    /**
+     * JSON on-demand untuk full history (dipakai lazy-loading chart).
+     * GET /analytics/history — array identik dengan props allDaily* mode full.
+     */
+    public function history(): JsonResponse
+    {
+        $arrays = $this->fullHistoryArrays(Auth::id());
+
+        return response()->json([
+            'labels' => $arrays['labels'],
+            'dates' => $arrays['dates'],
+            'income' => $arrays['income'],
+            'expense' => $arrays['expense'],
+            'debt' => $arrays['debt'],
+            'receivable' => $arrays['receivable'],
+        ]);
+    }
+
+    /**
+     * @return array{labels: list<string>, dates: list<string>, income: list<float>, expense: list<float>, debt: list<float>, receivable: list<float>}
+     */
+    private function fullHistoryArrays(int $userId): array
+    {
+        $labels = [];
+        $dates = [];
+        $income = [];
+        $expense = [];
+        $debt = [];
+        $receivable = [];
+
+        // Income & Expense per day (gross by type_id)
+        $allHistoryRaw = DB::table('transaction_logs')
+            ->selectRaw('date, type_id, SUM(amount) as total')
+            ->where('user_id', $userId)
+            ->where('is_cleared', true)
+            ->whereNull('deleted_at')
+            ->whereIn('type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE])
+            ->groupBy('date', 'type_id')
+            ->orderBy('date', 'asc')
+            ->get()
+            ->groupBy('date');
+
+        // Debt & Receivable NET per day
+        $allDebtRaw = DB::table('transaction_logs')
+            ->join('categories', 'transaction_logs.category_id', '=', 'categories.id')
+            ->selectRaw('transaction_logs.date, SUM('.$this->debtNetCase().') as net')
+            ->where('transaction_logs.user_id', $userId)
+            ->where('is_cleared', true)
+            ->whereNull('transaction_logs.deleted_at')
+            ->whereIn('categories.system_key', ['LOAN', 'DEBT_PAYMENT'])
+            ->groupBy('transaction_logs.date')
+            ->orderBy('transaction_logs.date', 'asc')
+            ->pluck('net', 'date');
+
+        $allReceivableRaw = DB::table('transaction_logs')
+            ->join('categories', 'transaction_logs.category_id', '=', 'categories.id')
+            ->selectRaw('transaction_logs.date, SUM('.$this->receivableNetCase().') as net')
+            ->where('transaction_logs.user_id', $userId)
+            ->where('is_cleared', true)
+            ->whereNull('transaction_logs.deleted_at')
+            ->whereIn('categories.system_key', ['RECEIVABLE', 'RECEIVABLE_PAYMENT'])
+            ->groupBy('transaction_logs.date')
+            ->orderBy('transaction_logs.date', 'asc')
+            ->pluck('net', 'date');
+
+        // Gabung semua tanggal yang muncul di salah satu query
+        $allDateKeys = collect(array_keys($allHistoryRaw->toArray()))
+            ->merge(array_keys($allDebtRaw->toArray()))
+            ->merge(array_keys($allReceivableRaw->toArray()))
+            ->unique()
+            ->sort()
+            ->values();
+
+        foreach ($allDateKeys as $date) {
+            $labels[] = Carbon::parse($date)->format('d M Y');
+            $dates[] = Carbon::parse($date)->format('Y-m-d');
+
+            $dayTx = $allHistoryRaw->get($date, collect());
+            $income[] = (float) ($dayTx->firstWhere('type_id', self::TYPE_INCOME)?->total ?? 0);
+            $expense[] = (float) ($dayTx->firstWhere('type_id', self::TYPE_EXPENSE)?->total ?? 0);
+            $debt[] = (float) ($allDebtRaw[$date] ?? 0);
+            $receivable[] = (float) ($allReceivableRaw[$date] ?? 0);
+        }
+
+        return compact('labels', 'dates', 'income', 'expense', 'debt', 'receivable');
     }
 }

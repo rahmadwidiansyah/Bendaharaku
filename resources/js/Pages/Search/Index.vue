@@ -33,16 +33,19 @@ const grouped = computed(() => {
     return groups
 })
 
+let searchAbort = null
 const doSearch = async () => {
     const q = searchQuery.value.trim()
     if (!q) { results.value = []; searched.value = false; return }
     loading.value = true
     searched.value = true
+    searchAbort?.abort()
+    searchAbort = new AbortController()
     try {
-        const res = await axios.get(route('search.global'), { params: { q } })
+        const res = await axios.get(route('search.global'), { params: { q }, signal: searchAbort.signal })
         results.value = res.data.results || []
-    } catch {
-        results.value = []
+    } catch (err) {
+        if (!axios.isCancel(err)) results.value = []
     } finally {
         loading.value = false
     }

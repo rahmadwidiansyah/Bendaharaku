@@ -145,6 +145,13 @@ class ProcessTransactionAction
         $result = DB::transaction(function () use ($transaction, $data, $userId) {
             $user = User::findOrFail($userId);
 
+            // Tangkap pasangan subjek/tipe LAMA sebelum dimutasi: rebuildAll()
+            // hanya menyentuh subjek yang masih ada di log, sehingga subjek
+            // lama yang ditinggalkan (ganti subject/kategori) harus di-rebuild
+            // eksplisit agar tidak menjadi baris yatim.
+            $oldSubject = strtoupper(trim((string) $transaction->subject));
+            $oldLoanType = $this->loanType($transaction->category()->value('system_key'));
+
             // Resolve kategori — sama dengan create()
             $type = strtolower($data['transaction_type'] ?? '');
 
@@ -202,6 +209,19 @@ class ProcessTransactionAction
 
             $this->loanBalances->rebuildAll($userId);
 
+            // Hapus baris yatim bila subjek/tipe lama ditinggalkan update.
+            // rebuild() tanpa sisa log menghapus barisnya; bila masih ada sisa
+            // log (mis. transaksi lain dengan subjek sama) hasilnya identik.
+            // Replay negatif (mis. LOAN dipindah sementara payment tertinggal)
+            // melempar sehingga seluruh update rollback — sama seperti delete.
+            $newSubject = strtoupper(trim((string) $transaction->subject));
+            $newLoanType = $this->loanType($transaction->category()->value('system_key'));
+            if ($oldSubject !== '' && $oldSubject !== '-' && $oldLoanType
+                && ($oldSubject !== $newSubject || $oldLoanType !== $newLoanType)
+            ) {
+                $this->loanBalances->rebuild($userId, $oldSubject, $oldLoanType);
+            }
+
             return $transaction;
         });
 
@@ -257,6 +277,21 @@ class ProcessTransactionAction
                 'notes' => $cleanNotes,
             ]);
 
+            // Samakan dengan create(): konfirmasi dapat mengaktifkan transaksi
+            // hutang/piutang yang sebelumnya tidak dihitung (is_cleared=false
+            // dikecualikan validate/rebuild). Urutan lock tetap wallet->loan,
+            // sama seperti create/update/delete, agar tidak ada deadlock baru.
+            // validate() melempar bila konfirmasi membuat saldo negatif
+            // (mis. pembayaran melebihi sisa) sehingga seluruh tx rollback.
+            $this->loanBalances->validate($transaction);
+            $confirmLoanType = $this->loanType($transaction->category()->value('system_key'));
+            if ($confirmLoanType) {
+                $confirmSubject = strtoupper(trim((string) $transaction->subject));
+                if ($confirmSubject !== '' && $confirmSubject !== '-') {
+                    $this->loanBalances->rebuild($transaction->user_id, $confirmSubject, $confirmLoanType);
+                }
+            }
+
             $this->dispatchBudgetOverCheckIfExpense($transaction);
 
             return $transaction;
@@ -270,6 +305,11 @@ class ProcessTransactionAction
     {
         return DB::transaction(function () use ($transaction) {
             $allowNegativeBalance = (bool) User::whereKey($transaction->user_id)->value('allow_negative_balance');
+            // Tangkap pasangan subjek/tipe sebelum soft-delete: bila ini log
+            // terakhir untuk subjek tersebut, rebuildAll() tidak akan
+            // menyentuhnya sehingga baris ringkasan menjadi yatim.
+            $oldSubject = strtoupper(trim((string) $transaction->subject));
+            $oldLoanType = $this->loanType($transaction->category()->value('system_key'));
             if ($transaction->is_cleared) {
                 // Kunci baris data wallet saat pemulihan penghapusan transaksi
                 $source = Wallet::where('user_id', $transaction->user_id)->where('id', $transaction->source_wallet_id)->lockForUpdate()->first();
@@ -285,6 +325,9 @@ class ProcessTransactionAction
 
             $deleted = $transaction->delete();
             $this->loanBalances->rebuildAll($transaction->user_id);
+            if ($oldSubject !== '' && $oldSubject !== '-' && $oldLoanType) {
+                $this->loanBalances->rebuild($transaction->user_id, $oldSubject, $oldLoanType);
+            }
 
             return $deleted;
         });

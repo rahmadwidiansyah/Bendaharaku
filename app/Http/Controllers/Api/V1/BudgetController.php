@@ -13,6 +13,7 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class BudgetController extends Controller
 {
@@ -125,9 +126,11 @@ class BudgetController extends Controller
     {
         $this->authorize('update', $budgetGroup);
 
+        // items.*.id dibatasi ke grup ini (422 konsisten; lookup lanjutan
+        // via $budgetGroup->items()->find() tetap dipertahankan).
         $validated = $request->validate([
             'items' => 'required|array',
-            'items.*.id' => 'required|exists:budget_items,id',
+            'items.*.id' => ['required', Rule::exists('budget_items', 'id')->where('budget_group_id', $budgetGroup->id)],
             'items.*.target_amount' => 'required|numeric|min:0',
         ]);
 

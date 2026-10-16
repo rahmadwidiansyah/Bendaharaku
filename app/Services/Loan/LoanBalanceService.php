@@ -4,6 +4,7 @@ namespace App\Services\Loan;
 
 use App\Models\LoanBalance;
 use App\Models\TransactionLog;
+use Illuminate\Support\Collection;
 use RuntimeException;
 
 class LoanBalanceService
@@ -108,7 +109,40 @@ class LoanBalanceService
 
     public function rebuildAll(int $userId): void
     {
-        $pairs = TransactionLog::where('user_id', $userId)
+        foreach ($this->loanPairs($userId) as $pair) {
+            $this->rebuild($userId, $pair['subject'], $pair['loan_type']);
+        }
+    }
+
+    /**
+     * Hapus baris ringkasan yang tidak lagi memiliki log tersisa (yatim).
+     * rebuild()/rebuildAll() tidak pernah menyentuh subjek yang hilang dari
+     * log, sehingga baris dari era sebelum perbaikan orphan (Tahap 1) menetap.
+     * Aman: hanya menghapus bila replay akan menghasilkan nol.
+     *
+     * @return int jumlah baris terhapus
+     */
+    public function pruneOrphans(int $userId): int
+    {
+        $alive = $this->loanPairs($userId)
+            ->map(fn ($pair) => $pair['subject'].'|'.$pair['loan_type'])
+            ->unique();
+
+        $orphanIds = LoanBalance::where('user_id', $userId)->get()
+            ->reject(fn ($row) => $alive->contains($row->subject.'|'.$row->loan_type))
+            ->pluck('id');
+
+        if ($orphanIds->isEmpty()) {
+            return 0;
+        }
+
+        return LoanBalance::whereIn('id', $orphanIds)->delete();
+    }
+
+    /** Pasangan (subject, loan_type) ternormalisasi yang masih memiliki log. */
+    private function loanPairs(int $userId): Collection
+    {
+        return TransactionLog::where('user_id', $userId)
             ->where('is_cleared', true)
             ->whereNotNull('subject')
             ->whereHas('category', fn ($query) => $query->whereIn('system_key', array_merge(array_keys(self::POSITIVE_KEYS), array_keys(self::NEGATIVE_KEYS))))
@@ -118,9 +152,5 @@ class LoanBalanceService
                 'subject' => strtoupper(trim($transaction->subject)),
                 'loan_type' => self::POSITIVE_KEYS[$transaction->category->system_key] ?? self::NEGATIVE_KEYS[$transaction->category->system_key],
             ])->unique(fn ($pair) => $pair['subject'].'|'.$pair['loan_type']);
-
-        foreach ($pairs as $pair) {
-            $this->rebuild($userId, $pair['subject'], $pair['loan_type']);
-        }
     }
 }

@@ -84,59 +84,81 @@ class ProcessingLogService
         return $result > 0 ? (int) $result : null;
     }
 
-    public function getMetrics(int $hours = 24): array
+    /**
+     * Metrik pipeline evidence. Selalu dibatasi user bila $userId diisi —
+     * endpoint publik wajib meneruskan user login agar data antar-pengguna
+     * tidak bocor (lihat EvidenceDebugController::stats).
+     */
+    public function getMetrics(int $hours = 24, ?int $userId = null): array
     {
         $since = now()->subHours($hours);
 
-        $totalEvidence = DB::table('evidence')
-            ->where('created_at', '>=', $since)
+        $scopeEvidence = fn ($query) => $userId === null
+            ? $query
+            : $query->where('evidence.user_id', $userId);
+
+        $totalEvidence = $scopeEvidence(DB::table('evidence')
+            ->where('created_at', '>=', $since))
             ->count();
 
-        $completedEvidence = DB::table('evidence')
+        $completedEvidence = $scopeEvidence(DB::table('evidence')
             ->where('created_at', '>=', $since)
-            ->where('status', 'READY')
-            ->orWhere('status', 'COMPLETED')
+            ->whereIn('status', ['READY', 'COMPLETED']))
             ->count();
 
-        $failedEvidence = DB::table('evidence')
+        $failedEvidence = $scopeEvidence(DB::table('evidence')
             ->where('created_at', '>=', $since)
-            ->where('status', 'FAILED')
+            ->where('status', 'FAILED'))
             ->count();
 
-        $avgOcrDuration = DB::table('evidence')
+        $avgOcrDuration = $scopeEvidence(DB::table('evidence')
             ->where('created_at', '>=', $since)
-            ->whereNotNull('ocr_duration_ms')
+            ->whereNotNull('ocr_duration_ms'))
             ->avg('ocr_duration_ms');
 
+        $pipelineSub = DB::table('evidence_processing_logs')
+            ->where('created_at', '>=', $since)
+            ->whereNotNull('duration_ms');
+        if ($userId !== null) {
+            $pipelineSub->whereIn('evidence_id', DB::table('evidence')
+                ->where('user_id', $userId)
+                ->select('id'));
+        }
         $avgPipelineDuration = DB::query()
             ->fromSub(
-                DB::table('evidence_processing_logs')
-                    ->where('created_at', '>=', $since)
-                    ->whereNotNull('duration_ms')
-                    ->selectRaw('evidence_id, SUM(duration_ms) as total')
+                $pipelineSub->selectRaw('evidence_id, SUM(duration_ms) as total')
                     ->groupBy('evidence_id'),
                 'pipeline_durations'
             )
             ->avg('total');
 
-        $avgConfidence = DB::table('evidence')
+        $avgConfidence = $scopeEvidence(DB::table('evidence')
             ->where('created_at', '>=', $since)
-            ->whereNotNull('resolver_confidence')
+            ->whereNotNull('resolver_confidence'))
             ->avg('resolver_confidence');
 
-        $mostCommonFailure = DB::table('evidence_processing_logs')
+        $failureQuery = DB::table('evidence_processing_logs')
             ->where('created_at', '>=', $since)
             ->where('status_after', 'FAILED')
-            ->whereNotNull('message')
+            ->whereNotNull('message');
+        if ($userId !== null) {
+            $failureQuery->whereIn('evidence_id', DB::table('evidence')
+                ->where('user_id', $userId)
+                ->select('id'));
+        }
+        $mostCommonFailure = $failureQuery
             ->select('message', DB::raw('COUNT(*) as count'))
             ->groupBy('message')
             ->orderByDesc('count')
             ->first();
 
-        $processing = DB::table('evidence')
+        $processingQuery = DB::table('evidence')
             ->where('created_at', '>=', $since)
-            ->whereIn('status', ['PROCESSING', 'QUEUED', 'UPLOADED'])
-            ->count();
+            ->whereIn('status', ['PROCESSING', 'QUEUED', 'UPLOADED']);
+        if ($userId !== null) {
+            $processingQuery->where('user_id', $userId);
+        }
+        $processing = $processingQuery->count();
 
         return [
             'period_hours' => $hours,

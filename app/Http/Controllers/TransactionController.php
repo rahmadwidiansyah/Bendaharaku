@@ -8,139 +8,117 @@ use App\Models\Category;
 use App\Models\TransactionDraft;
 use App\Models\TransactionLog;
 use App\Services\Chat\DraftConfirmationService;
+use App\Services\Transaction\TransactionListService;
 use App\Support\ActivityLogger;
 use App\Traits\CalculatesDebtAndReceivable;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
+use InvalidArgumentException;
 
-class TransactionController extends Controller
+class TransactionController extends Controller implements HasMiddleware
 {
     use CalculatesDebtAndReceivable;
+
+    public static function middleware(): array
+    {
+        // Batas tulis (<100 user): longgar untuk pemakaian normal, menahan
+        // spam/double-submit dan brute force. Baca (index/show/edit) bebas.
+        return [new Middleware('throttle:60,1', only: ['store', 'update', 'confirm', 'destroy'])];
+    }
 
     /**
      * Menampilkan daftar transaksi.
      */
-    public function index(Request $request): Response
+    public function index(Request $request, TransactionListService $lists): Response
     {
         $user = Auth::user();
-        $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->format('Y-m-d'));
-        $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->format('Y-m-d'));
+        $filters = $request->only(['start_date', 'end_date', 'type', 'search']);
+        $limit = $this->pageLimit($request);
 
-        $query = $user->transactionLogs()->with(['type', 'category', 'sourceWallet', 'destinationWallet']);
-        $query->where('is_cleared', true);
-        $query->whereBetween('date', [$startDate, $endDate]);
-
-        if ($request->filled('type')) {
-            $query->whereHas('type', fn ($q) => $q->where('name', $request->type));
-        }
-
-        if ($request->filled('search')) {
-            $search = strtolower($request->search);
-            $query->where(function ($q) use ($search) {
-                $q->whereRaw('LOWER(notes) LIKE ?', ["%{$search}%"])
-                    ->orWhereRaw('LOWER(subject) LIKE ?', ["%{$search}%"])
-                    ->orWhereHas('category', fn ($qCat) => $qCat->whereRaw('LOWER(category_name) LIKE ?', ["%{$search}%"]));
-            });
-        }
-
-        $transactions = $query->orderByDesc('date')
-            ->orderByDesc('created_at')
-            ->get()
-            ->map(fn ($trx) => [
-                'id' => $trx->id,
-                'amount' => (float) $trx->amount,
-                'notes' => $trx->notes,
-                'subject' => $trx->subject,
-                'date' => Carbon::parse($trx->date)->translatedFormat('d M Y'),
-                'raw_date' => $trx->date?->toDateString(),
-                'time' => Carbon::parse($trx->created_at)->format('H:i'),
-                'type' => $trx->type,
-                'category' => $trx->category,
-                'source_wallet' => $trx->sourceWallet,
-                'destination_wallet' => $trx->destinationWallet,
-            ]);
-
-        // ── Query Pending Drafts ──
-        $pendingDraftsQuery = $user->transactionDrafts()->where('status', 'pending');
-        $pendingDraftsQuery->whereBetween('created_at', [
-            Carbon::parse($startDate)->startOfDay(),
-            Carbon::parse($endDate)->endOfDay(),
-        ]);
-
-        if ($request->filled('type')) {
-            $type = strtolower($request->type);
-            $pendingDraftsQuery->whereRaw('LOWER(payload->>\'type_key\') = ?', [$type]);
-        }
-
-        if ($request->filled('search')) {
-            $search = strtolower(trim($request->search));
-            $pendingDraftsQuery->where(function ($q) use ($search) {
-                $q->whereRaw('LOWER(original_text) LIKE ?', ["%{$search}%"])
-                    ->orWhereRaw('LOWER(payload->>\'notes\') LIKE ?', ["%{$search}%"])
-                    ->orWhereRaw('LOWER(payload->>\'subject\') LIKE ?', ["%{$search}%"])
-                    ->orWhereRaw('LOWER(payload->>\'category_name\') LIKE ?', ["%{$search}%"]);
-            });
-        }
-
-        $drafts = $pendingDraftsQuery->orderBy('created_at', 'desc')->get();
-
-        $draftData = $drafts->map(function ($draft) {
-            $payload = $draft->payload ?? [];
-
-            return [
-                'id' => $draft->id,
-                'is_draft' => true,
-                'draft_id' => $draft->id,
-                'amount' => (float) ($payload['amount'] ?? 0),
-                'notes' => $payload['notes'] ?? $draft->original_text,
-                'subject' => $payload['subject'] ?? '-',
-                'is_cleared' => false,
-                'reference_number' => null,
-                'date' => Carbon::parse($payload['date'] ?? $draft->created_at)->translatedFormat('d M Y'),
-                'raw_date' => $payload['date'] ?? $draft->created_at->toDateString(),
-                'time' => Carbon::parse($draft->created_at)->format('H:i'),
-                'type' => [
-                    'id' => null,
-                    'name' => ucfirst($payload['type_key'] ?? 'expense'),
-                ],
-                'category' => isset($payload['category_name']) ? [
-                    'id' => $payload['category_id'] ?? null,
-                    'category_name' => $payload['category_name'],
-                ] : null,
-                'source_wallet' => isset($payload['source_wallet_name']) ? [
-                    'id' => $payload['source_wallet_id'] ?? null,
-                    'name' => $payload['source_wallet_name'],
-                ] : null,
-                'destination_wallet' => isset($payload['destination_wallet_name']) ? [
-                    'id' => $payload['destination_wallet_id'] ?? null,
-                    'name' => $payload['destination_wallet_name'],
-                ] : null,
-            ];
-        });
-
-        $transactions = $transactions->concat($draftData)->sort(function ($a, $b) {
-            $dateCompare = strcmp($b['raw_date'], $a['raw_date']);
-            if ($dateCompare !== 0) {
-                return $dateCompare;
-            }
-            $timeCompare = strcmp($b['time'], $a['time']);
-            if ($timeCompare !== 0) {
-                return $timeCompare;
-            }
-
-            return $b['id'] <=> $a['id'];
-        })->values();
+        $page = $lists->paginate($user, $filters, null, $limit);
+        $agg = $lists->aggregates($user, $filters);
+        $norm = $this->normalizedRange($request);
 
         return Inertia::render('Transactions/Index', [
-            'transactions' => ['data' => $transactions],
-            'startDate' => $startDate,
-            'endDate' => $endDate,
+            'transactions' => [
+                'data' => $page['data'],
+                'next_cursor' => $page['next_cursor'],
+                'has_more' => $page['has_more'],
+            ],
+            'dailyTotals' => $agg['dailyTotals'],
+            'calendarMarkers' => $agg['markers'],
+            'startDate' => $norm['start'],
+            'endDate' => $norm['end'],
             'filters' => $request->only(['search', 'type']),
+            'limit' => $limit,
         ]);
+    }
+
+    /**
+     * Halaman JSON berikutnya untuk "Muat lebih banyak" (dipakai
+     * Transactions/Index dan Dashboard). Filter diambil dari query saat ini;
+     * cursor lama tidak dipakai ulang saat filter berubah (client me-reset).
+     */
+    public function page(Request $request, TransactionListService $lists): JsonResponse
+    {
+        $validated = $request->validate([
+            'start_date' => ['nullable', 'date_format:Y-m-d'],
+            'end_date' => ['nullable', 'date_format:Y-m-d'],
+            'type' => ['nullable', 'string', 'max:30'],
+            'search' => ['nullable', 'string', 'max:100'],
+            'cursor' => ['nullable', 'string', 'max:500'],
+            // Sengaja tanpa max: nilai berlebih di-clamp ke MAX_LIMIT di bawah.
+            'limit' => ['nullable', 'integer', 'min:1'],
+        ]);
+
+        try {
+            $page = $lists->paginate(
+                $request->user(),
+                $validated,
+                $validated['cursor'] ?? null,
+                (int) ($validated['limit'] ?? TransactionListService::DEFAULT_LIMIT),
+            );
+        } catch (InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        $agg = $lists->aggregates($request->user(), $validated);
+
+        return response()->json($page + [
+            'dailyTotals' => $agg['dailyTotals'],
+            'calendarMarkers' => $agg['markers'],
+        ]);
+    }
+
+    private function pageLimit(Request $request): int
+    {
+        $limit = (int) $request->input('limit', TransactionListService::DEFAULT_LIMIT);
+
+        return max(1, min(TransactionListService::MAX_LIMIT, $limit));
+    }
+
+    private function normalizedRange(Request $request): array
+    {
+        $now = Carbon::now();
+        $start = (string) $request->input('start_date', $now->copy()->startOfMonth()->toDateString());
+        $end = (string) $request->input('end_date', $now->copy()->endOfMonth()->toDateString());
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $start)) {
+            $start = $now->copy()->startOfMonth()->toDateString();
+        }
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $end)) {
+            $end = $now->copy()->endOfMonth()->toDateString();
+        }
+
+        return ['start' => $start, 'end' => $end];
     }
 
     /**
@@ -158,17 +136,58 @@ class TransactionController extends Controller
     {
         $validated = $this->validateTransaction($request);
 
+        // Idempotency-Key opsional (satu UUID per klik submit dari frontend).
+        // Kunci sama → kembalikan hasil pertama tanpa tulis ulang; kunci beda
+        // (walau nominal identik) → transaksi sah yang terpisah. Tanpa header
+        // perilakunya persis seperti sebelumnya. Gagal validasi di atas tidak
+        // menghabiskan kunci; kegagalan create juga tidak (boleh retry).
+        $idemKey = $this->idempotencyKey($request);
+        if ($idemKey !== null) {
+            if ($hit = Cache::get($idemKey['result'])) {
+                return redirect()->route('dashboard')->with('success', 'Transaksi Berhasil!');
+            }
+            if (! Cache::add($idemKey['claim'], true, 300)) {
+                return back()->with('error', 'Permintaan sedang diproses, coba lagi beberapa detik.')->withHeaders(['Retry-After' => 5]);
+            }
+        }
+
         try {
-            $action->create(
+            $log = $action->create(
                 data: $validated,
                 userId: Auth::id(),
                 source: TransactionSource::WEB,
             );
 
+            if ($idemKey !== null) {
+                Cache::put($idemKey['result'], ['transaction_id' => $log->id], 86400);
+                Cache::forget($idemKey['claim']);
+            }
+
             return redirect()->route('dashboard')->with('success', 'Transaksi Berhasil!');
         } catch (\Exception $e) {
+            if ($idemKey !== null) {
+                Cache::forget($idemKey['claim']);
+            }
+
             return back()->with('error', $e->getMessage());
         }
+    }
+
+    /**
+     * Normalisasi Idempotency-Key: string 1–128 char apa pun diterima dan
+     * di-hash agar aman sebagai cache key; kosong/tak ada = nonaktif.
+     *
+     * @return ?array{claim: string, result: string}
+     */
+    private function idempotencyKey(Request $request): ?array
+    {
+        $raw = $request->header('Idempotency-Key');
+        if (! is_string($raw) || trim($raw) === '' || strlen($raw) > 128) {
+            return null;
+        }
+        $hash = hash('sha256', Auth::id().':'.trim($raw));
+
+        return ['claim' => "idempotency:txn:{$hash}:claim", 'result' => "idempotency:txn:{$hash}:result"];
     }
 
     /**
@@ -197,7 +216,7 @@ class TransactionController extends Controller
             $payload = $draft->payload ?? [];
 
             $catId = $payload['category_id'] ?? null;
-            $category = $catId ? Category::find($catId) : null;
+            $category = $catId ? Category::where('user_id', $user->id)->find($catId) : null;
             $systemKey = $category ? $category->system_key : null;
 
             $debtSubType = null;
@@ -492,11 +511,18 @@ class TransactionController extends Controller
         $type = strtolower($request->input('transaction_type', ''));
         $isSystemManagedCategory = in_array($type, ['transfer', 'debt', 'receivable']);
 
+        // exists: dibatasi pemilik agar ID milik pengguna lain ditolak pada
+        // tahap validasi (422 konsisten, tanpa membocorkan keberadaan data).
+        $userId = Auth::id();
+
         return $request->validate([
             'date' => 'required|date_format:Y-m-d',
-            'category_id' => $isSystemManagedCategory ? 'nullable' : 'required|exists:categories,id',
-            'source_wallet_id' => 'required|exists:wallets,id',
-            'destination_wallet_id' => 'required|exists:wallets,id',
+            'category_id' => [
+                $isSystemManagedCategory ? 'nullable' : 'required',
+                Rule::exists('categories', 'id')->where('user_id', $userId),
+            ],
+            'source_wallet_id' => ['required', Rule::exists('wallets', 'id')->where('user_id', $userId)],
+            'destination_wallet_id' => ['required', Rule::exists('wallets', 'id')->where('user_id', $userId)],
             'amount' => 'required|numeric|gt:0',
             'transaction_type' => 'nullable|string',
             'subject' => 'nullable|string|max:255',

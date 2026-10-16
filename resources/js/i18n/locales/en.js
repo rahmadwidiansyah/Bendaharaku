@@ -44,6 +44,8 @@ export default {
         close:          'Close',
         back:           'Back',
         loading:        'Loading...',
+        loadMore:      'Load more',
+        loadMoreFailed: 'Failed to load data. Try again.',
         search:         'Search...',
         filter:         'Filter',
         all:            'All',

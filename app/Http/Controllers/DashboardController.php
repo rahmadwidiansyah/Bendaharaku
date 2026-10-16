@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\Loan\ActiveLoanCycleService;
+use App\Services\Transaction\TransactionListService;
 use App\Traits\CalculatesDebtAndReceivable;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -34,7 +35,7 @@ class DashboardController extends Controller
         'receivable' => self::TYPE_RECEIVABLE,
     ];
 
-    public function index(Request $request): Response
+    public function index(Request $request, TransactionListService $lists): Response
     {
         $userId = Auth::id();
         $user = Auth::user();
@@ -105,163 +106,24 @@ class DashboardController extends Controller
             ->orderBy('id')
             ->get();
 
-        // 4. HISTORI TRANSAKSI
+        // 4-5. HISTORI TRANSAKSI (log + draft) via paginasi keyset UNION ALL.
+        // Halaman pertama di sini; halaman berikut via endpoint transactions.page.
+        // Subtotal grup & marker kalender dihitung server dari SELURUH rentang
+        // (bukan dari baris halaman) agar benar saat daftar dipaginasi.
         $startDate = $request->input('start_date', $startOfMonth);
         $endDate = $request->input('end_date', $endOfMonth);
 
-        $query = $user->transactionLogs()
-            // Batasi kolom tabel utama sesuai yang dipakai di ->map() di bawah,
-            // supaya Eloquent tidak menghidrasi kolom yang tidak perlu.
-            ->select([
-                'id',
-                'user_id',
-                'amount',
-                'notes',
-                'subject',
-                'is_cleared',
-                'reference_number',
-                'date',
-                'created_at',
-                'type_id',
-                'category_id',
-                'source_wallet_id',
-                'destination_wallet_id',
-                'due_date',
-                'due_date_type',
-                'due_date_interval',
-            ])
-            ->with([
-                'type:id,name',
-                'category:id,category_name,icon',
-                'sourceWallet:id,name,group_type',
-                'destinationWallet:id,name',
-            ])
-            ->where('is_cleared', true)
-            ->whereBetween('date', [$startDate, $endDate]);
+        $listFilters = [
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'type' => $request->input('type', ''),
+            'search' => $request->input('search', ''),
+        ];
+        $listLimit = max(1, min(TransactionListService::MAX_LIMIT, (int) $request->input('limit', TransactionListService::DEFAULT_LIMIT)));
 
-        // Filter by Type (Menggunakan ID, bukan Relasi/whereHas)
-        if ($request->has('type') && $request->type != '') {
-            $reqType = strtolower($request->type);
-            if (isset(self::TYPE_MAP[$reqType])) {
-                $query->where('type_id', self::TYPE_MAP[$reqType]);
-            }
-        }
-
-        // Search Filter (Menggunakan ILIKE bawaan PostgreSQL yang jauh lebih cepat)
-        if ($request->has('search') && $request->search != '') {
-            $search = trim($request->search);
-            $query->where(function ($q) use ($search) {
-                if (ctype_digit($search)) {
-                    $q->where('id', (int) $search)
-                        ->orWhere('reference_number', 'ILIKE', "%{$search}%");
-                } else {
-                    $q->where('notes', 'ILIKE', "%{$search}%")
-                        ->orWhere('subject', 'ILIKE', "%{$search}%")
-                        ->orWhere('reference_number', 'ILIKE', "%{$search}%")
-                        ->orWhereHas('category', function ($qCat) use ($search) {
-                            $qCat->where('category_name', 'ILIKE', "%{$search}%");
-                        });
-                }
-            });
-        }
-
-        $transactions = $query->orderBy('date', 'desc')
-            ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function ($trx) {
-                return [
-                    'id' => $trx->id,
-                    'amount' => (float) $trx->amount,
-                    'notes' => $trx->notes,
-                    'subject' => $trx->subject,
-                    'is_cleared' => (bool) $trx->is_cleared,
-                    'reference_number' => $trx->reference_number,
-                    'date' => Carbon::parse($trx->date)->translatedFormat('d M Y'),
-                    'raw_date' => Carbon::parse($trx->date)->format('Y-m-d'),
-                    'time' => Carbon::parse($trx->created_at)->format('H:i'),
-                    'type' => $trx->type,
-                    'category' => $trx->category,
-                    'source_wallet' => $trx->sourceWallet,
-                    'destination_wallet' => $trx->destinationWallet,
-                    'due_date' => $trx->due_date,
-                    'due_date_type' => $trx->due_date_type,
-                    'due_date_interval' => $trx->due_date_interval,
-                ];
-            });
-
-        // 5. TRANSAKSI DRAFTS
-        $pendingDraftsQuery = $user->transactionDrafts()->where('status', 'pending')
-            ->whereBetween('created_at', [
-                Carbon::parse($startDate)->startOfDay(),
-                Carbon::parse($endDate)->endOfDay(),
-            ]);
-
-        // Optimasi: PostgreSQL native JSON ILIKE
-        if ($request->filled('type')) {
-            $type = strtolower($request->type);
-            $pendingDraftsQuery->whereRaw("payload->>'type_key' ILIKE ?", [$type]);
-        }
-
-        if ($request->filled('search')) {
-            $search = trim($request->search);
-            $pendingDraftsQuery->where(function ($q) use ($search) {
-                $q->where('original_text', 'ILIKE', "%{$search}%")
-                    ->orWhereRaw("payload->>'notes' ILIKE ?", ["%{$search}%"])
-                    ->orWhereRaw("payload->>'subject' ILIKE ?", ["%{$search}%"])
-                    ->orWhereRaw("payload->>'category_name' ILIKE ?", ["%{$search}%"]);
-            });
-        }
-
-        $draftData = $pendingDraftsQuery->orderBy('created_at', 'desc')->get()->map(function ($draft) {
-            $payload = $draft->payload ?? [];
-
-            return [
-                'id' => $draft->id,
-                'is_draft' => true,
-                'draft_id' => $draft->id,
-                'amount' => (float) ($payload['amount'] ?? 0),
-                'notes' => $payload['notes'] ?? $draft->original_text,
-                'subject' => $payload['subject'] ?? '-',
-                'is_cleared' => false,
-                'reference_number' => null,
-                'date' => Carbon::parse($payload['date'] ?? $draft->created_at)->translatedFormat('d M Y'),
-                'raw_date' => Carbon::parse($payload['date'] ?? $draft->created_at)->format('Y-m-d'),
-                'time' => Carbon::parse($draft->created_at)->format('H:i'),
-                'type' => [
-                    'id' => null,
-                    'name' => ucfirst($payload['type_key'] ?? 'expense'),
-                ],
-                'category' => isset($payload['category_name']) ? [
-                    'id' => $payload['category_id'] ?? null,
-                    'category_name' => $payload['category_name'],
-                ] : null,
-                'source_wallet' => isset($payload['source_wallet_name']) ? [
-                    'id' => $payload['source_wallet_id'] ?? null,
-                    'name' => $payload['source_wallet_name'],
-                ] : null,
-                'destination_wallet' => isset($payload['destination_wallet_name']) ? [
-                    'id' => $payload['destination_wallet_id'] ?? null,
-                    'name' => $payload['destination_wallet_name'],
-                ] : null,
-                'due_date' => null,
-                'due_date_type' => null,
-                'due_date_interval' => null,
-            ];
-        });
-
-        $transactions = $transactions->concat($draftData)->sort(function ($a, $b) {
-            $dateCompare = strcmp($b['raw_date'], $a['raw_date']);
-            if ($dateCompare !== 0) {
-                return $dateCompare;
-            }
-
-            $timeCompare = strcmp($b['time'], $a['time']);
-            if ($timeCompare !== 0) {
-                return $timeCompare;
-            }
-
-            return $b['id'] <=> $a['id'];
-        })->values();
+        $listPage = $lists->paginate($user, $listFilters, null, $listLimit);
+        $listAgg = $lists->aggregates($user, $listFilters);
+        $transactions = $listPage['data'];
 
         // 6. NOTIFIKASI UPCOMING DEBT
         $upcomingDebts = [];
@@ -289,7 +151,15 @@ class DashboardController extends Controller
             return $a['days_until'] <=> $b['days_until'];
         });
 
-        $balances = $this->calculateAllBalances();
+        // Pakai ulang hasil pindai loan di atas ($activeCycles) alih-alih
+        // memanggil calculateAllBalances() yang menjalankan pindai penuh
+        // kedua untuk user dan tanggal yang sama. Total tidak bergantung
+        // pada presisi waktu $today (hanya due_date/age yang bergantung,
+        // dan itu sudah dihitung di $activeCycles).
+        $balances = [
+            'total_debt' => $activeCycles['total_debt'] ?? 0,
+            'total_receivable' => $activeCycles['total_receivable'] ?? 0,
+        ];
 
         return Inertia::render('Dashboard', [
             'totalPortfolio' => (int) $walletStats->total_portfolio,
@@ -303,7 +173,12 @@ class DashboardController extends Controller
             'wallets' => $wallets,
             'transactions' => [
                 'data' => $transactions,
+                'next_cursor' => $listPage['next_cursor'],
+                'has_more' => $listPage['has_more'],
             ],
+            'dailyTotals' => $listAgg['dailyTotals'],
+            'calendarMarkers' => $listAgg['markers'],
+            'listLimit' => $listLimit,
             'startDate' => $startDate,
             'endDate' => $endDate,
             'filters' => $request->only(['type']),

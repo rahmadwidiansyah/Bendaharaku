@@ -44,8 +44,11 @@ class EvidenceDebugController extends Controller
      */
     public function stats(Request $request): JsonResponse
     {
-        $hours = (int) $request->input('hours', 24);
-        $metrics = $this->processingLog->getMetrics($hours);
+        // Dibatasi per pengguna login: statistik lintas-pengguna tidak
+        // diperlukan (tidak ada konsumen frontend) dan akan membocorkan
+        // agregat + pesan kegagalan milik pengguna lain.
+        $hours = max(1, min(720, (int) $request->input('hours', 24)));
+        $metrics = $this->processingLog->getMetrics($hours, $request->user()->id);
 
         return response()->json($metrics);
     }

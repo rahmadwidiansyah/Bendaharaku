@@ -57,6 +57,7 @@ const suggestions = computed(() => {
 
 // ── Debounced API search ───────────────────────────────────────────
 let searchTimer = null
+let searchAbort = null
 
 watch(query, (val) => {
     selectedIndex.value = -1
@@ -68,11 +69,17 @@ watch(query, (val) => {
     loading.value = true
     clearTimeout(searchTimer)
     searchTimer = setTimeout(async () => {
+        // Batalkan request sebelumnya agar respons basi tidak menimpa hasil terbaru.
+        searchAbort?.abort()
+        searchAbort = new AbortController()
         try {
-            const res = await axios.get(route('search.global'), { params: { q: val.trim() } })
+            const res = await axios.get(route('search.global'), {
+                params: { q: val.trim() },
+                signal: searchAbort.signal,
+            })
             searchResults.value = res.data.results || []
-        } catch {
-            searchResults.value = []
+        } catch (err) {
+            if (!axios.isCancel(err)) searchResults.value = []
         } finally {
             loading.value = false
         }

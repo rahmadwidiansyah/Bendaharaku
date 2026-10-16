@@ -26,6 +26,24 @@ class TelegramWebhookController extends Controller
 
     public function handle(Request $request): JsonResponse
     {
+        // Verifikasi kontrak setWebhook Telegram: bila TELEGRAM_WEBHOOK_SECRET
+        // dikonfigurasi, Telegram menyertakan secret_token pada header
+        // X-Telegram-Bot-Api-Secret-Token. Tanpa secret yang cocok → tolak
+        // sebelum payload diproses (tanpa mem-log isi payload).
+        $expected = (string) config('services.telegram.webhook_secret', '');
+        if ($expected !== '') {
+            $provided = (string) $request->headers->get('X-Telegram-Bot-Api-Secret-Token', '');
+            if ($provided === '' || ! hash_equals($expected, $provided)) {
+                Log::warning('TelegramWebhookController: rejected (bad secret)', [
+                    'has_header' => $provided !== '',
+                ]);
+
+                return response()->json(['status' => 'forbidden'], 403);
+            }
+        } else {
+            Log::warning('TelegramWebhookController: webhook secret tidak dikonfigurasi, verifikasi dilewati.');
+        }
+
         Log::info('TelegramWebhookController: incoming', [
             'update_id' => $request->input('update_id'),
         ]);

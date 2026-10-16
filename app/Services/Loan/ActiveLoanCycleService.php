@@ -9,9 +9,24 @@ use Carbon\Carbon;
 
 class ActiveLoanCycleService
 {
+    /**
+     * Memo per instance (bukan statis/global): tiap resolusi container
+     * mendapat instance baru sehingga tidak ada status yang bocor antar
+     * request, antar job worker, maupun antar test dalam satu proses.
+     * Kunci mencakup user + tanggal agar hasil tidak tercampur.
+     * (Varian statis dievaluasi dan DITOLAK: terbukti mencemari antar-test
+     * dalam satu proses phpunit — risiko basi yang sama berlaku untuk
+     * worker antrean jangka panjang.)
+     */
+    private array $memo = [];
+
     public function calculateForUser(User $user, ?Carbon $today = null): array
     {
         $today = $today ?? Carbon::today();
+        $memoKey = $user->id.'|'.$today->toDateString();
+        if (array_key_exists($memoKey, $this->memo)) {
+            return $this->memo[$memoKey];
+        }
         if (! LoanBalance::where('user_id', $user->id)->exists()) {
             app(LoanBalanceService::class)->rebuildAll($user->id);
         }
@@ -88,7 +103,7 @@ class ActiveLoanCycleService
         usort($result['debts'], fn ($a, $b) => $b['latest_date'] <=> $a['latest_date']);
         usort($result['receivables'], fn ($a, $b) => $b['latest_date'] <=> $a['latest_date']);
 
-        return $result;
+        return $this->memo[$memoKey] = $result;
     }
 
     private function emptyCycle(string $subject, string $type): array

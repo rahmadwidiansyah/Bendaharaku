@@ -8,7 +8,7 @@ use Illuminate\Console\Command;
 
 class RebuildLoanBalancesCommand extends Command
 {
-    protected $signature = 'loans:rebuild-balances {user_id? : Batasi rebuild untuk user tertentu}';
+    protected $signature = 'loans:rebuild-balances {user_id? : Batasi rebuild untuk user tertentu} {--prune-orphans : Hapus baris ringkasan tanpa log tersisa}';
 
     protected $description = 'Membangun ulang ringkasan saldo hutang dan piutang dari transaction_logs';
 
@@ -26,6 +26,10 @@ class RebuildLoanBalancesCommand extends Command
         foreach ($users as $user) {
             $service->rebuildAll($user->id);
             $this->info("Saldo hutang/piutang user {$user->id} berhasil dibangun ulang.");
+            if ($this->option('prune-orphans')) {
+                $pruned = $service->pruneOrphans($user->id);
+                $this->info("Baris yatim terhapus untuk user {$user->id}: {$pruned}.");
+            }
         }
 
         return self::SUCCESS;

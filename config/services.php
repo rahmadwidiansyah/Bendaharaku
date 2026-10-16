@@ -41,6 +41,10 @@ return [
     ],
     'telegram' => [
         'token' => env('TELEGRAM_BOT_TOKEN'),
+        // Secret opsional untuk verifikasi webhook (header
+        // X-Telegram-Bot-Api-Secret-Token dari kontrak setWebhook Telegram).
+        // Kosong = verifikasi nonaktif (mode lama, tercatat di log).
+        'webhook_secret' => env('TELEGRAM_WEBHOOK_SECRET'),
     ],
 
     'webpush' => [
