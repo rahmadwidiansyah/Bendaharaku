@@ -11,9 +11,7 @@ use App\Evidence\Parsers\Extractors\NumberParser;
 use App\Models\AiRoutingPreference;
 use App\Models\Evidence;
 use App\Models\User;
-use App\Services\AI\AiCredentialManager;
 use App\Services\AI\AIManager;
-use App\Services\AI\AiPreferenceManager;
 use App\Services\AI\AiProviderFactory;
 use App\Services\AI\Routing\AiRoutingExecutor;
 use Illuminate\Support\Facades\Log;
@@ -22,20 +20,8 @@ class LlmEvidenceParser
 {
     public function __construct(
         private readonly AIManager $aiManager,
-        private readonly ?AiPreferenceManager $preferenceManager = null,
-        private readonly ?AiCredentialManager $credentialManager = null,
         private readonly ?AiProviderFactory $providerFactory = null,
     ) {}
-
-    private function prefManager(): AiPreferenceManager
-    {
-        return $this->preferenceManager ?? app(AiPreferenceManager::class);
-    }
-
-    private function credManager(): AiCredentialManager
-    {
-        return $this->credentialManager ?? app(AiCredentialManager::class);
-    }
 
     private function factory(): AiProviderFactory
     {
@@ -282,8 +268,8 @@ class LlmEvidenceParser
                 'amount' => $amount,
                 'merchant' => $merchant,
                 'category' => $category,
-                'provider' => $preference->provider->value,
-                'model' => $model,
+                'provider' => $out['routing']['selected_provider'] ?? '?',
+                'model' => $out['routing']['selected_model'] ?? '?',
                 'confidence' => $confidence,
             ]);
 
@@ -301,8 +287,8 @@ class LlmEvidenceParser
                 confidence: round($confidence, 4),
                 metadata: [
                     'engine' => 'LLM_SHOPPING_SEMANTIC',
-                    'provider' => $preference->provider->value,
-                    'model' => $model,
+                    'provider' => $out['routing']['selected_provider'] ?? '?',
+                    'model' => $out['routing']['selected_model'] ?? '?',
                     'llm_confidence' => $confidence,
                     'intent' => $intentRaw,
                     'category' => $category,
@@ -727,8 +713,8 @@ PROMPT;
                 'amount' => $amount,
                 'confidence' => $confidence,
                 'warnings' => $data['warnings'] ?? [],
-                'provider' => $preference->provider->value,
-                'model' => $model,
+                'provider' => $out['routing']['selected_provider'] ?? '?',
+                'model' => $out['routing']['selected_model'] ?? '?',
             ]);
 
             if ($amount === null) {
@@ -757,8 +743,8 @@ PROMPT;
                 confidence: round($confidence, 4),
                 metadata: [
                     'engine' => 'LLM_UNIFIED_SEMANTIC',
-                    'provider' => $preference->provider->value,
-                    'model' => $model,
+                    'provider' => $out['routing']['selected_provider'] ?? '?',
+                    'model' => $out['routing']['selected_model'] ?? '?',
                     'llm_confidence' => $confidence,
                     'transaction_type' => $trxType,
                     'source_wallet' => $data['source_wallet'] ?? null,

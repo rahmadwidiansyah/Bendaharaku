@@ -3,25 +3,24 @@
 namespace Tests\Unit;
 
 use App\Enums\AiProvider;
+use App\Exceptions\AiProviderException;
+use App\Models\AiModelCatalog;
+use App\Models\AiProviderAccount;
+use App\Models\AiRoutingPreference;
 use App\Models\BudgetGroup;
 use App\Models\Category;
 use App\Models\TransactionLog;
 use App\Models\TransactionType;
 use App\Models\User;
-use App\Models\UserAiCredential;
-use App\Models\UserAiPreference;
 use App\Services\AI\Adapters\DeepSeekAdapter;
 use App\Services\AI\Adapters\GeminiAdapter;
 use App\Services\AI\Adapters\OpenAIAdapter;
 use App\Services\AI\Adapters\OpenAiCompatibleAdapter;
-use App\Services\AI\AiCredentialManager;
-use App\Services\AI\AiPreferenceManager;
 use App\Services\AI\AiProviderFactory;
 use App\Services\Budgeting\AIBudgetService;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
-use RuntimeException;
 use Tests\TestCase;
 
 class AIBudgetServiceTest extends TestCase
@@ -44,19 +43,46 @@ class AIBudgetServiceTest extends TestCase
         $this->expenseType = TransactionType::where('name', 'Expense')->firstOrFail();
         $this->category = $this->user->categories()->where('type_id', $this->expenseType->id)->firstOrFail();
 
-        UserAiPreference::create([
+        $account = AiProviderAccount::create([
             'user_id' => $this->user->id,
             'provider' => AiProvider::DeepSeek,
-            'selected_model' => 'deepseek-chat',
-            'is_active_provider' => true,
-        ]);
-
-        UserAiCredential::create([
-            'user_id' => $this->user->id,
-            'provider' => AiProvider::DeepSeek,
+            'alias' => 'Test',
             'api_key' => 'test-api-key',
+            'is_active' => true,
             'is_valid' => true,
+            'priority' => 1,
+            'health_status' => 'unknown',
         ]);
+        AiModelCatalog::create([
+            'account_id' => $account->id,
+            'user_id' => $this->user->id,
+            'provider' => AiProvider::DeepSeek,
+            'model_id' => 'deepseek-chat',
+            'display_name' => 'deepseek-chat',
+            'supports_generate' => true,
+            'category' => 'text_generation',
+            'free_tier' => 'free',
+            'free_tier_source' => 'test',
+            'is_eligible' => true,
+            'is_enabled' => true,
+            'discovery_source' => 'test',
+            'last_seen_at' => now(),
+        ]);
+        AiRoutingPreference::updateOrCreate(
+            ['user_id' => $this->user->id],
+            [
+                'mode' => 'manual',
+                'primary_provider' => AiProvider::DeepSeek->value,
+                'primary_model' => 'deepseek-chat',
+                'fallback_models' => [],
+                'provider_priority' => AiRoutingPreference::defaultProviderPriority(),
+                'free_policy' => 'paid_allowed',
+                'allow_paid_fallback' => true,
+                'max_candidates' => 4,
+                'max_attempts' => 8,
+                'expand_beyond_primary' => true,
+            ],
+        );
 
         $this->adapter = $this->mock(DeepSeekAdapter::class);
 
@@ -94,11 +120,7 @@ class AIBudgetServiceTest extends TestCase
             $this->mock(OpenAiCompatibleAdapter::class),
         );
 
-        return new AIBudgetService(
-            $factory,
-            new AiPreferenceManager,
-            new AiCredentialManager,
-        );
+        return new AIBudgetService($factory);
     }
 
     public function test_generate_creates_budget_group_and_items_from_ai_response(): void
@@ -152,26 +174,25 @@ class AIBudgetServiceTest extends TestCase
         $this->assertSame('Second run.', $second->ai_notes);
     }
 
-    public function test_generate_throws_when_no_active_ai_preference(): void
+    public function test_generate_throws_when_no_pool_candidates(): void
     {
-        UserAiPreference::where('user_id', $this->user->id)->delete();
+        AiProviderAccount::where('user_id', $this->user->id)->delete();
 
         $this->adapter->shouldReceive('generateText')->never();
 
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('preferensi AI');
+        $this->expectException(AiProviderException::class);
 
         $this->makeService()->generate($this->user, 8, 2026);
     }
 
     public function test_generate_throws_when_no_valid_api_key(): void
     {
-        UserAiCredential::where('user_id', $this->user->id)->delete();
+        AiProviderAccount::where('user_id', $this->user->id)->update(['api_key' => '']);
 
         $this->adapter->shouldReceive('generateText')->never();
 
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('API Key');
+        // Pool membungkus kegagalan kandidat menjadi AiProviderException.
+        $this->expectException(AiProviderException::class);
 
         $this->makeService()->generate($this->user, 8, 2026);
     }
@@ -218,10 +239,9 @@ class AIBudgetServiceTest extends TestCase
         $this->assertSame(40.0, $summary[$item->id]['percentage']);
     }
 
-    public function test_generate_uses_default_openai_compatible_provider_when_no_active_preference(): void
+    public function test_generate_uses_default_openai_compatible_provider_when_no_pool_accounts(): void
     {
-        UserAiPreference::where('user_id', $this->user->id)->delete();
-        UserAiCredential::where('user_id', $this->user->id)->delete();
+        AiProviderAccount::where('user_id', $this->user->id)->delete();
 
         config()->set('bendaharaku.ai.openai_compatible.api_key', 'env-default-key');
         config()->set('bendaharaku.ai.openai_compatible.base_url', 'https://example.com/v1/chat/completions');
@@ -245,7 +265,7 @@ class AIBudgetServiceTest extends TestCase
             $compatAdapter,
         );
 
-        $service = new AIBudgetService($factory, new AiPreferenceManager, new AiCredentialManager);
+        $service = new AIBudgetService($factory);
         $group = $service->generate($this->user, 8, 2026);
 
         $this->assertSame('120000.00', $group->total_budget_amount);

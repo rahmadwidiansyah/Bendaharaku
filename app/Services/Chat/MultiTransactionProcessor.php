@@ -22,9 +22,7 @@ use App\Models\AiRoutingPreference;
 use App\Models\AiUsageLog;
 use App\Models\TransactionDraft;
 use App\Models\User;
-use App\Services\AI\AiCredentialManager;
 use App\Services\AI\AiParseLogService;
-use App\Services\AI\AiPreferenceManager;
 use App\Services\AI\AiProviderFactory;
 use App\Services\AI\Routing\AiRoutingExecutor;
 use App\Services\AI\TransactionResolver;
@@ -39,8 +37,6 @@ class MultiTransactionProcessor
     private AiRoutingExecutor $executor;
 
     public function __construct(
-        private readonly AiPreferenceManager $preferenceManager,
-        private readonly AiCredentialManager $credentialManager,
         private readonly AiProviderFactory $providerFactory,
         private readonly TransactionResolver $resolver,
         private readonly AiParseLogService $parseLogService,
@@ -169,26 +165,6 @@ class MultiTransactionProcessor
             'is_multi' => true,
             'multi_result' => $multiTxResult,
         ];
-    }
-
-    private function resolveMultiContext(User $user, string $text, array $wallets, array $categories, array $activeMemories, string $source, string $prompt = ''): ?array
-    {
-        $preference = $this->preferenceManager->resolveActivePreference($user);
-        if (! $preference) {
-            Log::info("MultiTx: No LLM configured for user #{$user->id}, fallback to single parse.");
-
-            return null;
-        }
-
-        $credential = $this->credentialManager->getCredential($user, $preference->provider);
-        if (! $credential || blank($credential->api_key) || ! $credential->is_valid) {
-            throw new AiConfigurationException("API Key untuk '{$preference->provider->value}' bermasalah.");
-        }
-
-        $adapter = $this->providerFactory->make($preference->provider);
-        $model = $preference->selected_model ?? $preference->provider->defaultModel();
-
-        return [$preference, $adapter, $credential, $model, $prompt];
     }
 
     private function processItem(User $user, ParsedTransaction $parsed, int $idx, bool $autoClear, AIParseResultMulti $multiResult, string $source): MultiTransactionItem

@@ -9,8 +9,6 @@ use App\Models\AiModelCatalog;
 use App\Models\AiProviderAccount;
 use App\Models\AiRoutingPreference;
 use App\Models\User;
-use App\Models\UserAiCredential;
-use App\Models\UserAiPreference;
 use App\Services\AI\AIManager;
 use App\Services\AI\Discovery\ModelDiscoveryService;
 use App\Services\AI\Routing\ModelResolver;
@@ -136,24 +134,16 @@ class AiPoolAuditTest extends TestCase
         );
     }
 
-    /** free_only menolak legacy unknown (tidak ada paid diam-diam). */
-    public function test_free_only_blocks_legacy_unknown(): void
+    /** free_only tanpa kandidat gratis: pool kosong → fallback lokal gagal → throw. */
+    public function test_free_only_without_verified_free_candidates_throws(): void
     {
-        UserAiPreference::create([
-            'user_id' => $this->user->id, 'provider' => AiProvider::OpenAI,
-            'selected_model' => 'gpt-4o-mini', 'is_active_provider' => true,
-        ]);
-        UserAiCredential::create([
-            'user_id' => $this->user->id, 'provider' => AiProvider::OpenAI,
-            'api_key' => 'test-key-1234567890', 'is_valid' => true,
-        ]);
+        // Tanpa akun pool sama sekali (jalur legacy sudah di-retire).
         AiRoutingPreference::updateOrCreate(['user_id' => $this->user->id], [
             'mode' => 'automatic', 'free_policy' => 'free_only', 'allow_paid_fallback' => false,
             'provider_priority' => ['gemini', 'openai', 'deepseek', 'openai-compatible'],
             'max_candidates' => 4, 'max_attempts' => 8, 'expand_beyond_primary' => true,
         ]);
         Http::fake([
-            'api.openai.com/*' => Http::response(['error' => 'x'], 401),
             '*' => Http::response(['success' => false], 500),
         ]);
         $manager = app(AIManager::class);
@@ -161,7 +151,6 @@ class AiPoolAuditTest extends TestCase
             $manager->parseTransaction($this->user, 'halo tanpa angka', [], [], [], 'prompt');
             $this->fail('Seharusnya throw karena free-only tanpa kandidat gratis.');
         } catch (\Throwable $e) {
-            // free-only: pool kosong + legacy diblokir → fallback lokal gagal → throw (bukan sukses diam-diam).
             $this->assertTrue(true);
         }
     }

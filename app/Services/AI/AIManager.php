@@ -22,8 +22,6 @@ use Illuminate\Support\Facades\Log;
 class AIManager
 {
     public function __construct(
-        private AiPreferenceManager $preferenceManager,
-        private AiCredentialManager $credentialManager,
         private AiProviderFactory $providerFactory,
         private PythonNLPProvider $pythonNlp,
         private LocalRuleEngine $ruleEngine,
@@ -125,12 +123,8 @@ class AIManager
                 $poolError = $e;
             }
         } else {
-            // Tidak ada kandidat layak: coba legacy single-provider sekali (BC untuk instalasi lama),
-            // lalu fallback lokal. Legacy TETAP tunduk pada kebijakan gratis (unknown ≠ gratis terverifikasi).
-            $legacy = $this->tryLegacySingle($user, $text, $prompt, $routing);
-            if ($legacy) {
-                return $legacy;
-            }
+            // Tidak ada kandidat layak: langsung fallback lokal.
+            // Jalur legacy single-provider sudah di-retire (Opsi A).
             $poolError = new AiConfigurationException('Tidak ada kandidat model yang layak (semua akun cooldown/invalid atau terfilter kebijakan).');
             Log::warning('AIManager: no pool candidates, trying local fallback', ['user_id' => $user->id, 'skipped' => $resolved['skipped'] ?? []]);
         }
@@ -156,65 +150,6 @@ class AIManager
         }
 
         throw $this->wrapPoolError($poolError ?? new AiProviderException('ai-router', 'AI gagal memproses.'));
-    }
-
-    /** Jalur legacy satu-provider (BC). Return null jika tidak ada preferensi/kredensial ATAU kebijakan gratis melarang tier unknown. */
-    private function tryLegacySingle(User $user, string $text, string $prompt, ?AiRoutingPreference $routing = null): ?AIParseResult
-    {
-        try {
-            // Tier legacy tidak terverifikasi (unknown): free_only selalu tolak (unknown ≠ gratis).
-            // free_first/paid: konfigurasi legacy eksplisit milik user dianggap persetujuan
-            // (BC untuk instalasi lama); dicatat agar dapat dimigrasikan ke pool.
-            $freePolicy = (string) ($routing?->free_policy ?? 'free_first');
-            if ($freePolicy === 'free_only') {
-                Log::info('AIManager: legacy single ditolak free-only (tier unknown tak terverifikasi)', [
-                    'user_id' => $user->id,
-                ]);
-
-                return null;
-            }
-            $preference = $this->preferenceManager->resolveActivePreference($user);
-            if (! $preference) {
-                return null;
-            }
-            $credential = $this->credentialManager->getCredential($user, $preference->provider);
-            if (! $credential || blank($credential->api_key) || ! $credential->is_valid) {
-                return null;
-            }
-            $adapter = $this->providerFactory->make($preference->provider);
-            $model = $preference->selected_model ?? $preference->provider->defaultModel();
-            $result = $adapter->parseTransaction(prompt: $prompt, apiKey: $credential->api_key, model: $model, fallbackText: $text);
-            $total = (int) ($result->usage['total'] ?? 0);
-            if ($total > 0) {
-                AiUsageLog::create([
-                    'user_id' => $user->id,
-                    'provider' => $preference->provider->value,
-                    'model' => $model,
-                    'prompt_tokens' => $result->usage['prompt'] ?? 0,
-                    'completion_tokens' => $result->usage['completion'] ?? 0,
-                    'total_tokens' => $total,
-                ]);
-            }
-
-            return new AIParseResult(
-                success: $result->success,
-                confidence: $result->confidence,
-                error: $result->error,
-                transaction: $result->transaction,
-                usage: $result->usage,
-                provider: $result->provider,
-                model: $result->model,
-                routing: ['selection_method' => 'legacy_single', 'selected_provider' => $preference->provider->value, 'selected_model' => $model, 'attempt_count' => 1, 'final_status' => 'success'],
-            );
-        } catch (AiRateLimitException|AiTimeoutException|AiProviderException $e) {
-            Log::warning('AIManager: legacy single failed: '.$e->getMessage(), ['user_id' => $user->id]);
-
-            return null;
-        } catch (\Throwable $e) {
-            Log::warning('AIManager: legacy single crash: '.$e->getMessage(), ['user_id' => $user->id]);
-
-            return null;
-        }
     }
 
     private function withLocalRouting(AIParseResult $result, string $method, ?\Throwable $poolError): AIParseResult

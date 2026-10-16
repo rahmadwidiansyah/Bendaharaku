@@ -4,22 +4,15 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Settings;
 
-use App\Enums\AiProvider;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\SaveAiSettingsRequest;
 use App\Models\AiParseLog;
 use App\Models\AiUsageLog;
-use App\Models\UserAiCredential;
 use App\Models\UserAiMemory;
 use App\Models\UserAiMemoryLog;
 use App\Services\AI\AiAccountManager;
-use App\Services\AI\AiCredentialManager;
-use App\Services\AI\AiPreferenceManager;
 use App\Services\AI\Memory\MemoryDecayEngine;
-use App\Services\AI\PlaceholderConnectionTester;
 use App\Services\AI\Routing\ModelResolver;
 use App\Support\ActivityLogger;
-use App\Support\SettingsChangeLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -31,43 +24,9 @@ use Inertia\Response;
 
 class AiSettingsController extends Controller
 {
-    public function __construct(
-        private AiCredentialManager $credentialManager,
-        private AiPreferenceManager $preferenceManager,
-    ) {}
-
     public function index(): Response
     {
-        $user = Auth::user()->load(['aiCredentials', 'aiPreferences']);
-
-        $hasAnyActivePreference = $user->aiPreferences->contains(fn ($p) => $p->is_active_provider);
-
-        $providerStatuses = [];
-        $modelsByProvider = [];
-
-        foreach (AiProvider::cases() as $provider) {
-            $credential = $user->aiCredentials->where('provider', $provider)->first();
-            $preference = $user->aiPreferences->where('provider', $provider)->first();
-
-            $modelsByProvider[$provider->value] = $this->modelsFor($provider);
-
-            if ($provider === AiProvider::OpenAiCompatible) {
-                $status = blank(config('bendaharaku.ai.openai_compatible.api_key'))
-                    ? 'Not Configured'
-                    : 'Connected';
-            } else {
-                $status = $credential instanceof UserAiCredential
-                    ? ($credential->is_valid ? 'Connected' : 'Invalid')
-                    : 'Not Configured';
-            }
-
-            $providerStatuses[$provider->value] = [
-                'status' => $status,
-                'selected_model' => $preference?->selected_model ?? $provider->defaultModel(),
-                'is_active_provider' => $preference?->is_active_provider
-                    ?? ($provider === AiProvider::OpenAiCompatible && ! $hasAnyActivePreference),
-            ];
-        }
+        $user = Auth::user();
 
         // 1. Ambil Statistik Penggunaan Token (Di-group per provider)
         $usageStats = AiUsageLog::where('user_id', $user->id)
@@ -113,12 +72,6 @@ class AiSettingsController extends Controller
         $resolved = app(ModelResolver::class)->resolve($user, $routing);
 
         return Inertia::render('Settings/AI/Models', [
-            'providerStatuses' => $providerStatuses,
-            'availableProviders' => array_map(
-                static fn (AiProvider $provider): string => $provider->value,
-                AiProvider::cases(),
-            ),
-            'modelsByProvider' => $modelsByProvider,
             'usageStats' => $usageStats,
             'recentLogs' => $recentLogs,
             'aiAccounts' => $accountManager->listFor($user),
@@ -132,153 +85,6 @@ class AiSettingsController extends Controller
             ], array_slice($resolved['candidates'], 0, 8)),
             'aiSkipped' => array_slice($resolved['skipped'] ?? [], 0, 20),
         ]);
-    }
-
-    public function store(SaveAiSettingsRequest $request): JsonResponse
-    {
-        $user = Auth::user();
-        $provider = AiProvider::from($request->validated('provider'));
-        $selectedModel = $request->validated('selected_model');
-        $wantsActive = $request->boolean('is_active_provider');
-
-        // snapshot old values for logging
-        $oldPreference = $user->aiPreferences()->where('provider', $provider->value)->first();
-        $oldModel = $oldPreference?->selected_model ?? null;
-        $oldActive = $oldPreference?->is_active_provider ?? false;
-        $oldCredential = $user->aiCredentials()->where('provider', $provider->value)->first();
-        $hadCredential = $oldCredential instanceof UserAiCredential;
-
-        if ($request->filled('api_key')) {
-            $this->credentialManager->setCredential($user, $provider, $request->validated('api_key'));
-
-            SettingsChangeLogger::logChange(
-                $user,
-                'ai_credentials',
-                'settings.ai.providers',
-                $hadCredential ? 'exists' : null,
-                'updated'
-            );
-        }
-
-        // Aktifkan hanya jika user mencentang toggle. Tanpa toggle, provider
-        // default (OpenAI API Compatible dari .env) tetap yang dipakai.
-        $isNowActive = $wantsActive;
-
-        if ($isNowActive) {
-            $this->preferenceManager->switchActiveProvider($user, $provider);
-
-            SettingsChangeLogger::logChange(
-                $user,
-                'is_active_provider',
-                'settings.ai.providers',
-                $oldActive ? 'true' : 'false',
-                'true'
-            );
-        }
-
-        $this->preferenceManager->setModelPreference($user, $provider, $selectedModel);
-
-        if ($oldModel !== $selectedModel) {
-            SettingsChangeLogger::logChange(
-                $user,
-                'selected_model',
-                'settings.ai.providers',
-                $oldModel,
-                $selectedModel
-            );
-        }
-
-        ActivityLogger::forUser($user, 'ai', $request->filled('api_key') ? 'updated' : 'switched', 'AI '.strtoupper($provider->value).' diperbarui', $oldModel !== $selectedModel ? "Model: {$oldModel} → {$selectedModel}" : null, ['provider' => $provider->value, 'model' => $selectedModel, 'is_active' => $isNowActive]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Pengaturan AI untuk '.strtoupper($provider->value).' berhasil diperbarui.',
-            'provider' => $provider->value,
-            'selected_model' => $selectedModel,
-            'is_active_provider' => $isNowActive,
-        ]);
-    }
-
-    public function testConnection(Request $request, PlaceholderConnectionTester $tester): JsonResponse
-    {
-        $request->validate([
-            'provider' => ['required', 'string'],
-            'api_key' => ['nullable', 'string'],
-            'model' => ['nullable', 'string', 'max:150'],
-        ]);
-
-        $provider = AiProvider::tryFrom((string) $request->input('provider'));
-
-        if (! $provider) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Provider tidak terdaftar di sistem.',
-            ], 422);
-        }
-
-        $user = Auth::user();
-        $storedCredential = $user->aiCredentials()
-            ->where('provider', $provider->value)
-            ->first();
-
-        $apiKey = (string) $request->input('api_key', '');
-
-        if (blank($apiKey)) {
-            $apiKey = $storedCredential?->api_key ?? '';
-        }
-
-        if (blank($apiKey) && $provider === AiProvider::OpenAiCompatible) {
-            $apiKey = (string) config('bendaharaku.ai.openai_compatible.api_key');
-        }
-
-        if (blank($apiKey)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Token API tidak ditemukan untuk dilakukan pengujian.',
-            ], 422);
-        }
-
-        $result = $tester->test($provider, $apiKey, $request->input('model'));
-
-        if ($result['success'] && $storedCredential) {
-            $storedCredential->update(['is_valid' => true]);
-        }
-
-        return response()->json($result, $result['success'] ? 200 : 422);
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function modelsFor(AiProvider $provider): array
-    {
-        return match ($provider) {
-            AiProvider::Gemini => [
-                // Gemini 3.5 (Terbaru)
-                'gemini-3.5-flash',
-                // Gemini 3.1
-                'gemini-3.1-pro-preview',
-                'gemini-3.1-flash-lite',
-                'gemini-3.1-flash-image',
-                // Gemini 3.0
-                'gemini-3-flash-preview',
-                'gemini-3-pro-image',
-                // Gemini 2.5
-                'gemini-2.5-pro',
-                'gemini-2.5-flash',
-                'gemini-2.5-flash-lite',
-                // Gemini 2.0
-                'gemini-2.0-flash',
-                'gemini-2.0-flash-lite',
-                // Gemini 1.5
-                'gemini-1.5-flash',
-                'gemini-1.5-flash-8b',
-                'gemini-1.5-pro',
-            ],
-            AiProvider::OpenAI => ['gpt-4o-mini', 'gpt-4o'],
-            AiProvider::DeepSeek => ['deepseek-chat'],
-            AiProvider::OpenAiCompatible => [AiProvider::OpenAiCompatible->defaultModel()],
-        };
     }
 
     public function memories(Request $request): Response

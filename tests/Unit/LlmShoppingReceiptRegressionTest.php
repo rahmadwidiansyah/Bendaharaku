@@ -12,18 +12,17 @@ use App\Evidence\Parsers\ShoppingReceiptParser;
 use App\Evidence\Parsers\TransferReceiptParser;
 use App\Evidence\Pipeline\Context\EvidenceContext;
 use App\Evidence\Pipeline\Stages\ParsingStage;
+use App\Models\AiModelCatalog;
+use App\Models\AiProviderAccount;
+use App\Models\AiRoutingPreference;
 use App\Models\Evidence;
 use App\Models\TransactionType;
 use App\Models\User;
-use App\Models\UserAiCredential;
-use App\Models\UserAiPreference;
 use App\Services\AI\Adapters\DeepSeekAdapter;
 use App\Services\AI\Adapters\GeminiAdapter;
 use App\Services\AI\Adapters\OpenAIAdapter;
 use App\Services\AI\Adapters\OpenAiCompatibleAdapter;
-use App\Services\AI\AiCredentialManager;
 use App\Services\AI\AIManager;
-use App\Services\AI\AiPreferenceManager;
 use App\Services\AI\AiProviderFactory;
 use App\Services\Evidence\LlmEvidenceParser;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -62,19 +61,47 @@ class LlmShoppingReceiptRegressionTest extends TestCase
             ['category_name' => 'Makan & Minum', 'type_id' => $expenseType->id, 'keyword' => 'makan'],
         ]);
 
-        // Setup AI preference + credential for LLM mock
-        UserAiPreference::create([
+        // Setup pool account + katalog + routing untuk LLM mock
+        $account = AiProviderAccount::create([
             'user_id' => $this->user->id,
             'provider' => AiProvider::Gemini->value,
-            'selected_model' => 'gemini-2.0-flash',
-            'is_active_provider' => true,
-        ]);
-        UserAiCredential::create([
-            'user_id' => $this->user->id,
-            'provider' => AiProvider::Gemini->value,
+            'alias' => 'Test',
             'api_key' => 'fake-key-123',
+            'is_active' => true,
             'is_valid' => true,
+            'priority' => 1,
+            'health_status' => 'unknown',
         ]);
+        AiModelCatalog::create([
+            'account_id' => $account->id,
+            'user_id' => $this->user->id,
+            'provider' => AiProvider::Gemini->value,
+            'model_id' => 'gemini-2.0-flash',
+            'display_name' => 'gemini-2.0-flash',
+            'supports_generate' => true,
+            'category' => 'text_generation',
+            'free_tier' => 'free',
+            'free_tier_source' => 'test',
+            'is_eligible' => true,
+            'is_enabled' => true,
+            'discovery_source' => 'test',
+            'last_seen_at' => now(),
+        ]);
+        AiRoutingPreference::updateOrCreate(
+            ['user_id' => $this->user->id],
+            [
+                'mode' => 'manual',
+                'primary_provider' => AiProvider::Gemini->value,
+                'primary_model' => 'gemini-2.0-flash',
+                'fallback_models' => [],
+                'provider_priority' => AiRoutingPreference::defaultProviderPriority(),
+                'free_policy' => 'paid_allowed',
+                'allow_paid_fallback' => true,
+                'max_candidates' => 4,
+                'max_attempts' => 8,
+                'expand_beyond_primary' => true,
+            ],
+        );
     }
 
     protected function tearDown(): void
@@ -103,12 +130,9 @@ class LlmShoppingReceiptRegressionTest extends TestCase
 
         $factory = new AiProviderFactory($mockGemini, $mockOpenAI, $mockDeepSeek, $mockCompat);
 
-        // Use real managers (they will read DB preference/credential)
-        $realPref = app(AiPreferenceManager::class);
-        $realCred = app(AiCredentialManager::class);
         $aiManager = app(AIManager::class);
 
-        return new LlmEvidenceParser($aiManager, $realPref, $realCred, $factory);
+        return new LlmEvidenceParser($aiManager, $factory);
     }
 
     /** @test */
