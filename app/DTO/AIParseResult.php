@@ -13,7 +13,8 @@ readonly class AIParseResult
         public ?ParsedTransaction $transaction,
         public array $usage = [],
         public string $provider = 'system', // Wajib diisi oleh Provider
-        public string $model = 'unknown'    // Wajib diisi oleh Provider
+        public string $model = 'unknown',    // Wajib diisi oleh Provider
+        public ?array $routing = null, // Metadata routing pool (trace_id, selected_account_id, attempts, ...) — nullable agar BC
     ) {}
 
     public static function failure(string $message, string $provider = 'system', string $model = 'unknown'): self

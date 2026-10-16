@@ -12,6 +12,7 @@ use App\Enums\TransactionIntent;
 use App\Exceptions\AiProviderException;
 use App\Exceptions\AiRateLimitException;
 use App\Exceptions\AiTimeoutException;
+use App\Exceptions\AiTokenLimitException;
 use App\Services\AI\Adapters\Contracts\LLMAdapterInterface;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
@@ -224,6 +225,17 @@ abstract class BaseAdapter implements LLMAdapterInterface
         }
         if (in_array($statusCode, [401, 403])) {
             throw new AiProviderException($provider, "API Key tidak valid (HTTP {$statusCode}).");
+        }
+
+        if ($statusCode === 400) {
+            $bodyLower = mb_strtolower($response->body());
+            if (str_contains($bodyLower, 'token')
+                || str_contains($bodyLower, 'context')
+                || str_contains($bodyLower, 'input too long')
+                || str_contains($bodyLower, 'exceeded')
+                || str_contains($bodyLower, 'maximum')) {
+                throw new AiTokenLimitException($provider, 0, $response->body());
+            }
         }
 
         throw new AiProviderException($provider, 'HTTP '.$statusCode.': '.substr($response->body(), 0, 200));

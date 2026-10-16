@@ -10,7 +10,9 @@ class AiParseLog extends Model
 {
     // Tambahkan kolom schema baru ke fillable
     protected $fillable = [
-        'user_id', 'transaction_log_id', 'provider', 'model', 'input_text',
+        'user_id', 'transaction_log_id', 'provider', 'model', 'account_id', 'trace_id',
+        'selection_method', 'routing_attempts', 'fallback_from', 'fallback_to', 'fallback_reason',
+        'input_text',
         'raw_response', 'raw_confidence', 'final_confidence', 'is_success',
         'status', 'error_message', 'prompt_tokens', 'completion_tokens', 'total_tokens',
     ];
@@ -22,6 +24,7 @@ class AiParseLog extends Model
             'raw_confidence' => 'float',
             'final_confidence' => 'float',
             'is_success' => 'boolean',
+            'routing_attempts' => 'array',
         ];
     }
 }

@@ -32,7 +32,10 @@ class GeminiAdapter extends BaseAdapter
     protected function sendRequest(string $url, string $apiKey, array $body, int $timeout): Response
     {
         $connectTimeout = (int) config('services.gemini.connect_timeout', 10);
-        $timeout = (int) config('services.gemini.timeout', 30);
+        // Hormati timeout dari BaseAdapter (15 single / 20 multi) kecuali config eksplisit lebih besar.
+        // Key services.gemini.timeout memang tidak ada di config/services.php → fallback ke param agar multi tidak terpotong.
+        $configured = (int) config('services.gemini.timeout', 0);
+        $timeout = $configured > 0 ? max($timeout, $configured) : $timeout;
 
         $start = microtime(true);
         $status = null;
