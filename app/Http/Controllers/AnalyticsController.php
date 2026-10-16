@@ -213,7 +213,11 @@ class AnalyticsController extends Controller
         // 6. Rebuild snapshot di background untuk dipakai kunjungan berikutnya
         BuildNetWorthSnapshotsJob::dispatch($userId, $startDate, $endDate);
 
-        return Inertia::render('Analytics/Index', [
+        // Multi-UI: pilih komponen halaman sesuai preferensi user.
+        // Pengumpulan data & payload props identik untuk kedua tampilan.
+        $view = $request->user()->ui_theme === 'm3' ? 'Material/Analytics' : 'Analytics/Index';
+
+        return Inertia::render($view, [
             'startDate' => $startDate,
             'endDate' => $endDate,
             'totalIncome' => $totalIncome,
