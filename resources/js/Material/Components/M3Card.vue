@@ -28,8 +28,10 @@ const classes = computed(() => [
 </template>
 
 <style scoped>
+/* Compact-finance language: cards use 16dp (lg), not the M3 card-spec
+   12dp — hierarchy: cards 16–20, controls 12–16, chips pill. */
 .m3-card {
-    border-radius: var(--m3-radius-md);
+    border-radius: var(--m3-radius-lg);
     color: var(--m3-color-on-surface);
     transition:
         box-shadow var(--m3-motion-default-effects-duration) var(--m3-motion-default-effects),
@@ -55,7 +57,7 @@ const classes = computed(() => [
 }
 
 .m3-card--pad-sm {
-    padding: 0.5rem;
+    padding: 0.75rem;
 }
 
 .m3-card--pad-md {

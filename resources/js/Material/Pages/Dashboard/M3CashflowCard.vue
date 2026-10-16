@@ -16,7 +16,7 @@ defineProps({
 
 <template>
     <div class="m3-cashflow">
-        <M3Card variant="filled" padding="md" class="m3-cashflow__cell">
+        <M3Card variant="filled" padding="sm" class="m3-cashflow__cell">
             <div class="m3-cashflow__icon m3-cashflow__icon--income" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
@@ -27,7 +27,7 @@ defineProps({
                 <span class="m3-cashflow__currency">Rp</span>{{ isVisible ? formatNumber(income) : '••••' }}
             </p>
         </M3Card>
-        <M3Card variant="filled" padding="md" class="m3-cashflow__cell">
+        <M3Card variant="filled" padding="sm" class="m3-cashflow__cell">
             <div class="m3-cashflow__icon m3-cashflow__icon--expense" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
@@ -45,13 +45,19 @@ defineProps({
 .m3-cashflow {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0.75rem;
+    gap: var(--m3-space-3);
+}
+
+@media (max-width: 22rem) {
+    .m3-cashflow {
+        grid-template-columns: 1fr;
+    }
 }
 
 .m3-cashflow__cell {
     display: flex;
     flex-direction: column;
-    gap: 0.375rem;
+    gap: var(--m3-space-1);
     min-width: 0;
 }
 
@@ -82,18 +88,19 @@ defineProps({
 
 .m3-cashflow__label {
     margin: 0;
-    font-size: var(--m3-type-label-medium-size);
-    font-weight: var(--m3-type-emphasized-label-medium-weight);
-    letter-spacing: var(--m3-type-label-medium-tracking);
-    text-transform: uppercase;
+    font-size: var(--m3-type-title-small-size);
+    font-weight: 500;
     color: var(--m3-color-on-surface-variant);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .m3-cashflow__amount {
     margin: 0;
-    font-size: var(--m3-type-title-medium-size);
-    line-height: var(--m3-type-title-medium-line-height);
-    font-weight: var(--m3-type-emphasized-title-medium-weight);
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+    font-weight: 600;
     color: var(--m3-color-on-surface);
     overflow: hidden;
     text-overflow: ellipsis;

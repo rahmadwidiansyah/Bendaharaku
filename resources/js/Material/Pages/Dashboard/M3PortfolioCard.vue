@@ -10,7 +10,7 @@ import { useI18n } from 'vue-i18n'
 import { Link } from '@inertiajs/vue3'
 import { formatNumber } from '@/utils/format.js'
 import AppIcon from '@/Components/AppIcon.vue'
-import { getWalletIconColor } from '@/Composables/useIcon.js'
+import { getM3WalletIconClass } from '@/Material/utils/m3IconColor.js'
 import M3Card from '@/Material/Components/M3Card.vue'
 import M3IconButton from '@/Material/Components/M3IconButton.vue'
 
@@ -91,7 +91,7 @@ const displayLocal = (n, visible) => visible ? formatNumber(n) : '••••�
                             :href="route('wallets.show', wallet.id)"
                             class="m3-wallet-row"
                         >
-                            <AppIcon :icon="wallet.icon" fallback="wallet" class="m3-wallet-row__icon" />
+                            <AppIcon :icon="wallet.icon" fallback="wallet" :class="['m3-wallet-ico', getM3WalletIconClass()]" />
                             <span class="m3-wallet-row__name">{{ wallet.name }}</span>
                             <span
                                 class="m3-wallet-row__balance"
@@ -174,23 +174,28 @@ const displayLocal = (n, visible) => visible ? formatNumber(n) : '••••�
 .m3-portfolio__total {
     display: flex;
     align-items: baseline;
-    gap: 0.375rem;
-    margin-bottom: 1rem;
+    gap: var(--m3-space-2);
+    margin-bottom: var(--m3-space-3);
+    min-width: 0;
 }
 
 .m3-portfolio__currency {
-    font-size: var(--m3-type-title-medium-size);
+    font-size: var(--m3-type-title-small-size);
     color: var(--m3-color-on-surface-variant);
+    flex-shrink: 0;
 }
 
 .m3-portfolio__amount {
     margin: 0;
-    font-size: var(--m3-type-headline-medium-size);
-    line-height: var(--m3-type-headline-medium-line-height);
-    font-weight: var(--m3-type-emphasized-headline-medium-weight);
+    min-width: 0;
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+    font-weight: 600;
     letter-spacing: 0;
     color: var(--m3-color-on-surface);
-    overflow-wrap: anywhere;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .m3-portfolio__section {
@@ -264,33 +269,33 @@ const displayLocal = (n, visible) => visible ? formatNumber(n) : '••••�
 .m3-portfolio__wallets {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    padding: 0.5rem 0;
+    padding: var(--m3-space-1) 0;
 }
 
 .m3-wallet-row {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem;
-    border-radius: var(--m3-radius-sm);
-    background: var(--m3-color-surface-container-high);
+    gap: var(--m3-space-2);
+    padding: var(--m3-space-2) 0;
+    border-bottom: 1px solid var(--m3-color-outline-variant);
     text-decoration: none;
 }
 
-.m3-wallet-row__icon {
-    width: 1rem;
-    height: 1rem;
+.m3-wallet-row:last-child {
+    border-bottom: none;
+}
+
+.m3-wallet-ico {
+    width: 1.125rem;
+    height: 1.125rem;
     flex-shrink: 0;
 }
 
 .m3-wallet-row__name {
     flex: 1;
     min-width: 0;
-    font-size: var(--m3-type-label-medium-size);
-    font-weight: var(--m3-type-emphasized-label-medium-weight);
-    letter-spacing: var(--m3-type-label-medium-tracking);
-    text-transform: uppercase;
+    font-size: var(--m3-type-body-small-size);
+    font-weight: 500;
     color: var(--m3-color-on-surface-variant);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -302,6 +307,7 @@ const displayLocal = (n, visible) => visible ? formatNumber(n) : '••••�
     font-weight: var(--m3-type-emphasized-body-medium-weight);
     color: var(--m3-color-on-surface);
     flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .m3-wallet-row__balance--negative {
@@ -332,32 +338,33 @@ const displayLocal = (n, visible) => visible ? formatNumber(n) : '••••�
 .m3-debt-link {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 0.5rem;
-    margin: 0.5rem 0;
-    border-radius: var(--m3-radius-sm);
-    border: 1px solid;
-    font-size: var(--m3-type-label-medium-size);
-    font-weight: var(--m3-type-emphasized-label-medium-weight);
-    letter-spacing: var(--m3-type-label-medium-tracking);
-    text-transform: uppercase;
+    gap: var(--m3-space-2);
+    padding: var(--m3-space-2) 0;
+    margin: var(--m3-space-1) 0;
+    font-size: var(--m3-type-body-small-size);
+    font-weight: 500;
     text-decoration: none;
 }
 
 .m3-debt-link svg {
     width: 0.875rem;
     height: 0.875rem;
+    flex-shrink: 0;
+}
+
+.m3-debt-link span {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .m3-debt-link--debt {
-    background: var(--m3-color-debt-container);
-    border-color: var(--m3-color-debt);
     color: var(--m3-color-on-debt-container);
 }
 
 .m3-debt-link--receivable {
-    background: var(--m3-color-receivable-container);
-    border-color: var(--m3-color-receivable);
     color: var(--m3-color-on-receivable-container);
 }
 </style>

@@ -124,7 +124,7 @@ onUnmounted(() => {
     color: var(--m3-color-on-surface);
     border-radius: var(--m3-radius-xl);
     box-shadow: var(--m3-elevation-3);
-    padding: 1.5rem;
+    padding: var(--m3-space-5) var(--m3-space-4);
 }
 
 .m3-modal__panel--sm {
@@ -148,9 +148,9 @@ onUnmounted(() => {
 }
 
 .m3-modal__title {
-    font-size: var(--m3-type-title-large-size);
-    line-height: var(--m3-type-title-large-line-height);
-    font-weight: var(--m3-type-title-large-weight);
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+    font-weight: 600;
     color: var(--m3-color-on-surface);
     text-align: center;
     flex: 1;

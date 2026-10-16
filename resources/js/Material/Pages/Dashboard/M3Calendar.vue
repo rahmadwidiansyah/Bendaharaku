@@ -100,7 +100,7 @@ defineEmits(['select', 'filter'])
 }
 
 .m3-cal__cell {
-    min-height: 2.875rem;
+    min-height: 2.75rem;
 }
 
 .m3-cal__day {
@@ -110,7 +110,7 @@ defineEmits(['select', 'filter'])
     justify-content: center;
     width: 100%;
     height: 100%;
-    min-height: 2.875rem;
+    min-height: 2.75rem;
     padding: 0.125rem;
     border-radius: var(--m3-radius-sm);
     border: 1px solid transparent;

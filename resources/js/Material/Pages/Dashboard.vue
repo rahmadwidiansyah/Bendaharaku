@@ -417,11 +417,11 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
 .m3-dash {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: var(--m3-space-4);
     width: 100%;
     max-width: 72rem;
     margin: 0 auto;
-    padding: 0.75rem 0.75rem 1rem;
+    padding: var(--m3-space-4) var(--m3-space-4) var(--m3-space-4);
 }
 
 @media (min-width: 1024px) {
@@ -446,29 +446,27 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
 .m3-dash__assets {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: var(--m3-space-3);
     min-width: 0;
 }
 
 .m3-dash__history {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: var(--m3-space-3);
     min-width: 0;
 }
 
 .m3-history-head {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: var(--m3-space-2);
 }
 
 .m3-history-head__title {
     margin: 0;
-    font-size: var(--m3-type-label-medium-size);
-    font-weight: var(--m3-type-emphasized-label-medium-weight);
-    letter-spacing: var(--m3-type-label-medium-tracking);
-    text-transform: uppercase;
+    font-size: var(--m3-type-title-small-size);
+    font-weight: 600;
     color: var(--m3-color-on-surface);
 }
 
@@ -483,15 +481,13 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
 }
 
 .m3-tabs__btn {
-    padding: 0.5rem 0.75rem;
+    padding: 0.375rem 0.75rem;
     border: none;
     border-radius: var(--m3-radius-sm);
     background: transparent;
     color: var(--m3-color-on-surface-variant);
-    font-size: var(--m3-type-label-medium-size);
-    font-weight: var(--m3-type-emphasized-label-medium-weight);
-    letter-spacing: var(--m3-type-label-medium-tracking);
-    text-transform: uppercase;
+    font-size: var(--m3-type-title-small-size);
+    font-weight: 500;
     cursor: pointer;
     transition: background-color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
 }
@@ -538,7 +534,7 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
 .m3-period__value {
     display: block;
     font-size: var(--m3-type-title-small-size);
-    font-weight: var(--m3-type-emphasized-title-small-weight);
+    font-weight: 600;
     color: var(--m3-color-on-surface);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -549,16 +545,17 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
-    padding: 0.625rem 0.75rem;
+    padding: 0.5rem 0.75rem;
     border-radius: var(--m3-radius-md);
     border: 1px solid var(--m3-color-outline-variant);
     background: var(--m3-color-surface-container-low);
     color: var(--m3-color-on-surface-variant);
-    font-size: var(--m3-type-label-medium-size);
-    font-weight: var(--m3-type-emphasized-label-medium-weight);
-    letter-spacing: var(--m3-type-label-medium-tracking);
-    text-transform: uppercase;
+    font-size: var(--m3-type-title-small-size);
+    font-weight: 500;
     cursor: pointer;
+    white-space: nowrap;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .m3-filter-btn svg {
@@ -579,10 +576,8 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
 
 .m3-selected-date {
     margin: 0;
-    font-size: var(--m3-type-label-medium-size);
-    font-weight: var(--m3-type-emphasized-label-medium-weight);
-    letter-spacing: var(--m3-type-label-medium-tracking);
-    text-transform: uppercase;
+    font-size: var(--m3-type-title-small-size);
+    font-weight: 600;
     color: var(--m3-color-on-surface-variant);
 }
 
@@ -597,15 +592,13 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
 }
 
 .m3-type-btn {
-    padding: 0.625rem 0.75rem;
+    padding: var(--m3-space-2) var(--m3-space-3);
     border-radius: var(--m3-radius-md);
     border: 1px solid var(--m3-color-outline-variant);
     background: var(--m3-color-surface-container-high);
     color: var(--m3-color-on-surface-variant);
-    font-size: var(--m3-type-label-medium-size);
-    font-weight: var(--m3-type-emphasized-label-medium-weight);
-    letter-spacing: var(--m3-type-label-medium-tracking);
-    text-transform: uppercase;
+    font-size: var(--m3-type-title-small-size);
+    font-weight: 500;
     cursor: pointer;
 }
 

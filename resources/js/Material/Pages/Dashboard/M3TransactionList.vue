@@ -5,7 +5,7 @@
  * trx.category/type/source_wallet, collapsedDates, Load More, empty state).
  */
 import AppIcon from '@/Components/AppIcon.vue'
-import { getCategoryIconColor } from '@/Composables/useIcon.js'
+import { getM3CategoryIconClass } from '@/Material/utils/m3IconColor.js'
 import { formatNumber } from '@/utils/format.js'
 import M3Card from '@/Material/Components/M3Card.vue'
 
@@ -73,7 +73,7 @@ const amountSign = (trx) => {
                 :style="{ gridTemplateRows: activeTab === 'detail' && collapsedDates[dateKey] ? '0fr' : '1fr' }"
             >
                 <div class="m3-collapse__inner" :class="activeTab === 'detail' && collapsedDates[dateKey] ? 'm3-collapse__inner--hidden' : ''">
-                    <M3Card variant="filled" padding="none" class="m3-trx-card">
+                    <div class="m3-trx-list">
                         <button
                             v-for="trx in group.transactions"
                             :key="(trx.is_draft ? 'd' : 't') + ':' + trx.id"
@@ -82,7 +82,7 @@ const amountSign = (trx) => {
                             @click="$emit('open-modal', trx)"
                         >
                             <span class="m3-trx__icon-wrap">
-                                <AppIcon :icon="trx.category?.icon" fallback="file-text" :class="['m3-trx__icon', getCategoryIconColor(trx.type?.name)]" />
+                                <AppIcon :icon="trx.category?.icon" fallback="file-text" :class="['m3-trx__icon', getM3CategoryIconClass(trx.type?.name)]" />
                                 <span v-if="!trx.is_cleared" class="m3-trx__draft-dot" aria-hidden="true" />
                             </span>
                             <span class="m3-trx__main">
@@ -96,7 +96,7 @@ const amountSign = (trx) => {
                                 <span class="m3-trx__time">{{ trx.time }}</span>
                             </span>
                         </button>
-                    </M3Card>
+                    </div>
                 </div>
             </div>
         </div>
@@ -150,10 +150,8 @@ const amountSign = (trx) => {
 }
 
 .m3-day-header__date {
-    font-size: var(--m3-type-label-medium-size);
-    font-weight: var(--m3-type-emphasized-label-medium-weight);
-    letter-spacing: var(--m3-type-label-medium-tracking);
-    text-transform: uppercase;
+    font-size: var(--m3-type-title-small-size);
+    font-weight: 600;
     flex: 1;
     min-width: 0;
     overflow: hidden;
@@ -164,8 +162,10 @@ const amountSign = (trx) => {
 .m3-day-header__totals {
     display: flex;
     gap: 0.625rem;
-    font-size: var(--m3-type-label-medium-size);
-    font-weight: var(--m3-type-emphasized-label-medium-weight);
+    flex-shrink: 0;
+    font-size: var(--m3-type-title-small-size);
+    font-weight: 600;
+    white-space: nowrap;
 }
 
 .m3-day-header__income {
@@ -201,16 +201,17 @@ const amountSign = (trx) => {
     opacity: 0;
 }
 
-.m3-trx-card {
-    overflow: hidden;
+.m3-trx-list {
+    display: flex;
+    flex-direction: column;
 }
 
 .m3-trx {
     display: flex;
     align-items: center;
-    gap: 0.625rem;
+    gap: var(--m3-space-3);
     width: 100%;
-    padding: 0.625rem 1rem;
+    padding: var(--m3-space-3) var(--m3-space-3);
     background: none;
     border: none;
     border-bottom: 1px solid var(--m3-color-outline-variant);
@@ -235,6 +236,7 @@ const amountSign = (trx) => {
 .m3-trx__icon {
     width: 1.25rem;
     height: 1.25rem;
+    flex-shrink: 0;
 }
 
 .m3-trx__draft-dot {
@@ -250,6 +252,7 @@ const amountSign = (trx) => {
 .m3-trx__main {
     display: flex;
     flex-direction: column;
+    justify-content: center;
     flex: 1;
     min-width: 0;
     line-height: 1.25rem;
@@ -257,7 +260,7 @@ const amountSign = (trx) => {
 
 .m3-trx__title {
     font-size: var(--m3-type-body-medium-size);
-    font-weight: var(--m3-type-emphasized-body-medium-weight);
+    font-weight: 500;
     color: var(--m3-color-on-surface);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -266,6 +269,7 @@ const amountSign = (trx) => {
 
 .m3-trx__sub {
     font-size: var(--m3-type-body-small-size);
+    font-weight: 400;
     color: var(--m3-color-on-surface-variant);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -276,12 +280,19 @@ const amountSign = (trx) => {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
+    justify-content: center;
     flex-shrink: 0;
+    min-width: 0;
+    max-width: 45%;
 }
 
 .m3-trx__amount {
-    font-size: var(--m3-type-body-small-size);
-    font-weight: var(--m3-type-emphasized-body-small-weight);
+    font-size: var(--m3-type-body-medium-size);
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
 }
 
 .m3-trx__amount--income {
@@ -297,7 +308,8 @@ const amountSign = (trx) => {
 }
 
 .m3-trx__time {
-    font-size: var(--m3-type-label-small-size);
+    font-size: var(--m3-type-body-small-size);
+    font-weight: 400;
     color: var(--m3-color-on-surface-variant);
 }
 
@@ -310,15 +322,13 @@ const amountSign = (trx) => {
 }
 
 .m3-load-more__btn {
-    padding: 0.625rem 1.25rem;
+    padding: var(--m3-space-2) var(--m3-space-5);
     border-radius: var(--m3-radius-md);
     border: 1px solid var(--m3-color-outline-variant);
     background: var(--m3-color-surface-container-low);
     color: var(--m3-color-on-surface-variant);
-    font-size: var(--m3-type-label-medium-size);
-    font-weight: var(--m3-type-emphasized-label-medium-weight);
-    letter-spacing: var(--m3-type-label-medium-tracking);
-    text-transform: uppercase;
+    font-size: var(--m3-type-title-small-size);
+    font-weight: 500;
     cursor: pointer;
 }
 
@@ -339,10 +349,8 @@ const amountSign = (trx) => {
 
 .m3-empty__text {
     margin: 0;
-    font-size: var(--m3-type-label-medium-size);
-    font-weight: var(--m3-type-emphasized-label-medium-weight);
-    letter-spacing: var(--m3-type-label-medium-tracking);
-    text-transform: uppercase;
+    font-size: var(--m3-type-body-medium-size);
+    font-weight: 500;
     color: var(--m3-color-on-surface-variant);
 }
 </style>

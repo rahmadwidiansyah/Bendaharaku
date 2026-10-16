@@ -40,8 +40,8 @@ const classes = computed(() => [
     align-items: center;
     justify-content: center;
     min-height: 2rem;
-    padding: 0 1rem;
-    border-radius: var(--m3-radius-sm);
+    padding: 0 0.875rem;
+    border-radius: var(--m3-radius-full);
     border: 1px solid var(--m3-color-outline);
     background: transparent;
     color: var(--m3-color-on-surface-variant);

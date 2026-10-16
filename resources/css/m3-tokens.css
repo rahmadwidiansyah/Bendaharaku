@@ -155,7 +155,10 @@
     --m3-type-label-small-weight: 500;
     --m3-type-label-small-tracking: 0.0455em;
 
-    /* ── Emphasized variants (M3 Expressive; same size/height, heavier weight) ── */
+    /* ── Emphasized variants (M3 Expressive; same size/height, heavier weight) ──
+       Deviation: title/label emphasized use 600 instead of M3's 700.
+       Compact-finance language uses 400 body / 500 important / 600 emphasis;
+       700 proved too dominant across dense financial rows. */
     --m3-type-emphasized-display-large-weight: 500;
     --m3-type-emphasized-display-medium-weight: 500;
     --m3-type-emphasized-display-small-weight: 500;
@@ -163,14 +166,22 @@
     --m3-type-emphasized-headline-medium-weight: 500;
     --m3-type-emphasized-headline-small-weight: 500;
     --m3-type-emphasized-title-large-weight: 500;
-    --m3-type-emphasized-title-medium-weight: 700;
-    --m3-type-emphasized-title-small-weight: 700;
+    --m3-type-emphasized-title-medium-weight: 600;
+    --m3-type-emphasized-title-small-weight: 600;
     --m3-type-emphasized-body-large-weight: 500;
     --m3-type-emphasized-body-medium-weight: 500;
-    --m3-type-emphasized-body-small-weight: 500;
-    --m3-type-emphasized-label-large-weight: 700;
-    --m3-type-emphasized-label-medium-weight: 700;
-    --m3-type-emphasized-label-small-weight: 700;
+    --m3-type-emphasized-body-small-weight: 600;
+    --m3-type-emphasized-label-large-weight: 600;
+    --m3-type-emphasized-label-medium-weight: 600;
+    --m3-type-emphasized-label-small-weight: 600;
+
+    /* ── Spacing scale (4px base; single source for M3 layout values) ── */
+    --m3-space-1: 0.25rem;
+    --m3-space-2: 0.5rem;
+    --m3-space-3: 0.75rem;
+    --m3-space-4: 1rem;
+    --m3-space-5: 1.25rem;
+    --m3-space-6: 1.5rem;
 
     /* ── Elevation (tone-based surfaces; shadows per spec) ── */
     --m3-elevation-0: none;
@@ -253,6 +264,37 @@
 .ui-m3 :focus-visible {
     outline: 2px solid var(--m3-color-primary);
     outline-offset: 2px;
+}
+
+/* Semantic icon colors for M3 (see Material/utils/m3IconColor.js).
+   Same hues as the Default semantic system, but as M3 tokens so they
+   adapt to the .ui-m3.light scheme. */
+.ui-m3 .m3-ico--income {
+    color: var(--m3-color-income);
+}
+
+.ui-m3 .m3-ico--expense {
+    color: var(--m3-color-expense);
+}
+
+.ui-m3 .m3-ico--transfer {
+    color: var(--m3-color-transfer);
+}
+
+.ui-m3 .m3-ico--debt {
+    color: var(--m3-color-debt);
+}
+
+.ui-m3 .m3-ico--receivable {
+    color: var(--m3-color-receivable);
+}
+
+.ui-m3 .m3-ico--brand {
+    color: var(--m3-color-primary);
+}
+
+.ui-m3 .m3-ico--plain {
+    color: var(--m3-color-on-surface);
 }
 
 @media (prefers-reduced-motion: reduce) {

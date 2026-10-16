@@ -129,7 +129,7 @@ const typeLabel = (type) => {
 .m3-debt__subject {
     margin: 0 0 0.25rem;
     font-size: var(--m3-type-body-medium-size);
-    font-weight: var(--m3-type-emphasized-body-medium-weight);
+    font-weight: 500;
     color: var(--m3-color-on-surface);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -156,8 +156,9 @@ const typeLabel = (type) => {
 .m3-debt__amount {
     margin: 0;
     flex-shrink: 0;
-    font-size: var(--m3-type-title-small-size);
-    font-weight: var(--m3-type-emphasized-title-small-weight);
+    white-space: nowrap;
+    font-size: var(--m3-type-body-medium-size);
+    font-weight: 600;
     color: var(--m3-color-debt);
 }
 </style>

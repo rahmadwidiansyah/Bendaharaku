@@ -355,7 +355,7 @@ const showSkeleton = computed(() =>
     font-weight: var(--m3-type-emphasized-label-large-weight);
 }
 
-/* ── Top app bar (small, 4rem) ── */
+/* ── Top app bar (compact small, 3.5rem) ── */
 .m3-appbar {
     position: sticky;
     top: 0;
@@ -363,9 +363,9 @@ const showSkeleton = computed(() =>
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1rem;
-    min-height: 4rem;
-    padding: 0.5rem 1rem;
+    gap: var(--m3-space-4);
+    min-height: 3.5rem;
+    padding: var(--m3-space-2) var(--m3-space-4);
     background: var(--m3-color-surface-container);
     color: var(--m3-color-on-surface);
 }
@@ -378,8 +378,8 @@ const showSkeleton = computed(() =>
 }
 
 .m3-appbar__subtitle {
-    font-size: var(--m3-type-body-small-size);
-    line-height: var(--m3-type-body-small-line-height);
+    font-size: var(--m3-type-body-medium-size);
+    line-height: var(--m3-type-body-medium-line-height);
     color: var(--m3-color-on-surface-variant);
     margin: 0;
     overflow: hidden;
@@ -568,7 +568,7 @@ const showSkeleton = computed(() =>
 .m3-content {
     position: relative;
     min-height: 100vh;
-    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
 }
 
 @media (min-width: 1024px) {
@@ -618,7 +618,8 @@ const showSkeleton = computed(() =>
     transition: opacity 200ms ease-in;
 }
 
-/* ── Mobile navigation bar (80dp) ── */
+/* ── Mobile navigation bar (compact ~4.5rem; deviation from M3 80dp
+   for information density — touch targets preserved via 3rem buttons) ── */
 .m3-navbar {
     position: fixed;
     left: 0;
@@ -628,8 +629,7 @@ const showSkeleton = computed(() =>
     display: flex;
     align-items: flex-start;
     justify-content: space-around;
-    min-height: 5rem;
-    padding: 0.75rem 0.5rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+    padding: var(--m3-space-2) var(--m3-space-2) calc(var(--m3-space-2) + env(safe-area-inset-bottom, 0px));
     background: var(--m3-color-surface-container);
 }
 
@@ -671,8 +671,8 @@ const showSkeleton = computed(() =>
 }
 
 .m3-navbar__indicator svg {
-    width: 1.5rem;
-    height: 1.5rem;
+    width: 1.375rem;
+    height: 1.375rem;
 }
 
 .m3-navbar__label {
