@@ -19,13 +19,36 @@ const props = defineProps({
 const emit = defineEmits(['close'])
 
 const panelRef = ref(null)
+let previouslyFocused = null
 
 const close = () => {
     if (props.closeable) emit('close')
 }
 
 const onKeydown = (e) => {
-    if (e.key === 'Escape') close()
+    if (e.key === 'Escape') {
+        close()
+        return
+    }
+    if (e.key === 'Tab' && panelRef.value) {
+        const focusable = panelRef.value.querySelectorAll(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        )
+        if (focusable.length === 0) return
+        const first = focusable[0]
+        const last = focusable[focusable.length - 1]
+        if (e.shiftKey) {
+            if (document.activeElement === first || !panelRef.value.contains(document.activeElement)) {
+                e.preventDefault()
+                last.focus()
+            }
+        } else {
+            if (document.activeElement === last) {
+                e.preventDefault()
+                first.focus()
+            }
+        }
+    }
 }
 
 const lockScroll = () => {
@@ -40,6 +63,7 @@ watch(
     () => props.show,
     async (visible) => {
         if (visible) {
+            previouslyFocused = document.activeElement
             lockScroll()
             window.addEventListener('keydown', onKeydown)
             await nextTick()
@@ -47,6 +71,9 @@ watch(
         } else {
             unlockScroll()
             window.removeEventListener('keydown', onKeydown)
+            if (previouslyFocused && typeof previouslyFocused.focus === 'function') {
+                previouslyFocused.focus()
+            }
         }
     },
     { immediate: true },
@@ -113,7 +140,7 @@ onUnmounted(() => {
     align-items: center;
     justify-content: center;
     padding: 1rem;
-    background: rgba(0, 0, 0, 0.55);
+    background: rgba(0, 0, 0, 0.32);
 }
 
 .m3-modal__panel {
@@ -148,15 +175,16 @@ onUnmounted(() => {
 }
 
 .m3-modal__title {
-    font-size: 1.25rem;
-    line-height: 1.75rem;
-    font-weight: 600;
+    font-size: var(--m3-type-headline-small-size);
+    line-height: var(--m3-type-headline-small-line-height);
+    font-weight: var(--m3-type-headline-small-weight);
     color: var(--m3-color-on-surface);
-    text-align: center;
+    text-align: start;
     flex: 1;
 }
 
 .m3-modal__close {
+    position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -168,10 +196,31 @@ onUnmounted(() => {
     background: transparent;
     color: var(--m3-color-on-surface-variant);
     cursor: pointer;
+    overflow: hidden;
 }
 
-.m3-modal__close:hover {
-    background: rgba(227, 226, 230, 0.08);
+.m3-modal__close::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
+}
+
+.m3-modal__close:hover::after {
+    opacity: 0.08;
+}
+
+.m3-modal__close:active::after {
+    opacity: 0.12;
+}
+
+.m3-modal__close:focus-visible {
+    outline: 2px solid var(--m3-color-primary);
+    outline-offset: 2px;
 }
 
 .m3-modal__close svg {
@@ -191,15 +240,39 @@ onUnmounted(() => {
 }
 
 .m3-modal-enter-active {
-    transition: opacity var(--m3-motion-default-effects-duration) var(--m3-motion-default-effects);
+    transition:
+        opacity var(--m3-motion-default-effects-duration) var(--m3-motion-default-effects);
 }
 
 .m3-modal-leave-active {
-    transition: opacity var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
+    transition:
+        opacity var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
+}
+
+.m3-modal-enter-active .m3-modal__panel {
+    transition:
+        transform var(--m3-motion-default-spatial-duration) var(--m3-motion-default-spatial),
+        opacity var(--m3-motion-default-effects-duration) var(--m3-motion-default-effects);
+}
+
+.m3-modal-leave-active .m3-modal__panel {
+    transition:
+        transform var(--m3-motion-fast-spatial-duration) var(--m3-motion-fast-spatial),
+        opacity var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
 }
 
 .m3-modal-enter-from,
 .m3-modal-leave-to {
+    opacity: 0;
+}
+
+.m3-modal-enter-from .m3-modal__panel {
+    transform: scale(0.95);
+    opacity: 0;
+}
+
+.m3-modal-leave-to .m3-modal__panel {
+    transform: scale(0.95);
     opacity: 0;
 }
 </style>

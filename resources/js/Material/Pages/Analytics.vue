@@ -941,14 +941,14 @@ onBeforeUnmount(() => {
     text-align: right;
 }
 
-/* ── Segmented control ── */
+/* ── Segmented control (M3 connected button group pattern) ── */
 .m3-ana__seg {
     display: flex;
-    gap: var(--m3-space-1);
-    padding: var(--m3-space-1);
-    border-radius: var(--m3-radius-md);
+    gap: 0.25rem;
+    padding: 0.25rem;
+    border-radius: var(--m3-radius-full);
     border: 1px solid var(--m3-color-outline-variant);
-    background: var(--m3-color-surface-container-high);
+    background: var(--m3-color-surface-container-low);
     flex-shrink: 0;
 }
 
@@ -958,21 +958,55 @@ onBeforeUnmount(() => {
 }
 
 .m3-ana__seg-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     padding: 0.375rem 0.625rem;
     border: none;
-    border-radius: var(--m3-radius-sm);
+    border-radius: var(--m3-radius-full);
     background: transparent;
     color: var(--m3-color-on-surface-variant);
-    font-size: var(--m3-type-title-small-size);
-    font-weight: 500;
+    font-size: var(--m3-type-label-medium-size);
+    font-weight: var(--m3-type-label-medium-weight);
+    letter-spacing: var(--m3-type-label-medium-tracking);
     cursor: pointer;
     white-space: nowrap;
-    transition: background-color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
+    overflow: hidden;
+    transition:
+        background-color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects),
+        color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects),
+        transform var(--m3-motion-fast-spatial-duration) var(--m3-motion-fast-spatial);
+}
+
+.m3-ana__seg-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
+}
+
+.m3-ana__seg-btn:hover::after {
+    opacity: 0.08;
+}
+
+.m3-ana__seg-btn:active::after {
+    opacity: 0.12;
 }
 
 .m3-ana__seg-btn--active {
-    background: var(--m3-color-primary);
-    color: var(--m3-color-on-primary);
+    background: var(--m3-color-secondary-container);
+    color: var(--m3-color-on-secondary-container);
+    font-weight: var(--m3-type-emphasized-label-medium-weight);
+}
+
+.m3-ana__seg-btn:focus-visible {
+    outline: 2px solid var(--m3-color-primary);
+    outline-offset: 2px;
 }
 
 /* ── Legenda ── */
@@ -1070,9 +1104,9 @@ onBeforeUnmount(() => {
     width: 2.5rem;
     height: 2.5rem;
     border-radius: var(--m3-radius-full);
-    border: 2px solid var(--m3-color-outline-variant);
+    border: 3px solid var(--m3-color-surface-container-highest);
     border-top-color: var(--m3-color-primary);
-    animation: m3-ana-spin 0.9s linear infinite;
+    animation: m3-ana-spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 @keyframes m3-ana-spin {

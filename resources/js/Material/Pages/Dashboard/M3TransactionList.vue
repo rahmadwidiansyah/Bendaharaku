@@ -8,6 +8,7 @@ import AppIcon from '@/Components/AppIcon.vue'
 import { getM3CategoryIconClass } from '@/Material/utils/m3IconColor.js'
 import { formatNumber } from '@/utils/format.js'
 import M3Card from '@/Material/Components/M3Card.vue'
+import M3Button from '@/Material/Components/M3Button.vue'
 
 defineProps({
     groups: { type: Object, default: () => ({}) },
@@ -102,9 +103,9 @@ const amountSign = (trx) => {
         </div>
 
         <div v-if="canLoadMore && activeTab === 'detail'" class="m3-load-more">
-            <button type="button" class="m3-load-more__btn" :disabled="isLoadingMore" @click="$emit('load-more')">
+            <M3Button variant="outlined" size="sm" :disabled="isLoadingMore" @click="$emit('load-more')">
                 {{ isLoadingMore ? $t('common.loading') : $t('common.loadMore') }}
-            </button>
+            </M3Button>
             <p v-if="loadError" class="m3-load-more__error">{{ loadError }}</p>
         </div>
 
@@ -207,6 +208,7 @@ const amountSign = (trx) => {
 }
 
 .m3-trx {
+    position: relative;
     display: flex;
     align-items: center;
     gap: var(--m3-space-3);
@@ -218,14 +220,34 @@ const amountSign = (trx) => {
     cursor: pointer;
     text-align: left;
     color: var(--m3-color-on-surface);
+    overflow: hidden;
 }
 
 .m3-trx:last-child {
     border-bottom: none;
 }
 
-.m3-trx:hover {
-    background: rgba(227, 226, 230, 0.06);
+.m3-trx::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
+}
+
+.m3-trx:hover::after {
+    opacity: 0.08;
+}
+
+.m3-trx:active::after {
+    opacity: 0.12;
+}
+
+.m3-trx:focus-visible {
+    outline: 2px solid var(--m3-color-primary);
+    outline-offset: -2px;
 }
 
 .m3-trx__icon-wrap {
@@ -319,22 +341,6 @@ const amountSign = (trx) => {
     align-items: center;
     gap: 0.5rem;
     padding: 0.75rem 0;
-}
-
-.m3-load-more__btn {
-    padding: var(--m3-space-2) var(--m3-space-5);
-    border-radius: var(--m3-radius-md);
-    border: 1px solid var(--m3-color-outline-variant);
-    background: var(--m3-color-surface-container-low);
-    color: var(--m3-color-on-surface-variant);
-    font-size: var(--m3-type-title-small-size);
-    font-weight: 500;
-    cursor: pointer;
-}
-
-.m3-load-more__btn:disabled {
-    opacity: 0.38;
-    cursor: wait;
 }
 
 .m3-load-more__error {

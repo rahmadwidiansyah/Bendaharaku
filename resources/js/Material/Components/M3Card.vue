@@ -39,7 +39,7 @@ const classes = computed(() => [
 }
 
 .m3-card--filled {
-    background: var(--m3-color-surface-container-low);
+    background: var(--m3-color-surface-container-highest);
 }
 
 .m3-card--elevated {
@@ -70,6 +70,32 @@ const classes = computed(() => [
 
 .m3-card--clickable {
     cursor: pointer;
+    position: relative;
+}
+
+/* State layer via ::after — currentColor 8% hover / 12% pressed */
+.m3-card--clickable::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
+}
+
+.m3-card--clickable:hover::after {
+    opacity: 0.08;
+}
+
+.m3-card--clickable:active::after {
+    opacity: 0.12;
+}
+
+.m3-card--clickable:focus-visible {
+    outline: 2px solid var(--m3-color-primary);
+    outline-offset: 2px;
 }
 
 .m3-card--clickable:hover {

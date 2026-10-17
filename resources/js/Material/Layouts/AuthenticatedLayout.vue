@@ -173,8 +173,13 @@ const showSkeleton = computed(() =>
 
         <a href="#main-content" class="m3-skip-link">Langsung ke konten</a>
 
-        <!-- ── Top app bar (small) ── -->
+        <!-- ── Top app bar (small, 4rem) ── -->
         <header v-if="!hideNav" class="m3-appbar">
+            <div class="m3-appbar__leading">
+                <Link :href="route('dashboard')" class="m3-appbar__brand-btn" aria-label="Bendaharaku">
+                    <img src="/icons/logo.png" alt="Bendaharaku" class="m3-appbar__brand-logo" />
+                </Link>
+            </div>
             <div class="m3-appbar__title-block">
                 <p class="m3-appbar__title">{{ title || $t('dashboard.title') }}</p>
                 <p v-if="userName" class="m3-appbar__subtitle">{{ userName }}</p>
@@ -275,7 +280,19 @@ const showSkeleton = computed(() =>
             </Transition>
         </div>
 
-        <!-- ── Mobile navigation bar ── -->
+        <!-- ── Mobile FAB (right-aligned above navigation bar per M3 spec) ── -->
+        <Link
+            v-if="!isDesktop && !hideNav"
+            :href="route('transactions.create')"
+            class="m3-fab m3-fab--mobile"
+            :aria-label="$t('nav.record')"
+        >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+        </Link>
+
+        <!-- ── Mobile navigation bar (5 destinations per M3 flexible nav bar) ── -->
         <nav v-if="!isDesktop && !hideNav" class="m3-navbar" :aria-label="$t('nav.mainNav')" role="navigation">
             <Link :href="route('dashboard')" class="m3-navbar__item" :class="{ 'm3-navbar__item--active': isActive(['dashboard']) }" :aria-current="isActive(['dashboard']) ? 'page' : undefined">
                 <span class="m3-navbar__indicator">
@@ -293,14 +310,6 @@ const showSkeleton = computed(() =>
                 </span>
                 <span class="m3-navbar__label">{{ $t('nav.budgeting') }}</span>
             </Link>
-            <div class="m3-navbar__fab-wrap">
-                <Link :href="route('transactions.create')" class="m3-fab m3-fab--nav" :aria-label="$t('nav.record')">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                    </svg>
-                </Link>
-                <span class="m3-navbar__label">{{ $t('nav.record') }}</span>
-            </div>
             <Link :href="route('analytics.index')" class="m3-navbar__item" :class="{ 'm3-navbar__item--active': isActive(['analytics.*']) }" :aria-current="isActive(['analytics.*']) ? 'page' : undefined">
                 <span class="m3-navbar__indicator">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
@@ -316,6 +325,14 @@ const showSkeleton = computed(() =>
                     </svg>
                 </span>
                 <span class="m3-navbar__label">{{ $t('nav.label') }}</span>
+            </Link>
+            <Link :href="route('loans.index', { type: 'debt' })" class="m3-navbar__item" :class="{ 'm3-navbar__item--active': isActive(['loans.*']) }" :aria-current="isActive(['loans.*']) ? 'page' : undefined">
+                <span class="m3-navbar__indicator">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75" />
+                    </svg>
+                </span>
+                <span class="m3-navbar__label">{{ $t('nav.loan') }}</span>
             </Link>
         </nav>
     </div>
@@ -355,7 +372,7 @@ const showSkeleton = computed(() =>
     font-weight: var(--m3-type-emphasized-label-large-weight);
 }
 
-/* ── Top app bar (compact small, 3.5rem) ── */
+/* ── Top app bar (small, 4rem / 64dp) ── */
 .m3-appbar {
     position: sticky;
     top: 0;
@@ -364,10 +381,50 @@ const showSkeleton = computed(() =>
     align-items: center;
     justify-content: space-between;
     gap: var(--m3-space-4);
-    min-height: 3.5rem;
+    min-height: 4rem;
+    height: 4rem;
     padding: var(--m3-space-2) var(--m3-space-4);
     background: var(--m3-color-surface-container);
     color: var(--m3-color-on-surface);
+}
+
+.m3-appbar__leading {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.m3-appbar__brand-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: var(--m3-radius-md);
+    transition: transform var(--m3-motion-fast-spatial-duration) var(--m3-motion-fast-spatial);
+}
+
+.m3-appbar__brand-btn:hover {
+    transform: scale(1.05);
+}
+
+.m3-appbar__brand-btn:focus-visible {
+    outline: 2px solid var(--m3-color-primary);
+    outline-offset: 2px;
+}
+
+.m3-appbar__brand-logo {
+    width: 2rem;
+    height: 2rem;
+    object-fit: contain;
+}
+
+.m3-appbar__title-block {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+    flex: 1;
 }
 
 .m3-appbar__title {
@@ -385,7 +442,7 @@ const showSkeleton = computed(() =>
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: 12rem;
+    max-width: 14rem;
 }
 
 .m3-appbar__actions {
@@ -395,17 +452,42 @@ const showSkeleton = computed(() =>
 }
 
 .m3-appbar__icon-btn {
+    position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 3rem;
-    height: 3rem;
+    width: 2.5rem;
+    height: 2.5rem;
     border-radius: var(--m3-radius-full);
     color: var(--m3-color-on-surface-variant);
+    overflow: hidden;
+    transition:
+        background-color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects),
+        color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
 }
 
-.m3-appbar__icon-btn:hover {
-    background: rgba(227, 226, 230, 0.08);
+.m3-appbar__icon-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
+}
+
+.m3-appbar__icon-btn:hover::after {
+    opacity: 0.08;
+}
+
+.m3-appbar__icon-btn:active::after {
+    opacity: 0.12;
+}
+
+.m3-appbar__icon-btn:focus-visible {
+    outline: 2px solid var(--m3-color-primary);
+    outline-offset: 2px;
 }
 
 .m3-appbar__icon-btn svg {
@@ -470,6 +552,7 @@ const showSkeleton = computed(() =>
 }
 
 .m3-rail__item {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 0.75rem;
@@ -479,7 +562,13 @@ const showSkeleton = computed(() =>
     text-decoration: none;
 }
 
+.m3-rail__item:focus-visible {
+    outline: 2px solid var(--m3-color-primary);
+    outline-offset: 2px;
+}
+
 .m3-rail__indicator {
+    position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -487,9 +576,35 @@ const showSkeleton = computed(() =>
     height: 2rem;
     flex-shrink: 0;
     border-radius: var(--m3-radius-full);
+    overflow: hidden;
+    transform: scaleX(0.75);
+    transition:
+        transform var(--m3-motion-default-spatial-duration) var(--m3-motion-default-spatial),
+        background-color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects),
+        color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
+}
+
+.m3-rail__indicator::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
+}
+
+.m3-rail__item:hover .m3-rail__indicator::after {
+    opacity: 0.08;
+}
+
+.m3-rail__item:active .m3-rail__indicator::after {
+    opacity: 0.1;
 }
 
 .m3-rail__item--active .m3-rail__indicator {
+    transform: scaleX(1);
     background: var(--m3-color-secondary-container);
     color: var(--m3-color-on-secondary-container);
 }
@@ -510,21 +625,46 @@ const showSkeleton = computed(() =>
 }
 
 .m3-rail__toggle {
+    position: relative;
     margin-top: auto;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 3rem;
-    height: 3rem;
+    width: 2.5rem;
+    height: 2.5rem;
     border: none;
     border-radius: var(--m3-radius-full);
     background: transparent;
     color: var(--m3-color-on-surface-variant);
     cursor: pointer;
+    overflow: hidden;
+    transition:
+        background-color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects),
+        color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
 }
 
-.m3-rail__toggle:hover {
-    background: rgba(227, 226, 230, 0.08);
+.m3-rail__toggle::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
+}
+
+.m3-rail__toggle:hover::after {
+    opacity: 0.08;
+}
+
+.m3-rail__toggle:active::after {
+    opacity: 0.12;
+}
+
+.m3-rail__toggle:focus-visible {
+    outline: 2px solid var(--m3-color-primary);
+    outline-offset: 2px;
 }
 
 .m3-rail__toggle svg {
@@ -560,8 +700,11 @@ const showSkeleton = computed(() =>
     height: 1.5rem;
 }
 
-.m3-fab--nav {
-    margin-top: -1.75rem;
+.m3-fab--mobile {
+    position: fixed;
+    right: 1.25rem;
+    bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+    z-index: 45;
 }
 
 /* ── Content ── */
@@ -639,8 +782,8 @@ const showSkeleton = computed(() =>
     }
 }
 
-.m3-navbar__item,
-.m3-navbar__fab-wrap {
+.m3-navbar__item {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -650,18 +793,51 @@ const showSkeleton = computed(() =>
     text-decoration: none;
     background: none;
     border: none;
+    border-radius: var(--m3-radius-sm);
+}
+
+.m3-navbar__item:focus-visible {
+    outline: 2px solid var(--m3-color-primary);
+    outline-offset: 2px;
 }
 
 .m3-navbar__indicator {
+    position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     width: 4rem;
     height: 2rem;
     border-radius: var(--m3-radius-full);
+    overflow: hidden;
+    transform: scaleX(0.75);
+    transition:
+        transform var(--m3-motion-default-spatial-duration) var(--m3-motion-default-spatial),
+        background-color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects),
+        color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
+}
+
+.m3-navbar__indicator::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
+}
+
+.m3-navbar__item:hover .m3-navbar__indicator::after {
+    opacity: 0.08;
+}
+
+.m3-navbar__item:active .m3-navbar__indicator::after {
+    opacity: 0.1;
 }
 
 .m3-navbar__item--active .m3-navbar__indicator {
+    transform: scaleX(1);
     background: var(--m3-color-secondary-container);
     color: var(--m3-color-on-secondary-container);
 }
@@ -671,8 +847,8 @@ const showSkeleton = computed(() =>
 }
 
 .m3-navbar__indicator svg {
-    width: 1.375rem;
-    height: 1.375rem;
+    width: 1.5rem;
+    height: 1.5rem;
 }
 
 .m3-navbar__label {

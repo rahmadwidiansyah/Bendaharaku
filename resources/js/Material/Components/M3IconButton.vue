@@ -38,8 +38,6 @@ const variantClass = computed(() => `m3-icon-btn--${props.variant}`)
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 3rem;
-    min-height: 3rem;
     width: 2.5rem;
     height: 2.5rem;
     padding: 0.5rem;
@@ -53,6 +51,20 @@ const variantClass = computed(() => `m3-icon-btn--${props.variant}`)
         background-color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects),
         color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects),
         transform var(--m3-motion-fast-spatial-duration) var(--m3-motion-fast-spatial);
+}
+
+/* Touch target expansion to 48x48dp minimum per accessibility guideline */
+.m3-icon-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-width: 48px;
+    min-height: 48px;
+    width: 100%;
+    height: 100%;
+    pointer-events: auto;
 }
 
 .m3-icon-btn__content {
@@ -90,6 +102,11 @@ const variantClass = computed(() => `m3-icon-btn--${props.variant}`)
 
 .m3-icon-btn:active {
     transform: scale(0.94);
+}
+
+.m3-icon-btn:focus-visible {
+    outline: 2px solid var(--m3-color-primary);
+    outline-offset: 2px;
 }
 
 .m3-icon-btn--tonal {

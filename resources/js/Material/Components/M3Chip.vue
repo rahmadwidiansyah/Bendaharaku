@@ -30,15 +30,28 @@ const classes = computed(() => [
         :aria-pressed="variant === 'filter' ? selected : undefined"
         @click="$emit('click', $event)"
     >
+        <svg
+            v-if="variant === 'filter' && selected"
+            class="m3-chip__check"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="3"
+            aria-hidden="true"
+        >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
         <span class="m3-chip__label"><slot /></span>
     </button>
 </template>
 
 <style scoped>
 .m3-chip {
+    position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 0.25rem;
     min-height: 2rem;
     padding: 0 0.875rem;
     border-radius: var(--m3-radius-full);
@@ -50,18 +63,42 @@ const classes = computed(() => [
     font-weight: var(--m3-type-label-large-weight);
     letter-spacing: var(--m3-type-label-large-tracking);
     cursor: pointer;
+    overflow: hidden;
     transition:
         background-color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects),
         color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects),
         border-color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
 }
 
-.m3-chip:hover {
-    background: rgba(227, 226, 230, 0.08);
+/* State layer via ::after — currentColor 8% hover / 10% pressed */
+.m3-chip::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
 }
 
-.m3-chip:active {
-    background: rgba(227, 226, 230, 0.1);
+.m3-chip:hover::after {
+    opacity: 0.08;
+}
+
+.m3-chip:active::after {
+    opacity: 0.1;
+}
+
+.m3-chip:focus-visible {
+    outline: 2px solid var(--m3-color-primary);
+    outline-offset: 2px;
+}
+
+.m3-chip__check {
+    width: 1.125rem;
+    height: 1.125rem;
+    flex-shrink: 0;
 }
 
 .m3-chip--selected {
@@ -70,9 +107,16 @@ const classes = computed(() => [
     color: var(--m3-color-on-secondary-container);
 }
 
-.m3-chip--selected:hover {
-    background: var(--m3-color-secondary-container);
-    filter: brightness(1.12);
+.m3-chip--selected::after {
+    background: var(--m3-color-on-secondary-container);
+}
+
+.m3-chip--selected:hover::after {
+    opacity: 0.08;
+}
+
+.m3-chip--selected:active::after {
+    opacity: 0.1;
 }
 
 .m3-chip:disabled {

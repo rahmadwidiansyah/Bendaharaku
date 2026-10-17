@@ -79,6 +79,11 @@ defineEmits(['click'])
     opacity: 0.1;
 }
 
+.m3-list-item--clickable:focus-visible {
+    outline: 2px solid var(--m3-color-primary);
+    outline-offset: -2px;
+}
+
 .m3-list-item__leading {
     display: inline-flex;
     align-items: center;

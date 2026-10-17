@@ -188,10 +188,10 @@ const displayLocal = (n, visible) => visible ? formatNumber(n) : '••••�
 .m3-portfolio__amount {
     margin: 0;
     min-width: 0;
-    font-size: 1.875rem;
-    line-height: 2.25rem;
-    font-weight: 600;
-    letter-spacing: 0;
+    font-size: var(--m3-type-headline-medium-size);
+    line-height: var(--m3-type-headline-medium-line-height);
+    font-weight: var(--m3-type-headline-medium-weight);
+    letter-spacing: var(--m3-type-headline-medium-tracking);
     color: var(--m3-color-on-surface);
     white-space: nowrap;
     overflow: hidden;

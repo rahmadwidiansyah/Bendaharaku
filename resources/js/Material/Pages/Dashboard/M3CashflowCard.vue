@@ -98,9 +98,10 @@ defineProps({
 
 .m3-cashflow__amount {
     margin: 0;
-    font-size: 1.25rem;
-    line-height: 1.75rem;
-    font-weight: 600;
+    font-size: var(--m3-type-title-large-size);
+    line-height: var(--m3-type-title-large-line-height);
+    font-weight: var(--m3-type-emphasized-title-large-weight);
+    letter-spacing: var(--m3-type-title-large-tracking);
     color: var(--m3-color-on-surface);
     overflow: hidden;
     text-overflow: ellipsis;

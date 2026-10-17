@@ -18,6 +18,7 @@ import M3TransactionList from '@/Material/Pages/Dashboard/M3TransactionList.vue'
 import M3Calendar from '@/Material/Pages/Dashboard/M3Calendar.vue'
 import M3Modal from '@/Material/Components/M3Modal.vue'
 import M3IconButton from '@/Material/Components/M3IconButton.vue'
+import M3Button from '@/Material/Components/M3Button.vue'
 import { Head, router } from '@inertiajs/vue3'
 import { ref, computed, watch, onUnmounted } from 'vue'
 import axios from 'axios'
@@ -347,17 +348,19 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
                             </svg>
                         </M3IconButton>
                     </div>
-                    <button
-                        type="button"
-                        class="m3-filter-btn"
+                    <M3Button
+                        variant="outlined"
+                        size="sm"
                         :class="type ? 'm3-filter-btn--active' : ''"
                         @click="showSortModal = true"
                     >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h9.75m4.5-4.5v12m0 0l-3.75-3.75M17.25 21L21 17.25" />
-                        </svg>
+                        <template #leading>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h9.75m4.5-4.5v12m0 0l-3.75-3.75M17.25 21L21 17.25" />
+                            </svg>
+                        </template>
                         {{ type ? getTypeName(type) : $t('types.all') }}
-                    </button>
+                    </M3Button>
                 </div>
 
                 <!-- Kalender -->
@@ -394,18 +397,23 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
         <!-- Popup filter tipe -->
         <M3Modal :show="showSortModal" :title="$t('dashboard.filterType')" max-width="md" @close="showSortModal = false">
             <div class="m3-type-grid">
-                <button
-                    type="button"
-                    :class="['m3-type-btn', !type ? 'm3-type-btn--active' : '']"
+                <M3Button
+                    :variant="!type ? 'filled' : 'outlined'"
+                    full-width
+                    class="m3-type-grid__all"
                     @click="setType('')"
-                >{{ $t('types.all') }}</button>
-                <button
+                >
+                    {{ $t('types.all') }}
+                </M3Button>
+                <M3Button
                     v-for="key in ['Income', 'Expense', 'Transfer', 'Debt', 'Receivable']"
                     :key="key"
-                    type="button"
-                    :class="['m3-type-btn', type === key ? 'm3-type-btn--active' : '']"
+                    :variant="type === key ? 'filled' : 'outlined'"
+                    full-width
                     @click="setType(key)"
-                >{{ getTypeName(key) }}</button>
+                >
+                    {{ getTypeName(key) }}
+                </M3Button>
             </div>
         </M3Modal>
 
@@ -471,30 +479,65 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
 }
 
 .m3-tabs {
+    position: relative;
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0.25rem;
     padding: 0.25rem;
-    border-radius: var(--m3-radius-md);
+    border-radius: var(--m3-radius-full);
     border: 1px solid var(--m3-color-outline-variant);
     background: var(--m3-color-surface-container-low);
 }
 
 .m3-tabs__btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     padding: 0.375rem 0.75rem;
     border: none;
-    border-radius: var(--m3-radius-sm);
+    border-radius: var(--m3-radius-full);
     background: transparent;
     color: var(--m3-color-on-surface-variant);
-    font-size: var(--m3-type-title-small-size);
-    font-weight: 500;
+    font-size: var(--m3-type-label-large-size);
+    font-weight: var(--m3-type-label-large-weight);
+    letter-spacing: var(--m3-type-label-large-tracking);
     cursor: pointer;
-    transition: background-color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
+    overflow: hidden;
+    transition:
+        background-color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects),
+        color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects),
+        transform var(--m3-motion-fast-spatial-duration) var(--m3-motion-fast-spatial);
+}
+
+.m3-tabs__btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
+}
+
+.m3-tabs__btn:hover::after {
+    opacity: 0.08;
+}
+
+.m3-tabs__btn:active::after {
+    opacity: 0.12;
 }
 
 .m3-tabs__btn--active {
-    background: var(--m3-color-primary);
-    color: var(--m3-color-on-primary);
+    background: var(--m3-color-secondary-container);
+    color: var(--m3-color-on-secondary-container);
+    font-weight: var(--m3-type-emphasized-label-large-weight);
+}
+
+.m3-tabs__btn:focus-visible {
+    outline: 2px solid var(--m3-color-primary);
+    outline-offset: 2px;
 }
 
 .m3-period-row {
@@ -587,24 +630,7 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
     gap: 0.5rem;
 }
 
-.m3-type-grid .m3-type-btn:first-child {
+.m3-type-grid__all {
     grid-column: span 2;
-}
-
-.m3-type-btn {
-    padding: var(--m3-space-2) var(--m3-space-3);
-    border-radius: var(--m3-radius-md);
-    border: 1px solid var(--m3-color-outline-variant);
-    background: var(--m3-color-surface-container-high);
-    color: var(--m3-color-on-surface-variant);
-    font-size: var(--m3-type-title-small-size);
-    font-weight: 500;
-    cursor: pointer;
-}
-
-.m3-type-btn--active {
-    background: var(--m3-color-primary);
-    border-color: transparent;
-    color: var(--m3-color-on-primary);
 }
 </style>
