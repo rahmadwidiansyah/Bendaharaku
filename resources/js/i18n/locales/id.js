@@ -712,6 +712,20 @@ categoryTab: {
                     m3:             'Material Design 3',
                     m3_desc:        'Desain Material 3 Expressive (Beta — Dashboard saja untuk saat ini)',
                 },
+                m3_color_scheme: {
+                    title:          'Skema Warna M3',
+                    description:    'Pilih skema warna aksen Material 3',
+                    ocean:          'Ocean',
+                    ocean_desc:     'Biru sejuk, kuat dan terpercaya',
+                    forest:         'Hutan',
+                    forest_desc:    'Hijau tumbuh, segar dan sehat',
+                    sunset:         'Sunset',
+                    sunset_desc:    'Oranye hangat, energik dan optimis',
+                    midnight:       'Midnight',
+                    midnight_desc:  'Ungu malam, premium dan mendalam',
+                    rose:           'Rose',
+                    rose_desc:      'Merah muda lembut, hangat dan empati',
+                },
             },
             
             language: {

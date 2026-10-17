@@ -9,6 +9,7 @@ import axios from 'axios';
 import { applyAccentColor, saveAccentColor, ACCENT_PALETTES, isCustomColor, isValidHex, getColorValue } from '@/Composables/useAccentColor.js';
 import { setCategoryIconColored } from '@/Composables/useIcon.js';
 import { useTheme } from '@/Composables/useTheme';
+import { useM3ColorScheme } from '@/Composables/useM3ColorScheme.js';
 import { useToast } from '@/Composables/useToast';
 
 const { t } = useI18n();
@@ -31,6 +32,12 @@ const iconColored = ref(props.categoryIconColored);
 // Multi-UI: pilihan UI tersimpan; dipakai untuk deteksi perubahan + revert saat gagal.
 const uiTheme = ref(props.userUiTheme ?? 'default');
 const savedUiTheme = ref(uiTheme.value);
+
+// M3 color scheme preset (hanya relevan saat ui_theme === 'm3')
+const { schemes: m3Schemes, defaultScheme: m3DefaultScheme, saveM3ColorScheme, initM3ColorScheme } = useM3ColorScheme();
+const m3ColorScheme = ref(localStorage.getItem('ls_m3_color_scheme') ?? m3DefaultScheme);
+
+const isM3Active = computed(() => uiTheme.value === 'm3');
 
 
 const isCustom = computed(() => isCustomColor(accentColor.value));
@@ -72,8 +79,17 @@ watch(iconColored, () => {
   saveAppearance();
 });
 
+watch(m3ColorScheme, (scheme) => {
+  if (!isM3Active.value) return;
+  saveM3ColorScheme(scheme);
+});
+
 let revertingUiTheme = false;
-watch(uiTheme, () => {
+watch(uiTheme, (newTheme) => {
+  if (newTheme === 'm3') {
+    initM3ColorScheme();
+    m3ColorScheme.value = localStorage.getItem('ls_m3_color_scheme') ?? m3DefaultScheme;
+  }
   // Lewati save saat revert otomatis pasca-gagal (hindari PATCH ganda).
   if (revertingUiTheme) return;
   saveAppearance();
@@ -150,6 +166,32 @@ const saveAppearance = () => {
                 {{ t(`settings.application.appearance.ui_theme.${value}_desc`) }}
               </span>
             </span>
+          </label>
+        </div>
+      </SettingsCard>
+
+      <!-- M3 Color Scheme (hanya tampil saat M3 UI aktif) -->
+      <SettingsCard v-if="isM3Active"
+        :title="t('settings.application.appearance.m3_color_scheme.title')"
+        :description="t('settings.application.appearance.m3_color_scheme.description')"
+      >
+        <div class="grid grid-cols-3 gap-3">
+          <label
+            v-for="(scheme, key) in m3Schemes"
+            :key="key"
+            class="flex flex-col items-center gap-2 p-3 border border-border-default rounded-lg cursor-pointer hover:bg-surface-muted transition-colors"
+            :class="m3ColorScheme === key && 'border-purple-500 bg-purple-500/10'"
+          >
+            <input v-model="m3ColorScheme" type="radio" :value="key" class="w-4 h-4" />
+            <div
+              class="w-12 h-12 rounded-full border border-border-default flex items-center justify-center mb-1"
+              :style="{ backgroundColor: scheme.primary }"
+            >
+              <span class="text-[10px] font-semibold uppercase tracking-wider"
+                :style="{ color: scheme.primary }">{{ key.slice(0, 1).toUpperCase() }}</span>
+            </div>
+            <span class="text-xs text-text-primary text-center font-medium">{{ scheme.label }}</span>
+            <span class="text-[10px] text-text-muted text-center leading-tight">{{ scheme.desc }}</span>
           </label>
         </div>
       </SettingsCard>

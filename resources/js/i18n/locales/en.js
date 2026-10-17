@@ -694,6 +694,20 @@ export default {
                     m3:             'Material Design 3',
                     m3_desc:        'Material 3 Expressive design (Beta — Dashboard only for now)',
                 },
+                m3_color_scheme: {
+                    title:          'M3 Color Scheme',
+                    description:    'Choose Material 3 accent color scheme',
+                    ocean:          'Ocean',
+                    ocean_desc:     'Cool blue, strong and trustworthy',
+                    forest:         'Forest',
+                    forest_desc:    'Green growth, fresh and healthy',
+                    sunset:         'Sunset',
+                    sunset_desc:    'Warm orange, energetic and optimistic',
+                    midnight:       'Midnight',
+                    midnight_desc:  'Deep purple, premium and profound',
+                    rose:           'Rose',
+                    rose_desc:      'Soft pink, gentle and warm',
+                },
             },
             
             language: {

@@ -29,6 +29,7 @@ import { usePushNotifications } from '@/Composables/usePushNotifications'
 import { usePage, router, Link } from '@inertiajs/vue3'
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { initM3ColorScheme } from '@/Composables/useM3ColorScheme.js'
 import { consumeStaleForRoute } from '@/utils/stale.js'
 
 const { t } = useI18n()
@@ -58,6 +59,9 @@ onMounted(() => {
     const userTheme = page.props.auth?.user?.theme ?? 'system'
     initTheme(userTheme)
     syncUiThemeFromProps(page.props)
+    if (page.props.auth?.user?.ui_theme === 'm3') {
+        initM3ColorScheme()
+    }
 })
 
 // ── Push presence ──
@@ -174,7 +178,14 @@ const showSkeleton = computed(() =>
         <a href="#main-content" class="m3-skip-link">Langsung ke konten</a>
 
         <!-- ── Top app bar (small, 4rem) ── -->
-        <header v-if="!hideNav" class="m3-appbar">
+        <header
+            v-if="!hideNav"
+            class="m3-appbar"
+            :class="{
+                'm3-appbar--rail': isDesktop && isRailOpen,
+                'm3-appbar--rail-collapsed': isDesktop && !isRailOpen,
+            }"
+        >
             <div class="m3-appbar__leading">
                 <Link :href="route('dashboard')" class="m3-appbar__brand-btn" aria-label="Bendaharaku">
                     <img src="/icons/logo.png" alt="Bendaharaku" class="m3-appbar__brand-logo" />
@@ -386,6 +397,17 @@ const showSkeleton = computed(() =>
     padding: var(--m3-space-2) var(--m3-space-4);
     background: var(--m3-color-surface-container);
     color: var(--m3-color-on-surface);
+    transition:
+        padding-left var(--m3-motion-default-spatial-duration) var(--m3-motion-default-spatial),
+        padding-right var(--m3-motion-default-spatial-duration) var(--m3-motion-default-spatial);
+}
+
+.m3-appbar--rail {
+    padding-left: 15rem;
+}
+
+.m3-appbar--rail-collapsed {
+    padding-left: 5rem;
 }
 
 .m3-appbar__leading {
@@ -576,12 +598,27 @@ const showSkeleton = computed(() =>
     height: 2rem;
     flex-shrink: 0;
     border-radius: var(--m3-radius-full);
-    overflow: hidden;
-    transform: scaleX(0.75);
-    transition:
-        transform var(--m3-motion-default-spatial-duration) var(--m3-motion-default-spatial),
-        background-color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects),
-        color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
+    overflow: visible;
+}
+
+.m3-rail__indicator::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 0;
+    height: 100%;
+    background: var(--m3-color-secondary-container);
+    border-radius: inherit;
+    transform: translateX(-50%);
+    transition: width var(--m3-motion-default-spatial-duration) var(--m3-motion-default-spatial);
+}
+
+.m3-rail__indicator svg {
+    position: relative;
+    z-index: 1;
+    width: 1.5rem;
+    height: 1.5rem;
 }
 
 .m3-rail__indicator::after {
@@ -603,15 +640,16 @@ const showSkeleton = computed(() =>
     opacity: 0.1;
 }
 
-.m3-rail__item--active .m3-rail__indicator {
-    transform: scaleX(1);
-    background: var(--m3-color-secondary-container);
-    color: var(--m3-color-on-secondary-container);
+.m3-rail__item--active .m3-rail__indicator::before {
+    width: 100%;
 }
 
-.m3-rail__indicator svg {
-    width: 1.5rem;
-    height: 1.5rem;
+.m3-rail__item--active .m3-rail__indicator::after {
+    opacity: 0;
+}
+
+.m3-rail__item--active .m3-rail__indicator svg {
+    color: var(--m3-color-on-secondary-container);
 }
 
 .m3-rail__label {
@@ -761,8 +799,7 @@ const showSkeleton = computed(() =>
     transition: opacity 200ms ease-in;
 }
 
-/* ── Mobile navigation bar (compact ~4.5rem; deviation from M3 80dp
-   for information density — touch targets preserved via 3rem buttons) ── */
+/* ── Mobile navigation bar (48dp tall, equal-width segments per M3 flexible nav bar) ── */
 .m3-navbar {
     position: fixed;
     left: 0;
@@ -770,9 +807,10 @@ const showSkeleton = computed(() =>
     bottom: 0;
     z-index: 50;
     display: flex;
-    align-items: flex-start;
-    justify-content: space-around;
-    padding: var(--m3-space-2) var(--m3-space-2) calc(var(--m3-space-2) + env(safe-area-inset-bottom, 0px));
+    align-items: center;
+    justify-content: center;
+    height: 4rem;
+    padding: 0 var(--m3-space-2) calc(var(--m3-space-2) + env(safe-area-inset-bottom, 0px));
     background: var(--m3-color-surface-container);
 }
 
@@ -787,6 +825,7 @@ const showSkeleton = computed(() =>
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 0.25rem;
     flex: 1;
     color: var(--m3-color-on-surface-variant);
@@ -794,6 +833,9 @@ const showSkeleton = computed(() =>
     background: none;
     border: none;
     border-radius: var(--m3-radius-sm);
+    min-width: 0;
+    height: 100%;
+    padding: 0 var(--m3-space-1);
 }
 
 .m3-navbar__item:focus-visible {
@@ -809,12 +851,27 @@ const showSkeleton = computed(() =>
     width: 4rem;
     height: 2rem;
     border-radius: var(--m3-radius-full);
-    overflow: hidden;
-    transform: scaleX(0.75);
-    transition:
-        transform var(--m3-motion-default-spatial-duration) var(--m3-motion-default-spatial),
-        background-color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects),
-        color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
+    overflow: visible;
+}
+
+.m3-navbar__indicator::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 0;
+    height: 100%;
+    background: var(--m3-color-secondary-container);
+    border-radius: inherit;
+    transform: translateX(-50%);
+    transition: width var(--m3-motion-default-spatial-duration) var(--m3-motion-default-spatial);
+}
+
+.m3-navbar__indicator svg {
+    position: relative;
+    z-index: 1;
+    width: 1.5rem;
+    height: 1.5rem;
 }
 
 .m3-navbar__indicator::after {
@@ -836,19 +893,20 @@ const showSkeleton = computed(() =>
     opacity: 0.1;
 }
 
-.m3-navbar__item--active .m3-navbar__indicator {
-    transform: scaleX(1);
-    background: var(--m3-color-secondary-container);
+.m3-navbar__item--active .m3-navbar__indicator::before {
+    width: 100%;
+}
+
+.m3-navbar__item--active .m3-navbar__indicator::after {
+    opacity: 0;
+}
+
+.m3-navbar__item--active .m3-navbar__indicator svg {
     color: var(--m3-color-on-secondary-container);
 }
 
 .m3-navbar__item--active {
     color: var(--m3-color-on-surface);
-}
-
-.m3-navbar__indicator svg {
-    width: 1.5rem;
-    height: 1.5rem;
 }
 
 .m3-navbar__label {
