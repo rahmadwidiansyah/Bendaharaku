@@ -95,6 +95,8 @@ export default {
         lastMonth:      'Last Month',
         applyFilter:    'Apply Filter',
         applying:       'Applying...',
+        selectDate:     'Select date',
+        selectYear:     'Select year',
         // Generic error messages
         errors: {
             generic: 'Something went wrong. Please try again later.'
@@ -132,6 +134,8 @@ export default {
         settings:   'Settings',
         telegram:   'Telegram',
         chat:       'Chat',
+        more:       'More',
+        search:     'Search',
         newRecord:  'New Record',
         mainNav:    'Main navigation',
         profile:    'Profile',
@@ -142,6 +146,17 @@ export default {
         analyticsDesc: 'Financial reports',
         chatDesc:      'Chat with AI Assistant',
         settingsDesc:  'All application settings',
+    },
+
+    // ────────────────────────────────────────────────────────────────
+    // MORE (mobile navigation bar "More" hub)
+    // ────────────────────────────────────────────────────────────────
+    more: {
+        finance:        'Finance',
+        app:            'App',
+        categoriesDesc: 'Manage transaction categories',
+        loansDesc:      'Debts & receivables',
+        searchDesc:     'Search transactions and more',
     },
 
     // ────────────────────────────────────────────────────────────────
@@ -173,6 +188,7 @@ export default {
         totalBudget:      'Total Budget',
         totalSpent:       'Total Spent',
         totalRemaining:   'Remaining',
+        remainingPct:     '{pct}% left',
         byCategory:       'By Category',
         byType:           'By Expense Type',
         budget:           'Budget',
@@ -215,6 +231,8 @@ export default {
     // ────────────────────────────────────────────────────────────────
     header: {
         toggleBalance:  'Toggle balance visibility',
+        toggleDebt:     'Toggle total debt visibility',
+        toggleReceivable: 'Toggle total receivable visibility',
         openSettings:   'Open settings',
         actions:        'Header actions',
     },
@@ -682,7 +700,7 @@ export default {
                 },
                 accent_color: {
                     title:          'Accent Color',
-                    description:    'Choose primary accent color',
+                    description:    'Accent color for the Default UI',
                     custom:         'Custom Color...',
                     setAccent:      'Set {name} as accent color',
                 },
@@ -692,21 +710,25 @@ export default {
                     default:        'Default',
                     default_desc:   'Current appearance',
                     m3:             'Material Design 3',
-                    m3_desc:        'Material 3 Expressive design (Beta — Dashboard only for now)',
+                    m3_desc:        'Material 3 Expressive design (Beta)',
                 },
                 m3_color_scheme: {
                     title:          'M3 Color Scheme',
-                    description:    'Choose Material 3 accent color scheme',
+                    description:    'Full color scheme for the Material 3 UI — independent from the Default accent color',
+                    teal:           'Teal',
+                    teal_desc:      'Bendaharaku teal, calm and balanced',
+                    baseline:       'Baseline',
+                    baseline_desc:  'Default Material 3 purple, classic and neutral',
                     ocean:          'Ocean',
                     ocean_desc:     'Cool blue, strong and trustworthy',
                     forest:         'Forest',
                     forest_desc:    'Green growth, fresh and healthy',
                     sunset:         'Sunset',
                     sunset_desc:    'Warm orange, energetic and optimistic',
-                    midnight:       'Midnight',
-                    midnight_desc:  'Deep purple, premium and profound',
                     rose:           'Rose',
                     rose_desc:      'Soft pink, gentle and warm',
+                    midnight:       'Midnight',
+                    midnight_desc:  'Deep indigo, premium and profound',
                 },
             },
             

@@ -3,14 +3,19 @@
  * M3IconButton — Material Design 3 Expressive icon button.
  * Per references/components/buttons.md: 40dp container, full shape,
  * 8% hover / 10% pressed state layers, 38% disabled opacity.
+ *
+ * `href` merender sebagai Inertia <Link> (semantik anchor untuk navigasi);
+ * tanpa href merender <button> dan mengemit click.
  */
 import { computed } from 'vue'
+import { Link } from '@inertiajs/vue3'
 
 const props = defineProps({
     variant: { type: String, default: 'standard' }, // standard | tonal | filled
     ariaLabel: { type: String, required: true },
     disabled: { type: Boolean, default: false },
     type: { type: String, default: 'button' },
+    href: { type: String, default: '' },
 })
 
 defineEmits(['click'])
@@ -19,17 +24,19 @@ const variantClass = computed(() => `m3-icon-btn--${props.variant}`)
 </script>
 
 <template>
-    <button
-        :type="type"
+    <component
+        :is="href ? Link : 'button'"
+        :href="href || undefined"
+        :type="href ? undefined : type"
         :aria-label="ariaLabel"
-        :disabled="disabled"
+        :disabled="href ? undefined : disabled"
         :class="['m3-icon-btn', variantClass]"
         @click="$emit('click', $event)"
     >
         <span class="m3-icon-btn__content" aria-hidden="true">
             <slot />
         </span>
-    </button>
+    </component>
 </template>
 
 <style scoped>
@@ -38,9 +45,9 @@ const variantClass = computed(() => `m3-icon-btn--${props.variant}`)
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 2.5rem;
-    height: 2.5rem;
-    padding: 0.5rem;
+    width: var(--m3-size-touch-target);
+    height: var(--m3-size-touch-target);
+    padding: var(--m3-space-2);
     border: none;
     border-radius: var(--m3-radius-full);
     background: transparent;
@@ -60,8 +67,8 @@ const variantClass = computed(() => `m3-icon-btn--${props.variant}`)
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    min-width: 48px;
-    min-height: 48px;
+    min-width: var(--m3-size-touch-target-lg);
+    min-height: var(--m3-size-touch-target-lg);
     width: 100%;
     height: 100%;
     pointer-events: auto;
@@ -71,13 +78,13 @@ const variantClass = computed(() => `m3-icon-btn--${props.variant}`)
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 1.5rem;
-    height: 1.5rem;
+    width: var(--m3-size-icon);
+    height: var(--m3-size-icon);
 }
 
 .m3-icon-btn__content :deep(svg) {
-    width: 1.5rem;
-    height: 1.5rem;
+    width: var(--m3-size-icon);
+    height: var(--m3-size-icon);
 }
 
 /* State layer via ::after (8% hover, 10% pressed of currentColor) */

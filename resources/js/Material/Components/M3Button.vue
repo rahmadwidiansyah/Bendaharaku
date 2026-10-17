@@ -10,6 +10,7 @@
  * - Disabled opacity: 0.38
  */
 import { computed } from 'vue'
+import { Link } from '@inertiajs/vue3'
 
 const props = defineProps({
     variant: {
@@ -39,6 +40,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    href: {
+        type: String,
+        default: '',
+    },
 })
 
 defineEmits(['click'])
@@ -53,9 +58,11 @@ const classes = computed(() => [
 </script>
 
 <template>
-    <button
-        :type="type"
-        :disabled="disabled"
+    <component
+        :is="href ? Link : 'button'"
+        :href="href || undefined"
+        :type="href ? undefined : type"
+        :disabled="href ? undefined : disabled"
         :class="classes"
         @click="$emit('click', $event)"
     >
@@ -68,7 +75,7 @@ const classes = computed(() => [
         <span v-if="$slots.trailing" class="m3-btn__trailing" aria-hidden="true">
             <slot name="trailing" />
         </span>
-    </button>
+    </component>
 </template>
 
 <style scoped>

@@ -3,24 +3,46 @@
  * M3ListItem — Material Design 3 Expressive list item.
  * Leading icon + headline + supporting text + trailing content.
  * Divider uses outline-variant (never plain outline on multi-element rows).
+ *
+ * `href` merender sebagai Inertia <Link> (semantik anchor, keyboard-aware);
+ * `clickable` tanpa href merender div role="button" dengan emit click.
  */
-defineProps({
+import { computed } from 'vue'
+import { Link } from '@inertiajs/vue3'
+
+const props = defineProps({
     clickable: { type: Boolean, default: false },
     dense: { type: Boolean, default: false },
     divider: { type: Boolean, default: false },
+    href: { type: String, default: '' },
 })
 
-defineEmits(['click'])
+const emit = defineEmits(['click'])
+
+const isInteractive = computed(() => props.clickable || !!props.href)
+
+function onEnter(e) {
+    if (!props.href && props.clickable) emit('click', e)
+}
+
+function onSpace(e) {
+    if (!props.href && props.clickable) {
+        e.preventDefault()
+        emit('click', e)
+    }
+}
 </script>
 
 <template>
-    <div
-        :class="['m3-list-item', clickable ? 'm3-list-item--clickable' : '', dense ? 'm3-list-item--dense' : '', divider ? 'm3-list-item--divider' : '']"
-        :role="clickable ? 'button' : undefined"
-        :tabindex="clickable ? 0 : undefined"
+    <component
+        :is="href ? Link : 'div'"
+        :href="href || undefined"
+        :class="['m3-list-item', isInteractive ? 'm3-list-item--clickable' : '', dense ? 'm3-list-item--dense' : '', divider ? 'm3-list-item--divider' : '']"
+        :role="!href && clickable ? 'button' : undefined"
+        :tabindex="!href && clickable ? 0 : undefined"
         @click="$emit('click', $event)"
-        @keydown.enter="$emit('click', $event)"
-        @keydown.space.prevent="$emit('click', $event)"
+        @keydown.enter="onEnter"
+        @keydown.space="onSpace"
     >
         <span v-if="$slots.icon" class="m3-list-item__leading" aria-hidden="true">
             <slot name="icon" />
@@ -32,7 +54,7 @@ defineEmits(['click'])
         <span v-if="$slots.trailing" class="m3-list-item__trailing">
             <slot name="trailing" />
         </span>
-    </div>
+    </component>
 </template>
 
 <style scoped>
@@ -40,17 +62,18 @@ defineEmits(['click'])
     position: relative;
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: var(--m3-space-4);
     width: 100%;
-    padding: 0.75rem 1rem;
+    padding: var(--m3-space-3) var(--m3-space-4);
     background: var(--m3-color-surface);
     color: var(--m3-color-on-surface);
     overflow: hidden;
+    text-decoration: none;
 }
 
 .m3-list-item--dense {
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
+    padding-top: var(--m3-space-2);
+    padding-bottom: var(--m3-space-2);
 }
 
 .m3-list-item--divider {
@@ -89,8 +112,8 @@ defineEmits(['click'])
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    width: 2.5rem;
-    height: 2.5rem;
+    width: var(--m3-size-touch-target);
+    height: var(--m3-size-touch-target);
     border-radius: var(--m3-radius-full);
 }
 
@@ -99,7 +122,7 @@ defineEmits(['click'])
     flex-direction: column;
     flex: 1;
     min-width: 0;
-    line-height: 1.25rem;
+    line-height: var(--m3-type-body-medium-line-height);
 }
 
 .m3-list-item__headline {

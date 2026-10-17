@@ -111,13 +111,27 @@ const displayLocal = (n, visible) => visible ? formatNumber(n) : '••••�
 
         <!-- Hutang -->
         <div v-if="totalHutang > 0" class="m3-portfolio__section">
-            <button type="button" class="m3-section-toggle" @click="toggleSection('hutang')" :aria-expanded="!collapsedSections.hutang">
-                <svg class="m3-chevron" :class="!collapsedSections.hutang ? 'm3-chevron--open' : ''" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-                <span class="m3-section-toggle__label">{{ $t('wallet.totalDebt') }}</span>
-                <span class="m3-section-toggle__amount m3-section-toggle__amount--debt">Rp {{ displayLocal(totalHutang, hutangVisible) }}</span>
-            </button>
+            <div class="m3-portfolio__section-head">
+                <button type="button" class="m3-section-toggle" @click="toggleSection('hutang')" :aria-expanded="!collapsedSections.hutang">
+                    <svg class="m3-chevron" :class="!collapsedSections.hutang ? 'm3-chevron--open' : ''" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                    <span class="m3-section-toggle__label">{{ $t('wallet.totalDebt') }}</span>
+                    <span class="m3-section-toggle__amount m3-section-toggle__amount--debt">Rp {{ displayLocal(totalHutang, hutangVisible) }}</span>
+                </button>
+                <M3IconButton
+                    :aria-label="$t('header.toggleDebt')"
+                    @click="hutangVisible = !hutangVisible"
+                >
+                    <svg v-if="hutangVisible" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                    </svg>
+                </M3IconButton>
+            </div>
             <div class="m3-collapse" :style="{ gridTemplateRows: collapsedSections.hutang ? '0fr' : '1fr' }">
                 <div class="m3-collapse__inner" :class="collapsedSections.hutang ? 'm3-collapse__inner--hidden' : ''">
                     <Link :href="route('loans.index', { type: 'hutang' })" class="m3-debt-link m3-debt-link--debt">
@@ -132,13 +146,27 @@ const displayLocal = (n, visible) => visible ? formatNumber(n) : '••••�
 
         <!-- Piutang -->
         <div v-if="totalPiutang > 0" class="m3-portfolio__section">
-            <button type="button" class="m3-section-toggle" @click="toggleSection('piutang')" :aria-expanded="!collapsedSections.piutang">
-                <svg class="m3-chevron" :class="!collapsedSections.piutang ? 'm3-chevron--open' : ''" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-                <span class="m3-section-toggle__label">{{ $t('wallet.totalReceivable') }}</span>
-                <span class="m3-section-toggle__amount m3-section-toggle__amount--receivable">Rp {{ displayLocal(totalPiutang, piutangVisible) }}</span>
-            </button>
+            <div class="m3-portfolio__section-head">
+                <button type="button" class="m3-section-toggle" @click="toggleSection('piutang')" :aria-expanded="!collapsedSections.piutang">
+                    <svg class="m3-chevron" :class="!collapsedSections.piutang ? 'm3-chevron--open' : ''" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                    <span class="m3-section-toggle__label">{{ $t('wallet.totalReceivable') }}</span>
+                    <span class="m3-section-toggle__amount m3-section-toggle__amount--receivable">Rp {{ displayLocal(totalPiutang, piutangVisible) }}</span>
+                </button>
+                <M3IconButton
+                    :aria-label="$t('header.toggleReceivable')"
+                    @click="piutangVisible = !piutangVisible"
+                >
+                    <svg v-if="piutangVisible" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                    </svg>
+                </M3IconButton>
+            </div>
             <div class="m3-collapse" :style="{ gridTemplateRows: collapsedSections.piutang ? '0fr' : '1fr' }">
                 <div class="m3-collapse__inner" :class="collapsedSections.piutang ? 'm3-collapse__inner--hidden' : ''">
                     <Link :href="route('loans.index', { type: 'piutang' })" class="m3-debt-link m3-debt-link--receivable">
@@ -158,7 +186,7 @@ const displayLocal = (n, visible) => visible ? formatNumber(n) : '••••�
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--m3-space-2);
 }
 
 .m3-portfolio__eyebrow {
@@ -200,15 +228,22 @@ const displayLocal = (n, visible) => visible ? formatNumber(n) : '••••�
 
 .m3-portfolio__section {
     border-top: 1px solid var(--m3-color-outline-variant);
-    padding-top: 0.25rem;
+    padding-top: var(--m3-space-1);
+}
+
+.m3-portfolio__section-head {
+    display: flex;
+    align-items: center;
+    gap: var(--m3-space-1);
 }
 
 .m3-section-toggle {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    width: 100%;
-    padding: 0.5rem 0;
+    gap: var(--m3-space-2);
+    flex: 1;
+    min-width: 0;
+    padding: var(--m3-space-2) 0;
     background: none;
     border: none;
     color: var(--m3-color-on-surface-variant);
@@ -242,8 +277,8 @@ const displayLocal = (n, visible) => visible ? formatNumber(n) : '••••�
 }
 
 .m3-chevron {
-    width: 0.875rem;
-    height: 0.875rem;
+    width: var(--m3-size-icon-3xs);
+    height: var(--m3-size-icon-3xs);
     flex-shrink: 0;
     transition: transform var(--m3-motion-default-effects-duration) var(--m3-motion-default-effects);
 }
@@ -286,8 +321,8 @@ const displayLocal = (n, visible) => visible ? formatNumber(n) : '••••�
 }
 
 .m3-wallet-ico {
-    width: 1.125rem;
-    height: 1.125rem;
+    width: var(--m3-size-icon-sm);
+    height: var(--m3-size-icon-sm);
     flex-shrink: 0;
 }
 
@@ -295,7 +330,7 @@ const displayLocal = (n, visible) => visible ? formatNumber(n) : '••••�
     flex: 1;
     min-width: 0;
     font-size: var(--m3-type-body-small-size);
-    font-weight: 500;
+    font-weight: var(--m3-type-emphasized-body-small-weight);
     color: var(--m3-color-on-surface-variant);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -318,8 +353,8 @@ const displayLocal = (n, visible) => visible ? formatNumber(n) : '••••�
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.375rem;
-    padding: 0.5rem;
+    gap: var(--m3-space-1-5);
+    padding: var(--m3-space-2);
     border-radius: var(--m3-radius-sm);
     border: 1px dashed var(--m3-color-outline);
     color: var(--m3-color-on-surface-variant);
@@ -331,8 +366,8 @@ const displayLocal = (n, visible) => visible ? formatNumber(n) : '••••�
 }
 
 .m3-wallet-add svg {
-    width: 0.875rem;
-    height: 0.875rem;
+    width: var(--m3-size-icon-3xs);
+    height: var(--m3-size-icon-3xs);
 }
 
 .m3-debt-link {
@@ -342,13 +377,13 @@ const displayLocal = (n, visible) => visible ? formatNumber(n) : '••••�
     padding: var(--m3-space-2) 0;
     margin: var(--m3-space-1) 0;
     font-size: var(--m3-type-body-small-size);
-    font-weight: 500;
+    font-weight: var(--m3-type-emphasized-body-small-weight);
     text-decoration: none;
 }
 
 .m3-debt-link svg {
-    width: 0.875rem;
-    height: 0.875rem;
+    width: var(--m3-size-icon-3xs);
+    height: var(--m3-size-icon-3xs);
     flex-shrink: 0;
 }
 

@@ -12,18 +12,21 @@
  *   chrome chart (grid, tooltip, ticks) sadar light/dark via kelas `.light`.
  * - Ikon kategori memakai Material/utils/m3IconColor (token, bukan utilitas
  *   Tailwind mentah — lihat catatan light-mode di file tersebut).
- * - DateModal dipakai ulang apa adanya (styling Default, fungsional identik
- *   — preseden sama seperti TransactionDetailModal di Dashboard M3).
+ * - DateModal digantikan M3DateRangeModal (preset + kalender M3; kontrak
+ *   query start_date/end_date dan route analytics.index tidak berubah).
  * - Animasi chart dimatikan bila prefers-reduced-motion aktif.
  */
 import M3Layout from '@/Material/Layouts/AuthenticatedLayout.vue'
 import M3Card from '@/Material/Components/M3Card.vue'
+import M3PageTitle from '@/Material/Components/M3PageTitle.vue'
 import M3CashflowCard from '@/Material/Pages/Dashboard/M3CashflowCard.vue'
-import DateModal from '@/Components/DateModal.vue'
+import M3DateRangeModal from '@/Material/Components/M3DateRangeModal.vue'
+import M3IconButton from '@/Material/Components/M3IconButton.vue'
+import M3Button from '@/Material/Components/M3Button.vue'
 import { Head, Link } from '@inertiajs/vue3'
 import { ref, shallowRef, onMounted, onBeforeUnmount, computed, nextTick, watch } from 'vue'
 import { Chart, registerables } from 'chart.js'
-import { formatNumber, formatDate, parseDateOnly } from '@/utils/format.js'
+import { formatNumber, formatDate, parseDateOnly, formatLocalYMD } from '@/utils/format.js'
 import { useI18n } from 'vue-i18n'
 import AppIcon from '@/Components/AppIcon.vue'
 import { getM3CategoryIconClass } from '@/Material/utils/m3IconColor.js'
@@ -72,6 +75,15 @@ const doughnutChartRef = ref(null)
 const barChartKey = ref(0)
 const doughnutReady = ref(false)
 
+// ─── Modal rentang tanggal M3 ─────────────────────────────────────
+const showDateModal = ref(false)
+// Indikator filter aktif (paritas DateModal Default): start_date bukan
+// tanggal 1 bulan berjalan.
+const isDateFiltered = computed(() => {
+    const now = new Date()
+    return props.startDate !== formatLocalYMD(new Date(now.getFullYear(), now.getMonth(), 1))
+})
+
 // Hormati prefers-reduced-motion: matikan durasi animasi Chart.js.
 const REDUCED_MOTION = typeof window !== 'undefined'
     && typeof window.matchMedia === 'function'
@@ -92,18 +104,19 @@ const FLOW_COLORS = computed(() => ({
     receivable: cssVar('--m3-color-receivable', '#c084fc'),
 }))
 
-// Chrome chart yang sadar skema light/dark.
+// Chrome chart yang sadar skema light/dark. Tooltip memakai pasangan
+// inverse-surface/on-inverse-surface (peran M3 untuk elemen kontras).
 const chartChrome = () => {
     const light = isLightScheme()
     return {
         grid: light ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.05)',
         ticks: cssVar('--m3-color-on-surface-variant', '#9CA3AF'),
         labels: cssVar('--m3-color-on-surface-variant', '#D1D5DB'),
-        tooltipBg: light ? 'rgba(255,255,255,0.97)' : 'rgba(18,18,18,0.95)',
-        tooltipTitle: light ? '#44474e' : '#9CA3AF',
-        tooltipBody: light ? '#1a1c1e' : '#ffffff',
+        tooltipBg: cssVar('--m3-color-inverse-surface', light ? '#e3e2e6' : '#2f3033'),
+        tooltipTitle: cssVar('--m3-color-inverse-on-surface', light ? '#1a1c1e' : '#f0f0f3') + 'b3',
+        tooltipBody: cssVar('--m3-color-inverse-on-surface', light ? '#1a1c1e' : '#f0f0f3'),
         surface: cssVar('--m3-color-surface', '#1a1c1e'),
-        brand: cssVar('--m3-color-primary', cssVar('--color-brand', '#a855f7')),
+        brand: cssVar('--m3-color-primary', '#82d5ca'),
     }
 }
 
@@ -745,14 +758,46 @@ onBeforeUnmount(() => {
         <Head title="Analitik" />
 
         <div class="m3-ana">
+            <!-- Judul halaman in-content (mobile; desktop memakai app bar) -->
+            <M3PageTitle :title="$t('analytics.title')">
+                <template #actions>
+                    <M3IconButton :href="route('chat.index')" :aria-label="$t('nav.chat')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 4v-4z" />
+                        </svg>
+                    </M3IconButton>
+                </template>
+            </M3PageTitle>
+
             <!-- Bar tanggal + pemilih rentang -->
             <div class="m3-ana__datebar">
                 <p class="m3-ana__range">
                     {{ $t('analytics.showingData') }}
                     <span class="m3-ana__range-dates">{{ formatDate(startDate, { day: 'numeric', month: 'long' }) }} – {{ formatDate(endDate, { day: 'numeric', month: 'long' }) }}</span>
                 </p>
-                <DateModal :action="route('analytics.index')" :start-date="startDate" :end-date="endDate" />
+                <M3Button
+                    variant="outlined"
+                    size="sm"
+                    :class="isDateFiltered ? 'm3-ana__date-btn--active' : ''"
+                    :aria-label="$t('common.dateRange')"
+                    @click="showDateModal = true"
+                >
+                    <template #leading>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </template>
+                    {{ $t('common.dateRange') }}
+                </M3Button>
             </div>
+
+            <M3DateRangeModal
+                :show="showDateModal"
+                :start-date="startDate"
+                :end-date="endDate"
+                :action="route('analytics.index')"
+                @close="showDateModal = false"
+            />
 
             <!-- KPI pemasukan/pengeluaran -->
             <M3CashflowCard :income="totalIncome" :expense="totalExpense" :is-visible="true" />
@@ -870,7 +915,7 @@ onBeforeUnmount(() => {
     flex-direction: column;
     gap: var(--m3-space-4);
     width: 100%;
-    max-width: 72rem;
+    max-width: var(--m3-size-content-max);
     margin: 0 auto;
     padding: var(--m3-space-4) var(--m3-space-4) var(--m3-space-4);
 }
@@ -888,7 +933,7 @@ onBeforeUnmount(() => {
     margin: 0;
     min-width: 0;
     font-size: var(--m3-type-body-small-size);
-    font-weight: 500;
+    font-weight: var(--m3-type-emphasized-body-small-weight);
     color: var(--m3-color-on-surface);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -897,7 +942,14 @@ onBeforeUnmount(() => {
 
 .m3-ana__range-dates {
     color: var(--m3-color-on-surface-variant);
-    font-weight: 400;
+    font-weight: var(--m3-type-body-small-weight);
+}
+
+/* Trigger rentang tanggal saat filter aktif (paritas dot DateModal Default) */
+.m3-ana__date-btn--active {
+    background: var(--m3-color-secondary-container);
+    color: var(--m3-color-on-secondary-container);
+    border-color: transparent;
 }
 
 /* ── Kepala kartu grafik ── */
@@ -916,23 +968,24 @@ onBeforeUnmount(() => {
 .m3-ana__card-title {
     margin: 0 0 var(--m3-space-1);
     font-size: var(--m3-type-title-small-size);
-    font-weight: 600;
+    font-weight: var(--m3-type-emphasized-title-small-weight);
     color: var(--m3-color-on-surface);
 }
 
 .m3-ana__card-sub {
     margin: 0;
     font-size: var(--m3-type-body-small-size);
-    font-weight: 400;
+    font-weight: var(--m3-type-body-small-weight);
     color: var(--m3-color-on-surface-variant);
 }
 
 .m3-ana__hero {
     margin: 0;
     flex-shrink: 0;
-    font-size: 1.5rem;
-    line-height: 2rem;
-    font-weight: 600;
+    font-size: var(--m3-type-headline-small-size);
+    line-height: var(--m3-type-headline-small-line-height);
+    font-weight: var(--m3-type-emphasized-headline-small-weight);
+    letter-spacing: var(--m3-type-headline-small-tracking);
     color: var(--m3-color-on-surface);
     white-space: nowrap;
     overflow: hidden;
@@ -944,8 +997,8 @@ onBeforeUnmount(() => {
 /* ── Segmented control (M3 connected button group pattern) ── */
 .m3-ana__seg {
     display: flex;
-    gap: 0.25rem;
-    padding: 0.25rem;
+    gap: var(--m3-space-1);
+    padding: var(--m3-space-1);
     border-radius: var(--m3-radius-full);
     border: 1px solid var(--m3-color-outline-variant);
     background: var(--m3-color-surface-container-low);
@@ -962,7 +1015,7 @@ onBeforeUnmount(() => {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0.375rem 0.625rem;
+    padding: var(--m3-space-1-5) var(--m3-space-2-5);
     border: none;
     border-radius: var(--m3-radius-full);
     background: transparent;
@@ -1025,15 +1078,15 @@ onBeforeUnmount(() => {
 }
 
 .m3-ana__legend-dot {
-    width: 0.5rem;
-    height: 0.5rem;
+    width: var(--m3-space-2);
+    height: var(--m3-space-2);
     border-radius: var(--m3-radius-full);
     flex-shrink: 0;
 }
 
 .m3-ana__legend-label {
     font-size: var(--m3-type-label-small-size);
-    font-weight: 500;
+    font-weight: var(--m3-type-emphasized-label-small-weight);
     color: var(--m3-color-on-surface-variant);
 }
 
@@ -1074,7 +1127,7 @@ onBeforeUnmount(() => {
 .m3-ana__section-title {
     margin: 0;
     font-size: var(--m3-type-title-small-size);
-    font-weight: 600;
+    font-weight: var(--m3-type-emphasized-title-small-weight);
     color: var(--m3-color-on-surface);
 }
 
@@ -1101,8 +1154,8 @@ onBeforeUnmount(() => {
 }
 
 .m3-ana__spinner-ring {
-    width: 2.5rem;
-    height: 2.5rem;
+    width: var(--m3-size-touch-target);
+    height: var(--m3-size-touch-target);
     border-radius: var(--m3-radius-full);
     border: 3px solid var(--m3-color-surface-container-highest);
     border-top-color: var(--m3-color-primary);
@@ -1135,7 +1188,7 @@ onBeforeUnmount(() => {
 
 .m3-ana__doughnut-label {
     font-size: var(--m3-type-label-small-size);
-    font-weight: 500;
+    font-weight: var(--m3-type-label-small-weight);
     color: var(--m3-color-on-surface-variant);
     margin-bottom: var(--m3-space-1);
     overflow: hidden;
@@ -1146,9 +1199,9 @@ onBeforeUnmount(() => {
 
 .m3-ana__doughnut-total {
     font-size: var(--m3-type-body-small-size);
-    font-weight: 600;
+    font-weight: var(--m3-type-emphasized-body-small-weight);
     color: var(--m3-color-on-surface);
-    line-height: 1.25rem;
+    line-height: var(--m3-type-body-medium-line-height);
     overflow-wrap: anywhere;
 }
 
@@ -1173,16 +1226,16 @@ onBeforeUnmount(() => {
 }
 
 .m3-ana__cat-bar {
-    width: 0.25rem;
+    width: var(--m3-space-1);
     align-self: stretch;
-    min-height: 1.25rem;
+    min-height: var(--m3-space-5);
     border-radius: var(--m3-radius-full);
     flex-shrink: 0;
 }
 
 .m3-ana__cat-icon {
-    width: 1.25rem;
-    height: 1.25rem;
+    width: var(--m3-size-icon-xs);
+    height: var(--m3-size-icon-xs);
     flex-shrink: 0;
 }
 
@@ -1191,12 +1244,12 @@ onBeforeUnmount(() => {
     flex-direction: column;
     flex: 1;
     min-width: 0;
-    line-height: 1.25rem;
+    line-height: var(--m3-type-body-medium-line-height);
 }
 
 .m3-ana__cat-name {
     font-size: var(--m3-type-body-medium-size);
-    font-weight: 500;
+    font-weight: var(--m3-type-emphasized-body-medium-weight);
     color: var(--m3-color-on-surface);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1205,14 +1258,14 @@ onBeforeUnmount(() => {
 
 .m3-ana__cat-pct {
     font-size: var(--m3-type-body-small-size);
-    font-weight: 400;
+    font-weight: var(--m3-type-body-small-weight);
     color: var(--m3-color-on-surface-variant);
 }
 
 .m3-ana__cat-amount {
     flex-shrink: 0;
     font-size: var(--m3-type-body-medium-size);
-    font-weight: 600;
+    font-weight: var(--m3-type-emphasized-body-medium-weight);
     color: var(--m3-color-on-surface);
     white-space: nowrap;
     overflow: hidden;
@@ -1234,8 +1287,8 @@ onBeforeUnmount(() => {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 2.5rem;
-    height: 2.5rem;
+    width: var(--m3-size-touch-target);
+    height: var(--m3-size-touch-target);
     border-radius: var(--m3-radius-md);
     background: var(--m3-color-surface-container-high);
     border: 1px solid var(--m3-color-outline-variant);
@@ -1244,14 +1297,14 @@ onBeforeUnmount(() => {
 }
 
 .m3-ana__empty-icon :deep(svg) {
-    width: 1.25rem;
-    height: 1.25rem;
+    width: var(--m3-size-icon-xs);
+    height: var(--m3-size-icon-xs);
 }
 
 .m3-ana__empty-text {
     margin: 0;
     font-size: var(--m3-type-body-medium-size);
-    font-weight: 500;
+    font-weight: var(--m3-type-emphasized-body-medium-weight);
     color: var(--m3-color-on-surface-variant);
 }
 </style>

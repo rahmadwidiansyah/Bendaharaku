@@ -70,18 +70,18 @@ defineEmits(['select', 'filter'])
 <style scoped>
 .m3-cal__filters {
     display: flex;
-    gap: 0.5rem;
+    gap: var(--m3-space-2);
     justify-content: center;
-    margin-bottom: 0.75rem;
+    margin-bottom: var(--m3-space-3);
     flex-wrap: wrap;
 }
 
 .m3-cal__weekdays {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 0.25rem;
+    gap: var(--m3-space-1);
     text-align: center;
-    margin-bottom: 0.375rem;
+    margin-bottom: var(--m3-space-1-5);
 }
 
 .m3-cal__weekday {
@@ -90,17 +90,17 @@ defineEmits(['select', 'filter'])
     letter-spacing: var(--m3-type-label-small-tracking);
     text-transform: uppercase;
     color: var(--m3-color-on-surface-variant);
-    padding: 0.25rem 0;
+    padding: var(--m3-space-1) 0;
 }
 
 .m3-cal__grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 0.25rem;
+    gap: var(--m3-space-1);
 }
 
 .m3-cal__cell {
-    min-height: 2.75rem;
+    min-height: var(--m3-size-calendar-cell);
 }
 
 .m3-cal__day {
@@ -110,8 +110,8 @@ defineEmits(['select', 'filter'])
     justify-content: center;
     width: 100%;
     height: 100%;
-    min-height: 2.75rem;
-    padding: 0.125rem;
+    min-height: var(--m3-size-calendar-cell);
+    padding: var(--m3-space-0-5);
     border-radius: var(--m3-radius-sm);
     border: 1px solid transparent;
     background: var(--m3-color-surface-container-high);
@@ -140,7 +140,7 @@ defineEmits(['select', 'filter'])
     font-size: var(--m3-type-body-small-size);
     font-weight: var(--m3-type-emphasized-body-small-weight);
     line-height: 1;
-    margin-bottom: 0.125rem;
+    margin-bottom: var(--m3-space-0-5);
 }
 
 .m3-cal__day--selected .m3-cal__number {

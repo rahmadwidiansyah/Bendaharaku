@@ -9,7 +9,7 @@ import axios from 'axios';
 import { applyAccentColor, saveAccentColor, ACCENT_PALETTES, isCustomColor, isValidHex, getColorValue } from '@/Composables/useAccentColor.js';
 import { setCategoryIconColored } from '@/Composables/useIcon.js';
 import { useTheme } from '@/Composables/useTheme';
-import { useM3ColorScheme } from '@/Composables/useM3ColorScheme.js';
+import { M3_SCHEME_KEYS, DEFAULT_M3_COLOR_SCHEME, isValidM3ColorScheme, applyM3ColorScheme, getM3SchemePreview } from '@/Composables/useM3ColorScheme.js';
 import { useToast } from '@/Composables/useToast';
 
 const { t } = useI18n();
@@ -20,6 +20,7 @@ const props = defineProps<{
   userTheme: string;
   categoryIconColored: boolean;
   userUiTheme: string;
+  userM3ColorScheme: string;
 }>();
 
 const { theme: currentTheme, setTheme } = useTheme();
@@ -33,9 +34,16 @@ const iconColored = ref(props.categoryIconColored);
 const uiTheme = ref(props.userUiTheme ?? 'default');
 const savedUiTheme = ref(uiTheme.value);
 
-// M3 color scheme preset (hanya relevan saat ui_theme === 'm3')
-const { schemes: m3Schemes, defaultScheme: m3DefaultScheme, saveM3ColorScheme, initM3ColorScheme } = useM3ColorScheme();
-const m3ColorScheme = ref(localStorage.getItem('ls_m3_color_scheme') ?? m3DefaultScheme);
+// Skema warna M3 (hanya relevan saat ui_theme === 'm3'). INDEPENDEN dari
+// accent_color UI Default; tersimpan di users.ui_m3_color_scheme.
+const m3ColorScheme = ref(isValidM3ColorScheme(props.userM3ColorScheme) ? props.userM3ColorScheme : DEFAULT_M3_COLOR_SCHEME);
+const savedM3ColorScheme = ref(m3ColorScheme.value);
+// Warna pratinjau mengikuti mode terang/gelap Default UI saat ini agar chip
+// tetap kontras di kartu pengaturan (bergantung pada `theme` agar reaktif).
+const m3PreviewMode = computed(() => {
+  void theme.value;
+  return document.documentElement.classList.contains('light') ? 'light' : 'dark';
+});
 
 const isM3Active = computed(() => uiTheme.value === 'm3');
 
@@ -79,17 +87,17 @@ watch(iconColored, () => {
   saveAppearance();
 });
 
+let revertingM3Scheme = false;
 watch(m3ColorScheme, (scheme) => {
   if (!isM3Active.value) return;
-  saveM3ColorScheme(scheme);
+  applyM3ColorScheme(scheme);
+  // Lewati save saat revert otomatis pasca-gagal (hindari PATCH ganda).
+  if (revertingM3Scheme) return;
+  saveAppearance();
 });
 
 let revertingUiTheme = false;
-watch(uiTheme, (newTheme) => {
-  if (newTheme === 'm3') {
-    initM3ColorScheme();
-    m3ColorScheme.value = localStorage.getItem('ls_m3_color_scheme') ?? m3DefaultScheme;
-  }
+watch(uiTheme, () => {
   // Lewati save saat revert otomatis pasca-gagal (hindari PATCH ganda).
   if (revertingUiTheme) return;
   saveAppearance();
@@ -113,9 +121,11 @@ const saveAppearance = () => {
         accent_color: accentColor.value,
         category_icon_colored: iconColored.value,
         ui_theme: uiTheme.value,
+        ui_m3_color_scheme: m3ColorScheme.value,
       });
       saveAccentColor(accentColor.value);
       setCategoryIconColored(iconColored.value);
+      savedM3ColorScheme.value = m3ColorScheme.value;
       showToast(t('toast.updated'), 'success');
       // Komponen halaman Dashboard berubah sesuai ui_theme — reload penuh
       // hanya bila pilihan UI benar-benar berubah dan berhasil disimpan.
@@ -124,11 +134,15 @@ const saveAppearance = () => {
         window.location.reload();
       }
     } catch (error: any) {
-      // Gagal: kembalikan pilihan UI ke nilai tersimpan, tanpa reload.
-      // Watcher berjalan async — flag direset setelah watcher terpanggil.
+      // Gagal: kembalikan pilihan UI + skema M3 ke nilai tersimpan, tanpa
+      // reload. Watcher berjalan async — flag direset setelah watcher terpanggil.
       revertingUiTheme = true;
       uiTheme.value = savedUiTheme.value;
       nextTick(() => { revertingUiTheme = false; });
+      revertingM3Scheme = true;
+      m3ColorScheme.value = savedM3ColorScheme.value;
+      applyM3ColorScheme(savedM3ColorScheme.value);
+      nextTick(() => { revertingM3Scheme = false; });
       showToast(error.response?.data?.message || t('errors.generic'), 'error');
     } finally {
       saving.value = false;
@@ -170,28 +184,31 @@ const saveAppearance = () => {
         </div>
       </SettingsCard>
 
-      <!-- M3 Color Scheme (hanya tampil saat M3 UI aktif) -->
+      <!-- M3 Color Scheme (hanya tampil saat M3 UI aktif; independen dari
+           accent_color Default di bawah) -->
       <SettingsCard v-if="isM3Active"
         :title="t('settings.application.appearance.m3_color_scheme.title')"
         :description="t('settings.application.appearance.m3_color_scheme.description')"
       >
         <div class="grid grid-cols-3 gap-3">
           <label
-            v-for="(scheme, key) in m3Schemes"
+            v-for="key in M3_SCHEME_KEYS"
             :key="key"
-            class="flex flex-col items-center gap-2 p-3 border border-border-default rounded-lg cursor-pointer hover:bg-surface-muted transition-colors"
+            class="flex flex-col items-center gap-2 p-3 border border-border-default rounded-lg cursor-pointer hover:bg-surface-muted transition-colors focus-within:ring-2 focus-within:ring-[var(--color-brand)]"
             :class="m3ColorScheme === key && 'border-purple-500 bg-purple-500/10'"
           >
-            <input v-model="m3ColorScheme" type="radio" :value="key" class="w-4 h-4" />
-            <div
-              class="w-12 h-12 rounded-full border border-border-default flex items-center justify-center mb-1"
-              :style="{ backgroundColor: scheme.primary }"
+            <input v-model="m3ColorScheme" type="radio" :value="key" class="sr-only" />
+            <span
+              class="w-12 h-12 rounded-full border border-border-default flex items-center justify-center gap-0.5 mb-1 shrink-0"
+              :style="{ backgroundColor: getM3SchemePreview(key)[m3PreviewMode].surface }"
+              aria-hidden="true"
             >
-              <span class="text-[10px] font-semibold uppercase tracking-wider"
-                :style="{ color: scheme.primary }">{{ key.slice(0, 1).toUpperCase() }}</span>
-            </div>
-            <span class="text-xs text-text-primary text-center font-medium">{{ scheme.label }}</span>
-            <span class="text-[10px] text-text-muted text-center leading-tight">{{ scheme.desc }}</span>
+              <span class="w-3.5 h-3.5 rounded-full" :style="{ backgroundColor: getM3SchemePreview(key)[m3PreviewMode].primary }" />
+              <span class="w-2.5 h-2.5 rounded-full" :style="{ backgroundColor: getM3SchemePreview(key)[m3PreviewMode].secondary }" />
+              <span class="w-2.5 h-2.5 rounded-full" :style="{ backgroundColor: getM3SchemePreview(key)[m3PreviewMode].tertiary }" />
+            </span>
+            <span class="text-xs text-text-primary text-center font-medium">{{ t(`settings.application.appearance.m3_color_scheme.${key}`) }}</span>
+            <span class="text-2xs text-text-muted text-center leading-tight">{{ t(`settings.application.appearance.m3_color_scheme.${key}_desc`) }}</span>
           </label>
         </div>
       </SettingsCard>

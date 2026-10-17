@@ -5,16 +5,18 @@
  * M3 Expressive shell — dipakai HANYA oleh halaman `Material/*`
  * (phase 1: Dashboard saja). Halaman lain tetap memakai layout Default.
  *
- * Struktur (per references/components/bars.md + navigation.md):
- * - Top app bar (small): surface-container, 4rem, judul + aksi chat/avatar
- * - Mobile: navigation bar 5rem, surface-container, active indicator pill
- * - Desktop: navigation rail (expanded 15rem / collapsed 5rem) + FAB
+ * Struktur (per references/components/bars.md + navigation.md + fabs.md):
+ * - Desktop: top app bar (small) + navigation rail (expanded 15rem / collapsed 5rem) + FAB
+ * - Mobile: TANPA app bar — judul halaman dirender in-content (M3PageTitle);
+ *   navigation bar 4 destinasi + FAB create "nested & raised" di tengah
+ *   (M3 Expressive: FAB boleh center-aligned dan nested dalam navigation bar)
+ * - Aksi global di mobile (chat, akun) diakses lewat destinasi "More"
  * - FAB record: primary-container, 3.5rem, shape 28dp
  * - Skeleton overlay + stale/bfcache handlers: perilaku identik layout Default
  *
  * Semua warna memakai token `--m3-*` (aktif hanya di bawah `.ui-m3`).
  */
-import Toast from '@/Components/Toast.vue'
+import M3Snackbar from '@/Material/Components/M3Snackbar.vue'
 import DashboardSkeleton from '@/Components/Skeleton/DashboardSkeleton.vue'
 import TransactionSkeleton from '@/Components/Skeleton/TransactionSkeleton.vue'
 import AssetSkeleton from '@/Components/Skeleton/AssetSkeleton.vue'
@@ -29,7 +31,7 @@ import { usePushNotifications } from '@/Composables/usePushNotifications'
 import { usePage, router, Link } from '@inertiajs/vue3'
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { initM3ColorScheme } from '@/Composables/useM3ColorScheme.js'
+import { initM3ColorScheme, syncM3ColorSchemeFromProps } from '@/Composables/useM3ColorScheme.js'
 import { consumeStaleForRoute } from '@/utils/stale.js'
 
 const { t } = useI18n()
@@ -59,8 +61,11 @@ onMounted(() => {
     const userTheme = page.props.auth?.user?.theme ?? 'system'
     initTheme(userTheme)
     syncUiThemeFromProps(page.props)
+    // Skema sudah dipasang head script Blade (tanpa flash); ini verifikasi
+    // + sinkronisasi bila props berubah tanpa reload.
     if (page.props.auth?.user?.ui_theme === 'm3') {
         initM3ColorScheme()
+        syncM3ColorSchemeFromProps(page.props)
     }
 })
 
@@ -153,9 +158,16 @@ const isActive = (patterns) => {
         if (p === 'categories.*') return /\/categories/.test(url)
         if (p === 'loans.*') return /\/loans/.test(url)
         if (p === 'settings.*') return /\/settings/.test(url)
+        if (p === 'chat.*') return /\/chat/.test(url)
+        if (p === 'search.*') return /\/search/.test(url)
+        if (p === 'more') return /\/more/.test(url)
         return false
     })
 }
+
+// Destinasi "More" mencakup semua halaman yang tidak punya slot di navbar
+// (label, tanggungan, chat, pencarian) agar salah satu destinasi selalu aktif.
+const isMoreActive = computed(() => isActive(['more', 'categories.*', 'loans.*', 'chat.*', 'search.*']))
 
 const userName = computed(() => page.props.auth?.user?.name ?? '')
 const avatarUrl = computed(() => page.props.auth?.user?.avatar_url ?? '')
@@ -173,13 +185,13 @@ const showSkeleton = computed(() =>
 
 <template>
     <div class="m3-shell">
-        <Toast />
+        <M3Snackbar />
 
         <a href="#main-content" class="m3-skip-link">Langsung ke konten</a>
 
-        <!-- ── Top app bar (small, 4rem) ── -->
+        <!-- ── Top app bar (small, 4rem) — desktop only; mobile memakai judul in-content ── -->
         <header
-            v-if="!hideNav"
+            v-if="isDesktop"
             class="m3-appbar"
             :class="{
                 'm3-appbar--rail': isDesktop && isRailOpen,
@@ -199,6 +211,11 @@ const showSkeleton = computed(() =>
                 <Link :href="route('chat.index')" class="m3-appbar__icon-btn" :aria-label="$t('nav.chat')">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 4v-4z" />
+                    </svg>
+                </Link>
+                <Link :href="route('search.page')" class="m3-appbar__icon-btn" :aria-label="$t('nav.search')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
                     </svg>
                 </Link>
                 <Link :href="route('settings.index')" class="m3-appbar__avatar" :aria-label="$t('header.openSettings')">
@@ -227,7 +244,7 @@ const showSkeleton = computed(() =>
                 <Link :href="route('budgeting.index')" class="m3-rail__item" :class="{ 'm3-rail__item--active': isActive(['budgeting.*']) }" :aria-current="isActive(['budgeting.*']) ? 'page' : undefined">
                     <span class="m3-rail__indicator">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
                         </svg>
                     </span>
                     <span v-if="isRailOpen" class="m3-rail__label">{{ $t('nav.budgeting') }}</span>
@@ -291,19 +308,7 @@ const showSkeleton = computed(() =>
             </Transition>
         </div>
 
-        <!-- ── Mobile FAB (right-aligned above navigation bar per M3 spec) ── -->
-        <Link
-            v-if="!isDesktop && !hideNav"
-            :href="route('transactions.create')"
-            class="m3-fab m3-fab--mobile"
-            :aria-label="$t('nav.record')"
-        >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
-        </Link>
-
-        <!-- ── Mobile navigation bar (5 destinations per M3 flexible nav bar) ── -->
+        <!-- ── Mobile navigation bar: 4 destinasi + FAB create nested-raised di tengah ── -->
         <nav v-if="!isDesktop && !hideNav" class="m3-navbar" :aria-label="$t('nav.mainNav')" role="navigation">
             <Link :href="route('dashboard')" class="m3-navbar__item" :class="{ 'm3-navbar__item--active': isActive(['dashboard']) }" :aria-current="isActive(['dashboard']) ? 'page' : undefined">
                 <span class="m3-navbar__indicator">
@@ -316,11 +321,23 @@ const showSkeleton = computed(() =>
             <Link :href="route('budgeting.index')" class="m3-navbar__item" :class="{ 'm3-navbar__item--active': isActive(['budgeting.*']) }" :aria-current="isActive(['budgeting.*']) ? 'page' : undefined">
                 <span class="m3-navbar__indicator">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
                     </svg>
                 </span>
                 <span class="m3-navbar__label">{{ $t('nav.budgeting') }}</span>
             </Link>
+            <div class="m3-navbar__fab-slot">
+                <Link
+                    :href="route('transactions.create')"
+                    class="m3-navbar__fab"
+                    :aria-label="$t('nav.record')"
+                    :title="$t('nav.record')"
+                >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                </Link>
+            </div>
             <Link :href="route('analytics.index')" class="m3-navbar__item" :class="{ 'm3-navbar__item--active': isActive(['analytics.*']) }" :aria-current="isActive(['analytics.*']) ? 'page' : undefined">
                 <span class="m3-navbar__indicator">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
@@ -329,21 +346,15 @@ const showSkeleton = computed(() =>
                 </span>
                 <span class="m3-navbar__label">{{ $t('nav.analytics') }}</span>
             </Link>
-            <Link :href="route('categories.index')" class="m3-navbar__item" :class="{ 'm3-navbar__item--active': isActive(['categories.*']) }" :aria-current="isActive(['categories.*']) ? 'page' : undefined">
+            <Link :href="route('more')" class="m3-navbar__item" :class="{ 'm3-navbar__item--active': isMoreActive }" :aria-current="isMoreActive ? 'page' : undefined">
                 <span class="m3-navbar__indicator">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <circle cx="5" cy="12" r="1.9" />
+                        <circle cx="12" cy="12" r="1.9" />
+                        <circle cx="19" cy="12" r="1.9" />
                     </svg>
                 </span>
-                <span class="m3-navbar__label">{{ $t('nav.label') }}</span>
-            </Link>
-            <Link :href="route('loans.index', { type: 'debt' })" class="m3-navbar__item" :class="{ 'm3-navbar__item--active': isActive(['loans.*']) }" :aria-current="isActive(['loans.*']) ? 'page' : undefined">
-                <span class="m3-navbar__indicator">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75" />
-                    </svg>
-                </span>
-                <span class="m3-navbar__label">{{ $t('nav.loan') }}</span>
+                <span class="m3-navbar__label">{{ $t('nav.more') }}</span>
             </Link>
         </nav>
     </div>
@@ -369,13 +380,13 @@ const showSkeleton = computed(() =>
 
 .m3-skip-link:focus {
     position: fixed;
-    top: 1rem;
-    left: 1rem;
+    top: var(--m3-space-4);
+    left: var(--m3-space-4);
     z-index: 200;
     width: auto;
     height: auto;
     clip: auto;
-    padding: 0.5rem 1rem;
+    padding: var(--m3-space-2) var(--m3-space-4);
     border-radius: var(--m3-radius-sm);
     background: var(--m3-color-primary);
     color: var(--m3-color-on-primary);
@@ -392,8 +403,8 @@ const showSkeleton = computed(() =>
     align-items: center;
     justify-content: space-between;
     gap: var(--m3-space-4);
-    min-height: 4rem;
-    height: 4rem;
+    min-height: var(--m3-size-appbar);
+    height: var(--m3-size-appbar);
     padding: var(--m3-space-2) var(--m3-space-4);
     background: var(--m3-color-surface-container);
     color: var(--m3-color-on-surface);
@@ -403,11 +414,11 @@ const showSkeleton = computed(() =>
 }
 
 .m3-appbar--rail {
-    padding-left: 15rem;
+    padding-left: var(--m3-size-rail-open);
 }
 
 .m3-appbar--rail-collapsed {
-    padding-left: 5rem;
+    padding-left: var(--m3-size-rail);
 }
 
 .m3-appbar__leading {
@@ -420,8 +431,8 @@ const showSkeleton = computed(() =>
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 2.5rem;
-    height: 2.5rem;
+    width: var(--m3-size-touch-target);
+    height: var(--m3-size-touch-target);
     border-radius: var(--m3-radius-md);
     transition: transform var(--m3-motion-fast-spatial-duration) var(--m3-motion-fast-spatial);
 }
@@ -436,8 +447,8 @@ const showSkeleton = computed(() =>
 }
 
 .m3-appbar__brand-logo {
-    width: 2rem;
-    height: 2rem;
+    width: var(--m3-size-logo);
+    height: var(--m3-size-logo);
     object-fit: contain;
 }
 
@@ -470,7 +481,7 @@ const showSkeleton = computed(() =>
 .m3-appbar__actions {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: var(--m3-space-1);
 }
 
 .m3-appbar__icon-btn {
@@ -478,8 +489,8 @@ const showSkeleton = computed(() =>
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 2.5rem;
-    height: 2.5rem;
+    width: var(--m3-size-touch-target);
+    height: var(--m3-size-touch-target);
     border-radius: var(--m3-radius-full);
     color: var(--m3-color-on-surface-variant);
     overflow: hidden;
@@ -513,16 +524,16 @@ const showSkeleton = computed(() =>
 }
 
 .m3-appbar__icon-btn svg {
-    width: 1.5rem;
-    height: 1.5rem;
+    width: var(--m3-size-icon);
+    height: var(--m3-size-icon);
 }
 
 .m3-appbar__avatar {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 2.5rem;
-    height: 2.5rem;
+    width: var(--m3-size-touch-target);
+    height: var(--m3-size-touch-target);
     border-radius: var(--m3-radius-full);
     overflow: hidden;
     background: var(--m3-color-primary-container);
@@ -547,9 +558,9 @@ const showSkeleton = computed(() =>
     display: none;
     flex-direction: column;
     align-items: center;
-    gap: 0.75rem;
-    width: 5rem;
-    padding: 1rem 0;
+    gap: var(--m3-space-3);
+    width: var(--m3-size-rail);
+    padding: var(--m3-space-4) 0;
     background: var(--m3-color-surface-container);
 }
 
@@ -560,16 +571,16 @@ const showSkeleton = computed(() =>
 }
 
 .m3-rail--open {
-    width: 15rem;
+    width: var(--m3-size-rail-open);
     align-items: stretch;
-    padding-left: 1rem;
-    padding-right: 1rem;
+    padding-left: var(--m3-space-4);
+    padding-right: var(--m3-space-4);
 }
 
 .m3-rail__items {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: var(--m3-space-1);
     width: 100%;
 }
 
@@ -577,8 +588,8 @@ const showSkeleton = computed(() =>
     position: relative;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.25rem 0;
+    gap: var(--m3-space-3);
+    padding: var(--m3-space-1) 0;
     border-radius: var(--m3-radius-full);
     color: var(--m3-color-on-surface-variant);
     text-decoration: none;
@@ -594,8 +605,8 @@ const showSkeleton = computed(() =>
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 3.5rem;
-    height: 2rem;
+    width: var(--m3-size-indicator-rail);
+    height: var(--m3-size-indicator-height);
     flex-shrink: 0;
     border-radius: var(--m3-radius-full);
     overflow: visible;
@@ -617,8 +628,8 @@ const showSkeleton = computed(() =>
 .m3-rail__indicator svg {
     position: relative;
     z-index: 1;
-    width: 1.5rem;
-    height: 1.5rem;
+    width: var(--m3-size-icon);
+    height: var(--m3-size-icon);
 }
 
 .m3-rail__indicator::after {
@@ -668,8 +679,8 @@ const showSkeleton = computed(() =>
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 2.5rem;
-    height: 2.5rem;
+    width: var(--m3-size-touch-target);
+    height: var(--m3-size-touch-target);
     border: none;
     border-radius: var(--m3-radius-full);
     background: transparent;
@@ -706,8 +717,8 @@ const showSkeleton = computed(() =>
 }
 
 .m3-rail__toggle svg {
-    width: 1.25rem;
-    height: 1.25rem;
+    width: var(--m3-size-icon-xs);
+    height: var(--m3-size-icon-xs);
 }
 
 /* ── FAB (56dp, primary-container, 28dp shape) ── */
@@ -715,8 +726,8 @@ const showSkeleton = computed(() =>
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 3.5rem;
-    height: 3.5rem;
+    width: var(--m3-size-fab);
+    height: var(--m3-size-fab);
     border-radius: var(--m3-radius-xl);
     background: var(--m3-color-primary-container);
     color: var(--m3-color-on-primary-container);
@@ -734,35 +745,29 @@ const showSkeleton = computed(() =>
 }
 
 .m3-fab svg {
-    width: 1.5rem;
-    height: 1.5rem;
-}
-
-.m3-fab--mobile {
-    position: fixed;
-    right: 1.25rem;
-    bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
-    z-index: 45;
+    width: var(--m3-size-icon);
+    height: var(--m3-size-icon);
 }
 
 /* ── Content ── */
 .m3-content {
     position: relative;
     min-height: 100vh;
-    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: calc(var(--m3-size-navbar) + var(--m3-space-6) + env(safe-area-inset-bottom, 0px));
 }
 
 @media (min-width: 1024px) {
     .m3-content {
-        padding-bottom: 2rem;
+        padding-bottom: var(--m3-space-8);
     }
 
     .m3-content--rail {
-        padding-left: 5rem;
+        padding-left: var(--m3-size-rail);
     }
 
     .m3-content--rail-open {
-        padding-left: 15rem;
+        padding-left: var(--m3-size-rail-open);
     }
 }
 
@@ -799,19 +804,28 @@ const showSkeleton = computed(() =>
     transition: opacity 200ms ease-in;
 }
 
-/* ── Mobile navigation bar (48dp tall, equal-width segments per M3 flexible nav bar) ── */
+/* ── Mobile navigation bar — floating bar (model BottomNav Default, styling M3) ──
+   Warna/indikator memakai token M3; geometri (floating margin, label selalu
+   tampil, FAB naik setengah) mengikuti varian "label always" M3. */
 .m3-navbar {
     position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    left: var(--m3-space-4);
+    right: var(--m3-space-4);
+    bottom: calc(var(--m3-space-3) + env(safe-area-inset-bottom, 0px));
     z-index: 50;
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 4rem;
-    padding: 0 var(--m3-space-2) calc(var(--m3-space-2) + env(safe-area-inset-bottom, 0px));
-    background: var(--m3-color-surface-container);
+    height: var(--m3-size-navbar);
+    max-width: var(--m3-size-navbar-max);
+    margin: 0 auto;
+    padding: var(--m3-space-1-5) var(--m3-space-2);
+    background: color-mix(in srgb, var(--m3-color-surface-container) 95%, transparent);
+    -webkit-backdrop-filter: blur(var(--m3-blur-glass));
+    backdrop-filter: blur(var(--m3-blur-glass));
+    border: 1px solid var(--m3-color-outline-variant);
+    border-radius: var(--m3-radius-lg);
+    box-shadow: var(--m3-elevation-3);
 }
 
 @media (min-width: 1024px) {
@@ -826,7 +840,6 @@ const showSkeleton = computed(() =>
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.25rem;
     flex: 1;
     color: var(--m3-color-on-surface-variant);
     text-decoration: none;
@@ -834,7 +847,7 @@ const showSkeleton = computed(() =>
     border: none;
     border-radius: var(--m3-radius-sm);
     min-width: 0;
-    height: 100%;
+    height: var(--m3-size-navbar-item);
     padding: 0 var(--m3-space-1);
 }
 
@@ -848,10 +861,13 @@ const showSkeleton = computed(() =>
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 4rem;
-    height: 2rem;
+    width: var(--m3-size-indicator-nav);
+    height: var(--m3-size-indicator-height);
     border-radius: var(--m3-radius-full);
     overflow: visible;
+    transform: translateY(0) scale(1);
+    transition:
+        transform var(--m3-motion-default-spatial-duration) var(--m3-motion-default-spatial);
 }
 
 .m3-navbar__indicator::before {
@@ -870,8 +886,8 @@ const showSkeleton = computed(() =>
 .m3-navbar__indicator svg {
     position: relative;
     z-index: 1;
-    width: 1.5rem;
-    height: 1.5rem;
+    width: var(--m3-size-icon);
+    height: var(--m3-size-icon);
 }
 
 .m3-navbar__indicator::after {
@@ -893,6 +909,12 @@ const showSkeleton = computed(() =>
     opacity: 0.1;
 }
 
+/* Item aktif: pill indicator M3 muncul di belakang ikon (ikon tidak bergeser,
+   karena label selalu tampil di bawahnya) */
+.m3-navbar__item--active .m3-navbar__indicator {
+    transform: scale(1.05);
+}
+
 .m3-navbar__item--active .m3-navbar__indicator::before {
     width: 100%;
 }
@@ -909,14 +931,89 @@ const showSkeleton = computed(() =>
     color: var(--m3-color-on-surface);
 }
 
+/* Label: selalu tampil (varian "label always" M3); saat aktif hanya
+   warna & ketebalan yang berubah. Di layar sangat sempit (<360px)
+   memakai skala label-small agar nama panjang tetap utuh. */
 .m3-navbar__label {
+    margin-top: var(--m3-space-1);
+    white-space: nowrap;
     font-size: var(--m3-type-label-medium-size);
     line-height: var(--m3-type-label-medium-line-height);
     font-weight: var(--m3-type-label-medium-weight);
     letter-spacing: var(--m3-type-label-medium-tracking);
+    color: inherit;
+    transition: color var(--m3-motion-default-effects-duration) var(--m3-motion-default-effects);
 }
 
 .m3-navbar__item--active .m3-navbar__label {
     font-weight: var(--m3-type-emphasized-label-medium-weight);
+    color: var(--m3-color-secondary);
+}
+
+@media (max-width: 359px) {
+    .m3-navbar__label {
+        font-size: var(--m3-type-label-small-size);
+        letter-spacing: var(--m3-type-label-small-tracking);
+    }
+
+    .m3-navbar__item--active .m3-navbar__label {
+        font-weight: var(--m3-type-emphasized-label-small-weight);
+    }
+}
+
+/* ── FAB create: nested dalam navigation bar, center-aligned & raised ──
+   Diizinkan M3 Expressive (fabs.md §Placement): FAB boleh center-aligned
+   dan "nested within the navigation bar". Geometri mengikuti FAB tema
+   Default (56dp) bulat penuh: naik setengah tinggi, ring surface 4dp,
+   ikon 28dp. Aksesibilitas via aria-label + tooltip title. */
+.m3-navbar__fab-slot {
+    position: relative;
+    flex: 1;
+    z-index: 10;
+    height: 100%;
+    user-select: none;
+}
+
+.m3-navbar__fab {
+    position: absolute;
+    left: 50%;
+    bottom: calc(var(--m3-size-navbar) - var(--m3-size-fab) / 2);
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--m3-size-fab);
+    height: var(--m3-size-fab);
+    border: var(--m3-space-1) solid var(--m3-color-surface);
+    border-radius: var(--m3-radius-full);
+    background: var(--m3-color-primary-container);
+    color: var(--m3-color-on-primary-container);
+    box-shadow:
+        var(--m3-elevation-3),
+        0 6px 20px color-mix(in srgb, var(--m3-color-primary) 30%, transparent);
+    text-decoration: none;
+    transition:
+        box-shadow var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects),
+        transform var(--m3-motion-fast-spatial-duration) var(--m3-motion-fast-spatial);
+}
+
+.m3-navbar__fab:hover {
+    box-shadow:
+        var(--m3-elevation-4),
+        0 8px 24px color-mix(in srgb, var(--m3-color-primary) 38%, transparent);
+}
+
+.m3-navbar__fab:active {
+    transform: translateX(-50%) scale(0.94) translateY(2px);
+}
+
+.m3-navbar__fab:focus-visible {
+    outline: 2px solid var(--m3-color-primary);
+    outline-offset: 2px;
+}
+
+.m3-navbar__fab svg {
+    width: var(--m3-size-icon-lg);
+    height: var(--m3-size-icon-lg);
 }
 </style>

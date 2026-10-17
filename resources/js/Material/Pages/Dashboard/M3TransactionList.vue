@@ -121,12 +121,12 @@ const amountSign = (trx) => {
 .m3-history {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: var(--m3-space-2);
 }
 
 .m3-day-group {
     border-bottom: 1px solid var(--m3-color-outline-variant);
-    padding-bottom: 0.25rem;
+    padding-bottom: var(--m3-space-1);
 }
 
 .m3-day-group:last-child {
@@ -136,9 +136,9 @@ const amountSign = (trx) => {
 .m3-day-header {
     display: flex;
     align-items: center;
-    gap: 0.375rem;
+    gap: var(--m3-space-1-5);
     width: 100%;
-    padding: 0.625rem 0.25rem;
+    padding: var(--m3-space-2-5) var(--m3-space-1);
     background: none;
     border: none;
     cursor: pointer;
@@ -152,7 +152,7 @@ const amountSign = (trx) => {
 
 .m3-day-header__date {
     font-size: var(--m3-type-title-small-size);
-    font-weight: 600;
+    font-weight: var(--m3-type-emphasized-title-small-weight);
     flex: 1;
     min-width: 0;
     overflow: hidden;
@@ -162,10 +162,10 @@ const amountSign = (trx) => {
 
 .m3-day-header__totals {
     display: flex;
-    gap: 0.625rem;
+    gap: var(--m3-space-2-5);
     flex-shrink: 0;
     font-size: var(--m3-type-title-small-size);
-    font-weight: 600;
+    font-weight: var(--m3-type-emphasized-title-small-weight);
     white-space: nowrap;
 }
 
@@ -178,8 +178,8 @@ const amountSign = (trx) => {
 }
 
 .m3-chevron {
-    width: 0.875rem;
-    height: 0.875rem;
+    width: var(--m3-size-icon-3xs);
+    height: var(--m3-size-icon-3xs);
     flex-shrink: 0;
     transition: transform var(--m3-motion-default-effects-duration) var(--m3-motion-default-effects);
 }
@@ -256,17 +256,17 @@ const amountSign = (trx) => {
 }
 
 .m3-trx__icon {
-    width: 1.25rem;
-    height: 1.25rem;
+    width: var(--m3-size-icon-xs);
+    height: var(--m3-size-icon-xs);
     flex-shrink: 0;
 }
 
 .m3-trx__draft-dot {
     position: absolute;
-    top: -0.25rem;
-    right: -0.25rem;
-    width: 0.5rem;
-    height: 0.5rem;
+    top: calc(-1 * var(--m3-space-1));
+    right: calc(-1 * var(--m3-space-1));
+    width: var(--m3-space-2);
+    height: var(--m3-space-2);
     border-radius: var(--m3-radius-full);
     background: var(--m3-color-debt);
 }
@@ -277,12 +277,12 @@ const amountSign = (trx) => {
     justify-content: center;
     flex: 1;
     min-width: 0;
-    line-height: 1.25rem;
+    line-height: var(--m3-type-body-small-line-height);
 }
 
 .m3-trx__title {
     font-size: var(--m3-type-body-medium-size);
-    font-weight: 500;
+    font-weight: var(--m3-type-emphasized-body-medium-weight);
     color: var(--m3-color-on-surface);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -291,7 +291,7 @@ const amountSign = (trx) => {
 
 .m3-trx__sub {
     font-size: var(--m3-type-body-small-size);
-    font-weight: 400;
+    font-weight: var(--m3-type-body-small-weight);
     color: var(--m3-color-on-surface-variant);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -310,7 +310,7 @@ const amountSign = (trx) => {
 
 .m3-trx__amount {
     font-size: var(--m3-type-body-medium-size);
-    font-weight: 600;
+    font-weight: var(--m3-type-emphasized-body-medium-weight);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -331,7 +331,7 @@ const amountSign = (trx) => {
 
 .m3-trx__time {
     font-size: var(--m3-type-body-small-size);
-    font-weight: 400;
+    font-weight: var(--m3-type-body-small-weight);
     color: var(--m3-color-on-surface-variant);
 }
 
@@ -339,8 +339,8 @@ const amountSign = (trx) => {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 0;
+    gap: var(--m3-space-2);
+    padding: var(--m3-space-3) 0;
 }
 
 .m3-load-more__error {
@@ -356,7 +356,7 @@ const amountSign = (trx) => {
 .m3-empty__text {
     margin: 0;
     font-size: var(--m3-type-body-medium-size);
-    font-weight: 500;
+    font-weight: var(--m3-type-emphasized-body-medium-weight);
     color: var(--m3-color-on-surface-variant);
 }
 </style>

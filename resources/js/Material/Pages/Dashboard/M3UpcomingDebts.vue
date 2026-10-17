@@ -95,7 +95,7 @@ const typeLabel = (type) => {
 
 <style scoped>
 .m3-section-eyebrow {
-    margin: 0 0 0.125rem;
+    margin: 0 0 var(--m3-space-0-5);
     font-size: var(--m3-type-label-medium-size);
     font-weight: var(--m3-type-emphasized-label-medium-weight);
     letter-spacing: var(--m3-type-label-medium-tracking);
@@ -104,7 +104,7 @@ const typeLabel = (type) => {
 }
 
 .m3-section-sub {
-    margin: 0 0 0.5rem;
+    margin: 0 0 var(--m3-space-2);
     font-size: var(--m3-type-body-small-size);
     color: var(--m3-color-on-surface-variant);
 }
@@ -112,13 +112,13 @@ const typeLabel = (type) => {
 .m3-debts {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: var(--m3-space-2);
 }
 
 .m3-debt__row {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: var(--m3-space-2);
 }
 
 .m3-debt__main {
@@ -127,9 +127,9 @@ const typeLabel = (type) => {
 }
 
 .m3-debt__subject {
-    margin: 0 0 0.25rem;
+    margin: 0 0 var(--m3-space-1);
     font-size: var(--m3-type-body-medium-size);
-    font-weight: 500;
+    font-weight: var(--m3-type-emphasized-body-medium-weight);
     color: var(--m3-color-on-surface);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -138,7 +138,7 @@ const typeLabel = (type) => {
 
 .m3-debt__badge {
     display: inline-block;
-    padding: 0.125rem 0.5rem;
+    padding: var(--m3-space-0-5) var(--m3-space-2);
     border-radius: var(--m3-radius-full);
     font-size: var(--m3-type-label-small-size);
     font-weight: var(--m3-type-emphasized-label-small-weight);
@@ -158,7 +158,7 @@ const typeLabel = (type) => {
     flex-shrink: 0;
     white-space: nowrap;
     font-size: var(--m3-type-body-medium-size);
-    font-weight: 600;
+    font-weight: var(--m3-type-emphasized-body-medium-weight);
     color: var(--m3-color-debt);
 }
 </style>

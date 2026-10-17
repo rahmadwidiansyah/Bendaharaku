@@ -3,7 +3,7 @@
  * BottomNav.vue
  *
  * Navigasi utama aplikasi:
- *   - Mobile: floating bottom navigation bar (5 item: Home, Transaksi, Aset, Grafik, Label)
+ *   - Mobile: floating bottom navigation bar (5 item: Home, Anggaran, FAB Catat, Grafik, Lainnya)
  *   - Desktop: collapsible sidebar dengan logo/brand area
  *
  * Phase 4 changes:
@@ -11,6 +11,11 @@
  *   - Tambah brand/logo area di sidebar desktop saat terbuka
  *   - Perbaiki active indicator: pill background lebih jelas di mobile
  *   - Desktop: Loan + Settings + Label tetap ada di sidebar
+ *
+ * More hub:
+ *   - Slots mobile "Label" diganti "Lainnya" (route more) — kategori,
+ *     tanggungan, chat, pencarian, dan pengaturan pindah ke hub tersebut.
+ *     Sidebar desktop tidak berubah.
  */
 
 import { Link } from '@inertiajs/vue3'
@@ -40,6 +45,7 @@ const isActive = (patterns) => {
         if (p === 'analytics.*')     return /\/analytics/.test(url)
         if (p === 'categories.*')    return /\/categories/.test(url)
         if (p === 'loans.*')         return /\/loans/.test(url)
+        if (p === 'more')            return /\/more/.test(url)
         if (p === 'settings.*')      return /\/settings/.test(url)
         return false
     })
@@ -219,8 +225,9 @@ defineEmits(['toggle'])
                 </template>
             </NavItem>
 
-            <!-- Label (Categories) — mobile + desktop -->
+            <!-- Label (Categories) — Desktop Only (mobile pindah ke hub "Lainnya") -->
             <NavItem
+                v-if="isDesktopLayout"
                 :href="route('categories.index')"
                 :label="$t('nav.label')"
                 :active="isActive(['categories.*'])"
@@ -230,6 +237,22 @@ defineEmits(['toggle'])
                 <template #icon>
                     <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+                    </svg>
+                </template>
+            </NavItem>
+
+            <!-- Lainnya (More) — Mobile Only: hub kategori, tanggungan, chat, pencarian, pengaturan -->
+            <NavItem
+                v-if="!isDesktopLayout"
+                :href="route('more')"
+                :label="$t('nav.more')"
+                :active="isActive(['more', 'categories.*', 'loans.*', 'chat.*', 'search.*'])"
+                :is-desktop="isDesktopLayout"
+                :sidebar-open="isSidebarOpen"
+            >
+                <template #icon>
+                    <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM18.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
                     </svg>
                 </template>
             </NavItem>

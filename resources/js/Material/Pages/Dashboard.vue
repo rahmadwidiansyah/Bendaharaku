@@ -6,10 +6,12 @@
  * 17 props yang sama dari DashboardController, composables bersama
  * (useBalanceVisibility, useLayoutPreference, useCalendar), util format
  * yang sama, dan TransactionDetailModal yang dipakai ulang apa adanya.
- * (Keterbatasan visual fase 1: modal detail memakai styling Default
- * karena BaseModal memakai token `--color-*`. Fungsional identik.)
+ * (Modal detail transaksi kini memakai M3TransactionDetailModal — paritas
+ * perilaku Default (destructive/confirm draft/footer) dengan styling M3:
+ * dialog di desktop, bottom sheet di mobile.)
  */
-import TransactionDetailModal from '@/Components/TransactionDetailModal.vue'
+import TransactionDetailModal from '@/Material/Components/M3TransactionDetailModal.vue'
+import M3DateRangeModal from '@/Material/Components/M3DateRangeModal.vue'
 import M3Layout from '@/Material/Layouts/AuthenticatedLayout.vue'
 import M3PortfolioCard from '@/Material/Pages/Dashboard/M3PortfolioCard.vue'
 import M3CashflowCard from '@/Material/Pages/Dashboard/M3CashflowCard.vue'
@@ -19,6 +21,7 @@ import M3Calendar from '@/Material/Pages/Dashboard/M3Calendar.vue'
 import M3Modal from '@/Material/Components/M3Modal.vue'
 import M3IconButton from '@/Material/Components/M3IconButton.vue'
 import M3Button from '@/Material/Components/M3Button.vue'
+import M3PageTitle from '@/Material/Components/M3PageTitle.vue'
 import { Head, router } from '@inertiajs/vue3'
 import { ref, computed, watch, onUnmounted } from 'vue'
 import axios from 'axios'
@@ -69,6 +72,9 @@ const openModal = (trx) => {
     selectedTransaction.value = trx
     showModal.value = true
 }
+
+// ─── Modal rentang tanggal (tap label periode) ───
+const showPeriodModal = ref(false)
 
 // ─── Filter type ───
 const type = ref(props.filters?.type || '')
@@ -290,6 +296,22 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
         <Head title="Dashboard" />
 
         <div class="m3-dash" :class="isDesktopLayout ? 'm3-dash--desktop' : ''">
+            <!-- Judul halaman in-content (mobile; desktop memakai app bar) -->
+            <M3PageTitle :title="$t('dashboard.title')">
+                <template #actions>
+                    <M3IconButton :href="route('chat.index')" :aria-label="$t('nav.chat')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 4v-4z" />
+                        </svg>
+                    </M3IconButton>
+                    <M3IconButton :href="route('search.page')" :aria-label="$t('nav.search')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                        </svg>
+                    </M3IconButton>
+                </template>
+            </M3PageTitle>
+
             <!-- Kolom kiri: aset -->
             <div class="m3-dash__assets">
                 <M3PortfolioCard
@@ -338,10 +360,15 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
                             </svg>
                         </M3IconButton>
-                        <p class="m3-period__label">
+                        <button
+                            type="button"
+                            class="m3-period__label"
+                            :aria-label="$t('common.dateRange')"
+                            @click="showPeriodModal = true"
+                        >
                             <span class="m3-period__eyebrow">Periode</span>
                             <span class="m3-period__value">{{ formattedPeriod }}</span>
-                        </p>
+                        </button>
                         <M3IconButton :aria-label="$t('common.next')" :disabled="!canGoNextMonth" @click="nextMonth">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
@@ -418,6 +445,16 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
         </M3Modal>
 
         <TransactionDetailModal :show="showModal" :transaction="selectedTransaction" @close="showModal = false" />
+
+        <M3DateRangeModal
+            :show="showPeriodModal"
+            :start-date="startDate"
+            :end-date="endDate"
+            :action="route('dashboard')"
+            :params="{ type }"
+            replace
+            @close="showPeriodModal = false"
+        />
     </M3Layout>
 </template>
 
@@ -427,7 +464,7 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
     flex-direction: column;
     gap: var(--m3-space-4);
     width: 100%;
-    max-width: 72rem;
+    max-width: var(--m3-size-content-max);
     margin: 0 auto;
     padding: var(--m3-space-4) var(--m3-space-4) var(--m3-space-4);
 }
@@ -436,14 +473,14 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
     .m3-dash--desktop {
         flex-direction: row;
         align-items: flex-start;
-        gap: 2rem;
-        padding: 1.25rem;
+        gap: var(--m3-space-8);
+        padding: var(--m3-space-5);
     }
 
     .m3-dash--desktop .m3-dash__assets {
         width: 33.333%;
         position: sticky;
-        top: 5rem;
+        top: calc(var(--m3-size-appbar) + var(--m3-space-4));
     }
 
     .m3-dash--desktop .m3-dash__history {
@@ -474,7 +511,7 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
 .m3-history-head__title {
     margin: 0;
     font-size: var(--m3-type-title-small-size);
-    font-weight: 600;
+    font-weight: var(--m3-type-emphasized-title-small-weight);
     color: var(--m3-color-on-surface);
 }
 
@@ -482,8 +519,8 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
     position: relative;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0.25rem;
-    padding: 0.25rem;
+    gap: var(--m3-space-1);
+    padding: var(--m3-space-1);
     border-radius: var(--m3-radius-full);
     border: 1px solid var(--m3-color-outline-variant);
     background: var(--m3-color-surface-container-low);
@@ -494,7 +531,7 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0.375rem 0.75rem;
+    padding: var(--m3-space-1-5) var(--m3-space-3);
     border: none;
     border-radius: var(--m3-radius-full);
     background: transparent;
@@ -543,7 +580,7 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
 .m3-period-row {
     display: grid;
     grid-template-columns: 1fr auto;
-    gap: 0.5rem;
+    gap: var(--m3-space-2);
     align-items: center;
 }
 
@@ -551,8 +588,8 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
     display: flex;
     align-items: center;
     min-width: 0;
-    gap: 0.25rem;
-    padding: 0.25rem 0.5rem;
+    gap: var(--m3-space-1);
+    padding: var(--m3-space-1) var(--m3-space-2);
     border-radius: var(--m3-radius-md);
     border: 1px solid var(--m3-color-outline-variant);
     background: var(--m3-color-surface-container-low);
@@ -563,6 +600,17 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
     flex: 1;
     min-width: 0;
     text-align: center;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    padding: 0;
+    cursor: pointer;
+    border-radius: var(--m3-radius-sm);
+}
+
+.m3-period__label:focus-visible {
+    outline: 2px solid var(--m3-color-primary);
+    outline-offset: 2px;
 }
 
 .m3-period__eyebrow {
@@ -577,7 +625,7 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
 .m3-period__value {
     display: block;
     font-size: var(--m3-type-title-small-size);
-    font-weight: 600;
+    font-weight: var(--m3-type-emphasized-title-small-weight);
     color: var(--m3-color-on-surface);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -587,14 +635,14 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
 .m3-filter-btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.375rem;
-    padding: 0.5rem 0.75rem;
+    gap: var(--m3-space-1-5);
+    padding: var(--m3-space-2) var(--m3-space-3);
     border-radius: var(--m3-radius-md);
     border: 1px solid var(--m3-color-outline-variant);
     background: var(--m3-color-surface-container-low);
     color: var(--m3-color-on-surface-variant);
     font-size: var(--m3-type-title-small-size);
-    font-weight: 500;
+    font-weight: var(--m3-type-title-small-weight);
     cursor: pointer;
     white-space: nowrap;
     max-width: 100%;
@@ -602,8 +650,8 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
 }
 
 .m3-filter-btn svg {
-    width: 0.875rem;
-    height: 0.875rem;
+    width: var(--m3-size-icon-3xs);
+    height: var(--m3-size-icon-3xs);
 }
 
 .m3-filter-btn--active {
@@ -614,20 +662,20 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
 .m3-dash__calendar {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: var(--m3-space-2);
 }
 
 .m3-selected-date {
     margin: 0;
     font-size: var(--m3-type-title-small-size);
-    font-weight: 600;
+    font-weight: var(--m3-type-emphasized-title-small-weight);
     color: var(--m3-color-on-surface-variant);
 }
 
 .m3-type-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0.5rem;
+    gap: var(--m3-space-2);
 }
 
 .m3-type-grid__all {

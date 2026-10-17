@@ -5,67 +5,42 @@
  * on <html>. Without that class no `--m3-*` token exists, so the Default UI
  * (which uses `--color-*` tokens from app.css) is completely unaffected.
  *
- * Dark scheme is the default (`.ui-m3`). Light overrides apply under
- * `.ui-m3.light`, which is active when `useTheme.js` has added `.light`
- * to <html> (dark/light preference) AND `useUiTheme.js` has added `.ui-m3`.
+ * ── Color scheme architecture ─────────────────────────────────────────
+ * Color ROLES (primary…scrim) live in `m3-schemes.css` — a generated file
+ * with seven complete M3 schemes (light + dark, all 49 roles each) produced
+ * with Google's Material Color Utilities. The active scheme is selected by
+ * `<html data-m3-scheme="…">`, set server-side from
+ * `users.ui_m3_color_scheme` before first paint.
+ *
+ * The M3 color scheme is fully INDEPENDENT from the Default UI accent
+ * system (`useAccentColor.js` → `--color-brand`): changing the Default
+ * accent never alters the M3 UI, and changing the M3 scheme never alters
+ * the Default UI.
+ *
+ * This file keeps everything that is scheme-invariant:
+ *   · financial semantic colors (below)
+ *   · shape, typography, spacing, motion, elevation
+ *   · state-layer opacities and M3 component sizes
+ *
+ * Dark is the default (`.ui-m3`); light overrides apply under `.ui-m3.light`
+ * (the `.light` class is managed by `useTheme.js`, matching the Default UI).
  *
  * Values sourced from `.agents/skills/m3-expressive/references/tokens.md`
- * and `color.md` (M3 baseline static schemes — no dynamic color, phase 1).
- *
- * ── Accent integration (deviation from M3 baseline, audited) ──────────
- * `--m3-color-primary` maps to `var(--color-brand)` so the M3 primary tracks
- * the existing accent system (`useAccentColor.js` overrides `--color-brand`
- * in both `:root` and `.light`, darkened for AA contrast on white).
- * Because our primary is a mid-tone (not M3 baseline's light tone),
- * `--m3-color-on-primary` is `#ffffff` in BOTH schemes (M3 baseline dark
- * uses a dark on-primary — not readable on our primary).
- * `--m3-color-primary-container` maps to `var(--color-brand-muted)`
- * (accent 700 — AA-safe with white text in both schemes; `.light` does not
- * override muted and #7e22ce-class tones keep ≥4.5:1 against white).
+ * and `color.md`.
  *
  * ── Financial semantic colors ─────────────────────────────────────────
  * Expense is intentionally NOT mapped to the M3 `error` role: Bendaharaku
- * keeps "pengeluaran" distinct from "error/destructive". Custom static
- * tones are used instead (same hues as the Default UI semantic system).
+ * keeps "pengeluaran" distinct from "error/destructive". Semantic hues are
+ * fixed across all color schemes — a green income stays green in every
+ * theme (CLAUDE.md §2.1). Containers are translucent tints in dark and
+ * solid tints in light so contrast holds on any scheme's surfaces.
  */
 
 /* ════════════════════════════════════════════════════════════════════
-   DARK SCHEME (default) — `.ui-m3` without `.light`
+   DARK SCHEME BASE — `.ui-m3` without `.light`
+   (Color roles come from m3-schemes.css)
    ════════════════════════════════════════════════════════════════════ */
 .ui-m3 {
-    /* ── Color roles (M3 baseline dark, static) ── */
-    --m3-color-primary: var(--color-brand);
-    --m3-color-on-primary: #ffffff;
-    --m3-color-primary-container: var(--color-brand-muted);
-    --m3-color-on-primary-container: #ffffff;
-    --m3-color-secondary: #bcc7dc;
-    --m3-color-on-secondary: #273141;
-    --m3-color-secondary-container: #3d4759;
-    --m3-color-on-secondary-container: #d8e3f8;
-    --m3-color-tertiary: #d6bee4;
-    --m3-color-on-tertiary: #382947;
-    --m3-color-tertiary-container: #4f3f5f;
-    --m3-color-on-tertiary-container: #f2daff;
-    --m3-color-error: #ffb4ab;
-    --m3-color-on-error: #690005;
-    --m3-color-error-container: #93000a;
-    --m3-color-on-error-container: #ffdad6;
-    --m3-color-surface: #1a1c1e;
-    --m3-color-on-surface: #e3e2e6;
-    --m3-color-on-surface-variant: #c3c7cf;
-    --m3-color-surface-dim: #131417;
-    --m3-color-surface-bright: #3b3f43;
-    --m3-color-surface-container-lowest: #15171a;
-    --m3-color-surface-container-low: #1e2023;
-    --m3-color-surface-container: #23262a;
-    --m3-color-surface-container-high: #2d3034;
-    --m3-color-surface-container-highest: #383b3f;
-    --m3-color-outline: #8d9199;
-    --m3-color-outline-variant: #44474e;
-    --m3-color-inverse-surface: #e3e2e6;
-    --m3-color-inverse-on-surface: #1a1c1e;
-    --m3-color-inverse-primary: #2c4a63;
-
     /* ── Financial semantic colors (dark) ── */
     --m3-color-income: #4ade80;
     --m3-color-income-container: rgba(74, 222, 128, 0.15);
@@ -178,12 +153,57 @@
     --m3-type-emphasized-label-small-weight: 600;
 
     /* ── Spacing scale (4px base; single source for M3 layout values) ── */
+    --m3-space-0-5: 0.125rem;
     --m3-space-1: 0.25rem;
+    --m3-space-1-5: 0.375rem;
     --m3-space-2: 0.5rem;
+    --m3-space-2-5: 0.625rem;
     --m3-space-3: 0.75rem;
     --m3-space-4: 1rem;
     --m3-space-5: 1.25rem;
     --m3-space-6: 1.5rem;
+    --m3-space-7: 1.75rem;
+    --m3-space-8: 2rem;
+    --m3-space-10: 2.5rem;
+    --m3-space-12: 3rem;
+
+    /* ── Component sizes (single source; layouts and pages reference these) ── */
+    --m3-size-appbar: 4rem;
+    --m3-size-rail: 5rem;
+    --m3-size-rail-open: 15rem;
+    --m3-size-navbar: 5rem;
+    --m3-size-navbar-item: 4.25rem;
+    --m3-size-navbar-max: 32rem;
+    --m3-size-fab: 3.5rem;
+    --m3-size-touch-target: 2.5rem;
+    --m3-size-touch-target-lg: 3rem;
+    --m3-size-icon-3xs: 0.875rem;
+    --m3-size-icon-2xs: 1rem;
+    --m3-size-icon-sm: 1.125rem;
+    --m3-size-icon-xs: 1.25rem;
+    --m3-size-icon: 1.5rem;
+    --m3-size-icon-lg: 1.75rem;
+    --m3-size-icon-xl: 2rem;
+    --m3-size-logo: 2rem;
+    --m3-size-content-max: 72rem;
+    --m3-size-list-max: 40rem;
+    --m3-size-dialog-sm: 24rem;
+    --m3-size-dialog-md: 32rem;
+    --m3-size-dialog-lg: 44rem;
+    --m3-size-calendar-cell: 2.75rem;
+    --m3-size-indicator-rail: 3.5rem;
+    --m3-size-indicator-nav: 4rem;
+    --m3-size-indicator-height: 2rem;
+
+    /* ── Glassmorphism ── */
+    --m3-blur-glass: 24px;
+
+    /* ── State layers (opacity of currentColor overlays) ── */
+    --m3-state-hover: 0.08;
+    --m3-state-focus: 0.1;
+    --m3-state-pressed: 0.12;
+    --m3-state-dragged: 0.16;
+    --m3-state-disabled: 0.38;
 
     /* ── Elevation (tone-based surfaces; shadows per spec) ──
        Dark scheme: M3 uses tone-based surfaces, not pure black shadows.
@@ -211,41 +231,10 @@
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   LIGHT SCHEME — `.ui-m3.light` (M3 baseline light, static)
-   Primary/container keep tracking the accent system (see header note);
-   only on-primary/on-primary-container switch to the light-tuned
-   darkened brand via --color-brand (already darkened by the accent
-   override under `.light`), so they need no override here.
+   LIGHT SCHEME BASE — `.ui-m3.light`
+   (Color roles come from m3-schemes.css)
    ════════════════════════════════════════════════════════════════════ */
 .ui-m3.light {
-    --m3-color-secondary: #545f71;
-    --m3-color-on-secondary: #ffffff;
-    --m3-color-secondary-container: #d8e3f8;
-    --m3-color-on-secondary-container: #111d2c;
-    --m3-color-tertiary: #6a5778;
-    --m3-color-on-tertiary: #ffffff;
-    --m3-color-tertiary-container: #f2daff;
-    --m3-color-on-tertiary-container: #241533;
-    --m3-color-error: #ba1a1a;
-    --m3-color-on-error: #ffffff;
-    --m3-color-error-container: #ffdad6;
-    --m3-color-on-error-container: #410002;
-    --m3-color-surface: #fdfbff;
-    --m3-color-on-surface: #1a1c1e;
-    --m3-color-on-surface-variant: #44474e;
-    --m3-color-surface-dim: #d9dae0;
-    --m3-color-surface-bright: #fdfbff;
-    --m3-color-surface-container-lowest: #ffffff;
-    --m3-color-surface-container-low: #f8f9fc;
-    --m3-color-surface-container: #f2f3f7;
-    --m3-color-surface-container-high: #eceef2;
-    --m3-color-surface-container-highest: #e6e8ec;
-    --m3-color-outline: #74777f;
-    --m3-color-outline-variant: #c3c7cf;
-    --m3-color-inverse-surface: #2f3033;
-    --m3-color-inverse-on-surface: #f0f0f3;
-    --m3-color-inverse-primary: #a8c7fa;
-
     /* ── Financial semantic colors (light) ── */
     --m3-color-income: #15803d;
     --m3-color-income-container: #f0fdf4;

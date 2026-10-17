@@ -31,15 +31,26 @@
     <!-- Multi-UI: preferensi ui_theme user (default | m3). Dibaca oleh
          useUiTheme.js. Nilai hanya dari database, tidak ada state kedua. -->
     <meta name="ui-theme" content="{{ auth()->user()?->ui_theme ?? 'default' }}">
+    <!-- Multi-UI: skema warna M3 user (teal | baseline | ocean | forest |
+         sunset | rose | midnight). Dibaca oleh useM3ColorScheme.js. -->
+    <meta name="m3-color-scheme" content="{{ auth()->user()?->ui_m3_color_scheme ?? 'teal' }}">
     <script>
-        // ── Anti-FOUC: UI Theme ───────────────────────────────────────
-        // Applies `.ui-m3` synchronously BEFORE first paint — no flash.
-        // Mirrors useUiTheme.js normalize logic.
+        // ── Anti-FOUC: UI Theme + M3 color scheme ─────────────────────
+        // Applies `.ui-m3` and `data-m3-scheme` synchronously BEFORE first
+        // paint — no flash. Mirrors useUiTheme.js / useM3ColorScheme.js.
         (function () {
             var u = document.querySelector('meta[name="ui-theme"]');
             var v = u ? u.getAttribute('content') : 'default';
             if (v !== 'default' && v !== 'm3') v = 'default';
-            if (v === 'm3') document.documentElement.classList.add('ui-m3');
+            if (v === 'm3') {
+                document.documentElement.classList.add('ui-m3');
+                var s = document.querySelector('meta[name="m3-color-scheme"]');
+                var k = s ? (s.getAttribute('content') || '') : '';
+                // Unknown values fall back to the scheme-less `teal` selector
+                // in m3-schemes.css — safe to pass through after sanitizing.
+                if (!/^[a-z_]{3,20}$/.test(k)) k = 'teal';
+                document.documentElement.setAttribute('data-m3-scheme', k);
+            }
         })();
     </script>
 

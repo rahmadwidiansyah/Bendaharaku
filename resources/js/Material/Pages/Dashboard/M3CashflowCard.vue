@@ -65,15 +65,15 @@ defineProps({
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 2rem;
-    height: 2rem;
+    width: var(--m3-space-8);
+    height: var(--m3-space-8);
     border-radius: var(--m3-radius-full);
     flex-shrink: 0;
 }
 
 .m3-cashflow__icon svg {
-    width: 1rem;
-    height: 1rem;
+    width: var(--m3-size-icon-2xs);
+    height: var(--m3-size-icon-2xs);
 }
 
 .m3-cashflow__icon--income {
@@ -89,7 +89,7 @@ defineProps({
 .m3-cashflow__label {
     margin: 0;
     font-size: var(--m3-type-title-small-size);
-    font-weight: 500;
+    font-weight: var(--m3-type-title-small-weight);
     color: var(--m3-color-on-surface-variant);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -111,7 +111,7 @@ defineProps({
 .m3-cashflow__currency {
     font-size: var(--m3-type-label-small-size);
     color: var(--m3-color-on-surface-variant);
-    margin-right: 0.25rem;
+    margin-right: var(--m3-space-1);
 }
 
 .m3-cashflow__amount--income {

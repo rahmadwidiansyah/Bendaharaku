@@ -30,6 +30,7 @@ class User extends Authenticatable
         'theme',
         'category_icon_colored',
         'ui_theme',
+        'ui_m3_color_scheme',
         'auto_budget_enabled',
         'email_notifications',
         'push_notifications',

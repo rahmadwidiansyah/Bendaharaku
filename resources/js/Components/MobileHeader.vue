@@ -44,6 +44,7 @@ const routeTitleMap = computed(() => ({
     'categories.edit':     t('category.titleEdit'),
     'categories.show':     t('category.titleEdit'),
     'loans.index':         t('loan.title'),
+    'more':                t('nav.more'),
     'settings.index':      t('settings.title'),
     'settings.ai':         t('ai.title'),
     'settings.account.profile':        t('settings.title'),

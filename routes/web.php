@@ -21,12 +21,14 @@ use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\WebChatController;
 use App\Support\ActivityLogger;
+use App\Support\M3ColorScheme;
 use App\Support\SettingsChangeLogger;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 // Google Auth
@@ -62,7 +64,9 @@ Route::middleware(['auth'])->group(function () {
 
         $expenseGroups = config('bendaharaku.budget.expense_groups');
 
-        return Inertia::render('Budgeting/Index', [
+        $view = $user->ui_theme === 'm3' ? 'Material/Budgeting/Index' : 'Budgeting/Index';
+
+        return Inertia::render($view, [
             'categories' => $categories,
             'expenseGroups' => $expenseGroups,
             'botName' => $user->bot_display_name,
@@ -205,6 +209,7 @@ Route::middleware(['auth'])->group(function () {
                 'userTheme' => $user->theme ?? 'dark',
                 'categoryIconColored' => $user->category_icon_colored ?? true,
                 'userUiTheme' => $user->ui_theme ?? 'default',
+                'userM3ColorScheme' => M3ColorScheme::normalize($user->ui_m3_color_scheme),
             ]);
         })->name('appearance');
         Route::patch('/appearance', function (Request $request) {
@@ -213,6 +218,7 @@ Route::middleware(['auth'])->group(function () {
                 'accent_color' => ['required', 'string', 'regex:/^(teal|blue|indigo|pink|cyan|rose|custom:#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3}))$/'],
                 'category_icon_colored' => ['boolean'],
                 'ui_theme' => ['nullable', 'string', 'in:default,m3'],
+                'ui_m3_color_scheme' => ['nullable', 'string', Rule::in(M3ColorScheme::SCHEMES)],
             ]);
 
             $user = $request->user();
@@ -222,6 +228,9 @@ Route::middleware(['auth'])->group(function () {
                 'category_icon_colored' => $validated['category_icon_colored'] ?? $user->category_icon_colored,
                 // Permintaan lama tanpa ui_theme mempertahankan preferensi tersimpan.
                 'ui_theme' => $validated['ui_theme'] ?? $user->ui_theme ?? 'default',
+                // Skema warna M3 tersimpan terpisah dari accent_color Default.
+                'ui_m3_color_scheme' => $validated['ui_m3_color_scheme']
+                    ?? M3ColorScheme::normalize($user->ui_m3_color_scheme),
             ]);
 
             SettingsChangeLogger::logChange(
@@ -506,6 +515,13 @@ Route::middleware(['auth'])->group(function () {
     // ── Global search ─────────────────────────────────────────────
     Route::get('/search', [SearchController::class, 'index'])->name('search.page');
     Route::get('/api/search', [SearchController::class, 'search'])->middleware('throttle:120,1')->name('search.global');
+
+    // ── "Lainnya" hub (navigation bar mobile) ──────────────────────
+    // Tema M3 merender Material/More, tema Default merender More (keduanya
+    // hub statis dengan tujuan route existing).
+    Route::get('/more', fn (Request $request) => $request->user()->ui_theme === 'm3'
+        ? Inertia::render('Material/More')
+        : Inertia::render('More'))->name('more');
 
     // ── Budgeting API (session auth, sama seperti Chat) ─────────────
     Route::prefix('api/v1/budget')->name('budget.')->group(function () {

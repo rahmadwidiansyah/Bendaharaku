@@ -95,6 +95,8 @@ export default {
         lastMonth:      'Bulan Lalu',
         applyFilter:    'Terapkan Filter',
         applying:       'Menerapkan...',
+        selectDate:     'Pilih tanggal',
+        selectYear:     'Pilih tahun',
         // Generic error messages
         errors: {
             generic: 'Terjadi kesalahan. Silakan coba lagi nanti.'
@@ -132,6 +134,8 @@ export default {
         settings:   'Pengaturan',
         telegram:   'Telegram',
         chat:       'Chat',
+        more:       'Lainnya',
+        search:     'Pencarian',
         newRecord:  'Catat Baru',
         mainNav:    'Navigasi utama',
         profile:    'Profil',
@@ -142,6 +146,17 @@ export default {
         analyticsDesc: 'Laporan keuangan',
         chatDesc:      'Chat dengan AI Assistant',
         settingsDesc:  'Semua pengaturan aplikasi',
+    },
+
+    // ────────────────────────────────────────────────────────────────
+    // MORE (hub destinasi "Lainnya" di navigation bar mobile)
+    // ────────────────────────────────────────────────────────────────
+    more: {
+        finance:        'Keuangan',
+        app:            'Aplikasi',
+        categoriesDesc: 'Kelola kategori transaksi',
+        loansDesc:      'Hutang & piutang',
+        searchDesc:     'Cari transaksi dan lainnya',
     },
 
     // ────────────────────────────────────────────────────────────────
@@ -173,6 +188,7 @@ export default {
         totalBudget:      'Total Budget',
         totalSpent:       'Total Terpakai',
         totalRemaining:   'Sisa Budget',
+        remainingPct:     '{pct}% sisa',
         byCategory:       'Per Kategori',
         byType:           'Per Tipe Pengeluaran',
         budget:           'Budget',
@@ -215,6 +231,8 @@ export default {
     // ────────────────────────────────────────────────────────────────
     header: {
         toggleBalance:  'Toggle visibilitas saldo',
+        toggleDebt:     'Toggle visibilitas total utang',
+        toggleReceivable: 'Toggle visibilitas total piutang',
         openSettings:   'Buka pengaturan',
         actions:        'Tombol aksi header',
     },
@@ -700,7 +718,7 @@ categoryTab: {
                 },
                 accent_color: {
                     title:          'Warna Aksen',
-                    description:    'Pilih warna aksen utama',
+                    description:    'Warna aksen untuk tampilan Default',
                     custom:         'Warna Kustom...',
                     setAccent:      'Set {name} sebagai warna aksen',
                 },
@@ -710,21 +728,25 @@ categoryTab: {
                     default:        'Default',
                     default_desc:   'Tampilan saat ini',
                     m3:             'Material Design 3',
-                    m3_desc:        'Desain Material 3 Expressive (Beta — Dashboard saja untuk saat ini)',
+                    m3_desc:        'Desain Material 3 Expressive (Beta)',
                 },
                 m3_color_scheme: {
                     title:          'Skema Warna M3',
-                    description:    'Pilih skema warna aksen Material 3',
+                    description:    'Skema warna lengkap untuk tampilan Material 3 — independen dari warna aksen Default',
+                    teal:           'Teal',
+                    teal_desc:      'Teal khas Bendaharaku, tenang dan seimbang',
+                    baseline:       'Baseline',
+                    baseline_desc:  'Ungu Material 3 default, klasik dan netral',
                     ocean:          'Ocean',
                     ocean_desc:     'Biru sejuk, kuat dan terpercaya',
                     forest:         'Hutan',
                     forest_desc:    'Hijau tumbuh, segar dan sehat',
                     sunset:         'Sunset',
                     sunset_desc:    'Oranye hangat, energik dan optimis',
-                    midnight:       'Midnight',
-                    midnight_desc:  'Ungu malam, premium dan mendalam',
                     rose:           'Rose',
                     rose_desc:      'Merah muda lembut, hangat dan empati',
+                    midnight:       'Midnight',
+                    midnight_desc:  'Indigo malam, premium dan mendalam',
                 },
             },
             
