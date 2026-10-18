@@ -33,7 +33,7 @@ const props = defineProps({
     showAvatar: { type: Boolean, default: true },
 })
 
-const emit = defineEmits(['retry', 'regenerate', 'suggest', 'review', 'retryEvidence'])
+const emit = defineEmits(['retry', 'regenerate', 'suggest', 'retryEvidence'])
 
 // Pesan bot yang masih diproses di background queue
 const isPending = computed(() =>
@@ -108,7 +108,6 @@ const hasUserImage = computed(() => userImageComponents.value.length > 0)
                         <MessageRenderer
                             :component="comp"
                             @suggest="emit('suggest', $event)"
-                            @review="emit('review', $event)"
                             @retry="emit('retryEvidence', $event)"
                         />
                     </div>
@@ -118,7 +117,6 @@ const hasUserImage = computed(() => userImageComponents.value.length > 0)
                             <MessageRenderer
                                 :component="comp"
                                 @suggest="emit('suggest', $event)"
-                                @review="emit('review', $event)"
                                 @retry="emit('retryEvidence', $event)"
                             />
                         </template>
@@ -145,7 +143,6 @@ const hasUserImage = computed(() => userImageComponents.value.length > 0)
                         <MessageRenderer
                             :component="comp"
                             @suggest="emit('suggest', $event)"
-                            @review="emit('review', $event)"
                             @retry="emit('retryEvidence', $event)"
                         />
                     </template>

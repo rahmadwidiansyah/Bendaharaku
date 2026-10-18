@@ -44,6 +44,7 @@ const SKELETON_MAP = [
     { pattern: /\/loans/,                      skeleton: 'TransactionSkeleton'  },
     { pattern: /\/settings/,                   skeleton: 'SettingsSkeleton'     },
     { pattern: /\/profile/,                    skeleton: 'SettingsSkeleton'     },
+    { pattern: /\/chat/,                       skeleton: null                   }, // fullscreen, skip (kedua tema)
 ]
 
 /**

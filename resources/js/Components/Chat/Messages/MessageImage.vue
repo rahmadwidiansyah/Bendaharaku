@@ -3,7 +3,7 @@
  * MessageImage.vue
  *
  * Render komponen gambar evidence di dalam user bubble.
- * Menampilkan thumbnail + status badge + tombol "Review" setelah OCR selesai.
+ * Menampilkan thumbnail + status badge OCR.
  *
  * Props:
  *   component.localPreviewUrl  — URL lokal (blob) saat upload belum selesai
@@ -13,7 +13,7 @@
  *   component.committed        — true jika sudah di-commit menjadi transaksi
  *
  * Emits:
- *   review(evidenceUuid)       — user menekan tombol Review
+ *   retry(evidenceUuid)        — user mencoba ulang saat OCR gagal
  */
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -28,7 +28,7 @@ const props = defineProps({
     },
 })
 
-const emit = defineEmits(['review', 'retry'])
+const emit = defineEmits(['retry'])
 
 const isPreviewOpen = ref(false)
 
@@ -141,10 +141,6 @@ const committed = computed(() => !!props.component.committed)
 const uuid = computed(() => props.component.evidenceUuid ?? null)
 
 const isDoneStatus = computed(() => ['COMMITTED', 'COMPLETED', 'DONE', 'SUCCESS'].includes(status.value))
-// Hanya tampilkan tombol Review jika OCR sudah selesai & belum di-commit/selesai
-const showReviewBtn = computed(() =>
-    !committed.value && !isDoneStatus.value && uuid.value && (status.value === 'READY' || status.value === 'RESOLVED')
-)
 
 // Status label + warna — semua via i18n (audit fix)
 const statusMeta = computed(() => {
@@ -219,20 +215,7 @@ const statusMeta = computed(() => {
             <span class="text-2xs text-[var(--color-text-primary)]/50 truncate">{{ t('chat.evidenceLabel') }}</span>
         </div>
 
-        <!-- Tombol Review — di bawah status, full width jika ada -->
-        <button
-            v-if="showReviewBtn"
-            type="button"
-            @click="emit('review', uuid)"
-            class="self-stretch inline-flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold
-                   bg-white text-black
-                   hover:bg-white/90 active:scale-[0.98] transition-all"
-        >
-            <AppIcon icon="eye" iconClass="w-3.5 h-3.5" />
-            {{ t('chat.reviewBtn') }}
-        </button>
-
-        <p v-else-if="committed || isDoneStatus" class="text-2xs text-[var(--color-brand)] font-semibold inline-flex items-center gap-1 px-1">
+        <p v-if="committed || isDoneStatus" class="text-2xs text-[var(--color-brand)] font-semibold inline-flex items-center gap-1 px-1">
             <AppIcon icon="check" iconClass="w-3 h-3 shrink-0" />
             {{ t('chat.committed') }}
         </p>

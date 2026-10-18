@@ -30,6 +30,13 @@ import { formatNumber, formatDate, parseDateOnly, formatLocalYMD } from '@/utils
 import { useI18n } from 'vue-i18n'
 import AppIcon from '@/Components/AppIcon.vue'
 import { getM3CategoryIconClass } from '@/Material/utils/m3IconColor.js'
+import {
+    m3CssVar as cssVar,
+    m3IsLight as isLightScheme,
+    m3ChartChrome as chartChrome,
+    m3ChartFontFamily,
+    m3TooltipOptions,
+} from '@/Material/utils/m3Chart.js'
 import { InboxIcon } from 'lucide-vue-next'
 
 const { t } = useI18n()
@@ -91,11 +98,6 @@ const REDUCED_MOTION = typeof window !== 'undefined'
 
 const barChartData = ref({ labels: [], incomes: [], expenses: [], debts: [], receivables: [] })
 
-const cssVar = (name, fallback) =>
-    getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
-
-const isLightScheme = () => document.documentElement.classList.contains('light')
-
 // Warna seri dari token M3 (hue semantik sama dengan Default).
 const FLOW_COLORS = computed(() => ({
     income: cssVar('--m3-color-income', '#4ade80'),
@@ -104,21 +106,7 @@ const FLOW_COLORS = computed(() => ({
     receivable: cssVar('--m3-color-receivable', '#c084fc'),
 }))
 
-// Chrome chart yang sadar skema light/dark. Tooltip memakai pasangan
-// inverse-surface/on-inverse-surface (peran M3 untuk elemen kontras).
-const chartChrome = () => {
-    const light = isLightScheme()
-    return {
-        grid: light ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.05)',
-        ticks: cssVar('--m3-color-on-surface-variant', '#9CA3AF'),
-        labels: cssVar('--m3-color-on-surface-variant', '#D1D5DB'),
-        tooltipBg: cssVar('--m3-color-inverse-surface', light ? '#e3e2e6' : '#2f3033'),
-        tooltipTitle: cssVar('--m3-color-inverse-on-surface', light ? '#1a1c1e' : '#f0f0f3') + 'b3',
-        tooltipBody: cssVar('--m3-color-inverse-on-surface', light ? '#1a1c1e' : '#f0f0f3'),
-        surface: cssVar('--m3-color-surface', '#1a1c1e'),
-        brand: cssVar('--m3-color-primary', '#82d5ca'),
-    }
-}
+// Chrome chart & tooltip dibagi lewat Material/utils/m3Chart.js (design.md §11.2).
 
 const barViews = [
     { key: 'harian', label: () => t('analytics.view.daily') },
@@ -239,15 +227,7 @@ const initCumulativeChart = async () => {
                     plugins: {
                         legend: { display: false },
                         tooltip: {
-                            enabled: true,
-                            backgroundColor: chrome.tooltipBg,
-                            titleColor: chrome.tooltipTitle,
-                            titleFont: { size: 11, weight: 'bold' },
-                            bodyColor: chrome.tooltipBody,
-                            bodyFont: { size: 13, weight: 'bold' },
-                            padding: { x: 12, y: 8 },
-                            cornerRadius: 8,
-                            displayColors: false,
+                            ...m3TooltipOptions(chrome),
                             callbacks: {
                                 title: (items) => {
                                     const d = parseDateOnly(items[0]?.label)
@@ -394,13 +374,15 @@ function updateBarYScale() {
     const visibleIdx = getVisibleIndices(scrollEl, chart)
     if (!visibleIdx) return
 
-    const { incomes, expenses, debts, receivables } = barChartData.value
-    const vals = visibleIdx.flatMap(i => [
-        incomes[i] || 0,
-        expenses[i] || 0,
-        debts[i] || 0,
-        receivables[i] || 0,
-    ]).filter(v => v > 0)
+    const bySeries = {
+        income: barChartData.value.incomes,
+        expense: barChartData.value.expenses,
+        debt: barChartData.value.debts,
+        receivable: barChartData.value.receivables,
+    }
+    const vals = visibleIdx.flatMap(i =>
+        BAR_SERIES.filter(k => !barHidden.value[k]).map(k => bySeries[k][i] || 0),
+    ).filter(v => v > 0)
 
     const newMax = vals.length ? Math.max(...vals) * 1.25 : 1000
     if (chart.options.scales.y.max === newMax) return
@@ -416,6 +398,30 @@ function onBarScroll() {
     barScrollTimer = setTimeout(() => {
         updateBarYScale()
     }, 120)
+}
+
+// ─── Legenda bar interaktif (design.md §11.2: legend harus terhubung ke data) ──
+const BAR_SERIES = ['income', 'expense', 'debt', 'receivable']
+const barHidden = ref({ income: false, expense: false, debt: false, receivable: false })
+
+function toggleBarSeries(key) {
+    const i = BAR_SERIES.indexOf(key)
+    if (i < 0) return
+
+    barHidden.value = { ...barHidden.value, [key]: !barHidden.value[key] }
+
+    const chart = charts.value['bar']
+    if (chart) {
+        chart.setDatasetVisibility(i, !barHidden.value[key])
+        chart.update()
+    }
+    updateBarYScale()
+}
+
+function applyBarVisibility() {
+    const chart = charts.value['bar']
+    if (!chart) return
+    BAR_SERIES.forEach((key, i) => chart.setDatasetVisibility(i, !barHidden.value[key]))
 }
 
 const renderBarChart = async (view) => {
@@ -443,37 +449,60 @@ const renderBarChart = async (view) => {
     if (!ctx) return
 
     const chrome = chartChrome()
+    const chartFont = m3ChartFontFamily()
     const last4Idx = labels.map((_, i) => i).slice(-4)
     const initialVals = last4Idx.flatMap(i => [incomes[i] || 0, expenses[i] || 0, debts[i] || 0, receivables[i] || 0]).filter(v => v > 0)
     const initialYMax = initialVals.length ? Math.max(...initialVals) * 1.25 : 1000
+
+    const seriesData = {
+        income: incomes,
+        expense: expenses,
+        debt: debts,
+        receivable: receivables,
+    }
 
     charts.value['bar'] = new Chart(ctx, {
         type: 'bar',
         data: {
             labels,
-            datasets: [
-                { label: t('analytics.chartLabels.income'), data: incomes, backgroundColor: FLOW_COLORS.value.income, borderRadius: 5, barPercentage: 0.9, categoryPercentage: 0.85 },
-                { label: t('analytics.chartLabels.expense'), data: expenses, backgroundColor: FLOW_COLORS.value.expense, borderRadius: 5, barPercentage: 0.9, categoryPercentage: 0.85 },
-                { label: t('analytics.chartLabels.debt'), data: debts, backgroundColor: FLOW_COLORS.value.debt, borderRadius: 5, barPercentage: 0.9, categoryPercentage: 0.85 },
-                { label: t('analytics.chartLabels.receivable'), data: receivables, backgroundColor: FLOW_COLORS.value.receivable, borderRadius: 5, barPercentage: 0.9, categoryPercentage: 0.85 },
-            ],
+            datasets: BAR_SERIES.map((key, idx) => ({
+                label: t(`analytics.chartLabels.${key}`),
+                data: seriesData[key],
+                backgroundColor: FLOW_COLORS.value[key],
+                hoverBackgroundColor: mixHex(FLOW_COLORS.value[key], 0.15),
+                borderRadius: 4,
+                barPercentage: 0.9,
+                categoryPercentage: 0.85,
+                animation: { delay: REDUCED_MOTION ? 0 : idx * 45 },
+            })),
         },
         options: {
             responsive: false,
             maintainAspectRatio: false,
-            animation: { duration: REDUCED_MOTION ? 0 : 400 },
-            plugins: { legend: { display: false } },
+            animation: {
+                duration: REDUCED_MOTION ? 0 : 450,
+                easing: 'easeOutQuart',
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    ...m3TooltipOptions(chrome, { swatch: true }),
+                    callbacks: {
+                        label: (item) => `${item.dataset.label}: Rp ${Number(item.raw).toLocaleString('id-ID')}`,
+                    },
+                },
+            },
             scales: {
                 x: {
                     grid: { display: false },
-                    ticks: { color: chrome.ticks, font: { size: 11, weight: 'bold' }, maxRotation: 0 },
+                    ticks: { color: chrome.ticks, font: { size: 11, weight: 'bold', family: chartFont }, maxRotation: 0 },
                 },
                 y: {
                     display: true,
                     min: 0,
                     max: initialYMax,
-                    grid: { display: true, color: chrome.grid, drawBorder: false },
-                    border: { display: false, dash: [4, 4] },
+                    grid: { display: true, color: chrome.grid, tickBorderDash: [4, 4] },
+                    border: { display: false },
                     ticks: { display: false },
                 },
             },
@@ -486,7 +515,7 @@ const renderBarChart = async (view) => {
                 const fontSize = isMobile ? 9 : 10
                 const placedLabels = []
 
-                ctx2.font = `bold ${fontSize}px sans-serif`
+                ctx2.font = `600 ${fontSize}px ${chartFont}`
                 ctx2.fillStyle = chrome.labels
                 ctx2.textAlign = 'center'
                 if (!isLightScheme()) {
@@ -496,6 +525,7 @@ const renderBarChart = async (view) => {
                 }
 
                 chart.data.datasets.forEach((ds, dsIndex) => {
+                    if (!chart.isDatasetVisible(dsIndex)) return
                     const meta = chart.getDatasetMeta(dsIndex)
                     meta.data.forEach((el, i) => {
                         const val = Number(ds.data[i])
@@ -542,6 +572,8 @@ const renderBarChart = async (view) => {
         }],
     })
 
+    applyBarVisibility()
+
     await nextTick()
     if (barScrollRef.value) {
         barScrollRef.value.scrollLeft = barScrollRef.value.scrollWidth
@@ -584,16 +616,17 @@ const activeColors = computed(() => {
     return buildPalette(base)
 })
 
-function buildPalette(baseHex) {
-    const mix = (hex, weight) => {
-        const { r, g, b } = hexRgb(hex)
-        const tone = (v) => {
-            const n = weight > 0 ? Math.round(v + (255 - v) * weight) : Math.round(v * (1 + weight))
-            return Math.max(0, Math.min(255, n))
-        }
-        return `#${[tone(r), tone(g), tone(b)].map((n) => n.toString(16).padStart(2, '0')).join('')}`
+function mixHex(hex, weight) {
+    const { r, g, b } = hexRgb(hex)
+    const tone = (v) => {
+        const n = weight > 0 ? Math.round(v + (255 - v) * weight) : Math.round(v * (1 + weight))
+        return Math.max(0, Math.min(255, n))
     }
-    return [mix(baseHex, 0.40), mix(baseHex, 0.22), baseHex, mix(baseHex, -0.15), mix(baseHex, -0.30), mix(baseHex, -0.45)]
+    return `#${[tone(r), tone(g), tone(b)].map((n) => n.toString(16).padStart(2, '0')).join('')}`
+}
+
+function buildPalette(baseHex) {
+    return [mixHex(baseHex, 0.40), mixHex(baseHex, 0.22), baseHex, mixHex(baseHex, -0.15), mixHex(baseHex, -0.30), mixHex(baseHex, -0.45)]
 }
 
 const iconColorClass = computed(() => {
@@ -620,32 +653,6 @@ function hexRgb(hex) {
 function hexToRgba(hex, alpha) {
     const { r, g, b } = hexRgb(hex)
     return `rgba(${r},${g},${b},${alpha})`
-}
-
-function applyGradients(chart, colors, labels) {
-    if (!chart) return
-
-    const cvs = chart.canvas
-    if (!cvs || !cvs.width || !cvs.height) {
-        if (cvs) chart.update('none')
-        return
-    }
-
-    const cx = cvs.width / 2
-    const cy = cvs.height / 2
-    const outerR = Math.min(cvs.width, cvs.height) / 2
-    const innerR = outerR * 0.7
-    const ctx = cvs.getContext('2d')
-
-    chart.data.datasets[0].backgroundColor = labels.map((_, i) => {
-        const c = colors[i % colors.length]
-        const rgb = hexRgb(c)
-        const g = ctx.createRadialGradient(cx, cy, innerR, cx, cy, outerR)
-        g.addColorStop(0, `rgba(${rgb.r},${rgb.g},${rgb.b},0.35)`)
-        g.addColorStop(1, c)
-        return g
-    })
-    chart.update('none')
 }
 
 const renderDoughnutChart = async () => {
@@ -676,8 +683,10 @@ const renderDoughnutChart = async () => {
             datasets: [{
                 data: dataObj.values,
                 backgroundColor: paint,
-                borderWidth: 2,
-                borderColor: chrome.surface,
+                borderWidth: 0,
+                spacing: 2,
+                borderRadius: 4,
+                hoverOffset: 6,
             }],
         },
         options: {
@@ -687,24 +696,22 @@ const renderDoughnutChart = async () => {
             animation: REDUCED_MOTION
                 ? false
                 : {
-                    duration: 700,
+                    duration: 650,
                     easing: 'easeOutQuart',
                     animateRotate: true,
-                    animateScale: false,
+                    animateScale: true,
                     onComplete: () => {
                         doughnutReady.value = true
                     },
                 },
-            plugins: { legend: { display: false } },
-            onResize: (chart) => {
-                const d = activeCategoryData.value
-                const p = activeColors.value
-                const s = d.values.map((v, i) => ({ v, i })).sort((a, b) => a.v - b.v)
-                const paint2 = d.labels.map((_, i) => {
-                    const rank = s.findIndex(x => x.i === i)
-                    return p[Math.round((rank / Math.max(s.length - 1, 1)) * (p.length - 1))]
-                })
-                applyGradients(chart, paint2, d.labels)
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    ...m3TooltipOptions(chrome, { swatch: true }),
+                    callbacks: {
+                        label: (item) => `Rp ${Number(item.raw).toLocaleString('id-ID')}`,
+                    },
+                },
             },
         },
     })
@@ -713,10 +720,7 @@ const renderDoughnutChart = async () => {
     charts.value['doughnut'] = chart
 
     if (REDUCED_MOTION) {
-        applyGradients(chart, paint, dataObj.labels)
         doughnutReady.value = true
-    } else {
-        requestAnimationFrame(() => applyGradients(chart, paint, dataObj.labels))
     }
 }
 
@@ -743,6 +747,35 @@ watch(() => props.dailyLabels, () => {
 watch(() => props.cumulativeData, () => {
     initCumulativeChart()
 })
+
+// Rentang tanggal berubah (router.get Inertia) → komponen dipakai ulang.
+// Inertia mempertahankan referensi prop yang isinya identik, jadi watcher
+// ini hanya menyala saat data full-history benar-benar berubah; watcher
+// doughnut menyala saat agregat per kategori pada rentang baru berbeda.
+watch(
+    () => [
+        props.allDailyDates,
+        props.allDailyIncome,
+        props.allDailyExpense,
+        props.allDailyDebt,
+        props.allDailyReceivable,
+    ],
+    () => {
+        renderBarChart(barView.value)
+    },
+)
+
+watch(
+    () => [
+        props.expensesByCategory,
+        props.incomesByCategory,
+        props.debtsByCategory,
+        props.receivablesByCategory,
+    ],
+    () => {
+        renderDoughnutChart()
+    },
+)
 
 onBeforeUnmount(() => {
     clearTimeout(barScrollTimer)
@@ -778,7 +811,7 @@ onBeforeUnmount(() => {
                 <M3Button
                     variant="outlined"
                     size="sm"
-                    :class="isDateFiltered ? 'm3-ana__date-btn--active' : ''"
+                    :class="['m3-ana__date-btn', isDateFiltered ? 'm3-ana__date-btn--active' : '']"
                     :aria-label="$t('common.dateRange')"
                     @click="showDateModal = true"
                 >
@@ -787,7 +820,7 @@ onBeforeUnmount(() => {
                             <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                     </template>
-                    {{ $t('common.dateRange') }}
+                    {{ $t('common.period') }}
                 </M3Button>
             </div>
 
@@ -800,10 +833,10 @@ onBeforeUnmount(() => {
             />
 
             <!-- KPI pemasukan/pengeluaran -->
-            <M3CashflowCard :income="totalIncome" :expense="totalExpense" :is-visible="true" />
+            <M3CashflowCard class="m3-ana__enter m3-ana__enter--1" :income="totalIncome" :expense="totalExpense" :is-visible="true" />
 
             <!-- Saldo kumulatif -->
-            <M3Card ref="cumulativeCardRef" variant="filled" padding="md">
+            <M3Card ref="cumulativeCardRef" variant="filled" padding="md" class="m3-ana__enter m3-ana__enter--2">
                 <div class="m3-ana__card-head">
                     <div class="m3-ana__card-titles">
                         <p class="m3-ana__card-title">{{ $t('analytics.cumulativeBalance') }}</p>
@@ -812,12 +845,12 @@ onBeforeUnmount(() => {
                     <p class="m3-ana__hero">Rp {{ formatNumber(cumulativeBalance) }}</p>
                 </div>
                 <div ref="cumulativeContainerRef" class="m3-ana__cumulative-wrap">
-                    <canvas ref="cumulativeChartRef" class="m3-ana__canvas" />
+                    <canvas ref="cumulativeChartRef" class="m3-ana__canvas" role="img" :aria-label="$t('analytics.chartAria.cumulative')" />
                 </div>
             </M3Card>
 
             <!-- Arus kas -->
-            <M3Card variant="filled" padding="md">
+            <M3Card variant="filled" padding="md" class="m3-ana__enter m3-ana__enter--3">
                 <div class="m3-ana__card-head">
                     <p class="m3-ana__card-title">{{ $t('analytics.cashflow') }}</p>
                     <div class="m3-ana__seg" role="tablist">
@@ -833,14 +866,22 @@ onBeforeUnmount(() => {
                     </div>
                 </div>
                 <div class="m3-ana__legend">
-                    <span v-for="f in ['income', 'expense', 'debt', 'receivable']" :key="f" class="m3-ana__legend-item">
+                    <button
+                        v-for="f in ['income', 'expense', 'debt', 'receivable']"
+                        :key="f"
+                        type="button"
+                        class="m3-ana__legend-item"
+                        :class="barHidden[f] ? 'm3-ana__legend-item--off' : ''"
+                        :aria-pressed="!barHidden[f]"
+                        @click="toggleBarSeries(f)"
+                    >
                         <span class="m3-ana__legend-dot" :style="{ backgroundColor: FLOW_COLORS[f] }" aria-hidden="true" />
                         <span class="m3-ana__legend-label">{{ $t(`analytics.chartLabels.${f}`) }}</span>
-                    </span>
+                    </button>
                 </div>
                 <div ref="barScrollRef" class="m3-ana__scroll">
                     <div class="m3-ana__bar-box" :style="{ minWidth: chartMinWidth + 'px' }">
-                        <canvas ref="barChartRef" :key="barChartKey" class="m3-ana__canvas" />
+                        <canvas ref="barChartRef" :key="barChartKey" class="m3-ana__canvas" role="img" :aria-label="$t('analytics.chartAria.cashflow')" />
                     </div>
                 </div>
             </M3Card>
@@ -859,7 +900,7 @@ onBeforeUnmount(() => {
                 >{{ c.label() }}</button>
             </div>
 
-            <M3Card variant="filled" padding="md">
+            <M3Card variant="filled" padding="md" class="m3-ana__enter m3-ana__enter--4">
                 <div v-if="doughnutReady && !activeCategoryData.labels.length" class="m3-ana__empty">
                     <span class="m3-ana__empty-icon" aria-hidden="true">
                         <InboxIcon :stroke-width="1.5" />
@@ -871,7 +912,7 @@ onBeforeUnmount(() => {
                         <div v-if="!doughnutReady" class="m3-ana__spinner" role="status" aria-label="Memuat">
                             <span class="m3-ana__spinner-ring" aria-hidden="true" />
                         </div>
-                        <canvas ref="doughnutChartRef" class="m3-ana__canvas m3-ana__canvas--front" />
+                        <canvas ref="doughnutChartRef" class="m3-ana__canvas m3-ana__canvas--front" role="img" :aria-label="$t('analytics.chartAria.breakdown')" />
                         <div v-if="doughnutReady && activeCategoryData.labels.length" class="m3-ana__doughnut-center" aria-hidden="true">
                             <span class="m3-ana__doughnut-label">{{ activeCategoryData.labelName }}</span>
                             <span class="m3-ana__doughnut-total">Rp {{ formatNumber(activeCategoryData.total) }}</span>
@@ -943,6 +984,12 @@ onBeforeUnmount(() => {
 .m3-ana__range-dates {
     color: var(--m3-color-on-surface-variant);
     font-weight: var(--m3-type-body-small-weight);
+}
+
+/* Tombol rentang tidak boleh menyusut (label pernah terpotong di locale ID);
+   teks tanggal di sebelah kiri yang melakukan ellipsis. */
+.m3-ana__date-btn {
+    flex-shrink: 0;
 }
 
 /* Trigger rentang tanggal saat filter aktif (paritas dot DateModal Default) */
@@ -1075,6 +1122,23 @@ onBeforeUnmount(() => {
     display: inline-flex;
     align-items: center;
     gap: var(--m3-space-2);
+    padding: 0;
+    border: none;
+    background: none;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    border-radius: var(--m3-radius-xs);
+    transition: opacity var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
+}
+
+.m3-ana__legend-item--off {
+    opacity: 0.38;
+}
+
+.m3-ana__legend-item:focus-visible {
+    outline: 2px solid var(--m3-color-primary);
+    outline-offset: 2px;
 }
 
 .m3-ana__legend-dot {
@@ -1306,5 +1370,32 @@ onBeforeUnmount(() => {
     font-size: var(--m3-type-body-medium-size);
     font-weight: var(--m3-type-emphasized-body-medium-weight);
     color: var(--m3-color-on-surface-variant);
+}
+
+/* ── Animasi masuk kartu (staggered fade-in-up, design.md §12.1) ── */
+.m3-ana__enter {
+    animation: m3-ana-rise var(--m3-motion-fast-spatial-duration) var(--m3-motion-fast-spatial) both;
+}
+
+.m3-ana__enter--1 { animation-delay: 0ms; }
+.m3-ana__enter--2 { animation-delay: 75ms; }
+.m3-ana__enter--3 { animation-delay: 150ms; }
+.m3-ana__enter--4 { animation-delay: 225ms; }
+
+@keyframes m3-ana-rise {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .m3-ana__enter {
+        animation: none;
+    }
 }
 </style>

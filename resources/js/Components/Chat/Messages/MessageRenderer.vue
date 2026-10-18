@@ -38,7 +38,7 @@ defineProps({
     },
 })
 
-const emit = defineEmits(['suggest', 'review', 'retry'])
+const emit = defineEmits(['suggest', 'retry'])
 
 const componentMap = {
     text:             MessageText,
@@ -62,7 +62,6 @@ const componentMap = {
         :content="content"
         v-bind="['transaction_card','summary_card'].includes(component.type) ? { metadata } : {}"
         @suggest="emit('suggest', $event)"
-        @review="emit('review', $event)"
         @retry="emit('retry', $event)"
     />
     <!-- Fallback: tipe tidak dikenal, tampilkan teks mentah (debug only) -->

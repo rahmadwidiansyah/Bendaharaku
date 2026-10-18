@@ -28,7 +28,7 @@ const props = defineProps({
 
 const { t } = useI18n()
 
-const emit = defineEmits(['loadMore', 'scrollUpdate', 'retry', 'regenerate', 'suggest', 'review', 'retryEvidence'])
+const emit = defineEmits(['loadMore', 'scrollUpdate', 'retry', 'regenerate', 'suggest', 'retryEvidence'])
 
 /** Ada pesan bot pending yang sudah dirender sebagai bubble mengetik */
 const hasPendingBotMessage = computed(() =>
@@ -139,7 +139,6 @@ defineExpose({ el: containerRef })
                 @retry="emit('retry', $event)"
                 @regenerate="emit('regenerate', $event)"
                 @suggest="emit('suggest', $event)"
-                @review="emit('review', $event)"
                 @retryEvidence="emit('retryEvidence', $event)"
             />
         </TransitionGroup>

@@ -126,7 +126,7 @@ class TransactionController extends Controller implements HasMiddleware
      */
     public function create(): Response
     {
-        return Inertia::render('Transactions/Create', $this->getFormData());
+        return Inertia::render($this->formView('Create'), $this->getFormData());
     }
 
     /**
@@ -247,7 +247,7 @@ class TransactionController extends Controller implements HasMiddleware
                 'debt_sub_type' => $debtSubType,
             ];
 
-            return Inertia::render('Transactions/Edit', array_merge(
+            return Inertia::render($this->formView('Edit'), array_merge(
                 ['transaction' => $mappedTransaction],
                 $this->getFormData()
             ));
@@ -275,7 +275,7 @@ class TransactionController extends Controller implements HasMiddleware
             'updated_at' => $transaction->updated_at?->toISOString(),
         ];
 
-        return Inertia::render('Transactions/Edit', array_merge(
+        return Inertia::render($this->formView('Edit'), array_merge(
             ['transaction' => $mappedTransaction],
             $this->getFormData()
         ));
@@ -539,6 +539,17 @@ class TransactionController extends Controller implements HasMiddleware
     /**
      * Menarik seluruh data master dan kalkulasi yang dibutuhkan oleh form Create & Edit.
      */
+    /**
+     * Multi-UI: halaman form transaksi memakai varian Material saat
+     * `ui_theme === 'm3'`. Kontrak props/route tidak berubah.
+     */
+    private function formView(string $page): string
+    {
+        return Auth::user()->ui_theme === 'm3'
+            ? "Material/Transactions/{$page}"
+            : "Transactions/{$page}";
+    }
+
     private function getFormData(): array
     {
         $user = Auth::user();

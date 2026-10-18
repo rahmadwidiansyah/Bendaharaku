@@ -87,7 +87,9 @@ class WebChatController extends Controller
             $messages = $raw;
         }
 
-        return Inertia::render('Chat/Index', [
+        $view = $user->ui_theme === 'm3' ? 'Material/Chat/Index' : 'Chat/Index';
+
+        return Inertia::render($view, [
             'conversation' => $conversation ? [
                 'id' => $conversation->id,
                 'title' => $conversation->title,

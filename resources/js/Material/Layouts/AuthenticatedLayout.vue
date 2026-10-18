@@ -8,8 +8,8 @@
  * Struktur (per references/components/bars.md + navigation.md + fabs.md):
  * - Desktop: top app bar (small) + navigation rail (expanded 15rem / collapsed 5rem) + FAB
  * - Mobile: TANPA app bar — judul halaman dirender in-content (M3PageTitle);
- *   navigation bar 4 destinasi + FAB create "nested & raised" di tengah
- *   (M3 Expressive: FAB boleh center-aligned dan nested dalam navigation bar)
+ *   navigation bar 5 destinasi (Beranda, Anggaran, Catat, Analitik, More) —
+ *   aksi Catat sejajar dengan destinasi lain
  * - Aksi global di mobile (chat, akun) diakses lewat destinasi "More"
  * - FAB record: primary-container, 3.5rem, shape 28dp
  * - Skeleton overlay + stale/bfcache handlers: perilaku identik layout Default
@@ -308,7 +308,7 @@ const showSkeleton = computed(() =>
             </Transition>
         </div>
 
-        <!-- ── Mobile navigation bar: 4 destinasi + FAB create nested-raised di tengah ── -->
+        <!-- ── Mobile navigation bar: 5 destinasi, aksi Catat sejajar dengan destinasi lain ── -->
         <nav v-if="!isDesktop && !hideNav" class="m3-navbar" :aria-label="$t('nav.mainNav')" role="navigation">
             <Link :href="route('dashboard')" class="m3-navbar__item" :class="{ 'm3-navbar__item--active': isActive(['dashboard']) }" :aria-current="isActive(['dashboard']) ? 'page' : undefined">
                 <span class="m3-navbar__indicator">
@@ -326,18 +326,14 @@ const showSkeleton = computed(() =>
                 </span>
                 <span class="m3-navbar__label">{{ $t('nav.budgeting') }}</span>
             </Link>
-            <div class="m3-navbar__fab-slot">
-                <Link
-                    :href="route('transactions.create')"
-                    class="m3-navbar__fab"
-                    :aria-label="$t('nav.record')"
-                    :title="$t('nav.record')"
-                >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true">
+            <Link :href="route('transactions.create')" class="m3-navbar__item">
+                <span class="m3-navbar__indicator">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                     </svg>
-                </Link>
-            </div>
+                </span>
+                <span class="m3-navbar__label">{{ $t('nav.record') }}</span>
+            </Link>
             <Link :href="route('analytics.index')" class="m3-navbar__item" :class="{ 'm3-navbar__item--active': isActive(['analytics.*']) }" :aria-current="isActive(['analytics.*']) ? 'page' : undefined">
                 <span class="m3-navbar__indicator">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
@@ -806,7 +802,7 @@ const showSkeleton = computed(() =>
 
 /* ── Mobile navigation bar — floating bar (model BottomNav Default, styling M3) ──
    Warna/indikator memakai token M3; geometri (floating margin, label selalu
-   tampil, FAB naik setengah) mengikuti varian "label always" M3. */
+   tampil) mengikuti varian "label always" M3. */
 .m3-navbar {
     position: fixed;
     left: var(--m3-space-4);
@@ -959,61 +955,5 @@ const showSkeleton = computed(() =>
     .m3-navbar__item--active .m3-navbar__label {
         font-weight: var(--m3-type-emphasized-label-small-weight);
     }
-}
-
-/* ── FAB create: nested dalam navigation bar, center-aligned & raised ──
-   Diizinkan M3 Expressive (fabs.md §Placement): FAB boleh center-aligned
-   dan "nested within the navigation bar". Geometri mengikuti FAB tema
-   Default (56dp) bulat penuh: naik setengah tinggi, ring surface 4dp,
-   ikon 28dp. Aksesibilitas via aria-label + tooltip title. */
-.m3-navbar__fab-slot {
-    position: relative;
-    flex: 1;
-    z-index: 10;
-    height: 100%;
-    user-select: none;
-}
-
-.m3-navbar__fab {
-    position: absolute;
-    left: 50%;
-    bottom: calc(var(--m3-size-navbar) - var(--m3-size-fab) / 2);
-    transform: translateX(-50%);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--m3-size-fab);
-    height: var(--m3-size-fab);
-    border: var(--m3-space-1) solid var(--m3-color-surface);
-    border-radius: var(--m3-radius-full);
-    background: var(--m3-color-primary-container);
-    color: var(--m3-color-on-primary-container);
-    box-shadow:
-        var(--m3-elevation-3),
-        0 6px 20px color-mix(in srgb, var(--m3-color-primary) 30%, transparent);
-    text-decoration: none;
-    transition:
-        box-shadow var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects),
-        transform var(--m3-motion-fast-spatial-duration) var(--m3-motion-fast-spatial);
-}
-
-.m3-navbar__fab:hover {
-    box-shadow:
-        var(--m3-elevation-4),
-        0 8px 24px color-mix(in srgb, var(--m3-color-primary) 38%, transparent);
-}
-
-.m3-navbar__fab:active {
-    transform: translateX(-50%) scale(0.94) translateY(2px);
-}
-
-.m3-navbar__fab:focus-visible {
-    outline: 2px solid var(--m3-color-primary);
-    outline-offset: 2px;
-}
-
-.m3-navbar__fab svg {
-    width: var(--m3-size-icon-lg);
-    height: var(--m3-size-icon-lg);
 }
 </style>
