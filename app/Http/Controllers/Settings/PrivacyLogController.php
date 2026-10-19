@@ -270,18 +270,38 @@ class PrivacyLogController extends Controller
             $aiLogs = AiParseLog::where('user_id', $user->id)->orderByDesc('created_at')->limit(100)->get();
             foreach ($aiLogs as $log) {
                 $status = strtolower((string) ($log->status ?? ($log->is_success ? 'executed' : 'failed')));
+                $fallbackChain = null;
+                if (! empty($log->fallback_from)) {
+                    $fallbackChain = ' | Fallback: '.$log->fallback_from.' → '.($log->fallback_to ?? '-');
+                    if (! empty($log->fallback_reason)) {
+                        $fallbackChain .= ' ('.$log->fallback_reason.')';
+                    }
+                }
                 $items->push([
                     'id' => 'ai-'.$log->id,
                     'type' => 'ai',
                     'type_label' => 'AI Parse',
                     'title' => mb_strimwidth($log->input_text ?? '-', 0, 60, '...'),
-                    'description' => 'Provider: '.strtoupper($log->provider ?? '-').' | Status: '.$status,
+                    'description' => 'Provider: '.strtoupper($log->provider ?? '-').' | Status: '.$status.($fallbackChain ?? ''),
                     'created_at' => $log->created_at,
                     'created_at_human' => $log->created_at?->diffForHumans() ?? '-',
                     'created_at_raw' => $log->created_at?->toIso8601String(),
                     'icon' => 'Zap',
                     'color' => $log->is_success ? 'indigo' : 'red',
-                    'metadata' => ['provider' => $log->provider, 'status' => $status, 'confidence' => $log->final_confidence, 'error' => $log->error_message],
+                    'metadata' => array_filter([
+                        'provider' => $log->provider,
+                        'model' => $log->model,
+                        'status' => $status,
+                        'confidence' => $log->final_confidence,
+                        'error' => $log->error_message,
+                        'selection_method' => $log->selection_method,
+                        'fallback_from' => $log->fallback_from,
+                        'fallback_to' => $log->fallback_to,
+                        'fallback_reason' => $log->fallback_reason,
+                        'trace_id' => $log->trace_id,
+                        'total_tokens' => $log->total_tokens,
+                        'attempts' => $log->routing_attempts,
+                    ], fn ($v) => $v !== null && $v !== '' && $v !== []),
                 ]);
             }
         }

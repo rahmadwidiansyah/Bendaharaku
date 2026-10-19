@@ -300,6 +300,7 @@ class ChatTransactionOrchestrator
             'model' => $aiResult->model,
             'confidence' => $finalConfidence,
             'usage' => $aiResult->usage,
+            'routing' => $aiResult->routing,
             'transaction' => $transactionLog->load(['category', 'sourceWallet', 'destinationWallet', 'type']),
         ];
     }
@@ -417,6 +418,7 @@ class ChatTransactionOrchestrator
             'model' => $aiResult->model,
             'confidence' => $finalConfidence,
             'usage' => $aiResult->usage,
+            'routing' => $aiResult->routing,
         ];
     }
 

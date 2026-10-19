@@ -22,6 +22,7 @@ use App\Models\AiRoutingPreference;
 use App\Models\AiUsageLog;
 use App\Models\TransactionDraft;
 use App\Models\User;
+use App\Services\AI\AiFallbackActivityLogger;
 use App\Services\AI\AiParseLogService;
 use App\Services\AI\AiProviderFactory;
 use App\Services\AI\Routing\AiRoutingExecutor;
@@ -133,7 +134,17 @@ class MultiTransactionProcessor
             provider: $multiResult->provider,
             model: $multiResult->model,
             confidence: $multiResult->confidence,
+            routing: $multiRouting,
         );
+
+        if (! empty($multiRouting['fallback_from'])) {
+            AiFallbackActivityLogger::log(
+                $user,
+                (string) $multiRouting['fallback_from'],
+                (string) ($multiRouting['fallback_to'] ?? $multiResult->provider.'/'.$multiResult->model),
+                $multiRouting,
+            );
+        }
 
         Log::info('MultiTx selesai.', [
             'user_id' => $user->id,
@@ -158,6 +169,7 @@ class MultiTransactionProcessor
             successCount: $multiTxResult->successCount(),
             totalCount: $multiTxResult->totalCount(),
             usage: $multiResult->usage,
+            routing: $multiRouting,
         );
 
         return [

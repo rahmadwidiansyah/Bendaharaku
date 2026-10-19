@@ -223,8 +223,9 @@ class ChatResponseConverter
     {
         $usage = $result['usage'] ?? ($result['multi_result']?->usage ?? []);
         $totalTokens = $usage['total'] ?? null;
+        $routing = $result['routing'] ?? ($result['multi_result']?->routing ?? null);
 
-        return [
+        $metadata = [
             'trace_id' => $context->traceId,
             'platform' => $context->platform->value,
             'provider' => $result['provider'] ?? ($result['multi_result']?->provider ?? null),
@@ -233,6 +234,46 @@ class ChatResponseConverter
             'latency_ms' => (int) $latency,
             'total_tokens' => $totalTokens,
         ];
+
+        if (is_array($routing) && $routing !== []) {
+            $metadata['routing'] = $this->summarizeRouting($routing);
+        }
+
+        return $metadata;
+    }
+
+    /**
+     * Ringkas metadata routing pool untuk konsumsi UI (chip fallback + detail modal).
+     * Attempts dibatasi 8 entri dan hanya field non-sensitif.
+     */
+    private function summarizeRouting(array $routing): array
+    {
+        $summary = array_filter([
+            'selected_provider' => $routing['selected_provider'] ?? null,
+            'selected_model' => $routing['selected_model'] ?? null,
+            'selected_account_alias' => $routing['selected_account_alias'] ?? null,
+            'selection_method' => $routing['selection_method'] ?? null,
+            'attempt_count' => $routing['attempt_count'] ?? null,
+            'final_status' => $routing['final_status'] ?? null,
+            'fallback_from' => $routing['fallback_from'] ?? null,
+            'fallback_to' => $routing['fallback_to'] ?? null,
+            'fallback_reason' => $routing['fallback_reason'] ?? null,
+        ], fn ($v) => $v !== null && $v !== '');
+
+        $attempts = $routing['attempts'] ?? null;
+        if (is_array($attempts) && $attempts !== []) {
+            $summary['attempts'] = array_values(array_map(
+                fn ($a) => array_filter([
+                    'provider' => $a['provider'] ?? null,
+                    'model' => $a['model'] ?? null,
+                    'category' => $a['category'] ?? null,
+                    'latency_ms' => $a['latency_ms'] ?? null,
+                ], fn ($v) => $v !== null && $v !== ''),
+                array_slice($attempts, 0, 8),
+            ));
+        }
+
+        return $summary;
     }
 
     public function mapErrorCodeToKey(?string $errorCode): string

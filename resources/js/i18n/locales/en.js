@@ -1427,6 +1427,7 @@ export default {
     // CHAT & SEARCH
     // ────────────────────────────────────────────────────────────────
     chat: {
+        meta_fallback: 'fallback',
         source: {
             web: 'Web Chat',
             telegram: 'Telegram Bot',

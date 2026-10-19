@@ -12,6 +12,7 @@ use App\Models\AiModelCatalog;
 use App\Models\AiProviderAccount;
 use App\Models\AiRoutingPreference;
 use App\Models\User;
+use App\Models\UserActivityLog;
 use App\Services\AI\AIManager;
 use App\Services\AI\Discovery\ModelDiscoveryService;
 use App\Services\AI\Discovery\ModelNormalizer;
@@ -128,8 +129,51 @@ class AiProviderPoolTest extends TestCase
         }, null, fn () => null);
         $this->assertSame('gemini-2.5-flash', $out['routing']['selected_model']);
         $this->assertSame(2, $out['routing']['attempt_count']);
+        $this->assertSame('gemini/gemini-2.0-flash', $out['routing']['fallback_from']);
+        $this->assertSame('gemini/gemini-2.5-flash', $out['routing']['fallback_to']);
+        $this->assertSame(AiErrorClassifier::CAT_MODEL_NOT_FOUND, $out['routing']['fallback_reason']);
         // Model 404 otomatis dinonaktifkan.
         $this->assertFalse(AiModelCatalog::where('model_id', 'gemini-2.0-flash')->first()->is_enabled);
+    }
+
+    /** Fallback sukses via AIManager mencatat tepat satu activity log. */
+    public function test_pool_fallback_success_logs_single_activity_entry(): void
+    {
+        $acc = $this->makeAccount(AiProvider::Gemini, 'G1');
+        $this->addModel($acc, 'gemini-2.0-flash');
+        $this->addModel($acc, 'gemini-2.5-flash');
+        $this->routing(['mode' => 'manual', 'primary_provider' => 'gemini', 'primary_model' => 'gemini-2.0-flash',
+            'fallback_models' => [['provider' => 'gemini', 'model' => 'gemini-2.5-flash']]]);
+
+        $rawText = json_encode([
+            'amount' => 20000,
+            'category' => 'Makanan',
+            'sourceWallet' => 'Cash',
+            'transactionType' => 'expense',
+        ]);
+
+        Http::fake([
+            'generativelanguage.googleapis.com/*' => Http::sequence()
+                ->push(['error' => ['code' => 404, 'message' => 'model not found']], 404)
+                ->push([
+                    'candidates' => [['content' => ['parts' => [['text' => $rawText]]]]],
+                    'usageMetadata' => ['promptTokenCount' => 10, 'candidatesTokenCount' => 5, 'totalTokenCount' => 15],
+                ], 200),
+        ]);
+
+        $result = app(AIManager::class)->parseTransaction($this->user, 'makan 20rb', [], [], [], 'prompt');
+
+        $this->assertTrue($result->success);
+        $this->assertSame('gemini/gemini-2.0-flash', $result->routing['fallback_from']);
+        $this->assertSame('gemini/gemini-2.5-flash', $result->routing['fallback_to']);
+
+        $logs = UserActivityLog::where('user_id', $this->user->id)
+            ->where('type', 'ai')
+            ->where('action', 'fallback')
+            ->get();
+
+        $this->assertCount(1, $logs);
+        $this->assertSame('AI fallback: gemini/gemini-2.0-flash → gemini/gemini-2.5-flash', $logs->first()->title);
     }
 
     /** 3. Seluruh kandidat akun 1 gagal → akun 2 berhasil. */

@@ -1448,6 +1448,7 @@ categoryTab: {
     // CHAT & SEARCH
     // ────────────────────────────────────────────────────────────────
     chat: {
+        meta_fallback: 'fallback',
         source: {
             web: 'Web Chat',
             telegram: 'Bot Telegram',

@@ -134,6 +134,7 @@ const goPage = (p: number) => {
                   <span v-if="item.metadata.source_wallet" class="px-2 py-0.5 bg-white/5 border border-white/5 rounded-full text-[11px] text-gray-300">{{ item.metadata.source_wallet }}</span>
                   <span v-if="item.metadata.source" class="px-2 py-0.5 bg-white/5 border border-white/5 rounded-full text-[11px] text-[var(--color-text-muted)]">src: {{ item.metadata.source }}</span>
                   <span v-if="item.metadata.provider" class="px-2 py-0.5 bg-white/5 border border-white/5 rounded-full text-[11px] text-indigo-300">{{ item.metadata.provider }}</span>
+                  <span v-if="item.metadata.fallback_from" class="px-2 py-0.5 bg-white/5 border border-white/5 rounded-full text-[11px] text-indigo-300/80" :title="item.metadata.fallback_reason || ''">{{ item.metadata.fallback_from }} → {{ item.metadata.fallback_to }}</span>
                 </div>
               </div>
               <div class="shrink-0 text-right hidden sm:block">

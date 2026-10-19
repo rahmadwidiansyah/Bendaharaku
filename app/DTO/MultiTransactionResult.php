@@ -30,12 +30,14 @@ readonly class MultiTransactionResult
      * @param  string  $provider  Nama AI provider yang dipakai (untuk info di UI)
      * @param  string  $model  Nama model yang dipakai
      * @param  float  $confidence  Rata-rata confidence LLM
+     * @param  array|null  $routing  Metadata routing pool (trace_id, fallback_from/to/reason, attempts) — nullable agar BC
      */
     public function __construct(
         public array $results,
         public string $provider,
         public string $model,
         public float $confidence,
+        public ?array $routing = null,
     ) {}
 
     // ── Computed helpers ──────────────────────────────────────────

@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import ModelBadge from '@/Components/Chat/ModelBadge.vue'
 import TokenBadge from '@/Components/Chat/TokenBadge.vue'
 
@@ -7,6 +8,8 @@ const props = defineProps({
   metadata: { type: Object, default: () => ({}) },
   content: { type: Array, default: () => [] },
 })
+
+const { t } = useI18n()
 
 // Format latency singkat
 const latencyLabel = computed(() => {
@@ -26,7 +29,20 @@ const tokens = computed(() =>
 const model = computed(() => props.metadata?.model ?? '')
 const provider = computed(() => props.metadata?.provider ?? '')
 
-const hasAny = computed(() => latencyLabel.value || tokens.value !== null || model.value || provider.value)
+const routing = computed(() => props.metadata?.routing ?? null)
+
+const isFallback = computed(() =>
+  Boolean(routing.value?.fallback_from || routing.value?.final_status === 'local_fallback')
+)
+
+const fallbackTitle = computed(() => {
+  const r = routing.value ?? {}
+  const from = r.fallback_from || 'llm-pool'
+  const to = r.fallback_to || [r.selected_provider ?? provider.value, r.selected_model ?? model.value].filter(Boolean).join('/') || '?'
+  return `${from} → ${to}${r.fallback_reason ? ' — ' + r.fallback_reason : ''}`
+})
+
+const hasAny = computed(() => latencyLabel.value || tokens.value !== null || model.value || provider.value || isFallback.value)
 </script>
 
 <template>
@@ -45,5 +61,15 @@ const hasAny = computed(() => latencyLabel.value || tokens.value !== null || mod
     
     <!-- Model badge -->
     <ModelBadge :model="model" :provider="provider" />
+
+    <!-- Titik pemisah sebelum chip fallback -->
+    <span v-if="isFallback && (latencyLabel || tokens !== null || model || provider)" class="text-2xs text-gray-700">&bull;</span>
+
+    <!-- Chip fallback routing (title berisi detail rantai + alasan) -->
+    <span
+      v-if="isFallback"
+      class="inline-flex items-center px-1.5 py-0.5 rounded-md border border-[var(--color-border-default)] bg-[var(--color-surface-muted)] text-2xs text-[var(--color-text-secondary)] whitespace-nowrap"
+      :title="fallbackTitle"
+    >{{ t('chat.meta_fallback') }}</span>
   </div>
 </template>

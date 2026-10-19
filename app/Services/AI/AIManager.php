@@ -97,7 +97,7 @@ class AIManager
                 ]);
 
                 // Lampirkan routing agar orchestrator/log bisa catat fallback_* tanpa query ulang.
-                return new AIParseResult(
+                $result = new AIParseResult(
                     success: $llmResult->success,
                     confidence: $llmResult->confidence,
                     error: $llmResult->error,
@@ -107,6 +107,17 @@ class AIManager
                     model: $llmResult->model,
                     routing: $meta,
                 );
+
+                if (! empty($meta['fallback_from'])) {
+                    AiFallbackActivityLogger::log(
+                        $user,
+                        (string) $meta['fallback_from'],
+                        (string) ($meta['fallback_to'] ?? $llmResult->provider.'/'.$llmResult->model),
+                        $meta,
+                    );
+                }
+
+                return $result;
             } catch (AiProviderException $e) {
                 // Pool habis atau permanen: lanjut ke fallback lokal di bawah.
                 // Jangan log API key; $e sudah safe (classifier safe_message).
@@ -130,11 +141,17 @@ class AIManager
         }
 
         // ── FALLBACK LOKAL (lazy: hanya saat pool gagal) ──
+        // Kandidat pool ada tapi semuanya gagal = fallback nyata; tanpa kandidat = jalur normal.
+        $hadPoolCandidates = ($resolved['candidates'] ?? []) !== [];
+
         $pythonResult = $this->runPythonNlp($text, $wallets, $this->injectMemories($categories, $activeMemories));
         if ($pythonResult !== null && $pythonResult->success) {
             Log::info("AIManager: pool failed, fallback to Python for user #{$user->id}");
 
-            return $this->withLocalRouting($pythonResult, 'local_python_fallback', $poolError ?? null);
+            $result = $this->withLocalRouting($pythonResult, 'local_python_fallback', $poolError ?? null);
+            $this->logLocalFallback($user, $result, $hadPoolCandidates);
+
+            return $result;
         }
 
         $ruleEngineResult = $this->ruleEngine->parse($user, $text);
@@ -146,10 +163,27 @@ class AIManager
             }
             Log::warning("AIManager: pool failed, fallback to LRE for user #{$user->id}");
 
-            return $this->withLocalRouting($ruleEngineResult, 'local_rule_fallback', $poolError ?? null);
+            $result = $this->withLocalRouting($ruleEngineResult, 'local_rule_fallback', $poolError ?? null);
+            $this->logLocalFallback($user, $result, $hadPoolCandidates);
+
+            return $result;
         }
 
         throw $this->wrapPoolError($poolError ?? new AiProviderException('ai-router', 'AI gagal memproses.'));
+    }
+
+    private function logLocalFallback(User $user, AIParseResult $result, bool $hadPoolCandidates): void
+    {
+        if (! $hadPoolCandidates) {
+            return;
+        }
+
+        AiFallbackActivityLogger::log(
+            $user,
+            'llm-pool',
+            trim(($result->provider ?? 'local').'/'.($result->model ?? 'unknown'), '/'),
+            $result->routing,
+        );
     }
 
     private function withLocalRouting(AIParseResult $result, string $method, ?\Throwable $poolError): AIParseResult
