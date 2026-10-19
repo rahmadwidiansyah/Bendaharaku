@@ -5,7 +5,7 @@
  * Status mengetik memakai role primary (bukan warna finansial).
  */
 import { computed } from 'vue'
-import { router } from '@inertiajs/vue3'
+import { Link, router } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import M3BotAvatar from './M3BotAvatar.vue'
 import M3IconButton from '@/Material/Components/M3IconButton.vue'
@@ -41,16 +41,23 @@ function handleBack() {
             </svg>
         </M3IconButton>
 
-        <M3BotAvatar :src="botAvatar" :name="botName" size="md" variant="bot" shape="rounded" :online="true" />
+        <!-- Avatar + nama → Profil Bot (seluruh area dapat diklik) -->
+        <Link
+            :href="route('settings.ai.bot')"
+            class="m3-chat-header__bot"
+            :aria-label="t('chatBot.title')"
+        >
+            <M3BotAvatar :src="botAvatar" :name="botName" size="md" variant="bot" shape="rounded" :online="true" />
 
-        <div class="m3-chat-header__info">
-            <h1 class="m3-chat-header__name">{{ botName }}</h1>
-            <p class="m3-chat-header__status" :class="{ 'm3-chat-header__status--typing': isTyping }">{{ statusText }}</p>
-        </div>
+            <div class="m3-chat-header__info">
+                <h1 class="m3-chat-header__name">{{ botName }}</h1>
+                <p class="m3-chat-header__status" :class="{ 'm3-chat-header__status--typing': isTyping }">{{ statusText }}</p>
+            </div>
+        </Link>
 
         <M3IconButton
-            :aria-label="t('chatBot.title')"
-            :href="route('settings.ai.bot')"
+            :aria-label="t('settings.chat.hub.title')"
+            :href="route('settings.chat.index')"
         >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -76,6 +83,21 @@ function handleBack() {
     backdrop-filter: blur(var(--m3-blur-glass));
     -webkit-backdrop-filter: blur(var(--m3-blur-glass));
     border-bottom: 1px solid var(--m3-color-outline-variant);
+}
+
+.m3-chat-header__bot {
+    display: flex;
+    align-items: center;
+    gap: var(--m3-space-2);
+    flex: 1;
+    min-width: 0;
+    text-decoration: none;
+    border-radius: var(--m3-radius-full);
+}
+
+.m3-chat-header__bot:focus-visible {
+    outline: 2px solid var(--m3-color-primary);
+    outline-offset: 2px;
 }
 
 .m3-chat-header__info {

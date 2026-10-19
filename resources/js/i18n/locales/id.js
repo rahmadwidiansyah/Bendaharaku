@@ -855,6 +855,41 @@ categoryTab: {
         // ═══ AI ═══
         ai: {
             title:          'AI & Otomasi',
+
+            status: {
+                title:       'Status Provider',
+                description: 'Kesehatan akun AI dan kandidat routing berikutnya',
+                method: {
+                    label:                  'Metode Routing',
+                    manual:                 'Manual — mengikuti urutan akun',
+                    automatic:              'Otomatis — skor terbaik dipilih',
+                    none_no_usable_account: 'Tidak ada akun layak',
+                },
+                accounts: {
+                    title:    'Akun Provider',
+                    empty:    'Belum ada akun provider. Tambahkan akun di Provider & Model.',
+                    priority: 'Prioritas',
+                    models:   'model',
+                    no_test:  'belum diuji',
+                },
+                candidates: {
+                    title: 'Kandidat Berikutnya',
+                    empty: 'Belum ada kandidat layak saat ini.',
+                    count: '{count} kandidat',
+                },
+                skipped: {
+                    title: 'Dilewati',
+                    count: '{count} dilewati',
+                },
+                health: {
+                    healthy:      'Sehat',
+                    invalid:      'Invalid',
+                    disabled:     'Nonaktif',
+                    rate_limited: 'Dibatasi',
+                    unknown:      'Belum diuji',
+                    cooldown:     'Cooldown',
+                },
+            },
             
             models: {
                 title:          'Provider & Model',
@@ -1096,6 +1131,32 @@ categoryTab: {
                     content_placeholder: 'Isi template...',
                 },
                 help_text: 'Developer tools adalah untuk pengguna tingkat lanjut untuk men-debug atau menyesuaikan AI.',
+            },
+        },
+
+        chat: {
+            hub: {
+                head:        'Pengaturan Chat',
+                subtitle:    'Bot, memori & notifikasi',
+                title:       'Pengaturan Chat',
+                description: 'Kelola bot, memori, provider, dan notifikasi chat',
+                section: {
+                    bot:           'Bot & AI',
+                    notifications: 'Notifikasi',
+                    activity:      'Aktivitas',
+                },
+                bot:       { title: 'Profil Bot', description: 'Nama, avatar, dan kepribadian bot' },
+                memory:    { title: 'Memori Bot', description: 'Hal yang diingat dari percakapan' },
+                providers: { title: 'Provider & Model', description: 'Akun provider AI dan model aktif' },
+                notifications: {
+                    title:       'Notifikasi',
+                    description: 'Notifikasi push saat bot selesai memproses pesan',
+                    label:       'Notifikasi push',
+                    on:          'Aktif di perangkat ini.',
+                    off:         'Nonaktif di perangkat ini.',
+                },
+                logs:   { title: 'Log Aktivitas AI', description: 'Riwayat pemrosesan AI, fallback, dan routing' },
+                status: { title: 'Cek Status Provider', description: 'Kesehatan akun dan kandidat routing berikutnya' },
             },
         },
 

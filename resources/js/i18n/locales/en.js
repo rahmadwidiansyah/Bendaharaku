@@ -837,6 +837,41 @@ export default {
         // ═══ AI ═══
         ai: {
             title:          'AI & Automation',
+
+            status: {
+                title:       'Provider Status',
+                description: 'AI account health and next routing candidates',
+                method: {
+                    label:                  'Routing Method',
+                    manual:                 'Manual — follows account order',
+                    automatic:              'Automatic — best score wins',
+                    none_no_usable_account: 'No usable account',
+                },
+                accounts: {
+                    title:    'Provider Accounts',
+                    empty:    'No provider accounts yet. Add one in Providers & Models.',
+                    priority: 'Priority',
+                    models:   'models',
+                    no_test:  'never tested',
+                },
+                candidates: {
+                    title: 'Upcoming Candidates',
+                    empty: 'No eligible candidates right now.',
+                    count: '{count} candidates',
+                },
+                skipped: {
+                    title: 'Skipped',
+                    count: '{count} skipped',
+                },
+                health: {
+                    healthy:      'Healthy',
+                    invalid:      'Invalid',
+                    disabled:     'Disabled',
+                    rate_limited: 'Rate limited',
+                    unknown:      'Not tested',
+                    cooldown:     'Cooldown',
+                },
+            },
             
             models: {
                 title:          'Providers & Models',
@@ -1078,6 +1113,32 @@ export default {
                     content_placeholder: 'Template body...',
                 },
                 help_text: 'Developer tools are for advanced users to debug or customize the AI.',
+            },
+        },
+
+        chat: {
+            hub: {
+                head:        'Chat Settings',
+                subtitle:    'Bot, memory & notifications',
+                title:       'Chat Settings',
+                description: 'Manage bot, memory, providers, and chat notifications',
+                section: {
+                    bot:           'Bot & AI',
+                    notifications: 'Notifications',
+                    activity:      'Activity',
+                },
+                bot:       { title: 'Bot Profile', description: 'Bot name, avatar, and personality' },
+                memory:    { title: 'Bot Memory', description: 'Facts remembered from chats' },
+                providers: { title: 'Providers & Models', description: 'AI provider accounts and active models' },
+                notifications: {
+                    title:       'Notifications',
+                    description: 'Push notification when the bot finishes processing',
+                    label:       'Push notifications',
+                    on:          'Enabled on this device.',
+                    off:         'Disabled on this device.',
+                },
+                logs:   { title: 'AI Activity Log', description: 'AI processing, fallback, and routing history' },
+                status: { title: 'Provider Status', description: 'Account health and next routing candidates' },
             },
         },
 

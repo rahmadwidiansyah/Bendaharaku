@@ -15,6 +15,7 @@ use App\Http\Controllers\LoanController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PushNotificationController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\Settings\AiProviderStatusController;
 use App\Http\Controllers\Settings\AiSettingsController;
 use App\Http\Controllers\Settings\PrivacyLogController;
 use App\Http\Controllers\TransactionController;
@@ -424,6 +425,8 @@ Route::middleware(['auth'])->group(function () {
             ]);
         })->name('bot');
         Route::get('/memory', fn () => Inertia::render('Settings/AI/Memory'))->name('memory');
+        // Halaman status provider — khusus tema M3; tema Default diarahkan ke Models.
+        Route::get('/status', AiProviderStatusController::class)->name('status');
         Route::get('/memory/manage', [AiSettingsController::class, 'memories'])->name('memory.manage');
         Route::get('/memory/{id}', [AiSettingsController::class, 'memoryLogs'])->name('memory.detail');
         Route::delete('/memory/{id}', [AiSettingsController::class, 'destroy'])->name('memory.destroy');
@@ -507,6 +510,19 @@ Route::middleware(['auth'])->group(function () {
 
     // ── Chat Bot Profile settings ─────────────────────────────────
     Route::prefix('settings/chat')->name('settings.chat.')->group(function () {
+        // Hub pengaturan chat — tema M3 merender Material, Default merender
+        // halaman Settings (pola /more). Semua tujuan memakai route existing.
+        Route::get('/', function (Request $request) {
+            $user = $request->user();
+            $props = [
+                'emailNotifications' => (bool) $user->email_notifications,
+                'pushNotifications' => (bool) $user->push_notifications,
+            ];
+
+            return $user->ui_theme === 'm3'
+                ? Inertia::render('Material/Settings/Chat/Settings', $props)
+                : Inertia::render('Settings/Chat/Settings', $props);
+        })->name('index');
         Route::get('/bot-profile', [ChatBotProfileController::class, 'show'])->name('bot-profile');
         Route::patch('/bot-profile', [ChatBotProfileController::class, 'update'])->name('bot-profile.update');
         Route::delete('/bot-avatar', [ChatBotProfileController::class, 'destroyAvatar'])->name('bot-avatar.destroy');
@@ -532,9 +548,6 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/{year}/{month}', [BudgetController::class, 'show'])->name('show');
         Route::put('/{budgetGroup}', [BudgetController::class, 'update'])->name('update');
     });
-
-    // ── Redirects for backward compatibility ───────────────────────
-    Route::get('/settings/chat/bot-profile', fn () => redirect('/settings/ai/bot', 301));
 
     // ── Web Push Notifications ──────────────────────────────────────
     Route::post('/notifications/subscribe', [PushNotificationController::class, 'subscribe'])->name('notifications.subscribe');

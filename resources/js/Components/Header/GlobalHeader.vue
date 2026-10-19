@@ -165,6 +165,7 @@ const routeTitleMap = computed(() => ({
     'settings.index':             t('settings.title'),
     'settings.ai.index':          t('ai.title'),
     'settings.ai.bot':            t('settings.title'),
+    'settings.chat.index':        t('settings.chat.hub.head'),
     'chat.index':                 'AI Chat',
     'settings.account.profile':   t('settings.title'),
 }))
@@ -180,6 +181,7 @@ const subtitle = computed(() => {
                 'settings.account':      t('account'),
                 'settings.finance':      t('finance'),
                 'settings.ai':           t('ai'),
+                'settings.chat':         t('settings.chat.hub.subtitle'),
                 'settings.notifications': t('notifications'),
                 'settings.privacy':      t('privacy'),
             }
