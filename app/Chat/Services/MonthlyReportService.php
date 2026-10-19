@@ -394,65 +394,65 @@ class MonthlyReportService
         Carbon $period,
         ?MonthlyReport $previousReport = null,
     ): ?array {
-        // Konsisten dengan routing pool (tidak hardcode Gemini). Nama method dipertahankan agar BC,
-        // tapi provider/model mengikuti preferensi routing pengguna.
-        $routingPref = AiRoutingPreference::where('user_id', $user->id)->first();
-
-        $transactionsCollection = Collection::make($transactions);
-        $transactionsForPayload = $transactionsCollection->take(50);
-
-        $payload = [
-            'periode' => $period->format('Y-m'),
-            'ringkasan_angka' => $localReport,
-            'pembanding_bulan_sebelumnya' => $previousReport ? [
-                'periode' => $previousReport->period_month?->format('Y-m'),
-                'ringkasan' => $previousReport->final_summary,
-                'metrics' => $previousReport->metrics,
-                'comparison' => $this->buildComparisonMetrics($this->buildMonthlyMetrics(Collection::make([])), $previousReport),
-            ] : null,
-            'transaksi' => $transactionsForPayload->map(fn ($trx) => [
-                'tanggal' => $trx->date?->toDateString(),
-                'tipe' => $trx->type?->name,
-                'kategori' => $trx->category?->category_name,
-                'dompet_asal' => $trx->sourceWallet?->name,
-                'dompet_tujuan' => $trx->destinationWallet?->name,
-                'nominal' => (float) $trx->amount,
-                'catatan' => $trx->notes,
-            ])->values()->all(),
-            'truncated' => ($transactionsForPayload->count() < $transactionsCollection->count()) ? true : false,
-            'transactions_count' => $transactionsCollection->count(),
-        ];
-
-        $prompt = implode("\n", [
-            'Kamu adalah analis keuangan pribadi untuk aplikasi Bendaharaku.',
-            'Buat laporan bulanan singkat dalam Bahasa Indonesia, ramah, padat, dan actionable.',
-            'Format wajib:',
-            '1. Ringkasan Bulan Ini',
-            '2. Pemasukan vs Pengeluaran',
-            '3. Kategori Pengeluaran Terbesar',
-            '4. Perbandingan dengan Bulan Sebelumnya',
-            '5. Insight Singkat',
-            '6. Saran Praktis Bulan Ini',
-            'Jika pembanding_bulan_sebelumnya null, tulis bahwa pembanding belum tersedia dan sarankan membuat laporan bulan sebelumnya.',
-            'Jangan mengarang data di luar JSON. Jika data terbatas, bilang data masih sedikit.',
-            'Jika daftar transaksi dipotong (truncated=true), beri tahu bahwa hasil mengabaikan transaksi sisanya.',
-            'Data JSON (ringkas):',
-            json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-        ]);
-
-        $promptLength = strlen($prompt);
-        $estimatedTokens = (int) max(1, round($promptLength / 4));
-        Log::info('Gemini prompt prepared', [
-            'user_id' => $user->id,
-            'model' => $model,
-            'transactions_sent' => $transactionsForPayload->count(),
-            'transactions_total' => $transactionsCollection->count(),
-            'truncated' => $payload['truncated'],
-            'prompt_length_chars' => $promptLength,
-            'estimated_tokens' => $estimatedTokens,
-        ]);
-
         try {
+            // Konsisten dengan routing pool (tidak hardcode Gemini). Nama method dipertahankan agar BC,
+            // tapi provider/model mengikuti preferensi routing pengguna.
+            $routingPref = AiRoutingPreference::where('user_id', $user->id)->first();
+
+            $transactionsCollection = Collection::make($transactions);
+            $transactionsForPayload = $transactionsCollection->take(50);
+
+            $payload = [
+                'periode' => $period->format('Y-m'),
+                'ringkasan_angka' => $localReport,
+                'pembanding_bulan_sebelumnya' => $previousReport ? [
+                    'periode' => $previousReport->period_month?->format('Y-m'),
+                    'ringkasan' => $previousReport->final_summary,
+                    'metrics' => $previousReport->metrics,
+                    'comparison' => $this->buildComparisonMetrics($this->buildMonthlyMetrics(Collection::make([])), $previousReport),
+                ] : null,
+                'transaksi' => $transactionsForPayload->map(fn ($trx) => [
+                    'tanggal' => $trx->date?->toDateString(),
+                    'tipe' => $trx->type?->name,
+                    'kategori' => $trx->category?->category_name,
+                    'dompet_asal' => $trx->sourceWallet?->name,
+                    'dompet_tujuan' => $trx->destinationWallet?->name,
+                    'nominal' => (float) $trx->amount,
+                    'catatan' => $trx->notes,
+                ])->values()->all(),
+                'truncated' => ($transactionsForPayload->count() < $transactionsCollection->count()) ? true : false,
+                'transactions_count' => $transactionsCollection->count(),
+            ];
+
+            $prompt = implode("\n", [
+                'Kamu adalah analis keuangan pribadi untuk aplikasi Bendaharaku.',
+                'Buat laporan bulanan singkat dalam Bahasa Indonesia, ramah, padat, dan actionable.',
+                'Format wajib:',
+                '1. Ringkasan Bulan Ini',
+                '2. Pemasukan vs Pengeluaran',
+                '3. Kategori Pengeluaran Terbesar',
+                '4. Perbandingan dengan Bulan Sebelumnya',
+                '5. Insight Singkat',
+                '6. Saran Praktis Bulan Ini',
+                'Jika pembanding_bulan_sebelumnya null, tulis bahwa pembanding belum tersedia dan sarankan membuat laporan bulan sebelumnya.',
+                'Jangan mengarang data di luar JSON. Jika data terbatas, bilang data masih sedikit.',
+                'Jika daftar transaksi dipotong (truncated=true), beri tahu bahwa hasil mengabaikan transaksi sisanya.',
+                'Data JSON (ringkas):',
+                json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            ]);
+
+            $promptLength = strlen($prompt);
+            $estimatedTokens = (int) max(1, round($promptLength / 4));
+            Log::info('Gemini prompt prepared', [
+                'user_id' => $user->id,
+                'model' => $routingPref?->primary_model,
+                'transactions_sent' => $transactionsForPayload->count(),
+                'transactions_total' => $transactionsCollection->count(),
+                'truncated' => $payload['truncated'],
+                'prompt_length_chars' => $promptLength,
+                'estimated_tokens' => $estimatedTokens,
+            ]);
+
             $out = $this->executor->executeText($user, function ($account, string $model, AiProvider $provider) use ($prompt) {
                 $apiKey = (string) ($account->id > 0 ? $account->api_key : config('bendaharaku.ai.openai_compatible.api_key'));
                 if (blank($apiKey)) {
