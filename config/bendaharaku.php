@@ -51,6 +51,11 @@ return [
             'prune_threshold' => 0.20,
             'max_memories' => 15,
             'max_effective_weight' => 10.0,
+            // Proteksi anti-lupa: memory terbukti (sering dipakai / bobot tinggi)
+            // tidak pernah dihapus prune — bobotnya dijaga minimal protect_floor.
+            'protect_min_hits' => 3,
+            'protect_min_weight' => 3.0,
+            'protect_floor' => 1.0,
         ],
         'parser' => [
             // Python NLP dicoba lebih dulu untuk single transaction (gratis & cepat).

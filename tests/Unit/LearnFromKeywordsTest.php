@@ -40,6 +40,19 @@ class LearnFromKeywordsTest extends TestCase
         self::assertDatabaseCount('user_ai_memory_contributions', 0);
     }
 
+    public function test_learnable_source_without_llm_keywords_does_not_create_memory(): void
+    {
+        $transaction = $this->createTransaction();
+
+        $event = new TransactionPosted($transaction, TransactionSource::TELEGRAM);
+
+        $listener = app(LearnFromTransaction::class);
+        $listener->handle($event);
+
+        self::assertDatabaseCount('user_ai_memories', 0);
+        self::assertDatabaseCount('user_ai_memory_contributions', 0);
+    }
+
     public function test_telegram_source_learns_from_keywords(): void
     {
         $transaction = $this->createTransaction();

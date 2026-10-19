@@ -102,6 +102,12 @@ class EvidenceResolver
         $confidences[] = $duplicate['confidence'];
         $metadata['duplicate'] = $duplicate;
 
+        // Keyword memory hasil LLM (memory_candidates) dibawa ke draft agar
+        // commit dapat menyimpannya sebagai memory — tanpa memengaruhi confidence.
+        if (! empty($data->metadata['memory_candidates'])) {
+            $metadata['memory_candidates'] = $data->metadata['memory_candidates'];
+        }
+
         // ── Guard: SHOPPING_RECEIPT tidak boleh income (bug 81M) ───────
         if (($data->documentType?->value ?? '') === 'SHOPPING_RECEIPT' && strtolower($transactionType) === 'income') {
             Log::warning('Evidence resolver: SHOPPING_RECEIPT income mismatch, force to expense', [

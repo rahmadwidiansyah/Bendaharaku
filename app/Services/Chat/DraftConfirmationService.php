@@ -13,6 +13,7 @@ use App\Models\TransactionDraft;
 use App\Models\TransactionLog;
 use App\Models\User;
 use App\Models\Wallet;
+use App\Services\AI\Memory\AiKeywordTargetRemapper;
 use App\Services\Wallet\WalletResolutionService;
 use App\Support\MoneyFormatter;
 use Illuminate\Support\Facades\DB;
@@ -74,7 +75,17 @@ class DraftConfirmationService
         $transactionLog = DB::transaction(function () use ($draft, $user, $payload) {
             // Buat TransactionLog via ProcessTransactionAction
             // ProcessTransactionAction::create() menangani mutasi saldo, reference number, dll.
-            $aiKeywords = $payload['aiKeywords'] ?? [];
+            // Keyword LLM dipetakan ke target final payload (mendukung assignWallet()).
+            $aiKeywords = app(AiKeywordTargetRemapper::class)->remapForDraft(
+                keywords: $payload['aiKeywords'] ?? $payload['ai_keywords'] ?? [],
+                payload: $payload,
+                finalCategoryId: isset($payload['category_id']) ? (int) $payload['category_id'] : null,
+                finalCategoryName: $payload['category_name'] ?? null,
+                finalSourceWalletId: isset($payload['source_wallet_id']) ? (int) $payload['source_wallet_id'] : null,
+                finalSourceWalletName: $payload['source_wallet_name'] ?? null,
+                finalDestinationWalletId: isset($payload['destination_wallet_id']) ? (int) $payload['destination_wallet_id'] : null,
+                finalDestinationWalletName: $payload['destination_wallet_name'] ?? null,
+            );
 
             $log = $this->transactionAction->create(
                 data: [

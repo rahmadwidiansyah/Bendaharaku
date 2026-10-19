@@ -30,25 +30,24 @@ class LearnFromTransaction
 
         $transaction = $event->transaction;
 
-        if (! empty($event->aiKeywords)) {
-            $this->memoryService->learnFromKeywords(
-                userId: $transaction->user_id,
-                keywords: $event->aiKeywords,
-                source: $event->source->value,
-                transactionId: $transaction->id,
-            );
-        } else {
-            $this->memoryService->upsertMemory(
-                userId: $transaction->user_id,
-                correctedData: [
-                    'subject' => $transaction->subject,
-                    'category_id' => $transaction->category_id,
-                    'source_wallet_id' => $transaction->source_wallet_id,
-                ],
-                source: $event->source->value,
-                transactionId: $transaction->id,
-            );
+        // Memory HANYA dari keyword hasil LLM (prinsip: "yang dicatat cuma ingatan dari LLM").
+        // Transaksi tanpa keyword LLM (Python/LRE/manual/OCR-review) tidak membentuk memory.
+        if (empty($event->aiKeywords)) {
+            Log::info('Memory learn skipped: no LLM keywords', [
+                'user_id' => $transaction->user_id,
+                'transaction_id' => $transaction->id,
+                'source' => $event->source->value,
+            ]);
+
+            return;
         }
+
+        $this->memoryService->learnFromKeywords(
+            userId: $transaction->user_id,
+            keywords: $event->aiKeywords,
+            source: $event->source->value,
+            transactionId: $transaction->id,
+        );
 
         Log::info('Memory learn from transaction', [
             'user_id' => $transaction->user_id,

@@ -7,6 +7,8 @@ use App\Enums\TransactionSource;
 use App\Models\Category;
 use App\Models\TransactionDraft;
 use App\Models\TransactionLog;
+use App\Models\Wallet;
+use App\Services\AI\Memory\AiKeywordTargetRemapper;
 use App\Services\Chat\DraftConfirmationService;
 use App\Services\Transaction\TransactionListService;
 use App\Support\ActivityLogger;
@@ -307,7 +309,8 @@ class TransactionController extends Controller implements HasMiddleware
             $validated = $this->validateTransaction($request);
 
             try {
-                $aiKeywords = $draft->payload['aiKeywords'] ?? $draft->payload['ai_keywords'] ?? [];
+                // Keyword LLM diarahkan ke target FINAL pilihan user (koreksi user = ground truth).
+                $aiKeywords = $this->remapDraftKeywords($draft, $validated, $user->id);
 
                 $transactionLog = DB::transaction(function () use ($draft, $user, $validated, $action, $aiKeywords) {
                     // a. Insert ke transactions (buat TransactionLog via ProcessTransactionAction)
@@ -377,6 +380,42 @@ class TransactionController extends Controller implements HasMiddleware
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
         }
+    }
+
+    /**
+     * Petakan keyword LLM dari payload draft ke kategori/wallet final yang
+     * divalidasi dari form konfirmasi. Entry yang targetnya tidak bisa
+     * dipetakan akan dibuang oleh remapper.
+     *
+     * @param  array<string, mixed>  $validated
+     * @return list<array{keyword:string,target_type:string,target_id:int,target_name:?string}>
+     */
+    private function remapDraftKeywords(TransactionDraft $draft, array $validated, int $userId): array
+    {
+        $payload = $draft->payload ?? [];
+
+        $categoryId = isset($validated['category_id']) ? (int) $validated['category_id'] : null;
+        $sourceWalletId = isset($validated['source_wallet_id']) ? (int) $validated['source_wallet_id'] : null;
+        $destinationWalletId = isset($validated['destination_wallet_id']) ? (int) $validated['destination_wallet_id'] : null;
+
+        $walletNames = Wallet::where('user_id', $userId)
+            ->whereIn('id', array_filter([$sourceWalletId, $destinationWalletId]))
+            ->pluck('name', 'id');
+
+        $categoryName = $categoryId !== null
+            ? Category::where('user_id', $userId)->where('id', $categoryId)->value('category_name')
+            : null;
+
+        return app(AiKeywordTargetRemapper::class)->remapForDraft(
+            keywords: $payload['aiKeywords'] ?? $payload['ai_keywords'] ?? [],
+            payload: $payload,
+            finalCategoryId: $categoryId,
+            finalCategoryName: $categoryName,
+            finalSourceWalletId: $sourceWalletId,
+            finalSourceWalletName: $sourceWalletId !== null ? $walletNames[$sourceWalletId] ?? null : null,
+            finalDestinationWalletId: $destinationWalletId,
+            finalDestinationWalletName: $destinationWalletId !== null ? $walletNames[$destinationWalletId] ?? null : null,
+        );
     }
 
     /**

@@ -11,6 +11,7 @@ use App\Evidence\DTO\TransactionDraft;
 use App\Models\Evidence;
 use App\Models\TransactionLog;
 use App\Models\Wallet;
+use App\Services\AI\Memory\AiKeywordTargetRemapper;
 use App\Services\Wallet\WalletResolutionService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -94,15 +95,25 @@ class EvidenceCommitService
         // ── 6. Map draft ke format ProcessTransactionAction ──────────
         $transactionData = $this->mapDraftToTransactionData($data, $evidence);
 
+        // Keyword memory LLM (bila ada) dipetakan ke target final setelah overrides user.
+        $aiKeywords = app(AiKeywordTargetRemapper::class)->remapForEvidence(
+            candidates: $data->metadata['memory_candidates'] ?? [],
+            finalCategoryId: isset($transactionData['category_id']) ? (int) $transactionData['category_id'] : null,
+            finalCategoryName: $data->categoryName,
+            userWalletId: $data->walletId,
+            userWalletName: $data->walletName,
+        );
+
         // ── 7. Commit dalam DB transaction ───────────────────────────
         try {
-            $transaction = DB::transaction(function () use ($transactionData, $evidence) {
+            $transaction = DB::transaction(function () use ($transactionData, $evidence, $aiKeywords) {
                 // Buat transaksi menggunakan action yang sudah ada
                 $transactionLog = $this->transactionAction->create(
                     data: $transactionData,
                     userId: $evidence->user_id,
                     sourcePrefix: 'OCR',
                     source: TransactionSource::OCR,
+                    aiKeywords: $aiKeywords,
                 );
 
                 // Hubungkan evidence dengan transaction

@@ -41,11 +41,11 @@ class AIManager
         $routing = AiRoutingPreference::where('user_id', $user->id)->first();
 
         $pythonFirst = (bool) config('bendaharaku.ai.parser.python_first', true);
-        $pythonCategories = $this->injectMemories($categories, $activeMemories);
+        $pythonPayload = $this->injectMemories($wallets, $categories, $activeMemories);
         $pythonResult = null;
 
         if ($pythonFirst) {
-            $pythonResult = $this->fetchPythonNlp($text, $wallets, $pythonCategories);
+            $pythonResult = $this->fetchPythonNlp($text, $pythonPayload['wallets'], $pythonPayload['categories']);
             $minPrimary = (float) config('bendaharaku.ai.parser.min_confidence', 0.85);
 
             if ($pythonResult !== null && $pythonResult->success && $pythonResult->confidence >= $minPrimary) {
@@ -165,7 +165,7 @@ class AIManager
 
         // Python-first sudah memanggil service di awal — pakai hasil yang di-hold (1 HTTP call per pesan).
         if (! $pythonFirst) {
-            $pythonResult = $this->fetchPythonNlp($text, $wallets, $pythonCategories);
+            $pythonResult = $this->fetchPythonNlp($text, $pythonPayload['wallets'], $pythonPayload['categories']);
         }
 
         $minFallback = (float) config('bendaharaku.ai.parser.min_confidence_fallback', 0.6);
@@ -241,22 +241,64 @@ class AIManager
         return new AiProviderException('ai-router', $e->getMessage());
     }
 
-    /** @param list<array> $categories */
-    private function injectMemories(array $categories, array $activeMemories): array
+    /**
+     * Suntik keyword memory dari LLM ke payload Python (kategori + wallet).
+     *
+     * @param  list<array>  $wallets
+     * @param  list<array>  $categories
+     * @param  list<array>  $activeMemories
+     * @return array{wallets: list<array>, categories: list<array>}
+     */
+    private function injectMemories(array $wallets, array $categories, array $activeMemories): array
     {
-        $pythonCategories = $categories;
+        $outWallets = $wallets;
+        $outCategories = $categories;
+
         foreach ($activeMemories as $memory) {
-            if (! empty($memory['category']) && ! empty($memory['keyword'])) {
-                foreach ($pythonCategories as &$cat) {
-                    if (($cat['category_name'] ?? null) === $memory['category']) {
-                        $cat['keyword'] = ($cat['keyword'] ?? '').','.$memory['keyword'];
-                    }
-                }
-                unset($cat);
+            $keyword = trim((string) ($memory['keyword'] ?? ''));
+            if ($keyword === '') {
+                continue;
+            }
+
+            if (! empty($memory['category'])) {
+                $this->mergeMemoryKeyword($outCategories, 'category_name', (string) $memory['category'], $keyword);
+            }
+
+            if (! empty($memory['wallet'])) {
+                $this->mergeMemoryKeyword($outWallets, 'name', (string) $memory['wallet'], $keyword);
             }
         }
 
-        return $pythonCategories;
+        return ['wallets' => $outWallets, 'categories' => $outCategories];
+    }
+
+    /**
+     * Isi keyword bila kosong/sentinel '-', selain itu append dengan dedupe.
+     *
+     * @param  list<array>  $items
+     */
+    private function mergeMemoryKeyword(array &$items, string $nameKey, string $targetName, string $keyword): void
+    {
+        foreach ($items as &$item) {
+            if (($item[$nameKey] ?? null) !== $targetName) {
+                continue;
+            }
+
+            $current = trim((string) ($item['keyword'] ?? ''));
+            if ($current === '' || $current === '-') {
+                $item['keyword'] = $keyword;
+            } else {
+                $existing = array_map('trim', preg_split('/[,|;]+/', mb_strtolower($current)) ?: []);
+                if (! in_array(mb_strtolower($keyword), $existing, true)) {
+                    $item['keyword'] = $current.','.$keyword;
+                }
+            }
+
+            unset($item);
+
+            return;
+        }
+        unset($item);
     }
 
     /**

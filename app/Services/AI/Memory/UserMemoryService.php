@@ -374,9 +374,28 @@ readonly class UserMemoryService
 
         usort($matched, fn ($a, $b) => $b['effective_weight'] <=> $a['effective_weight']);
 
+        // Limit per target_type: memory wallet tidak boleh tergusur oleh kategori
+        // (dan sebaliknya) saat keduanya cocok dengan teks.
         $limit = (int) config('bendaharaku.ai.memory.max_memories', 5);
+        $perType = ['category' => [], 'wallet' => []];
+        $result = [];
+        foreach ($matched as $memory) {
+            $type = $memory['target_type'] ?? null;
+            if (! isset($perType[$type])) {
+                $result[] = $memory;
 
-        return array_slice($matched, 0, $limit);
+                continue;
+            }
+            if (count($perType[$type]) >= $limit) {
+                continue;
+            }
+            $perType[$type][] = $memory;
+        }
+
+        $result = array_merge($result, ...array_values($perType));
+        usort($result, fn ($a, $b) => $b['effective_weight'] <=> $a['effective_weight']);
+
+        return $result;
     }
 
     private function memoryContains(string $textLower, string $keyword): bool

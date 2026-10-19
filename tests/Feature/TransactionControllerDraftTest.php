@@ -7,6 +7,7 @@ use App\Models\TransactionDraft;
 use App\Models\TransactionLog;
 use App\Models\TransactionType;
 use App\Models\User;
+use App\Models\UserAiMemoryContribution;
 use App\Models\Wallet;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -106,6 +107,88 @@ class TransactionControllerDraftTest extends TestCase
 
         // Assert wallet balance updated
         $this->assertEquals(85000, $this->sourceWallet->fresh()->balance);
+    }
+
+    /**
+     * Test update draft remaps LLM keywords to the final targets chosen by the user.
+     */
+    public function test_update_draft_remaps_llm_keywords_to_final_targets()
+    {
+        $transport = $this->user->categories()->create([
+            'category_name' => 'Transport',
+            'keyword' => 'bensin',
+            'type_id' => $this->category->type_id,
+        ]);
+
+        $draft = TransactionDraft::create([
+            'user_id' => $this->user->id,
+            'ai_provider' => 'gemini',
+            'ai_model' => 'gemini-1.5-flash',
+            'draft_type' => 'single',
+            'status' => 'pending',
+            'ai_confidence' => 0.90,
+            'original_text' => 'beli bakso 15rb cash',
+            'payload' => [
+                'amount' => 15000,
+                'category_id' => $this->category->id,
+                'category_name' => $this->category->category_name,
+                'source_wallet_id' => $this->sourceWallet->id,
+                'source_wallet_name' => $this->sourceWallet->name,
+                'destination_wallet_id' => $this->destWallet->id,
+                'destination_wallet_name' => $this->destWallet->name,
+                'subject' => 'Budi',
+                'notes' => 'beli bakso 15rb cash',
+                'type_key' => 'expense',
+                'needs_wallet' => false,
+                'is_cleared' => false,
+                'date' => '2026-07-22',
+                'aiKeywords' => [
+                    ['keyword' => 'bakso', 'target_type' => 'category', 'target_id' => $this->category->id, 'target_name' => $this->category->category_name],
+                    ['keyword' => 'cash', 'target_type' => 'wallet', 'target_id' => $this->sourceWallet->id, 'target_name' => $this->sourceWallet->name],
+                    ['keyword' => 'usang', 'target_type' => 'wallet', 'target_id' => 99999, 'target_name' => 'Sudah Hilang'],
+                ],
+            ],
+        ]);
+
+        $payload = [
+            'date' => '2026-07-22',
+            'category_id' => $transport->id,
+            'source_wallet_id' => $this->sourceWallet->id,
+            'destination_wallet_id' => $this->destWallet->id,
+            'amount' => 15000,
+            'transaction_type' => 'expense',
+            'subject' => 'BUDI',
+            'notes' => 'beli bakso 15rb cash',
+        ];
+
+        $this->actingAs($this->user)
+            ->put(route('transactions.update', $draft->id), $payload)
+            ->assertRedirect(route('dashboard'));
+
+        $log = TransactionLog::latest('id')->firstOrFail();
+
+        // 'bakso' diarahkan ke kategori FINAL (Transport), bukan kategori draft (Makan & Minum).
+        $this->assertDatabaseHas('user_ai_memories', [
+            'user_id' => $this->user->id,
+            'keyword_pattern' => 'bakso',
+            'target_type' => 'category',
+            'category_id' => $transport->id,
+        ]);
+
+        $this->assertDatabaseHas('user_ai_memories', [
+            'user_id' => $this->user->id,
+            'keyword_pattern' => 'cash',
+            'target_type' => 'wallet',
+            'wallet_id' => $this->sourceWallet->id,
+        ]);
+
+        // Keyword dengan target wallet usang tidak boleh disimpan.
+        $this->assertDatabaseMissing('user_ai_memories', [
+            'user_id' => $this->user->id,
+            'keyword_pattern' => 'usang',
+        ]);
+
+        $this->assertSame(2, UserAiMemoryContribution::where('transaction_id', $log->id)->count());
     }
 
     /**

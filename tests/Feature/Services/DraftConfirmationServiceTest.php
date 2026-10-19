@@ -195,6 +195,63 @@ class DraftConfirmationServiceTest extends TestCase
     }
 
     /** @test */
+    public function test_it_remaps_llm_keywords_to_final_payload_targets()
+    {
+        $newCategory = $this->user->categories()->create([
+            'category_name' => 'Transport',
+            'keyword' => 'bensin',
+            'type_id' => $this->category->type_id,
+        ]);
+
+        $draft = TransactionDraft::create([
+            'user_id' => $this->user->id,
+            'ai_provider' => 'gemini',
+            'ai_model' => 'gemini-1.5-flash',
+            'draft_type' => 'single',
+            'status' => 'pending',
+            'ai_confidence' => 0.90,
+            'original_text' => 'beli bakso 15rb cash',
+            'payload' => [
+                'amount' => 15000,
+                'category_id' => $newCategory->id,
+                'category_name' => $newCategory->category_name,
+                'source_wallet_id' => $this->sourceWallet->id,
+                'source_wallet_name' => $this->sourceWallet->name,
+                'destination_wallet_id' => $this->destWallet->id,
+                'destination_wallet_name' => $this->destWallet->name,
+                'subject' => 'Budi',
+                'notes' => 'beli bakso 15rb cash',
+                'type_key' => 'expense',
+                'needs_wallet' => false,
+                'is_cleared' => false,
+                'date' => now()->format('Y-m-d'),
+                'aiKeywords' => [
+                    ['keyword' => 'bakso', 'target_type' => 'category', 'target_id' => $this->category->id, 'target_name' => $this->category->category_name],
+                    ['keyword' => 'cash', 'target_type' => 'wallet', 'target_id' => $this->sourceWallet->id, 'target_name' => $this->sourceWallet->name],
+                ],
+            ],
+        ]);
+
+        $log = $this->draftService->confirm($draft, $this->user);
+
+        $this->assertInstanceOf(TransactionLog::class, $log);
+
+        $this->assertDatabaseHas('user_ai_memories', [
+            'user_id' => $this->user->id,
+            'keyword_pattern' => 'bakso',
+            'target_type' => 'category',
+            'category_id' => $newCategory->id,
+        ]);
+
+        $this->assertDatabaseHas('user_ai_memories', [
+            'user_id' => $this->user->id,
+            'keyword_pattern' => 'cash',
+            'target_type' => 'wallet',
+            'wallet_id' => $this->sourceWallet->id,
+        ]);
+    }
+
+    /** @test */
     public function test_it_cancels_a_pending_draft_and_does_not_create_transaction_log()
     {
         $draft = TransactionDraft::create([

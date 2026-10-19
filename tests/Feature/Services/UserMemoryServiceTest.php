@@ -110,4 +110,57 @@ class UserMemoryServiceTest extends TestCase
 
         $this->assertCount(0, $memories);
     }
+
+    public function test_limit_dihitung_per_target_type(): void
+    {
+        config()->set('bendaharaku.ai.memory.max_memories', 2);
+
+        $type = TransactionType::create(['name' => 'Expense']);
+        $category = Category::create([
+            'user_id' => $this->user->id,
+            'category_name' => 'Makanan',
+            'type_id' => $type->id,
+        ]);
+
+        foreach (range(1, 3) as $i) {
+            UserAiMemory::create([
+                'user_id' => $this->user->id,
+                'keyword_pattern' => "kopi{$i}",
+                'target_type' => 'category',
+                'category_id' => $category->id,
+                'weight' => 5.0 - ($i * 0.1),
+                'hit_count' => 1,
+                'last_applied_at' => Carbon::now(),
+            ]);
+        }
+
+        foreach (range(1, 3) as $i) {
+            $wallet = $this->user->wallets()->create([
+                'name' => "Dompet {$i}",
+                'balance' => 0,
+                'group_type' => 'Liquid',
+            ]);
+
+            UserAiMemory::create([
+                'user_id' => $this->user->id,
+                'keyword_pattern' => "dompet{$i}",
+                'target_type' => 'wallet',
+                'wallet_id' => $wallet->id,
+                'weight' => 5.0 - ($i * 0.1),
+                'hit_count' => 1,
+                'last_applied_at' => Carbon::now(),
+            ]);
+        }
+
+        $memories = $this->memoryService->getTopRelevantMemories(
+            $this->user->id,
+            'kopi1 kopi2 kopi3 dompet1 dompet2 dompet3'
+        );
+
+        $this->assertCount(4, $memories);
+
+        $counts = array_count_values(array_column($memories, 'target_type'));
+        $this->assertSame(2, $counts['category'] ?? 0);
+        $this->assertSame(2, $counts['wallet'] ?? 0);
+    }
 }
