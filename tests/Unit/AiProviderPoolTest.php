@@ -234,7 +234,7 @@ class AiProviderPoolTest extends TestCase
         $this->assertSame('openai-compatible', $out['routing']['selected_provider']);
     }
 
-    /** 6-8. Pool habis → AIManager fallback Python/LRE/gagal dengan aman (mock HTTP). */
+    /** 6-8. Python-first down + pool habis → LRE gagal → throw; Python tepat 1 HTTP call (hasil di-hold). */
     public function test_aimanager_local_fallback_chain(): void
     {
         $acc = $this->makeAccount(AiProvider::Gemini, 'G1', 'bad-key');
@@ -245,9 +245,14 @@ class AiProviderPoolTest extends TestCase
             'ai-parser*' => Http::response(['success' => false], 500),
         ]);
         $manager = app(AIManager::class);
-        // Mock LRE via container? LRE real akan return null untuk teks tanpa amount → expect AiProviderException.
-        $this->expectException(\Throwable::class);
-        $manager->parseTransaction($this->user, 'halo apa kabar tanpa angka', [], [], [], 'prompt');
+        // LRE real akan return null untuk teks tanpa amount → expect AiProviderException.
+        try {
+            $manager->parseTransaction($this->user, 'halo apa kabar tanpa angka', [], [], [], 'prompt');
+            $this->fail('Seharusnya throw — semua jalur lokal gagal.');
+        } catch (\Throwable) {
+            $pythonCalls = Http::recorded(fn ($request) => str_contains($request->url(), 'ai-parser'))->count();
+            $this->assertSame(1, $pythonCalls, 'Python harus dipanggil sekali (hasil di-hold untuk fallback).');
+        }
     }
 
     /** 9. Key invalid hanya tandai akun tsb, akun lain tetap sehat. */

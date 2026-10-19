@@ -13,8 +13,8 @@ namespace App\Services\Chat;
  *   - Deteksi separator kalimat (koma, titik koma, newline)
  *   - Deteksi pola berulang "<aktivitas> <nominal>"
  *
- * Python tetap digunakan untuk single transaction karena lebih cepat dan murah.
- * Multi-transaction langsung diarahkan ke LLM Provider.
+ * Single transaction: Python NLP dicoba lebih dulu (gratis & cepat); LLM pool
+ * hanya saat Python tidak yakin/gagal. Multi-transaction langsung diarahkan ke LLM Provider.
  */
 class MultiTransactionRouter
 {

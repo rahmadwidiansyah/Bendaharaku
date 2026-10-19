@@ -52,6 +52,15 @@ return [
             'max_memories' => 15,
             'max_effective_weight' => 10.0,
         ],
+        'parser' => [
+            // Python NLP dicoba lebih dulu untuk single transaction (gratis & cepat).
+            // Fallback pool LLM tetap dipakai saat Python tidak yakin/gagal.
+            'python_first' => env('AI_PARSER_PYTHON_FIRST', true),
+            // Ambang confidence jalur primary (Python-first).
+            'min_confidence' => env('AI_PARSER_MIN_CONFIDENCE', 0.85),
+            // Ambang lebih rendah saat pool LLM habis — tanpa ini fallback Python praktis mati.
+            'min_confidence_fallback' => env('AI_PARSER_MIN_CONFIDENCE_FALLBACK', 0.6),
+        ],
         'openai_compatible' => [
             'base_url' => env('OPENAI_COMPAT_BASE_URL', 'https://api.openai.com/v1/chat/completions'),
             'api_key' => env('OPENAI_COMPAT_API_KEY', ''),

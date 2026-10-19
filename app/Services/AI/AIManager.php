@@ -36,8 +36,27 @@ class AIManager
     public function parseTransaction(User $user, string $text, array $wallets = [], array $categories = [], array $activeMemories = [], string $prompt = ''): AIParseResult
     {
         // SPEC §4: LLM is source of truth; LocalRuleEngine MUST NOT override valid LLM result.
-        // Baru: routing pool lintas akun/provider; fallback lokal (Python→LRE) hanya saat pool gagal (lazy).
+        // Single: Python NLP dicoba lebih dulu (gratis & cepat); pool LLM saat Python tidak yakin/gagal.
+        // Pool gagal/habis: fallback berjenjang Python (ambang lebih rendah) → LRE.
         $routing = AiRoutingPreference::where('user_id', $user->id)->first();
+
+        $pythonFirst = (bool) config('bendaharaku.ai.parser.python_first', true);
+        $pythonCategories = $this->injectMemories($categories, $activeMemories);
+        $pythonResult = null;
+
+        if ($pythonFirst) {
+            $pythonResult = $this->fetchPythonNlp($text, $wallets, $pythonCategories);
+            $minPrimary = (float) config('bendaharaku.ai.parser.min_confidence', 0.85);
+
+            if ($pythonResult !== null && $pythonResult->success && $pythonResult->confidence >= $minPrimary) {
+                Log::info('AIManager: python-first success', [
+                    'user_id' => $user->id,
+                    'confidence' => $pythonResult->confidence,
+                ]);
+
+                return $this->withLocalRouting($pythonResult, 'local_python_primary', null, 'local_success');
+            }
+        }
 
         try {
             $resolved = $this->resolver->resolve($user, $routing);
@@ -144,8 +163,13 @@ class AIManager
         // Kandidat pool ada tapi semuanya gagal = fallback nyata; tanpa kandidat = jalur normal.
         $hadPoolCandidates = ($resolved['candidates'] ?? []) !== [];
 
-        $pythonResult = $this->runPythonNlp($text, $wallets, $this->injectMemories($categories, $activeMemories));
-        if ($pythonResult !== null && $pythonResult->success) {
+        // Python-first sudah memanggil service di awal — pakai hasil yang di-hold (1 HTTP call per pesan).
+        if (! $pythonFirst) {
+            $pythonResult = $this->fetchPythonNlp($text, $wallets, $pythonCategories);
+        }
+
+        $minFallback = (float) config('bendaharaku.ai.parser.min_confidence_fallback', 0.6);
+        if ($pythonResult !== null && $pythonResult->success && $pythonResult->confidence >= $minFallback) {
             Log::info("AIManager: pool failed, fallback to Python for user #{$user->id}");
 
             $result = $this->withLocalRouting($pythonResult, 'local_python_fallback', $poolError ?? null);
@@ -186,7 +210,7 @@ class AIManager
         );
     }
 
-    private function withLocalRouting(AIParseResult $result, string $method, ?\Throwable $poolError): AIParseResult
+    private function withLocalRouting(AIParseResult $result, string $method, ?\Throwable $poolError = null, string $finalStatus = 'local_fallback'): AIParseResult
     {
         return new AIParseResult(
             success: $result->success,
@@ -197,9 +221,11 @@ class AIManager
             provider: $result->provider, // python-nlp / local
             model: $result->model,
             routing: [
+                'selected_provider' => $result->provider,
+                'selected_model' => $result->model,
                 'selection_method' => $method,
                 'attempt_count' => 1,
-                'final_status' => 'local_fallback',
+                'final_status' => $finalStatus,
                 'fallback_reason' => $poolError ? mb_substr($poolError->getMessage(), 0, 200) : null,
             ],
         );
@@ -233,18 +259,20 @@ class AIManager
         return $pythonCategories;
     }
 
-    private function runPythonNlp(string $text, array $wallets, array $categories): ?AIParseResult
+    /**
+     * Panggil Python NLP tanpa gate confidence — gate ditentukan pemanggil
+     * (primary 0.85 saat Python-first, fallback 0.6 saat pool habis).
+     */
+    private function fetchPythonNlp(string $text, array $wallets, array $categories): ?AIParseResult
     {
         try {
             $pythonRequest = new AiProviderRequest($text, '', 'local-nlp', $wallets, $categories, []);
-            $pythonResult = $this->pythonNlp->parseTransaction($pythonRequest);
-            if ($pythonResult->success && $pythonResult->confidence >= 0.85) {
-                return $pythonResult;
-            }
+
+            return $this->pythonNlp->parseTransaction($pythonRequest);
         } catch (\Throwable $e) {
             Log::warning('Python NLP Service Down/Timeout: '.$e->getMessage());
-        }
 
-        return null;
+            return null;
+        }
     }
 }
