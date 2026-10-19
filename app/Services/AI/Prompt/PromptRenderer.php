@@ -28,10 +28,10 @@ class PromptRenderer
             'instruction' => $instruction,
             'text' => $context->userInput,
             'available_wallets' => $context->wallets,
+            'available_categories' => $context->categories,
+            'wallet_keyword_aliases' => $context->walletKeywordAliases,
+            'category_keyword_aliases' => $context->categoryKeywordAliases,
         ];
-
-        // Transfer and out-of-scope don't need categories
-        $payload['available_categories'] = $context->categories;
 
         if (! empty($context->activeMemories)) {
             $categoryPatterns = [];
@@ -86,8 +86,8 @@ class PromptRenderer
             'text' => $context->userInput,
             'available_wallets' => $context->wallets,
             'available_categories' => $context->categories,
-            'wallet_keyword_aliases' => $context->keywordAliases,
-            'category_keyword_aliases' => $context->keywordAliases,
+            'wallet_keyword_aliases' => $context->walletKeywordAliases,
+            'category_keyword_aliases' => $context->categoryKeywordAliases,
             'user_category_patterns' => $categoryPatterns,
             'user_wallet_patterns' => $walletPatterns,
             'response_format' => '{"transactions":[{"transaction_type":null,"category_keyword":null,"source_wallet_keyword":null,"destination_wallet_keyword":null,"memory_candidates":[]}]}',

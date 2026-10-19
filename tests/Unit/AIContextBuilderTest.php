@@ -64,7 +64,7 @@ class AIContextBuilderTest extends TestCase
         $this->assertSame('Cash', $context->wallets[1]['name']);
     }
 
-    public function test_ai_context_builds_keyword_aliases(): void
+    public function test_ai_context_builds_separate_keyword_alias_maps(): void
     {
         $snapshot = $this->makeSnapshot([
             'wallets' => [
@@ -77,11 +77,13 @@ class AIContextBuilderTest extends TestCase
 
         $context = $this->aiBuilder->build($snapshot);
 
-        $this->assertSame('ShopeePay', $context->keywordAliases['spay']);
-        $this->assertSame('ShopeePay', $context->keywordAliases['shopeepay']);
-        $this->assertSame('ShopeePay', $context->keywordAliases['shopeepay']);
-        $this->assertSame('Makan & Minum', $context->keywordAliases['makan']);
-        $this->assertSame('Makan & Minum', $context->keywordAliases['kuliner']);
+        $this->assertSame('ShopeePay', $context->walletKeywordAliases['spay']);
+        $this->assertSame('ShopeePay', $context->walletKeywordAliases['shopeepay']);
+        $this->assertSame('Makan & Minum', $context->categoryKeywordAliases['makan']);
+        $this->assertSame('Makan & Minum', $context->categoryKeywordAliases['kuliner']);
+
+        $this->assertArrayNotHasKey('makan', $context->walletKeywordAliases);
+        $this->assertArrayNotHasKey('spay', $context->categoryKeywordAliases);
     }
 
     public function test_ai_context_has_temporal_fields(): void

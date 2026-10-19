@@ -29,6 +29,8 @@ class PromptRendererTest extends TestCase
         $this->assertArrayHasKey('text', $payload);
         $this->assertArrayHasKey('available_wallets', $payload);
         $this->assertArrayHasKey('available_categories', $payload);
+        $this->assertArrayHasKey('wallet_keyword_aliases', $payload);
+        $this->assertArrayHasKey('category_keyword_aliases', $payload);
     }
 
     public function test_render_single_includes_instruction(): void
@@ -41,6 +43,23 @@ class PromptRendererTest extends TestCase
         $this->assertStringContainsString('Extract financial transaction', $payload['instruction']);
         $this->assertStringContainsString('sourceWallet=null', $payload['instruction']);
         $this->assertStringContainsString('Amount shorthand', $payload['instruction']);
+        $this->assertStringContainsString('Match category and wallet EXACTLY', $payload['instruction']);
+    }
+
+    public function test_render_single_includes_keyword_aliases(): void
+    {
+        $context = $this->makeContext([
+            'walletAliases' => ['spay' => 'ShopeePay'],
+            'categoryAliases' => ['makan' => 'Makanan'],
+        ]);
+
+        $result = $this->renderer->renderSingle($context);
+
+        $payload = json_decode($result, true);
+        $this->assertSame('ShopeePay', $payload['wallet_keyword_aliases']['spay']);
+        $this->assertSame('Makanan', $payload['category_keyword_aliases']['makan']);
+        $this->assertArrayNotHasKey('makan', $payload['wallet_keyword_aliases']);
+        $this->assertArrayNotHasKey('spay', $payload['category_keyword_aliases']);
     }
 
     public function test_render_single_includes_user_text(): void
@@ -99,13 +118,15 @@ class PromptRendererTest extends TestCase
         $this->assertArrayHasKey('available_wallets', $payload);
         $this->assertArrayHasKey('available_categories', $payload);
         $this->assertArrayHasKey('wallet_keyword_aliases', $payload);
+        $this->assertArrayHasKey('category_keyword_aliases', $payload);
         $this->assertArrayHasKey('response_format', $payload);
     }
 
-    public function test_render_multi_includes_keyword_aliases(): void
+    public function test_render_multi_includes_separate_keyword_alias_maps(): void
     {
         $context = $this->makeContext([
-            'aliases' => ['spay' => 'ShopeePay', 'makan' => 'Makanan'],
+            'walletAliases' => ['spay' => 'ShopeePay'],
+            'categoryAliases' => ['makan' => 'Makanan'],
         ]);
 
         $result = $this->renderer->renderMulti($context);
@@ -113,6 +134,8 @@ class PromptRendererTest extends TestCase
         $payload = json_decode($result, true);
         $this->assertSame('ShopeePay', $payload['wallet_keyword_aliases']['spay']);
         $this->assertSame('Makanan', $payload['category_keyword_aliases']['makan']);
+        $this->assertArrayNotHasKey('makan', $payload['wallet_keyword_aliases']);
+        $this->assertArrayNotHasKey('spay', $payload['category_keyword_aliases']);
     }
 
     public function test_render_multi_includes_historical_patterns(): void
@@ -162,7 +185,8 @@ class PromptRendererTest extends TestCase
                 ['id' => 1, 'name' => 'Makanan'],
                 ['id' => 2, 'name' => 'Transport'],
             ],
-            keywordAliases: $overrides['aliases'] ?? [],
+            walletKeywordAliases: $overrides['walletAliases'] ?? [],
+            categoryKeywordAliases: $overrides['categoryAliases'] ?? [],
             activeMemories: $overrides['memories'] ?? [],
             today: '2026-07-27',
             timezone: 'Asia/Jakarta',

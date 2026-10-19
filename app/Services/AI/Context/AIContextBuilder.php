@@ -17,7 +17,8 @@ class AIContextBuilder
             conversationId: null,
             wallets: $this->buildWallets($snapshot, $options),
             categories: $this->buildCategories($snapshot),
-            keywordAliases: $this->buildKeywordAliases($snapshot),
+            walletKeywordAliases: $this->buildWalletKeywordAliases($snapshot),
+            categoryKeywordAliases: $this->buildCategoryKeywordAliases($snapshot),
             activeMemories: $snapshot->activeMemories,
             today: now()->toDateString(),
             timezone: $snapshot->user->timezone ?? 'Asia/Jakarta',
@@ -54,7 +55,7 @@ class AIContextBuilder
         ], $categories);
     }
 
-    private function buildKeywordAliases(ContextSnapshot $snapshot): array
+    private function buildWalletKeywordAliases(ContextSnapshot $snapshot): array
     {
         $aliases = [];
 
@@ -68,6 +69,13 @@ class AIContextBuilder
                 $aliases[mb_strtolower(trim($kw))] = $name;
             }
         }
+
+        return $aliases;
+    }
+
+    private function buildCategoryKeywordAliases(ContextSnapshot $snapshot): array
+    {
+        $aliases = [];
 
         foreach ($snapshot->categories as $category) {
             $name = $category->category_name;
