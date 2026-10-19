@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
-use App\Models\AiParseLog;
-use App\Models\AiUsageLog;
 use App\Models\UserAiMemory;
 use App\Models\UserAiMemoryLog;
 use App\Services\AI\AiAccountManager;
@@ -16,7 +14,6 @@ use App\Support\ActivityLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -24,56 +21,16 @@ use Inertia\Response;
 
 class AiSettingsController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $user = Auth::user();
-
-        // 1. Ambil Statistik Penggunaan Token (Di-group per provider)
-        $usageStats = AiUsageLog::where('user_id', $user->id)
-            ->selectRaw('provider, SUM(prompt_tokens) as total_prompt, SUM(completion_tokens) as total_completion, SUM(total_tokens) as total_used')
-            ->groupBy('provider')
-            ->get()
-            ->keyBy('provider');
-
-        // 2. Ambil 10 Riwayat Log Terakhir
-        $recentLogs = AiParseLog::where('user_id', $user->id)
-            ->orderByDesc('created_at')
-            ->limit(10)
-            ->get()
-            ->map(function ($log) {
-                // Gunakan kolom status langsung dari database
-                // status bisa: 'draft', 'executed', 'failed', 'rate_limit', 'timeout', dll.
-                $rawStatus = strtolower((string) ($log->status ?? ''));
-
-                $status = match (true) {
-                    $rawStatus === 'draft' => 'Draft',
-                    in_array($rawStatus, ['executed', 'success', ''])
-                        && $log->is_success => 'Executed',
-                    str_contains($rawStatus, 'rate') || str_contains($rawStatus, 'quota') => 'Rate Limit',
-                    str_contains($rawStatus, 'timeout') => 'Timeout',
-                    ! $log->is_success => 'Failed',
-                    default => ucfirst($rawStatus) ?: 'Executed',
-                };
-
-                return [
-                    'id' => $log->id,
-                    'provider' => strtoupper($log->provider ?? 'PYTHON-NLP'),
-                    'input_text' => $log->input_text,
-                    'confidence' => $log->final_confidence ? round($log->final_confidence * 100) : null,
-                    'status' => $status,
-                    'error' => $log->error_message,
-                    'date' => $log->created_at->diffForHumans(),
-                ];
-            });
+        $user = $request->user();
 
         // Pool baru: akun multi-key + katalog discovery + routing (tanpa secret).
         $accountManager = app(AiAccountManager::class);
         $routing = $accountManager->getOrCreateRouting($user);
         $resolved = app(ModelResolver::class)->resolve($user, $routing);
 
-        return Inertia::render('Settings/AI/Models', [
-            'usageStats' => $usageStats,
-            'recentLogs' => $recentLogs,
+        $props = [
             'aiAccounts' => $accountManager->listFor($user),
             'aiRouting' => $routing,
             'aiCandidates' => array_map(fn ($c) => [
@@ -84,7 +41,12 @@ class AiSettingsController extends Controller
                 'source' => $c['source'] ?? null,
             ], array_slice($resolved['candidates'], 0, 8)),
             'aiSkipped' => array_slice($resolved['skipped'] ?? [], 0, 20),
-        ]);
+        ];
+
+        // Tema M3 memakai halaman Material; tema Default tetap seperti semula.
+        return $user->ui_theme === 'm3'
+            ? Inertia::render('Material/Settings/AI/Models', $props)
+            : Inertia::render('Settings/AI/Models', $props);
     }
 
     public function memories(Request $request): Response

@@ -53,7 +53,7 @@ const floated = computed(() => focused.value || String(props.modelValue ?? '') !
                 :id="inputId"
                 :type="type"
                 :value="modelValue"
-                :placeholder="placeholder"
+                :placeholder="floated ? placeholder : ''"
                 :inputmode="inputmode"
                 :min="min"
                 :max="max"

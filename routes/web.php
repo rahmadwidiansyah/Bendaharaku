@@ -416,15 +416,20 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/models', [AiSettingsController::class, 'index'])->name('models');
         Route::get('/bot', function (Request $request) {
             $user = $request->user();
-
-            return Inertia::render('Settings/AI/Bot', [
+            $props = [
                 'botName' => $user->bot_name ?? 'Ken-Chan',
                 'botAvatar' => $user->bot_avatar
                     ? asset('storage/'.$user->bot_avatar)
                     : null,
-            ]);
+            ];
+
+            return $user->ui_theme === 'm3'
+                ? Inertia::render('Material/Settings/AI/Bot', $props)
+                : Inertia::render('Settings/AI/Bot', $props);
         })->name('bot');
-        Route::get('/memory', fn () => Inertia::render('Settings/AI/Memory'))->name('memory');
+        Route::get('/memory', fn (Request $request) => $request->user()->ui_theme === 'm3'
+            ? Inertia::render('Material/Settings/AI/Memory')
+            : Inertia::render('Settings/AI/Memory'))->name('memory');
         // Halaman status provider — khusus tema M3; tema Default diarahkan ke Models.
         Route::get('/status', AiProviderStatusController::class)->name('status');
         Route::get('/memory/manage', [AiSettingsController::class, 'memories'])->name('memory.manage');

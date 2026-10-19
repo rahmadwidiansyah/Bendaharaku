@@ -11,6 +11,16 @@ import { useToast } from '@/Composables/useToast';
 const { t } = useI18n();
 const { showToast } = useToast();
 
+const formatDateTime = (iso: string) => {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  try {
+    return d.toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' });
+  } catch {
+    return iso;
+  }
+};
+
 interface Props {
   aiAccounts?: Record<string, any>[];
   aiRouting?: Record<string, any>;
@@ -203,25 +213,14 @@ async function saveRouting() {
       :title="t('settings.ai.models.title')"
       :description="t('settings.ai.models.description')"
     >
-      <!-- Pengaturan lama dipindahkan: fallback kini 100% lewat pool di bawah.
-        Jalankan `php artisan ai:migrate-legacy-pool` bila pengaturan lama belum muncul. -->
-      <div class="p-3 sm:p-4 bg-blue-900/20 border border-blue-500/20 rounded-lg">
-        <p class="text-xs sm:text-sm text-blue-400">
-          Pengaturan provider per model yang lama sudah diganti sistem pool dengan
-          fallback otomatis. Kelola API key, model, dan urutan fallback pada
-          bagian Akun API dan Routing di bawah.
-        </p>
-      </div>
-
       <!-- Provider pool: multi-akun -->
       <SettingsCard
-        title="Akun API per provider (multi-key)"
-        description="Satu provider bisa punya beberapa API key. Status jujur berdasarkan pemeriksaan nyata, bukan label. Key tidak pernah ditampilkan utuh."
+        title="Akun API"
+        description="Satu API key per akun. Status berdasarkan pemeriksaan nyata; key tidak pernah ditampilkan utuh."
       >
         <div class="space-y-3">
           <div v-if="!poolAccounts.length" class="text-xs text-[var(--color-text-secondary)]">
-            Belum ada akun pool. Tambahkan akun baru di bawah, atau jalankan
-            `php artisan ai:migrate-legacy-pool` untuk memindahkan pengaturan lama.
+            Belum ada akun API. Tambahkan akun baru di bawah.
           </div>
           <div v-for="acc in poolAccounts" :key="acc.id" class="p-3 rounded-lg border border-white/5 bg-[var(--color-surface-raised)]">
             <div class="flex items-center gap-2 flex-wrap">
@@ -239,12 +238,12 @@ async function saveRouting() {
               </span>
             </div>
             <div class="mt-1 text-2xs text-[var(--color-text-secondary)]">
-              Prioritas {{ acc.priority }} · {{ acc.model_count }} model · {{ acc.last_test_status || 'belum diuji' }}{{ acc.last_discovery_at ? ' · discovery ' + acc.last_discovery_at : '' }}
+              Prioritas {{ acc.priority }} · {{ acc.model_count }} model · {{ acc.last_test_status || 'belum diuji' }}{{ acc.last_discovery_at ? ' · diperbarui ' + formatDateTime(acc.last_discovery_at) : '' }}
               <span v-if="acc.last_test_message"> · {{ acc.last_test_message }}</span>
             </div>
             <div v-if="acc.id !== 0" class="mt-2">
               <button @click="loadAccountModels(acc.id)" :disabled="loadingModelsFor === acc.id" class="text-2xs px-2 py-1 rounded-lg bg-[var(--color-surface-muted)] hover:bg-gray-600 disabled:opacity-50">
-                {{ accountModels[acc.id] ? 'Muat ulang daftar model' : 'Lihat model ter-discovery' }}
+                {{ accountModels[acc.id] ? 'Muat ulang model' : 'Lihat model' }}
               </button>
               <div v-if="accountModels[acc.id]" class="mt-2 space-y-1 max-h-48 overflow-y-auto">
                 <div v-for="m in accountModels[acc.id]" :key="m.model_id" class="flex items-center gap-2 text-2xs py-1 border-b border-white/5">
@@ -261,7 +260,7 @@ async function saveRouting() {
           </div>
 
           <div class="p-3 rounded-lg border border-dashed border-white/10 space-y-2">
-            <div class="text-xs font-semibold text-[var(--color-text-primary)]">Tambah akun baru</div>
+            <div class="text-xs font-semibold text-[var(--color-text-primary)]">Tambah akun</div>
             <div class="grid grid-cols-2 gap-2">
               <select v-model="newAccount.provider" class="px-3 py-2 bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-lg text-sm">
                 <option value="gemini">gemini</option>
@@ -273,15 +272,15 @@ async function saveRouting() {
             </div>
             <input v-model="newAccount.api_key" type="password" placeholder="Tempel API key (tidak ditampilkan lagi setelah disimpan)" autocomplete="new-password" class="w-full px-3 py-2 bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-lg text-sm" />
             <input v-if="newAccount.provider === 'openai-compatible'" v-model="newAccount.base_url" placeholder="Base URL (mis. https://api.contoh.com/v1/chat/completions)" class="w-full px-3 py-2 bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-lg text-sm" />
-            <button @click="addAccount" :disabled="addingAccount || !newAccount.api_key" class="px-3 py-2 bg-[var(--color-brand)] rounded-lg text-xs font-bold uppercase tracking-wider disabled:opacity-50">Tambah & discovery otomatis</button>
+            <button @click="addAccount" :disabled="addingAccount || !newAccount.api_key" class="px-3 py-2 bg-[var(--color-brand)] rounded-lg text-xs font-bold uppercase tracking-wider disabled:opacity-50">Tambah akun</button>
           </div>
         </div>
       </SettingsCard>
 
       <!-- Routing & kandidat -->
       <SettingsCard
-        title="Routing cerdas & kandidat utama"
-        description="Otomatis menyusun 3–4 kandidat dari model ter-discovery. Manual tidak diubah diam-diam saat mode otomatis mati."
+        title="Routing"
+        description="Otomatis menyusun kandidat dari model yang tersedia. Mode manual tidak diubah diam-diam."
       >
         <div class="space-y-3">
           <div class="grid grid-cols-2 gap-2">
@@ -328,14 +327,14 @@ async function saveRouting() {
           <button @click="saveRouting" :disabled="savingRouting" class="px-3 py-2 bg-[var(--color-brand)] rounded-lg text-xs font-bold uppercase tracking-wider disabled:opacity-50">Simpan routing</button>
 
           <div>
-            <div class="text-xs font-semibold text-[var(--color-text-primary)] mb-1">Kandidat utama (maks 8 ditampilkan)</div>
+            <div class="text-xs font-semibold text-[var(--color-text-primary)] mb-1">Kandidat utama (maks 8)</div>
             <div v-if="!poolCandidates.length" class="text-2xs text-[var(--color-text-secondary)]">Belum ada kandidat layak. Cek akun/cooldown/kebijakan gratis.</div>
             <div v-for="(c, i) in poolCandidates" :key="i" class="text-2xs text-gray-300 py-1 border-b border-white/5">
-              {{ i + 1 }}. {{ c.provider }}/{{ c.model }} <span class="text-gray-500">· akun #{{ c.account_id }} {{ c.account_alias }} · {{ c.source }}</span>
+              {{ i + 1 }}. {{ c.provider }}/{{ c.model }} <span class="text-gray-500"><template v-if="c.account_alias">· {{ c.account_alias }}</template> · {{ c.source }}</span>
             </div>
           </div>
           <div v-if="poolSkipped.length">
-            <div class="text-xs font-semibold text-[var(--color-text-primary)] mb-1">Dilewati (alasan jujur)</div>
+            <div class="text-xs font-semibold text-[var(--color-text-primary)] mb-1">Dilewati</div>
             <div v-for="(s, i) in poolSkipped.slice(0, 8)" :key="i" class="text-2xs text-[var(--color-text-secondary)] py-0.5">
               {{ s.provider }}/{{ s.model }} — {{ s.reason }}
             </div>
