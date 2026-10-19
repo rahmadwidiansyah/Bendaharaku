@@ -23,7 +23,6 @@ const emit = defineEmits(['send', 'openCommands', 'openUpload', 'removeAttachmen
 
 const text = ref('')
 const textareaRef = ref(null)
-const isFocused = ref(false)
 
 function insertText(value) {
     text.value = value
@@ -128,7 +127,7 @@ onBeforeUnmount(() => {
             </M3IconButton>
 
             <!-- Field -->
-            <div class="m3-composer__field" :class="{ 'm3-composer__field--focused': isFocused }">
+            <div class="m3-composer__field">
                 <textarea
                     ref="textareaRef"
                     v-model="text"
@@ -140,8 +139,6 @@ onBeforeUnmount(() => {
                     aria-multiline="true"
                     @keydown="onKeydown"
                     @input="resize"
-                    @focus="isFocused = true"
-                    @blur="isFocused = false"
                 ></textarea>
 
                 <button
@@ -266,13 +263,14 @@ onBeforeUnmount(() => {
     display: flex;
     align-items: center;
     border: 1px solid transparent;
-    border-radius: var(--m3-radius-xl);
+    border-radius: var(--m3-radius-lg-inc);
     background: var(--m3-color-surface-container-high);
     transition: border-color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
 }
 
-.m3-composer__field--focused {
+.m3-composer__field:focus-within {
     border-color: var(--m3-color-primary);
+    box-shadow: inset 0 0 0 1px var(--m3-color-primary);
 }
 
 .m3-composer__textarea {
@@ -282,8 +280,9 @@ onBeforeUnmount(() => {
     resize: none;
     border: 0;
     outline: none;
+    box-shadow: none;
     background: transparent;
-    padding: 0.6875rem var(--m3-space-10) 0.6875rem var(--m3-space-3);
+    padding: 0.6875rem calc(var(--m3-space-1) + var(--m3-size-touch-target) + var(--m3-space-2)) 0.6875rem var(--m3-space-3);
     min-height: 2.75rem;
     overflow-y: hidden;
     font-family: inherit;

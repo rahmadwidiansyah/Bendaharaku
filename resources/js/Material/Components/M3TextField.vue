@@ -116,6 +116,7 @@ const floated = computed(() => focused.value || String(props.modelValue ?? '') !
     line-height: var(--m3-type-body-large-line-height);
     letter-spacing: var(--m3-type-body-large-tracking);
     outline: none;
+    box-shadow: none;
     appearance: none;
     transition: padding-top var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
 }

@@ -266,7 +266,7 @@
 /* ════════════════════════════════════════════════════════════════════
    Shared M3 helpers (still namespaced — no effect without .ui-m3)
    ════════════════════════════════════════════════════════════════════ */
-.ui-m3 :focus-visible {
+.ui-m3 :where(:focus-visible) {
     outline: 2px solid var(--m3-color-primary);
     outline-offset: 2px;
 }

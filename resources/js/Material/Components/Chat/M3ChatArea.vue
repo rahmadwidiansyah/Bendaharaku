@@ -36,6 +36,12 @@ function shouldShowAvatar(messages, index) {
     return messages[index - 1].role !== messages[index].role
 }
 
+/** Indikator mengetik setelah pesan user = awal grup bot (spasi antar-pengirim) */
+const lastIsUser = computed(() => {
+    const last = props.messages[props.messages.length - 1]
+    return !!last && last.role === 'user'
+})
+
 const containerRef = ref(null)
 let ticking = false
 
@@ -110,6 +116,7 @@ defineExpose({ el: containerRef })
                 v-if="isTyping && !hasPendingBotMessage"
                 :bot-avatar="botAvatar"
                 :bot-name="botName"
+                :class="{ 'm3-typing--group-start': lastIsUser }"
             />
         </Transition>
 

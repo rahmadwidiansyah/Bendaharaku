@@ -47,15 +47,26 @@ const hasUserImage = computed(() => userImageComponents.value.length > 0)
 
 <template>
     <!-- Bot pending: bubble mengetik -->
-    <M3TypingIndicator v-if="isPending" :bot-avatar="botAvatar" :bot-name="botName" />
+    <M3TypingIndicator
+        v-if="isPending"
+        :bot-avatar="botAvatar"
+        :bot-name="botName"
+        :class="{ 'm3-typing--group-start': showAvatar }"
+    />
 
     <!-- Pesan bot -->
-    <div v-else-if="isBot" class="m3-msg m3-msg--bot">
+    <div v-else-if="isBot" class="m3-msg m3-msg--bot" :class="{ 'm3-msg--group-start': showAvatar }">
         <div class="m3-msg__avatar">
             <M3BotAvatar v-if="showAvatar" :src="botAvatar" :name="botName" size="sm" variant="bot" shape="circle" />
         </div>
 
-        <div class="m3-msg__bubble" :class="isErrorMessage ? 'm3-msg__bubble--error' : 'm3-msg__bubble--bot'">
+        <div
+            class="m3-msg__bubble"
+            :class="[
+                isErrorMessage ? 'm3-msg__bubble--error' : 'm3-msg__bubble--bot',
+                { 'm3-msg__bubble--tail': showAvatar },
+            ]"
+        >
             <!-- Kartu (transaction_card, summary_card, report_section, bar_chart, dst.) -->
             <template v-for="(comp, i) in cardComponents" :key="'card-' + i">
                 <M3MessageRenderer :component="comp" :metadata="message.metadata ?? {}" @suggest="emit('suggest', $event)" />
@@ -81,11 +92,11 @@ const hasUserImage = computed(() => userImageComponents.value.length > 0)
     </div>
 
     <!-- Pesan user -->
-    <div v-else-if="isUser" class="m3-msg m3-msg--user">
-        <div class="m3-msg__user-col" :style="hasUserImage ? 'max-width: min(280px, 82%)' : 'max-width: 82%'">
+    <div v-else-if="isUser" class="m3-msg m3-msg--user" :class="{ 'm3-msg--group-start': showAvatar }">
+        <div class="m3-msg__user-col" :style="hasUserImage ? 'max-width: min(280px, 80%)' : 'max-width: 80%'">
             <!-- Foto + caption (satu bubble, WA-style) -->
             <template v-if="hasUserImage">
-                <div class="m3-msg__bubble m3-msg__bubble--user m3-msg__bubble--media">
+                <div class="m3-msg__bubble m3-msg__bubble--user m3-msg__bubble--media" :class="{ 'm3-msg__bubble--tail': showAvatar }">
                     <div v-for="(comp, i) in userImageComponents" :key="'img-' + i" class="m3-msg__media">
                         <M3MessageRenderer
                             :component="comp"
@@ -118,7 +129,7 @@ const hasUserImage = computed(() => userImageComponents.value.length > 0)
                 </div>
             </template>
             <template v-else>
-                <div class="m3-msg__bubble m3-msg__bubble--user">
+                <div class="m3-msg__bubble m3-msg__bubble--user m3-msg__bubble--user-text" :class="{ 'm3-msg__bubble--tail': showAvatar }">
                     <template v-for="(comp, i) in filteredInline" :key="i">
                         <M3MessageRenderer
                             :component="comp"
@@ -162,6 +173,11 @@ const hasUserImage = computed(() => userImageComponents.value.length > 0)
     gap: var(--m3-space-2);
 }
 
+/* Awal grup role: jarak antar-pengirim 12px (2px bawah + 10px atas) */
+.m3-msg--group-start {
+    padding-top: var(--m3-space-2-5);
+}
+
 .m3-msg__avatar {
     width: 1.5rem;
     height: 1.5rem;
@@ -182,26 +198,46 @@ const hasUserImage = computed(() => userImageComponents.value.length > 0)
 
 .m3-msg__bubble--bot {
     background: var(--m3-color-surface-container-high);
-    border-top-left-radius: var(--m3-radius-xs);
     box-shadow: var(--m3-elevation-1);
 }
 
 .m3-msg__bubble--error {
     background: var(--m3-color-error-container);
     color: var(--m3-color-on-error-container);
-    border-top-left-radius: var(--m3-radius-xs);
 }
 
 .m3-msg__bubble--user {
     background: var(--m3-color-primary-container);
     color: var(--m3-color-on-primary-container);
-    border-top-right-radius: var(--m3-radius-xs);
     box-shadow: var(--m3-elevation-1);
+}
+
+/* Tail 4px hanya di bubble pembuka grup (paritas avatar grouping) */
+.m3-msg__bubble--bot.m3-msg__bubble--tail,
+.m3-msg__bubble--error.m3-msg__bubble--tail {
+    border-top-left-radius: var(--m3-radius-xs);
+}
+
+.m3-msg__bubble--user.m3-msg__bubble--tail {
+    border-top-right-radius: var(--m3-radius-xs);
 }
 
 .m3-msg__bubble--media {
     width: 100%;
     max-width: 280px;
+}
+
+/* Bubble teks user: width 100% kolom (hindari circular max-width% → teks wrap dini),
+   padding paritas Default px-3.5 pt-2 pb-1.5 */
+.m3-msg__bubble--user-text {
+    width: 100%;
+    max-width: 100%;
+    gap: var(--m3-space-1);
+    padding: var(--m3-space-2) var(--m3-space-3) var(--m3-space-1-5);
+}
+
+.m3-msg__bubble--user-text .m3-msg__raw {
+    padding: 0;
 }
 
 .m3-msg__user-col {

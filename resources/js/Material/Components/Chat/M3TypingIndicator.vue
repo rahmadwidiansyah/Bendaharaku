@@ -31,6 +31,11 @@ defineProps({
     padding: var(--m3-space-1) var(--m3-space-3);
 }
 
+/* Muncul setelah pesan user (awal grup bot): jarak antar-pengirim */
+.m3-typing--group-start {
+    padding-top: var(--m3-space-2-5);
+}
+
 .m3-typing__avatar {
     align-self: flex-end;
     margin-bottom: var(--m3-space-0-5);
