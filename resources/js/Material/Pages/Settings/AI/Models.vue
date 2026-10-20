@@ -16,6 +16,7 @@ import M3IconButton from '@/Material/Components/M3IconButton.vue'
 import M3TextField from '@/Material/Components/M3TextField.vue'
 import M3Switch from '@/Material/Components/M3Switch.vue'
 import M3Modal from '@/Material/Components/M3Modal.vue'
+import M3InfoPopover from '@/Material/Components/M3InfoPopover.vue'
 import { Head } from '@inertiajs/vue3'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -79,6 +80,29 @@ const healthKind = (status) => {
     return 'neutral'
 }
 
+const toneForHealth = (status) => {
+    if (status === 'healthy') return 'success'
+    if (status === 'invalid' || status === 'disabled') return 'danger'
+    if (status === 'rate_limited') return 'warning'
+    return 'neutral'
+}
+
+const accountNotices = ref({})
+const routingNotice = ref(null)
+
+const noticeFor = (id) => accountNotices.value[id] || null
+
+function setAccountNotice(id, notice) {
+    accountNotices.value = { ...accountNotices.value, [id]: notice }
+}
+
+function clearAccountNotice(id) {
+    if (!accountNotices.value[id]) return
+    const next = { ...accountNotices.value }
+    delete next[id]
+    accountNotices.value = next
+}
+
 async function refreshPool() {
     try {
         const { data } = await axios.get(route('settings.ai.accounts.index'))
@@ -119,10 +143,28 @@ async function testAccount(id) {
     busyAccountId.value = id
     try {
         const { data } = await axios.post(route('settings.ai.accounts.test', { id }))
-        showToast(data.message || t('settings.ai.models.messages.test_ok'), 'success')
+        setAccountNotice(id, {
+            tone: 'success',
+            titleKey: 'settings.ai.models.test_button',
+            lines: [
+                data.message,
+                data.model ? `${data.model}${data.latency_ms != null ? ` · ${data.latency_ms} ms` : ''}` : null,
+            ].filter(Boolean),
+        })
+        showToast(t('settings.ai.models.messages.test_ok'), 'success')
         await refreshPool()
     } catch (err) {
-        showToast(err.response?.data?.message || t('settings.ai.models.messages.test_failed'), 'error')
+        const data = err.response?.data || {}
+        setAccountNotice(id, {
+            tone: 'danger',
+            titleKey: 'settings.ai.models.test_button',
+            lines: [
+                data.message || t('settings.ai.models.messages.test_failed'),
+                data.model ? `${data.model}${data.latency_ms != null ? ` · ${data.latency_ms} ms` : ''}` : null,
+                data.error_code,
+            ].filter(Boolean),
+        })
+        showToast(t('settings.ai.models.messages.test_failed'), 'error')
         await refreshPool()
     } finally {
         busyAccountId.value = null
@@ -133,14 +175,37 @@ async function refreshDiscovery(id) {
     busyAccountId.value = id
     try {
         const { data } = await axios.post(route('settings.ai.accounts.refresh', { id }))
-        if (data.discovery?.error) {
-            showToast(data.discovery.error, 'error')
+        const discovery = data.discovery || {}
+        if (discovery.error) {
+            setAccountNotice(id, {
+                tone: 'danger',
+                titleKey: 'settings.ai.models.pool.actions.refresh',
+                lines: [discovery.error],
+            })
+            showToast(t('settings.ai.models.messages.refresh_failed'), 'error')
         } else {
-            showToast(t('settings.ai.models.messages.refresh_ok', { count: data.discovery?.eligible ?? 0 }), 'success')
+            setAccountNotice(id, {
+                tone: 'success',
+                titleKey: 'settings.ai.models.pool.actions.refresh',
+                lines: [
+                    t('settings.ai.models.messages.refresh_ok', { count: discovery.eligible ?? 0 }),
+                    discovery.source ? `${discovery.source} · ${discovery.discovered ?? 0}` : null,
+                ].filter(Boolean),
+            })
+            showToast(
+                t('settings.ai.models.messages.refresh_ok', { count: discovery.eligible ?? 0 }),
+                'success',
+            )
         }
         await refreshPool()
     } catch (err) {
-        showToast(err.response?.data?.message || t('settings.ai.models.messages.refresh_failed'), 'error')
+        const message = err.response?.data?.message || t('settings.ai.models.messages.refresh_failed')
+        setAccountNotice(id, {
+            tone: 'danger',
+            titleKey: 'settings.ai.models.pool.actions.refresh',
+            lines: [message],
+        })
+        showToast(t('settings.ai.models.messages.refresh_failed'), 'error')
     } finally {
         busyAccountId.value = null
     }
@@ -163,6 +228,7 @@ async function confirmDeleteAccount() {
     removingAccount.value = true
     try {
         await axios.delete(route('settings.ai.accounts.destroy', { id: removeTarget.value.id }))
+        clearAccountNotice(removeTarget.value.id)
         showToast(t('settings.ai.models.messages.removed'), 'success')
         removeTarget.value = null
         await refreshPool()
@@ -179,9 +245,7 @@ async function toggleModels(accId) {
         return
     }
     expandedAccount.value = accId
-    if (!accountModels.value[accId]) {
-        await loadAccountModels(accId, true)
-    }
+    await loadAccountModels(accId, true)
 }
 
 async function loadAccountModels(accId, force = false) {
@@ -192,7 +256,13 @@ async function loadAccountModels(accId, force = false) {
         const { data } = await axios.get(route('settings.ai.accounts.models', { id: accId }))
         accountModels.value = { ...accountModels.value, [accId]: data.models || [] }
     } catch (err) {
-        showToast(err.response?.data?.message || t('settings.ai.models.messages.models_load_failed'), 'error')
+        const message = err.response?.data?.message || t('settings.ai.models.messages.models_load_failed')
+        setAccountNotice(accId, {
+            tone: 'danger',
+            titleKey: 'settings.ai.models.pool.actions.view_models',
+            lines: [message],
+        })
+        showToast(t('settings.ai.models.messages.models_load_failed'), 'error')
     } finally {
         loadingModelsFor.value = null
     }
@@ -210,7 +280,15 @@ async function toggleModelEnabled(accId, modelId, enable) {
         await loadAccountModels(accId, true)
         await refreshPool()
     } catch (err) {
-        showToast(err.response?.data?.message || t('settings.ai.models.messages.model_failed'), 'error')
+        const message = err.response?.data?.message || t('settings.ai.models.messages.model_failed')
+        setAccountNotice(accId, {
+            tone: 'danger',
+            titleKey: enable
+                ? 'settings.ai.models.pool.actions.enable_model'
+                : 'settings.ai.models.pool.actions.disable_model',
+            lines: [message],
+        })
+        showToast(t('settings.ai.models.messages.model_failed'), 'error')
     }
 }
 
@@ -250,10 +328,23 @@ async function saveRouting() {
         }
         const { data } = await axios.put(route('settings.ai.routing.store'), payload)
         showToast(t('settings.ai.models.messages.routing_saved'), 'success')
-        if (data.warnings?.length) showToast(data.warnings[0], 'error')
+        routingNotice.value = data.warnings?.length
+            ? {
+                tone: 'warning',
+                titleKey: 'settings.ai.models.routing.title',
+                lines: data.warnings,
+            }
+            : null
+        if (data.warnings?.length) showToast(t('common.warning'), 'error')
         await refreshPool()
     } catch (err) {
-        showToast(err.response?.data?.message || t('settings.ai.models.messages.routing_failed'), 'error')
+        const message = err.response?.data?.message || t('settings.ai.models.messages.routing_failed')
+        routingNotice.value = {
+            tone: 'danger',
+            titleKey: 'settings.ai.models.routing.title',
+            lines: [message],
+        }
+        showToast(t('settings.ai.models.messages.routing_failed'), 'error')
     } finally {
         savingRouting.value = false
     }
@@ -296,17 +387,68 @@ async function saveRouting() {
                             <span v-if="!acc.is_active" class="m3-models__badge m3-models__badge--neutral">
                                 {{ t('common.inactive') }}
                             </span>
+                            <M3InfoPopover
+                                :label="`${t('common.info')} · ${acc.alias}`"
+                                :tone="noticeFor(acc.id)?.tone || toneForHealth(acc.health_status)"
+                            >
+                                <div class="m3-models__details">
+                                    <div class="m3-models__detail-block">
+                                        <span class="m3-models__detail-label">{{ t('common.status') }}</span>
+                                        <p class="m3-models__detail-value">{{ healthLabel(acc.health_status) }}</p>
+                                    </div>
+                                    <div class="m3-models__detail-block">
+                                        <span class="m3-models__detail-label">{{ t('settings.ai.models.test_button') }}</span>
+                                        <p class="m3-models__detail-value">
+                                            {{ acc.last_test_status || t('settings.ai.status.accounts.no_test') }}
+                                        </p>
+                                        <p v-if="acc.last_test_message" class="m3-models__detail-note">
+                                            {{ acc.last_test_message }}
+                                        </p>
+                                        <p v-if="acc.last_tested_at" class="m3-models__detail-note">
+                                            {{ formatDateTime(acc.last_tested_at) }}
+                                        </p>
+                                    </div>
+                                    <div v-if="acc.last_discovery_at" class="m3-models__detail-block">
+                                        <span class="m3-models__detail-label">
+                                            {{ t('settings.ai.models.pool.actions.refresh') }}
+                                        </span>
+                                        <p class="m3-models__detail-note">
+                                            {{ t('settings.ai.models.pool.discovery_at', { time: formatDateTime(acc.last_discovery_at) }) }}
+                                        </p>
+                                        <p v-if="acc.discovery_status" class="m3-models__detail-note">
+                                            {{ acc.discovery_status }}
+                                        </p>
+                                    </div>
+                                    <div v-if="acc.in_cooldown" class="m3-models__detail-block">
+                                        <span class="m3-models__detail-label">
+                                            {{ t('settings.ai.status.health.cooldown') }}
+                                        </span>
+                                        <p v-if="acc.cooldown_until" class="m3-models__detail-note">
+                                            {{ formatDateTime(acc.cooldown_until) }}
+                                        </p>
+                                    </div>
+                                    <div
+                                        v-if="noticeFor(acc.id)"
+                                        class="m3-models__notice"
+                                        :class="`m3-models__notice--${noticeFor(acc.id).tone}`"
+                                    >
+                                        <p class="m3-models__notice-title">{{ t(noticeFor(acc.id).titleKey) }}</p>
+                                        <p
+                                            v-for="(line, i) in noticeFor(acc.id).lines"
+                                            :key="i"
+                                            class="m3-models__detail-note"
+                                        >
+                                            {{ line }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </M3InfoPopover>
                         </div>
 
                         <p class="m3-models__account-meta">
                             {{ t('settings.ai.models.pool.priority', { priority: acc.priority }) }}
                             · {{ t('settings.ai.models.pool.models_count', { count: acc.model_count }) }}
-                            · {{ acc.last_test_status || t('settings.ai.status.accounts.no_test') }}
-                            <template v-if="acc.last_discovery_at">
-                                · {{ t('settings.ai.models.pool.discovery_at', { time: formatDateTime(acc.last_discovery_at) }) }}
-                            </template>
                         </p>
-                        <p v-if="acc.last_test_message" class="m3-models__account-msg">{{ acc.last_test_message }}</p>
 
                         <div class="m3-models__account-actions">
                             <M3Button
@@ -364,8 +506,17 @@ async function saveRouting() {
                                     <div class="m3-models__model-info">
                                         <span class="m3-models__model-id">{{ m.model_id }}</span>
                                         <span class="m3-models__model-meta">{{ m.free_tier }} · {{ m.category }}</span>
-                                        <span v-if="!m.is_enabled" class="m3-models__badge m3-models__badge--bad">
-                                            {{ t('common.inactive') }}{{ m.last_error ? ' · ' + m.last_error : '' }}
+                                        <span v-if="!m.is_enabled" class="m3-models__model-state">
+                                            <span class="m3-models__badge m3-models__badge--bad">
+                                                {{ t('common.inactive') }}
+                                            </span>
+                                            <M3InfoPopover
+                                                v-if="m.last_error"
+                                                :label="`${t('common.warning')} · ${m.model_id}`"
+                                                tone="danger"
+                                            >
+                                                <p class="m3-models__detail-note">{{ m.last_error }}</p>
+                                            </M3InfoPopover>
                                         </span>
                                     </div>
                                     <M3Button
@@ -531,9 +682,24 @@ async function saveRouting() {
                         </M3Button>
                     </div>
 
-                    <M3Button variant="filled" :disabled="savingRouting" @click="saveRouting">
-                        {{ savingRouting ? t('settings.ai.models.routing.saving') : t('settings.ai.models.routing.save') }}
-                    </M3Button>
+                    <div class="m3-models__routing-actions">
+                        <M3Button variant="filled" :disabled="savingRouting" @click="saveRouting">
+                            {{ savingRouting ? t('settings.ai.models.routing.saving') : t('settings.ai.models.routing.save') }}
+                        </M3Button>
+                        <M3InfoPopover
+                            v-if="routingNotice"
+                            :label="t('common.warning')"
+                            :tone="routingNotice.tone"
+                        >
+                            <p
+                                v-for="(line, i) in routingNotice.lines"
+                                :key="i"
+                                class="m3-models__detail-note"
+                            >
+                                {{ line }}
+                            </p>
+                        </M3InfoPopover>
+                    </div>
                 </M3Card>
             </section>
 
@@ -568,8 +734,17 @@ async function saveRouting() {
                     </h2>
                     <M3Card variant="outlined" padding="md">
                         <div v-for="(s, i) in poolSkipped" :key="(s.provider || '') + '-' + (s.model || '') + '-' + i" class="m3-models__skipped">
-                            <span class="m3-models__skipped-model">{{ s.model || '*' }}</span>
-                            <span class="m3-models__model-meta">{{ s.provider }} · {{ s.reason }}</span>
+                            <div class="m3-models__skipped-main">
+                                <span class="m3-models__skipped-model">{{ s.model || '*' }}</span>
+                                <span class="m3-models__model-meta">{{ s.provider }}</span>
+                            </div>
+                            <M3InfoPopover
+                                v-if="s.reason"
+                                :label="`${t('settings.ai.models.candidates.skipped_title')} · ${s.model || '*'}`"
+                                tone="warning"
+                            >
+                                <p class="m3-models__detail-note">{{ s.reason }}</p>
+                            </M3InfoPopover>
                         </div>
                     </M3Card>
                 </template>
@@ -711,12 +886,80 @@ async function saveRouting() {
     border-color: transparent;
 }
 
-.m3-models__account-meta,
-.m3-models__account-msg {
+.m3-models__account-meta {
     margin: 0;
     font-size: var(--m3-type-body-small-size);
     line-height: var(--m3-type-body-small-line-height);
     color: var(--m3-color-on-surface-variant);
+}
+
+.m3-models__details {
+    display: flex;
+    flex-direction: column;
+    gap: var(--m3-space-3);
+}
+
+.m3-models__detail-block {
+    display: flex;
+    flex-direction: column;
+    gap: var(--m3-space-1);
+}
+
+.m3-models__detail-label {
+    font-size: var(--m3-type-label-small-size);
+    line-height: var(--m3-type-label-small-line-height);
+    font-weight: var(--m3-type-label-large-weight);
+    letter-spacing: var(--m3-type-label-small-tracking);
+    color: var(--m3-color-on-surface);
+}
+
+.m3-models__detail-value,
+.m3-models__detail-note {
+    margin: 0;
+    font-size: var(--m3-type-body-small-size);
+    line-height: var(--m3-type-body-small-line-height);
+    color: var(--m3-color-on-surface-variant);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.m3-models__notice {
+    display: flex;
+    flex-direction: column;
+    gap: var(--m3-space-1);
+    padding: var(--m3-space-2);
+    border-radius: var(--m3-radius-sm);
+}
+
+.m3-models__notice--success {
+    background: var(--m3-color-primary-container);
+    color: var(--m3-color-on-primary-container);
+}
+
+.m3-models__notice--warning {
+    background: var(--m3-color-tertiary-container);
+    color: var(--m3-color-on-tertiary-container);
+}
+
+.m3-models__notice--danger {
+    background: var(--m3-color-error-container);
+    color: var(--m3-color-on-error-container);
+}
+
+.m3-models__notice--neutral {
+    background: var(--m3-color-surface-container-highest);
+    color: var(--m3-color-on-surface-variant);
+}
+
+.m3-models__notice-title {
+    margin: 0;
+    font-size: var(--m3-type-label-medium-size);
+    line-height: var(--m3-type-label-medium-line-height);
+    font-weight: var(--m3-type-label-large-weight);
+}
+
+.m3-models__notice .m3-models__detail-note {
+    color: inherit;
 }
 
 .m3-models__account-actions {
@@ -753,6 +996,12 @@ async function saveRouting() {
     gap: 2px;
     flex: 1;
     min-width: 0;
+}
+
+.m3-models__model-state {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--m3-space-1);
 }
 
 .m3-models__model-id {
@@ -853,6 +1102,12 @@ async function saveRouting() {
     gap: var(--m3-space-1);
 }
 
+.m3-models__routing-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--m3-space-2);
+}
+
 /* ── Kandidat ── */
 .m3-models__candidate {
     display: flex;
@@ -896,9 +1151,17 @@ async function saveRouting() {
 
 .m3-models__skipped {
     display: flex;
+    align-items: center;
+    gap: var(--m3-space-2);
+    padding: var(--m3-space-1) 0;
+}
+
+.m3-models__skipped-main {
+    display: flex;
     flex-direction: column;
     gap: 2px;
-    padding: var(--m3-space-1) 0;
+    flex: 1;
+    min-width: 0;
 }
 
 .m3-models__skipped-model {
