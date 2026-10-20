@@ -240,9 +240,9 @@ class ModelResolver
             return $b['score'] <=> $a['score'];
         });
 
-        // free_first: gratis dulu, lalu berbayar/unknown hanya jika diizinkan — sudah difilter di passesFreePolicy.
-        // free_first tanpa allow_paid == free_only efektif (kecuali unknown ditolak juga).
-        $candidates = $rows; // ekspansi penuh; executor batasi via max_attempts.
+        // Sebar kandidat lintas akun: akun terbaik tetap pertama, lalu model terbaik akun berikutnya.
+        // Ini mencegah satu akun menghabiskan seluruh max_attempts saat provider-nya sedang down.
+        $candidates = $this->interleaveByAccount($rows); // ekspansi penuh; executor batasi via max_attempts.
 
         Log::info('ModelResolver: automatic chain resolved', [
             'user_id' => $usableAccounts->first()?->user_id,
@@ -253,6 +253,51 @@ class ModelResolver
         ]);
 
         return ['candidates' => array_values($candidates), 'skipped' => $skipped, 'method' => 'automatic', 'primary_count' => min(count($candidates), $maxCandidates), 'total_eligible' => $totalEligible];
+    }
+
+    /**
+     * Urutan round-robin per akun dengan tetap mempertahankan skor tertinggi di dalam akun.
+     * Contoh: A1-90, A2-80, A2-70, A1-60 → A1-90, A2-80, A1-60, A2-70.
+     *
+     * @param  list<array<string, mixed>>  $rows
+     * @return list<array<string, mixed>>
+     */
+    private function interleaveByAccount(array $rows): array
+    {
+        if (count($rows) < 2) {
+            return $rows;
+        }
+
+        $buckets = [];
+        $accountOrder = [];
+        foreach ($rows as $row) {
+            $accountId = (int) $row['account']->id;
+            if (! isset($buckets[$accountId])) {
+                $buckets[$accountId] = [];
+                $accountOrder[] = $accountId;
+            }
+            $buckets[$accountId][] = $row;
+        }
+
+        if (count($accountOrder) < 2) {
+            return $rows;
+        }
+
+        $interleaved = [];
+        $round = 0;
+        $added = true;
+        while ($added) {
+            $added = false;
+            foreach ($accountOrder as $accountId) {
+                if (isset($buckets[$accountId][$round])) {
+                    $interleaved[] = $buckets[$accountId][$round];
+                    $added = true;
+                }
+            }
+            $round++;
+        }
+
+        return $interleaved;
     }
 
     private function passesFreePolicy(string $freeTier, string $freePolicy, bool $allowPaid): bool

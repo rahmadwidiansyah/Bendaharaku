@@ -221,7 +221,7 @@ abstract class BaseAdapter implements LLMAdapterInterface
             throw new AiRateLimitException($provider);
         }
         if (in_array($statusCode, [408, 503, 504])) {
-            throw new AiTimeoutException($provider);
+            throw new AiTimeoutException($provider, $statusCode);
         }
         if (in_array($statusCode, [401, 403])) {
             throw new AiProviderException($provider, "API Key tidak valid (HTTP {$statusCode}).");

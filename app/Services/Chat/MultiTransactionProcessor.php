@@ -6,6 +6,7 @@ namespace App\Services\Chat;
 
 use App\Actions\ProcessTransactionAction;
 use App\DTO\AIParseResultMulti;
+use App\DTO\ChatProcessOptions;
 use App\DTO\MultiTransactionItem;
 use App\DTO\MultiTransactionResult;
 use App\DTO\ParsedTransaction;
@@ -54,7 +55,9 @@ class MultiTransactionProcessor
         array $wallets, array $categories, array $activeMemories,
         string $source,
         string $prompt = '',
+        ?ChatProcessOptions $options = null,
     ): array {
+        $options ??= new ChatProcessOptions;
         // Routing pool lintas akun/provider; fallback ke single jika tak ada kandidat.
         try {
             $routingPref = AiRoutingPreference::where('user_id', $user->id)->first();
@@ -75,17 +78,35 @@ class MultiTransactionProcessor
             $preferenceProvider = $multiRouting['selected_provider'] ?? $multiResult->provider;
             $preferenceModel = $multiRouting['selected_model'] ?? $multiResult->model;
         } catch (AiConfigurationException $e) {
-            return ['__fallback_to_single' => true];
+            if (! $options->allowSingleFallback) {
+                return [
+                    'success' => false,
+                    'error_code' => 'AI_NOT_CONFIGURED',
+                    'retryable' => false,
+                    'message' => '⚙️ *AI Multi-Transaksi Belum Siap*\n\nTidak ada provider AI cadangan yang aktif. Periksa Settings → AI.',
+                ];
+            }
+
+            return ['__fallback_to_single' => true, 'multi_fallback' => true, 'fallback_reason' => 'ai_configuration'];
         } catch (AiProviderException $e) {
             // Pool habis: fallback ke single (yang masih punya Python/LRE) alih-alih gagal langsung.
-            // Ini menyamakan semantik single vs multi (sebelumnya multi langsung throw).
-            Log::warning('MultiTx: pool exhausted, fallback to single', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+            // Ini menyamakan semantik single vs multi untuk chat. Caller yang butuh semantik ketat
+            // (Evidence grouping) menonaktifkan fallback ini agar tidak salah mengubah multi → single.
+            Log::warning('MultiTx: pool exhausted', ['user_id' => $user->id, 'allow_single_fallback' => $options->allowSingleFallback, 'error' => $e->getMessage()]);
 
-            return ['__fallback_to_single' => true];
+            if (! $options->allowSingleFallback) {
+                return $this->poolExhaustedResult();
+            }
+
+            return ['__fallback_to_single' => true, 'multi_fallback' => true, 'fallback_reason' => 'pool_exhausted'];
         } catch (Throwable $e) {
-            Log::warning('MultiTx: pool crash, fallback to single', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+            Log::warning('MultiTx: pool crash', ['user_id' => $user->id, 'error' => $e->getMessage()]);
 
-            return ['__fallback_to_single' => true];
+            if (! $options->allowSingleFallback) {
+                return $this->poolExhaustedResult();
+            }
+
+            return ['__fallback_to_single' => true, 'multi_fallback' => true, 'fallback_reason' => 'pool_crash'];
         }
 
         if (! $multiResult->success || empty($multiResult->transactions)) {
@@ -176,6 +197,17 @@ class MultiTransactionProcessor
             'success' => $multiTxResult->hasAnySuccess(),
             'is_multi' => true,
             'multi_result' => $multiTxResult,
+        ];
+    }
+
+    /** @return array{success:false,error_code:string,retryable:bool,message:string} */
+    private function poolExhaustedResult(): array
+    {
+        return [
+            'success' => false,
+            'error_code' => 'AI_POOL_EXHAUSTED',
+            'retryable' => true,
+            'message' => '⚠️ *AI Multi-Transaksi Sedang Sibuk*\n\nSemua kandidat AI gagal merespons. Draft tidak dibuat otomatis agar tidak salah catat. Coba kirim ulang foto dalam 1–2 menit, atau buka Review manual.',
         ];
     }
 

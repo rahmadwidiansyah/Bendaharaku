@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Evidence;
 
 use App\Chat\Services\DraftViewModelBuilder;
+use App\DTO\ChatProcessOptions;
 use App\DTO\MultiTransactionItem;
 use App\DTO\MultiTransactionResult;
 use App\Models\Evidence;
@@ -45,34 +46,42 @@ class LlmEvidenceGroupingService
         $normalizedCaption = preg_replace('/\s+/', ' ', mb_strtolower($captionHint));
         $normalizedCaption = str_replace(['punya ku', 'milik ku'], ['punyaku', 'milikku'], $normalizedCaption);
         $isFilterCaption = $captionHint !== '' && $captionHint !== '[Evidence]' && preg_match('/\b(punyaku|cuma|cuman|hanya|punya saya|punya aku|milikku|milik saya|yang saya)\b/iu', $normalizedCaption);
-        $hintWallet = null;
+        $walletRoles = ['source' => null, 'destination' => null];
         $isWalletCaption = false;
 
-        // Ekstrak wallet hint dari caption secara independen (flex: cek semua caption, tidak eksklusif dengan filter)
+        // Ekstrak wallet hint dari caption secara independen, sadar peran sumber vs tujuan.
         if ($captionHint !== '' && $captionHint !== '[Evidence]') {
-            $hintWallet = $this->resolveHintWallet($captionHint, $user);
-            if ($hintWallet) {
-                $isWalletCaption = true;
-            }
+            $walletRoles = $this->resolveWalletRoles($captionHint, $user);
+            $isWalletCaption = $walletRoles['source'] !== null || $walletRoles['destination'] !== null;
         }
 
         if ($captionHint !== '' && $captionHint !== '[Evidence]') {
             // SELALU kirim full caption ke LLM (flexible, tidak hardcode) — prioritas caption > OCR
             $text .= "\n\n[User caption (full): \"{$captionHint}\"]";
-            Log::info('Evidence LLM: caption full included', ['evidence_id' => $evidence->id, 'hint' => $captionHint, 'is_filter' => (bool) $isFilterCaption, 'wallet' => $hintWallet?->name]);
+            Log::info('Evidence LLM: caption full included', [
+                'evidence_id' => $evidence->id,
+                'hint' => $captionHint,
+                'is_filter' => (bool) $isFilterCaption,
+                'source_wallet' => $walletRoles['source']?->name,
+                'destination_wallet' => $walletRoles['destination']?->name,
+            ]);
 
             if ($isFilterCaption) {
                 // Caption filter + wallet hint bisa bersamaan (mis. "punyaku magelangan rendang dan es kopi abc ya bayar pakai dana")
                 $text .= "\n[User filter: hanya simpan item yang disebutkan di caption di atas — abaikan item lain di struk]";
                 Log::info('Evidence LLM: caption as item filter', ['evidence_id' => $evidence->id, 'hint' => $captionHint]);
-                if ($hintWallet) {
-                    $text .= "\n[Wallet hint: {$hintWallet->name}]";
-                    Log::info('Evidence LLM: caption hint wallet resolved (filter+wallet)', ['evidence_id' => $evidence->id, 'hint' => $captionHint, 'wallet' => $hintWallet->name]);
+                foreach ($this->walletHintLines($walletRoles) as $line) {
+                    $text .= "\n".$line;
+                }
+                if ($isWalletCaption) {
+                    Log::info('Evidence LLM: caption wallet roles resolved (filter+wallet)', ['evidence_id' => $evidence->id, 'hint' => $captionHint, 'roles' => $this->walletRoleLog($walletRoles)]);
                 }
             } else {
-                if ($hintWallet) {
-                    $text .= "\n[Wallet hint: {$hintWallet->name}]";
-                    Log::info('Evidence LLM: caption hint wallet resolved', ['evidence_id' => $evidence->id, 'hint' => $captionHint, 'wallet' => $hintWallet->name]);
+                if ($isWalletCaption) {
+                    foreach ($this->walletHintLines($walletRoles) as $line) {
+                        $text .= "\n".$line;
+                    }
+                    Log::info('Evidence LLM: caption wallet roles resolved', ['evidence_id' => $evidence->id, 'hint' => $captionHint, 'roles' => $this->walletRoleLog($walletRoles)]);
                 } else {
                     // Caption bukan wallet valid dan bukan filter eksplisit → treat sebagai catatan user
                     $text .= "\n[User note: gunakan caption di atas sebagai konteks tambahan untuk grouping, jika ada nama barang spesifik di caption, prioritaskan yang disebut]";
@@ -81,18 +90,29 @@ class LlmEvidenceGroupingService
             }
         }
 
-        // Fallback wallet dari OCR jika caption tidak memberi hint (prioritas caption > OCR, OCR candidate tetap dilog)
+        // OCR wallet adalah bukti sisi SUMBER (rekening/dompet yang dipakai membayar).
+        // Jangan biarkan caption tujuan (mis. "pindah ke dana") menimpa sumber dari OCR.
         $ocrWalletCandidate = $this->detectWalletInOcr($ocrText, $user);
-        if (! $isWalletCaption) {
-            // Jika caption tidak memberi wallet hint (atau hanya filter tanpa wallet), coba deteksi wallet label di OCR text
-            if ($ocrWalletCandidate) {
-                $text .= "\n[Wallet hint (from OCR): {$ocrWalletCandidate->name}]";
-                Log::info('Evidence LLM: OCR wallet fallback', ['evidence_id' => $evidence->id, 'wallet' => $ocrWalletCandidate->name]);
-            }
+        $captionSource = $walletRoles['source'];
+        $captionDestination = $walletRoles['destination'];
+        $ocrAddsSource = $ocrWalletCandidate !== null
+            && $captionSource === null
+            && ($captionDestination === null || $captionDestination->id !== $ocrWalletCandidate->id);
+
+        if ($ocrAddsSource) {
+            $text .= "\n[Source wallet hint (from OCR): {$ocrWalletCandidate->name}]";
+            Log::info('Evidence LLM: OCR source wallet included', ['evidence_id' => $evidence->id, 'wallet' => $ocrWalletCandidate->name, 'caption_destination' => $captionDestination?->name]);
         } elseif ($ocrWalletCandidate) {
-            // Caption sudah ada wallet, tetap log OCR candidate untuk debug (prioritas caption)
-            Log::info('Evidence LLM: OCR wallet candidate ignored (caption priority)', ['evidence_id' => $evidence->id, 'ocr_wallet' => $ocrWalletCandidate->name, 'caption_wallet' => $hintWallet?->name]);
+            Log::info('Evidence LLM: OCR wallet candidate ignored (caption priority)', [
+                'evidence_id' => $evidence->id,
+                'ocr_wallet' => $ocrWalletCandidate->name,
+                'caption_source' => $captionSource?->name,
+                'caption_destination' => $captionDestination?->name,
+            ]);
         }
+
+        // Enrichment draft: utamakan sumber. Caption tujuan saja tidak boleh jadi source wallet.
+        $hintWallet = $walletRoles['source'] ?? ($ocrAddsSource ? $ocrWalletCandidate : null);
 
         // Instruksi PENTING: kelompok per kategori, jangan gabung semua jadi 1 (bug 5 item jadi 1)
         $text .= "\n\n[Instruksi PENTING: Kelompokkan HANYA per kategori user. Jika 5 item semua kategori 'Makanan' → jadi 1 transaksi dengan notes berisi semua nama dipisah koma (contoh: 'Ayam Goreng, Nasi, Es Teh'). Jika ada Es Jeruk kategori 'Minuman' dan Ayam Goreng kategori 'Makanan' → jadi 2 transaksi terpisah. Jangan buat 1 transaksi untuk semua jika beda kategori. Amount per transaksi = jumlah amount item dalam kategori tersebut. Notes = daftar nama barang dalam kategori itu (samakan dengan description). Jika ada filter user seperti 'punyaku cuma X', hanya buat transaksi untuk X yang disebutkan. Jangan gabung reference number (12+ digit) sebagai amount.]";
@@ -100,7 +120,8 @@ class LlmEvidenceGroupingService
         // Panggil orchestrator dengan source EVIDENCE (biar is_cleared logic sesuai WEB/DRAFT)
         // Pakai WEB agar jadi draft (butuh QuickWalletPicker jika wallet null)
         $source = 'WEB';
-        $result = $this->orchestrator->process($user, $text, $source);
+        // Evidence multi-transaksi tidak boleh fallback diam-diam ke single: makna transaksi bisa berubah.
+        $result = $this->orchestrator->process($user, $text, $source, new ChatProcessOptions(allowSingleFallback: false));
 
         // Fallback kertas vs digital: jika LLM gagal ekstrak nominal (amount 0) tapi evidence punya parsed amount 5029, pakai itu
         // Ini untuk struk kertas yang OCR-nya jelek (244 char) tapi TransferReceiptParser sudah benar 5029
@@ -148,7 +169,7 @@ class LlmEvidenceGroupingService
                                 $cat = $user->categories()->where('type_id', function ($q) {
                                     $q->select('id')->from('transaction_types')->where('name', 'Expense')->limit(1);
                                 })->first();
-                                $wallet = $this->resolveHintWallet($captionHint, $user) ?? $this->detectWalletInOcr($ocrText, $user) ?? $user->wallets()->where('group_type', '!=', 'System')->first();
+                                $wallet = $walletRoles['source'] ?? $walletRoles['destination'] ?? $this->detectWalletInOcr($ocrText, $user) ?? $user->wallets()->where('group_type', '!=', 'System')->first();
                                 $payload = [
                                     'amount' => $perItem,
                                     'category_id' => $cat?->id,
@@ -274,37 +295,92 @@ class LlmEvidenceGroupingService
         return $result;
     }
 
-    private function resolveHintWallet(string $hint, User $user): ?Wallet
+    /**
+     * @return array{source:Wallet|null,destination:Wallet|null}
+     */
+    private function resolveWalletRoles(string $hint, User $user): array
     {
-        $hint = trim($hint);
-        if ($hint === '') {
-            return null;
+        $roles = ['source' => null, 'destination' => null];
+        $lower = mb_strtolower(trim($hint));
+        if ($lower === '') {
+            return $roles;
         }
 
-        // Coba exact name
-        $wallet = $user->wallets()->where('name', $hint)->first();
-        if ($wallet) {
-            return $wallet;
-        }
-
-        // Coba keyword
         $wallets = $user->wallets()->where('group_type', '!=', 'System')->get();
-        foreach ($wallets as $w) {
-            $keywords = array_map('trim', explode(',', $w->keyword ?? ''));
-            foreach ($keywords as $kw) {
-                if ($kw !== '' && str_contains(mb_strtolower($hint), mb_strtolower($kw))) {
-                    return $w;
-                }
-                if ($kw !== '' && str_contains(mb_strtolower($w->name), mb_strtolower($hint))) {
-                    return $w;
-                }
+        foreach ($wallets as $wallet) {
+            $aliases = [$wallet->name];
+            foreach (explode(',', $wallet->keyword ?? '') as $keyword) {
+                $aliases[] = trim($keyword);
             }
-            if (str_contains(mb_strtolower($hint), mb_strtolower($w->name))) {
-                return $w;
+            $aliases = array_values(array_unique(array_filter($aliases, fn (string $a) => $a !== '')));
+
+            foreach ($aliases as $alias) {
+                $needle = mb_strtolower($alias);
+                if (mb_strlen($needle) < 2) {
+                    continue;
+                }
+
+                $offset = 0;
+                while (($position = mb_strpos($lower, $needle, $offset)) !== false) {
+                    $beforeLength = min(24, $position);
+                    $before = mb_substr($lower, $position - $beforeLength, $beforeLength);
+                    $role = $this->walletRoleFromPrefix($before);
+                    if ($roles[$role] === null) {
+                        $roles[$role] = $wallet;
+                    }
+                    $offset = $position + mb_strlen($needle);
+                }
             }
         }
 
-        return null;
+        return $roles;
+    }
+
+    /**
+     * Tentukan peran wallet dari kata sebelum penyebutannya.
+     * Default sumber: "bayar pakai dana", "dari seabank".
+     */
+    private function walletRoleFromPrefix(string $before): string
+    {
+        $tail = trim((string) preg_replace('/\s+/u', ' ', $before));
+
+        if (preg_match('/(?:^|\s)(?:ke|tujuan|menuju)\s*(?:rekening|akun|dompet|wallet)?\s*$/u', $tail)) {
+            return 'destination';
+        }
+        if (preg_match('/(?:^|\s)(?:masuk|pindah|transfer|ditransfer|kirim|dikirim|top\s*up|topup|isi\s+saldo)\s*(?:ke|saldo|rekening|akun|dompet|wallet)*\s*$/u', $tail)) {
+            return 'destination';
+        }
+
+        return 'source';
+    }
+
+    /**
+     * @param  array{source:Wallet|null,destination:Wallet|null}  $roles
+     * @return list<string>
+     */
+    private function walletHintLines(array $roles): array
+    {
+        $lines = [];
+        if ($roles['source']) {
+            $lines[] = "[Source wallet hint: {$roles['source']->name}]";
+        }
+        if ($roles['destination']) {
+            $lines[] = "[Destination wallet hint: {$roles['destination']->name}]";
+        }
+
+        return $lines;
+    }
+
+    /**
+     * @param  array{source:Wallet|null,destination:Wallet|null}  $roles
+     * @return array{source:string|null,destination:string|null}
+     */
+    private function walletRoleLog(array $roles): array
+    {
+        return [
+            'source' => $roles['source']?->name,
+            'destination' => $roles['destination']?->name,
+        ];
     }
 
     private function detectWalletInOcr(string $ocrText, User $user): ?Wallet

@@ -21,15 +21,30 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 
 class EvidenceLlmGroupingJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries = 1;
+    public int $tries = 45;
 
-    public int $timeout = 120;
+    public int $maxExceptions = 2;
+
+    public int $timeout = 240;
+
+    private const OCR_WAIT_SECONDS = 120;
+
+    private const OCR_POLL_DELAY_SECONDS = 3;
+
+    private const AI_RETRY_DELAY_SECONDS = 45;
+
+    private const AI_MAX_RETRIES = 1;
+
+    private const WAITING_MESSAGE = 'Proses struk sedang berjalan (OCR/AI bisa lambat). Mohon tunggu maksimal sekitar 7 menit, jangan kirim ulang.';
+
+    private const AI_RETRY_WAITING_MESSAGE = 'AI sedang sibuk. Mencoba ulang otomatis; mohon tunggu maksimal sekitar 3 menit lagi dan jangan kirim ulang.';
 
     private float $jobStartedAt = 0.0;
 
@@ -58,20 +73,55 @@ class EvidenceLlmGroupingJob implements ShouldQueue
             return;
         }
 
-        // Tunggu OCR selesai (max 30s) — karena EvidenceLlmGroupingJob dispatch segera setelah upload, OCR mungkin belum siap
-        $waited = 0;
-        while (blank($evidence->ocr_text) && $waited < 30) {
-            sleep(2);
-            $waited += 2;
-            $evidence->refresh();
+        if (! in_array($botMessage->status, ['pending', 'processing'], true)) {
+            Log::info('EvidenceLlmGroupingJob: bot message sudah selesai, skip', [
+                'bot_message_id' => $botMessage->id,
+                'status' => $botMessage->status,
+            ]);
+
+            return;
         }
 
+        $this->markProcessing($botMessage);
+
+        // Tunggu OCR selesai tanpa memblokir worker. Job di-release tiap 3s,
+        // maksimal 120s — OCR service bisa lambat pada perangkat tertentu.
         if (blank($evidence->ocr_text)) {
-            Log::warning('EvidenceLlmGroupingJob: OCR text masih kosong setelah tunggu', ['evidence_id' => $evidence->id]);
+            $metadata = $botMessage->metadata ?? [];
+            $startedAt = $metadata['ocr_wait_started_at'] ?? null;
+
+            if ($startedAt === null) {
+                $botMessage->update([
+                    'metadata' => array_merge($metadata, [
+                        'ocr_wait_started_at' => now()->toIso8601String(),
+                    ]),
+                ]);
+                $waited = 0;
+            } else {
+                $waited = (int) Carbon::parse($startedAt)->diffInSeconds(now());
+            }
+
+            if ($waited < self::OCR_WAIT_SECONDS) {
+                Log::info('EvidenceLlmGroupingJob: OCR belum siap, release', [
+                    'evidence_id' => $evidence->id,
+                    'waited_seconds' => $waited,
+                ]);
+                $this->release(self::OCR_POLL_DELAY_SECONDS);
+
+                return;
+            }
+
+            Log::warning('EvidenceLlmGroupingJob: OCR text masih kosong setelah tunggu', [
+                'evidence_id' => $evidence->id,
+                'waited_seconds' => $waited,
+            ]);
             $botMessage->update([
                 'status' => 'failed',
                 'content' => [['type' => 'error', 'message' => 'OCR belum selesai, coba buka Review manual.', 'severity' => 'error']],
                 'error_message' => 'OCR timeout',
+                'metadata' => array_merge($botMessage->metadata ?? [], [
+                    'waiting_message' => null,
+                ]),
             ]);
             $evidence->refresh();
             try {
@@ -90,11 +140,41 @@ class EvidenceLlmGroupingJob implements ShouldQueue
             $result = $groupingService->group($evidence, $user, $this->captionHint);
 
             if (empty($result['success'])) {
+                $metadata = $botMessage->metadata ?? [];
+                $retryCount = (int) ($metadata['ai_retry_count'] ?? 0);
+                $retryable = (bool) ($result['retryable'] ?? false);
+
+                if ($retryable && $retryCount < self::AI_MAX_RETRIES) {
+                    $botMessage->update([
+                        'status' => 'processing',
+                        'content' => [],
+                        'error_message' => null,
+                        'metadata' => array_merge($metadata, [
+                            'evidence_uuid' => $evidence->uuid,
+                            'ai_retry_count' => $retryCount + 1,
+                            'last_error_code' => $result['error_code'] ?? 'GROUPING_FAILED',
+                            'waiting_message' => self::AI_RETRY_WAITING_MESSAGE,
+                        ]),
+                    ]);
+                    Log::warning('EvidenceLlmGroupingJob: retryable failure, requeue', [
+                        'evidence_id' => $evidence->id,
+                        'error_code' => $result['error_code'] ?? null,
+                        'retry_count' => $retryCount + 1,
+                    ]);
+                    $this->release(self::AI_RETRY_DELAY_SECONDS);
+
+                    return;
+                }
+
                 $botMessage->update([
                     'status' => 'failed',
                     'content' => [['type' => 'error', 'message' => $result['message'] ?? 'Gagal mengelompokkan struk.', 'severity' => 'error']],
                     'error_message' => $result['message'] ?? 'Grouping failed',
-                    'metadata' => array_merge($botMessage->metadata ?? [], ['evidence_uuid' => $evidence->uuid, 'error_code' => $result['error_code'] ?? 'GROUPING_FAILED']),
+                    'metadata' => array_merge($metadata, [
+                        'evidence_uuid' => $evidence->uuid,
+                        'error_code' => $result['error_code'] ?? 'GROUPING_FAILED',
+                        'waiting_message' => null,
+                    ]),
                 ]);
                 $this->updateUserImageStatus($botMessage->conversation_id, $evidence->uuid, 'FAILED');
                 // Jika fail karena INVALID_AMOUNT (token abis, LLM gagal ekstrak nominal 0), coba fallback ke parsed amount evidence
@@ -199,6 +279,9 @@ class EvidenceLlmGroupingJob implements ShouldQueue
                 'status' => 'failed',
                 'content' => [['type' => 'error', 'message' => 'Gagal memproses struk via LLM: '.$e->getMessage(), 'severity' => 'error']],
                 'error_message' => $e->getMessage(),
+                'metadata' => array_merge($botMessage->metadata ?? [], [
+                    'waiting_message' => null,
+                ]),
             ]);
             $this->updateUserImageStatus($botMessage->conversation_id, $evidence->uuid, 'FAILED');
             try {
@@ -209,6 +292,71 @@ class EvidenceLlmGroupingJob implements ShouldQueue
             } catch (\Throwable $pe) {
                 Log::warning('Evidence push failed (exception): '.$pe->getMessage());
             }
+        }
+    }
+
+    /**
+     * Tandai pesan bot sedang diproses + pasang pesan tunggu.
+     * Tidak menimpa pesan retry yang sudah ada (mis. "AI sedang sibuk...").
+     */
+    private function markProcessing(ChatMessage $botMessage): void
+    {
+        $metadata = $botMessage->metadata ?? [];
+
+        if (empty($metadata['waiting_message'])) {
+            $botMessage->update([
+                'status' => 'processing',
+                'metadata' => array_merge($metadata, [
+                    'waiting_message' => self::WAITING_MESSAGE,
+                ]),
+            ]);
+
+            return;
+        }
+
+        if ($botMessage->status !== 'processing') {
+            $botMessage->update(['status' => 'processing']);
+        }
+    }
+
+    /**
+     * Dipanggil saat job timeout / worker mati. Tanpa ini, bot message bisa
+     * tertahan di status processing sampai WebChatController menandainya stuck.
+     */
+    public function failed(?\Throwable $exception): void
+    {
+        $botMessage = ChatMessage::find($this->botMessageId);
+
+        if (! $botMessage || ! in_array($botMessage->status, ['pending', 'processing'], true)) {
+            return;
+        }
+
+        $message = 'Gagal memproses struk (timeout). Silakan coba lagi.';
+        $botMessage->update([
+            'status' => 'failed',
+            'content' => [['type' => 'error', 'message' => $message, 'severity' => 'error']],
+            'error_message' => $exception?->getMessage() ?: 'Evidence grouping timeout',
+            'metadata' => array_merge($botMessage->metadata ?? [], [
+                'waiting_message' => null,
+            ]),
+        ]);
+
+        $evidence = Evidence::find($this->evidenceId);
+        if (! $evidence) {
+            return;
+        }
+
+        $this->updateUserImageStatus($botMessage->conversation_id, $evidence->uuid, 'FAILED');
+
+        $user = User::find($this->userId);
+        if (! $user) {
+            return;
+        }
+
+        try {
+            PushGate::dispatch($user, PushPayloadBuilder::evidenceFailed($user, $evidence, $message));
+        } catch (\Throwable $e) {
+            Log::warning('Evidence push failed (job failed hook): '.$e->getMessage());
         }
     }
 

@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Tests\Unit;
 
 use App\DTO\AIParseResult;
+use App\DTO\AIParseResultMulti;
 use App\Enums\AiProvider;
 use App\Exceptions\AiProviderException;
 use App\Exceptions\AiRateLimitException;
+use App\Exceptions\AiTimeoutException;
 use App\Models\AiModelCatalog;
 use App\Models\AiProviderAccount;
 use App\Models\AiRoutingPreference;
@@ -418,5 +420,100 @@ class AiProviderPoolTest extends TestCase
         $this->assertArrayNotHasKey('api_key', $safe);
         $this->assertStringNotContainsString('super-secret', json_encode($safe));
         $this->assertSame('7890', $safe['key_suffix']);
+    }
+
+    /** 21. Kandidat automatic disebar lintas akun (round-robin). */
+    public function test_automatic_candidates_interleaved_across_accounts(): void
+    {
+        $a1 = $this->makeAccount(AiProvider::Gemini, 'A1', 'key-aaaaaaaaaaaaaaaa', 1);
+        $a2 = $this->makeAccount(AiProvider::Gemini, 'A2', 'key-bbbbbbbbbbbbbbbb', 2);
+        foreach (['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-3.0-flash'] as $model) {
+            $this->addModel($a1, $model);
+            $this->addModel($a2, $model.'-b');
+        }
+        $this->routing();
+        $resolved = app(ModelResolver::class)->resolve($this->user);
+        $accountIds = array_map(fn ($c) => $c['account']->id, array_slice($resolved['candidates'], 0, 4));
+        $this->assertSame([$a1->id, $a2->id, $a1->id, $a2->id], $accountIds);
+    }
+
+    /** 22. Retry same-pair tidak menghabiskan jatah max_attempts. */
+    public function test_retry_does_not_consume_candidate_budget(): void
+    {
+        $a1 = $this->makeAccount(AiProvider::Gemini, 'A1', 'key-aaaaaaaaaaaaaaaa', 1);
+        $this->addModel($a1, 'gemini-2.0-flash');
+        $this->routing(['max_attempts' => 1]);
+        $calls = 0;
+        $out = app(AiRoutingExecutor::class)->executeParse($this->user, function ($account, $model, $provider) use (&$calls) {
+            $calls++;
+            if ($calls === 1) {
+                throw new AiProviderException('gemini', 'HTTP 503: provider overloaded');
+            }
+
+            return $this->okResult($provider->value, $model);
+        }, null, fn () => null);
+
+        $this->assertSame('success', $out['routing']['final_status']);
+        $this->assertSame(2, $calls, 'Satu kandidat + satu retry, bukan dianggap dua kandidat');
+        $this->assertSame(2, $out['routing']['attempt_count']);
+    }
+
+    /** 23. Akun yang masuk cooldown di-skip; akun lain tidak ikut menunggu. */
+    public function test_account_cooldown_skips_remaining_models(): void
+    {
+        $a1 = $this->makeAccount(AiProvider::Gemini, 'A1', 'key-aaaaaaaaaaaaaaaa', 1);
+        $a2 = $this->makeAccount(AiProvider::Gemini, 'A2', 'key-bbbbbbbbbbbbbbbb', 2);
+        $this->addModel($a1, 'gemini-2.0-flash');
+        $this->addModel($a1, 'gemini-2.5-flash');
+        $this->addModel($a1, 'gemini-3.0-flash');
+        $this->addModel($a2, 'gemini-2.5-flash');
+        $this->routing(['max_attempts' => 4]);
+        $calls = 0;
+        $out = app(AiRoutingExecutor::class)->executeParse($this->user, function ($account, $model, $provider) use (&$calls, $a1) {
+            $calls++;
+            if ($account->id === $a1->id) {
+                throw new AiProviderException('gemini', 'HTTP 503: provider overloaded');
+            }
+
+            return $this->okResult($provider->value, $model);
+        }, null, fn () => null);
+
+        $this->assertSame($a2->id, $out['routing']['selected_account_id']);
+        $this->assertSame(3, $calls, 'Dua call untuk akun down + satu sukses di akun kedua');
+        $this->assertNotNull($a1->fresh()->cooldown_until);
+    }
+
+    /** 24. Executor multi memakai distribusi + skip akun yang sama. */
+    public function test_multi_executor_spreads_and_skips_failed_account(): void
+    {
+        $a1 = $this->makeAccount(AiProvider::Gemini, 'A1', 'key-aaaaaaaaaaaaaaaa', 1);
+        $a2 = $this->makeAccount(AiProvider::Gemini, 'A2', 'key-bbbbbbbbbbbbbbbb', 2);
+        $this->addModel($a1, 'gemini-2.0-flash');
+        $this->addModel($a1, 'gemini-2.5-flash');
+        $this->addModel($a2, 'gemini-2.5-flash');
+        $this->routing(['max_attempts' => 3]);
+        $calls = 0;
+        $out = app(AiRoutingExecutor::class)->executeMulti($this->user, function ($account, $model, $provider) use (&$calls, $a1) {
+            $calls++;
+            if ($account->id === $a1->id) {
+                throw new AiProviderException('gemini', 'HTTP 503: provider overloaded');
+            }
+
+            return new AIParseResultMulti(true, [], 0.9, null, false, null, [], $provider->value, $model);
+        }, null, fn () => null);
+
+        $this->assertSame($a2->id, $out['routing']['selected_account_id']);
+        $this->assertSame(3, $calls);
+    }
+
+    /** 25. 503 asli diklasifikasikan SERVER, bukan TIMEOUT koneksi. */
+    public function test_http_503_classified_as_server(): void
+    {
+        $server = AiErrorClassifier::classify(new AiTimeoutException('gemini', 503));
+        $this->assertSame(AiErrorClassifier::CAT_SERVER, $server['category']);
+        $this->assertSame(AiErrorClassifier::ACTION_RETRY_SAME, $server['action']);
+
+        $timeout = AiErrorClassifier::classify(new AiTimeoutException('gemini'));
+        $this->assertSame(AiErrorClassifier::CAT_TIMEOUT, $timeout['category']);
     }
 }

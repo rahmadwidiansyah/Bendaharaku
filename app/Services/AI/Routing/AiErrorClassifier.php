@@ -129,6 +129,10 @@ class AiErrorClassifier
 
     private static function extractStatus(\Throwable $e): ?int
     {
+        // Status HTTP asli dari adapter (mis. 503) agar tidak salah diklasifikasikan sebagai timeout koneksi.
+        if ($e instanceof AiTimeoutException && $e->httpStatus() !== null) {
+            return $e->httpStatus();
+        }
         // AiProviderException membawa "HTTP {code}:" di message; coba parse.
         if (preg_match('/HTTP\s+(\d{3})/i', $e->getMessage(), $m)) {
             return (int) $m[1];

@@ -7,18 +7,22 @@
 import M3BotAvatar from './M3BotAvatar.vue'
 
 defineProps({
-    botAvatar: { type: String, default: null },
-    botName:   { type: String, default: 'Ken-Chan' },
+    botAvatar:   { type: String, default: null },
+    botName:     { type: String, default: 'Ken-Chan' },
+    waitingText: { type: String, default: null },
 })
 </script>
 
 <template>
     <div class="m3-typing">
         <M3BotAvatar :src="botAvatar" :name="botName" size="sm" variant="bot" shape="circle" class="m3-typing__avatar" />
-        <div class="m3-typing__bubble" role="status" :aria-label="$t('chat.typing')">
-            <span class="m3-typing__dot" />
-            <span class="m3-typing__dot m3-typing__dot--2" />
-            <span class="m3-typing__dot m3-typing__dot--3" />
+        <div class="m3-typing__bubble" role="status" :aria-label="waitingText || $t('chat.typing')">
+            <span v-if="waitingText" class="m3-typing__text">{{ waitingText }}</span>
+            <span class="m3-typing__dots">
+                <span class="m3-typing__dot" />
+                <span class="m3-typing__dot m3-typing__dot--2" />
+                <span class="m3-typing__dot m3-typing__dot--3" />
+            </span>
         </div>
     </div>
 </template>
@@ -43,13 +47,28 @@ defineProps({
 
 .m3-typing__bubble {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-start;
     gap: var(--m3-space-1);
     padding: var(--m3-space-2-5) var(--m3-space-3);
     background: var(--m3-color-surface-container-high);
     border-radius: var(--m3-radius-lg-inc);
     border-top-left-radius: var(--m3-radius-xs);
     box-shadow: var(--m3-elevation-1);
+}
+
+.m3-typing__text {
+    max-width: 18rem;
+    color: var(--m3-color-on-surface-variant);
+    font-size: var(--m3-type-body-small-size);
+    line-height: var(--m3-type-body-small-line-height);
+    letter-spacing: var(--m3-type-body-small-tracking);
+}
+
+.m3-typing__dots {
+    display: flex;
+    align-items: center;
+    gap: var(--m3-space-1);
 }
 
 .m3-typing__dot {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
+use App\DTO\ChatProcessOptions;
 use App\DTO\MultiTransactionResult;
 use App\Enums\EvidenceStatus;
 use App\Models\Evidence;
@@ -61,14 +62,15 @@ class CaptionWalletFilterTest extends TestCase
         ]);
     }
 
-    private function makeServiceWithCapture(?string &$capturedText): LlmEvidenceGroupingService
+    private function makeServiceWithCapture(?string &$capturedText, ?ChatProcessOptions &$capturedOptions = null): LlmEvidenceGroupingService
     {
         $captured = null;
         $mockOrchestrator = Mockery::mock(ChatTransactionOrchestrator::class);
         $mockOrchestrator->shouldReceive('process')
-            ->andReturnUsing(function (User $user, string $text, string $source) use (&$captured, &$capturedText) {
+            ->andReturnUsing(function (User $user, string $text, string $source, ?ChatProcessOptions $options = null) use (&$captured, &$capturedText, &$capturedOptions) {
                 $captured = $text;
                 $capturedText = $text;
+                $capturedOptions = $options;
 
                 // Return dummy success to avoid hitting real LLM
                 return [
@@ -110,7 +112,7 @@ class CaptionWalletFilterTest extends TestCase
         $this->assertNotNull($capturedText, 'Captured text should not be null');
         $this->assertStringContainsString('[User filter:', $capturedText, 'Should contain filter hint');
         $this->assertStringContainsString('punyaku magelangan rendang', $capturedText);
-        $this->assertStringContainsString('[Wallet hint: DANA]', $capturedText, 'Should contain wallet hint DANA even when punyaku filter present');
+        $this->assertStringContainsString('[Source wallet hint: DANA]', $capturedText, 'Should contain wallet hint DANA even when punyaku filter present');
     }
 
     /** @test */
@@ -126,7 +128,8 @@ class CaptionWalletFilterTest extends TestCase
 
         $this->assertStringContainsString('[User filter:', $capturedText);
         // No wallet hint because caption has no dana keyword
-        $this->assertStringNotContainsString('[Wallet hint: DANA]', $capturedText);
+        $this->assertStringNotContainsString('[Source wallet hint', $capturedText);
+        $this->assertStringNotContainsString('[Destination wallet hint', $capturedText);
     }
 
     /** @test */
@@ -140,7 +143,7 @@ class CaptionWalletFilterTest extends TestCase
         $service = $this->makeServiceWithCapture($capturedText);
         $service->group($evidence, $this->user, $caption);
 
-        $this->assertStringContainsString('[Wallet hint: DANA]', $capturedText);
+        $this->assertStringContainsString('[Source wallet hint: DANA]', $capturedText);
         $this->assertStringNotContainsString('[User filter:', $capturedText);
     }
 
@@ -157,7 +160,7 @@ class CaptionWalletFilterTest extends TestCase
         $service = $this->makeServiceWithCapture($capturedText);
         $service->group($evidence, $this->user, $caption);
 
-        $this->assertStringContainsString('[Wallet hint: OVO]', $capturedText, 'Should be flexible for any wallet, not hardcoded DANA');
+        $this->assertStringContainsString('[Source wallet hint: OVO]', $capturedText, 'Should be flexible for any wallet, not hardcoded DANA');
         $this->assertStringContainsString('[User filter:', $capturedText);
     }
 
@@ -174,7 +177,7 @@ class CaptionWalletFilterTest extends TestCase
         $service->group($evidence, $this->user, $caption);
 
         // Because caption wallet is null, OCR wallet DANA should be detected (even with filter)
-        $this->assertStringContainsString('[Wallet hint (from OCR): DANA]', $capturedText, 'Should fallback to OCR wallet detection');
+        $this->assertStringContainsString('[Source wallet hint (from OCR): DANA]', $capturedText, 'Should fallback to OCR wallet detection');
     }
 
     /** @test */
@@ -192,7 +195,7 @@ class CaptionWalletFilterTest extends TestCase
         $this->assertStringContainsString('[User caption (full):', $capturedText, 'Full caption harus selalu dikirim ke LLM');
         $this->assertStringContainsString('Punya ku yang magelangan rendang', $capturedText);
         $this->assertStringContainsString('[User filter:', $capturedText, 'Punya ku spasi harus tetap trigger filter (normalisasi)');
-        $this->assertStringContainsString('[Wallet hint: DANA]', $capturedText, 'Wallet DANA tetap terdeteksi walau filter spasi');
+        $this->assertStringContainsString('[Source wallet hint: DANA]', $capturedText, 'Wallet DANA tetap terdeteksi walau filter spasi');
     }
 
     /** @test */
@@ -225,7 +228,53 @@ class CaptionWalletFilterTest extends TestCase
 
         $this->assertStringContainsString('[User caption (full):', $capturedText);
         $this->assertStringContainsString('[User filter:', $capturedText);
-        $this->assertStringContainsString('[Wallet hint (from OCR): DANA]', $capturedText, 'Harus fallback ke OCR wallet dengan label baru');
+        $this->assertStringContainsString('[Source wallet hint (from OCR): DANA]', $capturedText, 'Harus fallback ke OCR wallet dengan label baru');
+    }
+
+    /** @test */
+    public function test_evidence_grouping_disables_single_fallback(): void
+    {
+        $ocr = "Burjo Mabar\nTotal Rp 49.000";
+        $evidence = $this->makeEvidence($ocr);
+
+        $capturedText = null;
+        $capturedOptions = null;
+        $service = $this->makeServiceWithCapture($capturedText, $capturedOptions);
+        $service->group($evidence, $this->user, 'bayar pakai dana');
+
+        $this->assertInstanceOf(ChatProcessOptions::class, $capturedOptions);
+        $this->assertFalse($capturedOptions->allowSingleFallback, 'Evidence tidak boleh fallback multi → single secara senyap');
+    }
+
+    /** @test */
+    public function test_transfer_caption_destination_keeps_ocr_as_source(): void
+    {
+        $this->user->wallets()->create(['name' => 'Seabank', 'keyword' => 'seabank', 'group_type' => 'Liquid', 'balance' => 50000]);
+        $ocr = "Seabank\nTransfer Berhasil\nTotal Rp 15.000";
+        $evidence = $this->makeEvidence($ocr);
+
+        $capturedText = null;
+        $service = $this->makeServiceWithCapture($capturedText);
+        $service->group($evidence, $this->user, 'makan ku 16 yang 15 pindah ke dana');
+
+        $this->assertStringContainsString('[Destination wallet hint: DANA]', $capturedText);
+        $this->assertStringContainsString('[Source wallet hint (from OCR): Seabank]', $capturedText);
+        $this->assertStringNotContainsString('[Source wallet hint: DANA]', $capturedText, 'Caption tujuan tidak boleh menimpa sumber');
+    }
+
+    /** @test */
+    public function test_caption_mentions_source_and_destination(): void
+    {
+        $this->user->wallets()->create(['name' => 'Seabank', 'keyword' => 'seabank', 'group_type' => 'Liquid', 'balance' => 50000]);
+        $ocr = "Transfer Berhasil\nTotal Rp 15.000";
+        $evidence = $this->makeEvidence($ocr);
+
+        $capturedText = null;
+        $service = $this->makeServiceWithCapture($capturedText);
+        $service->group($evidence, $this->user, 'pindah 15rb dari seabank ke dana');
+
+        $this->assertStringContainsString('[Source wallet hint: Seabank]', $capturedText);
+        $this->assertStringContainsString('[Destination wallet hint: DANA]', $capturedText);
     }
 
     protected function tearDown(): void

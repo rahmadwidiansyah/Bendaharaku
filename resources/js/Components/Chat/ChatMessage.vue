@@ -58,7 +58,13 @@ const hasUserImage = computed(() => userImageComponents.value.length > 0)
 
 <template>
     <!-- ── BOT MESSAGE PENDING (masih diproses di queue) ────────── -->
-    <TypingIndicator v-if="isPending" :bot-avatar="botAvatar" :bot-name="botName" class="px-3 py-0.5" />
+    <TypingIndicator
+        v-if="isPending"
+        :bot-avatar="botAvatar"
+        :bot-name="botName"
+        :waiting-text="message.metadata?.waiting_message"
+        class="px-3 py-0.5"
+    />
 
     <!-- ── BOT MESSAGE ─────────────────────────────────────────── -->
     <div v-else-if="isBot" class="flex items-end gap-1.5 px-3 py-0.5 animate-fade-in group">

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Chat;
 
 use App\Actions\ProcessTransactionAction;
+use App\DTO\ChatProcessOptions;
 use App\DTO\ConfidenceScoreContext;
 use App\DTO\ParsedTransaction;
 use App\DTO\ResolvedTransaction;
@@ -62,8 +63,9 @@ class ChatTransactionOrchestrator
      *
      * @return array{success: bool, message: string, transaction?: TransactionLog, transactions?: TransactionLog[]}
      */
-    public function process(User $user, string $text, string $source = 'TEL'): array
+    public function process(User $user, string $text, string $source = 'TEL', ?ChatProcessOptions $options = null): array
     {
+        $options ??= new ChatProcessOptions;
         try {
             // Kirim hanya wallet non-System ke AI agar AI tidak salah pilih/menyebutkan
             // wallet sistem (External, Merchant, Hutang, Piutang) sebagai target transaksi.
@@ -92,7 +94,7 @@ class ChatTransactionOrchestrator
 
             // ── ROUTING: single vs multi ──────────────────────────────
             if ($this->multiRouter->isMultiTransaction($text)) {
-                return $this->processMulti($user, $text, $wallets, $categories, $activeMemories, $source, $prompt);
+                return $this->processMulti($user, $text, $wallets, $categories, $activeMemories, $source, $prompt, $options);
             }
 
             return $this->processSingle($user, $text, $wallets, $categories, $activeMemories, $source, $prompt);
@@ -523,11 +525,26 @@ class ChatTransactionOrchestrator
         Collection $wallets, Collection $categories, array $activeMemories,
         string $source,
         string $prompt = '',
+        ?ChatProcessOptions $options = null,
     ): array {
-        $result = $this->multiProcessor->process($user, $text, $wallets->toArray(), $categories->toArray(), $activeMemories, $source, $prompt);
+        $options ??= new ChatProcessOptions;
+        $result = $this->multiProcessor->process($user, $text, $wallets->toArray(), $categories->toArray(), $activeMemories, $source, $prompt, $options);
 
         if (isset($result['__fallback_to_single']) && $result['__fallback_to_single']) {
-            return $this->processSingle($user, $text, $wallets, $categories, $activeMemories, $source);
+            if (! $options->allowSingleFallback) {
+                return [
+                    'success' => false,
+                    'error_code' => 'AI_POOL_EXHAUSTED',
+                    'retryable' => true,
+                    'message' => '⚠️ *AI Multi-Transaksi Sedang Sibuk*\n\nDraft tidak dibuat otomatis agar tidak salah catat. Coba kirim ulang dalam 1–2 menit.',
+                ];
+            }
+
+            $single = $this->processSingle($user, $text, $wallets, $categories, $activeMemories, $source);
+            $single['multi_fallback'] = true;
+            $single['multi_fallback_reason'] = $result['fallback_reason'] ?? 'pool_exhausted';
+
+            return $single;
         }
 
         return $result;

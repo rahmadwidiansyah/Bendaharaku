@@ -51,6 +51,7 @@ const hasUserImage = computed(() => userImageComponents.value.length > 0)
         v-if="isPending"
         :bot-avatar="botAvatar"
         :bot-name="botName"
+        :waiting-text="message.metadata?.waiting_message"
         :class="{ 'm3-typing--group-start': showAvatar }"
     />
 

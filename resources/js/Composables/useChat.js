@@ -41,8 +41,12 @@ export function useChat(initialMessages = [], initialConversationId = null, init
     const pendingStartedAt = new Map()
     const { trackBotMessage, untrackBotMessage } = useChatPending()
 
-    /** Batas maksimal polling pesan bot — 90 detik cukup untuk normal AI response */
-    const POLL_MAX_MS = 90 * 1000
+    /**
+     * Batas maksimal polling pesan bot. Evidence grouping bisa menunggu OCR
+     * (maks 120s) + retry AI (45s) + AI, jadi beri ruang 8 menit.
+     * Backend tetap menandai stuck setelah 5 menit tanpa update.
+     */
+    const POLL_MAX_MS = 8 * 60 * 1000
 
     // ── Pending bot message (async queue) ─────────────────────────
 
@@ -89,6 +93,15 @@ export function useChat(initialMessages = [], initialConversationId = null, init
 
             try {
                 const { data } = await axios.get(route('chat.message.status', { id: botId }))
+
+                // Masih diproses: update bubble lokal agar pesan tunggu dari backend
+                // (mis. OCR lambat / retry AI) langsung terlihat tanpa menghentikan polling.
+                if (data.bot_message && (data.status === 'pending' || data.status === 'processing')) {
+                    const idx = messages.value.findIndex((m) => m.id === botId)
+                    if (idx !== -1) {
+                        messages.value[idx] = normalizeMessage(data.bot_message)
+                    }
+                }
 
                 if (data.status === 'completed' || data.status === 'failed') {
                     stopPollingBotMessage(botId)
