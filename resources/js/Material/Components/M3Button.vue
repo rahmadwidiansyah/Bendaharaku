@@ -16,7 +16,7 @@ const props = defineProps({
     variant: {
         type: String,
         default: 'filled',
-        validator: (v) => ['filled', 'tonal', 'outlined', 'text', 'elevated'].includes(v),
+        validator: (v) => ['filled', 'tonal', 'outlined', 'text', 'elevated', 'error'].includes(v),
     },
     size: {
         type: String,
@@ -199,6 +199,11 @@ const classes = computed(() => [
 
 .m3-btn--elevated:hover {
     box-shadow: var(--m3-elevation-2);
+}
+
+.m3-btn--error {
+    background: var(--m3-color-error);
+    color: var(--m3-color-on-error);
 }
 
 /* Slots */

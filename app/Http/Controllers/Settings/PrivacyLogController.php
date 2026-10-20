@@ -65,7 +65,7 @@ class PrivacyLogController extends Controller
             'category' => $allItems->where('type', 'category')->count(),
         ];
 
-        return Inertia::render('Settings/Privacy/Logs', [
+        $props = [
             'logs' => $paginated,
             'pagination' => [
                 'current_page' => $page,
@@ -78,7 +78,11 @@ class PrivacyLogController extends Controller
                 'filter' => $filter,
             ],
             'stats' => $stats,
-        ]);
+        ];
+
+        return $user->ui_theme === 'm3'
+            ? Inertia::render('Material/Settings/Privacy/Logs', $props)
+            : Inertia::render('Settings/Privacy/Logs', $props);
     }
 
     private function userLocale($user): string

@@ -91,10 +91,14 @@ class AiSettingsController extends Controller
                 'created_at' => $m->created_at?->toIso8601String(),
             ]);
 
-        return Inertia::render('Settings/AI/MemoryManage', [
+        $props = [
             'memories' => $memories,
             'filters' => ['search' => $search, 'filter' => $filter],
-        ]);
+        ];
+
+        return $user->ui_theme === 'm3'
+            ? Inertia::render('Material/Settings/AI/MemoryManage', $props)
+            : Inertia::render('Settings/AI/MemoryManage', $props);
     }
 
     public function memoryLogs(int $memoryId, Request $request): Response
@@ -157,7 +161,7 @@ class AiSettingsController extends Controller
                 'created_at_diff' => $log->created_at->diffForHumans(),
             ]);
 
-        return Inertia::render('Settings/AI/MemoryDetail', [
+        $props = [
             'memory' => [
                 'id' => $memory->id,
                 'keyword' => $memory->memory_keyword ?? $memory->keyword_pattern,
@@ -181,7 +185,11 @@ class AiSettingsController extends Controller
                 'algorithm_version' => 'v2-provenance',
             ],
             'logs' => $logs,
-        ]);
+        ];
+
+        return $user->ui_theme === 'm3'
+            ? Inertia::render('Material/Settings/AI/MemoryDetail', $props)
+            : Inertia::render('Settings/AI/MemoryDetail', $props);
     }
 
     public function destroy(int $memoryId, Request $request): RedirectResponse|JsonResponse

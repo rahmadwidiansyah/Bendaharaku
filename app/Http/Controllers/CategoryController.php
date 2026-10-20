@@ -27,7 +27,7 @@ class CategoryController extends Controller
 
         $totalCategories = Auth::user()->categories()->count();
 
-        return Inertia::render('Categories/Index', [
+        return $this->renderPage('Index', [
             'groupedCategories' => $groupedCategories,
             'totalCategories' => $totalCategories,
         ]);
@@ -37,7 +37,7 @@ class CategoryController extends Controller
     {
         $types = TransactionType::whereIn('name', ['Income', 'Expense'])->get();
 
-        return Inertia::render('Categories/Create', [
+        return $this->renderPage('Create', [
             'types' => $types,
             'defaultType' => $request->query('type', 'Expense'),
         ]);
@@ -81,7 +81,7 @@ class CategoryController extends Controller
 
         $types = TransactionType::whereIn('name', ['Income', 'Expense'])->get();
 
-        return Inertia::render('Categories/Edit', [
+        return $this->renderPage('Edit', [
             'category' => $category,
             'types' => $types,
             'isSystem' => $category->system_key !== null,
@@ -191,7 +191,7 @@ class CategoryController extends Controller
         $totalUsage = (float) $transactions->sum('amount');
         $isSystem = $category->system_key !== null;
 
-        return Inertia::render('Categories/Show', [
+        return $this->renderPage('Show', [
             'category' => $category->load('type'),
             'transactions' => $transactions,
             'totalUsage' => $totalUsage,
@@ -199,5 +199,14 @@ class CategoryController extends Controller
             'startDate' => $startDate,
             'endDate' => $endDate,
         ]);
+    }
+
+    private function renderPage(string $page, array $props): Response
+    {
+        $view = Auth::user()?->ui_theme === 'm3'
+            ? "Material/Categories/{$page}"
+            : "Categories/{$page}";
+
+        return Inertia::render($view, $props);
     }
 }

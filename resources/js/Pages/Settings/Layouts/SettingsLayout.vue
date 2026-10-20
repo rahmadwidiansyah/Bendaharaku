@@ -22,6 +22,11 @@ useScrollRestore();
 <template>
   <div class="w-full max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6">
 
+    <!-- Custom header (mis. MemoryManage/MemoryDetail yang membawa tombol kembali) -->
+    <div v-if="$slots.header" class="mb-4 sm:mb-6">
+      <slot name="header" />
+    </div>
+
     <!-- Page title -->
     <div v-if="title" class="mb-4 sm:mb-6">
       <h1 class="text-lg sm:text-2xl font-black text-[var(--color-text-primary)] tracking-tight leading-none">{{ title }}</h1>

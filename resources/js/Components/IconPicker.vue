@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n';
 import AppIcon from '@/Components/AppIcon.vue';
 import BaseModal from '@/Components/BaseModal.vue';
 import ImageCropModal from '@/Components/ImageCropModal.vue';
+import { ICON_CATALOG, ICON_TABS } from '@/utils/iconCatalog.js';
 
 const { t } = useI18n();
 
@@ -26,24 +27,15 @@ const searchTerm = ref('');
 const previewUrl = ref(null);
 const hasCustomImage = ref(false);
 
-const allIcons = {
-    Finance: ['wallet', 'wallet-2', 'credit-card', 'coins', 'banknote', 'piggy-bank', 'land-plot', 'trending-up', 'trending-down', 'dollar-sign', 'circle-dollar-sign', 'hand-coins', 'receipt', 'gift', 'gem', 'safe'],
-    Lifestyle: ['utensils', 'coffee', 'cup-soda', 'pizza', 'ice-cream', 'cake', 'apple', 'beef', 'shopping-bag', 'shopping-cart', 'shirt', 'footprints', 'gamepad-2', 'music', 'film', 'popcorn', 'beer', 'wine', 'candy', 'cookie'],
-    Places: ['home', 'building-2', 'building', 'hotel', 'plane', 'car', 'bike', 'bus', 'train', 'ship', 'fuel', 'map-pin', 'store', 'globe', 'tree-pine', 'flower-2'],
-    Tech: ['smartphone', 'laptop', 'monitor', 'wifi', 'zap', 'plug', 'briefcase', 'graduation-cap', 'book-open', 'pencil', 'calculator', 'calendar'],
-    Animals: ['dog', 'cat', 'paw-print', 'fish', 'bird', 'snail', 'turtle', 'rabbit', 'rat', 'bee', 'butterfly', 'dragonfly', 'feather'],
-    Misc: ['heart-pulse', 'pill', 'stethoscope', 'dumbbell', 'baby', 'sprout', 'leaf', 'sun', 'moon', 'clouds', 'umbrella', 'key', 'lock', 'wrench', 'hammer', 'trash-2', 'package', 'truck', 'handshake', 'file-text', 'folder', 'inbox', 'send', 'download', 'upload', 'plus', 'star', 'hearts', 'crown', 'medal', 'trophy', 'wand'],
-};
-
 const filteredIcons = computed(() => {
     if (searchTerm.value.trim()) {
         const lowerTerm = searchTerm.value.toLowerCase();
-        return Object.values(allIcons).flat().filter(icon => icon.includes(lowerTerm));
+        return Object.values(ICON_CATALOG).flat().filter(icon => icon.includes(lowerTerm));
     }
-    return allIcons[activeTab.value];
+    return ICON_CATALOG[activeTab.value];
 });
 
-const tabNames = computed(() => Object.keys(allIcons));
+const tabNames = computed(() => ICON_TABS);
 
 function openModal() {
     isOpen.value = true;

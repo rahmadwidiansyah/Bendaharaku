@@ -15,6 +15,7 @@ use App\Http\Controllers\LoanController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PushNotificationController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\Settings\AiProviderAccountController;
 use App\Http\Controllers\Settings\AiProviderStatusController;
 use App\Http\Controllers\Settings\AiSettingsController;
 use App\Http\Controllers\Settings\PrivacyLogController;
@@ -84,7 +85,9 @@ Route::middleware(['auth'])->group(function () {
 
     // Settings
     Route::get('/settings', function (Request $request) {
-        return Inertia::render('Settings/Index');
+        return $request->user()->ui_theme === 'm3'
+            ? Inertia::render('Material/Settings/Index')
+            : Inertia::render('Settings/Index');
     })->name('settings.index');
 
     // Simpan preferensi locale user ke DB agar chat (Telegram & Web) bisa baca
@@ -115,10 +118,14 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/profile', function (Request $request) {
             $user = $request->user();
 
-            return Inertia::render('Settings/Account/Profile', [
+            $props = [
                 'user' => $user,
                 'status' => session('status'),
-            ]);
+            ];
+
+            return $user->ui_theme === 'm3'
+                ? Inertia::render('Material/Settings/Account/Profile', $props)
+                : Inertia::render('Settings/Account/Profile', $props);
         })->name('profile');
 
         // Full profile update (name, email, whatsapp, telegram, avatar) via ProfileController
@@ -158,20 +165,28 @@ Route::middleware(['auth'])->group(function () {
             $currentSession = collect($sessions)->firstWhere('is_current', true) ?? $sessions[0];
             $otherSessions = collect($sessions)->where('is_current', false)->values()->all();
 
-            return Inertia::render('Settings/Account/Security', [
+            $props = [
                 'currentSession' => $currentSession,
                 'otherSessions' => $otherSessions,
-            ]);
+            ];
+
+            return $user->ui_theme === 'm3'
+                ? Inertia::render('Material/Settings/Account/Security', $props)
+                : Inertia::render('Settings/Account/Security', $props);
         })->name('security');
 
         Route::get('/preferences', function (Request $request) {
             $user = $request->user();
 
-            return Inertia::render('Settings/Account/Preferences', [
+            $props = [
                 'userTimezone' => $user->timezone ?? 'Asia/Jakarta',
                 'userDateFormat' => $user->date_format ?? 'DD/MM/YYYY',
                 'userLanguage' => $user->locale ?? 'id',
-            ]);
+            ];
+
+            return $user->ui_theme === 'm3'
+                ? Inertia::render('Material/Settings/Account/Preferences', $props)
+                : Inertia::render('Settings/Account/Preferences', $props);
         })->name('preferences');
         Route::patch('/preferences', function (Request $request) {
             $validated = $request->validate([
@@ -205,13 +220,17 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/appearance', function (Request $request) {
             $user = $request->user();
 
-            return Inertia::render('Settings/Application/Appearance', [
+            $props = [
                 'userAccentColor' => $user->accent_color ?? 'teal',
                 'userTheme' => $user->theme ?? 'dark',
                 'categoryIconColored' => $user->category_icon_colored ?? true,
                 'userUiTheme' => $user->ui_theme ?? 'default',
                 'userM3ColorScheme' => M3ColorScheme::normalize($user->ui_m3_color_scheme),
-            ]);
+            ];
+
+            return $user->ui_theme === 'm3'
+                ? Inertia::render('Material/Settings/Application/Appearance', $props)
+                : Inertia::render('Settings/Application/Appearance', $props);
         })->name('appearance');
         Route::patch('/appearance', function (Request $request) {
             $validated = $request->validate([
@@ -249,11 +268,15 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/notifications', function (Request $request) {
             $user = $request->user();
 
-            return Inertia::render('Settings/Application/Notifications', [
+            $props = [
                 'emailNotifications' => (bool) $user->email_notifications,
                 'pushNotifications' => (bool) $user->push_notifications,
                 'vapidPublicKey' => config('services.webpush.vapid_public_key'),
-            ]);
+            ];
+
+            return $user->ui_theme === 'm3'
+                ? Inertia::render('Material/Settings/Application/Notifications', $props)
+                : Inertia::render('Settings/Application/Notifications', $props);
         })->name('notifications');
         Route::patch('/notifications', function (Request $request) {
             $validated = $request->validate([
@@ -282,8 +305,10 @@ Route::middleware(['auth'])->group(function () {
 
     // Finance
     Route::prefix('settings/finance')->name('settings.finance.')->group(function () {
-        Route::get('/logic', function () {
-            return Inertia::render('Settings/Finance/Defaults');
+        Route::get('/logic', function (Request $request) {
+            return $request->user()->ui_theme === 'm3'
+                ? Inertia::render('Material/Settings/Finance/Defaults')
+                : Inertia::render('Settings/Finance/Defaults');
         })->name('logic');
         Route::patch('/logic', function (Request $request) {
             $validated = $request->validate([
@@ -306,12 +331,16 @@ Route::middleware(['auth'])->group(function () {
             return response()->json(['success' => true, 'message' => 'Logika transaksi diperbarui.']);
         })->name('logic.update');
 
-        Route::get('/budget', fn () => Inertia::render('Settings/Finance/Budget'))->name('budget');
+        Route::get('/budget', fn (Request $request) => $request->user()->ui_theme === 'm3'
+            ? Inertia::render('Material/Settings/Finance/Budget')
+            : Inertia::render('Settings/Finance/Budget'))->name('budget');
     });
 
     // Privacy & Data
     Route::prefix('settings/privacy')->name('settings.privacy.')->group(function () {
-        Route::get('/settings', fn () => Inertia::render('Settings/Privacy/Settings'))->name('settings');
+        Route::get('/settings', fn (Request $request) => $request->user()->ui_theme === 'm3'
+            ? Inertia::render('Material/Settings/Privacy/Settings')
+            : Inertia::render('Settings/Privacy/Settings'))->name('settings');
         Route::patch('/settings', function (Request $request) {
             $validated = $request->validate([
                 'data_collection' => ['required', 'boolean'],
@@ -333,8 +362,12 @@ Route::middleware(['auth'])->group(function () {
             return response()->json(['success' => true, 'message' => 'Privasi berhasil diperbarui.']);
         })->name('settings.update');
 
-        Route::get('/data', fn () => Inertia::render('Settings/Privacy/Data'))->name('data');
-        Route::get('/danger', fn () => Inertia::render('Settings/Privacy/Danger'))->name('danger');
+        Route::get('/data', fn (Request $request) => $request->user()->ui_theme === 'm3'
+            ? Inertia::render('Material/Settings/Privacy/Data')
+            : Inertia::render('Settings/Privacy/Data'))->name('data');
+        Route::get('/danger', fn (Request $request) => $request->user()->ui_theme === 'm3'
+            ? Inertia::render('Material/Settings/Privacy/Danger')
+            : Inertia::render('Settings/Privacy/Danger'))->name('danger');
         Route::get('/logs', [PrivacyLogController::class, 'index'])->name('logs');
     });
 
@@ -399,15 +432,17 @@ Route::middleware(['auth'])->group(function () {
 
     // System
     Route::prefix('settings/system')->name('settings.system.')->group(function () {
-        Route::get('/about', function () {
+        Route::get('/about', function (Request $request) {
             $composerJson = json_decode(file_get_contents(base_path('composer.json')), true);
             $appVersion = $composerJson['version']
                 ?? config('app.version')
                 ?? '1.0.0';
 
-            return Inertia::render('Settings/System/About', [
-                'appVersion' => $appVersion,
-            ]);
+            $props = ['appVersion' => $appVersion];
+
+            return $request->user()->ui_theme === 'm3'
+                ? Inertia::render('Material/Settings/System/About', $props)
+                : Inertia::render('Settings/System/About', $props);
         })->name('about');
     });
 
@@ -435,20 +470,24 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/memory/manage', [AiSettingsController::class, 'memories'])->name('memory.manage');
         Route::get('/memory/{id}', [AiSettingsController::class, 'memoryLogs'])->name('memory.detail');
         Route::delete('/memory/{id}', [AiSettingsController::class, 'destroy'])->name('memory.destroy');
-        Route::get('/integrations', fn () => Inertia::render('Settings/AI/Integration'))->name('integrations');
+        Route::get('/integrations', fn (Request $request) => $request->user()->ui_theme === 'm3'
+            ? Inertia::render('Material/Settings/AI/Integration')
+            : Inertia::render('Settings/AI/Integration'))->name('integrations');
 
         Route::get('/', fn () => redirect()->route('settings.ai.models'))->name('index');
         // ── Provider pool: multi-account + discovery + routing ──
-        Route::get('/accounts', [\App\Http\Controllers\Settings\AiProviderAccountController::class, 'index'])->name('accounts.index');
-        Route::post('/accounts', [\App\Http\Controllers\Settings\AiProviderAccountController::class, 'store'])->name('accounts.store');
-        Route::patch('/accounts/{id}', [\App\Http\Controllers\Settings\AiProviderAccountController::class, 'update'])->name('accounts.update');
-        Route::delete('/accounts/{id}', [\App\Http\Controllers\Settings\AiProviderAccountController::class, 'destroy'])->name('accounts.destroy');
-        Route::post('/accounts/{id}/test', [\App\Http\Controllers\Settings\AiProviderAccountController::class, 'test'])->name('accounts.test');
-        Route::post('/accounts/{id}/refresh', [\App\Http\Controllers\Settings\AiProviderAccountController::class, 'refresh'])->name('accounts.refresh');
-        Route::get('/accounts/{id}/models', [\App\Http\Controllers\Settings\AiProviderAccountController::class, 'models'])->name('accounts.models');
-        Route::patch('/accounts/{id}/models/{model}', [\App\Http\Controllers\Settings\AiProviderAccountController::class, 'toggleModel'])->where('model', '[A-Za-z0-9._:-]+')->name('accounts.models.toggle');
-        Route::put('/routing', [\App\Http\Controllers\Settings\AiProviderAccountController::class, 'storeRouting'])->name('routing.store');
-        Route::get('/integration', fn () => Inertia::render('Settings/AI/Integration'))->name('integration');
+        Route::get('/accounts', [AiProviderAccountController::class, 'index'])->name('accounts.index');
+        Route::post('/accounts', [AiProviderAccountController::class, 'store'])->name('accounts.store');
+        Route::patch('/accounts/{id}', [AiProviderAccountController::class, 'update'])->name('accounts.update');
+        Route::delete('/accounts/{id}', [AiProviderAccountController::class, 'destroy'])->name('accounts.destroy');
+        Route::post('/accounts/{id}/test', [AiProviderAccountController::class, 'test'])->name('accounts.test');
+        Route::post('/accounts/{id}/refresh', [AiProviderAccountController::class, 'refresh'])->name('accounts.refresh');
+        Route::get('/accounts/{id}/models', [AiProviderAccountController::class, 'models'])->name('accounts.models');
+        Route::patch('/accounts/{id}/models/{model}', [AiProviderAccountController::class, 'toggleModel'])->where('model', '[A-Za-z0-9._:-]+')->name('accounts.models.toggle');
+        Route::put('/routing', [AiProviderAccountController::class, 'storeRouting'])->name('routing.store');
+        Route::get('/integration', fn (Request $request) => $request->user()->ui_theme === 'm3'
+            ? Inertia::render('Material/Settings/AI/Integration')
+            : Inertia::render('Settings/AI/Integration'))->name('integration');
 
         // API untuk Dashboard (not in settings, but for reference)
         Route::get('/api/dashboard', [AiAnalyticsController::class, 'dashboard'])->name('api.dashboard');
