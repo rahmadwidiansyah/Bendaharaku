@@ -39,6 +39,7 @@ class GeminiAdapter extends BaseAdapter
 
         $start = microtime(true);
         $status = null;
+        $model = preg_match('#/models/([^:]+):generateContent#', $url, $matches) ? $matches[1] : null;
         // SPEC §19: Redact API key from logs
         $redactedUrl = $url.'?key=[REDACTED]';
 
@@ -76,7 +77,7 @@ class GeminiAdapter extends BaseAdapter
         } finally {
             Log::info('Gemini Request Finished', [
                 'provider' => 'gemini',
-                'model' => null,
+                'model' => $model,
                 'status' => $status,
                 'success' => $status !== null && $status >= 200 && $status < 300,
                 'timeout' => $timeout,

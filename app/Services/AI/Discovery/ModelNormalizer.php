@@ -48,14 +48,23 @@ class ModelNormalizer
         $category = self::classifyCategory($modelId, $methods);
         $variant = self::variant($modelId);
         $generation = self::parseGeneration($modelId);
+        $interactionsOnly = self::requiresInteractionsApi($modelId);
 
         $freeTier = self::freeTierStatus($variant, $channel);
-        $eligible = $supportsGc && in_array($category, self::ELIGIBLE, true) && $modelId !== '';
+        $eligible = $supportsGc
+            && ! $interactionsOnly
+            && in_array($category, self::ELIGIBLE, true)
+            && $modelId !== '';
+
+        $description = mb_substr((string) ($raw['description'] ?? ''), 0, 500);
+        if ($interactionsOnly) {
+            $description = trim($description.' [requires Interactions API]');
+        }
 
         return [
             'id' => $modelId,
             'display_name' => (string) ($raw['displayName'] ?? $modelId),
-            'supports_generate' => $supportsGc,
+            'supports_generate' => $supportsGc && ! $interactionsOnly,
             'family' => str_starts_with(strtolower($modelId), 'gemini') ? 'gemini' : 'other',
             'generation' => $generation,
             'variant' => $variant,
@@ -63,15 +72,24 @@ class ModelNormalizer
             'is_preview' => $isPreview,
             'is_experimental' => $isExperimental,
             'is_latest_alias' => $isLatest,
-            'category' => $category,
+            'category' => $interactionsOnly ? self::CAT_OTHER : $category,
             'free_tier' => $freeTier,
             'free_tier_source' => 'local_policy',
             'eligible' => $eligible,
             'input_token_limit' => self::toIntOrNull($raw['inputTokenLimit'] ?? null),
             'output_token_limit' => self::toIntOrNull($raw['outputTokenLimit'] ?? null),
             'version' => (string) ($raw['version'] ?? $generation),
-            'description' => mb_substr((string) ($raw['description'] ?? ''), 0, 500),
+            'description' => $description,
         ];
+    }
+
+    /**
+     * Model yang terdaftar di Models API tetapi hanya menerima Interactions API,
+     * bukan endpoint generateContent yang dipakai adapter chat.
+     */
+    public static function requiresInteractionsApi(string $modelId): bool
+    {
+        return str_contains(strtolower($modelId), 'antigravity');
     }
 
     /** Normalisasi generik untuk OpenAI-compatible /v1/models (id + created). */

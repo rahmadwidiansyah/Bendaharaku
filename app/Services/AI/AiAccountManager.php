@@ -13,6 +13,7 @@ use App\Services\AI\Adapters\GeminiAdapter;
 use App\Services\AI\Adapters\OpenAIAdapter;
 use App\Services\AI\Adapters\OpenAiCompatibleAdapter;
 use App\Services\AI\Discovery\ModelDiscoveryService;
+use App\Services\AI\Security\SafeEndpointValidator;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -79,7 +80,7 @@ class AiAccountManager
         // Defense in depth: normalisasi + tolak SSRF walau validasi request lolos/dilewati.
         $safeBaseUrl = null;
         if ($provider === AiProvider::OpenAiCompatible && is_string($baseUrl) && trim($baseUrl) !== '') {
-            $safeBaseUrl = \App\Services\AI\Security\SafeEndpointValidator::normalizeBaseUrl($baseUrl);
+            $safeBaseUrl = SafeEndpointValidator::normalizeBaseUrl($baseUrl);
         }
         $account = AiProviderAccount::create([
             'user_id' => $user->id,
@@ -124,7 +125,7 @@ class AiAccountManager
         if ($account->provider === AiProvider::OpenAiCompatible && $baseUrl !== null) {
             $patch['base_url'] = trim($baseUrl) === ''
                 ? null
-                : \App\Services\AI\Security\SafeEndpointValidator::normalizeBaseUrl($baseUrl);
+                : SafeEndpointValidator::normalizeBaseUrl($baseUrl);
         }
         $account->update($patch);
 
@@ -180,16 +181,9 @@ class AiAccountManager
             return ['ok' => false, 'model' => '', 'latency_ms' => null, 'error_code' => 'missing_api_key', 'message' => 'API key belum diisi.'];
         }
 
-        // Pilih model uji: preferensi eksplisit → katalog eligible pertama → default provider.
-        $testModel = $model;
-        if (blank($testModel) && $account->id > 0) {
-            $testModel = $account->models()->where('is_eligible', true)->where('is_enabled', true)->orderBy('model_id')->value('model_id');
-        }
-        if (blank($testModel)) {
-            $testModel = $provider->defaultModel();
-            if ($provider === AiProvider::OpenAiCompatible && blank($testModel)) {
-                $testModel = 'gpt-4o-mini';
-            }
+        $candidates = $this->testCandidates($account, $provider, $model);
+        if ($candidates === []) {
+            return ['ok' => false, 'model' => '', 'latency_ms' => null, 'error_code' => 'no_model', 'message' => 'Tidak ada model yang siap diuji. Refresh katalog model terlebih dahulu.'];
         }
 
         $adapter = match ($provider) {
@@ -199,59 +193,165 @@ class AiAccountManager
             AiProvider::OpenAiCompatible => $this->compatible,
         };
 
-        $started = microtime(true);
-        try {
-            // Jika akun compatible punya base_url kustom, set sementara via config override.
-            if ($provider === AiProvider::OpenAiCompatible && $account->base_url) {
-                config()->set('bendaharaku.ai.openai_compatible.base_url', $account->base_url);
-            }
-            $text = $adapter->generateText('Reply with exactly: ok', $apiKey, (string) $testModel);
-            $latency = (int) round((microtime(true) - $started) * 1000);
-            if (blank($text)) {
-                throw new \RuntimeException('Respons kosong dari provider.');
-            }
-            if ($account->id > 0) {
-                $account->update([
-                    'is_valid' => true,
-                    'health_status' => 'healthy',
-                    'consecutive_failures' => 0,
-                    'cooldown_until' => null,
-                    'last_tested_at' => now(),
-                    'last_test_status' => 'ok',
-                    'last_test_message' => 'Koneksi berhasil.',
-                ]);
-            }
-
-            return ['ok' => true, 'model' => (string) $testModel, 'latency_ms' => $latency, 'error_code' => null, 'message' => 'Koneksi berhasil.'];
-        } catch (\Throwable $e) {
-            $latency = (int) round((microtime(true) - $started) * 1000);
-            $lower = strtolower($e->getMessage());
-            $code = 'unknown_error';
-            $message = 'Koneksi gagal.';
-            if (str_contains($lower, 'api key tidak valid') || str_contains($lower, '401') || str_contains($lower, '403')) {
-                $code = 'invalid_api_key';
-                $message = 'API key tidak valid atau akses ditolak.';
-                if ($account->id > 0) {
-                    $account->update(['is_valid' => false, 'health_status' => 'invalid', 'last_tested_at' => now(), 'last_test_status' => 'auth_error', 'last_test_message' => $message]);
-                }
-            } elseif (str_contains($lower, 'rate') || str_contains($lower, 'quota') || str_contains($lower, '429')) {
-                $code = 'rate_limit';
-                $message = 'Rate limit/kuota tercapai saat pengujian.';
-                if ($account->id > 0) {
-                    $account->update(['health_status' => 'rate_limited', 'last_tested_at' => now(), 'last_test_status' => 'transient', 'last_test_message' => $message]);
-                }
-            } elseif (str_contains($lower, 'timeout') || str_contains($lower, 'timed out')) {
-                $code = 'timeout';
-                $message = 'Permintaan pengujian timeout.';
-            } else {
-                if ($account->id > 0) {
-                    $account->update(['last_tested_at' => now(), 'last_test_status' => 'transient', 'last_test_message' => mb_substr($e->getMessage(), 0, 300)]);
-                }
-                $message = 'Koneksi gagal: '.mb_substr($e->getMessage(), 0, 200);
-            }
-
-            return ['ok' => false, 'model' => (string) $testModel, 'latency_ms' => $latency, 'error_code' => $code, 'message' => $message];
+        // Jika akun compatible punya base_url kustom, set sementara via config override.
+        if ($provider === AiProvider::OpenAiCompatible && $account->base_url) {
+            config()->set('bendaharaku.ai.openai_compatible.base_url', $account->base_url);
         }
+
+        $lastModel = $candidates[0];
+        $lastException = null;
+        $lastLatency = null;
+        $autoSelect = blank($model);
+
+        foreach ($candidates as $testModel) {
+            $lastModel = $testModel;
+            $started = microtime(true);
+
+            try {
+                $text = $adapter->generateText('Reply with exactly: ok', $apiKey, $testModel);
+                $latency = (int) round((microtime(true) - $started) * 1000);
+                if (blank($text)) {
+                    throw new \RuntimeException('Respons kosong dari provider.');
+                }
+                if ($account->id > 0) {
+                    $account->update([
+                        'is_valid' => true,
+                        'health_status' => 'healthy',
+                        'consecutive_failures' => 0,
+                        'cooldown_until' => null,
+                        'last_tested_at' => now(),
+                        'last_test_status' => 'ok',
+                        'last_test_message' => 'Koneksi berhasil.',
+                    ]);
+                }
+
+                return ['ok' => true, 'model' => $testModel, 'latency_ms' => $latency, 'error_code' => null, 'message' => 'Koneksi berhasil.'];
+            } catch (\Throwable $e) {
+                $lastException = $e;
+                $lastLatency = (int) round((microtime(true) - $started) * 1000);
+
+                if ($this->isInteractionsOnlyError($e)) {
+                    if ($account->id > 0) {
+                        $this->markInteractionsOnlyModel($account, $testModel);
+                    }
+                    Log::warning('AiAccountManager: interactions-only model skipped', [
+                        'account_id' => $account->id,
+                        'model' => $testModel,
+                    ]);
+
+                    // Model auto-pilih: coba kandidat berikutnya. Model eksplisit: hormati pilihan user.
+                    if ($autoSelect) {
+                        continue;
+                    }
+                }
+
+                break;
+            }
+        }
+
+        return $this->connectionFailureResult($account, $lastModel, $lastException, $lastLatency);
+    }
+
+    /**
+     * Kandidat model uji: eksplisit, katalog eligible (maks 3), lalu default provider.
+     *
+     * @return list<string>
+     */
+    private function testCandidates(AiProviderAccount $account, AiProvider $provider, ?string $model): array
+    {
+        if (! blank($model)) {
+            return [trim((string) $model)];
+        }
+
+        if ($account->id > 0) {
+            $candidates = $account->models()
+                ->where('is_eligible', true)
+                ->where('is_enabled', true)
+                ->orderBy('model_id')
+                ->pluck('model_id')
+                ->filter(fn ($id) => is_string($id) && trim($id) !== '')
+                ->unique()
+                ->take(3)
+                ->values()
+                ->all();
+
+            if ($candidates !== []) {
+                return $candidates;
+            }
+        }
+
+        $default = $provider->defaultModel();
+        if ($provider === AiProvider::OpenAiCompatible && blank($default)) {
+            $default = 'gpt-4o-mini';
+        }
+
+        return blank($default) ? [] : [(string) $default];
+    }
+
+    private function isInteractionsOnlyError(\Throwable $e): bool
+    {
+        $lower = strtolower($e->getMessage());
+
+        return str_contains($lower, 'interactions api')
+            || str_contains($lower, 'only supports interactions');
+    }
+
+    private function markInteractionsOnlyModel(AiProviderAccount $account, string $modelId): void
+    {
+        $account->models()->where('model_id', $modelId)->update([
+            'is_eligible' => false,
+            'supports_generate' => false,
+            'last_error' => 'Hanya mendukung Interactions API (bukan generateContent).',
+            'last_validated_at' => now(),
+        ]);
+    }
+
+    /**
+     * @return array{ok:bool,model:string,latency_ms:?int,error_code:?string,message:string}
+     */
+    private function connectionFailureResult(
+        AiProviderAccount $account,
+        string $testModel,
+        ?\Throwable $e,
+        ?int $latency,
+    ): array {
+        if (! $e) {
+            return ['ok' => false, 'model' => $testModel, 'latency_ms' => $latency, 'error_code' => 'unknown_error', 'message' => 'Koneksi gagal.'];
+        }
+
+        $lower = strtolower($e->getMessage());
+        $code = 'unknown_error';
+        $message = 'Koneksi gagal.';
+
+        if ($this->isInteractionsOnlyError($e)) {
+            $code = 'model_incompatible';
+            $message = 'Model '.$testModel.' hanya mendukung Interactions API, bukan generateContent. Refresh katalog lalu pilih model Gemini lain.';
+            if ($account->id > 0) {
+                $account->update(['last_tested_at' => now(), 'last_test_status' => 'transient', 'last_test_message' => mb_substr($message, 0, 300)]);
+            }
+        } elseif (str_contains($lower, 'api key tidak valid') || str_contains($lower, '401') || str_contains($lower, '403')) {
+            $code = 'invalid_api_key';
+            $message = 'API key tidak valid atau akses ditolak.';
+            if ($account->id > 0) {
+                $account->update(['is_valid' => false, 'health_status' => 'invalid', 'last_tested_at' => now(), 'last_test_status' => 'auth_error', 'last_test_message' => $message]);
+            }
+        } elseif (str_contains($lower, 'rate') || str_contains($lower, 'quota') || str_contains($lower, '429')) {
+            $code = 'rate_limit';
+            $message = 'Rate limit/kuota tercapai saat pengujian.';
+            if ($account->id > 0) {
+                $account->update(['health_status' => 'rate_limited', 'last_tested_at' => now(), 'last_test_status' => 'transient', 'last_test_message' => $message]);
+            }
+        } elseif (str_contains($lower, 'timeout') || str_contains($lower, 'timed out')) {
+            $code = 'timeout';
+            $message = 'Permintaan pengujian timeout.';
+        } else {
+            $message = 'Koneksi gagal: '.mb_substr($e->getMessage(), 0, 200).' (model: '.$testModel.')';
+            if ($account->id > 0) {
+                $account->update(['last_tested_at' => now(), 'last_test_status' => 'transient', 'last_test_message' => mb_substr($e->getMessage(), 0, 300)]);
+            }
+        }
+
+        return ['ok' => false, 'model' => $testModel, 'latency_ms' => $latency, 'error_code' => $code, 'message' => $message];
     }
 
     public function refreshDiscovery(AiProviderAccount $account): array

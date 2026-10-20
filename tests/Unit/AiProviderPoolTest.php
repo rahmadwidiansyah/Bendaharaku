@@ -15,6 +15,8 @@ use App\Models\AiProviderAccount;
 use App\Models\AiRoutingPreference;
 use App\Models\User;
 use App\Models\UserActivityLog;
+use App\Services\AI\Adapters\GeminiAdapter;
+use App\Services\AI\AiAccountManager;
 use App\Services\AI\AIManager;
 use App\Services\AI\Discovery\ModelDiscoveryService;
 use App\Services\AI\Discovery\ModelNormalizer;
@@ -515,5 +517,68 @@ class AiProviderPoolTest extends TestCase
 
         $timeout = AiErrorClassifier::classify(new AiTimeoutException('gemini'));
         $this->assertSame(AiErrorClassifier::CAT_TIMEOUT, $timeout['category']);
+    }
+
+    /** 26. Model Interactions-only tidak boleh masuk kandidat routing. */
+    public function test_interactions_only_model_not_eligible(): void
+    {
+        $info = ModelNormalizer::normalizeGemini([
+            'name' => 'models/antigravity-preview-05-2026',
+            'displayName' => 'Antigravity Preview',
+            'supportedGenerationMethods' => ['generateContent'],
+            'description' => 'Model khusus Antigravity.',
+        ]);
+
+        $this->assertFalse($info['eligible']);
+        $this->assertFalse($info['supports_generate']);
+        $this->assertSame(ModelNormalizer::CAT_OTHER, $info['category']);
+        $this->assertStringContainsString('Interactions API', $info['description']);
+    }
+
+    /** 27. Tes koneksi melewati model Interactions-only lalu sukses di model Gemini biasa. */
+    public function test_connection_skips_interactions_only_model_and_tries_next(): void
+    {
+        $account = $this->makeAccount(AiProvider::Gemini, 'G1', 'key-interactions-test');
+        $bad = $this->addModel($account, 'antigravity-preview-05-2026');
+        $good = $this->addModel($account, 'gemini-3.6-flash');
+
+        $gemini = \Mockery::mock(GeminiAdapter::class);
+        $gemini->shouldReceive('generateText')
+            ->once()
+            ->with('Reply with exactly: ok', 'key-interactions-test', 'antigravity-preview-05-2026')
+            ->andThrow(new AiProviderException('gemini', 'HTTP 400: This model only supports Interactions API.'));
+        $gemini->shouldReceive('generateText')
+            ->once()
+            ->with('Reply with exactly: ok', 'key-interactions-test', 'gemini-3.6-flash')
+            ->andReturn('ok');
+        $this->app->instance(GeminiAdapter::class, $gemini);
+
+        $result = app(AiAccountManager::class)->testConnection($account->fresh());
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame('gemini-3.6-flash', $result['model']);
+        $this->assertFalse($bad->fresh()->is_eligible);
+        $this->assertFalse($bad->fresh()->supports_generate);
+        $this->assertTrue($good->fresh()->is_eligible);
+        $this->assertSame('healthy', $account->fresh()->health_status);
+    }
+
+    /** 28. Jika semua kandidat Interactions-only, error jelas dan akun tidak dianggap invalid. */
+    public function test_connection_reports_model_incompatible_when_all_candidates_unsupported(): void
+    {
+        $account = $this->makeAccount(AiProvider::Gemini, 'G2', 'key-interactions-only');
+
+        $gemini = \Mockery::mock(GeminiAdapter::class);
+        $gemini->shouldReceive('generateText')
+            ->once()
+            ->andThrow(new AiProviderException('gemini', 'HTTP 400: This model only supports Interactions API.'));
+        $this->app->instance(GeminiAdapter::class, $gemini);
+
+        $result = app(AiAccountManager::class)->testConnection($account->fresh(), 'antigravity-preview-05-2026');
+
+        $this->assertFalse($result['ok']);
+        $this->assertSame('model_incompatible', $result['error_code']);
+        $this->assertSame('antigravity-preview-05-2026', $result['model']);
+        $this->assertTrue($account->fresh()->is_valid);
     }
 }
