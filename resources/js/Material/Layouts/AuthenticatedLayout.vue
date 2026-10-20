@@ -2,8 +2,8 @@
 /**
  * Material/Layouts/AuthenticatedLayout.vue
  *
- * M3 Expressive shell — dipakai HANYA oleh halaman `Material/*`
- * (phase 1: Dashboard saja). Halaman lain tetap memakai layout Default.
+ * M3 Expressive shell — dipakai HANYA oleh halaman `Material/*`.
+ * Halaman lain tetap memakai layout Default.
  *
  * Struktur (per references/components/bars.md + navigation.md + fabs.md):
  * - Desktop: top app bar (small) + navigation rail (expanded 15rem / collapsed 5rem) + FAB
@@ -17,12 +17,17 @@
  * Semua warna memakai token `--m3-*` (aktif hanya di bawah `.ui-m3`).
  */
 import M3Snackbar from '@/Material/Components/M3Snackbar.vue'
-import DashboardSkeleton from '@/Components/Skeleton/DashboardSkeleton.vue'
-import TransactionSkeleton from '@/Components/Skeleton/TransactionSkeleton.vue'
-import AssetSkeleton from '@/Components/Skeleton/AssetSkeleton.vue'
-import StatisticsSkeleton from '@/Components/Skeleton/StatisticsSkeleton.vue'
-import SettingsSkeleton from '@/Components/Skeleton/SettingsSkeleton.vue'
-import BudgetingSkeleton from '@/Components/Skeleton/BudgetingSkeleton.vue'
+import M3WavyProgress from '@/Material/Components/M3WavyProgress.vue'
+import M3DashboardSkeleton from '@/Material/Components/Skeleton/M3DashboardSkeleton.vue'
+import M3BudgetSkeleton from '@/Material/Components/Skeleton/M3BudgetSkeleton.vue'
+import M3AnalyticsSkeleton from '@/Material/Components/Skeleton/M3AnalyticsSkeleton.vue'
+import M3WalletsSkeleton from '@/Material/Components/Skeleton/M3WalletsSkeleton.vue'
+import M3WalletShowSkeleton from '@/Material/Components/Skeleton/M3WalletShowSkeleton.vue'
+import M3CategoriesSkeleton from '@/Material/Components/Skeleton/M3CategoriesSkeleton.vue'
+import M3CategoryShowSkeleton from '@/Material/Components/Skeleton/M3CategoryShowSkeleton.vue'
+import M3LoansSkeleton from '@/Material/Components/Skeleton/M3LoansSkeleton.vue'
+import M3SettingsHubSkeleton from '@/Material/Components/Skeleton/M3SettingsHubSkeleton.vue'
+import M3SettingsSkeleton from '@/Material/Components/Skeleton/M3SettingsSkeleton.vue'
 import { useLayoutPreference } from '@/Composables/useLayoutPreference'
 import { usePageLoading } from '@/Composables/usePageLoading'
 import { initTheme } from '@/Composables/useTheme'
@@ -37,12 +42,16 @@ import { consumeStaleForRoute } from '@/utils/stale.js'
 const { t } = useI18n()
 
 const SKELETON_COMPONENTS = {
-    DashboardSkeleton,
-    TransactionSkeleton,
-    AssetSkeleton,
-    StatisticsSkeleton,
-    SettingsSkeleton,
-    BudgetingSkeleton,
+    M3DashboardSkeleton,
+    M3BudgetSkeleton,
+    M3AnalyticsSkeleton,
+    M3WalletsSkeleton,
+    M3WalletShowSkeleton,
+    M3CategoriesSkeleton,
+    M3CategoryShowSkeleton,
+    M3LoansSkeleton,
+    M3SettingsHubSkeleton,
+    M3SettingsSkeleton,
 }
 
 const props = defineProps({
@@ -53,7 +62,7 @@ const props = defineProps({
 
 const isRailOpen = ref(true)
 const { isDesktopLayout } = useLayoutPreference()
-const { isLoading, currentSkeleton, pendingUrl } = usePageLoading()
+const { isLoading, currentSkeletonM3, pendingUrl } = usePageLoading()
 
 // ── Theme init: verifikasi (kelas sudah dipasang pre-paint oleh Blade) ──
 const page = usePage()
@@ -175,7 +184,7 @@ const avatarUrl = computed(() => page.props.auth?.user?.avatar_url ?? '')
 const isDesktop = computed(() => isDesktopLayout.value && !props.hideNav)
 
 const activeSkeletonComponent = computed(() =>
-    currentSkeleton.value ? (SKELETON_COMPONENTS[currentSkeleton.value] ?? null) : null,
+    currentSkeletonM3.value ? (SKELETON_COMPONENTS[currentSkeletonM3.value] ?? null) : null,
 )
 
 const showSkeleton = computed(() =>
@@ -188,6 +197,13 @@ const showSkeleton = computed(() =>
         <M3Snackbar />
 
         <a href="#main-content" class="m3-skip-link">Langsung ke konten</a>
+
+        <!-- Indikator navigasi global: wavy linear (M3 Expressive) -->
+        <M3WavyProgress
+            :active="isLoading"
+            :below-app-bar="isDesktop"
+            :aria-label="$t('common.loading')"
+        />
 
         <!-- ── Top app bar (small, 4rem) — desktop only; mobile memakai judul in-content ── -->
         <header
@@ -291,7 +307,13 @@ const showSkeleton = computed(() =>
 
         <!-- ── Content ── -->
         <div class="m3-content" :class="isDesktop && !hideNav ? (isRailOpen ? 'm3-content--rail-open' : 'm3-content--rail') : ''">
-            <main id="main-content" tabindex="-1" :class="['m3-main', showSkeleton ? 'm3-main--loading' : '']" :inert="showSkeleton ? '' : false">
+            <main
+                id="main-content"
+                tabindex="-1"
+                :class="['m3-main', showSkeleton ? 'm3-main--loading' : '']"
+                :inert="showSkeleton ? '' : false"
+                :aria-busy="isLoading ? 'true' : 'false'"
+            >
                 <slot />
             </main>
             <Transition
@@ -780,6 +802,13 @@ const showSkeleton = computed(() =>
     inset: 0;
     background: var(--m3-color-surface);
     overflow-y: auto;
+}
+
+.m3-skeleton :deep(.m3-bud-skel) {
+    width: 100%;
+    max-width: var(--m3-size-content-max);
+    margin: 0 auto;
+    padding: var(--m3-space-4);
 }
 
 .m3-fade-enter-active {

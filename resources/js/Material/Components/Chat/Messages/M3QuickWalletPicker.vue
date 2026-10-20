@@ -8,6 +8,7 @@ import axios from 'axios'
 import { useI18n } from 'vue-i18n'
 import AppIcon from '@/Components/AppIcon.vue'
 import M3Chip from '@/Material/Components/M3Chip.vue'
+import M3CircularProgress from '@/Material/Components/M3CircularProgress.vue'
 
 const { t } = useI18n()
 
@@ -63,7 +64,7 @@ function select(wallet) {
                 :disabled="loading || !!selectedId"
                 @click="select(wallet)"
             >
-                <span v-if="loading && selectedId === wallet.id" class="m3-qwp__spin" aria-hidden="true" />
+                <M3CircularProgress v-if="loading && selectedId === wallet.id" size="xs" />
                 {{ wallet.name }}
             </M3Chip>
         </div>
@@ -118,20 +119,6 @@ function select(wallet) {
     font-size: var(--m3-type-label-small-size);
     line-height: var(--m3-type-label-small-line-height);
     color: var(--m3-color-error);
-}
-
-.m3-qwp__spin {
-    display: inline-block;
-    width: 0.75rem;
-    height: 0.75rem;
-    border: 2px solid currentColor;
-    border-top-color: transparent;
-    border-radius: var(--m3-radius-full);
-    animation: m3-qwp-spin 0.8s linear infinite;
-}
-
-@keyframes m3-qwp-spin {
-    to { transform: rotate(360deg); }
 }
 
 @keyframes m3-qwp-pulse {

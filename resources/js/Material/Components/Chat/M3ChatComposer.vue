@@ -7,6 +7,7 @@
  */
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
+import M3CircularProgress from '@/Material/Components/M3CircularProgress.vue'
 import M3IconButton from '@/Material/Components/M3IconButton.vue'
 
 const { t } = useI18n()
@@ -102,7 +103,7 @@ onBeforeUnmount(() => {
             <div class="m3-composer__thumb">
                 <img :src="attachmentPreview" alt="" class="m3-composer__thumb-img" />
                 <div v-if="isUploading" class="m3-composer__thumb-scrim" aria-hidden="true">
-                    <span class="m3-composer__spinner m3-composer__spinner--onScrim" />
+                    <M3CircularProgress size="sm" />
                 </div>
             </div>
             <div class="m3-composer__preview-info">
@@ -167,7 +168,7 @@ onBeforeUnmount(() => {
                 <svg v-if="!isLoading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
                 </svg>
-                <span v-else class="m3-composer__spinner" aria-hidden="true" />
+                <M3CircularProgress v-else size="sm" />
             </button>
         </div>
 
@@ -381,20 +382,6 @@ onBeforeUnmount(() => {
 .m3-composer__send svg {
     width: var(--m3-size-icon-xs);
     height: var(--m3-size-icon-xs);
-}
-
-/* ── Spinner ── */
-.m3-composer__spinner {
-    width: var(--m3-size-icon-xs);
-    height: var(--m3-size-icon-xs);
-    border-radius: var(--m3-radius-full);
-    border: 2px solid color-mix(in srgb, currentColor 30%, transparent);
-    border-top-color: currentColor;
-    animation: m3-composer-spin 0.7s linear infinite;
-}
-
-@keyframes m3-composer-spin {
-    to { transform: rotate(360deg); }
 }
 
 /* Hint desktop */

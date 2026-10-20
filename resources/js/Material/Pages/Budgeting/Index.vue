@@ -17,8 +17,9 @@ import M3Card from '@/Material/Components/M3Card.vue'
 import M3Button from '@/Material/Components/M3Button.vue'
 import M3IconButton from '@/Material/Components/M3IconButton.vue'
 import M3Modal from '@/Material/Components/M3Modal.vue'
+import M3CircularProgress from '@/Material/Components/M3CircularProgress.vue'
 import M3ProgressBar from '@/Material/Components/M3ProgressBar.vue'
-import M3BudgetSkeleton from '@/Material/Pages/Budgeting/M3BudgetSkeleton.vue'
+import M3BudgetSkeleton from '@/Material/Components/Skeleton/M3BudgetSkeleton.vue'
 import AppIcon from '@/Components/AppIcon.vue'
 import { getM3CategoryIconClass } from '@/Material/utils/m3IconColor.js'
 import { useBotAvatar } from '@/Composables/useBotAvatar.js'
@@ -363,10 +364,8 @@ onUnmounted(stopGenerationPolling)
                             @click="requestRegenerate"
                         >
                             <template #leading>
-                                <AppIcon
-                                    :icon="isGenerating ? 'loader-2' : 'refresh-cw'"
-                                    :class="isGenerating ? 'm3-bud__spin' : ''"
-                                />
+                                <M3CircularProgress v-if="isGenerating" size="sm" />
+                                <AppIcon v-else icon="refresh-cw" />
                             </template>
                             {{ t('budgeting.refresh') }}
                         </M3Button>
@@ -416,10 +415,8 @@ onUnmounted(stopGenerationPolling)
                         @click="generateBudget"
                     >
                         <template #leading>
-                            <AppIcon
-                                :icon="isGenerating ? 'loader-2' : 'sparkles'"
-                                :class="isGenerating ? 'm3-bud__spin' : ''"
-                            />
+                            <M3CircularProgress v-if="isGenerating" size="sm" />
+                            <AppIcon v-else icon="sparkles" />
                         </template>
                         {{ isGenerating ? t('budgeting.generating') : t('budgeting.generate', { bot: botName }) }}
                     </M3Button>
@@ -1331,22 +1328,7 @@ onUnmounted(stopGenerationPolling)
     opacity: 0;
 }
 
-/* ── Utilitas ── */
-.m3-bud__spin {
-    animation: m3-bud-spin 1s linear infinite;
-}
-
-@keyframes m3-bud-spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
 @media (prefers-reduced-motion: reduce) {
-    .m3-bud__spin {
-        animation-duration: 3s;
-    }
-
     .m3-bud__group-chevron,
     .m3-bud__group-head {
         transition: none;

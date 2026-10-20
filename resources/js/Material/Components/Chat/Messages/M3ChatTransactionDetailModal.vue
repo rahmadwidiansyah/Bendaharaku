@@ -15,6 +15,7 @@ import { useToast } from '@/Composables/useToast'
 import AppIcon from '@/Components/AppIcon.vue'
 import M3Modal from '@/Material/Components/M3Modal.vue'
 import M3Button from '@/Material/Components/M3Button.vue'
+import M3CircularProgress from '@/Material/Components/M3CircularProgress.vue'
 
 const { t, locale } = useI18n()
 const { showToast } = useToast()
@@ -425,7 +426,7 @@ async function confirmDeleteTransaction() {
                     :aria-label="$t('common.delete')"
                     @click="deleteTransaction"
                 >
-                    <span v-if="isDeleting" class="m3-cdm__btn-spinner" aria-hidden="true" />
+                    <M3CircularProgress v-if="isDeleting" size="xs" />
                     <AppIcon v-else icon="trash-2" iconClass="m3-cdm__action-icon" />
                 </button>
                 <M3Button variant="outlined" full-width @click="close">
@@ -902,19 +903,6 @@ async function confirmDeleteTransaction() {
 .m3-cdm__action-icon {
     width: var(--m3-size-icon-2xs);
     height: var(--m3-size-icon-2xs);
-}
-
-.m3-cdm__btn-spinner {
-    width: var(--m3-size-icon-2xs);
-    height: var(--m3-size-icon-2xs);
-    border: 2px solid currentColor;
-    border-top-color: transparent;
-    border-radius: var(--m3-radius-full);
-    animation: m3-cdm-spin 0.8s linear infinite;
-}
-
-@keyframes m3-cdm-spin {
-    to { transform: rotate(360deg); }
 }
 
 /* Dialog konfirmasi hapus */

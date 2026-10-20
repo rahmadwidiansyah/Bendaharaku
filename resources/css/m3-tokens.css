@@ -302,6 +302,11 @@
     color: var(--m3-color-on-surface);
 }
 
+/* Progress bawaan Inertia diganti M3WavyProgress di layout M3. */
+html.ui-m3 #nprogress {
+    display: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .ui-m3 *,
     .ui-m3 *::before,

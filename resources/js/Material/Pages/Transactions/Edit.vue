@@ -287,56 +287,64 @@ const confirmDelete = () => {
                             <div class="m3-txn__wallets">
                                 <p class="m3-txn__section-label">{{ t('transaction.transferFunds') }}</p>
 
-                                <button
-                                    type="button"
-                                    :class="['m3-txn__wallet', transferErrors.source ? 'm3-txn__wallet--error' : selectedSourceWallet ? 'm3-txn__wallet--filled' : '']"
-                                    @click="openWalletModal('source')"
-                                >
-                                    <span class="m3-txn__wallet-icon" aria-hidden="true">
-                                        <AppIcon :icon="selectedSourceWallet?.icon" :fallback="selectedSourceWallet ? 'wallet' : 'circle-plus'" />
-                                    </span>
-                                    <span class="m3-txn__wallet-body">
-                                        <span class="m3-txn__wallet-label">{{ t('transaction.detail.from') }}</span>
-                                        <span class="m3-txn__wallet-name">{{ selectedSourceWallet?.name || t('transaction.chooseSourceWallet') }}</span>
-                                        <span v-if="selectedSourceWallet" class="m3-txn__wallet-balance">
-                                            Rp {{ formatBalance(selectedSourceWallet.balance) }}
-                                        </span>
-                                    </span>
-                                    <svg class="m3-txn__wallet-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-                                    </svg>
-                                </button>
+                                <div class="m3-txn__wallet-pair">
+                                    <div class="m3-txn__wallet-stack">
+                                        <button
+                                            type="button"
+                                            :class="['m3-txn__wallet', transferErrors.source ? 'm3-txn__wallet--error' : selectedSourceWallet ? 'm3-txn__wallet--filled' : '']"
+                                            @click="openWalletModal('source')"
+                                        >
+                                            <span class="m3-txn__wallet-icon" aria-hidden="true">
+                                                <AppIcon :icon="selectedSourceWallet?.icon" :fallback="selectedSourceWallet ? 'wallet' : 'circle-plus'" />
+                                            </span>
+                                            <span class="m3-txn__wallet-body">
+                                                <span class="m3-txn__wallet-meta">
+                                                    <span class="m3-txn__wallet-label">{{ t('transaction.detail.from') }}</span>
+                                                    <span v-if="selectedSourceWallet" class="m3-txn__wallet-balance">
+                                                        Rp {{ formatBalance(selectedSourceWallet.balance) }}
+                                                    </span>
+                                                </span>
+                                                <span class="m3-txn__wallet-name">{{ selectedSourceWallet?.name || t('transaction.chooseSourceWallet') }}</span>
+                                            </span>
+                                            <svg class="m3-txn__wallet-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        </button>
 
-                                <label v-if="selectedSourceWallet" class="m3-txn__check">
-                                    <input v-model="transferAll" type="checkbox" class="m3-txn__check-box">
-                                    <span>{{ t('transaction.allBalance') }}</span>
-                                </label>
+                                        <label v-if="selectedSourceWallet" class="m3-txn__check">
+                                            <input v-model="transferAll" type="checkbox" class="m3-txn__check-box">
+                                            <span>{{ t('transaction.allBalance') }}</span>
+                                        </label>
 
-                                <M3IconButton class="m3-txn__swap" :aria-label="t('transaction.transferFunds')" :class="isSwapping ? 'm3-txn__swap--on' : ''" @click="swapWallets">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4" />
-                                    </svg>
-                                </M3IconButton>
+                                        <button
+                                            type="button"
+                                            :class="['m3-txn__wallet', transferErrors.dest ? 'm3-txn__wallet--error' : selectedDestWallet ? 'm3-txn__wallet--filled' : '']"
+                                            @click="openWalletModal('dest')"
+                                        >
+                                            <span class="m3-txn__wallet-icon" aria-hidden="true">
+                                                <AppIcon :icon="selectedDestWallet?.icon" :fallback="selectedDestWallet ? 'wallet' : 'circle-plus'" />
+                                            </span>
+                                            <span class="m3-txn__wallet-body">
+                                                <span class="m3-txn__wallet-meta">
+                                                    <span class="m3-txn__wallet-label">{{ t('transaction.detail.to') }}</span>
+                                                    <span v-if="selectedDestWallet" class="m3-txn__wallet-balance">
+                                                        Rp {{ formatBalance(selectedDestWallet.balance) }}
+                                                    </span>
+                                                </span>
+                                                <span class="m3-txn__wallet-name">{{ selectedDestWallet?.name || t('transaction.chooseDestWallet') }}</span>
+                                            </span>
+                                            <svg class="m3-txn__wallet-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        </button>
+                                    </div>
 
-                                <button
-                                    type="button"
-                                    :class="['m3-txn__wallet', transferErrors.dest ? 'm3-txn__wallet--error' : selectedDestWallet ? 'm3-txn__wallet--filled' : '']"
-                                    @click="openWalletModal('dest')"
-                                >
-                                    <span class="m3-txn__wallet-icon" aria-hidden="true">
-                                        <AppIcon :icon="selectedDestWallet?.icon" :fallback="selectedDestWallet ? 'wallet' : 'circle-plus'" />
-                                    </span>
-                                    <span class="m3-txn__wallet-body">
-                                        <span class="m3-txn__wallet-label">{{ t('transaction.detail.to') }}</span>
-                                        <span class="m3-txn__wallet-name">{{ selectedDestWallet?.name || t('transaction.chooseDestWallet') }}</span>
-                                        <span v-if="selectedDestWallet" class="m3-txn__wallet-balance">
-                                            Rp {{ formatBalance(selectedDestWallet.balance) }}
-                                        </span>
-                                    </span>
-                                    <svg class="m3-txn__wallet-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-                                    </svg>
-                                </button>
+                                    <M3IconButton class="m3-txn__swap" :aria-label="t('transaction.transferFunds')" :class="isSwapping ? 'm3-txn__swap--on' : ''" @click="swapWallets">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4" />
+                                        </svg>
+                                    </M3IconButton>
+                                </div>
                             </div>
 
                             <M3TextField
@@ -353,22 +361,24 @@ const confirmDelete = () => {
                                     <span class="m3-txn__amount-currency">Rp</span>{{ formatAmount }}
                                 </p>
                                 <div class="m3-txn__actions">
-                                    <M3IconButton :aria-label="t('transaction.chooseDate')" @click="dateModalTarget = 'transaction'; showDateModal = true">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                        </svg>
-                                    </M3IconButton>
-                                    <span class="m3-txn__date-label">{{ dateButtonLabel }}</span>
+                                    <button
+                                        type="button"
+                                        class="m3-txn__date"
+                                        :title="t('transaction.chooseDate')"
+                                        @click="dateModalTarget = 'transaction'; showDateModal = true"
+                                    >
+                                        <AppIcon icon="calendar-days" />
+                                        <span class="m3-txn__date-label">{{ dateButtonLabel }}</span>
+                                    </button>
                                     <M3IconButton
                                         :aria-label="t('transaction.keypadLabel')"
                                         :variant="showKeypad ? 'tonal' : 'standard'"
+                                        :aria-pressed="showKeypad ? 'true' : 'false'"
                                         @click="showKeypad = !showKeypad"
                                     >
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                        </svg>
+                                        <AppIcon :icon="showKeypad ? 'keyboard-off' : 'keyboard'" />
                                     </M3IconButton>
-                                    <M3Button variant="filled" full-width :disabled="form.processing" @click="submitTransfer(true)">
+                                    <M3Button variant="filled" size="lg" full-width :disabled="form.processing" @click="submitTransfer(true)">
                                         {{ t('common.save') }}
                                     </M3Button>
                                 </div>
@@ -580,22 +590,24 @@ const confirmDelete = () => {
                                 <span class="m3-txn__amount-currency">Rp</span>{{ formatAmount }}
                             </p>
                             <div class="m3-txn__actions">
-                                <M3IconButton :aria-label="t('transaction.chooseDate')" @click="dateModalTarget = 'transaction'; showDateModal = true">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                </M3IconButton>
-                                <span class="m3-txn__date-label">{{ dateButtonLabel }}</span>
+                                <button
+                                    type="button"
+                                    class="m3-txn__date"
+                                    :title="t('transaction.chooseDate')"
+                                    @click="dateModalTarget = 'transaction'; showDateModal = true"
+                                >
+                                    <AppIcon icon="calendar-days" />
+                                    <span class="m3-txn__date-label">{{ dateButtonLabel }}</span>
+                                </button>
                                 <M3IconButton
                                     :aria-label="t('transaction.keypadLabel')"
                                     :variant="showKeypad ? 'tonal' : 'standard'"
+                                    :aria-pressed="showKeypad ? 'true' : 'false'"
                                     @click="showKeypad = !showKeypad"
                                 >
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                    </svg>
+                                    <AppIcon :icon="showKeypad ? 'keyboard-off' : 'keyboard'" />
                                 </M3IconButton>
-                                <M3Button variant="filled" full-width type="submit" :disabled="form.processing">
+                                <M3Button variant="filled" size="lg" full-width type="submit" :disabled="form.processing">
                                     {{ t('common.save') }}
                                 </M3Button>
                             </div>
@@ -1007,14 +1019,28 @@ const confirmDelete = () => {
     display: flex;
     flex-direction: column;
     gap: var(--m3-space-2);
-    padding: var(--m3-space-4);
+    padding: var(--m3-space-3);
     border: 1px solid var(--m3-color-outline-variant);
     border-radius: var(--m3-radius-lg);
     background: var(--m3-color-surface-container-low);
 }
 
+.m3-txn__wallet-pair {
+    display: flex;
+    align-items: center;
+    gap: var(--m3-space-2);
+}
+
+.m3-txn__wallet-stack {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--m3-space-2);
+    min-width: 0;
+}
+
 .m3-txn__section-label {
-    margin: 0 0 var(--m3-space-1);
+    margin: 0;
     color: var(--m3-color-on-surface-variant);
     font-size: var(--m3-type-label-medium-size);
     line-height: var(--m3-type-label-medium-line-height);
@@ -1027,9 +1053,10 @@ const confirmDelete = () => {
 .m3-txn__wallet {
     display: flex;
     align-items: center;
-    gap: var(--m3-space-3);
+    gap: var(--m3-space-2);
     width: 100%;
-    padding: var(--m3-space-3);
+    min-height: var(--m3-size-touch-target-lg);
+    padding: var(--m3-space-2) var(--m3-space-3);
     border: 1px dashed var(--m3-color-outline-variant);
     border-radius: var(--m3-radius-md);
     background: var(--m3-color-surface);
@@ -1087,6 +1114,14 @@ const confirmDelete = () => {
     min-width: 0;
 }
 
+.m3-txn__wallet-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--m3-space-2);
+    min-width: 0;
+}
+
 .m3-txn__wallet-label {
     color: var(--m3-color-on-surface-variant);
     font-size: var(--m3-type-label-small-size);
@@ -1106,10 +1141,12 @@ const confirmDelete = () => {
 }
 
 .m3-txn__wallet-balance {
+    flex-shrink: 0;
     color: var(--m3-color-on-surface-variant);
     font-size: var(--m3-type-body-small-size);
     line-height: var(--m3-type-body-small-line-height);
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
 
 .m3-txn__wallet-chevron {
@@ -1121,6 +1158,7 @@ const confirmDelete = () => {
 
 .m3-txn__swap {
     align-self: center;
+    flex-shrink: 0;
 }
 
 .m3-txn__swap--on {
@@ -1199,7 +1237,7 @@ const confirmDelete = () => {
 /* ── Kategori ── */
 .m3-txn__cats {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--m3-space-2);
 }
 
@@ -1209,9 +1247,9 @@ const confirmDelete = () => {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: var(--m3-space-2);
-    min-height: 5.5rem;
-    padding: var(--m3-space-3);
+    gap: var(--m3-space-1);
+    aspect-ratio: 1;
+    padding: var(--m3-space-2);
     border: 1px solid var(--m3-color-outline-variant);
     border-radius: var(--m3-radius-lg);
     background: var(--m3-color-surface-container-low);
@@ -1289,6 +1327,12 @@ const confirmDelete = () => {
     height: var(--m3-size-icon-3xs);
 }
 
+@media (min-width: 30rem) {
+    .m3-txn__cats {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
 .m3-txn__empty {
     padding: var(--m3-space-6) var(--m3-space-4);
     border: 1px dashed var(--m3-color-outline-variant);
@@ -1345,8 +1389,8 @@ const confirmDelete = () => {
 .m3-txn__amount-panel {
     display: flex;
     flex-direction: column;
-    gap: var(--m3-space-2);
-    padding: var(--m3-space-4) 0 var(--m3-space-2);
+    gap: var(--m3-space-1);
+    padding: var(--m3-space-3) 0 var(--m3-space-2);
     border-top: 1px solid var(--m3-color-outline-variant);
     text-align: center;
 }
@@ -1396,13 +1440,90 @@ const confirmDelete = () => {
     gap: var(--m3-space-2);
 }
 
-.m3-txn__date-label {
+.m3-txn__actions :deep(.m3-icon-btn) {
+    width: var(--m3-size-touch-target-lg);
+    height: var(--m3-size-touch-target-lg);
+}
+
+.m3-txn__actions :deep(.m3-icon-btn__content) {
+    width: var(--m3-size-icon-lg);
+    height: var(--m3-size-icon-lg);
+}
+
+.m3-txn__actions :deep(.m3-icon-btn__content svg) {
+    width: var(--m3-size-icon-lg);
+    height: var(--m3-size-icon-lg);
+}
+
+.m3-txn__actions :deep(.m3-btn--full) {
     flex: 1;
+    width: auto;
+    min-width: 0;
+}
+
+.m3-txn__date {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--m3-space-2);
+    flex: 0 1 auto;
+    min-width: 0;
+    min-height: var(--m3-size-touch-target-lg);
+    padding: 0 var(--m3-space-3);
+    border: 1px solid var(--m3-color-outline-variant);
+    border-radius: var(--m3-radius-full);
+    background: var(--m3-color-surface-container-low);
+    color: var(--m3-color-on-surface);
+    font-family: inherit;
+    cursor: pointer;
+    transition:
+        background-color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects),
+        transform var(--m3-motion-fast-spatial-duration) var(--m3-motion-fast-spatial);
+}
+
+.m3-txn__date:active {
+    transform: scale(0.96);
+}
+
+.m3-txn__date:focus-visible {
+    outline: 2px solid var(--m3-color-primary);
+    outline-offset: 2px;
+}
+
+.m3-txn__date :deep(svg) {
+    width: var(--m3-size-icon-lg);
+    height: var(--m3-size-icon-lg);
+    flex-shrink: 0;
+}
+
+.m3-txn__date-label {
+    min-width: 0;
+    overflow: hidden;
     color: var(--m3-color-on-surface-variant);
     font-size: var(--m3-type-label-large-size);
     line-height: var(--m3-type-label-large-line-height);
     font-weight: var(--m3-type-label-large-weight);
     text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.m3-txn__dock :deep(.m3-keypad) {
+    row-gap: var(--m3-space-1);
+}
+
+.m3-txn__dock :deep(.m3-keypad__del) {
+    width: var(--m3-size-icon-lg);
+    height: var(--m3-size-icon-lg);
+}
+
+@media (max-width: 359px) {
+    .m3-txn__actions {
+        gap: var(--m3-space-1);
+    }
+
+    .m3-txn__date {
+        padding: 0 var(--m3-space-2);
+    }
 }
 
 /* ── Konfirmasi hapus ── */

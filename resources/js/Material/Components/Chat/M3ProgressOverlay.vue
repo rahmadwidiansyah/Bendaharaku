@@ -4,6 +4,7 @@
  * Dipakai saat memproses bukti/aksi panjang tanpa memblokir seluruh halaman.
  */
 import { useI18n } from 'vue-i18n'
+import M3CircularProgress from '@/Material/Components/M3CircularProgress.vue'
 import M3ProgressBar from '@/Material/Components/M3ProgressBar.vue'
 
 const { t } = useI18n()
@@ -16,7 +17,7 @@ defineProps({
 
 <template>
     <div v-if="show" class="m3-progress-overlay" role="status" :aria-label="t('common.processing')">
-        <span class="m3-progress-overlay__spinner" aria-hidden="true" />
+        <M3CircularProgress class="m3-progress-overlay__spinner" size="md" />
         <div class="m3-progress-overlay__bar">
             <M3ProgressBar :value="progress" size="sm" />
         </div>
@@ -37,16 +38,7 @@ defineProps({
 }
 
 .m3-progress-overlay__spinner {
-    width: 1.5rem;
-    height: 1.5rem;
-    border-radius: var(--m3-radius-full);
-    border: 2px solid color-mix(in srgb, var(--m3-color-primary) 30%, transparent);
-    border-top-color: var(--m3-color-primary);
-    animation: m3-progress-overlay-spin 0.7s linear infinite;
-}
-
-@keyframes m3-progress-overlay-spin {
-    to { transform: rotate(360deg); }
+    color: var(--m3-color-primary);
 }
 
 .m3-progress-overlay__bar {

@@ -14,6 +14,7 @@ import { useForm } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import M3Card from '@/Material/Components/M3Card.vue'
 import M3Button from '@/Material/Components/M3Button.vue'
+import M3CircularProgress from '@/Material/Components/M3CircularProgress.vue'
 import M3Modal from '@/Material/Components/M3Modal.vue'
 import M3TextField from '@/Material/Components/M3TextField.vue'
 import M3Textarea from '@/Material/Components/M3Textarea.vue'
@@ -201,7 +202,8 @@ const confirmDelete = () => {
                 :disabled="form.processing"
             >
                 <template #leading>
-                    <AppIcon :icon="form.processing ? 'loader-2' : 'check'" />
+                    <M3CircularProgress v-if="form.processing" size="sm" />
+                    <AppIcon v-else icon="check" />
                 </template>
                 {{ form.processing ? t('btn.saving') : (isEdit ? t('btn.update') : t('btn.save')) }}
             </M3Button>

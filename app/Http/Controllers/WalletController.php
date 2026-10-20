@@ -33,7 +33,7 @@ class WalletController extends Controller
 
         $balances = $this->calculateAllBalances();
 
-        return Inertia::render('Wallets/Index', [
+        return $this->renderPage('Index', [
             'wallets' => $wallets,
             'totalHutang' => $balances['total_debt'],
             'totalPiutang' => $balances['total_receivable'],
@@ -43,7 +43,7 @@ class WalletController extends Controller
     // Tampilkan Form Tambah Wallet
     public function create()
     {
-        return Inertia::render('Wallets/Create');
+        return $this->renderPage('Create', []);
     }
 
     // Proses Simpan Wallet Baru
@@ -110,7 +110,7 @@ class WalletController extends Controller
             ->whereBetween('date', [$startDate, $endDate])
             ->orderBy('date', 'desc')->orderBy('created_at', 'desc')->paginate(20);
 
-        return Inertia::render('Wallets/Show', [
+        return $this->renderPage('Show', [
             'wallet' => $wallet,
             'transactions' => $transactions,
             'startDate' => $startDate,
@@ -130,7 +130,7 @@ class WalletController extends Controller
             abort(403, 'Dompet Sistem tidak boleh diedit.');
         }
 
-        return Inertia::render('Wallets/Edit', [
+        return $this->renderPage('Edit', [
             'wallet' => $wallet,
         ]);
     }
@@ -255,5 +255,14 @@ class WalletController extends Controller
         $message = $validated['state'] ? 'Dompet berhasil ditambahkan ke Dashboard!' : 'Dompet berhasil dilepas dari Dashboard!';
 
         return back()->with('success', $message);
+    }
+
+    private function renderPage(string $page, array $props)
+    {
+        $view = Auth::user()?->ui_theme === 'm3'
+            ? "Material/Wallets/{$page}"
+            : "Wallets/{$page}";
+
+        return Inertia::render($view, $props);
     }
 }

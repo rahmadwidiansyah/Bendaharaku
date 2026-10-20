@@ -20,6 +20,7 @@ import M3Layout from '@/Material/Layouts/AuthenticatedLayout.vue'
 import M3Card from '@/Material/Components/M3Card.vue'
 import M3PageTitle from '@/Material/Components/M3PageTitle.vue'
 import M3CashflowCard from '@/Material/Pages/Dashboard/M3CashflowCard.vue'
+import M3CircularProgress from '@/Material/Components/M3CircularProgress.vue'
 import M3DateRangeModal from '@/Material/Components/M3DateRangeModal.vue'
 import M3IconButton from '@/Material/Components/M3IconButton.vue'
 import M3Button from '@/Material/Components/M3Button.vue'
@@ -909,8 +910,8 @@ onBeforeUnmount(() => {
                 </div>
                 <div v-show="!doughnutReady || activeCategoryData.labels.length">
                     <div class="m3-ana__doughnut-wrap">
-                        <div v-if="!doughnutReady" class="m3-ana__spinner" role="status" aria-label="Memuat">
-                            <span class="m3-ana__spinner-ring" aria-hidden="true" />
+                        <div v-if="!doughnutReady" class="m3-ana__spinner" role="status" :aria-label="$t('common.loading')">
+                            <M3CircularProgress size="lg" />
                         </div>
                         <canvas ref="doughnutChartRef" class="m3-ana__canvas m3-ana__canvas--front" role="img" :aria-label="$t('analytics.chartAria.breakdown')" />
                         <div v-if="doughnutReady && activeCategoryData.labels.length" class="m3-ana__doughnut-center" aria-hidden="true">
@@ -1215,19 +1216,7 @@ onBeforeUnmount(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-}
-
-.m3-ana__spinner-ring {
-    width: var(--m3-size-touch-target);
-    height: var(--m3-size-touch-target);
-    border-radius: var(--m3-radius-full);
-    border: 3px solid var(--m3-color-surface-container-highest);
-    border-top-color: var(--m3-color-primary);
-    animation: m3-ana-spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-}
-
-@keyframes m3-ana-spin {
-    to { transform: rotate(360deg); }
+    color: var(--m3-color-primary);
 }
 
 .m3-ana__doughnut-center {

@@ -26,7 +26,11 @@ class LoanController extends Controller
             $title = 'Rincian Piutang';
         }
 
-        return Inertia::render('Loans/Index', [
+        $view = request()->user()?->ui_theme === 'm3'
+            ? 'Material/Loans/Index'
+            : 'Loans/Index';
+
+        return Inertia::render($view, [
             'loanDetails' => $loanDetails,
             'title' => $title,
             'isDebt' => $isDebt,

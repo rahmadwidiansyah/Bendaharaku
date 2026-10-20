@@ -11,6 +11,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppIcon from '@/Components/AppIcon.vue'
+import M3CircularProgress from '@/Material/Components/M3CircularProgress.vue'
 
 const { t } = useI18n()
 
@@ -165,7 +166,7 @@ const statusMeta = computed(() => {
                 <AppIcon icon="maximize-2" iconClass="m3-ev__zoom-icon" />
             </span>
             <div v-if="statusMeta.spin" class="m3-ev__loading" aria-hidden="true">
-                <span class="m3-ev__spinner" />
+                <M3CircularProgress class="m3-ev__spinner" size="md" />
             </div>
             <div v-else-if="committed" class="m3-ev__committed" aria-hidden="true">
                 <AppIcon icon="check" iconClass="m3-ev__committed-icon" />
@@ -359,16 +360,7 @@ const statusMeta = computed(() => {
 }
 
 .m3-ev__spinner {
-    width: var(--m3-size-icon-xs);
-    height: var(--m3-size-icon-xs);
-    border: 2px solid color-mix(in srgb, var(--m3-color-primary) 30%, transparent);
-    border-top-color: var(--m3-color-primary);
-    border-radius: var(--m3-radius-full);
-    animation: m3-ev-spin 0.8s linear infinite;
-}
-
-@keyframes m3-ev-spin {
-    to { transform: rotate(360deg); }
+    color: var(--m3-color-primary);
 }
 
 .m3-ev__committed {

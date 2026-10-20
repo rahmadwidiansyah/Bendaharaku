@@ -8,6 +8,7 @@ import M3Button from '@/Material/Components/M3Button.vue'
 import M3IconButton from '@/Material/Components/M3IconButton.vue'
 import M3Modal from '@/Material/Components/M3Modal.vue'
 import M3Chip from '@/Material/Components/M3Chip.vue'
+import M3CircularProgress from '@/Material/Components/M3CircularProgress.vue'
 import M3AmountKeypad from '@/Material/Components/M3AmountKeypad.vue'
 import M3TextField from '@/Material/Components/M3TextField.vue'
 import AppIcon from '@/Components/AppIcon.vue'
@@ -349,10 +350,8 @@ const submit = () => {
                         :disabled="form.processing || totalBudget === 0"
                     >
                         <template #leading>
-                            <AppIcon
-                                :icon="form.processing ? 'loader-2' : 'check'"
-                                :class="form.processing ? 'm3-bc__spin' : ''"
-                            />
+                            <M3CircularProgress v-if="form.processing" size="sm" />
+                            <AppIcon v-else icon="check" />
                         </template>
                         {{ form.processing ? t('btn.saving') : t('btn.save') }}
                     </M3Button>
@@ -992,16 +991,6 @@ const submit = () => {
     gap: var(--m3-space-1);
 }
 
-.m3-bc__spin {
-    animation: m3-bc-spin 1s linear infinite;
-}
-
-@keyframes m3-bc-spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
 @media (min-width: 640px) {
     .m3-bc__fields {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1040,10 +1029,6 @@ const submit = () => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .m3-bc__spin {
-        animation: none;
-    }
-
     .m3-bc__field,
     .m3-bc__check-box,
     .m3-bc__check-box::after,

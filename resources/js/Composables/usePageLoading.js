@@ -59,7 +59,43 @@ function resolveSkeletonFromUrl(pathname) {
     return match?.skeleton ?? 'DashboardSkeleton'
 }
 
+// ── URL → nama skeleton M3 ────────────────────────────────────────
+// Map terpisah agar tema Default tidak terpengaruh. Halaman form/fullscreen
+// sengaja null: indikator wavy tetap tampil, tetapi overlay skeleton tidak.
+const M3_SKELETON_MAP = [
+    { pattern: /\/transactions\/create/,       skeleton: null                     },
+    { pattern: /\/transactions\/\d+\/edit/,    skeleton: null                     },
+    { pattern: /\/transactions/,               skeleton: null                     },
+    { pattern: /\/budgeting\/create/,          skeleton: null                     },
+    { pattern: /\/budgeting/,                  skeleton: 'M3BudgetSkeleton'        },
+    { pattern: /\/wallets\/create/,            skeleton: null                     },
+    { pattern: /\/wallets\/\d+\/edit/,         skeleton: null                     },
+    { pattern: /\/wallets\/\d+\/?$/,           skeleton: 'M3WalletShowSkeleton'    },
+    { pattern: /\/wallets/,                    skeleton: 'M3WalletsSkeleton'       },
+    { pattern: /\/categories\/create/,         skeleton: null                     },
+    { pattern: /\/categories\/\d+\/edit/,      skeleton: null                     },
+    { pattern: /\/categories\/\d+\/?$/,        skeleton: 'M3CategoryShowSkeleton'  },
+    { pattern: /\/categories/,                 skeleton: 'M3CategoriesSkeleton'    },
+    { pattern: /\/loans/,                      skeleton: 'M3LoansSkeleton'         },
+    { pattern: /^\/$|\/dashboard/,             skeleton: 'M3DashboardSkeleton'     },
+    { pattern: /\/analytics/,                  skeleton: 'M3AnalyticsSkeleton'     },
+    { pattern: /^\/settings\/?$/,              skeleton: 'M3SettingsHubSkeleton'   },
+    { pattern: /\/settings|\/profile/,         skeleton: 'M3SettingsSkeleton'      },
+    { pattern: /\/chat|\/more|\/search/,       skeleton: null                     },
+]
+
+/**
+ * Resolve skeleton M3 dari URL pathname. Fallback null agar halaman
+ * yang tidak punya padanan M3 tidak menampilkan komposisi yang salah.
+ */
+function resolveM3SkeletonFromUrl(pathname) {
+    if (!pathname) return null
+    const match = M3_SKELETON_MAP.find(m => m.pattern.test(pathname))
+    return match?.skeleton ?? null
+}
+
 const currentSkeleton = computed(() => resolveSkeletonFromUrl(pendingUrl.value))
+const currentSkeletonM3 = computed(() => resolveM3SkeletonFromUrl(pendingUrl.value))
 
 // ── Init listener sekali saja ─────────────────────────────────────
 function initListeners() {
@@ -113,5 +149,6 @@ export function usePageLoading() {
         isLoading,
         pendingUrl,
         currentSkeleton,
+        currentSkeletonM3,
     }
 }

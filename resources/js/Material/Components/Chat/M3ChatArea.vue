@@ -5,6 +5,7 @@
  */
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import M3CircularProgress from '@/Material/Components/M3CircularProgress.vue'
 import M3ChatMessage from './M3ChatMessage.vue'
 import M3TypingIndicator from './M3TypingIndicator.vue'
 
@@ -85,7 +86,7 @@ defineExpose({ el: containerRef })
 
         <!-- Indikator loading riwayat -->
         <div v-if="isLoadingMore" class="m3-chat-area__loading" role="status">
-            <span class="m3-chat-area__spinner" aria-hidden="true" />
+            <M3CircularProgress class="m3-chat-area__spinner" size="sm" />
             {{ t('chat.loadingMore') }}
         </div>
 
@@ -192,16 +193,7 @@ defineExpose({ el: containerRef })
 }
 
 .m3-chat-area__spinner {
-    width: 0.75rem;
-    height: 0.75rem;
-    border-radius: var(--m3-radius-full);
-    border: 2px solid var(--m3-color-outline-variant);
-    border-top-color: var(--m3-color-primary);
-    animation: m3-area-spin 0.8s linear infinite;
-}
-
-@keyframes m3-area-spin {
-    to { transform: rotate(360deg); }
+    color: var(--m3-color-primary);
 }
 
 .m3-chat-area__list {
