@@ -306,7 +306,7 @@ onUnmounted(stopGenerationPolling)
 </script>
 
 <template>
-    <M3Layout>
+    <M3Layout :title="t('budgeting.title')">
         <Head :title="t('budgeting.title')" />
 
         <div class="m3-bud">
@@ -338,7 +338,7 @@ onUnmounted(stopGenerationPolling)
                 <div class="m3-bud__actions">
                     <M3Button
                         v-if="!budgetData && isCurrentPeriod"
-                        variant="outlined"
+                        variant="tonal"
                         size="sm"
                         :href="route('budgeting.create')"
                     >
@@ -347,7 +347,7 @@ onUnmounted(stopGenerationPolling)
                     </M3Button>
                     <template v-if="budgetData && isCurrentPeriod">
                         <M3Button
-                            variant="outlined"
+                            variant="tonal"
                             size="sm"
                             :href="route('budgeting.create')"
                             :title="t('budgeting.edit')"
@@ -464,6 +464,15 @@ onUnmounted(stopGenerationPolling)
                             </M3IconButton>
                         </div>
 
+                        <div
+                            class="m3-bud__summary-hero"
+                            :class="{ 'm3-bud__summary-hero--over': totalRemaining < 0 }"
+                        >
+                            <span class="m3-bud__summary-hero-label">{{ t('budgeting.totalRemaining') }}</span>
+                            <span class="m3-bud__summary-hero-value">{{ formatRupiah(totalRemaining) }}</span>
+                            <span class="m3-bud__summary-hero-hint">{{ remainingHint }}</span>
+                        </div>
+
                         <div class="m3-bud__stats">
                             <div class="m3-bud__stat">
                                 <span class="m3-bud__stat-label">{{ t('budgeting.totalBudget') }}</span>
@@ -472,11 +481,6 @@ onUnmounted(stopGenerationPolling)
                             <div class="m3-bud__stat m3-bud__stat--spent">
                                 <span class="m3-bud__stat-label">{{ t('budgeting.totalSpent') }}</span>
                                 <span class="m3-bud__stat-value">{{ formatRupiah(totalSpent) }}</span>
-                            </div>
-                            <div class="m3-bud__stat" :class="totalRemaining < 0 ? 'm3-bud__stat--over' : ''">
-                                <span class="m3-bud__stat-label">{{ t('budgeting.totalRemaining') }}</span>
-                                <span class="m3-bud__stat-value">{{ formatRupiah(totalRemaining) }}</span>
-                                <span class="m3-bud__stat-hint">{{ remainingHint }}</span>
                             </div>
                         </div>
 
@@ -511,6 +515,7 @@ onUnmounted(stopGenerationPolling)
                                 type="button"
                                 class="m3-bud__group-head"
                                 :aria-expanded="expandedGroups.has(row.key)"
+                                :aria-controls="expandedGroups.has(row.key) ? `budget-group-members-${row.key}` : undefined"
                                 @click="toggleGroup(row.key)"
                             >
                                 <span class="m3-bud__group-ico">
@@ -532,29 +537,27 @@ onUnmounted(stopGenerationPolling)
                             </button>
 
                             <div class="m3-bud__group-body">
-                                <div class="m3-bud__group-budget">
-                                    <span class="m3-bud__label">{{ t('budgeting.budget') }}</span>
-                                    <span class="m3-bud__amount">{{ formatRupiah(row.target) }}</span>
-                                </div>
-
                                 <div class="m3-bud__group-bar">
                                     <M3ProgressBar :value="pct(row)" :over="isOver(row)" :aria-label="row.name" />
                                     <span class="m3-bud__group-pct">{{ pct(row) }}%</span>
                                 </div>
 
-                                <div class="m3-bud__tiles">
-                                    <div class="m3-bud__tile m3-bud__tile--spent">
-                                        <span class="m3-bud__tile-label">{{ t('budgeting.spent') }}</span>
-                                        <span class="m3-bud__tile-value" :title="formatRupiah(row.spent)">
-                                            {{ formatRupiah(row.spent) }}
-                                        </span>
-                                    </div>
-                                    <div class="m3-bud__tile" :class="row.remaining < 0 ? 'm3-bud__tile--over' : ''">
-                                        <span class="m3-bud__tile-label">{{ t('budgeting.remaining') }}</span>
-                                        <span class="m3-bud__tile-value" :title="formatRupiah(row.remaining)">
-                                            {{ formatRupiah(row.remaining) }}
-                                        </span>
-                                    </div>
+                                <div class="m3-bud__group-meta">
+                                    <span class="m3-bud__group-meta-item">
+                                        <span class="m3-bud__group-meta-label">{{ t('budgeting.budget') }}</span>
+                                        <span class="m3-bud__group-meta-value">{{ formatRupiah(row.target) }}</span>
+                                    </span>
+                                    <span class="m3-bud__group-meta-item m3-bud__group-meta-item--spent">
+                                        <span class="m3-bud__group-meta-label">{{ t('budgeting.spent') }}</span>
+                                        <span class="m3-bud__group-meta-value">{{ formatRupiah(row.spent) }}</span>
+                                    </span>
+                                    <span
+                                        class="m3-bud__group-meta-item"
+                                        :class="{ 'm3-bud__group-meta-item--over': row.remaining < 0 }"
+                                    >
+                                        <span class="m3-bud__group-meta-label">{{ t('budgeting.remaining') }}</span>
+                                        <span class="m3-bud__group-meta-value">{{ formatRupiah(row.remaining) }}</span>
+                                    </span>
                                 </div>
 
                                 <p v-if="isOver(row)" class="m3-bud__over-chip">
@@ -564,39 +567,44 @@ onUnmounted(stopGenerationPolling)
                             </div>
 
                             <!-- Anggota grup (expand) -->
-                            <div v-if="expandedGroups.has(row.key)" class="m3-bud__members">
-                                <div v-for="m in row.members" :key="m.id" class="m3-bud__member">
-                                    <span class="m3-bud__member-ico">
-                                        <AppIcon
-                                            :icon="m.icon"
-                                            fallback="folder"
-                                            :class="getM3CategoryIconClass(m.type?.name)"
-                                        />
-                                    </span>
-                                    <div class="m3-bud__member-main">
-                                        <p class="m3-bud__member-name">{{ m.name }}</p>
-                                        <div class="m3-bud__member-bar">
-                                            <M3ProgressBar :value="pct(m)" :over="isOver(m)" size="sm" :aria-label="m.name" />
-                                            <span class="m3-bud__member-pct">{{ pct(m) }}%</span>
+                            <Transition name="m3-bud-expand">
+                                <div
+                                    v-if="expandedGroups.has(row.key)"
+                                    :id="`budget-group-members-${row.key}`"
+                                    class="m3-bud__members"
+                                >
+                                    <div v-for="m in row.members" :key="m.id" class="m3-bud__member">
+                                        <span class="m3-bud__member-ico">
+                                            <AppIcon
+                                                :icon="m.icon"
+                                                fallback="folder"
+                                                :class="getM3CategoryIconClass(m.type?.name)"
+                                            />
+                                        </span>
+                                        <div class="m3-bud__member-main">
+                                            <div class="m3-bud__member-top">
+                                                <p class="m3-bud__member-name" :title="m.name">{{ m.name }}</p>
+                                                <span class="m3-bud__member-pct">{{ pct(m) }}%</span>
+                                            </div>
+                                            <div class="m3-bud__member-bar">
+                                                <M3ProgressBar :value="pct(m)" :over="isOver(m)" size="sm" :aria-label="m.name" />
+                                            </div>
+                                            <p class="m3-bud__member-amounts">
+                                                <span
+                                                    class="m3-bud__member-spent"
+                                                    :class="{ 'm3-bud__member-spent--over': isOver(m) }"
+                                                >
+                                                    {{ t('budgeting.spent') }} {{ formatRupiah(m.spent) }}
+                                                </span>
+                                                <span class="m3-bud__member-target">/ {{ formatRupiah(m.target) }}</span>
+                                            </p>
                                         </div>
                                     </div>
-                                    <div class="m3-bud__member-amounts">
-                                        <p class="m3-bud__member-target" :title="formatRupiah(m.target)">
-                                            {{ formatRupiah(m.target) }}
-                                        </p>
-                                        <p
-                                            class="m3-bud__member-spent"
-                                            :class="{ 'm3-bud__member-spent--over': isOver(m) }"
-                                            :title="formatRupiah(m.spent)"
-                                        >
-                                            {{ formatRupiah(m.spent) }} / {{ formatRupiah(m.target) }}
-                                        </p>
-                                    </div>
+                                    <p v-if="row.members.length === 0" class="m3-bud__members-empty">
+                                        — {{ t('common.noData') }} —
+                                    </p>
                                 </div>
-                                <p v-if="row.members.length === 0" class="m3-bud__members-empty">
-                                    — {{ t('common.noData') }} —
-                                </p>
-                            </div>
+                            </Transition>
                         </M3Card>
                     </div>
                 </template>
@@ -661,22 +669,23 @@ onUnmounted(stopGenerationPolling)
 
 /* ── Toolbar ── */
 .m3-bud__toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: var(--m3-space-3);
 }
 
 .m3-bud__period {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: var(--m3-space-1);
 }
 
 .m3-bud__period-label {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
+    flex: 1;
     gap: var(--m3-space-2);
     min-height: var(--m3-size-touch-target);
     padding: 0 var(--m3-space-4);
@@ -700,10 +709,13 @@ onUnmounted(stopGenerationPolling)
 }
 
 .m3-bud__actions {
-    display: flex;
-    align-items: center;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
     gap: var(--m3-space-2);
-    flex-wrap: wrap;
+}
+
+.m3-bud__actions > :deep(.m3-btn) {
+    width: 100%;
 }
 
 /* ── States ── */
@@ -843,23 +855,21 @@ onUnmounted(stopGenerationPolling)
     font-weight: var(--m3-type-emphasized-body-small-weight);
 }
 
-.m3-bud__stats {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--m3-space-2);
-    margin-top: var(--m3-space-4);
-}
-
-.m3-bud__stat {
+.m3-bud__summary-hero {
     display: flex;
     flex-direction: column;
     gap: var(--m3-space-1);
+    margin-top: var(--m3-space-4);
     padding: var(--m3-space-3) var(--m3-space-4);
     border-radius: var(--m3-radius-md);
     background: var(--m3-color-surface-container-high);
 }
 
-.m3-bud__stat-label {
+.m3-bud__summary-hero--over {
+    background: var(--m3-color-expense-container);
+}
+
+.m3-bud__summary-hero-label {
     font-size: var(--m3-type-label-medium-size);
     line-height: var(--m3-type-label-medium-line-height);
     font-weight: var(--m3-type-label-medium-weight);
@@ -868,34 +878,73 @@ onUnmounted(stopGenerationPolling)
     color: var(--m3-color-on-surface-variant);
 }
 
-.m3-bud__stat-value {
-    font-size: var(--m3-type-title-medium-size);
-    line-height: var(--m3-type-title-medium-line-height);
-    font-weight: var(--m3-type-emphasized-title-medium-weight);
+.m3-bud__summary-hero-value {
+    font-size: var(--m3-type-headline-small-size);
+    line-height: var(--m3-type-headline-small-line-height);
+    font-weight: var(--m3-type-emphasized-headline-small-weight);
+    letter-spacing: var(--m3-type-headline-small-tracking);
     font-variant-numeric: tabular-nums;
     overflow-wrap: anywhere;
 }
 
-.m3-bud__stat-hint {
+.m3-bud__summary-hero-hint {
     font-size: var(--m3-type-body-small-size);
     line-height: var(--m3-type-body-small-line-height);
     color: var(--m3-color-on-surface-variant);
 }
 
-.m3-bud__stat--spent,
-.m3-bud__stat--over {
-    background: var(--m3-color-expense-container);
-}
-
-.m3-bud__stat--spent .m3-bud__stat-label,
-.m3-bud__stat--over .m3-bud__stat-label,
-.m3-bud__stat--spent .m3-bud__stat-hint,
-.m3-bud__stat--over .m3-bud__stat-hint {
+.m3-bud__summary-hero--over .m3-bud__summary-hero-label,
+.m3-bud__summary-hero--over .m3-bud__summary-hero-hint {
     color: color-mix(in srgb, var(--m3-color-expense) 72%, transparent);
 }
 
-.m3-bud__stat--spent .m3-bud__stat-value,
-.m3-bud__stat--over .m3-bud__stat-value {
+.m3-bud__summary-hero--over .m3-bud__summary-hero-value {
+    color: var(--m3-color-expense);
+}
+
+.m3-bud__stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--m3-space-2);
+    margin-top: var(--m3-space-3);
+}
+
+.m3-bud__stat {
+    display: flex;
+    flex-direction: column;
+    gap: var(--m3-space-0-5);
+    min-width: 0;
+    padding: var(--m3-space-2) var(--m3-space-3);
+    border-radius: var(--m3-radius-md);
+    background: var(--m3-color-surface-container-high);
+}
+
+.m3-bud__stat-label {
+    font-size: var(--m3-type-label-small-size);
+    line-height: var(--m3-type-label-small-line-height);
+    font-weight: var(--m3-type-label-small-weight);
+    letter-spacing: var(--m3-type-label-small-tracking);
+    text-transform: uppercase;
+    color: var(--m3-color-on-surface-variant);
+}
+
+.m3-bud__stat-value {
+    font-size: var(--m3-type-body-medium-size);
+    line-height: var(--m3-type-body-medium-line-height);
+    font-weight: var(--m3-type-emphasized-body-medium-weight);
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+
+.m3-bud__stat--spent {
+    background: var(--m3-color-expense-container);
+}
+
+.m3-bud__stat--spent .m3-bud__stat-label {
+    color: color-mix(in srgb, var(--m3-color-expense) 72%, transparent);
+}
+
+.m3-bud__stat--spent .m3-bud__stat-value {
     color: var(--m3-color-expense);
 }
 
@@ -903,7 +952,13 @@ onUnmounted(stopGenerationPolling)
     display: flex;
     align-items: center;
     gap: var(--m3-space-3);
-    margin-top: var(--m3-space-4);
+    margin-top: var(--m3-space-3);
+}
+
+.m3-bud__summary-bar > :deep(.m3-progress),
+.m3-bud__group-bar > :deep(.m3-progress) {
+    flex: 1;
+    min-width: 0;
 }
 
 .m3-bud__summary-pct {
@@ -949,6 +1004,11 @@ onUnmounted(stopGenerationPolling)
     display: grid;
     grid-template-columns: 1fr;
     gap: var(--m3-space-3);
+    min-width: 0;
+}
+
+.m3-bud__group {
+    min-width: 0;
 }
 
 .m3-bud__group-head {
@@ -956,6 +1016,7 @@ onUnmounted(stopGenerationPolling)
     align-items: center;
     gap: var(--m3-space-2);
     width: 100%;
+    min-width: 0;
     padding: 0;
     border: none;
     background: none;
@@ -964,6 +1025,15 @@ onUnmounted(stopGenerationPolling)
     text-align: start;
     cursor: pointer;
     border-radius: var(--m3-radius-md);
+    transition: background-color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
+}
+
+.m3-bud__group-head:hover {
+    background: color-mix(in srgb, var(--m3-color-on-surface) 8%, transparent);
+}
+
+.m3-bud__group-head:active {
+    background: color-mix(in srgb, var(--m3-color-on-surface) 12%, transparent);
 }
 
 .m3-bud__group-head:focus-visible {
@@ -1027,37 +1097,13 @@ onUnmounted(stopGenerationPolling)
 }
 
 .m3-bud__group-body {
-    margin-top: var(--m3-space-3);
-}
-
-.m3-bud__group-budget {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: var(--m3-space-2);
-}
-
-.m3-bud__label {
-    font-size: var(--m3-type-label-medium-size);
-    line-height: var(--m3-type-label-medium-line-height);
-    font-weight: var(--m3-type-label-medium-weight);
-    letter-spacing: var(--m3-type-label-medium-tracking);
-    text-transform: uppercase;
-    color: var(--m3-color-on-surface-variant);
-}
-
-.m3-bud__amount {
-    font-size: var(--m3-type-title-small-size);
-    line-height: var(--m3-type-title-small-line-height);
-    font-weight: var(--m3-type-emphasized-title-small-weight);
-    font-variant-numeric: tabular-nums;
+    margin-top: var(--m3-space-2);
 }
 
 .m3-bud__group-bar {
     display: flex;
     align-items: center;
     gap: var(--m3-space-3);
-    margin-top: var(--m3-space-2);
 }
 
 .m3-bud__group-pct {
@@ -1069,23 +1115,22 @@ onUnmounted(stopGenerationPolling)
     color: var(--m3-color-on-surface-variant);
 }
 
-.m3-bud__tiles {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--m3-space-2);
-    margin-top: var(--m3-space-3);
-}
-
-.m3-bud__tile {
+.m3-bud__group-meta {
     display: flex;
-    flex-direction: column;
-    gap: var(--m3-space-1);
-    padding: var(--m3-space-2) var(--m3-space-3);
-    border-radius: var(--m3-radius-md);
-    background: var(--m3-color-surface-container-high);
+    flex-wrap: wrap;
+    gap: var(--m3-space-1) var(--m3-space-3);
+    margin-top: var(--m3-space-2);
+    min-width: 0;
 }
 
-.m3-bud__tile-label {
+.m3-bud__group-meta-item {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--m3-space-1);
+    min-width: 0;
+}
+
+.m3-bud__group-meta-label {
     font-size: var(--m3-type-label-small-size);
     line-height: var(--m3-type-label-small-line-height);
     font-weight: var(--m3-type-label-small-weight);
@@ -1094,28 +1139,21 @@ onUnmounted(stopGenerationPolling)
     color: var(--m3-color-on-surface-variant);
 }
 
-.m3-bud__tile-value {
-    font-size: var(--m3-type-body-medium-size);
-    line-height: var(--m3-type-body-medium-line-height);
-    font-weight: var(--m3-type-emphasized-body-medium-weight);
+.m3-bud__group-meta-value {
+    font-size: var(--m3-type-body-small-size);
+    line-height: var(--m3-type-body-small-line-height);
+    font-weight: var(--m3-type-emphasized-body-small-weight);
     font-variant-numeric: tabular-nums;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
 }
 
-.m3-bud__tile--spent,
-.m3-bud__tile--over {
-    background: var(--m3-color-expense-container);
-}
-
-.m3-bud__tile--spent .m3-bud__tile-label,
-.m3-bud__tile--over .m3-bud__tile-label {
+.m3-bud__group-meta-item--spent .m3-bud__group-meta-label,
+.m3-bud__group-meta-item--over .m3-bud__group-meta-label {
     color: color-mix(in srgb, var(--m3-color-expense) 72%, transparent);
 }
 
-.m3-bud__tile--spent .m3-bud__tile-value,
-.m3-bud__tile--over .m3-bud__tile-value {
+.m3-bud__group-meta-item--spent .m3-bud__group-meta-value,
+.m3-bud__group-meta-item--over .m3-bud__group-meta-value {
     color: var(--m3-color-expense);
 }
 
@@ -1141,6 +1179,7 @@ onUnmounted(stopGenerationPolling)
 
 /* ── Anggota grup ── */
 .m3-bud__members {
+    min-width: 0;
     margin-top: var(--m3-space-3);
     padding-top: var(--m3-space-3);
     border-top: 1px solid var(--m3-color-outline-variant);
@@ -1148,9 +1187,14 @@ onUnmounted(stopGenerationPolling)
 
 .m3-bud__member {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: var(--m3-space-3);
+    min-width: 0;
     padding: var(--m3-space-2) 0;
+}
+
+.m3-bud__member + .m3-bud__member {
+    margin-top: var(--m3-space-1);
 }
 
 .m3-bud__member-ico {
@@ -1172,62 +1216,65 @@ onUnmounted(stopGenerationPolling)
 .m3-bud__member-main {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--m3-space-1);
+}
+
+.m3-bud__member-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--m3-space-2);
+    min-width: 0;
 }
 
 .m3-bud__member-name {
+    flex: 1;
+    min-width: 0;
     font-size: var(--m3-type-body-medium-size);
     line-height: var(--m3-type-body-medium-line-height);
     font-weight: var(--m3-type-emphasized-body-medium-weight);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-}
-
-.m3-bud__member-bar {
-    display: flex;
-    align-items: center;
-    gap: var(--m3-space-2);
-    margin-top: var(--m3-space-1-5);
 }
 
 .m3-bud__member-pct {
     flex-shrink: 0;
-    font-size: var(--m3-type-label-small-size);
-    line-height: var(--m3-type-label-small-line-height);
-    font-weight: var(--m3-type-emphasized-label-small-weight);
+    font-size: var(--m3-type-label-medium-size);
+    line-height: var(--m3-type-label-medium-line-height);
+    font-weight: var(--m3-type-emphasized-label-medium-weight);
     font-variant-numeric: tabular-nums;
     color: var(--m3-color-on-surface-variant);
 }
 
+.m3-bud__member-bar {
+    min-width: 0;
+}
+
 .m3-bud__member-amounts {
-    flex-shrink: 0;
-    min-width: 5.5rem;
-    text-align: end;
-}
-
-.m3-bud__member-target {
-    font-size: var(--m3-type-body-medium-size);
-    line-height: var(--m3-type-body-medium-line-height);
-    font-weight: var(--m3-type-emphasized-body-medium-weight);
-    font-variant-numeric: tabular-nums;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.m3-bud__member-spent {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--m3-space-1);
     font-size: var(--m3-type-body-small-size);
     line-height: var(--m3-type-body-small-line-height);
     font-variant-numeric: tabular-nums;
     color: var(--m3-color-on-surface-variant);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
+}
+
+.m3-bud__member-spent {
+    font-weight: var(--m3-type-emphasized-body-small-weight);
+    color: var(--m3-color-on-surface);
 }
 
 .m3-bud__member-spent--over {
     color: var(--m3-color-expense);
-    font-weight: var(--m3-type-emphasized-body-small-weight);
+}
+
+.m3-bud__member-target {
+    white-space: nowrap;
 }
 
 .m3-bud__members-empty {
@@ -1273,6 +1320,17 @@ onUnmounted(stopGenerationPolling)
     color: var(--m3-color-on-surface-variant);
 }
 
+/* ── Expand transition ── */
+.m3-bud-expand-enter-active,
+.m3-bud-expand-leave-active {
+    transition: opacity var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
+}
+
+.m3-bud-expand-enter-from,
+.m3-bud-expand-leave-to {
+    opacity: 0;
+}
+
 /* ── Utilitas ── */
 .m3-bud__spin {
     animation: m3-bud-spin 1s linear infinite;
@@ -1289,25 +1347,62 @@ onUnmounted(stopGenerationPolling)
         animation-duration: 3s;
     }
 
-    .m3-bud__group-chevron {
+    .m3-bud__group-chevron,
+    .m3-bud__group-head {
+        transition: none;
+    }
+
+    .m3-bud-expand-enter-active,
+    .m3-bud-expand-leave-active {
         transition: none;
     }
 }
 
 /* ── Responsif ── */
 @media (min-width: 640px) {
-    .m3-bud__stats {
-        grid-template-columns: repeat(3, 1fr);
+    .m3-bud__toolbar {
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--m3-space-3);
+    }
+
+    .m3-bud__period {
+        flex: 0 1 auto;
+        justify-content: flex-start;
+    }
+
+    .m3-bud__period-label {
+        flex: 0 1 auto;
+    }
+
+    .m3-bud__actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: var(--m3-space-2);
+    }
+
+    .m3-bud__actions > :deep(.m3-btn) {
+        width: auto;
+    }
+
+    .m3-bud__summary-hero-value {
+        font-size: var(--m3-type-headline-medium-size);
+        line-height: var(--m3-type-headline-medium-line-height);
+        font-weight: var(--m3-type-emphasized-headline-medium-weight);
+        letter-spacing: var(--m3-type-headline-medium-tracking);
     }
 
     .m3-bud__grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
 @media (min-width: 1280px) {
     .m3-bud__grid {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 }
 </style>

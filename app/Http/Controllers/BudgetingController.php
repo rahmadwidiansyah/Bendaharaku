@@ -33,7 +33,9 @@ class BudgetingController extends Controller
             ->with(['items.budgetable', 'expenseGroups'])
             ->first();
 
-        return Inertia::render('Budgeting/Create', [
+        $view = $user->ui_theme === 'm3' ? 'Material/Budgeting/Create' : 'Budgeting/Create';
+
+        return Inertia::render($view, [
             'categories' => $categories,
             'expenseGroups' => $expenseGroups,
             'existingBudget' => $existingBudget,

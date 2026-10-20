@@ -10,7 +10,7 @@ import M3ProgressBar from '@/Material/Components/M3ProgressBar.vue'
 
 <template>
     <div class="m3-bud-skel" role="status" aria-label="Memuat anggaran">
-        <M3Card variant="outlined">
+        <M3Card variant="outlined" padding="lg">
             <div class="m3-bud-skel__head">
                 <div class="m3-bud-skel__block m3-bud-skel__avatar"></div>
                 <div class="m3-bud-skel__head-text">
@@ -18,8 +18,9 @@ import M3ProgressBar from '@/Material/Components/M3ProgressBar.vue'
                     <div class="m3-bud-skel__block m3-bud-skel__line-sm"></div>
                 </div>
             </div>
+            <div class="m3-bud-skel__block m3-bud-skel__hero"></div>
             <div class="m3-bud-skel__stats">
-                <div v-for="i in 3" :key="i" class="m3-bud-skel__block m3-bud-skel__stat"></div>
+                <div v-for="i in 2" :key="i" class="m3-bud-skel__block m3-bud-skel__stat"></div>
             </div>
             <div class="m3-bud-skel__bar">
                 <M3ProgressBar :value="0" size="md" />
@@ -27,7 +28,7 @@ import M3ProgressBar from '@/Material/Components/M3ProgressBar.vue'
         </M3Card>
 
         <div class="m3-bud-skel__grid">
-            <M3Card v-for="i in 3" :key="i" variant="outlined">
+            <M3Card v-for="i in 3" :key="i" variant="outlined" padding="sm">
                 <div class="m3-bud-skel__group-head">
                     <div class="m3-bud-skel__block m3-bud-skel__group-icon"></div>
                     <div class="m3-bud-skel__head-text">
@@ -36,13 +37,12 @@ import M3ProgressBar from '@/Material/Components/M3ProgressBar.vue'
                     </div>
                 </div>
                 <div class="m3-bud-skel__group-bar">
-                    <div class="m3-bud-skel__block m3-bud-skel__line-sm"></div>
-                    <div class="m3-bud-skel__block m3-bud-skel__line-md"></div>
+                    <M3ProgressBar :value="0" size="md" />
+                    <div class="m3-bud-skel__block m3-bud-skel__pct"></div>
                 </div>
-                <M3ProgressBar :value="0" size="md" />
-                <div class="m3-bud-skel__tiles">
-                    <div class="m3-bud-skel__block m3-bud-skel__tile"></div>
-                    <div class="m3-bud-skel__block m3-bud-skel__tile"></div>
+                <div class="m3-bud-skel__group-meta">
+                    <div class="m3-bud-skel__block m3-bud-skel__meta"></div>
+                    <div class="m3-bud-skel__block m3-bud-skel__meta"></div>
                 </div>
             </M3Card>
         </div>
@@ -107,20 +107,26 @@ import M3ProgressBar from '@/Material/Components/M3ProgressBar.vue'
     border-radius: var(--m3-radius-full);
 }
 
+.m3-bud-skel__hero {
+    height: 6rem;
+    margin-top: var(--m3-space-4);
+    border-radius: var(--m3-radius-md);
+}
+
 .m3-bud-skel__stats {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--m3-space-2);
-    margin-top: var(--m3-space-4);
+    margin-top: var(--m3-space-3);
 }
 
 .m3-bud-skel__stat {
-    height: 4.5rem;
+    height: 3.375rem;
     border-radius: var(--m3-radius-md);
 }
 
 .m3-bud-skel__bar {
-    margin-top: var(--m3-space-4);
+    margin-top: var(--m3-space-3);
 }
 
 .m3-bud-skel__grid {
@@ -136,8 +142,8 @@ import M3ProgressBar from '@/Material/Components/M3ProgressBar.vue'
 }
 
 .m3-bud-skel__group-icon {
-    width: 2.5rem;
-    height: 2.5rem;
+    width: var(--m3-size-touch-target);
+    height: var(--m3-size-touch-target);
     border-radius: var(--m3-radius-full);
     flex-shrink: 0;
 }
@@ -145,36 +151,48 @@ import M3ProgressBar from '@/Material/Components/M3ProgressBar.vue'
 .m3-bud-skel__group-bar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: var(--m3-space-2);
-    margin: var(--m3-space-4) 0 var(--m3-space-2);
+    gap: var(--m3-space-3);
+    margin-top: var(--m3-space-2);
 }
 
-.m3-bud-skel__tiles {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--m3-space-2);
-    margin-top: var(--m3-space-3);
+.m3-bud-skel__group-bar :deep(.m3-progress) {
+    flex: 1;
+    min-width: 0;
 }
 
-.m3-bud-skel__tile {
-    height: 3rem;
-    border-radius: var(--m3-radius-md);
+.m3-bud-skel__pct {
+    width: 2rem;
+    height: 1.25rem;
+    border-radius: var(--m3-radius-full);
+    flex-shrink: 0;
+}
+
+.m3-bud-skel__group-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--m3-space-1) var(--m3-space-3);
+    margin-top: var(--m3-space-2);
+}
+
+.m3-bud-skel__meta {
+    width: 5.5rem;
+    height: 1rem;
+    border-radius: var(--m3-radius-full);
 }
 
 @media (min-width: 640px) {
-    .m3-bud-skel__stats {
-        grid-template-columns: repeat(3, 1fr);
+    .m3-bud-skel__hero {
+        height: 6.25rem;
     }
 
     .m3-bud-skel__grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
 @media (min-width: 1280px) {
     .m3-bud-skel__grid {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 }
 
