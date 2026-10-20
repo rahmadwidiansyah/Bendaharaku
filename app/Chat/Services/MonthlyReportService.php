@@ -170,7 +170,7 @@ class MonthlyReportService
                 'final_summary' => $finalReport,
                 'metrics' => $metrics,
                 'previous_month_summary' => null,
-                'provider' => $geminiReport ? 'gemini' : 'local',
+                'provider' => $geminiReport ? ($geminiResult['provider'] ?? 'ai-pool') : 'local',
                 'model' => $geminiResult['model'] ?? null,
                 'status' => 'completed',
             ]
@@ -387,6 +387,37 @@ class MonthlyReportService
         ];
     }
 
+    private function buildMonthlyReportPayload(
+        Collection $transactions,
+        string $localReport,
+        Carbon $period,
+        ?MonthlyReport $previousReport,
+    ): array {
+        $transactionsForPayload = $transactions->take(50);
+
+        return [
+            'periode' => $period->format('Y-m'),
+            'ringkasan_angka' => $localReport,
+            'pembanding_bulan_sebelumnya' => $previousReport ? [
+                'periode' => $previousReport->period_month?->format('Y-m'),
+                'ringkasan' => $previousReport->final_summary,
+                'metrics' => $previousReport->metrics,
+                'comparison' => $this->buildComparisonMetrics($this->buildMonthlyMetrics($transactions), $previousReport),
+            ] : null,
+            'transaksi' => $transactionsForPayload->map(fn ($trx) => [
+                'tanggal' => $trx->date?->toDateString(),
+                'tipe' => $trx->type?->name,
+                'kategori' => $trx->category?->category_name,
+                'dompet_asal' => $trx->sourceWallet?->name,
+                'dompet_tujuan' => $trx->destinationWallet?->name,
+                'nominal' => (float) $trx->amount,
+                'catatan' => $trx->notes,
+            ])->values()->all(),
+            'truncated' => ($transactionsForPayload->count() < $transactions->count()) ? true : false,
+            'transactions_count' => $transactions->count(),
+        ];
+    }
+
     public function generateGeminiMonthlyReport(
         User $user,
         $transactions,
@@ -401,28 +432,7 @@ class MonthlyReportService
 
             $transactionsCollection = Collection::make($transactions);
             $transactionsForPayload = $transactionsCollection->take(50);
-
-            $payload = [
-                'periode' => $period->format('Y-m'),
-                'ringkasan_angka' => $localReport,
-                'pembanding_bulan_sebelumnya' => $previousReport ? [
-                    'periode' => $previousReport->period_month?->format('Y-m'),
-                    'ringkasan' => $previousReport->final_summary,
-                    'metrics' => $previousReport->metrics,
-                    'comparison' => $this->buildComparisonMetrics($this->buildMonthlyMetrics(Collection::make([])), $previousReport),
-                ] : null,
-                'transaksi' => $transactionsForPayload->map(fn ($trx) => [
-                    'tanggal' => $trx->date?->toDateString(),
-                    'tipe' => $trx->type?->name,
-                    'kategori' => $trx->category?->category_name,
-                    'dompet_asal' => $trx->sourceWallet?->name,
-                    'dompet_tujuan' => $trx->destinationWallet?->name,
-                    'nominal' => (float) $trx->amount,
-                    'catatan' => $trx->notes,
-                ])->values()->all(),
-                'truncated' => ($transactionsForPayload->count() < $transactionsCollection->count()) ? true : false,
-                'transactions_count' => $transactionsCollection->count(),
-            ];
+            $payload = $this->buildMonthlyReportPayload($transactionsCollection, $localReport, $period, $previousReport);
 
             $prompt = implode("\n", [
                 'Kamu adalah analis keuangan pribadi untuk aplikasi Bendaharaku.',
