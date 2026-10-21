@@ -1,5 +1,7 @@
-@extends('errors.minimal')
+@extends('errors.layout')
 
-@section('title', __('419 Page Expired'))
+@section('title', 'Halaman kedaluwarsa')
 @section('code', '419')
-@section('message', __('Page Expired'))
+@section('icon', 'timer')
+@section('heading', 'Halaman sudah kedaluwarsa')
+@section('message', 'Sesi halaman ini telah berakhir. Muat ulang halaman lalu coba lagi.')

@@ -123,6 +123,26 @@ class BudgetingCreateTest extends TestCase
         $this->assertSame([$rent->id], $fixedGroup->category_ids);
     }
 
+    public function test_store_rounds_fractional_target_to_whole_rupiah(): void
+    {
+        $food = $this->createExpenseCategory('Makanan');
+
+        $this->actingAs($this->user)
+            ->post('/budgeting/create', [
+                'name' => 'Budget Bulanan',
+                'rows' => [
+                    ['category_id' => $food->id, 'group_key' => 'variable', 'target_amount' => 50000.6],
+                ],
+            ])
+            ->assertRedirect(route('budgeting.index'));
+
+        $budgetGroup = BudgetGroup::where('user_id', $this->user->id)->firstOrFail();
+        $item = $budgetGroup->items()->where('budgetable_id', $food->id)->firstOrFail();
+
+        $this->assertSame('50001.00', $budgetGroup->total_budget_amount);
+        $this->assertSame('50001.00', $item->target_amount);
+    }
+
     public function test_store_merges_with_existing_ai_budget(): void
     {
         $food = $this->createExpenseCategory('Makanan');

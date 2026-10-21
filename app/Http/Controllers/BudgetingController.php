@@ -98,6 +98,8 @@ class BudgetingController extends Controller
                 $row['group_name'] = null;
             }
 
+            $row['target_amount'] = (int) round((float) $row['target_amount']);
+
             return $row;
         });
 
@@ -132,7 +134,7 @@ class BudgetingController extends Controller
                 $aiGroup = $aiGroupOf($categoryId);
                 $final->put($categoryId, [
                     'category_id' => (int) $categoryId,
-                    'target_amount' => $row !== null ? (float) $row['target_amount'] : (float) $item->target_amount,
+                    'target_amount' => $row !== null ? (int) $row['target_amount'] : (int) round((float) $item->target_amount),
                     'group_key' => $row !== null ? $row['group_key'] : $aiGroup['key'],
                     'group_name' => $row !== null ? $row['group_name'] : $aiGroup['name'],
                 ]);
@@ -143,7 +145,7 @@ class BudgetingController extends Controller
                 if (! $final->has($categoryId)) {
                     $final->put($categoryId, [
                         'category_id' => (int) $categoryId,
-                        'target_amount' => (float) $row['target_amount'],
+                        'target_amount' => (int) $row['target_amount'],
                         'group_key' => $row['group_key'],
                         'group_name' => $row['group_name'],
                     ]);
@@ -153,7 +155,7 @@ class BudgetingController extends Controller
             foreach ($selected as $categoryId => $row) {
                 $final->put($categoryId, [
                     'category_id' => (int) $categoryId,
-                    'target_amount' => (float) $row['target_amount'],
+                    'target_amount' => (int) $row['target_amount'],
                     'group_key' => $row['group_key'],
                     'group_name' => $row['group_name'],
                 ]);

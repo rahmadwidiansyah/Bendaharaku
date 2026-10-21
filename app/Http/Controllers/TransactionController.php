@@ -50,7 +50,11 @@ class TransactionController extends Controller implements HasMiddleware
         $agg = $lists->aggregates($user, $filters);
         $norm = $this->normalizedRange($request);
 
-        return Inertia::render('Transactions/Index', [
+        $view = $user->ui_theme === 'm3'
+            ? 'Material/Transactions/Index'
+            : 'Transactions/Index';
+
+        return Inertia::render($view, [
             'transactions' => [
                 'data' => $page['data'],
                 'next_cursor' => $page['next_cursor'],

@@ -146,6 +146,23 @@ class AIBudgetServiceTest extends TestCase
         $this->assertCount(1, $group->items);
     }
 
+    public function test_generate_rounds_fractional_ai_amounts_to_whole_rupiah(): void
+    {
+        $this->createExpense(100000, '2026-05-15');
+
+        $this->adapter->shouldReceive('generateText')->once()->andReturn(
+            json_encode([
+                'notes' => 'Rounded.',
+                'by_category' => [['id' => $this->category->id, 'amount' => 120000.67]],
+            ])
+        );
+
+        $group = $this->makeService()->generate($this->user, 8, 2026);
+
+        $this->assertSame('120001.00', $group->total_budget_amount);
+        $this->assertSame('120001.00', $group->items->first()->target_amount);
+    }
+
     public function test_regenerate_replaces_items_instead_of_duplicating(): void
     {
         $this->createExpense(100000, '2026-05-15');

@@ -663,6 +663,8 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
     display: flex;
     flex-direction: column;
     gap: var(--m3-space-2);
+    min-width: 0;
+    max-width: 100%;
 }
 
 .m3-selected-date {

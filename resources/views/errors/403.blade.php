@@ -1,5 +1,7 @@
-@extends('errors.minimal')
+@extends('errors.layout')
 
-@section('title', __('403 Forbidden'))
+@section('title', 'Akses dibatasi')
 @section('code', '403')
-@section('message', __($exception->getMessage() ?: "The page you are trying to access is restricted. If you believe this is a mistake, please contact the administrator."))
+@section('icon', 'shield')
+@section('heading', 'Akses dibatasi')
+@section('message', ($exception ?? null)?->getMessage() ?: 'Anda tidak memiliki izin untuk membuka halaman ini.')

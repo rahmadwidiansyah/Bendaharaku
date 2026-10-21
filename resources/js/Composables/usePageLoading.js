@@ -65,7 +65,7 @@ function resolveSkeletonFromUrl(pathname) {
 const M3_SKELETON_MAP = [
     { pattern: /\/transactions\/create/,       skeleton: null                     },
     { pattern: /\/transactions\/\d+\/edit/,    skeleton: null                     },
-    { pattern: /\/transactions/,               skeleton: null                     },
+    { pattern: /\/transactions/,               skeleton: 'M3TransactionsSkeleton' },
     { pattern: /\/budgeting\/create/,          skeleton: null                     },
     { pattern: /\/budgeting/,                  skeleton: 'M3BudgetSkeleton'        },
     { pattern: /\/wallets\/create/,            skeleton: null                     },

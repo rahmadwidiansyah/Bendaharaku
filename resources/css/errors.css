@@ -1,0 +1,356 @@
+/*
+ * errors.css — standalone styling for HTTP error pages.
+ *
+ * Error pages are rendered by Laravel outside Inertia, so they get their own
+ * CSS entry that reuses the SAME design tokens as the app:
+ *   · Default UI → --color-* / --radius-* / --shadow-* / --spacing-*
+ *   · M3 UI      → --m3-* under `.ui-m3`
+ *
+ * No financial semantic colors are used here. Error/destructive states use the
+ * theme accent; expense-red stays reserved for expenses.
+ */
+
+@import "./app.css";
+@import "./m3-tokens.css";
+@import "./m3-schemes.css";
+
+/* ── Theme aliases (Default) ─────────────────────────────────────── */
+:root {
+    --err-bg: var(--color-surface-base);
+    --err-surface: var(--color-surface-raised);
+    --err-surface-soft: var(--color-surface-muted);
+    --err-text: var(--color-text-primary);
+    --err-muted: var(--color-text-secondary);
+    --err-border: var(--color-border-default);
+    --err-accent: var(--color-brand);
+    --err-accent-soft: var(--color-brand-subtle);
+    --err-accent-border: var(--color-brand-border);
+    --err-on-accent: var(--color-text-primary);
+    --err-glow-1: var(--color-brand-subtle);
+    --err-glow-2: var(--color-brand-subtle);
+    --err-glow-blur: 96px;
+    --err-shadow: var(--shadow-modal);
+    --err-action-shadow: var(--shadow-card);
+    --err-radius-card: var(--radius-2xl);
+    --err-radius-pill: var(--radius-pill);
+    --err-font: var(--font-sans);
+    --err-space-1: var(--spacing-xs);
+    --err-space-2: var(--spacing-sm);
+    --err-space-3: var(--spacing-md);
+    --err-space-4: var(--spacing-lg);
+    --err-space-6: var(--spacing-xl);
+    --err-space-8: var(--spacing-2xl);
+    --err-space-12: var(--spacing-3xl);
+    --err-code-size: clamp(4.5rem, 18vw, 8rem);
+    --err-code-weight: 800;
+    --err-code-tracking: -0.045em;
+    --err-title-size: var(--text-fluid-2xl);
+    --err-title-line: 1.2;
+    --err-title-weight: 700;
+    --err-body-size: var(--text-fluid-base);
+    --err-body-line: 1.7;
+    --err-label-size: var(--text-2xs);
+    --err-label-tracking: 0.14em;
+    --err-label-transform: uppercase;
+    --err-control-height: var(--spacing-3xl);
+    --err-motion: var(--duration-fast) var(--ease-standard);
+}
+
+/* ── Theme aliases (M3 Expressive) ───────────────────────────────── */
+.ui-m3 {
+    --err-bg: var(--m3-color-background);
+    --err-surface: var(--m3-color-surface-container);
+    --err-surface-soft: var(--m3-color-surface-container-high);
+    --err-text: var(--m3-color-on-surface);
+    --err-muted: var(--m3-color-on-surface-variant);
+    --err-border: var(--m3-color-outline-variant);
+    --err-accent: var(--m3-color-primary);
+    --err-accent-soft: var(--m3-color-primary-container);
+    --err-accent-border: var(--m3-color-primary);
+    --err-on-accent: var(--m3-color-on-primary);
+    --err-glow-1: var(--m3-color-primary-container);
+    --err-glow-2: var(--m3-color-tertiary-container);
+    --err-glow-blur: 110px;
+    --err-shadow: var(--m3-elevation-3);
+    --err-action-shadow: none;
+    --err-radius-card: var(--m3-radius-xl);
+    --err-radius-pill: var(--m3-radius-full);
+    --err-font: var(--font-sans);
+    --err-space-1: var(--m3-space-1);
+    --err-space-2: var(--m3-space-2);
+    --err-space-3: var(--m3-space-3);
+    --err-space-4: var(--m3-space-4);
+    --err-space-6: var(--m3-space-6);
+    --err-space-8: var(--m3-space-8);
+    --err-space-12: var(--m3-space-12);
+    --err-code-size: clamp(4.5rem, 18vw, 8.5rem);
+    --err-code-weight: var(--m3-type-display-small-weight);
+    --err-code-tracking: -0.02em;
+    --err-title-size: var(--m3-type-headline-medium-size);
+    --err-title-line: var(--m3-type-headline-medium-line-height);
+    --err-title-weight: var(--m3-type-emphasized-headline-medium-weight);
+    --err-body-size: var(--m3-type-body-large-size);
+    --err-body-line: var(--m3-type-body-large-line-height);
+    --err-label-size: var(--m3-type-label-medium-size);
+    --err-label-tracking: var(--m3-type-label-medium-tracking);
+    --err-label-transform: none;
+    --err-control-height: var(--m3-size-touch-target-lg);
+    --err-motion: var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
+}
+
+/* ── Page shell ─────────────────────────────────────────────────── */
+.err-page {
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-height: 100svh;
+    margin: 0;
+    padding: var(--err-space-6) var(--err-space-4);
+    overflow: hidden;
+    font-family: var(--err-font);
+    color: var(--err-text);
+    background: var(--err-bg);
+    -webkit-font-smoothing: antialiased;
+}
+
+.err-page__glow {
+    position: fixed;
+    z-index: 0;
+    width: min(34rem, 85vw);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    filter: blur(var(--err-glow-blur));
+    opacity: 0.55;
+    pointer-events: none;
+}
+
+.err-page__glow--one {
+    top: -18%;
+    right: -12%;
+    background: var(--err-glow-1);
+}
+
+.err-page__glow--two {
+    bottom: -24%;
+    left: -16%;
+    background: var(--err-glow-2);
+    opacity: 0.4;
+}
+
+.err-shell {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 42rem;
+    display: flex;
+    flex-direction: column;
+    gap: var(--err-space-6);
+}
+
+/* ── Brand ──────────────────────────────────────────────────────── */
+.err-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--err-space-2);
+    align-self: flex-start;
+    color: var(--err-text);
+    text-decoration: none;
+}
+
+.err-brand__logo {
+    width: var(--err-space-8);
+    height: var(--err-space-8);
+    object-fit: contain;
+}
+
+.err-brand__name {
+    font-size: var(--err-body-size);
+    line-height: 1;
+    font-weight: var(--err-title-weight);
+    letter-spacing: -0.01em;
+}
+
+/* ── Card ───────────────────────────────────────────────────────── */
+.err-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--err-space-4);
+    padding: var(--err-space-8) var(--err-space-6) var(--err-space-6);
+    overflow: hidden;
+    text-align: center;
+    background: var(--err-surface);
+    border: 1px solid var(--err-border);
+    border-radius: var(--err-radius-card);
+    box-shadow: var(--err-shadow);
+}
+
+.err-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: var(--err-space-1);
+    background: linear-gradient(90deg, transparent, var(--err-accent), transparent);
+}
+
+.err-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--err-space-2);
+    max-width: 100%;
+    padding: var(--err-space-1) var(--err-space-3);
+    color: var(--err-accent);
+    background: var(--err-accent-soft);
+    border: 1px solid var(--err-accent-border);
+    border-radius: var(--err-radius-pill);
+    font-size: var(--err-label-size);
+    line-height: 1.3;
+    font-weight: 700;
+    letter-spacing: var(--err-label-tracking);
+    text-transform: var(--err-label-transform);
+}
+
+.err-badge__icon {
+    display: inline-flex;
+    flex-shrink: 0;
+}
+
+.err-badge__icon svg {
+    width: 1em;
+    height: 1em;
+}
+
+.err-code {
+    margin: 0;
+    font-size: var(--err-code-size);
+    line-height: 0.85;
+    font-weight: var(--err-code-weight);
+    letter-spacing: var(--err-code-tracking);
+    font-variant-numeric: tabular-nums;
+    color: var(--err-accent);
+}
+
+.err-title {
+    margin: 0;
+    max-width: 30ch;
+    font-size: var(--err-title-size);
+    line-height: var(--err-title-line);
+    font-weight: var(--err-title-weight);
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    color: var(--err-text);
+}
+
+.err-message {
+    margin: 0;
+    max-width: 46ch;
+    font-size: var(--err-body-size);
+    line-height: var(--err-body-line);
+    text-wrap: pretty;
+    color: var(--err-muted);
+}
+
+/* ── Actions ────────────────────────────────────────────────────── */
+.err-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--err-space-2);
+    width: 100%;
+    margin-top: var(--err-space-2);
+}
+
+.err-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--err-control-height);
+    padding: 0 var(--err-space-6);
+    font-family: inherit;
+    font-size: var(--err-label-size);
+    line-height: 1.2;
+    font-weight: 700;
+    letter-spacing: var(--err-label-tracking);
+    text-transform: var(--err-label-transform);
+    text-decoration: none;
+    border-radius: var(--err-radius-pill);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition:
+        background-color var(--err-motion),
+        border-color var(--err-motion),
+        color var(--err-motion),
+        transform var(--err-motion),
+        box-shadow var(--err-motion);
+}
+
+.err-btn:focus-visible {
+    outline: 2px solid var(--err-accent);
+    outline-offset: 3px;
+}
+
+.err-btn:active {
+    transform: scale(0.98);
+}
+
+.err-btn--filled {
+    color: var(--err-on-accent);
+    background: var(--err-accent);
+    box-shadow: var(--err-action-shadow);
+}
+
+.err-btn--filled:hover {
+    background: color-mix(in srgb, var(--err-accent) 88%, var(--err-text));
+}
+
+.err-btn--outlined {
+    color: var(--err-text);
+    background: transparent;
+    border-color: var(--err-border);
+}
+
+.err-btn--outlined:hover {
+    background: var(--err-accent-soft);
+    border-color: var(--err-accent-border);
+}
+
+/* ── Footer ─────────────────────────────────────────────────────── */
+.err-foot {
+    margin: 0;
+    text-align: center;
+    font-size: var(--err-label-size);
+    line-height: 1.4;
+    letter-spacing: var(--err-label-tracking);
+    color: var(--err-muted);
+}
+
+/* ── Responsive ─────────────────────────────────────────────────── */
+@media (min-width: 40rem) {
+    .err-shell {
+        gap: var(--err-space-8);
+    }
+
+    .err-card {
+        padding: var(--err-space-12) var(--err-space-8) var(--err-space-8);
+    }
+
+    .err-actions {
+        flex-direction: row;
+        justify-content: center;
+        width: auto;
+    }
+
+    .err-btn {
+        min-width: 10rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .err-btn {
+        transition: none;
+    }
+
+    .err-btn:active {
+        transform: none;
+    }
+}

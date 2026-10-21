@@ -1,5 +1,7 @@
-@extends('errors.minimal')
+@extends('errors.layout')
 
-@section('title', __('404 Not Found'))
+@section('title', 'Halaman tidak ditemukan')
 @section('code', '404')
-@section('message', __('The page you are looking for does not exist or has been moved.'))
+@section('icon', 'compass')
+@section('heading', 'Halaman tidak ditemukan')
+@section('message', 'Halaman yang Anda cari tidak ada atau sudah dipindahkan.')

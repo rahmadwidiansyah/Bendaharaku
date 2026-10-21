@@ -1,5 +1,7 @@
-@extends('errors.minimal')
+@extends('errors.layout')
 
-@section('title', __('503 Service Unavailable'))
+@section('title', 'Layanan tidak tersedia')
 @section('code', '503')
-@section('message', __('Service Unavailable'))
+@section('icon', 'cloud-off')
+@section('heading', 'Layanan sedang tidak tersedia')
+@section('message', 'Layanan sedang dalam pemeliharaan. Silakan coba lagi nanti.')

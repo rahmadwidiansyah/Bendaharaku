@@ -347,28 +347,24 @@ onUnmounted(stopGenerationPolling)
                         {{ t('budgeting.createManual') }}
                     </M3Button>
                     <template v-if="budgetData && isCurrentPeriod">
-                        <M3Button
+                        <M3IconButton
                             variant="tonal"
-                            size="sm"
                             :href="route('budgeting.create')"
+                            :aria-label="t('budgeting.edit')"
                             :title="t('budgeting.edit')"
                         >
-                            <template #leading><AppIcon icon="pencil" /></template>
-                            {{ t('budgeting.edit') }}
-                        </M3Button>
-                        <M3Button
-                            variant="outlined"
-                            size="sm"
+                            <AppIcon icon="pencil" />
+                        </M3IconButton>
+                        <M3IconButton
+                            variant="standard"
                             :disabled="isGenerating"
+                            :aria-label="t('budgeting.refresh')"
                             :title="t('budgeting.refresh')"
                             @click="requestRegenerate"
                         >
-                            <template #leading>
-                                <M3CircularProgress v-if="isGenerating" size="sm" />
-                                <AppIcon v-else icon="refresh-cw" />
-                            </template>
-                            {{ t('budgeting.refresh') }}
-                        </M3Button>
+                            <M3CircularProgress v-if="isGenerating" size="sm" />
+                            <AppIcon v-else icon="refresh-cw" />
+                        </M3IconButton>
                     </template>
                 </div>
             </div>
@@ -470,24 +466,24 @@ onUnmounted(stopGenerationPolling)
                             <span class="m3-bud__summary-hero-hint">{{ remainingHint }}</span>
                         </div>
 
-                        <div class="m3-bud__stats">
-                            <div class="m3-bud__stat">
-                                <span class="m3-bud__stat-label">{{ t('budgeting.totalBudget') }}</span>
-                                <span class="m3-bud__stat-value">{{ formatRupiah(totalBudget) }}</span>
-                            </div>
-                            <div class="m3-bud__stat m3-bud__stat--spent">
-                                <span class="m3-bud__stat-label">{{ t('budgeting.totalSpent') }}</span>
-                                <span class="m3-bud__stat-value">{{ formatRupiah(totalSpent) }}</span>
-                            </div>
-                        </div>
-
                         <div class="m3-bud__summary-bar">
                             <M3ProgressBar
                                 :value="totalPct"
                                 :over="totalRemaining < 0"
                                 :aria-label="t('budgeting.totalSpent')"
                             />
-                            <span class="m3-bud__summary-pct">{{ totalPct }}%</span>
+                        </div>
+
+                        <div class="m3-bud__facts">
+                            <div class="m3-bud__fact">
+                                <span class="m3-bud__fact-label">{{ t('budgeting.totalBudget') }}</span>
+                                <span class="m3-bud__fact-value">{{ formatRupiah(totalBudget) }}</span>
+                            </div>
+                            <span class="m3-bud__fact-divider" aria-hidden="true"></span>
+                            <div class="m3-bud__fact">
+                                <span class="m3-bud__fact-label">{{ t('budgeting.totalSpent') }}</span>
+                                <span class="m3-bud__fact-value">{{ formatRupiah(totalSpent) }}</span>
+                            </div>
                         </div>
 
                         <p v-if="!isCurrentPeriod" class="m3-bud__hint">{{ t('budgeting.pastPeriodHint') }}</p>
@@ -499,13 +495,13 @@ onUnmounted(stopGenerationPolling)
                         </div>
                     </M3Card>
 
-                    <!-- Grid kartu grup pengeluaran -->
-                    <div class="m3-bud__grid">
+                    <!-- Daftar grup pengeluaran (accordion) -->
+                    <div class="m3-bud__groups">
                         <M3Card
                             v-for="row in visibleRows"
                             :key="row.key"
                             variant="outlined"
-                            padding="sm"
+                            padding="none"
                             class="m3-bud__group"
                         >
                             <button
@@ -520,10 +516,15 @@ onUnmounted(stopGenerationPolling)
                                 </span>
                                 <span class="m3-bud__group-text">
                                     <span class="m3-bud__group-name">{{ row.name }}</span>
-                                    <span class="m3-bud__group-count">
+                                    <span class="m3-bud__group-sub">
                                         {{ row.members.length }} {{ t('budgeting.categories') }}
+                                        <template v-if="isOver(row)">
+                                            <span aria-hidden="true"> · </span>
+                                            <span class="m3-bud__group-over">{{ t('budgeting.overBudget') }}</span>
+                                        </template>
                                     </span>
                                 </span>
+                                <span class="m3-bud__group-total">{{ formatRupiah(row.target) }}</span>
                                 <span
                                     class="m3-bud__group-chevron"
                                     :class="{ 'm3-bud__group-chevron--open': expandedGroups.has(row.key) }"
@@ -532,36 +533,6 @@ onUnmounted(stopGenerationPolling)
                                     <AppIcon icon="chevron-down" />
                                 </span>
                             </button>
-
-                            <div class="m3-bud__group-body">
-                                <div class="m3-bud__group-bar">
-                                    <M3ProgressBar :value="pct(row)" :over="isOver(row)" :aria-label="row.name" />
-                                    <span class="m3-bud__group-pct">{{ pct(row) }}%</span>
-                                </div>
-
-                                <div class="m3-bud__group-meta">
-                                    <span class="m3-bud__group-meta-item">
-                                        <span class="m3-bud__group-meta-label">{{ t('budgeting.budget') }}</span>
-                                        <span class="m3-bud__group-meta-value">{{ formatRupiah(row.target) }}</span>
-                                    </span>
-                                    <span class="m3-bud__group-meta-item m3-bud__group-meta-item--spent">
-                                        <span class="m3-bud__group-meta-label">{{ t('budgeting.spent') }}</span>
-                                        <span class="m3-bud__group-meta-value">{{ formatRupiah(row.spent) }}</span>
-                                    </span>
-                                    <span
-                                        class="m3-bud__group-meta-item"
-                                        :class="{ 'm3-bud__group-meta-item--over': row.remaining < 0 }"
-                                    >
-                                        <span class="m3-bud__group-meta-label">{{ t('budgeting.remaining') }}</span>
-                                        <span class="m3-bud__group-meta-value">{{ formatRupiah(row.remaining) }}</span>
-                                    </span>
-                                </div>
-
-                                <p v-if="isOver(row)" class="m3-bud__over-chip">
-                                    <AppIcon icon="triangle-alert" class="m3-bud__over-icon" />
-                                    {{ t('budgeting.overBudget') }} {{ formatRupiah(row.spent - row.target) }}
-                                </p>
-                            </div>
 
                             <!-- Anggota grup (expand) -->
                             <Transition name="m3-bud-expand">
@@ -581,7 +552,10 @@ onUnmounted(stopGenerationPolling)
                                         <div class="m3-bud__member-main">
                                             <div class="m3-bud__member-top">
                                                 <p class="m3-bud__member-name" :title="m.name">{{ m.name }}</p>
-                                                <span class="m3-bud__member-pct">{{ pct(m) }}%</span>
+                                                <span
+                                                    class="m3-bud__member-pct"
+                                                    :class="{ 'm3-bud__member-pct--over': isOver(m) }"
+                                                >{{ pct(m) }}%</span>
                                             </div>
                                             <div class="m3-bud__member-bar">
                                                 <M3ProgressBar :value="pct(m)" :over="isOver(m)" size="sm" :aria-label="m.name" />
@@ -591,7 +565,7 @@ onUnmounted(stopGenerationPolling)
                                                     class="m3-bud__member-spent"
                                                     :class="{ 'm3-bud__member-spent--over': isOver(m) }"
                                                 >
-                                                    {{ t('budgeting.spent') }} {{ formatRupiah(m.spent) }}
+                                                    {{ formatRupiah(m.spent) }}
                                                 </span>
                                                 <span class="m3-bud__member-target">/ {{ formatRupiah(m.target) }}</span>
                                             </p>
@@ -899,24 +873,22 @@ onUnmounted(stopGenerationPolling)
     color: var(--m3-color-expense);
 }
 
-.m3-bud__stats {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--m3-space-2);
+.m3-bud__facts {
+    display: flex;
+    align-items: stretch;
+    gap: var(--m3-space-3);
     margin-top: var(--m3-space-3);
 }
 
-.m3-bud__stat {
+.m3-bud__fact {
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: var(--m3-space-0-5);
-    min-width: 0;
-    padding: var(--m3-space-2) var(--m3-space-3);
-    border-radius: var(--m3-radius-md);
-    background: var(--m3-color-surface-container-high);
 }
 
-.m3-bud__stat-label {
+.m3-bud__fact-label {
     font-size: var(--m3-type-label-small-size);
     line-height: var(--m3-type-label-small-line-height);
     font-weight: var(--m3-type-label-small-weight);
@@ -925,7 +897,7 @@ onUnmounted(stopGenerationPolling)
     color: var(--m3-color-on-surface-variant);
 }
 
-.m3-bud__stat-value {
+.m3-bud__fact-value {
     font-size: var(--m3-type-body-medium-size);
     line-height: var(--m3-type-body-medium-line-height);
     font-weight: var(--m3-type-emphasized-body-medium-weight);
@@ -933,38 +905,21 @@ onUnmounted(stopGenerationPolling)
     overflow-wrap: anywhere;
 }
 
-.m3-bud__stat--spent {
-    background: var(--m3-color-expense-container);
-}
-
-.m3-bud__stat--spent .m3-bud__stat-label {
-    color: color-mix(in srgb, var(--m3-color-expense) 72%, transparent);
-}
-
-.m3-bud__stat--spent .m3-bud__stat-value {
-    color: var(--m3-color-expense);
+.m3-bud__fact-divider {
+    width: 1px;
+    flex-shrink: 0;
+    background: var(--m3-color-outline-variant);
 }
 
 .m3-bud__summary-bar {
     display: flex;
     align-items: center;
-    gap: var(--m3-space-3);
     margin-top: var(--m3-space-3);
 }
 
-.m3-bud__summary-bar > :deep(.m3-progress),
-.m3-bud__group-bar > :deep(.m3-progress) {
+.m3-bud__summary-bar > :deep(.m3-progress) {
     flex: 1;
     min-width: 0;
-}
-
-.m3-bud__summary-pct {
-    flex-shrink: 0;
-    font-size: var(--m3-type-label-large-size);
-    line-height: var(--m3-type-label-large-line-height);
-    font-weight: var(--m3-type-emphasized-label-large-weight);
-    font-variant-numeric: tabular-nums;
-    color: var(--m3-color-on-surface-variant);
 }
 
 .m3-bud__hint {
@@ -996,16 +951,17 @@ onUnmounted(stopGenerationPolling)
     overflow-wrap: anywhere;
 }
 
-/* ── Grid grup ── */
-.m3-bud__grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--m3-space-3);
+/* ── Daftar grup (accordion) ── */
+.m3-bud__groups {
+    display: flex;
+    flex-direction: column;
+    gap: var(--m3-space-2);
     min-width: 0;
 }
 
 .m3-bud__group {
     min-width: 0;
+    overflow: hidden;
 }
 
 .m3-bud__group-head {
@@ -1014,14 +970,14 @@ onUnmounted(stopGenerationPolling)
     gap: var(--m3-space-2);
     width: 100%;
     min-width: 0;
-    padding: 0;
+    min-height: var(--m3-size-touch-target-lg);
+    padding: var(--m3-space-2) var(--m3-space-3);
     border: none;
     background: none;
     color: inherit;
     font: inherit;
     text-align: start;
     cursor: pointer;
-    border-radius: var(--m3-radius-md);
     transition: background-color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
 }
 
@@ -1035,7 +991,7 @@ onUnmounted(stopGenerationPolling)
 
 .m3-bud__group-head:focus-visible {
     outline: 2px solid var(--m3-color-primary);
-    outline-offset: 2px;
+    outline-offset: -2px;
 }
 
 .m3-bud__group-ico {
@@ -1060,6 +1016,7 @@ onUnmounted(stopGenerationPolling)
     min-width: 0;
     display: flex;
     flex-direction: column;
+    gap: var(--m3-space-0-5);
 }
 
 .m3-bud__group-name {
@@ -1072,10 +1029,27 @@ onUnmounted(stopGenerationPolling)
     white-space: nowrap;
 }
 
-.m3-bud__group-count {
+.m3-bud__group-sub {
     font-size: var(--m3-type-body-small-size);
     line-height: var(--m3-type-body-small-line-height);
     color: var(--m3-color-on-surface-variant);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.m3-bud__group-over {
+    color: var(--m3-color-expense);
+    font-weight: var(--m3-type-emphasized-body-small-weight);
+}
+
+.m3-bud__group-total {
+    flex-shrink: 0;
+    font-size: var(--m3-type-body-medium-size);
+    line-height: var(--m3-type-body-medium-line-height);
+    font-weight: var(--m3-type-emphasized-body-medium-weight);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
 
 .m3-bud__group-chevron {
@@ -1093,92 +1067,10 @@ onUnmounted(stopGenerationPolling)
     transform: rotate(180deg);
 }
 
-.m3-bud__group-body {
-    margin-top: var(--m3-space-2);
-}
-
-.m3-bud__group-bar {
-    display: flex;
-    align-items: center;
-    gap: var(--m3-space-3);
-}
-
-.m3-bud__group-pct {
-    flex-shrink: 0;
-    font-size: var(--m3-type-label-medium-size);
-    line-height: var(--m3-type-label-medium-line-height);
-    font-weight: var(--m3-type-emphasized-label-medium-weight);
-    font-variant-numeric: tabular-nums;
-    color: var(--m3-color-on-surface-variant);
-}
-
-.m3-bud__group-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--m3-space-1) var(--m3-space-3);
-    margin-top: var(--m3-space-2);
-    min-width: 0;
-}
-
-.m3-bud__group-meta-item {
-    display: inline-flex;
-    align-items: baseline;
-    gap: var(--m3-space-1);
-    min-width: 0;
-}
-
-.m3-bud__group-meta-label {
-    font-size: var(--m3-type-label-small-size);
-    line-height: var(--m3-type-label-small-line-height);
-    font-weight: var(--m3-type-label-small-weight);
-    letter-spacing: var(--m3-type-label-small-tracking);
-    text-transform: uppercase;
-    color: var(--m3-color-on-surface-variant);
-}
-
-.m3-bud__group-meta-value {
-    font-size: var(--m3-type-body-small-size);
-    line-height: var(--m3-type-body-small-line-height);
-    font-weight: var(--m3-type-emphasized-body-small-weight);
-    font-variant-numeric: tabular-nums;
-    overflow-wrap: anywhere;
-}
-
-.m3-bud__group-meta-item--spent .m3-bud__group-meta-label,
-.m3-bud__group-meta-item--over .m3-bud__group-meta-label {
-    color: color-mix(in srgb, var(--m3-color-expense) 72%, transparent);
-}
-
-.m3-bud__group-meta-item--spent .m3-bud__group-meta-value,
-.m3-bud__group-meta-item--over .m3-bud__group-meta-value {
-    color: var(--m3-color-expense);
-}
-
-.m3-bud__over-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--m3-space-1);
-    margin-top: var(--m3-space-3);
-    padding: var(--m3-space-1) var(--m3-space-3);
-    border-radius: var(--m3-radius-full);
-    background: var(--m3-color-expense-container);
-    color: var(--m3-color-expense);
-    font-size: var(--m3-type-label-small-size);
-    line-height: var(--m3-type-label-small-line-height);
-    font-weight: var(--m3-type-emphasized-label-small-weight);
-}
-
-.m3-bud__over-icon {
-    width: var(--m3-size-icon-3xs);
-    height: var(--m3-size-icon-3xs);
-    flex-shrink: 0;
-}
-
 /* ── Anggota grup ── */
 .m3-bud__members {
     min-width: 0;
-    margin-top: var(--m3-space-3);
-    padding-top: var(--m3-space-3);
+    padding: var(--m3-space-1) var(--m3-space-3) var(--m3-space-3);
     border-top: 1px solid var(--m3-color-outline-variant);
 }
 
@@ -1244,6 +1136,10 @@ onUnmounted(stopGenerationPolling)
     font-weight: var(--m3-type-emphasized-label-medium-weight);
     font-variant-numeric: tabular-nums;
     color: var(--m3-color-on-surface-variant);
+}
+
+.m3-bud__member-pct--over {
+    color: var(--m3-color-expense);
 }
 
 .m3-bud__member-bar {
@@ -1375,16 +1271,6 @@ onUnmounted(stopGenerationPolling)
         line-height: var(--m3-type-headline-medium-line-height);
         font-weight: var(--m3-type-emphasized-headline-medium-weight);
         letter-spacing: var(--m3-type-headline-medium-tracking);
-    }
-
-    .m3-bud__grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-}
-
-@media (min-width: 1280px) {
-    .m3-bud__grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 }
 </style>

@@ -138,8 +138,9 @@ class BudgetController extends Controller
         foreach ($validated['items'] as $itemData) {
             $item = $budgetGroup->items()->find($itemData['id']);
             if ($item && $item->budgetable_type === Category::class) {
-                $item->update(['target_amount' => $itemData['target_amount']]);
-                $totalAmount += $itemData['target_amount'];
+                $amount = (int) round((float) $itemData['target_amount']);
+                $item->update(['target_amount' => $amount]);
+                $totalAmount += $amount;
             }
         }
 

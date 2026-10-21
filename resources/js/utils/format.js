@@ -9,13 +9,18 @@
 
 const ID_LOCALE = 'id-ID';
 
+// Nominal rupiah selalu tampil sebagai bilangan bulat.
+const idrFormatter = new Intl.NumberFormat(ID_LOCALE, {
+    maximumFractionDigits: 0,
+});
+
 /**
  * Format angka ke format Rupiah tanpa simbol "Rp".
  * Contoh: 150000 → "150.000"
  */
 export const formatNumber = (n) => {
     if (n === null || n === undefined) return '0';
-    return new Intl.NumberFormat(ID_LOCALE).format(n);
+    return idrFormatter.format(n);
 };
 
 /**
@@ -24,7 +29,7 @@ export const formatNumber = (n) => {
  */
 export const formatRupiah = (n) => {
     if (n === null || n === undefined) return 'Rp 0';
-    return 'Rp ' + new Intl.NumberFormat(ID_LOCALE).format(n);
+    return 'Rp ' + idrFormatter.format(n);
 };
 
 /**

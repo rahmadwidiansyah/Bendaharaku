@@ -86,7 +86,13 @@ class AIBudgetService implements BudgetingServiceInterface
         }
 
         $categoryIds = $categories->pluck('id')->all();
-        $validCategories = collect($budgetData['by_category'])->filter(fn ($item) => isset($item['id'], $item['amount']) && in_array($item['id'], $categoryIds) && is_numeric($item['amount']) && $item['amount'] >= 0);
+        $validCategories = collect($budgetData['by_category'])
+            ->filter(fn ($item) => isset($item['id'], $item['amount']) && in_array($item['id'], $categoryIds) && is_numeric($item['amount']) && $item['amount'] >= 0)
+            ->map(function (array $item) {
+                $item['amount'] = (int) round((float) $item['amount']);
+
+                return $item;
+            });
 
         if ($validCategories->isEmpty()) {
             throw new \UnexpectedValueException('AI returned no valid budget items.');
@@ -128,7 +134,7 @@ class AIBudgetService implements BudgetingServiceInterface
                 $budgetGroup->items()->create([
                     'budgetable_id' => $item['id'],
                     'budgetable_type' => Category::class,
-                    'target_amount' => $item['amount'],
+                    'target_amount' => (int) $item['amount'],
                 ]);
             }
 
@@ -164,7 +170,7 @@ class AIBudgetService implements BudgetingServiceInterface
             'discretionary' => 'Discretionary expenses: fully optional, lifestyle — entertainment (cinema, streaming subscriptions, games), hobbies (gadgets beyond work needs, aesthetic homelab accessories).',
         ];
 
-        return "Based on the following expense categories and their spending for the last 3 months, create a monthly budget recommendation. Return only valid JSON. Preserve category IDs exactly and use non-negative numeric amounts. Classify EVERY category into exactly one expense group using this taxonomy: {$taxonomy[$groupKeys[0]]} / {$taxonomy[$groupKeys[1]]} / {$taxonomy[$groupKeys[2]]} / {$taxonomy[$groupKeys[3]]} / {$taxonomy[$groupKeys[4]]}. As allocation guidance, follow the 50/20/30 rule: 50% to fixed & variable essentials, 20% to investment & sinking funds, 30% to discretionary. Format: { \"notes\": \"...\", \"by_category\": [{\"id\": 123, \"amount\": 123.45}], \"expense_groups\": [{\"group\": \"fixed\", \"category_ids\": [123, 456]}] }. Allowed groups: {$groupList}. Categories: {$categoryData}";
+        return "Based on the following expense categories and their spending for the last 3 months, create a monthly budget recommendation. Return only valid JSON. Preserve category IDs exactly and use non-negative integer rupiah amounts (no decimals). Classify EVERY category into exactly one expense group using this taxonomy: {$taxonomy[$groupKeys[0]]} / {$taxonomy[$groupKeys[1]]} / {$taxonomy[$groupKeys[2]]} / {$taxonomy[$groupKeys[3]]} / {$taxonomy[$groupKeys[4]]}. As allocation guidance, follow the 50/20/30 rule: 50% to fixed & variable essentials, 20% to investment & sinking funds, 30% to discretionary. Format: { \"notes\": \"...\", \"by_category\": [{\"id\": 123, \"amount\": 12345}], \"expense_groups\": [{\"group\": \"fixed\", \"category_ids\": [123, 456]}] }. Allowed groups: {$groupList}. Categories: {$categoryData}";
     }
 
     public function getBudgetSummary(BudgetGroup $budgetGroup): array

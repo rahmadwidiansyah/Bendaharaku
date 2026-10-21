@@ -22,10 +22,10 @@ initUiTheme();
 // sebelum mount (atribut sudah dipasang head script Blade).
 initM3ColorScheme();
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+const appName = import.meta.env.VITE_APP_NAME || 'Bendaharaku';
 
 createInertiaApp({
-    title: (title) => `${title} - ${appName}`,
+    title: (title) => title || appName,
     resolve: (name) => {
         // Multi-UI: halaman M3 di ./Material/Pages dipetakan sebagai
         // `Material/<Name>` (mis. Material/Dashboard). Tidak ada benturan

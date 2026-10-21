@@ -1,5 +1,7 @@
-@extends('errors.minimal')
+@extends('errors.layout')
 
-@section('title', __('401 Unauthorized'))
+@section('title', 'Sesi berakhir')
 @section('code', '401')
-@section('message', __('Unauthorized'))
+@section('icon', 'lock')
+@section('heading', 'Sesi Anda telah berakhir')
+@section('message', 'Silakan masuk kembali untuk melanjutkan.')

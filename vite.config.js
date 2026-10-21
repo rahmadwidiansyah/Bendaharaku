@@ -31,7 +31,10 @@ export default defineConfig({
     plugins: [
         tailwindcss(),
         laravel({
-            input: ['resources/js/app.js'],
+            input: [
+                'resources/js/app.js',
+                'resources/css/errors.css',
+            ],
             refresh: true,
         }),
         vue({

@@ -26,6 +26,7 @@ import M3WalletShowSkeleton from '@/Material/Components/Skeleton/M3WalletShowSke
 import M3CategoriesSkeleton from '@/Material/Components/Skeleton/M3CategoriesSkeleton.vue'
 import M3CategoryShowSkeleton from '@/Material/Components/Skeleton/M3CategoryShowSkeleton.vue'
 import M3LoansSkeleton from '@/Material/Components/Skeleton/M3LoansSkeleton.vue'
+import M3TransactionsSkeleton from '@/Material/Components/Skeleton/M3TransactionsSkeleton.vue'
 import M3SettingsHubSkeleton from '@/Material/Components/Skeleton/M3SettingsHubSkeleton.vue'
 import M3SettingsSkeleton from '@/Material/Components/Skeleton/M3SettingsSkeleton.vue'
 import { useLayoutPreference } from '@/Composables/useLayoutPreference'
@@ -50,6 +51,7 @@ const SKELETON_COMPONENTS = {
     M3CategoriesSkeleton,
     M3CategoryShowSkeleton,
     M3LoansSkeleton,
+    M3TransactionsSkeleton,
     M3SettingsHubSkeleton,
     M3SettingsSkeleton,
 }

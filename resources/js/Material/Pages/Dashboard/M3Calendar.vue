@@ -17,10 +17,26 @@ defineProps({
 })
 
 defineEmits(['select', 'filter'])
+
+// Badge kalender harus muat di kolom 1/7 layar mobile. Nominal ringkas
+// (tanpa desimal untuk ribuan) mencegah min-content melebarkan grid.
+const compactBadgeAmount = (value) => {
+    const abs = Math.abs(value ?? 0)
+    if (abs >= 1_000_000_000) return `${(abs / 1_000_000_000).toFixed(1).replace('.0', '')}M`
+    if (abs >= 1_000_000) return `${(abs / 1_000_000).toFixed(1).replace('.0', '')}Jt`
+    if (abs >= 1_000) return `${Math.round(abs / 1_000)}Rb`
+    return String(Math.round(abs))
+}
+
+const badgeSign = (day) => (day.largestType === 'income' ? '+' : '-')
+
+const badgeAriaLabel = (day) => day.largestType
+    ? `${day.dateStr}, ${badgeSign(day)}${formatCompact(day.largestAmount)}`
+    : day.dateStr
 </script>
 
 <template>
-    <M3Card variant="filled" padding="sm">
+    <M3Card variant="filled" padding="sm" class="m3-cal">
         <div class="m3-cal__filters" role="group" :aria-label="$t('dashboard.calendarTab')">
             <M3Chip
                 variant="filter"
@@ -52,7 +68,7 @@ defineEmits(['select', 'filter'])
                         day.dateStr === today && selectedDate !== day.dateStr ? 'm3-cal__day--today' : '',
                     ]"
                     :aria-pressed="selectedDate === day.dateStr"
-                    :aria-label="day.dateStr"
+                    :aria-label="badgeAriaLabel(day)"
                     @click="$emit('select', day.dateStr)"
                 >
                     <span class="m3-cal__number">{{ day.day }}</span>
@@ -60,7 +76,7 @@ defineEmits(['select', 'filter'])
                         v-if="day.largestType"
                         class="m3-cal__badge"
                         :class="day.largestType === 'income' ? 'm3-cal__badge--income' : 'm3-cal__badge--expense'"
-                    >{{ day.largestType === 'income' ? '+' : '-' }}{{ formatCompact(day.largestAmount) }}</span>
+                    >{{ badgeSign(day) }}{{ compactBadgeAmount(day.largestAmount) }}</span>
                 </button>
             </div>
         </div>
@@ -68,6 +84,11 @@ defineEmits(['select', 'filter'])
 </template>
 
 <style scoped>
+.m3-cal {
+    width: 100%;
+    min-width: 0;
+}
+
 .m3-cal__filters {
     display: flex;
     gap: var(--m3-space-2);
@@ -78,13 +99,14 @@ defineEmits(['select', 'filter'])
 
 .m3-cal__weekdays {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: var(--m3-space-1);
     text-align: center;
     margin-bottom: var(--m3-space-1-5);
 }
 
 .m3-cal__weekday {
+    min-width: 0;
     font-size: var(--m3-type-label-small-size);
     font-weight: var(--m3-type-emphasized-label-small-weight);
     letter-spacing: var(--m3-type-label-small-tracking);
@@ -95,11 +117,12 @@ defineEmits(['select', 'filter'])
 
 .m3-cal__grid {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: var(--m3-space-1);
 }
 
 .m3-cal__cell {
+    min-width: 0;
     min-height: var(--m3-size-calendar-cell);
 }
 
@@ -109,9 +132,11 @@ defineEmits(['select', 'filter'])
     align-items: center;
     justify-content: center;
     width: 100%;
+    min-width: 0;
     height: 100%;
     min-height: var(--m3-size-calendar-cell);
     padding: var(--m3-space-0-5);
+    overflow: hidden;
     border-radius: var(--m3-radius-sm);
     border: 1px solid transparent;
     background: var(--m3-color-surface-container-high);
@@ -148,9 +173,16 @@ defineEmits(['select', 'filter'])
 }
 
 .m3-cal__badge {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
     font-size: var(--m3-type-label-small-size);
     font-weight: var(--m3-type-emphasized-label-small-weight);
     line-height: 1;
+    letter-spacing: 0;
+    text-align: center;
+    text-overflow: ellipsis;
     white-space: nowrap;
 }
 

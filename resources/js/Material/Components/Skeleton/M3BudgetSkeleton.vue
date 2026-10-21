@@ -29,8 +29,8 @@ const { t } = useI18n()
                 <M3SkeletonBlock width="35%" height="var(--m3-space-2)" radius="var(--m3-radius-full)" />
             </div>
 
-            <div class="m3-bud-skel__stats">
-                <div v-for="i in 2" :key="i" class="m3-bud-skel__stat">
+            <div class="m3-bud-skel__facts">
+                <div v-for="i in 2" :key="i" class="m3-bud-skel__fact">
                     <M3SkeletonBlock width="50%" height="var(--m3-space-2)" radius="var(--m3-radius-full)" />
                     <M3SkeletonBlock width="80%" height="var(--m3-space-3)" radius="var(--m3-radius-full)" />
                 </div>
@@ -38,30 +38,19 @@ const { t } = useI18n()
 
             <div class="m3-bud-skel__bar">
                 <M3SkeletonBlock width="100%" height="var(--m3-space-2)" radius="var(--m3-radius-full)" />
-                <M3SkeletonBlock width="2.5rem" height="var(--m3-space-3)" radius="var(--m3-radius-full)" />
             </div>
         </M3Card>
 
-        <div class="m3-bud-skel__grid">
-            <M3Card v-for="i in 3" :key="i" variant="outlined" padding="sm">
+        <div class="m3-bud-skel__groups">
+            <M3Card v-for="i in 3" :key="i" variant="outlined" padding="none">
                 <div class="m3-bud-skel__group-head">
-                    <M3SkeletonBlock circle width="var(--m3-space-8)" height="var(--m3-space-8)" />
+                    <M3SkeletonBlock circle width="var(--m3-size-touch-target)" height="var(--m3-size-touch-target)" />
                     <div class="m3-bud-skel__group-text">
                         <M3SkeletonBlock width="55%" height="var(--m3-space-3)" radius="var(--m3-radius-full)" />
                         <M3SkeletonBlock width="35%" height="var(--m3-space-2)" radius="var(--m3-radius-full)" />
                     </div>
-                    <M3SkeletonBlock circle width="var(--m3-size-icon)" height="var(--m3-size-icon)" />
-                </div>
-
-                <div class="m3-bud-skel__bar m3-bud-skel__group-bar">
-                    <M3SkeletonBlock width="100%" height="var(--m3-space-2)" radius="var(--m3-radius-full)" />
-                    <M3SkeletonBlock width="2.25rem" height="var(--m3-space-3)" radius="var(--m3-radius-full)" />
-                </div>
-
-                <div class="m3-bud-skel__group-meta">
-                    <M3SkeletonBlock width="4.5rem" height="var(--m3-space-2)" radius="var(--m3-radius-full)" />
-                    <M3SkeletonBlock width="4rem" height="var(--m3-space-2)" radius="var(--m3-radius-full)" />
-                    <M3SkeletonBlock width="4.5rem" height="var(--m3-space-2)" radius="var(--m3-radius-full)" />
+                    <M3SkeletonBlock width="4.5rem" height="var(--m3-space-3)" radius="var(--m3-radius-full)" />
+                    <M3SkeletonBlock circle width="var(--m3-size-icon-xs)" height="var(--m3-size-icon-xs)" />
                 </div>
             </M3Card>
         </div>
@@ -78,8 +67,7 @@ const { t } = useI18n()
 
 .m3-bud-skel__summary-head,
 .m3-bud-skel__bar,
-.m3-bud-skel__group-head,
-.m3-bud-skel__group-meta {
+.m3-bud-skel__group-head {
     display: flex;
     align-items: center;
     gap: var(--m3-space-3);
@@ -99,76 +87,43 @@ const { t } = useI18n()
     flex-direction: column;
     gap: var(--m3-space-1);
     margin-top: var(--m3-space-4);
-    padding: var(--m3-space-3) var(--m3-space-4);
-    border-radius: var(--m3-radius-md);
-    background: var(--m3-color-surface-container-high);
 }
 
-.m3-bud-skel__hero :deep(.m3-skel-block) {
-    background: var(--m3-color-surface-container);
-}
-
-.m3-bud-skel__stats {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--m3-space-2);
+.m3-bud-skel__facts {
+    display: flex;
+    gap: var(--m3-space-3);
     margin-top: var(--m3-space-3);
 }
 
-.m3-bud-skel__stat {
+.m3-bud-skel__fact {
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: var(--m3-space-1);
-    padding: var(--m3-space-2) var(--m3-space-3);
-    border-radius: var(--m3-radius-md);
-    background: var(--m3-color-surface-container-low);
-}
-
-.m3-bud-skel__stat :deep(.m3-skel-block) {
-    background: var(--m3-color-surface-container);
 }
 
 .m3-bud-skel__bar {
     margin-top: var(--m3-space-3);
 }
 
-.m3-bud-skel__bar :deep(.m3-skel-block:first-child) {
+.m3-bud-skel__bar :deep(.m3-skel-block) {
     flex: 1;
     width: auto;
     min-width: 0;
 }
 
-.m3-bud-skel__group-bar {
-    margin-top: var(--m3-space-3);
+.m3-bud-skel__groups {
+    display: flex;
+    flex-direction: column;
+    gap: var(--m3-space-2);
+    min-width: 0;
 }
 
 .m3-bud-skel__group-head {
     gap: var(--m3-space-2);
-}
-
-.m3-bud-skel__group-meta {
-    flex-wrap: wrap;
-    gap: var(--m3-space-1) var(--m3-space-3);
-    margin-top: var(--m3-space-2);
-}
-
-.m3-bud-skel__grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--m3-space-3);
-    min-width: 0;
-}
-
-@media (min-width: 1024px) {
-    .m3-bud-skel__grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-}
-
-@media (min-width: 1280px) {
-    .m3-bud-skel__grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
+    min-height: var(--m3-size-touch-target-lg);
+    padding: var(--m3-space-2) var(--m3-space-3);
 }
 
 @keyframes m3-bud-skel-pulse {

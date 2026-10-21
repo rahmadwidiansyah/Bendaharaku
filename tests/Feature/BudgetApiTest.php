@@ -295,6 +295,37 @@ class BudgetApiTest extends TestCase
         Queue::assertNothingPushed();
     }
 
+    public function test_update_rounds_fractional_target_to_whole_rupiah(): void
+    {
+        $category = $this->user->categories()->firstOrFail();
+
+        $budgetGroup = BudgetGroup::create([
+            'user_id' => $this->user->id,
+            'period_month' => 8,
+            'period_year' => 2026,
+            'total_budget_amount' => 100000,
+            'ai_notes' => null,
+            'generated_by' => 'ai',
+        ]);
+
+        $item = $budgetGroup->items()->create([
+            'budgetable_id' => $category->id,
+            'budgetable_type' => Category::class,
+            'target_amount' => 100000,
+        ]);
+
+        $this->actingAs($this->user)
+            ->putJson("/api/v1/budget/{$budgetGroup->id}", [
+                'items' => [
+                    ['id' => $item->id, 'target_amount' => 75000.6],
+                ],
+            ])
+            ->assertOk();
+
+        $this->assertSame('75001.00', $budgetGroup->fresh()->total_budget_amount);
+        $this->assertSame('75001.00', $item->fresh()->target_amount);
+    }
+
     public function test_update_recalculates_total_budget(): void
     {
         $category = $this->user->categories()->firstOrFail();

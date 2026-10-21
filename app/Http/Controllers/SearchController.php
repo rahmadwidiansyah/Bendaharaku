@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\TransactionLog;
 use App\Models\Wallet;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
@@ -13,8 +14,15 @@ class SearchController extends Controller
 {
     public function index(Request $request)
     {
-        return Inertia::render('Search/Index', [
-            'query' => $request->input('q', ''),
+        $user = $request->user();
+        $query = $request->input('q', '');
+
+        $view = $user->ui_theme === 'm3'
+            ? 'Material/Search/Index'
+            : 'Search/Index';
+
+        return Inertia::render($view, [
+            'query' => is_string($query) ? $query : '',
         ]);
     }
 
@@ -89,20 +97,29 @@ class SearchController extends Controller
             ->get();
 
         foreach ($transactions as $t) {
+            $date = Carbon::parse($t->date)->translatedFormat('d M Y');
+            $time = $t->created_at?->format('H:i') ?? '';
+
             $results[] = [
                 'type' => 'Transaksi',
                 'id' => "transaction-{$t->id}",
                 'transaction_id' => $t->id,
                 'label' => $t->subject,
+                'subject' => $t->subject,
                 'amount' => (float) $t->amount,
-                'date' => $t->date,
+                'date' => $date,
+                'time' => $time,
                 'is_cleared' => (bool) $t->is_cleared,
+                'is_draft' => false,
+                'due_date' => $t->due_date?->toDateString(),
+                'due_date_type' => $t->due_date_type,
+                'due_date_interval' => $t->due_date_interval,
                 'transaction_type' => $t->type ? ['id' => $t->type->id, 'name' => $t->type->name] : null,
                 'category' => $t->category ? ['id' => $t->category->id, 'category_name' => $t->category->category_name, 'icon' => $t->category->icon] : null,
                 'source_wallet' => $t->sourceWallet ? ['id' => $t->sourceWallet->id, 'name' => $t->sourceWallet->name, 'group_type' => $t->sourceWallet->group_type] : null,
                 'destination_wallet' => $t->destinationWallet ? ['id' => $t->destinationWallet->id, 'name' => $t->destinationWallet->name, 'group_type' => $t->destinationWallet->group_type] : null,
                 'notes' => $t->notes,
-                'description' => 'Rp'.number_format($t->amount, 0, ',', '.').' — '.$t->date,
+                'description' => 'Rp'.number_format($t->amount, 0, ',', '.').' — '.$date,
                 'route' => route('transactions.edit', $t->id),
                 'icon' => $t->category?->icon ?: 'receipt',
                 'color' => 'purple',
