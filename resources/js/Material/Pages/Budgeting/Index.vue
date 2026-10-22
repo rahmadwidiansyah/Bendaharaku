@@ -336,7 +336,7 @@ onUnmounted(stopGenerationPolling)
                     </M3IconButton>
                 </div>
 
-                <div class="m3-bud__actions">
+                <div v-if="isCurrentPeriod" class="m3-bud__actions">
                     <M3Button
                         v-if="!budgetData && isCurrentPeriod"
                         variant="tonal"
@@ -680,8 +680,10 @@ onUnmounted(stopGenerationPolling)
 }
 
 .m3-bud__actions {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
     gap: var(--m3-space-2);
 }
 

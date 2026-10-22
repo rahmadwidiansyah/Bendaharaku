@@ -55,6 +55,7 @@ defineProps({
 }
 
 .m3-cashflow__cell {
+    container-type: inline-size;
     display: flex;
     flex-direction: column;
     gap: var(--m3-space-1);
@@ -98,14 +99,15 @@ defineProps({
 
 .m3-cashflow__amount {
     margin: 0;
-    font-size: var(--m3-type-title-large-size);
+    max-width: 100%;
+    font-size: var(--m3-type-title-medium-size);
+    font-size: clamp(var(--m3-type-title-small-size), 12cqi, var(--m3-type-title-large-size));
     line-height: var(--m3-type-title-large-line-height);
     font-weight: var(--m3-type-emphasized-title-large-weight);
     letter-spacing: var(--m3-type-title-large-tracking);
     color: var(--m3-color-on-surface);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
+    white-space: normal;
 }
 
 .m3-cashflow__currency {

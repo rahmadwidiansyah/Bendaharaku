@@ -61,27 +61,31 @@ let searchAbort = null
 
 watch(query, (val) => {
     selectedIndex.value = -1
+    clearTimeout(searchTimer)
+    searchAbort?.abort()
+    searchAbort = null
+
     if (!val.trim()) {
         searchResults.value = []
         loading.value = false
         return
     }
     loading.value = true
-    clearTimeout(searchTimer)
     searchTimer = setTimeout(async () => {
         // Batalkan request sebelumnya agar respons basi tidak menimpa hasil terbaru.
-        searchAbort?.abort()
-        searchAbort = new AbortController()
+        const controller = new AbortController()
+        searchAbort = controller
         try {
             const res = await axios.get(route('search.global'), {
                 params: { q: val.trim() },
-                signal: searchAbort.signal,
+                signal: controller.signal,
             })
+            if (searchAbort !== controller) return
             searchResults.value = res.data.results || []
         } catch (err) {
-            if (!axios.isCancel(err)) searchResults.value = []
+            if (!axios.isCancel(err) && searchAbort === controller) searchResults.value = []
         } finally {
-            loading.value = false
+            if (searchAbort === controller) loading.value = false
         }
     }, 250)
 })
@@ -116,11 +120,8 @@ const navigate = (item) => {
         router.visit(route('search.page', { q: query.value.trim() }))
         return
     }
-    try {
-        router.visit(route(item.route))
-    } catch {
-        window.location.href = '/dashboard'
-    }
+    // Hasil API membawa URL lengkap; quick link membawa nama route.
+    router.visit(item.type ? item.route : route(item.route))
 }
 
 // ── Open/close ────────────────────────────────────────────────────

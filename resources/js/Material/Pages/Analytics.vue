@@ -838,7 +838,7 @@ onBeforeUnmount(() => {
 
             <!-- Saldo kumulatif -->
             <M3Card ref="cumulativeCardRef" variant="filled" padding="md" class="m3-ana__enter m3-ana__enter--2">
-                <div class="m3-ana__card-head">
+                <div class="m3-ana__card-head m3-ana__card-head--balance">
                     <div class="m3-ana__card-titles">
                         <p class="m3-ana__card-title">{{ $t('analytics.cumulativeBalance') }}</p>
                         <p class="m3-ana__card-sub">{{ $t('analytics.cumulativeDesc') }}</p>
@@ -1013,6 +1013,14 @@ onBeforeUnmount(() => {
     min-width: 0;
 }
 
+.m3-ana__card-head--balance {
+    flex-wrap: wrap;
+}
+
+.m3-ana__card-head--balance .m3-ana__card-titles {
+    flex: 1 1 8rem;
+}
+
 .m3-ana__card-title {
     margin: 0 0 var(--m3-space-1);
     font-size: var(--m3-type-title-small-size);
@@ -1035,11 +1043,10 @@ onBeforeUnmount(() => {
     font-weight: var(--m3-type-emphasized-headline-small-weight);
     letter-spacing: var(--m3-type-headline-small-tracking);
     color: var(--m3-color-on-surface);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 55%;
+    max-width: 100%;
+    overflow-wrap: anywhere;
     text-align: right;
+    white-space: normal;
 }
 
 /* ── Segmented control (M3 connected button group pattern) ── */

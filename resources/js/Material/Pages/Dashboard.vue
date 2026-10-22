@@ -207,6 +207,10 @@ const {
     },
 })
 
+const setCalendarFilter = (value) => {
+    calendarFilter.value = value
+}
+
 const todayYMD = computed(() => getLocalYMD(new Date()))
 
 const selectedDateTransactions = computed(() => {
@@ -399,7 +403,7 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
                         :today="todayYMD"
                         :filter="calendarFilter"
                         @select="selectDate"
-                        @filter="(v) => { calendarFilter.value = v }"
+                        @filter="setCalendarFilter"
                     />
                     <h3 v-if="showSelectedDateLabel" class="m3-selected-date">{{ selectedDateFormatted }}</h3>
                 </div>

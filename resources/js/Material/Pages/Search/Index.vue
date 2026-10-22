@@ -27,6 +27,7 @@ const {
     loading,
     error,
     grouped,
+    searched,
     showNoResults,
     showModal,
     selectedTransaction,
