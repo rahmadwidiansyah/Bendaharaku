@@ -170,7 +170,7 @@
     /* ── Component sizes (single source; layouts and pages reference these) ── */
     --m3-size-appbar: 4rem;
     --m3-size-rail: 5rem;
-    --m3-size-rail-open: 15rem;
+    --m3-size-rail-open: 16rem;
     --m3-size-navbar: 5rem;
     --m3-size-navbar-item: 4.25rem;
     --m3-size-navbar-max: 32rem;
