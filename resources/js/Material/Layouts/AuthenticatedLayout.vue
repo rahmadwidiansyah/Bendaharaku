@@ -804,6 +804,19 @@ const showSkeleton = computed(() =>
     inset: 0;
     background: var(--m3-color-surface);
     overflow-y: auto;
+    transition: left var(--m3-motion-default-spatial-duration) var(--m3-motion-default-spatial);
+}
+
+/* Desktop: batasi overlay ke area konten (kanan rail) agar centering
+   skeleton identik dengan halaman final, mengikuti state rail. */
+@media (min-width: 1024px) {
+    .m3-content--rail-open .m3-skeleton {
+        left: var(--m3-size-rail-open);
+    }
+
+    .m3-content--rail .m3-skeleton {
+        left: var(--m3-size-rail);
+    }
 }
 
 .m3-skeleton :deep(.m3-bud-skel) {
