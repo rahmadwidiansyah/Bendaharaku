@@ -50,6 +50,7 @@ const submit = () => {
                     required
                     autofocus
                     autocomplete="email"
+                    enterkeyhint="next"
                 >
                     <template #icon-left>
                         <AppIcon icon="mail" iconClass="w-4 h-4" />
@@ -67,6 +68,7 @@ const submit = () => {
                     :error="form.errors.password"
                     required
                     autocomplete="current-password"
+                    enterkeyhint="done"
                 >
                     <template #icon-left>
                         <AppIcon icon="lock" iconClass="w-4 h-4" />

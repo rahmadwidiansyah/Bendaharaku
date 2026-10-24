@@ -103,6 +103,10 @@ const props = defineProps({
         type: String,
         default: null,
     },
+    enterkeyhint: {
+        type: String,
+        default: undefined,
+    },
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -196,6 +200,7 @@ const hasIconRight = computed(() => false)
                 :disabled="disabled"
                 :required="required"
                 :autocomplete="autocomplete ?? undefined"
+                :enterkeyhint="enterkeyhint ?? undefined"
                 :aria-invalid="error ? 'true' : undefined"
                 :aria-describedby="ariaDescribedBy"
                 :aria-required="required ? 'true' : undefined"

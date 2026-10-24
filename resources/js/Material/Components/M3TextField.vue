@@ -20,6 +20,7 @@ const props = defineProps({
     uppercase: { type: Boolean, default: false },
     centered: { type: Boolean, default: false },
     inputmode: { type: String, default: undefined },
+    enterkeyhint: { type: String, default: undefined },
     min: { type: [String, Number], default: undefined },
     max: { type: [String, Number], default: undefined },
     autocomplete: { type: String, default: 'off' },
@@ -55,6 +56,7 @@ const floated = computed(() => focused.value || String(props.modelValue ?? '') !
                 :value="modelValue"
                 :placeholder="floated ? placeholder : ''"
                 :inputmode="inputmode"
+                :enterkeyhint="enterkeyhint"
                 :min="min"
                 :max="max"
                 :autocomplete="autocomplete"

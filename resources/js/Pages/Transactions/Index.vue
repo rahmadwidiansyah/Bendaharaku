@@ -160,10 +160,10 @@ const getWalletName = (trx) => {
 
 			<!-- Filter -->
 			<div class="flex flex-col sm:flex-row gap-2 mb-4">
-				<input v-model="searchInput" @input="onSearchInput" type="search"
+				<input v-model="searchInput" @input="onSearchInput" type="search" enterkeyhint="search"
 					:placeholder="t('common.search')"
 					class="flex-1 px-3 py-2 bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-xl text-sm text-[var(--color-text-primary)] placeholder-gray-500 focus:outline-none" />
-				<select v-model="type" @change="applyFilters()"
+				<select v-model="type" @change="applyFilters()" :aria-label="t('common.filter')"
 					class="px-3 py-2 bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-xl text-sm text-[var(--color-text-primary)]">
 					<option value="">{{ t('types.all') }}</option>
 					<option v-for="key in ['Income', 'Expense', 'Transfer', 'Debt', 'Receivable']" :key="key" :value="key">
@@ -171,9 +171,9 @@ const getWalletName = (trx) => {
 					</option>
 				</select>
 				<div class="flex gap-2">
-					<input v-model="from" @change="applyFilters()" type="date"
+					<input v-model="from" @change="applyFilters()" type="date" :aria-label="t('common.from')"
 						class="px-3 py-2 bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-xl text-sm text-[var(--color-text-primary)]" />
-					<input v-model="to" @change="applyFilters()" type="date"
+					<input v-model="to" @change="applyFilters()" type="date" :aria-label="t('common.to')"
 						class="px-3 py-2 bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-xl text-sm text-[var(--color-text-primary)]" />
 				</div>
 			</div>

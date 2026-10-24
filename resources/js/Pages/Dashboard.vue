@@ -377,7 +377,7 @@ const calendarDayNames = computed(() => [
 					<!-- Month Navigation & Filter Type-->
 					<div class="grid grid-cols-[1fr_auto] gap-2 mb-3 sm:mb-4 animate-fade-in-up delay-500 px-1 items-center">
 						<div class="flex items-center justify-between gap-2 min-w-0 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-raised)]/70 px-2 py-1.5 shadow-sm shadow-black/20">
-							<button @click="prevMonth"
+							<button @click="prevMonth" :aria-label="$t('btn.prev')"
 								class="p-1.5 rounded-lg bg-[var(--color-surface-muted)]/50 border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors active:scale-95 shrink-0">
 								<svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" viewBox="0 0 24 24"
 									stroke="currentColor" stroke-width="2.5">
@@ -388,7 +388,7 @@ const calendarDayNames = computed(() => [
 								<span class="block text-[10px] font-bold text-[var(--color-brand)] uppercase tracking-[0.18em]">Periode</span>
 								<span class="block text-sm font-bold text-[var(--color-text-primary)] tracking-tight leading-tight truncate">{{ formattedPeriod }}</span>
 							</p>
-							<button @click="nextMonth" :disabled="!canGoNextMonth"
+							<button @click="nextMonth" :disabled="!canGoNextMonth" :aria-label="$t('btn.next')"
 								class="p-1.5 rounded-lg border transition-colors active:scale-95 shrink-0"
 								:class="canGoNextMonth ? 'bg-[var(--color-surface-muted)]/50 border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]' : 'bg-[var(--color-surface-muted)]/20 border-[var(--color-border-subtle)] text-[var(--color-text-muted)] cursor-not-allowed'">
 								<svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" viewBox="0 0 24 24"

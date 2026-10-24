@@ -61,5 +61,29 @@ export default defineConfig({
                 colorScheme: 'dark',
             },
         },
+        // ── Profil mobile (390×844): hanya visual spec — spec layout/density
+        // ditulis dengan asumsi geometri desktop 1440. ──
+        {
+            name: 'default-mobile',
+            testIgnore: ['**/layout.spec.js', '**/density.spec.js', '**/a11y.spec.js'],
+            use: {
+                storageState: 'tests/e2e/.auth/default.json',
+                colorScheme: 'light',
+                viewport: { width: 390, height: 844 },
+                hasTouch: true,
+                isMobile: true,
+            },
+        },
+        {
+            name: 'm3-mobile',
+            testIgnore: ['**/layout.spec.js', '**/density.spec.js', '**/a11y.spec.js'],
+            use: {
+                storageState: 'tests/e2e/.auth/m3.json',
+                colorScheme: 'dark',
+                viewport: { width: 390, height: 844 },
+                hasTouch: true,
+                isMobile: true,
+            },
+        },
     ],
 });

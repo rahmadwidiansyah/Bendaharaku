@@ -135,6 +135,7 @@ onBeforeUnmount(() => {
                     :placeholder="placeholderText"
                     :disabled="isLoading"
                     rows="1"
+                    enterkeyhint="send"
                     class="m3-composer__textarea"
                     :aria-label="placeholderText"
                     aria-multiline="true"

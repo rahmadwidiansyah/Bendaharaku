@@ -273,6 +273,7 @@ const getWalletName = (trx) => {
                     <M3TextField
                         :model-value="searchInput"
                         type="search"
+                        enterkeyhint="search"
                         :label="t('nav.search')"
                         :placeholder="t('common.search')"
                         @update:model-value="onSearchInput"

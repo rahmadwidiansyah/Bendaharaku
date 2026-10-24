@@ -37,8 +37,14 @@ for (const route of ROUTES) {
         }));
 
         expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.clientWidth + 1);
-        expect(geometry.visibleH1).toBe(1);
-        expect(['comfortable', 'compact']).toContain(geometry.density);
+        // Judul halaman: Default memakai h1 in-content; M3 desktop merender
+        // judul di appbar <p> (h1 hanya pada judul in-content mobile yang
+        // sengaja disembunyikan >=1024px) — jadi 0 ATAU 1, maksimal satu.
+        expect(geometry.visibleH1).toBeLessThanOrEqual(1);
+        // data-density hanya di-set tema Default; M3 tidak memakai density global.
+        if (geometry.density !== null) {
+            expect(['comfortable', 'compact']).toContain(geometry.density);
+        }
         expect(errors, errors.join('\n')).toEqual([]);
     });
 }
