@@ -748,6 +748,13 @@ onUnmounted(stopGenerationPolling)
     margin-top: var(--m3-space-5);
 }
 
+/* Label CTA boleh wrap — nowrap bawaan M3Button meluber di viewport
+   320px ("Ask Ken-Chan to generate budget" melewati tepi layar). */
+.m3-bud__empty-cta :deep(.m3-btn__label) {
+    white-space: normal;
+    text-align: start;
+}
+
 .m3-bud__lock {
     display: inline-flex;
     align-items: flex-start;

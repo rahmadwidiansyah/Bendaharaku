@@ -234,9 +234,12 @@ const showSkeleton = computed(() =>
             <div
                 :class="[
                     'flex-1 relative overflow-hidden',
-                    !effectiveHideNav ? 'pb-28 lg:pb-8' : 'pb-0',
+                    // Mobile: beri ruang minimum untuk bottom-nav + safe area;
+                    // Desktop: inline style lama menimpa lg:pb-8 — kini class urutan.
+                    !effectiveHideNav
+                        ? 'pb-[max(7rem,calc(3.5rem+env(safe-area-inset-bottom,0px)+1rem))] lg:pb-8'
+                        : 'pb-0',
                 ]"
-                :style="!effectiveHideNav ? 'padding-bottom: max(7rem, calc(3.5rem + env(safe-area-inset-bottom, 0px) + 1rem));' : ''"
             >
                 <!--
                     ── Konten Halaman (slot) ──────────────────────────────────────
