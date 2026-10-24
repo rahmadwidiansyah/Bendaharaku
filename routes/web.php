@@ -604,7 +604,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('categories', CategoryController::class);
     Route::patch('transactions/{transaction}/confirm', [TransactionController::class, 'confirm'])->name('transactions.confirm');
     Route::get('transactions/page', [TransactionController::class, 'page'])->name('transactions.page');
-    Route::resource('transactions', TransactionController::class);
+    Route::resource('transactions', TransactionController::class)->except(['show']);
     Route::get('/loans/{type}', [LoanController::class, 'index'])->name('loans.index');
 });
 

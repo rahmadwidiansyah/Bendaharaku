@@ -1198,8 +1198,10 @@ onBeforeUnmount(() => {
 /* ── Judul seksi ── */
 .m3-ana__section-title {
     margin: 0;
-    font-size: var(--m3-type-title-small-size);
-    font-weight: var(--m3-type-emphasized-title-small-weight);
+    font-size: var(--m3-type-title-medium-size);
+    line-height: var(--m3-type-title-medium-line-height);
+    font-weight: var(--m3-type-title-medium-weight);
+    letter-spacing: var(--m3-type-title-medium-tracking);
     color: var(--m3-color-on-surface);
 }
 

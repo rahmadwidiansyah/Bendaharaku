@@ -182,7 +182,7 @@ const getWalletName = (trx) => {
 			<div v-for="(group, dateKey) in groupedTransactions" :key="dateKey"
 				class="border-b border-[var(--color-border-subtle)] last:border-b-0 pb-1 sm:pb-2">
 				<div class="flex justify-between items-center py-2.5 px-1">
-					<h3 class="text-2xs font-bold text-[var(--color-brand)] uppercase tracking-widest">
+					<h3 class="text-xs font-bold text-[var(--color-brand)] uppercase tracking-widest">
 						{{ group.date }}
 					</h3>
 					<div class="text-2xs font-bold flex gap-2.5 tracking-wide">

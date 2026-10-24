@@ -39,7 +39,7 @@
  *   closeable     — Apakah modal bisa ditutup via klik overlay atau tombol close (default: true)
  *   showCloseBtn  — Tampilkan tombol X di sudut kanan atas (default: true)
  *   padding       — Padding konten panel: 'none' | 'sm' | 'md' | 'lg' (default: 'lg')
- *   zIndex        — Kelas z-index Tailwind (default: 'z-[9999]')
+ *   zIndex        — Kelas z-index Tailwind (default: 'z-[300]')
  *   align         — Posisi modal:
  *                   'center'      → centered (default)
  *                   'bottom-sheet'→ menempel bawah di mobile, centered di sm+
@@ -131,7 +131,7 @@ const props = defineProps({
     },
     zIndex: {
         type: String,
-        default: 'z-[9999]',
+        default: 'z-[300]', // skema z: 100 overlay lokal · 200 sheet · 300 modal/menu · 400 search · 500 toast · 600 skip-link
     },
 })
 

@@ -292,7 +292,7 @@ const calendarDayNames = computed(() => [
 
 		<Head title="Dashboard" />
 
-		<div class="p-3 sm:p-5 w-full mx-auto">
+		<div class="p-3 sm:p-5 w-full lg:max-w-7xl mx-auto lg:px-8">
 			<!-- dual grid desktop view. (left: asset cards, right: transactions list) -->
 			<div :class="isDesktopLayout ? 'lg:flex lg:gap-8 lg:items-start' : ''">
 				<!-- left asset cards -->
@@ -355,7 +355,7 @@ const calendarDayNames = computed(() => [
 					<div class="mb-3 sm:mb-4 px-1 animate-fade-in-up delay-500">
 						<div class="flex items-center gap-2 mb-2">
 							<h2
-								class="text-2xs font-bold text-[var(--color-text-primary)] uppercase tracking-widest flex items-center gap-2 shrink-0">
+								class="text-xs font-bold text-[var(--color-text-primary)] uppercase tracking-widest flex items-center gap-2 shrink-0">
 								<span class="w-1.5 h-1.5 rounded-full bg-[var(--color-brand)]"></span>
 								{{ $t('dashboard.transactionHistory') }}
 							</h2>
@@ -475,7 +475,7 @@ const calendarDayNames = computed(() => [
 								<path stroke-linecap="round" stroke-linejoin="round"
 									d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
 							</svg>
-							<h3 class="text-2xs font-bold text-[var(--color-text-secondary)] uppercase tracking-widest">
+							<h3 class="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-widest">
 								{{ selectedDateFormatted }}
 							</h3>
 						</div>
@@ -488,7 +488,7 @@ const calendarDayNames = computed(() => [
 									activeHistoryTab === 'detail' ? 'cursor-pointer' : '',
 								]">
 								<h3
-									class="text-2xs font-bold text-[var(--color-brand)] uppercase tracking-widest flex items-center gap-1.5 transition-colors group-hover/header:opacity-90">
+									class="text-xs font-bold text-[var(--color-brand)] uppercase tracking-widest flex items-center gap-1.5 transition-colors group-hover/header:opacity-90">
 									<svg v-if="activeHistoryTab === 'detail'"
 										class="w-3.5 h-3.5 transition-transform duration-300"
 										:class="!collapsedDates[dateKey] ? 'rotate-90' : ''" fill="none"

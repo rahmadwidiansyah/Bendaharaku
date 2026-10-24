@@ -67,7 +67,7 @@ const logout = () => {
         >
             <div
                 v-if="show"
-                class="fixed inset-0 z-[9999]"
+                class="fixed inset-0 z-[300]"
                 @click.self="close"
                 role="presentation"
             >

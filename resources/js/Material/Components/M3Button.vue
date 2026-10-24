@@ -116,18 +116,18 @@ const classes = computed(() => [
 /* Sizes */
 .m3-btn--sm {
     min-height: 2.25rem;
-    padding: 0 0.75rem;
+    padding: 0 var(--m3-space-3);
     font-size: var(--m3-type-label-medium-size);
 }
 
 .m3-btn--md {
     min-height: 2.5rem;
-    padding: 0 1rem;
+    padding: 0 var(--m3-space-4);
 }
 
 .m3-btn--lg {
     min-height: 3rem;
-    padding: 0 1.25rem;
+    padding: 0 var(--m3-space-5);
 }
 
 .m3-btn--full {

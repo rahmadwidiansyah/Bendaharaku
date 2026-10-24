@@ -81,7 +81,7 @@ const displayLocal = (n, visible) => visible ? formatNumber(n) : '••••�
 
     <div class="flex items-baseline gap-1.5 mb-4">
         <span class="text-sm sm:text-lg font-medium text-[var(--color-text-muted)]">Rp</span>
-        <h2 class="text-2xl sm:text-3xl font-black text-[var(--color-text-primary)] tracking-tight leading-none" aria-live="polite">
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-[var(--color-text-primary)] tracking-tight" aria-live="polite">
             {{ displayAmount(totalPortfolio) }}
         </h2>
     </div>

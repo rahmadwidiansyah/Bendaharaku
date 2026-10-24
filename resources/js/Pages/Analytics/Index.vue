@@ -455,7 +455,7 @@ const renderBarChart = async (view) => {
             scales: {
                 x: {
                     grid: { display: false },
-                    ticks: { color: '#9CA3AF', font: { size: 11, weight: 'bold' }, maxRotation: 0 }
+                    ticks: { color: '#9CA3AF', font: { size: 12, weight: 'bold' }, maxRotation: 0 }
                 },
                 y: {
                     display: true,
@@ -477,7 +477,7 @@ const renderBarChart = async (view) => {
             afterDraw(chart) {
                 const ctx2 = chart.ctx;
                 const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
-                const fontSize = isMobile ? 9 : 10;
+                const fontSize = isMobile ? 10 : 12;
                 const placedLabels = [];
                 
                 ctx2.font = `bold ${fontSize}px sans-serif`;

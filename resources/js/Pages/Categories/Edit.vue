@@ -96,7 +96,7 @@ const confirmDelete = () => {
                 </div>
                 <div v-else>
                     <label class="block text-2xs lg:text-sm font-medium text-[var(--color-text-secondary)] mb-1.5 lg:mb-2 ml-1">{{ t('category.type') }}</label>
-                    <div class="h-[44px] lg:h-[50px] bg-[var(--color-surface-raised)]/30 border border-white/5 rounded-xl px-4 lg:px-5 flex items-center text-[var(--color-text-muted)] text-xs lg:text-sm font-medium select-none">
+                    <div class="h-[52px] lg:h-[60px] bg-[var(--color-surface-raised)]/30 border border-white/5 rounded-xl px-4 lg:px-5 flex items-center text-[var(--color-text-muted)] text-xs lg:text-sm font-medium select-none">
                         {{ category.type?.name }} (System Kategori)
                     </div>
                 </div>

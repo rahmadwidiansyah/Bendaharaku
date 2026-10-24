@@ -57,15 +57,15 @@ const classes = computed(() => [
 }
 
 .m3-card--pad-sm {
-    padding: 0.75rem;
+    padding: var(--m3-space-3);
 }
 
 .m3-card--pad-md {
-    padding: 1rem;
+    padding: var(--m3-space-4);
 }
 
 .m3-card--pad-lg {
-    padding: 1.5rem;
+    padding: var(--m3-space-6);
 }
 
 .m3-card--clickable {

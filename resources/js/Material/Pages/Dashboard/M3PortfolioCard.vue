@@ -218,8 +218,10 @@ const displayLocal = (n, visible) => visible ? formatNumber(n) : '••••�
     min-width: 0;
     font-size: var(--m3-type-headline-medium-size);
     line-height: var(--m3-type-headline-medium-line-height);
-    font-weight: var(--m3-type-headline-medium-weight);
+    /* KPI utama: emphasized (bukan baseline 400) + tabular agar digit stabil */
+    font-weight: var(--m3-type-emphasized-headline-medium-weight);
     letter-spacing: var(--m3-type-headline-medium-tracking);
+    font-variant-numeric: tabular-nums;
     color: var(--m3-color-on-surface);
     white-space: nowrap;
     overflow: hidden;

@@ -186,7 +186,7 @@ const typeBadgeColors = {
         >
             <div
                 v-if="show"
-                class="fixed inset-0 z-[9998] flex flex-col"
+                class="fixed inset-0 z-[400] flex flex-col"
                 role="dialog"
                 aria-modal="true"
                 aria-label="Pencarian global"

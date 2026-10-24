@@ -9,21 +9,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Inertia\Inertia;
 
 class ProfileController extends Controller
 {
-    /**
-     * Display the user's profile form.
-     */
-    public function edit(Request $request)
-    {
-        return Inertia::render('Profile/Edit', [
-            'user' => $request->user(),
-            'status' => session('status'),
-        ]);
-    }
-
     /**
      * Update the user's profile information.
      */

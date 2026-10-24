@@ -33,7 +33,7 @@ defineProps({
 <template>
     <label
         :for="$props.for"
-        class="block text-2xs font-bold text-[var(--color-text-secondary)] uppercase tracking-widest mb-1.5 ml-1"
+        class="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5 ml-1"
     >
         <slot />
         <span

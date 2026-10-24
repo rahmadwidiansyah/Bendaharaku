@@ -51,9 +51,10 @@ const classes = computed(() => [
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.25rem;
+    gap: var(--m3-space-1);
     min-height: 2rem;
-    padding: 0 0.875rem;
+    /* 14px (0.875rem) tidak ada di skala --m3-space-* → dipetakan ke 16px */
+    padding: 0 var(--m3-space-4);
     border-radius: var(--m3-radius-full);
     border: 1px solid var(--m3-color-outline);
     background: transparent;

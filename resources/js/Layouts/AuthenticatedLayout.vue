@@ -27,8 +27,8 @@
  * di desktop.
  *
  * SEKARANG: root panel SELALU `w-full`. Desktop memakai ruang layar
- * sepenuhnya. Lebar konten halaman dikendalikan oleh `PageContainer`
- * yang dipakai di masing-masing halaman (lihat Components/PageContainer.vue).
+ * sepenuhnya. Lebar konten halaman dikendalikan container per halaman
+ * (pola `w-full lg:max-w-7xl mx-auto lg:px-8`).
  *
  * Props:
  *   fullWidth — DIPERTAHANKAN UNTUK BACKWARD-COMPAT. Nilai apa pun sekarang
@@ -217,7 +217,7 @@ const showSkeleton = computed(() =>
         <!-- Skip-to-content: aksesibilitas keyboard & screen reader -->
         <a
             href="#main-content"
-            class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[200] focus:px-4 focus:py-2 focus:rounded-xl focus:bg-[var(--color-brand)] focus:text-white focus:font-bold focus:text-sm focus:shadow-lg focus:outline-none"
+            class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[600] focus:px-4 focus:py-2 focus:rounded-xl focus:bg-[var(--color-brand)] focus:text-white focus:font-bold focus:text-sm focus:shadow-lg focus:outline-none"
         >
             Langsung ke konten
         </a>

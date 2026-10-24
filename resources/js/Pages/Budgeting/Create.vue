@@ -216,7 +216,7 @@ const submit = () => {
                             <label class="block lg:hidden text-2xs font-semibold text-[var(--color-text-muted)] mb-1 ml-1">{{ t('budgeting.categoryLabel') }}</label>
                             <button
                                 type="button"
-                                class="w-full min-h-[44px] lg:h-[48px] px-3 flex items-center gap-2 rounded-xl bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] text-left transition-all hover:border-purple-500/50 focus:outline-none focus:border-purple-500 active:scale-[0.98]"
+                                class="w-full min-h-[52px] lg:h-[60px] px-3 flex items-center gap-2 rounded-xl bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] text-left transition-all hover:border-purple-500/50 focus:outline-none focus:border-purple-500 active:scale-[0.98]"
                                 :class="form.errors[`rows.${index}.category_id`] ? 'border-red-500' : ''"
                                 :aria-label="t('budgeting.categoryLabel')"
                                 @click="openCategoryPicker(index)"
@@ -247,7 +247,7 @@ const submit = () => {
                             <label class="block lg:hidden text-2xs font-semibold text-[var(--color-text-muted)] mb-1 ml-1">{{ t('budgeting.groupLabel') }}</label>
                             <button
                                 type="button"
-                                class="w-full min-h-[44px] lg:h-[48px] px-3 flex items-center gap-2 rounded-xl bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] text-left transition-all hover:border-purple-500/50 focus:outline-none focus:border-purple-500 active:scale-[0.98]"
+                                class="w-full min-h-[52px] lg:h-[60px] px-3 flex items-center gap-2 rounded-xl bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] text-left transition-all hover:border-purple-500/50 focus:outline-none focus:border-purple-500 active:scale-[0.98]"
                                 :class="form.errors[`rows.${index}.group_key`] ? 'border-red-500' : ''"
                                 :aria-label="t('budgeting.groupLabel')"
                                 @click="openGroupPicker(index)"
@@ -261,7 +261,7 @@ const submit = () => {
                             </button>
                             <div
                                 v-if="r.group_key === 'custom'"
-                                class="flex items-center gap-1.5 mt-2 h-[40px] lg:h-[44px] bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] rounded-xl px-3 focus-within:border-purple-500 transition-all"
+                                class="flex items-center gap-1.5 mt-2 h-[52px] lg:h-[60px] bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] rounded-xl px-3 focus-within:border-purple-500 transition-all"
                                 :class="form.errors[`rows.${index}.custom_group_name`] ? 'border-red-500' : ''"
                             >
                                 <input
@@ -276,7 +276,7 @@ const submit = () => {
                         <!-- Nominal — optimasi: tabular, clear, chips -->
                         <div class="col-span-1 lg:col-span-4">
                             <label class="block lg:hidden text-2xs font-semibold tracking-widest uppercase text-[var(--color-text-muted)] mb-1 ml-1">{{ t('budgeting.amountLabel') }}</label>
-                            <div class="flex items-center gap-1.5 min-h-[44px] lg:h-[48px] bg-[var(--color-surface-raised)] border rounded-xl px-3 transition-all focus-within:border-[var(--color-brand)] focus-within:ring-2 focus-within:ring-[var(--color-brand)]/20" :class="form.errors[`rows.${index}.target_amount`] ? 'border-[var(--color-expense-text)]' : 'border-[var(--color-border-default)]'">
+                            <div class="flex items-center gap-1.5 min-h-[52px] lg:h-[60px] bg-[var(--color-surface-raised)] border rounded-xl px-3 transition-all focus-within:border-[var(--color-brand)] focus-within:ring-2 focus-within:ring-[var(--color-brand)]/20" :class="form.errors[`rows.${index}.target_amount`] ? 'border-[var(--color-expense-text)]' : 'border-[var(--color-border-default)]'">
                                 <span class="text-xs font-black tracking-widest text-[var(--color-brand)] shrink-0">RP</span>
                                 <input
                                     type="text"
@@ -424,7 +424,7 @@ const submit = () => {
                         </button>
                     </template>
                     <template v-else>
-                        <div class="flex items-center gap-1.5 h-[44px] bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] rounded-xl px-3 focus-within:border-purple-500 transition-all">
+                        <div class="flex items-center gap-1.5 h-[52px] lg:h-[60px] bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] rounded-xl px-3 focus-within:border-purple-500 transition-all">
                             <input
                                 type="text"
                                 v-model="customName"

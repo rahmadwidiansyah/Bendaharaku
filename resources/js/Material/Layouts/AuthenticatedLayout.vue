@@ -59,6 +59,7 @@ const SKELETON_COMPONENTS = {
 const props = defineProps({
     fullWidth: { type: Boolean, default: false },
     hideNav: { type: Boolean, default: false },
+    hideAppbar: { type: Boolean, default: false },
     title: { type: String, default: '' },
 })
 
@@ -203,13 +204,13 @@ const showSkeleton = computed(() =>
         <!-- Indikator navigasi global: wavy linear (M3 Expressive) -->
         <M3WavyProgress
             :active="isLoading"
-            :below-app-bar="isDesktop"
+            :below-app-bar="isDesktop && !hideAppbar"
             :aria-label="$t('common.loading')"
         />
 
         <!-- ── Top app bar (small, 4rem) — desktop only; mobile memakai judul in-content ── -->
         <header
-            v-if="isDesktop"
+            v-if="isDesktop && !hideAppbar"
             class="m3-appbar"
             :class="{
                 'm3-appbar--rail': isDesktop && isRailOpen,
@@ -780,6 +781,9 @@ const showSkeleton = computed(() =>
 @media (min-width: 1024px) {
     .m3-content {
         padding-bottom: var(--m3-space-8);
+        /* Inset kanan agar konten tidak menempel tepi viewport pada
+           1024–1392px (cap 72rem baru memberi margin di atasnya). */
+        padding-right: var(--m3-space-4);
     }
 
     .m3-content--rail {

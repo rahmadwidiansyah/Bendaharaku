@@ -9,17 +9,17 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Inertia\Inertia;
-use Inertia\Response;
 
 /**
  * ChatBotProfileController — Pengaturan Bot Profile per-user.
  *
  * Tanggung jawab:
- * - Render halaman Bot Profile settings (Inertia)
  * - Update bot_name
  * - Update bot_avatar (upload + crop result)
  * - Hapus bot_avatar (reset ke default)
+ *
+ * UI edit profil bot hidup di Settings/AI/Bot (kedua tema);
+ * GET bot-profile hanya redirect ke sana.
  *
  * bot_name  → disimpan langsung di users.bot_name
  * bot_avatar → file disimpan di storage/app/public/bot-avatars/{user_id}.{ext}
@@ -29,18 +29,12 @@ class ChatBotProfileController extends Controller
 {
     /**
      * GET /settings/chat/bot-profile
-     * Render halaman Bot Profile settings.
+     * Halaman terpisah tidak ada; arahkan ke halaman Bot yang memakai
+     * endpoint update ini.
      */
-    public function show(Request $request): Response
+    public function show(): RedirectResponse
     {
-        $user = $request->user();
-
-        return Inertia::render('Settings/ChatBotProfile', [
-            'botName' => $user->bot_name ?? 'Ken-Chan',
-            'botAvatar' => $user->bot_avatar
-                ? asset('storage/'.$user->bot_avatar)
-                : null,
-        ]);
+        return redirect()->route('settings.ai.bot');
     }
 
     /**

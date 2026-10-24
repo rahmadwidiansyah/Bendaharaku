@@ -320,10 +320,10 @@ const groups = computed(() => [
     margin: 0;
     min-width: 0;
     color: var(--m3-color-on-surface);
-    font-size: var(--m3-type-title-small-size);
-    line-height: var(--m3-type-title-small-line-height);
-    font-weight: var(--m3-type-emphasized-title-small-weight);
-    letter-spacing: var(--m3-type-title-small-tracking);
+    font-size: var(--m3-type-title-medium-size);
+    line-height: var(--m3-type-title-medium-line-height);
+    font-weight: var(--m3-type-title-medium-weight);
+    letter-spacing: var(--m3-type-title-medium-tracking);
 }
 
 .m3-wallets__group-count {
