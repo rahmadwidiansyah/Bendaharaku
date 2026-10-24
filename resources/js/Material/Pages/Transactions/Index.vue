@@ -723,10 +723,13 @@ const getWalletName = (trx) => {
 @media (min-width: 100rem) {
     .m3-tx {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 24rem;
+        /* Daftar tetap diukur content-max yang nyaman dibaca; panel detail
+           menempati ruang kosong layar lebar, grid di-center. */
+        grid-template-columns: minmax(0, var(--m3-size-content-max)) 24rem;
         gap: var(--m3-space-6);
+        justify-content: center;
         align-items: start;
-        max-width: min(var(--m3-size-content-max), 100rem);
+        max-width: none;
     }
 
     .m3-tx__primary {

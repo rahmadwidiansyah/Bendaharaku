@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { Head, Link } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import M3Layout from '@/Material/Layouts/AuthenticatedLayout.vue'
@@ -38,6 +38,36 @@ const displayAmount = (amount) => (isBalanceVisible.value ? formatNumber(amount)
 const balanceClass = (balance) =>
     parseFloat(balance) < 0 && isBalanceVisible.value ? 'm3-wallets__balance--negative' : ''
 
+// ─── List-detail (layar lebar >= 100rem): pilih dompet → panel kanan ───
+const selectedWallet = ref(null)
+const WIDE_MQ = '(min-width: 100rem)'
+const isWideLayout = ref(typeof window !== 'undefined' && window.matchMedia(WIDE_MQ).matches)
+let wideMq = null
+const onWideMqChange = (e) => { isWideLayout.value = e.matches }
+
+onMounted(() => {
+    wideMq = window.matchMedia(WIDE_MQ)
+    isWideLayout.value = wideMq.matches
+    wideMq.addEventListener('change', onWideMqChange)
+})
+
+onUnmounted(() => {
+    wideMq?.removeEventListener('change', onWideMqChange)
+})
+
+// Di layout lebar, klik baris memilih dompet untuk panel kanan
+// (href dikosongkan → M3ListItem merender div role=button, bukan link);
+// di bawahnya baris tetap link ke halaman dompet.
+const onWalletClick = (wallet) => {
+    selectedWallet.value = selectedWallet.value?.id === wallet.id ? null : wallet
+}
+
+const selectedGroupLabel = computed(() =>
+    selectedWallet.value?.group_type === 'Asset'
+        ? t('wallet.groupTypes.asset')
+        : t('wallet.groupTypes.liquid'),
+)
+
 const groups = computed(() => [
     {
         key: 'liquid',
@@ -59,6 +89,7 @@ const groups = computed(() => [
         <Head :title="t('wallet.title')" />
 
         <div class="m3-wallets">
+          <div class="m3-wallets__primary">
             <M3PageTitle :title="t('wallet.title')" />
 
             <M3Card variant="elevated" padding="lg" class="m3-wallets__hero">
@@ -120,8 +151,12 @@ const groups = computed(() => [
                         <M3ListItem
                             v-for="(wallet, index) in group.wallets"
                             :key="wallet.id"
-                            :href="route('wallets.show', wallet.id)"
+                            :href="isWideLayout ? '' : route('wallets.show', wallet.id)"
+                            clickable
                             :divider="index < group.wallets.length - 1"
+                            :class="{ 'm3-wallets__row--selected': isWideLayout && selectedWallet?.id === wallet.id }"
+                            :aria-current="isWideLayout && selectedWallet?.id === wallet.id ? 'true' : undefined"
+                            @click="onWalletClick(wallet)"
                         >
                             <template #icon>
                                 <span class="m3-wallets__icon-wrap">
@@ -152,6 +187,58 @@ const groups = computed(() => [
                     </M3Card>
                 </section>
             </div>
+          </div>
+
+          <!-- Panel ringkasan dompet (hanya layar lebar >= 100rem) -->
+          <aside class="m3-wallets__detail" :aria-label="t('wallet.title')">
+              <M3Card variant="elevated" padding="lg" class="m3-wallets__detail-card">
+                  <template v-if="selectedWallet">
+                      <div class="m3-wallets__detail-head">
+                          <span class="m3-wallets__detail-icon">
+                              <AppIcon
+                                  :icon="selectedWallet.icon"
+                                  fallback="wallet"
+                                  :class="['m3-wallets__icon', getM3WalletIconClass()]"
+                              />
+                          </span>
+                          <div class="m3-wallets__detail-titles">
+                              <span class="m3-wallets__detail-group">{{ selectedGroupLabel }}</span>
+                              <h2 class="m3-wallets__detail-name">{{ selectedWallet.name }}</h2>
+                          </div>
+                      </div>
+
+                      <div class="m3-wallets__detail-balance">
+                          <span class="m3-wallets__detail-balance-label">{{ t('wallet.totalWealth') }}</span>
+                          <p class="m3-wallets__detail-balance-value" aria-live="polite">
+                              <span class="m3-wallets__detail-balance-currency">{{ t('common.currency') }}</span>
+                              {{ displayAmount(selectedWallet.balance) }}
+                          </p>
+                      </div>
+
+                      <div class="m3-wallets__detail-actions">
+                          <M3Button variant="filled" full-width :href="route('wallets.show', selectedWallet.id)">
+                              <template #leading>
+                                  <AppIcon icon="arrow-right" />
+                              </template>
+                              {{ t('wallet.openDetail') }}
+                          </M3Button>
+                          <M3Button variant="outlined" full-width :href="route('wallets.edit', selectedWallet.id)">
+                              <template #leading>
+                                  <AppIcon icon="pencil" />
+                              </template>
+                              {{ t('common.edit') }}
+                          </M3Button>
+                      </div>
+                  </template>
+
+                  <div v-else class="m3-wallets__detail-empty">
+                      <span class="m3-wallets__empty-icon-wrap" aria-hidden="true">
+                          <AppIcon icon="wallet" class="m3-wallets__empty-icon" />
+                      </span>
+                      <p class="m3-wallets__detail-empty-text">{{ t('wallet.selectHint') }}</p>
+                  </div>
+              </M3Card>
+          </aside>
         </div>
     </M3Layout>
 </template>
@@ -423,5 +510,157 @@ const groups = computed(() => [
         grid-template-columns: repeat(2, minmax(0, 1fr));
         align-items: start;
     }
+}
+
+/* Kolom utama (hero + aksi + grup dompet). Wrapper tetap berperilaku
+   seperti anak langsung .m3-wallets di bawah breakpoint list-detail. */
+.m3-wallets__primary {
+    display: flex;
+    flex-direction: column;
+    gap: var(--m3-space-5);
+    min-width: 0;
+}
+
+/* ── List-detail: layar lebar (>= 100rem / 1600px) ────────────────
+   Klik baris dompet memilihnya untuk panel ringkasan kanan; di bawah
+   breakpoint baris tetap navigasi ke halaman dompet. */
+.m3-wallets__detail {
+    display: none;
+}
+
+.m3-wallets__row--selected {
+    background: var(--m3-color-secondary-container);
+}
+
+@media (min-width: 100rem) {
+    .m3-wallets {
+        display: grid;
+        grid-template-columns: minmax(0, var(--m3-size-content-max)) 24rem;
+        gap: var(--m3-space-6);
+        justify-content: center;
+        align-items: start;
+        max-width: none;
+    }
+
+    .m3-wallets__primary {
+        display: flex;
+        flex-direction: column;
+        gap: var(--m3-space-5);
+        min-width: 0;
+    }
+
+    .m3-wallets__detail {
+        display: block;
+        position: sticky;
+        top: calc(var(--m3-size-appbar) + var(--m3-space-4));
+        max-height: calc(100dvh - var(--m3-size-appbar) - var(--m3-space-8));
+        overflow-y: auto;
+    }
+
+    .m3-wallets__detail-card {
+        display: flex;
+        flex-direction: column;
+    }
+}
+
+.m3-wallets__detail-head {
+    display: flex;
+    align-items: center;
+    gap: var(--m3-space-3);
+}
+
+.m3-wallets__detail-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--m3-size-touch-target-lg);
+    height: var(--m3-size-touch-target-lg);
+    border-radius: var(--m3-radius-full);
+    background: var(--m3-color-surface-container);
+}
+
+.m3-wallets__detail-titles {
+    display: flex;
+    flex-direction: column;
+    gap: var(--m3-space-0-5);
+    min-width: 0;
+}
+
+.m3-wallets__detail-group {
+    font-size: var(--m3-type-label-medium-size);
+    line-height: var(--m3-type-label-medium-line-height);
+    font-weight: var(--m3-type-label-medium-weight);
+    letter-spacing: var(--m3-type-label-medium-tracking);
+    color: var(--m3-color-on-surface-variant);
+}
+
+.m3-wallets__detail-name {
+    margin: 0;
+    font-size: var(--m3-type-title-large-size);
+    line-height: var(--m3-type-title-large-line-height);
+    font-weight: var(--m3-type-emphasized-title-large-weight);
+    color: var(--m3-color-on-surface);
+    overflow-wrap: anywhere;
+}
+
+.m3-wallets__detail-balance {
+    display: flex;
+    flex-direction: column;
+    gap: var(--m3-space-1);
+    padding: var(--m3-space-4);
+    border-radius: var(--m3-radius-md);
+    background: var(--m3-color-surface-container);
+}
+
+.m3-wallets__detail-balance-label {
+    margin: 0;
+    font-size: var(--m3-type-label-medium-size);
+    line-height: var(--m3-type-label-medium-line-height);
+    font-weight: var(--m3-type-emphasized-label-medium-weight);
+    letter-spacing: var(--m3-type-label-medium-tracking);
+    text-transform: uppercase;
+    color: var(--m3-color-on-surface-variant);
+}
+
+.m3-wallets__detail-balance-value {
+    display: flex;
+    align-items: baseline;
+    gap: var(--m3-space-1);
+    margin: 0;
+    font-size: var(--m3-type-headline-medium-size);
+    line-height: var(--m3-type-headline-medium-line-height);
+    font-weight: var(--m3-type-emphasized-headline-medium-weight);
+    letter-spacing: var(--m3-type-headline-medium-tracking);
+    font-variant-numeric: tabular-nums;
+    color: var(--m3-color-on-surface);
+    overflow-wrap: anywhere;
+}
+
+.m3-wallets__detail-balance-currency {
+    font-size: var(--m3-type-body-medium-size);
+    font-weight: var(--m3-type-emphasized-body-medium-weight);
+    color: var(--m3-color-on-surface-variant);
+}
+
+.m3-wallets__detail-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--m3-space-2);
+}
+
+.m3-wallets__detail-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--m3-space-3);
+    padding: var(--m3-space-8) var(--m3-space-4);
+    text-align: center;
+}
+
+.m3-wallets__detail-empty-text {
+    margin: 0;
+    font-size: var(--m3-type-body-medium-size);
+    line-height: var(--m3-type-body-medium-line-height);
+    color: var(--m3-color-on-surface-variant);
 }
 </style>

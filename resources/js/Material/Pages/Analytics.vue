@@ -793,7 +793,7 @@ onBeforeUnmount(() => {
 
         <div class="m3-ana">
             <!-- Judul halaman in-content (mobile; desktop memakai app bar) -->
-            <M3PageTitle :title="$t('analytics.title')">
+            <M3PageTitle class="m3-ana__head" :title="$t('analytics.title')">
                 <template #actions>
                     <M3IconButton :href="route('chat.index')" :aria-label="$t('nav.chat')">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
@@ -833,6 +833,8 @@ onBeforeUnmount(() => {
                 @close="showDateModal = false"
             />
 
+          <!-- Kolom utama: KPI + grafik -->
+          <div class="m3-ana__primary">
             <!-- KPI pemasukan/pengeluaran -->
             <M3CashflowCard class="m3-ana__enter m3-ana__enter--1" :income="totalIncome" :expense="totalExpense" :is-visible="true" />
 
@@ -887,6 +889,10 @@ onBeforeUnmount(() => {
                 </div>
             </M3Card>
 
+          </div>
+
+          <!-- Panel pendukung: rincian kategori (layar lebar >= 100rem) -->
+          <aside class="m3-ana__aside" :aria-label="$t('analytics.categoryBreakdown')">
             <!-- Rincian kategori -->
             <h2 class="m3-ana__section-title">{{ $t('analytics.categoryBreakdown') }}</h2>
             <div class="m3-ana__seg m3-ana__seg--block" role="tablist">
@@ -947,6 +953,7 @@ onBeforeUnmount(() => {
                     </div>
                 </div>
             </M3Card>
+          </aside>
         </div>
     </M3Layout>
 </template>
@@ -960,6 +967,46 @@ onBeforeUnmount(() => {
     max-width: var(--m3-size-content-max);
     margin: 0 auto;
     padding: var(--m3-space-4) var(--m3-space-4) var(--m3-space-4);
+}
+
+/* Kolom utama (KPI + grafik). Wrapper tetap berperilaku seperti
+   anak langsung .m3-ana di bawah breakpoint list-detail. */
+.m3-ana__primary {
+    display: flex;
+    flex-direction: column;
+    gap: var(--m3-space-4);
+    min-width: 0;
+}
+
+/* Panel pendukung (rincian kategori) — tampil hanya >= 100rem */
+.m3-ana__aside {
+    display: none;
+}
+
+@media (min-width: 100rem) {
+    .m3-ana {
+        display: grid;
+        grid-template-columns: minmax(0, var(--m3-size-content-max)) 28rem;
+        gap: var(--m3-space-6);
+        justify-content: center;
+        align-items: start;
+        max-width: none;
+    }
+
+    .m3-ana__head,
+    .m3-ana > .m3-ana__datebar {
+        grid-column: 1 / -1;
+    }
+
+    .m3-ana__aside {
+        display: flex;
+        flex-direction: column;
+        gap: var(--m3-space-4);
+        position: sticky;
+        top: calc(var(--m3-size-appbar) + var(--m3-space-4));
+        max-height: calc(100dvh - var(--m3-size-appbar) - var(--m3-space-8));
+        overflow-y: auto;
+    }
 }
 
 /* ── Bar tanggal ── */

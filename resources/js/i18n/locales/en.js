@@ -447,6 +447,8 @@ export default {
         title:          'Assets & Wallets',
         titleCreate:    'Add Wallet',
         titleEdit:      'Edit Wallet',
+        selectHint:     'Select a wallet to see its summary',
+        openDetail:     'Open Wallet Page',
         totalWealth:    'Net Worth',
         liquid:         'Liquid',
         investment:     'Investment',

@@ -451,6 +451,8 @@ export default {
         title:          'Aset & Dompet',
         titleCreate:    'Tambah Dompet',
         titleEdit:      'Edit Dompet',
+        selectHint:     'Pilih dompet untuk melihat ringkasan',
+        openDetail:     'Buka Halaman Dompet',
         totalWealth:    'Total Kekayaan',
         liquid:         'Liquid',
         investment:     'Investasi',
