@@ -50,3 +50,9 @@ __pycache__/
 /twa-manifest.json.bak
 /twa/
 /twa-manifest.json.bak
+
+# Playwright
+/tests/e2e/.auth/
+/test-results/
+/playwright-report/
+/blob-report/

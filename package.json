@@ -4,11 +4,16 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "lint:colors": "node scripts/check-design-colors.mjs",
+        "test:e2e": "playwright test",
+        "test:e2e:update": "playwright test --update-snapshots"
     },
     "devDependencies": {
+        "@axe-core/playwright": "^4.14.0",
         "@bubblewrap/cli": "1.25.0",
         "@bubblewrap/core": "1.25.0",
+        "@playwright/test": "^1.64.1",
         "@tailwindcss/forms": "^0.5.2",
         "@tailwindcss/vite": "^4.0.0",
         "alpinejs": "^3.4.2",
