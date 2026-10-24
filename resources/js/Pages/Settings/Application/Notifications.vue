@@ -3,6 +3,7 @@ import { Head } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import SettingsLayout from '../Layouts/SettingsLayout.vue';
 import SettingsCard from '@/Components/Settings/SettingsCard.vue';
+import ToggleSwitch from '@/Components/ToggleSwitch.vue';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import axios from 'axios';
@@ -84,10 +85,7 @@ onUnmounted(() => {
       <SettingsCard :title="t('settings.application.notifications.email.title')" :description="t('settings.application.notifications.email.description')">
         <div class="flex items-center justify-between">
           <span class="text-2xs sm:text-sm text-text-secondary">{{ t('settings.application.notifications.email.label') }}</span>
-          <label class="relative inline-flex items-center cursor-pointer">
-            <input v-model="emailEnabled" type="checkbox" class="sr-only peer" />
-            <div class="w-11 h-6 bg-surface-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--color-brand)] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-brand)]"></div>
-          </label>
+          <ToggleSwitch v-model="emailEnabled" :aria-label="t('settings.application.notifications.email.label')" />
         </div>
       </SettingsCard>
 
@@ -97,15 +95,12 @@ onUnmounted(() => {
             <span class="text-2xs sm:text-sm text-text-secondary">{{ t('settings.application.notifications.push.label') }}</span>
             <p class="text-2xs text-text-secondary mt-1">{{ permissionHint }}</p>
           </div>
-          <label class="relative inline-flex items-center cursor-pointer shrink-0" :class="{ 'opacity-50 pointer-events-none': push.busy.value }">
-            <input
-              v-model="pushEnabled"
-              type="checkbox"
-              class="sr-only peer"
-              :disabled="!push.isSupported || !props.vapidPublicKey"
-            />
-            <div class="w-11 h-6 bg-surface-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--color-brand)] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-brand)]"></div>
-          </label>
+          <ToggleSwitch
+            v-model="pushEnabled"
+            :disabled="!push.isSupported || !props.vapidPublicKey || push.busy.value"
+            :aria-label="t('settings.application.notifications.push.label')"
+            class="shrink-0"
+          />
         </div>
       </SettingsCard>
 

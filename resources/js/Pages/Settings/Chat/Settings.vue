@@ -3,6 +3,7 @@ import { Head, Link, usePage } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import SettingsLayout from '../Layouts/SettingsLayout.vue';
 import SettingsCard from '@/Components/Settings/SettingsCard.vue';
+import ToggleSwitch from '@/Components/ToggleSwitch.vue';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import axios from 'axios';
@@ -143,15 +144,12 @@ onUnmounted(() => {
             <span class="text-2xs sm:text-sm text-text-secondary">{{ t('settings.chat.hub.notifications.label') }}</span>
             <p class="text-2xs text-text-secondary mt-1">{{ permissionHint }}</p>
           </div>
-          <label class="relative inline-flex items-center cursor-pointer shrink-0" :class="{ 'opacity-50 pointer-events-none': push.busy.value }">
-            <input
-              v-model="pushEnabled"
-              type="checkbox"
-              class="sr-only peer"
-              :disabled="!push.isSupported || !vapidPublicKey"
-            />
-            <div class="w-11 h-6 bg-surface-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--color-brand)] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-brand)]"></div>
-          </label>
+          <ToggleSwitch
+            v-model="pushEnabled"
+            :disabled="!push.isSupported || !vapidPublicKey || push.busy.value"
+            :aria-label="t('settings.chat.hub.notifications.label')"
+            class="shrink-0"
+          />
         </div>
       </SettingsCard>
 

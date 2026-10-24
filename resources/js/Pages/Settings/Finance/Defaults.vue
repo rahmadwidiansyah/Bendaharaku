@@ -3,6 +3,7 @@ import { Head, usePage } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import SettingsLayout from '../Layouts/SettingsLayout.vue';
 import SettingsCard from '@/Components/Settings/SettingsCard.vue';
+import ToggleSwitch from '@/Components/ToggleSwitch.vue';
 import { useI18n } from 'vue-i18n';
 import axios from 'axios';
 import { ref } from 'vue';
@@ -60,16 +61,12 @@ const handleToggle = async () => {
               }}
             </p>
           </div>
-          <label class="relative inline-flex items-center cursor-pointer">
-            <input
-              v-model="allowNegativeBalance"
-              type="checkbox"
-              class="sr-only peer"
-              :disabled="saving"
-              @change="handleToggle"
-            />
-            <div class="w-11 h-6 bg-[var(--color-surface-muted)] peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--color-brand)] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-brand)] animate-transition"></div>
-          </label>
+          <ToggleSwitch
+            v-model="allowNegativeBalance"
+            :disabled="saving"
+            :aria-label="t('settings.finance.defaults.transaction_logic.label')"
+            @change="handleToggle"
+          />
         </div>
       </SettingsCard>
     </SettingsLayout>

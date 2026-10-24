@@ -3,6 +3,7 @@ import { Head, Link } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import SettingsLayout from '../Layouts/SettingsLayout.vue';
 import SettingsCard from '@/Components/Settings/SettingsCard.vue';
+import ToggleSwitch from '@/Components/ToggleSwitch.vue';
 
 import { useI18n } from 'vue-i18n';
 import { ref, onMounted } from 'vue';
@@ -77,15 +78,11 @@ const handleSave = () => {
           <span class="text-sm text-gray-300">
             {{ t('settings.ai.memory.conversation_history.enable') }}
           </span>
-          <label class="relative inline-flex items-center cursor-pointer">
-            <input
-              v-model="form.enable_conversation_history"
-              type="checkbox"
-              class="sr-only peer"
-              @change="handleSave"
-            />
-            <div class="w-11 h-6 bg-[var(--color-surface-muted)] peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--color-brand)] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-brand)]" />
-          </label>
+          <ToggleSwitch
+            v-model="form.enable_conversation_history"
+            :aria-label="t('settings.ai.memory.conversation_history.enable')"
+            @change="handleSave"
+          />
         </div>
       </SettingsCard>
     </SettingsLayout>
