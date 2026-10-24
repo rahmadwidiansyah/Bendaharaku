@@ -2,7 +2,7 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title inertia>{{ config('app.name', 'Bendaharaku') }}</title>
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
