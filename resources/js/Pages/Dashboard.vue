@@ -418,17 +418,17 @@ const calendarDayNames = computed(() => [
 								<div class="flex w-full bg-[var(--color-surface-muted)] rounded-xl border border-[var(--color-border-default)] p-0.5">
 									<button @click="calendarFilter = 'income'"
 										:class="calendarFilter === 'income' ? 'bg-[var(--color-income-bg)] text-[var(--color-income-text)] border border-[var(--color-income-border)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-transparent'"
-										class="flex-1 px-2 py-1.5 rounded-lg text-2xs font-bold uppercase tracking-widest transition-all text-center">
+										class="flex-1 px-2 py-2.5 rounded-lg text-2xs font-bold uppercase tracking-widest transition-all text-center">
 										{{ $t('dashboard.calendarFilter.income') }}
 									</button>
 									<button @click="calendarFilter = 'total'"
 										:class="calendarFilter === 'total' ? 'text-white border bg-[var(--color-brand)] border-[var(--color-brand)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-transparent'"
-										class="flex-1 px-2 py-1.5 rounded-lg text-2xs font-bold uppercase tracking-widest transition-all text-center">
+										class="flex-1 px-2 py-2.5 rounded-lg text-2xs font-bold uppercase tracking-widest transition-all text-center">
 										{{ $t('dashboard.calendarFilter.total') }}
 									</button>
 									<button @click="calendarFilter = 'expense'"
 										:class="calendarFilter === 'expense' ? 'bg-[var(--color-expense-bg)] text-[var(--color-expense-text)] border border-[var(--color-expense-border)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-transparent'"
-										class="flex-1 px-2 py-1.5 rounded-lg text-2xs font-bold uppercase tracking-widest transition-all text-center">
+										class="flex-1 px-2 py-2.5 rounded-lg text-2xs font-bold uppercase tracking-widest transition-all text-center">
 										{{ $t('dashboard.calendarFilter.expense') }}
 									</button>
 								</div>

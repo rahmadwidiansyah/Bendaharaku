@@ -103,7 +103,7 @@ onBeforeUnmount(() => {
         <p class="text-xs font-semibold text-[var(--color-text-primary)] truncate">{{ attachmentName || t('chat.evidenceLabel') }}</p>
         <p class="text-2xs truncate" :class="isUploading ? 'text-[var(--color-brand)]' : 'text-[var(--color-text-muted)]'">{{ isUploading ? t('chat.evidenceUploading') : t('chat.captionHint') }}</p>
       </div>
-      <button type="button" @click="$emit('removeAttachment')" :disabled="isUploading" class="w-7 h-7 rounded-full bg-[var(--color-surface-muted)] hover:bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] flex items-center justify-center shrink-0 transition-colors disabled:opacity-50" :aria-label="t('chat.removeAttachment')">
+      <button type="button" @click="$emit('removeAttachment')" :disabled="isUploading" class="w-10 h-10 rounded-full bg-[var(--color-surface-muted)] hover:bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] flex items-center justify-center shrink-0 transition-colors disabled:opacity-50" :aria-label="t('chat.removeAttachment')">
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
       </button>
     </div>
@@ -144,6 +144,7 @@ onBeforeUnmount(() => {
           :placeholder="placeholderText"
           :disabled="isLoading"
           rows="1"
+          enterkeyhint="send"
           @keydown="onKeydown"
           @input="resize"
           @focus="isFocused = true"
@@ -159,7 +160,7 @@ onBeforeUnmount(() => {
           @click="$emit('openUpload')"
           :disabled="isLoading"
           :class="[
-            'absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all duration-200',
+            'absolute right-1.5 top-1/2 -translate-y-1/2 w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-all duration-200',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/50',
             isLoading
               ? 'opacity-40 cursor-not-allowed text-[var(--color-text-muted)]'

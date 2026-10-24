@@ -355,7 +355,7 @@ const handleBack = () => router.visit(route('dashboard'))
                     <button
                         type="button"
                         @click="goBack"
-                        class="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-gray-800 border border-white/10 text-gray-400 hover:text-[var(--color-expense-text)] hover:border-red-500/30 active:scale-90 transition-all"
+                        class="shrink-0 w-11 h-11 flex items-center justify-center rounded-full bg-gray-800 border border-white/10 text-gray-400 hover:text-[var(--color-expense-text)] hover:border-red-500/30 active:scale-90 transition-all"
                         :aria-label="t('common.close')"
                     >
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -630,7 +630,7 @@ const handleBack = () => router.visit(route('dashboard'))
                         <!-- Jatuh tempo hanya untuk Dapat/Ngasih -->
                         <div v-if="(activeType === 'Debt' && debtSubTab === 'income') || (activeType === 'Receivable' && debtSubTab === 'expense')"
                             class="p-4 bg-gray-800/60 rounded-xl border border-white/5 space-y-3">
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2 min-h-11">
                                 <input type="checkbox" id="has_due" :checked="form.due_date_type !== null"
                                     @change="form.due_date_type = $event.target.checked ? 'fixed' : null"
                                     class="rounded bg-gray-700 border-white/10" :class="typeTheme.focusRing" />

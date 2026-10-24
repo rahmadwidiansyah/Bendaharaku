@@ -407,7 +407,7 @@ async function handleRetryEvidence(uuid) {
                 <button
                     v-if="showJumpBtn"
                     @click="jumpToLatest"
-                    class="absolute right-4 z-20 flex items-center gap-1.5 pl-2.5 pr-3 py-2 rounded-full bg-[var(--color-surface-raised)] border border-white/12 shadow-xl shadow-black/40 hover:bg-[var(--color-surface-muted)] hover:border-white/20 active:scale-95 transition-all"
+                    class="absolute right-4 z-20 flex items-center gap-1.5 pl-2.5 pr-3 py-2 min-h-11 rounded-full bg-[var(--color-surface-raised)] border border-white/12 shadow-xl shadow-black/40 hover:bg-[var(--color-surface-muted)] hover:border-white/20 active:scale-95 transition-all"
                     :aria-label="t('chat.scrollToBottom')"
                     :style="{ bottom: fabStyle.bottom, backdropFilter: 'blur(12px)' }"
                 >

@@ -52,7 +52,7 @@ function handleBack() {
         <button
             type="button"
             @click="handleBack"
-            class="w-9 h-9 sm:w-10 sm:h-10 lg:w-11 lg:h-11 shrink-0 flex items-center justify-center rounded-xl lg:rounded-2xl text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-muted)] active:scale-90 border border-transparent hover:border-[var(--color-border-default)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)] transition-all"
+            class="w-11 h-11 shrink-0 flex items-center justify-center rounded-xl lg:rounded-2xl text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-muted)] active:scale-90 border border-transparent hover:border-[var(--color-border-default)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)] transition-all"
             :aria-label="t('btn.back')"
         >
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -90,7 +90,7 @@ function handleBack() {
         <div class="flex items-center gap-0.5 shrink-0">
             <Link
                 :href="route('settings.chat.index')"
-                class="w-8 h-8 flex items-center justify-center rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-muted)] transition-colors"
+                class="w-11 h-11 flex items-center justify-center rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-muted)] transition-colors"
                 :aria-label="t('settings.chat.hub.title')"
             >
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

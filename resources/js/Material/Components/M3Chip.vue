@@ -52,7 +52,8 @@ const classes = computed(() => [
     align-items: center;
     justify-content: center;
     gap: var(--m3-space-1);
-    min-height: 2rem;
+    /* 40px — target sentuh nyaman untuk chip interaktif (filter/saran) */
+    min-height: 2.5rem;
     /* 14px (0.875rem) tidak ada di skala --m3-space-* → dipetakan ke 16px */
     padding: 0 var(--m3-space-4);
     border-radius: var(--m3-radius-full);

@@ -278,7 +278,16 @@ watch(
     background: transparent;
     color: var(--m3-color-on-surface-variant);
     cursor: pointer;
-    overflow: hidden;
+    overflow: visible;
+}
+
+/* Perluasan hit area ke 48px (paritas M3IconButton) */
+.m3-modal__close::before {
+    content: '';
+    position: absolute;
+    width: var(--m3-size-touch-target-lg);
+    height: var(--m3-size-touch-target-lg);
+    border-radius: var(--m3-radius-full);
 }
 
 .m3-modal__close::after {

@@ -47,6 +47,7 @@ const { t } = useI18n()
     display: flex;
     align-items: center;
     gap: var(--m3-space-1-5);
+    min-height: 2.75rem;
     padding: var(--m3-space-1-5) var(--m3-space-3) var(--m3-space-1-5) var(--m3-space-2);
     border: 1px solid var(--m3-color-outline-variant);
     border-radius: var(--m3-radius-full);

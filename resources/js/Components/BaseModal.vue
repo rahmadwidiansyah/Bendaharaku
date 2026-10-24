@@ -279,7 +279,7 @@ const panelClasses = computed(() => {
                             <button
                                 v-if="showCloseBtn && closeable"
                                 type="button"
-                                class="ml-3 w-8 h-8 shrink-0 flex items-center justify-center rounded-full bg-[var(--color-surface-muted)]/50 border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-muted)] active:scale-90 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]"
+                                class="ml-3 w-11 h-11 shrink-0 flex items-center justify-center rounded-full bg-[var(--color-surface-muted)]/50 border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-muted)] active:scale-90 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]"
                                 aria-label="Tutup modal"
                                 @click="close"
                             >
