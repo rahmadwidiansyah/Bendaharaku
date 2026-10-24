@@ -171,7 +171,7 @@ const statusMeta = computed(() => {
             <img
                 v-if="src"
                 :src="src"
-                :alt="t('chat.evidence')"
+                :alt="t('chat.evidenceLabel')"
                 class="w-full h-auto max-h-[360px] object-cover block"
                 loading="lazy"
             />
@@ -284,7 +284,7 @@ const statusMeta = computed(() => {
                     <img
                         v-if="src"
                         :src="src"
-                        :alt="t('chat.evidence')"
+                        :alt="t('chat.evidenceLabel')"
                         class="max-w-[92vw] max-h-[82vh] object-contain will-change-transform select-none"
                         :style="{
                             transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`,

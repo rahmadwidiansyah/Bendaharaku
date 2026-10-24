@@ -364,6 +364,8 @@ onMounted(checkStatus)
     display: inline-flex;
     align-items: center;
     gap: var(--m3-space-1);
+    min-width: 0;
+    overflow: hidden; /* potong rapi alih-alih meluber menimpa chip status */
     padding: var(--m3-space-0-5) var(--m3-space-2);
     border-radius: var(--m3-radius-full);
     font-size: var(--m3-type-label-small-size);
@@ -515,6 +517,9 @@ onMounted(checkStatus)
 .m3-txn__compact {
     display: flex;
     align-items: center;
+    flex-wrap: wrap; /* saat sempit, hint "Detail Transaksi" pindah baris —
+                        teks kategori/dompet tidak menyusut jadi 1 karakter */
+    row-gap: var(--m3-space-1);
     gap: var(--m3-space-2);
     padding: var(--m3-space-2-5) var(--m3-space-3);
     border-top: 1px solid var(--m3-color-outline-variant);

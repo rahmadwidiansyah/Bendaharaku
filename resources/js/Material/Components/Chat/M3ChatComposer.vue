@@ -107,7 +107,7 @@ onBeforeUnmount(() => {
                 </div>
             </div>
             <div class="m3-composer__preview-info">
-                <p class="m3-composer__preview-name">{{ attachmentName || t('chat.evidence') }}</p>
+                <p class="m3-composer__preview-name">{{ attachmentName || t('chat.evidenceLabel') }}</p>
                 <p class="m3-composer__preview-hint" :class="{ 'm3-composer__preview-hint--active': isUploading }">
                     {{ isUploading ? t('chat.evidenceUploading') : t('chat.captionHint') }}
                 </p>

@@ -100,7 +100,7 @@ onBeforeUnmount(() => {
         </div>
       </div>
       <div class="flex-1 min-w-0">
-        <p class="text-xs font-semibold text-[var(--color-text-primary)] truncate">{{ attachmentName || t('chat.evidence') }}</p>
+        <p class="text-xs font-semibold text-[var(--color-text-primary)] truncate">{{ attachmentName || t('chat.evidenceLabel') }}</p>
         <p class="text-2xs truncate" :class="isUploading ? 'text-[var(--color-brand)]' : 'text-[var(--color-text-muted)]'">{{ isUploading ? t('chat.evidenceUploading') : t('chat.captionHint') }}</p>
       </div>
       <button type="button" @click="$emit('removeAttachment')" :disabled="isUploading" class="w-7 h-7 rounded-full bg-[var(--color-surface-muted)] hover:bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] flex items-center justify-center shrink-0 transition-colors disabled:opacity-50" :aria-label="t('chat.removeAttachment')">

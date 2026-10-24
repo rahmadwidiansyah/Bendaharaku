@@ -158,7 +158,7 @@ const statusMeta = computed(() => {
             <img
                 v-if="src"
                 :src="src"
-                :alt="t('chat.evidence')"
+                :alt="t('chat.evidenceLabel')"
                 class="m3-ev__img"
                 loading="lazy"
             />
@@ -249,7 +249,7 @@ const statusMeta = computed(() => {
                     <img
                         v-if="src"
                         :src="src"
-                        :alt="t('chat.evidence')"
+                        :alt="t('chat.evidenceLabel')"
                         class="m3-ev-view__img"
                         :style="{
                             transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`,
@@ -318,6 +318,19 @@ const statusMeta = computed(() => {
     height: auto;
     max-height: 22.5rem;
     object-fit: cover;
+    /* Saat gambar gagal dimuat, browser merender alt text memakai
+       font img — buat kecil & redup agar bubble tetap rapi. */
+    color: var(--m3-color-on-surface-variant);
+    font-size: var(--m3-type-label-small-size);
+}
+
+/* Mobile: batasi tinggi pratinjau agar tidak mendominasi layar;
+   gambar penuh tetap bisa dilihat lewat tombol zoom. */
+@media (max-width: 1023px) {
+    .m3-ev__thumb,
+    .m3-ev__img {
+        max-height: 15rem;
+    }
 }
 
 .m3-ev__zoom-hint {
@@ -380,7 +393,7 @@ const statusMeta = computed(() => {
     align-items: center;
     justify-content: space-between;
     gap: var(--m3-space-2);
-    padding: 0 var(--m3-space-1);
+    padding: var(--m3-space-1) var(--m3-space-2);
 }
 
 .m3-ev__status {
@@ -424,7 +437,9 @@ const statusMeta = computed(() => {
 .m3-ev__status-label.m3-ev__dot--failed { color: var(--m3-color-error); }
 
 .m3-ev__kind {
-    flex-shrink: 0;
+    /* Boleh menyusut agar ellipsis aktif — tanpa ini label nowrap
+       meluber dan terpotong keras di tepi bubble saat layar sempit. */
+    min-width: 0;
     font-size: var(--m3-type-label-small-size);
     line-height: var(--m3-type-label-small-line-height);
     color: color-mix(in srgb, currentColor 55%, transparent);

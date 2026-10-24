@@ -1653,7 +1653,6 @@ export default {
         evidenceUploading: 'Uploading evidence...',
         evidencePreview: 'Transaction evidence preview',
         openFullscreen: 'Open full image',
-        evidence: 'Evidence',
         sheetTitle: 'Quick Commands',
         sheetDesc: 'Select a command to insert into chat',
         showMore: 'Show More',
@@ -1681,7 +1680,7 @@ export default {
             uploadFailed: 'Upload failed',
         },
         evidence: {
-            summaryTitle: 'Receipt — :count items detected',
+            summaryTitle: 'Receipt — {count} items detected',
         },
         statistik: {
             title: '7-Day Statistics',

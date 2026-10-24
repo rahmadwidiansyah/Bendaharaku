@@ -57,11 +57,13 @@ const hasAny = computed(() =>
 
         <M3TokenBadge :tokens="tokens" />
 
-        <span v-if="(latencyLabel || tokens !== null) && (model || provider)" class="m3-response-meta__sep" aria-hidden="true">&bull;</span>
+        <!-- Separator hanya jika kedua tetangganya benar-benar dirender:
+             kiri = token badge (muncul saat tokens !== null), kanan = model badge. -->
+        <span v-if="tokens !== null && (model || provider)" class="m3-response-meta__sep" aria-hidden="true">&bull;</span>
 
         <M3ModelBadge :model="model" :provider="provider" />
 
-        <span v-if="isFallback && (latencyLabel || tokens !== null || model || provider)" class="m3-response-meta__sep" aria-hidden="true">&bull;</span>
+        <span v-if="isFallback && (model || provider)" class="m3-response-meta__sep" aria-hidden="true">&bull;</span>
 
         <span v-if="isFallback" class="m3-response-meta__fallback" :title="fallbackTitle">{{ t('chat.meta_fallback') }}</span>
     </div>

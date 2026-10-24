@@ -191,8 +191,10 @@ class WebFormatter implements ChatFormatterInterface
 
     private function stripForWeb(string $text): string
     {
-        // Hapus emoji leading (✅ ❌ 📄 🔴 🟢 dll) dan markdown ** * untuk web (sudah ada warna via CSS)
+        // Hapus emoji leading & trailing (✅ ❌ 📄 🔴 🟢 dll) dan markdown ** *
+        // untuk web (sudah ada warna via CSS). Tanda baca umum dipertahankan.
         $text = preg_replace('/^[^\p{L}\p{N}\s]+/u', '', trim($text));
+        $text = preg_replace('/[^\p{L}\p{N}\s.)\]%:]+$/u', '', $text);
         $text = str_replace(['**', '*'], '', $text);
 
         return trim($text);

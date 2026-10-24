@@ -300,7 +300,9 @@ async function handleRetryEvidence(uuid) {
 </script>
 
 <template>
-    <M3Layout :hide-nav="hideNav" :title="t('chat.assistant')">
+    <!-- Desktop: appbar global disembunyikan (hide-appbar) agar M3ChatHeader menjadi
+         satu-satunya header — tidak ada dua bar judul bertumpuk. -->
+    <M3Layout :hide-nav="hideNav" :hide-appbar="!isMobileChat">
         <Head :title="t('chat.assistant')" />
 
         <div
@@ -396,7 +398,10 @@ async function handleRetryEvidence(uuid) {
 
 @media (min-width: 1024px) {
     .m3-chat {
-        height: calc(100dvh - var(--m3-size-appbar) - var(--m3-space-8));
+        /* Inset kiri-kanan agar bubble tidak menempel tepi viewport
+           (max-width content-max > area konten saat rail terbuka). */
+        width: calc(100% - 2 * var(--m3-space-4));
+        height: calc(100dvh - var(--m3-space-8));
     }
 }
 </style>

@@ -1674,7 +1674,6 @@ categoryTab: {
         evidenceUploading: 'Mengunggah bukti...',
         evidencePreview: 'Preview bukti transaksi',
         openFullscreen: 'Buka gambar penuh',
-        evidence: 'Bukti Transaksi',
         sheetTitle: 'Perintah Cepat',
         sheetDesc: 'Pilih perintah untuk memasukkannya ke chat',
         showMore: 'Lihat Selengkapnya',
@@ -1702,7 +1701,7 @@ categoryTab: {
             uploadFailed: 'Upload gagal',
         },
         evidence: {
-            summaryTitle: 'Struk — :count item terdeteksi',
+            summaryTitle: 'Struk — {count} item terdeteksi',
         },
         statistik: {
             title: 'Statistik 7 Hari',
