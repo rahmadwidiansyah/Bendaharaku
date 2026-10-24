@@ -25,8 +25,10 @@
     --text-3xs: 0.5rem;
     --text-3xs--line-height: 0.625rem;
 
-    --text-2xs: 0.625rem;
-    --text-2xs--line-height: 0.75rem;
+    /* 12px — diangkat dari 10px (hasil audit keterbacaan desktop);
+       jangan turunkan kembali di bawah 12px */
+    --text-2xs: 0.75rem;
+    --text-2xs--line-height: 1rem;
 
     /* ── Color: Surface (Dark defaults) ───────────────
        design.md §3.1: Surface hierarchy
