@@ -391,6 +391,7 @@ export default {
             loanSubject: 'Nama Pihak',
             editBtn:     'Edit',
             deleteBtn:   'Hapus',
+            selectHint:  'Pilih transaksi untuk melihat detail',
         },
 
         confirmDraftDetail: 'Apakah data transaksi ini sudah benar?',

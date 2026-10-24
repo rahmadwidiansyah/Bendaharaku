@@ -387,6 +387,7 @@ export default {
             loanSubject: 'Party Name',
             editBtn:     'Edit',
             deleteBtn:   'Delete',
+            selectHint:  'Select a transaction to see its details',
         },
 
         confirmDraftDetail: 'Is this transaction data correct?',

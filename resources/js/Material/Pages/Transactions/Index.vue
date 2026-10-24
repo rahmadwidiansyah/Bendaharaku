@@ -17,10 +17,11 @@ import M3IconButton from '@/Material/Components/M3IconButton.vue'
 import M3CircularProgress from '@/Material/Components/M3CircularProgress.vue'
 import M3DateRangeModal from '@/Material/Components/M3DateRangeModal.vue'
 import M3TransactionDetailModal from '@/Material/Components/M3TransactionDetailModal.vue'
+import M3TransactionDetailContent from '@/Material/Components/M3TransactionDetailContent.vue'
 import AppIcon from '@/Components/AppIcon.vue'
 import { Head, router } from '@inertiajs/vue3'
 import { route } from 'ziggy-js'
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useBalanceVisibility } from '@/Composables/useBalanceVisibility'
 import { getM3CategoryIconClass } from '@/Material/utils/m3IconColor.js'
@@ -87,8 +88,7 @@ watch(
 )
 
 onUnmounted(() => {
-    clearTimeout(searchTimer)
-    loadAbort?.abort()
+    wideMq?.removeEventListener('change', onWideMqChange)
 })
 
 // ─── Filter ───────────────────────────────────────────────────────
@@ -189,13 +189,43 @@ const groupedTransactions = computed(() => {
 
 const isEmpty = computed(() => Object.keys(groupedTransactions.value).length === 0)
 
-// ─── Modal detail ─────────────────────────────────────────────────
+// ─── Detail transaksi: modal (biasa) / panel list-detail (layar lebar) ───
 const showModal = ref(false)
 const selectedTransaction = ref(null)
+
+// >= 100rem (1600px): layout list-detail — klik baris mengisi panel kanan,
+// bukan membuka modal. Di bawah itu perilaku modal dipertahankan.
+const WIDE_MQ = '(min-width: 100rem)'
+const isWideLayout = ref(typeof window !== 'undefined' && window.matchMedia(WIDE_MQ).matches)
+let wideMq = null
+const onWideMqChange = (e) => { isWideLayout.value = e.matches }
+
+onMounted(() => {
+    wideMq = window.matchMedia(WIDE_MQ)
+    isWideLayout.value = wideMq.matches
+    wideMq.addEventListener('change', onWideMqChange)
+})
+
+onUnmounted(() => {
+    clearTimeout(searchTimer)
+    loadAbort?.abort()
+    wideMq?.removeEventListener('change', onWideMqChange)
+})
 
 const openModal = (trx) => {
     selectedTransaction.value = trx
     showModal.value = true
+}
+
+const selectTransaction = (trx) => {
+    if (isWideLayout.value) {
+        showModal.value = false
+        selectedTransaction.value = selectedTransaction.value?.id === trx.id && selectedTransaction.value?.is_draft === trx.is_draft
+            ? null // klik ulang baris sama = batal pilih
+            : trx
+    } else {
+        openModal(trx)
+    }
 }
 
 // ─── Helper tampilan ──────────────────────────────────────────────
@@ -235,6 +265,7 @@ const getWalletName = (trx) => {
         <Head :title="t('nav.recordDesc')" />
 
         <div class="m3-tx">
+          <div class="m3-tx__primary">
             <M3PageTitle :title="t('nav.recordDesc')" :subtitle="dateRangeLabel" />
 
             <M3Card variant="outlined" padding="md" class="m3-tx__filters">
@@ -303,7 +334,9 @@ const getWalletName = (trx) => {
                             :key="rowKey(trx)"
                             clickable
                             :divider="index < group.transactions.length - 1"
-                            @click="openModal(trx)"
+                            :class="{ 'm3-tx__row--selected': isWideLayout && selectedTransaction && rowKey(selectedTransaction) === rowKey(trx) }"
+                            :aria-current="isWideLayout && selectedTransaction && rowKey(selectedTransaction) === rowKey(trx) ? 'true' : undefined"
+                            @click="selectTransaction(trx)"
                         >
                             <template #icon>
                                 <span class="m3-tx__icon">
@@ -366,6 +399,24 @@ const getWalletName = (trx) => {
                 </M3Button>
                 <p v-if="loadError" class="m3-tx__error" role="alert">{{ loadError }}</p>
             </div>
+          </div>
+
+          <!-- Panel detail (hanya layar lebar >= 100rem) -->
+          <aside class="m3-tx__detail" :aria-label="t('transaction.detail.title')">
+              <M3Card variant="elevated" padding="lg" class="m3-tx__detail-card">
+                  <M3TransactionDetailContent
+                      v-if="selectedTransaction"
+                      :transaction="selectedTransaction"
+                      @close="selectedTransaction = null"
+                  />
+                  <div v-else class="m3-tx__detail-empty">
+                      <span class="m3-tx__empty-icon" aria-hidden="true">
+                          <AppIcon icon="receipt" class="m3-tx__empty-glyph" />
+                      </span>
+                      <p class="m3-tx__detail-empty-text">{{ t('transaction.detail.selectHint') }}</p>
+                  </div>
+              </M3Card>
+          </aside>
         </div>
 
         <M3DateRangeModal
@@ -656,6 +707,63 @@ const getWalletName = (trx) => {
     .m3-tx__types {
         flex-basis: 100%;
     }
+}
+
+/* ── List-detail: layar lebar (>= 100rem / 1600px) ────────────────
+   Pola adaptive M3: daftar + filter di kiri, panel detail sticky di
+   kanan; modal detail tidak dipakai di rentang ini. */
+.m3-tx__detail {
+    display: none;
+}
+
+.m3-tx__row--selected {
+    background: var(--m3-color-secondary-container);
+}
+
+@media (min-width: 100rem) {
+    .m3-tx {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 24rem;
+        gap: var(--m3-space-6);
+        align-items: start;
+        max-width: min(var(--m3-size-content-max), 100rem);
+    }
+
+    .m3-tx__primary {
+        display: flex;
+        flex-direction: column;
+        gap: var(--m3-space-4);
+        min-width: 0;
+    }
+
+    .m3-tx__detail {
+        display: block;
+        position: sticky;
+        top: calc(var(--m3-size-appbar) + var(--m3-space-4));
+        max-height: calc(100dvh - var(--m3-size-appbar) - var(--m3-space-8));
+        overflow-y: auto;
+    }
+
+    .m3-tx__detail-card {
+        display: flex;
+        flex-direction: column;
+    }
+}
+
+.m3-tx__detail-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--m3-space-3);
+    padding: var(--m3-space-8) var(--m3-space-4);
+    text-align: center;
+}
+
+.m3-tx__detail-empty-text {
+    margin: 0;
+    font-size: var(--m3-type-body-medium-size);
+    line-height: var(--m3-type-body-medium-line-height);
+    color: var(--m3-color-on-surface-variant);
 }
 
 @media (prefers-reduced-motion: reduce) {
