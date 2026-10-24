@@ -63,7 +63,15 @@ const props = defineProps({
     title: { type: String, default: '' },
 })
 
-const isRailOpen = ref(true)
+// State collapse rail dipertahankan antar navigasi (layout di-remount
+// per halaman Inertia) dan antar reload via localStorage.
+const RAIL_OPEN_KEY = 'bendaharaku:m3-rail-open'
+const isRailOpen = ref(localStorage.getItem(RAIL_OPEN_KEY) !== 'closed')
+
+const toggleRail = () => {
+    isRailOpen.value = !isRailOpen.value
+    localStorage.setItem(RAIL_OPEN_KEY, isRailOpen.value ? 'open' : 'closed')
+}
 const { isDesktopLayout } = useLayoutPreference()
 const { isLoading, currentSkeletonM3, pendingUrl } = usePageLoading()
 
@@ -205,6 +213,7 @@ const showSkeleton = computed(() =>
         <M3WavyProgress
             :active="isLoading"
             :below-app-bar="isDesktop && !hideAppbar"
+            :class="isDesktop && !hideNav ? (isRailOpen ? 'm3-shell__wavy--rail-open' : 'm3-shell__wavy--rail') : ''"
             :aria-label="$t('common.loading')"
         />
 
@@ -301,7 +310,7 @@ const showSkeleton = computed(() =>
                     <span v-if="isRailOpen" class="m3-rail__label">{{ $t('nav.settings') }}</span>
                 </Link>
             </div>
-            <button type="button" class="m3-rail__toggle" :aria-expanded="isRailOpen" :aria-label="$t('common.close')" @click="isRailOpen = !isRailOpen">
+            <button type="button" class="m3-rail__toggle" :aria-expanded="isRailOpen" :aria-label="$t('common.close')" @click="toggleRail">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
                 </svg>
@@ -819,6 +828,17 @@ const showSkeleton = computed(() =>
     }
 
     .m3-content--rail .m3-skeleton {
+        left: var(--m3-size-rail);
+    }
+
+    /* Loading bar (fixed) mengikuti offset rail yang sama — tidak
+       melintasi sidebar. Selector .m3-shell untuk specificity di atas
+       .m3-wavy milik komponen. */
+    .m3-shell .m3-shell__wavy--rail-open {
+        left: var(--m3-size-rail-open);
+    }
+
+    .m3-shell .m3-shell__wavy--rail {
         left: var(--m3-size-rail);
     }
 }
