@@ -114,7 +114,7 @@ const accentClasses = {
             <!-- Judul in-content: GlobalHeader hanya tampil < lg -->
             <header class="hidden lg:block pt-3 lg:pt-4 mb-6 lg:mb-8 px-1 animate-fade-in-up">
                 <p class="text-2xs text-[var(--color-brand)] font-black uppercase tracking-[0.3em] mb-1 opacity-80">Bendaharaku</p>
-                <h1 class="text-3xl font-bold text-[var(--color-text-primary)] tracking-tighter leading-none">{{ $t('nav.more') }}</h1>
+                <h1 class="text-2xl sm:text-3xl font-bold text-[var(--color-text-primary)] tracking-tighter leading-tight">{{ $t('nav.more') }}</h1>
             </header>
 
             <div class="pt-3 lg:pt-0 space-y-6 sm:space-y-8 animate-page-enter">

@@ -52,7 +52,7 @@ const getHeaderText = (typeName) => {
                     <div>
                         <p class="text-2xs text-[var(--color-text-secondary)] font-bold uppercase tracking-[0.3em] mb-1 opacity-80">✨
                             {{ $t('category.collection') }}</p>
-                        <h1 class="text-3xl font-bold text-[var(--color-text-primary)] tracking-tighter leading-none">Vault <span
+                        <h1 class="text-2xl sm:text-3xl font-bold text-[var(--color-text-primary)] tracking-tighter leading-tight">Vault <span
                                 class="text-[var(--color-text-muted)]">{{ $t('nav.label') }}</span></h1>
                     </div>
 

@@ -205,7 +205,7 @@ defineEmits(['toggle'])
                     </svg>
                 </Link>
                 <span
-                    class="text-[9px] font-black tracking-wider uppercase leading-none transition-all duration-300"
+                    class="text-[11px] font-black tracking-wider uppercase leading-none transition-all duration-300"
                     :class="isActive(['transactions.*']) ? 'text-purple-400' : 'text-gray-400'"
                 >{{ $t('nav.record') }}</span>
             </div>

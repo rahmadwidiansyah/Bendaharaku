@@ -775,7 +775,7 @@ onBeforeUnmount(() => {
 <p class="text-2xs text-purple-500 font-black mb-1.5 uppercase tracking-[0.2em] flex items-center gap-2">
     {{ $t('analytics.subtitle') }}
 </p>
-        <h1 class="text-3xl font-black text-[var(--color-text-primary)] tracking-tight leading-none">{{ $t('analytics.title') }}</h1>
+        <h1 class="text-2xl sm:text-3xl font-bold text-[var(--color-text-primary)] tracking-tight leading-tight">{{ $t('analytics.title') }}</h1>
     </div>
 </header>
 

@@ -64,11 +64,12 @@ const linkClasses = computed(() => {
 
 const iconWrapperClasses = computed(() => {
     if (props.isDesktop) return 'w-5 h-5 shrink-0'
-    // Mobile active state: scale up and color
+    // Mobile active state: scale up and color; ikon digeser naik agar
+    // tidak berdempet dengan label yang kini selalu tampil
     if (props.active) {
         return 'w-6 h-6 p-0.5 rounded-lg bg-purple-500/10 shrink-0 transform scale-110 text-purple-400 transition-all duration-300'
     }
-    return 'w-6 h-6 shrink-0 transform scale-100 text-gray-500 transition-all duration-300'
+    return 'w-6 h-6 shrink-0 transform -translate-y-1 text-gray-500 transition-all duration-300'
 })
 
 const labelClasses = computed(() => {
@@ -76,8 +77,9 @@ const labelClasses = computed(() => {
         if (!props.sidebarOpen) return 'hidden'
         return 'text-2xs font-bold tracking-wider uppercase'
     }
-    // Mobile: small label positioned absolutely at the bottom
-    return 'text-[9px] font-bold tracking-wider uppercase leading-none transition-all duration-300'
+    // Mobile: label selalu tampil di bawah ikon (paritas M3 navbar);
+    // 11px — sebelumnya 9px + tersembunyi saat nonaktif (hasil audit mobile)
+    return 'text-[11px] font-bold tracking-wider uppercase leading-none transition-all duration-300'
 })
 </script>
 
@@ -101,14 +103,14 @@ const labelClasses = computed(() => {
             <slot name="icon" />
         </span>
 
-        <!-- Label with fade/slide animation on mobile -->
+        <!-- Label selalu tampil (warna/weight berubah saat aktif) -->
         <span
             v-if="!isDesktop"
             :class="[
                 labelClasses,
-                active ? 'opacity-100 translate-y-0 text-purple-400' : 'opacity-0 translate-y-1.5 text-gray-500 pointer-events-none'
+                active ? 'text-purple-400' : 'text-gray-500'
             ]"
-            class="absolute bottom-1 transition-all duration-300"
+            class="absolute bottom-0.5"
         >
             {{ label }}
         </span>
