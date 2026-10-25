@@ -47,7 +47,7 @@ const suggestions = [
 
         <!-- Suggestion chips -->
         <div class="w-full sm:max-w-md">
-            <p class="text-2xs font-bold text-gray-700 uppercase tracking-widest mb-2.5">{{ t('chat.gettingStarted') }}</p>
+            <p class="text-2xs font-bold text-gray-500 uppercase tracking-widest mb-2.5">{{ t('chat.gettingStarted') }}</p>
             <div class="flex flex-wrap gap-1.5 justify-center">
                 <div class="grid grid-cols-2 gap-2">
                     <button

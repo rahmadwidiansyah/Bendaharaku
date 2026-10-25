@@ -51,19 +51,19 @@ const hasAny = computed(() => latencyLabel.value || tokens.value !== null || mod
     <span v-if="latencyLabel" class="text-2xs text-[var(--color-text-muted)] tabular-nums">{{ latencyLabel }}</span>
     
     <!-- Titik pemisah jika ada token & latency -->
-    <span v-if="latencyLabel && tokens !== null" class="text-2xs text-gray-700">&bull;</span>
+    <span v-if="latencyLabel && tokens !== null" class="text-2xs text-gray-500">&bull;</span>
     
     <!-- Token badge -->
     <TokenBadge :tokens="tokens" />
     
     <!-- Titik pemisah jika ada model/provider -->
-    <span v-if="(latencyLabel || tokens !== null) && (model || provider)" class="text-2xs text-gray-700">&bull;</span>
+    <span v-if="(latencyLabel || tokens !== null) && (model || provider)" class="text-2xs text-gray-500">&bull;</span>
     
     <!-- Model badge -->
     <ModelBadge :model="model" :provider="provider" />
 
     <!-- Titik pemisah sebelum chip fallback -->
-    <span v-if="isFallback && (latencyLabel || tokens !== null || model || provider)" class="text-2xs text-gray-700">&bull;</span>
+    <span v-if="isFallback && (latencyLabel || tokens !== null || model || provider)" class="text-2xs text-gray-500">&bull;</span>
 
     <!-- Chip fallback routing (title berisi detail rantai + alasan) -->
     <span
