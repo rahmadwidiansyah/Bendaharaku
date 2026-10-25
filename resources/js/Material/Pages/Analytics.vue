@@ -978,9 +978,14 @@ onBeforeUnmount(() => {
     min-width: 0;
 }
 
-/* Panel pendukung (rincian kategori) — tampil hanya >= 100rem */
+/* Panel pendukung (rincian kategori). Di bawah 100rem tetap tampil
+   sebagai seksi normal di alur halaman (jangan display:none — doughnut
+   pernah hilang di mobile karena itu); >= 100rem menjadi panel samping. */
 .m3-ana__aside {
-    display: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--m3-space-4);
+    min-width: 0;
 }
 
 @media (min-width: 100rem) {
@@ -999,9 +1004,6 @@ onBeforeUnmount(() => {
     }
 
     .m3-ana__aside {
-        display: flex;
-        flex-direction: column;
-        gap: var(--m3-space-4);
         position: sticky;
         top: calc(var(--m3-size-appbar) + var(--m3-space-4));
         max-height: calc(100dvh - var(--m3-size-appbar) - var(--m3-space-8));
