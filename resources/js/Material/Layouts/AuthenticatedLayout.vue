@@ -18,6 +18,7 @@
  */
 import M3Snackbar from '@/Material/Components/M3Snackbar.vue'
 import M3WavyProgress from '@/Material/Components/M3WavyProgress.vue'
+import M3ChatSheet from '@/Material/Components/Chat/M3ChatSheet.vue'
 import M3DashboardSkeleton from '@/Material/Components/Skeleton/M3DashboardSkeleton.vue'
 import M3BudgetSkeleton from '@/Material/Components/Skeleton/M3BudgetSkeleton.vue'
 import M3AnalyticsSkeleton from '@/Material/Components/Skeleton/M3AnalyticsSkeleton.vue'
@@ -72,6 +73,13 @@ const toggleRail = () => {
     isRailOpen.value = !isRailOpen.value
     localStorage.setItem(RAIL_OPEN_KEY, isRailOpen.value ? 'open' : 'closed')
 }
+
+// ── Chat side sheet (P1): bubble global, hanya desktop & di luar /chat ──
+const chatSheetOpen = ref(false)
+const isChatRoute = computed(() => {
+    try { return route().current('chat.*') } catch { return false }
+})
+const showChatBubble = computed(() => isDesktop && !isChatRoute.value)
 const { isDesktopLayout } = useLayoutPreference()
 const { isLoading, currentSkeletonM3, pendingUrl } = usePageLoading()
 
@@ -341,6 +349,23 @@ const showSkeleton = computed(() =>
                 </div>
             </Transition>
         </div>
+
+        <!-- ── Chat bubble + side sheet (desktop, di luar halaman chat) ── -->
+        <Transition name="m3-bubble-fade">
+            <button
+                v-if="showChatBubble && !chatSheetOpen"
+                type="button"
+                class="m3-chat-bubble"
+                :aria-label="$t('nav.chat')"
+                @click="chatSheetOpen = true"
+            >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 4v-4z" />
+                </svg>
+            </button>
+        </Transition>
+
+        <M3ChatSheet :show="chatSheetOpen && isDesktop" @close="chatSheetOpen = false" />
 
         <!-- ── Mobile navigation bar: 5 destinasi, aksi Catat sejajar dengan destinasi lain ── -->
         <nav v-if="!isDesktop && !hideNav" class="m3-navbar" :aria-label="$t('nav.mainNav')" role="navigation">
@@ -866,6 +891,52 @@ const showSkeleton = computed(() =>
 
 .m3-fade-leave-active {
     transition: opacity 200ms ease-in;
+}
+
+/* ── Chat bubble (desktop, zona istirahat F-pattern: kanan-bawah) ── */
+.m3-chat-bubble {
+    position: fixed;
+    right: var(--m3-space-6);
+    bottom: var(--m3-space-6);
+    z-index: 40;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--m3-size-fab);
+    height: var(--m3-size-fab);
+    border: none;
+    border-radius: var(--m3-radius-xl);
+    background: var(--m3-color-primary-container);
+    color: var(--m3-color-on-primary-container);
+    box-shadow: var(--m3-elevation-3);
+    cursor: pointer;
+    transition: box-shadow var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects),
+        transform var(--m3-motion-fast-spatial-duration) var(--m3-motion-fast-spatial);
+}
+
+.m3-chat-bubble:hover {
+    box-shadow: var(--m3-elevation-4);
+}
+
+.m3-chat-bubble:active {
+    transform: scale(0.94);
+}
+
+.m3-chat-bubble svg {
+    width: var(--m3-size-icon);
+    height: var(--m3-size-icon);
+}
+
+.m3-bubble-fade-enter-active,
+.m3-bubble-fade-leave-active {
+    transition: opacity var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects),
+        transform var(--m3-motion-fast-spatial-duration) var(--m3-motion-fast-spatial);
+}
+
+.m3-bubble-fade-enter-from,
+.m3-bubble-fade-leave-to {
+    opacity: 0;
+    transform: scale(0.9);
 }
 
 /* ── Mobile navigation bar — floating bar (model BottomNav Default, styling M3) ──

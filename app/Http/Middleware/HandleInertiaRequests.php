@@ -48,6 +48,10 @@ class HandleInertiaRequests extends Middleware
                     'category_icon_colored' => $request->user()->category_icon_colored,
                     'ui_theme' => $request->user()->ui_theme ?? 'default',
                     'ui_m3_color_scheme' => $request->user()->ui_m3_color_scheme ?? 'teal',
+                    'bot_name' => $request->user()->bot_name ?? 'Ken-Chan',
+                    'bot_avatar' => $request->user()->bot_avatar
+                        ? asset('storage/' . $request->user()->bot_avatar)
+                        : null,
                 ] : null,
             ],
             'flash' => [
