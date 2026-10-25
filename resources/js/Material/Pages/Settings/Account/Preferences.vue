@@ -111,7 +111,8 @@ async function handleSave() {
             :subtitle="t('settings.account.preferences.description')"
             back-route="settings.index"
         >
-            <M3SettingsSection :title="t('settings.account.preferences.title')">
+            <!-- Seksi tunggal: judul == judul halaman, tak perlu diulang -->
+            <M3SettingsSection>
                 <M3Card variant="outlined" padding="none" class="m3-preferences__card">
                     <M3ListItem clickable divider @click="picker = 'language'">
                         <template #icon>
@@ -181,7 +182,6 @@ async function handleSave() {
 <style scoped>
 .m3-preferences__card {
     overflow: hidden;
-    max-width: var(--m3-size-list-max);
 }
 
 .m3-preferences__ico {

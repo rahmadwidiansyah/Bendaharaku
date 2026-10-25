@@ -60,7 +60,6 @@ const { t } = useI18n()
 
 <style scoped>
 .m3-privacy__card {
-    max-width: var(--m3-size-list-max);
 }
 
 .m3-privacy__header {

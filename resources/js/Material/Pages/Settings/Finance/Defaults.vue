@@ -52,7 +52,8 @@ async function handleToggle() {
             :subtitle="t('settings.finance.defaults.transaction_logic.description')"
             back-route="settings.index"
         >
-            <M3SettingsSection :title="t('settings.finance.defaults.transaction_logic.title')">
+            <!-- Satu-satunya seksi: judul seksi == judul halaman, cukup sekali -->
+            <M3SettingsSection>
                 <M3Card variant="outlined" padding="none" class="m3-finance__card">
                     <M3ListItem>
                         <template #icon>
@@ -84,7 +85,6 @@ async function handleToggle() {
 <style scoped>
 .m3-finance__card {
     overflow: hidden;
-    max-width: var(--m3-size-list-max);
 }
 
 .m3-finance__ico {

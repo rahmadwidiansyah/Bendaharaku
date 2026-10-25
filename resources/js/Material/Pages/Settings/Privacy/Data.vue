@@ -107,7 +107,6 @@ async function handleExport() {
 
 <style scoped>
 .m3-data__card {
-    max-width: var(--m3-size-list-max);
 }
 
 .m3-data__row {

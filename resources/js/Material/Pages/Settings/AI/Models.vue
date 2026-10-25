@@ -9,6 +9,7 @@
  */
 import M3Layout from '@/Material/Layouts/AuthenticatedLayout.vue'
 import M3PageTitle from '@/Material/Components/M3PageTitle.vue'
+import M3SettingsBack from '@/Material/Components/Settings/M3SettingsBack.vue'
 import M3Card from '@/Material/Components/M3Card.vue'
 import M3Chip from '@/Material/Components/M3Chip.vue'
 import M3Button from '@/Material/Components/M3Button.vue'
@@ -356,6 +357,8 @@ async function saveRouting() {
         <Head :title="t('settings.ai.models.title')" />
 
         <div class="m3-models">
+            <M3SettingsBack />
+
             <M3PageTitle
                 :title="t('settings.ai.models.title')"
                 :subtitle="t('settings.ai.models.description')"
@@ -777,7 +780,6 @@ async function saveRouting() {
     flex-direction: column;
     gap: var(--m3-space-6);
     width: 100%;
-    max-width: var(--m3-size-list-max);
     margin: 0 auto;
     padding: var(--m3-space-4);
 }

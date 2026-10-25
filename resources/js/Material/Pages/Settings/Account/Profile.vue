@@ -105,7 +105,7 @@ function removeAvatar() {
                     <p v-if="form.errors.avatar_file" class="m3-profile__error">{{ form.errors.avatar_file }}</p>
                 </div>
 
-                <M3SettingsSection :title="t('settings.account.profile.title')">
+                <M3SettingsSection>
                     <M3Card variant="outlined" padding="lg" class="m3-profile__form-card">
                         <M3TextField
                             v-model="form.name"
@@ -216,7 +216,6 @@ function removeAvatar() {
     display: flex;
     flex-direction: column;
     gap: var(--m3-space-6);
-    max-width: var(--m3-size-list-max);
     width: 100%;
     margin: 0 auto;
 }

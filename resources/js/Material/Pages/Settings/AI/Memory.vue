@@ -8,6 +8,7 @@
  */
 import M3Layout from '@/Material/Layouts/AuthenticatedLayout.vue'
 import M3PageTitle from '@/Material/Components/M3PageTitle.vue'
+import M3SettingsBack from '@/Material/Components/Settings/M3SettingsBack.vue'
 import M3Card from '@/Material/Components/M3Card.vue'
 import M3ListItem from '@/Material/Components/M3ListItem.vue'
 import M3Switch from '@/Material/Components/M3Switch.vue'
@@ -53,6 +54,8 @@ const chevron = 'M8.25 4.5l7.5 7.5-7.5 7.5'
         <Head :title="t('settings.ai.memory.title')" />
 
         <div class="m3-memory">
+            <M3SettingsBack />
+
             <M3PageTitle
                 :title="t('settings.ai.memory.title')"
                 :subtitle="t('settings.ai.memory.description')"
@@ -113,7 +116,6 @@ const chevron = 'M8.25 4.5l7.5 7.5-7.5 7.5'
     flex-direction: column;
     gap: var(--m3-space-6);
     width: 100%;
-    max-width: var(--m3-size-list-max);
     margin: 0 auto;
     padding: var(--m3-space-4);
 }

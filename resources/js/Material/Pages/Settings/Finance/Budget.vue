@@ -95,7 +95,6 @@ onMounted(loadSettings)
 <style scoped>
 .m3-finance__card {
     overflow: hidden;
-    max-width: var(--m3-size-list-max);
 }
 
 .m3-finance__ico {
@@ -120,6 +119,5 @@ onMounted(loadSettings)
     font-size: var(--m3-type-body-small-size);
     line-height: var(--m3-type-body-small-line-height);
     color: var(--m3-color-on-surface-variant);
-    max-width: var(--m3-size-list-max);
 }
 </style>

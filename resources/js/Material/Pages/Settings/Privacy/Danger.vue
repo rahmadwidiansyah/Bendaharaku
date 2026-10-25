@@ -104,7 +104,6 @@ async function handleDeleteAccount() {
 
 <style scoped>
 .m3-danger {
-    max-width: var(--m3-size-list-max);
     border-color: var(--m3-color-error);
 }
 

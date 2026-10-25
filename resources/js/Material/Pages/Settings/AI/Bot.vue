@@ -8,6 +8,7 @@
  */
 import M3Layout from '@/Material/Layouts/AuthenticatedLayout.vue'
 import M3PageTitle from '@/Material/Components/M3PageTitle.vue'
+import M3SettingsBack from '@/Material/Components/Settings/M3SettingsBack.vue'
 import M3Card from '@/Material/Components/M3Card.vue'
 import M3ListItem from '@/Material/Components/M3ListItem.vue'
 import M3TextField from '@/Material/Components/M3TextField.vue'
@@ -105,6 +106,8 @@ const confirmDeleteBotAvatar = () => {
         <Head :title="t('settings.ai.bot.title')" />
 
         <div class="m3-bot">
+            <M3SettingsBack />
+
             <M3PageTitle
                 :title="t('settings.ai.bot.title')"
                 :subtitle="t('settings.ai.bot.description')"
@@ -241,7 +244,6 @@ const confirmDeleteBotAvatar = () => {
     flex-direction: column;
     gap: var(--m3-space-6);
     width: 100%;
-    max-width: var(--m3-size-list-max);
     margin: 0 auto;
     padding: var(--m3-space-4);
 }

@@ -172,7 +172,6 @@ function handleUpdatePassword() {
 
 <style scoped>
 .m3-security__form {
-    max-width: var(--m3-size-list-max);
 }
 
 .m3-security__form-fields {
@@ -188,7 +187,6 @@ function handleUpdatePassword() {
 
 .m3-security__sessions {
     overflow: hidden;
-    max-width: var(--m3-size-list-max);
 }
 
 .m3-security__session-ico {

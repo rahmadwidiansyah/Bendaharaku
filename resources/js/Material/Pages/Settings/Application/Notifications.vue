@@ -147,7 +147,6 @@ onUnmounted(() => {
 <style scoped>
 .m3-notifications__card {
     overflow: hidden;
-    max-width: var(--m3-size-list-max);
 }
 
 .m3-notifications__ico {
