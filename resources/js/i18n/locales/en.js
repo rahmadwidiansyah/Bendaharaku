@@ -597,6 +597,11 @@ export default {
             cashflow:   'Bar chart of cash flow: income, expenses, debt, receivables',
             breakdown:  'Doughnut chart of category breakdown',
         },
+
+        // Cash flow chart paging (canvas kept below browser render limits)
+        chartPage:     'Page {current}/{total}',
+        chartPrevPage: 'Older period',
+        chartNextPage: 'Newer period',
     },
 
     // ────────────────────────────────────────────────────────────────

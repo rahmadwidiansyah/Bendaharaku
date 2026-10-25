@@ -83,6 +83,49 @@ const doughnutChartRef = ref(null)
 const barChartKey = ref(0)
 const doughnutReady = ref(false)
 
+// ─── Paging chart arus kas ────────────────────────────────────────
+// Satu canvas selebar seluruh riwayat melewati batas keras canvas
+// Chromium/Skia (~32.767px per dimensi): canvas gagal dirender dan tampil
+// putih blank di Android. Karena itu label dipotong per halaman — halaman
+// 0 adalah yang paling baru — dan lebar canvas di-clamp sebagai pengaman.
+const isMobileViewport = () => typeof window !== 'undefined' && window.innerWidth < 640
+const BAR_PAGE_SIZE = {
+    harian: () => (isMobileViewport() ? 30 : 60),
+    mingguan: () => 52,
+    bulanan: () => 120,
+}
+const CANVAS_MAX_WIDTH = 16000
+const barPage = ref(0)
+const barPager = ref({ page: 0, count: 1 })
+
+const sliceBarPage = (data, view) => {
+    const size = BAR_PAGE_SIZE[view]?.() || 60
+    const total = data.labels.length
+    const pageCount = Math.max(1, Math.ceil(total / size))
+    const page = Math.min(barPage.value, pageCount - 1)
+    const end = Math.max(0, total - page * size)
+    const start = Math.max(0, end - size)
+    return {
+        pageCount,
+        page,
+        labels: data.labels.slice(start, end),
+        incomes: data.incomes.slice(start, end),
+        expenses: data.expenses.slice(start, end),
+        debts: data.debts.slice(start, end),
+        receivables: data.receivables.slice(start, end),
+    }
+}
+
+const goOlderBarPage = () => {
+    barPage.value += 1
+    renderBarChart(barView.value, true)
+}
+
+const goNewerBarPage = () => {
+    barPage.value = Math.max(0, barPage.value - 1)
+    renderBarChart(barView.value, true)
+}
+
 // ─── Modal rentang tanggal M3 ─────────────────────────────────────
 const showDateModal = ref(false)
 // Indikator filter aktif (paritas DateModal Default): start_date bukan
@@ -278,7 +321,23 @@ function formatCompact(n) {
 }
 
 function buildBarData(view) {
-    const dates = props.allDailyDates || []
+    // Chart arus kas mengikuti rentang tanggal terpilih (paritas dengan KPI &
+    // doughnut). Label ISO 'YYYY-MM-DD' aman dibandingkan sebagai string.
+    const startDate = props.startDate || ''
+    const endDate = props.endDate || ''
+    const inRange = (date) => (!startDate || date >= startDate) && (!endDate || date <= endDate)
+
+    const allDates = props.allDailyDates || []
+    const idx = []
+    allDates.forEach((date, i) => {
+        if (inRange(date)) idx.push(i)
+    })
+    const dates = idx.map(i => allDates[i])
+    const fIncome = idx.map(i => props.allDailyIncome?.[i] || 0)
+    const fExpense = idx.map(i => props.allDailyExpense?.[i] || 0)
+    const fDebt = idx.map(i => props.allDailyDebt?.[i] || 0)
+    const fReceivable = idx.map(i => props.allDailyReceivable?.[i] || 0)
+
     const labels = [], incomes = [], expenses = [], debts = [], receivables = []
 
     function pushNonEmpty(l, i, e, d, r) {
@@ -289,10 +348,10 @@ function buildBarData(view) {
 
     if (view === 'harian') {
         dates.forEach((date, i) => {
-            const inc = Math.abs(props.allDailyIncome[i] || 0)
-            const exp = Math.abs(props.allDailyExpense[i] || 0)
-            const debt = Math.abs(props.allDailyDebt[i] || 0)
-            const rec = Math.abs(props.allDailyReceivable[i] || 0)
+            const inc = Math.abs(fIncome[i])
+            const exp = Math.abs(fExpense[i])
+            const debt = Math.abs(fDebt[i])
+            const rec = Math.abs(fReceivable[i])
             pushNonEmpty(
                 formatDate(date, { day: '2-digit', month: 'short' }),
                 inc, exp, debt, rec,
@@ -310,10 +369,10 @@ function buildBarData(view) {
             }
 
             bucket.end = d.getDate()
-            bucket.inc += Math.abs(props.allDailyIncome[i] || 0)
-            bucket.exp += Math.abs(props.allDailyExpense[i] || 0)
-            bucket.debt += Math.abs(props.allDailyDebt[i] || 0)
-            bucket.rec += Math.abs(props.allDailyReceivable[i] || 0)
+            bucket.inc += Math.abs(fIncome[i])
+            bucket.exp += Math.abs(fExpense[i])
+            bucket.debt += Math.abs(fDebt[i])
+            bucket.rec += Math.abs(fReceivable[i])
             bucket.count++
 
             if (bucket.count === 7 || i === dates.length - 1) {
@@ -336,10 +395,10 @@ function buildBarData(view) {
             })
         }
         const m = monthMap.get(key)
-        m.inc += Math.abs(props.allDailyIncome[i] || 0)
-        m.exp += Math.abs(props.allDailyExpense[i] || 0)
-        m.debt += Math.abs(props.allDailyDebt[i] || 0)
-        m.rec += Math.abs(props.allDailyReceivable[i] || 0)
+        m.inc += Math.abs(fIncome[i])
+        m.exp += Math.abs(fExpense[i])
+        m.debt += Math.abs(fDebt[i])
+        m.rec += Math.abs(fReceivable[i])
     })
 
     Array.from(monthMap.values()).forEach((m) => {
@@ -425,9 +484,12 @@ function applyBarVisibility() {
     BAR_SERIES.forEach((key, i) => chart.setDatasetVisibility(i, !barHidden.value[key]))
 }
 
-const renderBarChart = async (view) => {
+const renderBarChart = async (view, keepPage = false) => {
     barView.value = view
-    const { labels, incomes, expenses, debts, receivables } = buildBarData(view)
+    if (!keepPage) barPage.value = 0
+    const full = buildBarData(view)
+    const { labels, incomes, expenses, debts, receivables, pageCount, page } = sliceBarPage(full, view)
+    barPager.value = { page, count: pageCount }
 
     barChartData.value = { labels, incomes, expenses, debts, receivables }
 
@@ -439,7 +501,8 @@ const renderBarChart = async (view) => {
     if (!canvas) return
 
     const container = canvas.parentElement
-    const canvasWidth = container?.offsetWidth || Math.max(labels.length * 80, 300)
+    // Clamp lebar canvas: pengaman terhadap batas render browser (~32.767px).
+    const canvasWidth = Math.min(container?.offsetWidth || Math.max(labels.length * 80, 300), CANVAS_MAX_WIDTH)
     const canvasHeight = container?.offsetHeight || 220
     canvas.width = canvasWidth
     canvas.height = canvasHeight
@@ -583,9 +646,9 @@ const renderBarChart = async (view) => {
 }
 
 const chartMinWidth = computed(() => {
-    const { labels } = buildBarData(barView.value)
+    const { labels } = sliceBarPage(buildBarData(barView.value), barView.value)
     // Mobile: per grup lebih lebar (96px) agar 4 balok tetap terbaca
-    const minWidthPerLabel = typeof window !== 'undefined' && window.innerWidth < 640 ? 96 : 80
+    const minWidthPerLabel = isMobileViewport() ? 96 : 80
     return Math.max(labels.length * minWidthPerLabel, 300)
 })
 
@@ -774,6 +837,8 @@ watch(() => props.cumulativeData, () => {
 // Inertia mempertahankan referensi prop yang isinya identik, jadi watcher
 // ini hanya menyala saat data full-history benar-benar berubah; watcher
 // doughnut menyala saat agregat per kategori pada rentang baru berbeda.
+// start/endDate ikut dipantau karena buildBarData menyaring per rentang —
+// array allDaily* bisa sama referensinya padahal rentang berubah.
 watch(
     () => [
         props.allDailyDates,
@@ -781,6 +846,8 @@ watch(
         props.allDailyExpense,
         props.allDailyDebt,
         props.allDailyReceivable,
+        props.startDate,
+        props.endDate,
     ],
     () => {
         renderBarChart(barView.value)
@@ -912,6 +979,29 @@ onBeforeUnmount(() => {
                     <div class="m3-ana__bar-box" :style="{ minWidth: chartMinWidth + 'px' }">
                         <canvas ref="barChartRef" :key="barChartKey" class="m3-ana__canvas" role="img" :aria-label="$t('analytics.chartAria.cashflow')" />
                     </div>
+                </div>
+                <div v-if="barPager.count > 1" class="m3-ana__pager">
+                    <M3IconButton
+                        variant="tonal"
+                        :aria-label="$t('analytics.chartPrevPage')"
+                        :disabled="barPager.page >= barPager.count - 1"
+                        @click="goOlderBarPage"
+                    >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m15 18-6-6 6-6" />
+                        </svg>
+                    </M3IconButton>
+                    <span class="m3-ana__pager-label">{{ $t('analytics.chartPage', { current: barPager.page + 1, total: barPager.count }) }}</span>
+                    <M3IconButton
+                        variant="tonal"
+                        :aria-label="$t('analytics.chartNextPage')"
+                        :disabled="barPager.page <= 0"
+                        @click="goNewerBarPage"
+                    >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6" />
+                        </svg>
+                    </M3IconButton>
                 </div>
             </M3Card>
             </div>
@@ -1288,6 +1378,23 @@ onBeforeUnmount(() => {
 
 .m3-ana__bar-box {
     height: 220px;
+}
+
+/* ── Navigasi halaman chart arus kas ── */
+.m3-ana__pager {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--m3-space-2);
+    margin-top: var(--m3-space-2);
+}
+
+.m3-ana__pager-label {
+    min-width: 4.5rem;
+    text-align: center;
+    font-size: var(--m3-type-label-medium-size);
+    font-weight: var(--m3-type-label-medium-weight);
+    color: var(--m3-color-on-surface-variant);
 }
 
 .m3-ana__cumulative-wrap {

@@ -615,6 +615,11 @@ categoryTab: {
             cashflow:   'Grafik batang arus kas: pemasukan, pengeluaran, hutang, piutang',
             breakdown:  'Grafik donat rincian kategori',
         },
+
+        // Paging chart arus kas (canvas dibatasi agar tidak blank di Android)
+        chartPage:     'Hal {current}/{total}',
+        chartPrevPage: 'Periode lebih lama',
+        chartNextPage: 'Periode lebih baru',
     },
 
     // ────────────────────────────────────────────────────────────────

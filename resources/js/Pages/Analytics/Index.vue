@@ -57,6 +57,49 @@ const barChartData = ref({ labels: [], incomes: [], expenses: [], debts: [], rec
 // State doughnut: false = sedang loading/render, true = sudah siap
 const doughnutReady = ref(false);
 
+// ─── Paging chart arus kas ────────────────────────────────────────
+// Satu canvas selebar seluruh riwayat melewati batas keras canvas
+// Chromium/Skia (~32.767px per dimensi): canvas gagal dirender dan tampil
+// putih blank di Android. Karena itu label dipotong per halaman — halaman
+// 0 adalah yang paling baru — dan lebar canvas di-clamp sebagai pengaman.
+const isMobileViewport = () => typeof window !== 'undefined' && window.innerWidth < 640;
+const BAR_PAGE_SIZE = {
+    harian: () => (isMobileViewport() ? 30 : 60),
+    mingguan: () => 52,
+    bulanan: () => 120,
+};
+const CANVAS_MAX_WIDTH = 16000;
+const barPage = ref(0);
+const barPager = ref({ page: 0, count: 1 });
+
+const sliceBarPage = (data, view) => {
+    const size = (BAR_PAGE_SIZE[view] && BAR_PAGE_SIZE[view]()) || 60;
+    const total = data.labels.length;
+    const pageCount = Math.max(1, Math.ceil(total / size));
+    const page = Math.min(barPage.value, pageCount - 1);
+    const end = Math.max(0, total - page * size);
+    const start = Math.max(0, end - size);
+    return {
+        pageCount,
+        page,
+        labels: data.labels.slice(start, end),
+        incomes: data.incomes.slice(start, end),
+        expenses: data.expenses.slice(start, end),
+        debts: data.debts.slice(start, end),
+        receivables: data.receivables.slice(start, end)
+    };
+};
+
+const goOlderBarPage = () => {
+    barPage.value += 1;
+    renderBarChart(barView.value, true);
+};
+
+const goNewerBarPage = () => {
+    barPage.value = Math.max(0, barPage.value - 1);
+    renderBarChart(barView.value, true);
+};
+
 const isDateFilterActive = computed(() => usePage().url.includes('start_date='));
 
 const cssVar = (name, fallback) =>
@@ -264,7 +307,23 @@ function formatCompact(n) {
  * Kontainer chart menyediakan scroll horizontal agar periode lama tetap dapat diakses.
  */
 function buildBarData(view) {
-    const dates = props.allDailyDates || [];
+    // Chart arus kas mengikuti rentang tanggal terpilih (paritas dengan KPI &
+    // doughnut). Label ISO 'YYYY-MM-DD' aman dibandingkan sebagai string.
+    const startDate = props.startDate || '';
+    const endDate = props.endDate || '';
+    const inRange = (date) => (!startDate || date >= startDate) && (!endDate || date <= endDate);
+
+    const allDates = props.allDailyDates || [];
+    const idx = [];
+    allDates.forEach((date, i) => {
+        if (inRange(date)) idx.push(i);
+    });
+    const dates = idx.map(i => allDates[i]);
+    const fIncome = idx.map(i => props.allDailyIncome?.[i] || 0);
+    const fExpense = idx.map(i => props.allDailyExpense?.[i] || 0);
+    const fDebt = idx.map(i => props.allDailyDebt?.[i] || 0);
+    const fReceivable = idx.map(i => props.allDailyReceivable?.[i] || 0);
+
     const labels = [], incomes = [], expenses = [], debts = [], receivables = [];
 
     function pushNonEmpty(l, i, e, d, r) {
@@ -274,12 +333,12 @@ function buildBarData(view) {
     }
 
     if (view === 'harian') {
-        // Tampilkan semua hari yang ada transaksi — bisa di-swipe, default scroll ke kanan (4 terbaru terlihat)
+        // Tampilkan hari-hari bertransaksi dalam rentang terpilih
         dates.forEach((date, i) => {
-            const inc = Math.abs(props.allDailyIncome[i] || 0);
-            const exp = Math.abs(props.allDailyExpense[i] || 0);
-            const debt = Math.abs(props.allDailyDebt[i] || 0);
-            const rec = Math.abs(props.allDailyReceivable[i] || 0);
+            const inc = Math.abs(fIncome[i]);
+            const exp = Math.abs(fExpense[i]);
+            const debt = Math.abs(fDebt[i]);
+            const rec = Math.abs(fReceivable[i]);
             pushNonEmpty(
                 formatDate(date, { day: '2-digit', month: 'short' }),
                 inc, exp, debt, rec
@@ -305,10 +364,10 @@ function buildBarData(view) {
             }
 
             bucket.end = d.getDate();
-            bucket.inc += Math.abs(props.allDailyIncome[i] || 0);
-            bucket.exp += Math.abs(props.allDailyExpense[i] || 0);
-            bucket.debt += Math.abs(props.allDailyDebt[i] || 0);
-            bucket.rec += Math.abs(props.allDailyReceivable[i] || 0);
+            bucket.inc += Math.abs(fIncome[i]);
+            bucket.exp += Math.abs(fExpense[i]);
+            bucket.debt += Math.abs(fDebt[i]);
+            bucket.rec += Math.abs(fReceivable[i]);
             bucket.count++;
 
             if (bucket.count === 7 || i === dates.length - 1) {
@@ -332,10 +391,10 @@ function buildBarData(view) {
             });
         }
         const m = monthMap.get(key);
-        m.inc += Math.abs(props.allDailyIncome[i] || 0);
-        m.exp += Math.abs(props.allDailyExpense[i] || 0);
-        m.debt += Math.abs(props.allDailyDebt[i] || 0);
-        m.rec += Math.abs(props.allDailyReceivable[i] || 0);
+        m.inc += Math.abs(fIncome[i]);
+        m.exp += Math.abs(fExpense[i]);
+        m.debt += Math.abs(fDebt[i]);
+        m.rec += Math.abs(fReceivable[i]);
     });
 
     Array.from(monthMap.values()).forEach((m) => {
@@ -404,9 +463,12 @@ function onBarScroll() {
     }, 120);
 }
 
-const renderBarChart = async (view) => {
+const renderBarChart = async (view, keepPage = false) => {
     barView.value = view;
-    const { labels, incomes, expenses, debts, receivables } = buildBarData(view);
+    if (!keepPage) barPage.value = 0;
+    const full = buildBarData(view);
+    const { labels, incomes, expenses, debts, receivables, pageCount, page } = sliceBarPage(full, view);
+    barPager.value = { page, count: pageCount };
 
     // Simpan data untuk rekalkulasi scale saat scroll
     barChartData.value = { labels, incomes, expenses, debts, receivables };
@@ -418,9 +480,10 @@ const renderBarChart = async (view) => {
     const canvas = barChartRef.value;
     if (!canvas) return;
 
-    // Set canvas size eksplisit agar responsive:false tidak bikin chart kosong
+    // Set canvas size eksplisit agar responsive:false tidak bikin chart kosong.
+    // Clamp lebar canvas: pengaman terhadap batas render browser (~32.767px).
     const container = canvas.parentElement;
-    const canvasWidth = container?.offsetWidth || Math.max(labels.length * 80, 300);
+    const canvasWidth = Math.min(container?.offsetWidth || Math.max(labels.length * 80, 300), CANVAS_MAX_WIDTH);
     const canvasHeight = container?.offsetHeight || 220;
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
@@ -553,7 +616,7 @@ const renderBarChart = async (view) => {
 };
 
 const chartMinWidth = computed(() => {
-    const { labels } = buildBarData(barView.value);
+    const { labels } = sliceBarPage(buildBarData(barView.value), barView.value);
     const minWidthPerLabel = 80; // 80px per time period
     return Math.max(labels.length * minWidthPerLabel, 300); // minimum 300px
 });
@@ -750,6 +813,24 @@ watch(() => props.cumulativeData, () => {
     initCumulativeChart();
 });
 
+// Chart arus kas menyaring per rentang tanggal — render ulang saat rentang
+// berubah. start/endDate ikut dipantau karena array allDaily* bisa sama
+// referensinya (Inertia mempertahankan prop identik) padahal rentang berubah.
+watch(
+    () => [
+        props.allDailyDates,
+        props.allDailyIncome,
+        props.allDailyExpense,
+        props.allDailyDebt,
+        props.allDailyReceivable,
+        props.startDate,
+        props.endDate,
+    ],
+    () => {
+        renderBarChart(barView.value);
+    },
+);
+
 onBeforeUnmount(() => {
     clearTimeout(barScrollTimer);
     if (barScrollRef.value) {
@@ -865,6 +946,25 @@ onBeforeUnmount(() => {
                     <div :style="{ minWidth: chartMinWidth + 'px', height: '220px' }">
                         <canvas ref="barChartRef" :key="barChartKey"></canvas>
                     </div>
+                </div>
+
+                <!-- Paging chart (muncul saat label melebihi kapasitas satu halaman) -->
+                <div v-if="barPager.count > 1" class="flex items-center justify-center gap-3 mt-3">
+                    <button type="button" :disabled="barPager.page >= barPager.count - 1" @click="goOlderBarPage"
+                        :aria-label="$t('analytics.chartPrevPage')"
+                        class="w-9 h-9 flex items-center justify-center rounded-full border border-[var(--color-border-default)] bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)] disabled:opacity-40 disabled:cursor-not-allowed">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m15 18-6-6 6-6" />
+                        </svg>
+                    </button>
+                    <span class="text-xs font-bold text-[var(--color-text-secondary)] min-w-[4rem] text-center">{{ $t('analytics.chartPage', { current: barPager.page + 1, total: barPager.count }) }}</span>
+                    <button type="button" :disabled="barPager.page <= 0" @click="goNewerBarPage"
+                        :aria-label="$t('analytics.chartNextPage')"
+                        class="w-9 h-9 flex items-center justify-center rounded-full border border-[var(--color-border-default)] bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)] disabled:opacity-40 disabled:cursor-not-allowed">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6" />
+                        </svg>
+                    </button>
                 </div>
             </div>
 
