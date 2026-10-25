@@ -5,18 +5,20 @@
  * groupedCategories + totalCategories.
  *
  * Mobile (<1024px): grid tile (vault) — 3/4/6 kolom.
- * Desktop (>=1024px): daftar per grup memakai M3ListItem, karena tile
- * kecil selebar konten 72rem menghasilkan puluhan ikon tanpa hierarki.
+ * Desktop (>=1024px): grid tile auto-fill (minmax 10rem) agar lebar layar
+ * terpakai penuh; daftar M3ListItem tetap tersedia sebagai opsi lewat
+ * toggle Grid/List di toolbar.
  */
 import M3Layout from '@/Material/Layouts/AuthenticatedLayout.vue'
 import M3PageTitle from '@/Material/Components/M3PageTitle.vue'
 import M3Button from '@/Material/Components/M3Button.vue'
 import M3Card from '@/Material/Components/M3Card.vue'
+import M3IconButton from '@/Material/Components/M3IconButton.vue'
 import M3ListItem from '@/Material/Components/M3ListItem.vue'
 import AppIcon from '@/Components/AppIcon.vue'
 import { getM3CategoryIconClass } from '@/Material/utils/m3IconColor.js'
 import { Head, Link } from '@inertiajs/vue3'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
@@ -25,6 +27,10 @@ const props = defineProps({
     groupedCategories: { type: Object, default: () => ({}) },
     totalCategories: { type: Number, default: 0 },
 })
+
+// Mode tampilan desktop: 'grid' (default, memanfaatkan lebar layar) atau
+// 'list'. Toggle hanya tampil di toolbar desktop; mobile selalu grid.
+const catView = ref('grid')
 
 const desiredOrder = ['Income', 'Expense', 'Transfer', 'Debt', 'Receivable']
 
@@ -82,6 +88,28 @@ const hasCategories = computed(() => Object.keys(props.groupedCategories).length
                 <p class="m3-cat-index__toolbar-count">
                     {{ totalCategories }} {{ t('category.collection') }}
                 </p>
+                <div class="m3-cat-index__view-toggle" role="group" :aria-label="t('category.viewToggle')">
+                    <M3IconButton
+                        :variant="catView === 'grid' ? 'tonal' : 'standard'"
+                        :aria-label="t('category.viewGrid')"
+                        :aria-pressed="catView === 'grid'"
+                        @click="catView = 'grid'"
+                    >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75h6v6h-6v-6zM14.25 3.75h6v6h-6v-6zM3.75 14.25h6v6h-6v-6zM14.25 14.25h6v6h-6v-6z" />
+                        </svg>
+                    </M3IconButton>
+                    <M3IconButton
+                        :variant="catView === 'list' ? 'tonal' : 'standard'"
+                        :aria-label="t('category.viewList')"
+                        :aria-pressed="catView === 'list'"
+                        @click="catView = 'list'"
+                    >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6h12M8.25 12h12M8.25 18h12M3.75 6h.008M3.75 12h.008M3.75 18h.008" />
+                        </svg>
+                    </M3IconButton>
+                </div>
                 <M3Button :href="route('categories.create')" variant="tonal">
                     <template #leading>
                         <AppIcon icon="plus" class="m3-cat-index__cta-icon" />
@@ -110,7 +138,7 @@ const hasCategories = computed(() => Object.keys(props.groupedCategories).length
                     </span>
                 </header>
 
-                <div class="m3-cat-index__grid">
+                <div v-show="catView === 'grid'" class="m3-cat-index__grid">
                     <Link
                         v-for="category in categories"
                         :key="category.id"
@@ -132,7 +160,7 @@ const hasCategories = computed(() => Object.keys(props.groupedCategories).length
                     </Link>
                 </div>
 
-                <M3Card variant="outlined" padding="none" class="m3-cat-index__list">
+                <M3Card v-show="catView === 'list'" variant="outlined" padding="none" class="m3-cat-index__list">
                     <M3ListItem
                         v-for="(category, catIndex) in categories"
                         :key="category.id"
@@ -207,6 +235,14 @@ const hasCategories = computed(() => Object.keys(props.groupedCategories).length
     justify-content: space-between;
     gap: var(--m3-space-3);
     min-width: 0;
+}
+
+/* ── Toggle Grid/List (desktop) ── */
+.m3-cat-index__view-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--m3-space-1);
+    margin-left: auto;
 }
 
 .m3-cat-index__toolbar-count {
@@ -455,9 +491,26 @@ const hasCategories = computed(() => Object.keys(props.groupedCategories).length
     }
 }
 
-@media (min-width: 64rem) {
-    .m3-cat-index__mobile-cta,
+/* ── Mobile: pakai grid apa pun pilihan desktop (toggle tak tersedia
+   di bawah 64rem — !important menang atas inline v-show) ── */
+@media (max-width: 63.99rem) {
     .m3-cat-index__grid {
+        display: grid !important;
+    }
+
+    .m3-cat-index__list {
+        display: none !important;
+    }
+}
+
+@media (min-width: 64rem) {
+    /* Desktop: tile mengisi lebar layar (audit: baris list 1120px hanya
+       terisi ~30% konten). List tetap tersedia lewat toggle toolbar. */
+    .m3-cat-index__grid {
+        grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+    }
+
+    .m3-cat-index__mobile-cta {
         display: none;
     }
 

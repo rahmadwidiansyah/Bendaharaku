@@ -303,7 +303,6 @@ const themeOptions = ['light', 'dark', 'system']
 <style scoped>
 .m3-appearance__options {
     overflow: hidden;
-    max-width: var(--m3-size-list-max);
 }
 
 .m3-appearance__option {

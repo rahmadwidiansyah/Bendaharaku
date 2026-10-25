@@ -204,42 +204,44 @@ const handleLogout = () => router.post(route('logout'))
                 </M3IconButton>
             </M3Card>
 
-            <M3SettingsSection
-                v-for="section in sections"
-                :key="section.id"
-                :title="section.title"
-            >
-                <M3Card variant="outlined" padding="none" class="m3-settings-hub__card">
-                    <M3ListItem
-                        v-for="(item, index) in section.items"
-                        :key="item.route"
-                        :href="route(item.route)"
-                        :divider="index < section.items.length - 1"
-                        :class="item.danger ? 'm3-settings-hub__item--danger' : ''"
-                    >
-                        <template #icon>
-                            <span :class="['m3-settings-hub__ico', item.danger ? 'm3-settings-hub__ico--danger' : '']">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-                                    <path
-                                        v-for="(path, pathIndex) in item.paths"
-                                        :key="pathIndex"
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        :d="path"
-                                    />
+            <div class="m3-settings-hub__sections">
+                <M3SettingsSection
+                    v-for="section in sections"
+                    :key="section.id"
+                    :title="section.title"
+                >
+                    <M3Card variant="outlined" padding="none" class="m3-settings-hub__card">
+                        <M3ListItem
+                            v-for="(item, index) in section.items"
+                            :key="item.route"
+                            :href="route(item.route)"
+                            :divider="index < section.items.length - 1"
+                            :class="item.danger ? 'm3-settings-hub__item--danger' : ''"
+                        >
+                            <template #icon>
+                                <span :class="['m3-settings-hub__ico', item.danger ? 'm3-settings-hub__ico--danger' : '']">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                                        <path
+                                            v-for="(path, pathIndex) in item.paths"
+                                            :key="pathIndex"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            :d="path"
+                                        />
+                                    </svg>
+                                </span>
+                            </template>
+                            {{ item.label }}
+                            <template #supporting>{{ item.description }}</template>
+                            <template #trailing>
+                                <svg class="m3-settings-hub__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" :d="chevron" />
                                 </svg>
-                            </span>
-                        </template>
-                        {{ item.label }}
-                        <template #supporting>{{ item.description }}</template>
-                        <template #trailing>
-                            <svg class="m3-settings-hub__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" :d="chevron" />
-                            </svg>
-                        </template>
-                    </M3ListItem>
-                </M3Card>
-            </M3SettingsSection>
+                            </template>
+                        </M3ListItem>
+                    </M3Card>
+                </M3SettingsSection>
+            </div>
 
             <button type="button" class="m3-settings-logout" @click="handleLogout">
                 <span class="m3-settings-logout__ico">
@@ -254,6 +256,30 @@ const handleLogout = () => router.post(route('logout'))
 </template>
 
 <style scoped>
+/* Seksional stack; di layar sangat lebar jadi 2 kolom (audit: kolom
+   640px tunggal menyisakan ±510px kosong per sisi pada 1920px).
+   Breakpoint 100rem konsisten dengan layout wide halaman Analytics. */
+.m3-settings-hub__sections {
+    display: flex;
+    flex-direction: column;
+    gap: var(--m3-space-6);
+}
+
+@media (min-width: 100rem) {
+    /* Kontainer hub melebar mengikuti 2 kolom (tiap kolom selebar list-max
+       tunggal + jarak antar kolom) — .m3-settings-page adalah root komponen
+       anak sehingga bisa diseleksi langsung dari scoped style ini. */
+    .m3-settings-page {
+        max-width: calc(2 * var(--m3-size-list-max) + var(--m3-space-6));
+    }
+
+    .m3-settings-hub__sections {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+    }
+}
+
 .m3-settings-user {
     display: flex;
     align-items: center;

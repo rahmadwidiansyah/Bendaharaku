@@ -513,6 +513,9 @@ export default {
         collection:     'Collection',
         transaction:    'transaction',
         systemCategory: 'System Category',
+        viewToggle:     'Category view mode',
+        viewGrid:       'Show as grid',
+        viewList:       'Show as list',
 
         typeHeaders: {
             Income:     'Income',

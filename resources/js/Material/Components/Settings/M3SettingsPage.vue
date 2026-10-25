@@ -16,7 +16,12 @@ defineProps({
     backLabel: { type: String, default: '' },
     width: {
         type: String,
-        default: 'content',
+        // Default 'list' (40rem): ukuran baca form yang sehat dan konsisten
+        // dengan hub — form tidak perlu direntang 72rem (audit: input selebar
+        // 1120px sulit discan; Appearance sendiri sudah membatasi opsinya ke
+        // 640px). Beri 'content' eksplisit hanya untuk halaman yang butuh
+        // lebar (mis. tabel besar).
+        default: 'list',
         validator: (v) => ['list', 'content'].includes(v),
     },
 })

@@ -84,6 +84,7 @@ function typeIcon(type) {
         <Head :title="t('settings.privacy.logs.page_title')" />
 
         <M3SettingsPage
+            width="content"
             :title="t('settings.privacy.logs.page_title')"
             :subtitle="t('settings.privacy.logs.page_desc')"
             back-route="settings.index"

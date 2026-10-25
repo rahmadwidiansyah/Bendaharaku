@@ -520,6 +520,9 @@ export default {
         collection:     'Koleksi',
         transaction:    'Transaksi',
         systemCategory: 'Kategori Sistem',
+        viewToggle:     'Mode tampilan kategori',
+        viewGrid:       'Tampilkan sebagai kisi',
+        viewList:       'Tampilkan sebagai daftar',
 
         // Type labels (untuk grouping)
         typeHeaders: {
