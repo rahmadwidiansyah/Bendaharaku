@@ -833,65 +833,10 @@ onBeforeUnmount(() => {
                 @close="showDateModal = false"
             />
 
-          <!-- Kolom utama: KPI + grafik -->
-          <div class="m3-ana__primary">
-            <!-- KPI pemasukan/pengeluaran -->
-            <M3CashflowCard class="m3-ana__enter m3-ana__enter--1" :income="totalIncome" :expense="totalExpense" :is-visible="true" />
+            <!-- KPI pemasukan/pengeluaran (anak langsung — lihat grid areas) -->
+            <M3CashflowCard class="m3-ana__kpi m3-ana__enter m3-ana__enter--1" :income="totalIncome" :expense="totalExpense" :is-visible="true" />
 
-            <!-- Saldo kumulatif -->
-            <M3Card ref="cumulativeCardRef" variant="filled" padding="md" class="m3-ana__enter m3-ana__enter--2">
-                <div class="m3-ana__card-head m3-ana__card-head--balance">
-                    <div class="m3-ana__card-titles">
-                        <p class="m3-ana__card-title">{{ $t('analytics.cumulativeBalance') }}</p>
-                        <p class="m3-ana__card-sub">{{ $t('analytics.cumulativeDesc') }}</p>
-                    </div>
-                    <p class="m3-ana__hero">Rp {{ formatNumber(cumulativeBalance) }}</p>
-                </div>
-                <div ref="cumulativeContainerRef" class="m3-ana__cumulative-wrap">
-                    <canvas ref="cumulativeChartRef" class="m3-ana__canvas" role="img" :aria-label="$t('analytics.chartAria.cumulative')" />
-                </div>
-            </M3Card>
-
-            <!-- Arus kas -->
-            <M3Card variant="filled" padding="md" class="m3-ana__enter m3-ana__enter--3">
-                <div class="m3-ana__card-head">
-                    <p class="m3-ana__card-title">{{ $t('analytics.cashflow') }}</p>
-                    <div class="m3-ana__seg" role="tablist">
-                        <button
-                            v-for="v in barViews"
-                            :key="v.key"
-                            type="button"
-                            role="tab"
-                            :aria-selected="barView === v.key"
-                            :class="['m3-ana__seg-btn', barView === v.key ? 'm3-ana__seg-btn--active' : '']"
-                            @click="renderBarChart(v.key)"
-                        >{{ v.label() }}</button>
-                    </div>
-                </div>
-                <div class="m3-ana__legend">
-                    <button
-                        v-for="f in ['income', 'expense', 'debt', 'receivable']"
-                        :key="f"
-                        type="button"
-                        class="m3-ana__legend-item"
-                        :class="barHidden[f] ? 'm3-ana__legend-item--off' : ''"
-                        :aria-pressed="!barHidden[f]"
-                        @click="toggleBarSeries(f)"
-                    >
-                        <span class="m3-ana__legend-dot" :style="{ backgroundColor: FLOW_COLORS[f] }" aria-hidden="true" />
-                        <span class="m3-ana__legend-label">{{ $t(`analytics.chartLabels.${f}`) }}</span>
-                    </button>
-                </div>
-                <div ref="barScrollRef" class="m3-ana__scroll">
-                    <div class="m3-ana__bar-box" :style="{ minWidth: chartMinWidth + 'px' }">
-                        <canvas ref="barChartRef" :key="barChartKey" class="m3-ana__canvas" role="img" :aria-label="$t('analytics.chartAria.cashflow')" />
-                    </div>
-                </div>
-            </M3Card>
-
-          </div>
-
-          <!-- Panel pendukung: rincian kategori (layar lebar >= 100rem) -->
+          <!-- Panel pendukung: rincian kategori — F-pattern: doughnut di band tengah (di atas fold <100rem) -->
           <aside class="m3-ana__aside" :aria-label="$t('analytics.categoryBreakdown')">
             <!-- Rincian kategori -->
             <h2 class="m3-ana__section-title">{{ $t('analytics.categoryBreakdown') }}</h2>
@@ -954,6 +899,62 @@ onBeforeUnmount(() => {
                 </div>
             </M3Card>
           </aside>
+
+          <!-- Kolom utama: grafik -->
+          <div class="m3-ana__primary">
+            <!-- Saldo kumulatif -->
+            <M3Card ref="cumulativeCardRef" variant="filled" padding="md" class="m3-ana__enter m3-ana__enter--2">
+                <div class="m3-ana__card-head m3-ana__card-head--balance">
+                    <div class="m3-ana__card-titles">
+                        <p class="m3-ana__card-title">{{ $t('analytics.cumulativeBalance') }}</p>
+                        <p class="m3-ana__card-sub">{{ $t('analytics.cumulativeDesc') }}</p>
+                    </div>
+                    <p class="m3-ana__hero">Rp {{ formatNumber(cumulativeBalance) }}</p>
+                </div>
+                <div ref="cumulativeContainerRef" class="m3-ana__cumulative-wrap">
+                    <canvas ref="cumulativeChartRef" class="m3-ana__canvas" role="img" :aria-label="$t('analytics.chartAria.cumulative')" />
+                </div>
+            </M3Card>
+
+            <!-- Arus kas -->
+            <M3Card variant="filled" padding="md" class="m3-ana__enter m3-ana__enter--3">
+                <div class="m3-ana__card-head">
+                    <p class="m3-ana__card-title">{{ $t('analytics.cashflow') }}</p>
+                    <div class="m3-ana__seg" role="tablist">
+                        <button
+                            v-for="v in barViews"
+                            :key="v.key"
+                            type="button"
+                            role="tab"
+                            :aria-selected="barView === v.key"
+                            :class="['m3-ana__seg-btn', barView === v.key ? 'm3-ana__seg-btn--active' : '']"
+                            @click="renderBarChart(v.key)"
+                        >{{ v.label() }}</button>
+                    </div>
+                </div>
+                <div class="m3-ana__legend">
+                    <button
+                        v-for="f in ['income', 'expense', 'debt', 'receivable']"
+                        :key="f"
+                        type="button"
+                        class="m3-ana__legend-item"
+                        :class="barHidden[f] ? 'm3-ana__legend-item--off' : ''"
+                        :aria-pressed="!barHidden[f]"
+                        @click="toggleBarSeries(f)"
+                    >
+                        <span class="m3-ana__legend-dot" :style="{ backgroundColor: FLOW_COLORS[f] }" aria-hidden="true" />
+                        <span class="m3-ana__legend-label">{{ $t(`analytics.chartLabels.${f}`) }}</span>
+                    </button>
+                </div>
+                <div ref="barScrollRef" class="m3-ana__scroll">
+                    <div class="m3-ana__bar-box" :style="{ minWidth: chartMinWidth + 'px' }">
+                        <canvas ref="barChartRef" :key="barChartKey" class="m3-ana__canvas" role="img" :aria-label="$t('analytics.chartAria.cashflow')" />
+                    </div>
+                </div>
+            </M3Card>
+
+          </div>
+
         </div>
     </M3Layout>
 </template>
@@ -988,19 +989,36 @@ onBeforeUnmount(() => {
     min-width: 0;
 }
 
+/* In-flow (<100rem): kartu doughnut di-clamp 40rem rata kiri (kolom F),
+   proporsi doughnut kembali seperti desain panel 28rem. */
+.m3-ana__aside .m3-card {
+    max-width: 40rem;
+}
+
 @media (min-width: 100rem) {
     .m3-ana {
         display: grid;
         grid-template-columns: minmax(0, var(--m3-size-content-max)) 28rem;
+        grid-template-areas:
+            "head head"
+            "bar bar"
+            "kpi aside"
+            "primary aside";
         gap: var(--m3-space-6);
         justify-content: center;
         align-items: start;
         max-width: none;
     }
 
-    .m3-ana__head,
-    .m3-ana > .m3-ana__datebar {
-        grid-column: 1 / -1;
+    .m3-ana__head { grid-area: head; }
+    .m3-ana__datebar { grid-area: bar; }
+    .m3-ana__kpi { grid-area: kpi; }
+    .m3-ana__primary { grid-area: primary; }
+    .m3-ana__aside { grid-area: aside; }
+
+    /* Kartu doughnut tidak di-clamp pada panel samping (lebar area 28rem) */
+    .m3-ana__aside .m3-card {
+        max-width: none;
     }
 
     .m3-ana__aside {

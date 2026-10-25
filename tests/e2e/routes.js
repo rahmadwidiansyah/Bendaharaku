@@ -17,6 +17,7 @@ export const STABLE_VISUAL_ROUTES = [
     { name: 'settings-profile', path: '/settings/account/profile' },
     { name: 'categories', path: '/categories' },
     { name: 'wallets', path: '/wallets' },
+    { name: 'analytics', path: '/analytics' },
 ];
 
 export async function blockThirdParty(page) {
