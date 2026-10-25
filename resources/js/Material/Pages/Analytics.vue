@@ -989,12 +989,6 @@ onBeforeUnmount(() => {
     min-width: 0;
 }
 
-/* In-flow (<100rem): kartu doughnut di-clamp 40rem rata kiri (kolom F),
-   proporsi doughnut kembali seperti desain panel 28rem. */
-.m3-ana__aside .m3-card {
-    max-width: 40rem;
-}
-
 @media (min-width: 100rem) {
     .m3-ana {
         display: grid;
