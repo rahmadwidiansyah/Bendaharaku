@@ -561,6 +561,8 @@ export default {
         cumulativeDesc:    'Net worth movement',
         cashflow:       'Cash Flow',
         categoryBreakdown: 'Category Breakdown',
+        showMoreCats:    'Show {n} more categories',
+        showLessCats:    'Show less',
         noData:         'No Data',
         totalIncome:    'Total Income',
         totalExpense:   'Total Expense',

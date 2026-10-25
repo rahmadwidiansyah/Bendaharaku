@@ -72,7 +72,7 @@ const props = defineProps({
 })
 
 const charts = shallowRef({})
-const barView = ref('harian')
+const barView = ref(typeof window !== 'undefined' && window.innerWidth < 640 ? 'mingguan' : 'harian')
 const categoryView = ref('expense')
 const barChartRef = ref(null)
 const barScrollRef = ref(null)
@@ -584,7 +584,8 @@ const renderBarChart = async (view) => {
 
 const chartMinWidth = computed(() => {
     const { labels } = buildBarData(barView.value)
-    const minWidthPerLabel = 80
+    // Mobile: per grup lebih lebar (96px) agar 4 balok tetap terbaca
+    const minWidthPerLabel = typeof window !== 'undefined' && window.innerWidth < 640 ? 96 : 80
     return Math.max(labels.length * minWidthPerLabel, 300)
 })
 
@@ -606,6 +607,26 @@ const activeCategoryData = computed(() => {
         return { labels: s.map(x => x.name), values: s.map(x => x.total), ids: s.map(x => x.id), icons: s.map(x => x.icon), total: s.reduce((a, b) => a + b.total, 0), labelName: t('analytics.totalReceivable') }
     }
 })
+
+// ── Daftar kategori: 5 teratas + "Lihat lainnya" (doughnut tetap semua) ──
+const CAT_VISIBLE = 5
+const showAllCategories = ref(false)
+const visibleCategoryData = computed(() => {
+    const d = activeCategoryData.value
+    if (showAllCategories.value) return d
+    return {
+        labels: d.labels.slice(0, CAT_VISIBLE),
+        values: d.values.slice(0, CAT_VISIBLE),
+        ids: d.ids.slice(0, CAT_VISIBLE),
+        icons: d.icons.slice(0, CAT_VISIBLE),
+        total: d.total,
+        labelName: d.labelName,
+    }
+})
+const hiddenCategoryCount = computed(() =>
+    Math.max(0, activeCategoryData.value.labels.length - CAT_VISIBLE),
+)
+const toggleAllCategories = () => { showAllCategories.value = !showAllCategories.value }
 
 const activeColors = computed(() => {
     const base = {
@@ -732,7 +753,7 @@ const switchCategory = (type) => {
 
 onMounted(() => {
     initCumulativeChart()
-    renderBarChart('harian')
+    renderBarChart(barView.value)
     renderDoughnutChart()
 
     nextTick(() => {
@@ -834,72 +855,13 @@ onBeforeUnmount(() => {
             />
 
             <!-- KPI pemasukan/pengeluaran (anak langsung — lihat grid areas) -->
-            <M3CashflowCard class="m3-ana__kpi m3-ana__enter m3-ana__enter--1" :income="totalIncome" :expense="totalExpense" :is-visible="true" />
 
           <!-- Panel pendukung: rincian kategori — F-pattern: doughnut di band tengah (di atas fold <100rem) -->
-          <aside class="m3-ana__aside" :aria-label="$t('analytics.categoryBreakdown')">
-            <!-- Rincian kategori -->
-            <h2 class="m3-ana__section-title">{{ $t('analytics.categoryBreakdown') }}</h2>
-            <div class="m3-ana__seg m3-ana__seg--block" role="tablist">
-                <button
-                    v-for="c in categoryViews"
-                    :key="c.key"
-                    type="button"
-                    role="tab"
-                    :aria-selected="categoryView === c.key"
-                    :class="['m3-ana__seg-btn', categoryView === c.key ? 'm3-ana__seg-btn--active' : '']"
-                    @click="switchCategory(c.key)"
-                >{{ c.label() }}</button>
-            </div>
 
-            <M3Card variant="filled" padding="md" class="m3-ana__enter m3-ana__enter--4">
-                <div v-if="doughnutReady && !activeCategoryData.labels.length" class="m3-ana__empty">
-                    <span class="m3-ana__empty-icon" aria-hidden="true">
-                        <InboxIcon :stroke-width="1.5" />
-                    </span>
-                    <p class="m3-ana__empty-text">{{ $t('analytics.noData') }}</p>
-                </div>
-                <div v-show="!doughnutReady || activeCategoryData.labels.length">
-                    <div class="m3-ana__doughnut-wrap">
-                        <div v-if="!doughnutReady" class="m3-ana__spinner" role="status" :aria-label="$t('common.loading')">
-                            <M3CircularProgress size="lg" />
-                        </div>
-                        <canvas ref="doughnutChartRef" class="m3-ana__canvas m3-ana__canvas--front" role="img" :aria-label="$t('analytics.chartAria.breakdown')" />
-                        <div v-if="doughnutReady && activeCategoryData.labels.length" class="m3-ana__doughnut-center" aria-hidden="true">
-                            <span class="m3-ana__doughnut-label">{{ activeCategoryData.labelName }}</span>
-                            <span class="m3-ana__doughnut-total">Rp {{ formatNumber(activeCategoryData.total) }}</span>
-                        </div>
-                    </div>
-                    <div v-if="doughnutReady && activeCategoryData.labels.length" class="m3-ana__catlist">
-                        <template v-for="(label, i) in activeCategoryData.labels" :key="i">
-                            <Link
-                                v-if="activeCategoryData.ids[i] != null"
-                                :href="route('categories.show', { category: activeCategoryData.ids[i], start_date: startDate, end_date: endDate })"
-                                class="m3-ana__cat"
-                            >
-                                <span class="m3-ana__cat-bar" :style="{ backgroundColor: categoryColors[i] }" aria-hidden="true" />
-                                <AppIcon :icon="activeCategoryData.icons[i]" :class="['m3-ana__cat-icon', iconColorClass]" />
-                                <span class="m3-ana__cat-main">
-                                    <span class="m3-ana__cat-name">{{ label }}</span>
-                                    <span class="m3-ana__cat-pct">{{ activeCategoryData.total > 0 ? ((activeCategoryData.values[i] / activeCategoryData.total) * 100).toFixed(1) : 0 }}%</span>
-                                </span>
-                                <span class="m3-ana__cat-amount">Rp {{ formatNumber(activeCategoryData.values[i]) }}</span>
-                            </Link>
-                            <div v-else class="m3-ana__cat">
-                                <span class="m3-ana__cat-bar" :style="{ backgroundColor: categoryColors[i] }" aria-hidden="true" />
-                                <AppIcon :icon="activeCategoryData.icons[i]" :class="['m3-ana__cat-icon', iconColorClass]" />
-                                <span class="m3-ana__cat-main">
-                                    <span class="m3-ana__cat-name">{{ label }}</span>
-                                    <span class="m3-ana__cat-pct">{{ activeCategoryData.total > 0 ? ((activeCategoryData.values[i] / activeCategoryData.total) * 100).toFixed(1) : 0 }}%</span>
-                                </span>
-                                <span class="m3-ana__cat-amount">Rp {{ formatNumber(activeCategoryData.values[i]) }}</span>
-                            </div>
-                        </template>
-                    </div>
-                </div>
-            </M3Card>
-          </aside>
-
+            <!-- Kolom utama (F): KPI + grafik — satu kolom kiri di >= 100rem -->
+            <div class="m3-ana__grid">
+            <div class="m3-ana__left">
+            <M3CashflowCard class="m3-ana__kpi m3-ana__enter m3-ana__enter--1" :income="totalIncome" :expense="totalExpense" :is-visible="true" />
           <!-- Kolom utama: grafik -->
           <div class="m3-ana__primary">
             <!-- Saldo kumulatif -->
@@ -952,9 +914,82 @@ onBeforeUnmount(() => {
                     </div>
                 </div>
             </M3Card>
+            </div>
+            </div>
 
-          </div>
+            <!-- Panel pendukung: rincian kategori — kolom kanan >= 100rem, seksi bawah < 100rem -->
+          <aside class="m3-ana__aside" :aria-label="$t('analytics.categoryBreakdown')">
+            <!-- Rincian kategori -->
+            <h2 class="m3-ana__section-title">{{ $t('analytics.categoryBreakdown') }}</h2>
+            <div class="m3-ana__seg m3-ana__seg--block" role="tablist">
+                <button
+                    v-for="c in categoryViews"
+                    :key="c.key"
+                    type="button"
+                    role="tab"
+                    :aria-selected="categoryView === c.key"
+                    :class="['m3-ana__seg-btn', categoryView === c.key ? 'm3-ana__seg-btn--active' : '']"
+                    @click="switchCategory(c.key)"
+                >{{ c.label() }}</button>
+            </div>
 
+            <M3Card variant="filled" padding="md" class="m3-ana__enter m3-ana__enter--4">
+                <div v-if="doughnutReady && !activeCategoryData.labels.length" class="m3-ana__empty">
+                    <span class="m3-ana__empty-icon" aria-hidden="true">
+                        <InboxIcon :stroke-width="1.5" />
+                    </span>
+                    <p class="m3-ana__empty-text">{{ $t('analytics.noData') }}</p>
+                </div>
+                <div v-show="!doughnutReady || activeCategoryData.labels.length">
+                    <div class="m3-ana__doughnut-wrap">
+                        <div v-if="!doughnutReady" class="m3-ana__spinner" role="status" :aria-label="$t('common.loading')">
+                            <M3CircularProgress size="lg" />
+                        </div>
+                        <canvas ref="doughnutChartRef" class="m3-ana__canvas m3-ana__canvas--front" role="img" :aria-label="$t('analytics.chartAria.breakdown')" />
+                        <div v-if="doughnutReady && activeCategoryData.labels.length" class="m3-ana__doughnut-center" aria-hidden="true">
+                            <span class="m3-ana__doughnut-label">{{ activeCategoryData.labelName }}</span>
+                            <span class="m3-ana__doughnut-total">Rp {{ formatNumber(activeCategoryData.total) }}</span>
+                        </div>
+                    </div>
+                    <div v-if="doughnutReady && activeCategoryData.labels.length" class="m3-ana__catlist">
+                        <template v-for="(label, i) in visibleCategoryData.labels" :key="i">
+                            <Link
+                                v-if="visibleCategoryData.ids[i] != null"
+                                :href="route('categories.show', { category: visibleCategoryData.ids[i], start_date: startDate, end_date: endDate })"
+                                class="m3-ana__cat"
+                            >
+                                <span class="m3-ana__cat-bar" :style="{ backgroundColor: categoryColors[i] }" aria-hidden="true" />
+                                <AppIcon :icon="visibleCategoryData.icons[i]" :class="['m3-ana__cat-icon', iconColorClass]" />
+                                <span class="m3-ana__cat-main">
+                                    <span class="m3-ana__cat-name">{{ label }}</span>
+                                    <span class="m3-ana__cat-pct">{{ visibleCategoryData.total > 0 ? ((visibleCategoryData.values[i] / visibleCategoryData.total) * 100).toFixed(1) : 0 }}%</span>
+                                </span>
+                                <span class="m3-ana__cat-amount">Rp {{ formatNumber(visibleCategoryData.values[i]) }}</span>
+                            </Link>
+                            <div v-else class="m3-ana__cat">
+                                <span class="m3-ana__cat-bar" :style="{ backgroundColor: categoryColors[i] }" aria-hidden="true" />
+                                <AppIcon :icon="visibleCategoryData.icons[i]" :class="['m3-ana__cat-icon', iconColorClass]" />
+                                <span class="m3-ana__cat-main">
+                                    <span class="m3-ana__cat-name">{{ label }}</span>
+                                    <span class="m3-ana__cat-pct">{{ visibleCategoryData.total > 0 ? ((visibleCategoryData.values[i] / visibleCategoryData.total) * 100).toFixed(1) : 0 }}%</span>
+                                </span>
+                                <span class="m3-ana__cat-amount">Rp {{ formatNumber(visibleCategoryData.values[i]) }}</span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                <M3Button
+                    v-if="hiddenCategoryCount > 0 || showAllCategories"
+                    variant="text"
+                    size="sm"
+                    class="m3-ana__cat-toggle"
+                    @click="toggleAllCategories"
+                >
+                    {{ showAllCategories ? t('analytics.showLessCats') : t('analytics.showMoreCats', { n: hiddenCategoryCount }) }}
+                </M3Button>
+            </M3Card>
+          </aside>
+            </div>
         </div>
     </M3Layout>
 </template>
@@ -989,33 +1024,43 @@ onBeforeUnmount(() => {
     min-width: 0;
 }
 
+/* Kolom kiri (F): KPI + grafik — jadi satu kolom kiri di >= 100rem */
+.m3-ana__left {
+    display: flex;
+    flex-direction: column;
+    gap: var(--m3-space-4);
+    min-width: 0;
+}
+
+/* Dua kolom di layar lebar: charts kiri, breakdown kanan (sticky).
+   Head & datebar tetap di luar grid — full width. */
+.m3-ana__grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--m3-space-4);
+    min-width: 0;
+}
+
 @media (min-width: 100rem) {
     .m3-ana {
-        display: grid;
-        grid-template-columns: minmax(0, var(--m3-size-content-max)) 28rem;
-        grid-template-areas:
-            "head head"
-            "bar bar"
-            "kpi aside"
-            "primary aside";
-        gap: var(--m3-space-6);
-        justify-content: center;
-        align-items: start;
         max-width: none;
     }
 
-    .m3-ana__head { grid-area: head; }
-    .m3-ana__datebar { grid-area: bar; }
-    .m3-ana__kpi { grid-area: kpi; }
-    .m3-ana__primary { grid-area: primary; }
-    .m3-ana__aside { grid-area: aside; }
-
-    /* Kartu doughnut tidak di-clamp pada panel samping (lebar area 28rem) */
-    .m3-ana__aside .m3-card {
+    .m3-ana__grid {
+        display: grid;
+        grid-template-columns: minmax(0, var(--m3-size-content-max)) 28rem;
+        gap: var(--m3-space-6);
+        align-items: start;
+        justify-content: center;
         max-width: none;
+    }
+
+    .m3-ana__left {
+        grid-column: 1;
     }
 
     .m3-ana__aside {
+        grid-column: 2;
         position: sticky;
         top: calc(var(--m3-size-appbar) + var(--m3-space-4));
         max-height: calc(100dvh - var(--m3-size-appbar) - var(--m3-space-8));
@@ -1332,6 +1377,11 @@ onBeforeUnmount(() => {
 .m3-ana__catlist {
     display: flex;
     flex-direction: column;
+}
+
+.m3-ana__cat-toggle {
+    align-self: center;
+    margin-top: var(--m3-space-2);
 }
 
 .m3-ana__cat {

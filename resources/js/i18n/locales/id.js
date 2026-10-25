@@ -572,6 +572,8 @@ export default {
         cumulativeDesc:    'Pergerakan total kekayaan',
         cashflow:       'Arus Kas',
         categoryBreakdown: 'Rincian Kategori',
+        showMoreCats:    'Lihat {n} kategori lainnya',
+        showLessCats:    'Tampilkan lebih sedikit',
         noData:         'Tidak Ada Data',
         totalIncome:    'Total Pemasukan',
         totalExpense:   'Total Pengeluaran',
