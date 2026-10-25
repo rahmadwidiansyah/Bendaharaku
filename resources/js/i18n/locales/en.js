@@ -167,6 +167,8 @@ export default {
     more: {
         finance:        'Finance',
         app:            'App',
+        appearance:     'Appearance',
+        appearanceHint: 'Switch light/dark theme without opening Settings',
         categoriesDesc: 'Manage transaction categories',
         loansDesc:      'Debts & receivables',
         searchDesc:     'Search transactions and more',

@@ -11,12 +11,44 @@ import M3Layout from '@/Material/Layouts/AuthenticatedLayout.vue'
 import M3PageTitle from '@/Material/Components/M3PageTitle.vue'
 import M3Card from '@/Material/Components/M3Card.vue'
 import M3ListItem from '@/Material/Components/M3ListItem.vue'
+import M3Button from '@/Material/Components/M3Button.vue'
+import AppIcon from '@/Components/AppIcon.vue'
 import { Head, Link, usePage } from '@inertiajs/vue3'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { route } from 'ziggy-js'
+import axios from 'axios'
+import { useTheme } from '@/Composables/useTheme'
 
+const { t } = useI18n()
 const page = usePage()
 const avatarUrl = computed(() => page.props.auth?.user?.avatar_url ?? '')
 const avatarInitial = computed(() => (page.props.auth?.user?.name || 'B').charAt(0).toUpperCase())
+
+// ── Toggle tema cepat (PATCH endpoint Appearance yang sama) ──
+const { setTheme } = useTheme()
+const themeOptions = ['light', 'dark', 'system']
+const theme = ref(page.props.auth?.user?.theme ?? 'system')
+const themeBusy = ref(false)
+
+const chooseTheme = async (value) => {
+    if (themeBusy.value || theme.value === value) return
+    const prev = theme.value
+    theme.value = value
+    setTheme(value)
+    themeBusy.value = true
+    try {
+        await axios.patch(route('settings.application.appearance.update'), {
+            theme: value,
+            accent_color: page.props.auth?.user?.accent_color,
+        })
+    } catch {
+        theme.value = prev
+        setTheme(prev)
+    } finally {
+        themeBusy.value = false
+    }
+}
 </script>
 
 <template>
@@ -38,7 +70,34 @@ const avatarInitial = computed(() => (page.props.auth?.user?.name || 'B').charAt
                 </template>
             </M3PageTitle>
 
-            <section class="m3-more__section">
+            <!-- Tampilan cepat: toggle tema tanpa masuk halaman Settings -->
+            <section class="m3-more__section m3-more__section--quick">
+                <h2 class="m3-more__section-title">{{ t('more.appearance') }}</h2>
+                <M3Card variant="outlined" padding="md" class="m3-more__theme-card">
+                    <div class="m3-more__theme-head">
+                        <span class="m3-more__ico" aria-hidden="true">
+                            <AppIcon :icon="theme === 'light' ? 'sun' : theme === 'dark' ? 'moon' : 'monitor'" />
+                        </span>
+                        <p class="m3-more__theme-hint">{{ t('more.appearanceHint') }}</p>
+                    </div>
+                    <div class="m3-more__theme-seg" role="group" :aria-label="t('more.appearance')">
+                        <button
+                            v-for="value in themeOptions"
+                            :key="value"
+                            type="button"
+                            class="m3-more__theme-btn"
+                            :class="{ 'm3-more__theme-btn--active': theme === value }"
+                            :aria-pressed="theme === value"
+                            :disabled="themeBusy"
+                            @click="chooseTheme(value)"
+                        >
+                            {{ t(`settings.application.appearance.theme.${value}`) }}
+                        </button>
+                    </div>
+                </M3Card>
+            </section>
+
+            <section class="m3-more__section m3-more__mobile-only">
                 <h2 class="m3-more__section-title">{{ $t('more.finance') }}</h2>
                 <M3Card variant="outlined" padding="none" class="m3-more__card">
                     <M3ListItem :href="route('categories.index')" divider>
@@ -81,8 +140,7 @@ const avatarInitial = computed(() => (page.props.auth?.user?.name || 'B').charAt
             <section class="m3-more__section">
                 <h2 class="m3-more__section-title">{{ $t('more.app') }}</h2>
                 <M3Card variant="outlined" padding="none" class="m3-more__card">
-                    <M3ListItem :href="route('chat.index')" divider>
-                        <template #icon>
+                    <M3ListItem :href="route('chat.index')" divider>                        <template #icon>
                             <span class="m3-more__ico">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 4v-4z" />
@@ -115,7 +173,7 @@ const avatarInitial = computed(() => (page.props.auth?.user?.name || 'B').charAt
                         </template>
                     </M3ListItem>
 
-                    <M3ListItem :href="route('settings.index')">
+                    <M3ListItem :href="route('settings.index')" class="m3-more__mobile-only">
                         <template #icon>
                             <span class="m3-more__ico">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
@@ -147,6 +205,89 @@ const avatarInitial = computed(() => (page.props.auth?.user?.name || 'B').charAt
     max-width: var(--m3-size-list-max);
     margin: 0 auto;
     padding: var(--m3-space-4);
+}
+
+/* Item yang duplikat dengan rail desktop hanya tampil di mobile.
+   Specificity 2-class agar menang atas .m3-more__section/.m3-list-item. */
+@media (min-width: 64rem) {
+    .m3-more .m3-more__mobile-only {
+        display: none;
+    }
+}
+
+/* Hub desktop 2 kolom (F-pattern): aksi app kiri, tampilan cepat kanan */
+@media (min-width: 64rem) {
+    .m3-more {
+        max-width: calc(2 * var(--m3-size-list-max) + var(--m3-space-6));
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--m3-space-6);
+        align-items: start;
+    }
+
+    .m3-more > .m3-page-title {
+        grid-column: 1 / -1;
+    }
+
+    .m3-more__section--quick {
+        grid-column: 2;
+        grid-row: 2;
+    }
+}
+
+/* ── Kartu tema cepat ── */
+.m3-more__theme-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--m3-space-3);
+}
+
+.m3-more__theme-head {
+    display: flex;
+    align-items: center;
+    gap: var(--m3-space-3);
+}
+
+.m3-more__theme-hint {
+    margin: 0;
+    min-width: 0;
+    font-size: var(--m3-type-body-medium-size);
+    line-height: var(--m3-type-body-medium-line-height);
+    color: var(--m3-color-on-surface-variant);
+}
+
+.m3-more__theme-seg {
+    display: flex;
+    gap: var(--m3-space-2);
+}
+
+.m3-more__theme-btn {
+    flex: 1;
+    min-height: var(--m3-size-touch-target-lg);
+    padding: 0 var(--m3-space-2);
+    border: 1px solid var(--m3-color-outline-variant);
+    border-radius: var(--m3-radius-full);
+    background: transparent;
+    color: var(--m3-color-on-surface-variant);
+    font-size: var(--m3-type-label-large-size);
+    line-height: var(--m3-type-label-large-line-height);
+    font-weight: var(--m3-type-label-large-weight);
+    letter-spacing: var(--m3-type-label-large-tracking);
+    cursor: pointer;
+    transition: background-color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects),
+        color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
+}
+
+.m3-more__theme-btn--active {
+    background: var(--m3-color-secondary-container);
+    border-color: transparent;
+    color: var(--m3-color-on-secondary-container);
+    font-weight: var(--m3-type-emphasized-label-large-weight);
+}
+
+.m3-more__theme-btn:disabled {
+    opacity: 0.6;
+    cursor: wait;
 }
 
 .m3-more__section {

@@ -167,6 +167,8 @@ export default {
     more: {
         finance:        'Keuangan',
         app:            'Aplikasi',
+        appearance:     'Tampilan',
+        appearanceHint: 'Ganti tema terang/gelap tanpa masuk Pengaturan',
         categoriesDesc: 'Kelola kategori transaksi',
         loansDesc:      'Hutang & piutang',
         searchDesc:     'Cari transaksi dan lainnya',

@@ -44,6 +44,7 @@ class HandleInertiaRequests extends Middleware
                     'email' => $request->user()->email,
                     'avatar_url' => $request->user()->avatar_url,
                     'theme' => $request->user()->theme ?? 'system',
+                    'accent_color' => $request->user()->accent_color,
                     'category_icon_colored' => $request->user()->category_icon_colored,
                     'ui_theme' => $request->user()->ui_theme ?? 'default',
                     'ui_m3_color_scheme' => $request->user()->ui_m3_color_scheme ?? 'teal',
