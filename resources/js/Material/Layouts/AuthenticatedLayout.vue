@@ -79,7 +79,9 @@ const chatSheetOpen = ref(false)
 const isChatRoute = computed(() => {
     try { return route().current('chat.*') } catch { return false }
 })
-const showChatBubble = computed(() => isDesktop && !isChatRoute.value)
+// Catatan: `isDesktop.value` — tanpa .value, ComputedRef selalu truthy dan
+// bubble bocor ke mobile di semua halaman non-chat.
+const showChatBubble = computed(() => isDesktop.value && !isChatRoute.value)
 const { isDesktopLayout } = useLayoutPreference()
 const { isLoading, currentSkeletonM3, pendingUrl } = usePageLoading()
 
