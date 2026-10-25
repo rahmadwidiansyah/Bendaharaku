@@ -85,9 +85,11 @@ const fetchBudget = async () => {
     try {
         const response = await axios.get(`/api/v1/budget/${currentYear.value}/${currentMonth.value}`)
         budgetData.value = response.data
+        if (!budgetData.value) fetchLastBudget()
     } catch (error) {
         if (error.response && error.response.status === 404) {
             budgetData.value = null
+            fetchLastBudget()
         } else {
             loadError.value = true
             console.error('Error fetching budget:', error)
@@ -95,6 +97,49 @@ const fetchBudget = async () => {
     } finally {
         isLoading.value = false
     }
+}
+
+// ─── Snapshot periode aktif terakhir (saat periode berjalan kosong) ──
+// Mencari mundur maksimal 3 bulan lewat endpoint yang sama; kartu muncul
+// di bawah empty-state agar halaman tidak kosong tanpa kontinuitas.
+const lastBudget = ref(null)
+
+const fetchLastBudget = async () => {
+    let m = currentMonth.value
+    let y = currentYear.value
+    for (let i = 0; i < 3; i++) {
+        m -= 1
+        if (m === 0) { m = 12; y -= 1 }
+        try {
+            const { data } = await axios.get(`/api/v1/budget/${y}/${m}`)
+            if (data && (Number(data.total_budget_amount) > 0 || (data.expense_groups ?? []).length > 0)) {
+                lastBudget.value = { ...data, month: m, year: y }
+                return
+            }
+        } catch { /* 404 dsb — lanjut mundur */ }
+    }
+    lastBudget.value = null
+}
+
+const lastBudgetLabel = computed(() =>
+    lastBudget.value
+        ? new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(
+            new Date(lastBudget.value.year, lastBudget.value.month - 1, 1),
+        )
+        : ''
+)
+
+const lastBudgetSpent = computed(() => {
+    const map = lastBudget.value?.summary ?? {}
+    return Object.values(map).reduce((acc, s) => acc + (Number(s?.spent) || 0), 0)
+})
+
+const openLastBudget = () => {
+    if (!lastBudget.value) return
+    currentMonth.value = lastBudget.value.month
+    currentYear.value = lastBudget.value.year
+    lastBudget.value = null
+    fetchBudget()
 }
 
 // ─── Generate AI (async: request hanya dispatch job, polling status) ──
@@ -429,6 +474,32 @@ onUnmounted(stopGenerationPolling)
                     </div>
                 </M3Card>
 
+                <!-- ── Snapshot periode aktif terakhir (kontinuitas saat periode kosong) ── -->
+                <M3Card v-if="lastBudget" variant="outlined" padding="lg" class="m3-bud__last">
+                    <div class="m3-bud__last-head">
+                        <span class="m3-bud__last-icon" aria-hidden="true">
+                            <AppIcon icon="calendar-days" class="m3-bud__last-glyph" />
+                        </span>
+                        <div class="m3-bud__last-titles">
+                            <p class="m3-bud__last-label">{{ t('budgeting.lastPeriod') }}</p>
+                            <p class="m3-bud__last-month">{{ lastBudgetLabel }}</p>
+                        </div>
+                        <M3Button variant="tonal" size="sm" @click="openLastBudget">
+                            {{ t('budgeting.openLastPeriod') }}
+                        </M3Button>
+                    </div>
+                    <div class="m3-bud__last-stats">
+                        <div class="m3-bud__last-stat">
+                            <span class="m3-bud__last-stat-label">{{ t('budgeting.totalBudget') }}</span>
+                            <span class="m3-bud__last-stat-value">{{ formatRupiah(lastBudget.total_budget_amount) }}</span>
+                        </div>
+                        <div class="m3-bud__last-stat">
+                            <span class="m3-bud__last-stat-label">{{ t('budgeting.totalSpent') }}</span>
+                            <span class="m3-bud__last-stat-value">{{ formatRupiah(lastBudgetSpent) }}</span>
+                        </div>
+                    </div>
+                </M3Card>
+
                 <!-- ── Active state: budget ada ── -->
                 <template v-else>
                     <!-- Summary card -->
@@ -755,11 +826,91 @@ onUnmounted(stopGenerationPolling)
     text-align: start;
 }
 
+/* ── Snapshot periode aktif terakhir ── */
+.m3-bud__last-head {
+    display: flex;
+    align-items: center;
+    gap: var(--m3-space-3);
+}
+
+.m3-bud__last-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--m3-size-touch-target);
+    height: var(--m3-size-touch-target);
+    border-radius: var(--m3-radius-full);
+    background: var(--m3-color-secondary-container);
+    color: var(--m3-color-on-secondary-container);
+    flex-shrink: 0;
+}
+
+.m3-bud__last-glyph {
+    width: var(--m3-size-icon-sm);
+    height: var(--m3-size-icon-sm);
+}
+
+.m3-bud__last-titles {
+    display: flex;
+    flex-direction: column;
+    gap: var(--m3-space-0-5);
+    min-width: 0;
+    flex: 1;
+}
+
+.m3-bud__last-label {
+    margin: 0;
+    font-size: var(--m3-type-label-medium-size);
+    line-height: var(--m3-type-label-medium-line-height);
+    font-weight: var(--m3-type-emphasized-label-medium-weight);
+    letter-spacing: var(--m3-type-label-medium-tracking);
+    text-transform: uppercase;
+    color: var(--m3-color-on-surface-variant);
+}
+
+.m3-bud__last-month {
+    margin: 0;
+    font-size: var(--m3-type-title-medium-size);
+    line-height: var(--m3-type-title-medium-line-height);
+    font-weight: var(--m3-type-emphasized-title-medium-weight);
+    color: var(--m3-color-on-surface);
+}
+
+.m3-bud__last-stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--m3-space-3);
+    margin-top: var(--m3-space-4);
+}
+
+.m3-bud__last-stat {
+    display: flex;
+    flex-direction: column;
+    gap: var(--m3-space-1);
+    padding: var(--m3-space-3);
+    border-radius: var(--m3-radius-md);
+    background: var(--m3-color-surface-container);
+}
+
+.m3-bud__last-stat-label {
+    font-size: var(--m3-type-label-medium-size);
+    line-height: var(--m3-type-label-medium-line-height);
+    color: var(--m3-color-on-surface-variant);
+}
+
+.m3-bud__last-stat-value {
+    font-size: var(--m3-type-title-medium-size);
+    line-height: var(--m3-type-title-medium-line-height);
+    font-weight: var(--m3-type-emphasized-title-medium-weight);
+    font-variant-numeric: tabular-nums;
+    color: var(--m3-color-on-surface);
+    overflow-wrap: anywhere;
+}
+
 .m3-bud__lock {
     display: inline-flex;
     align-items: flex-start;
-    gap: var(--m3-space-2);
-    margin-top: var(--m3-space-5);
+    gap: var(--m3-space-2);    margin-top: var(--m3-space-5);
     padding: var(--m3-space-3) var(--m3-space-4);
     border-radius: var(--m3-radius-md);
     background: var(--m3-color-surface-container-high);

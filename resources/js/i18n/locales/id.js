@@ -185,6 +185,8 @@ export default {
         generate:         'Minta {bot} generate budgeting',
         pastPeriod:       'Budget AI hanya bisa dibuat untuk bulan berjalan ini',
         pastPeriodHint:   'Budget AI hanya bisa dibuat untuk bulan berjalan. Edit manual tetap tersedia.',
+        lastPeriod:       'Periode Aktif Terakhir',
+        openLastPeriod:   'Lihat Periode Ini',
         generating:       'Generate budget...',
         generated:        'Budget berhasil di-generate',
         saved:            'Budget berhasil disimpan',

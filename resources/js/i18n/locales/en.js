@@ -185,6 +185,8 @@ export default {
         generate:         'Ask {bot} to generate budget',
         pastPeriod:       'AI budgets can only be created for the current month',
         pastPeriodHint:   'AI budgets can only be created for the current month. Manual editing is still available.',
+        lastPeriod:       'Last Active Period',
+        openLastPeriod:   'Open This Period',
         generating:       'Generating budget...',
         generated:        'Budget generated',
         saved:            'Budget saved',
