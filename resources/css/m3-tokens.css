@@ -41,6 +41,8 @@
    (Color roles come from m3-schemes.css)
    ════════════════════════════════════════════════════════════════════ */
 .ui-m3 {
+    /* Native widgets (date picker, scrollbar, autofill) mengikuti tema */
+    color-scheme: dark;
     /* ── Financial semantic colors (dark) ── */
     --m3-color-income: #4ade80;
     --m3-color-income-container: rgba(74, 222, 128, 0.15);
@@ -237,6 +239,7 @@
    (Color roles come from m3-schemes.css)
    ════════════════════════════════════════════════════════════════════ */
 .ui-m3.light {
+    color-scheme: light;
     /* ── Financial semantic colors (light) ── */
     --m3-color-income: #15803d;
     --m3-color-income-container: #f0fdf4;

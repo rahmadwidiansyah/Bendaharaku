@@ -44,6 +44,13 @@ function readFromMeta() {
 
 export function applyM3ColorScheme(key) {
     document.documentElement.setAttribute('data-m3-scheme', normalizeM3ColorScheme(key));
+    // Status-bar browser mengikuti surface skema M3 aktif (bukan palet Default)
+    requestAnimationFrame(() => {
+        const meta = document.querySelector('meta[name="theme-color"]');
+        const surface = getComputedStyle(document.documentElement)
+            .getPropertyValue('--m3-color-surface').trim();
+        if (meta && surface) meta.setAttribute('content', surface);
+    });
 }
 
 /**

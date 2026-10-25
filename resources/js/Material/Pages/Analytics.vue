@@ -214,7 +214,7 @@ const initCumulativeChart = async () => {
                         pointBorderColor: chrome.surface,
                         pointBorderWidth: 2,
                         pointHoverBackgroundColor: brand,
-                        pointHoverBorderColor: '#fff',
+                        pointHoverBorderColor: chrome.surface,
                         pointHoverBorderWidth: 2,
                         spanGaps: true,
                     }],
