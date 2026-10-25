@@ -87,7 +87,7 @@ onBeforeUnmount(() => {
   <div
     class="z-10 shrink-0 bg-[var(--color-surface-overlay)]/96 backdrop-blur-xl border-t border-[var(--color-border-subtle)]"
     :style="{
-      boxShadow: '0 -8px 24px rgba(0,0,0,0.4)',
+      boxShadow: '0 -8px 24px rgba(0,0,0,0.15)',
       paddingBottom: 'max(10px, env(safe-area-inset-bottom, 10px))',
     }"
   >

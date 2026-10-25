@@ -308,7 +308,7 @@ const statusMeta = computed(() => {
                         <AppIcon icon="zoom-in" iconClass="w-4 h-4" />
                     </button>
                     <span class="w-px h-6 bg-white/10 mx-1"></span>
-                    <button type="button" class="px-3 py-1.5 rounded-full bg-white text-black text-xs font-bold hover:bg-white/90 disabled:opacity-50" :disabled="scale===1 && translate.x===0 && translate.y===0" @click="resetZoom">Reset</button>
+                    <button type="button" class="px-3 py-1.5 rounded-full bg-[var(--color-surface-raised)] text-[var(--color-text-primary)] text-xs font-bold hover:bg-white/90 disabled:opacity-50" :disabled="scale===1 && translate.x===0 && translate.y===0" @click="resetZoom">Reset</button>
                 </div>
             </div>
         </Transition>

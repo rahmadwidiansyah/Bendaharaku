@@ -16,6 +16,11 @@ const props = defineProps({
     component: { type: Object, required: true },
 });
 
+// Warna canvas light-aware (tema aplikasi via html.light)
+const isLight = () => document.documentElement.classList.contains('light');
+const chartTickColor = () => (isLight() ? '#64748B' : '#9ca3af');
+const chartGridColor = () => (isLight() ? 'rgba(15, 23, 42, 0.07)' : 'rgba(255,255,255,0.06)');
+
 const canvasRef = ref(null);
 let chartInstance = null;
 const renderError = ref('');
@@ -147,14 +152,14 @@ function render() {
                 scales: {
                     x: {
                         grid: { display: false },
-                        ticks: { color: '#9ca3af', font: { size: 10, weight: '600' } },
+                        ticks: { color: chartTickColor(), font: { size: 10, weight: '600' } },
                         border: { display: false },
                     },
                     y: {
                         beginAtZero: true,
                         max: yMax,
-                        grid: { color: 'rgba(255,255,255,0.06)' },
-                        ticks: { color: '#6b7280', font: { size: 10 }, callback: (v) => formatCompact(v) },
+                        grid: { color: chartGridColor() },
+                        ticks: { color: chartTickColor(), font: { size: 10 }, callback: (v) => formatCompact(v) },
                         border: { display: false },
                     },
                 },

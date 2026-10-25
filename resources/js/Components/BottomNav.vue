@@ -67,7 +67,7 @@ defineEmits(['toggle'])
             'fixed z-50 transition-all duration-300',
             isDesktopLayout
                 ? 'lg:bottom-auto lg:top-0 lg:left-0 lg:translate-x-0 lg:h-screen lg:border-t-0 lg:border-r lg:rounded-none lg:bg-[var(--color-surface-overlay)] lg:flex lg:flex-col lg:justify-start'
-                : 'bottom-[calc(0.75rem+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] sm:max-w-lg md:max-w-2xl bg-[var(--color-surface-overlay)]/95 backdrop-blur-2xl border border-[var(--color-border-default)] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.85)]',
+                : 'bottom-[calc(0.75rem+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] sm:max-w-lg md:max-w-2xl bg-[var(--color-surface-overlay)]/95 backdrop-blur-2xl border border-[var(--color-border-default)] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.35)]',
             isDesktopLayout && isSidebarOpen ? 'lg:w-64' : (isDesktopLayout ? 'lg:w-20' : ''),
         ]"
         style="overflow: visible;"

@@ -38,7 +38,7 @@ const lastCrumb = computed<Breadcrumb | null>(() => {
     </Link>
 
     <template v-if="lastCrumb">
-      <span class="text-gray-700 text-xs">/</span>
+      <span class="text-gray-500 text-xs">/</span>
       <Link
         v-if="lastCrumb.href"
         :href="lastCrumb.href"

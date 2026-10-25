@@ -140,7 +140,7 @@ const isFiltered = computed(() => {
                         id="date-start"
                         type="date"
                         v-model="form.start_date"
-                        class="w-full bg-gradient-to-br from-gray-900 to-gray-800 border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-xl p-3 text-2xs focus:outline-none focus:ring-1 focus:border-purple-500 focus:ring-purple-500 transition-all [color-scheme:dark]"
+                        class="w-full bg-gradient-to-br from-gray-900 to-gray-800 border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-xl p-3 text-2xs focus:outline-none focus:ring-1 focus:border-purple-500 focus:ring-purple-500 transition-all"
                     />
                 </div>
                 <div class="space-y-1">
@@ -156,7 +156,7 @@ const isFiltered = computed(() => {
                         v-model="form.end_date"
                         :min="form.start_date"
                         :class="[
-                            'w-full bg-gradient-to-br from-gray-900 to-gray-800 border text-[var(--color-text-primary)] rounded-xl p-3 text-2xs focus:outline-none focus:ring-1 transition-all [color-scheme:dark]',
+                            'w-full bg-gradient-to-br from-gray-900 to-gray-800 border text-[var(--color-text-primary)] rounded-xl p-3 text-2xs focus:outline-none focus:ring-1 transition-all',
                             isInvalidRange
                                 ? 'border-red-500/60 focus:border-red-500 focus:ring-red-500'
                                 : 'border-[var(--color-border-default)] focus:border-purple-500 focus:ring-purple-500',

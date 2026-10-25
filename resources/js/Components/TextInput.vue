@@ -133,8 +133,6 @@ const baseInputClasses = computed(() => [
     'disabled:opacity-50 disabled:cursor-not-allowed',
     // Padding — date pakai py lebih kecil karena browser menambah native chrome
     isDate.value ? 'px-3 sm:px-4 py-2.5 sm:py-3 text-sm' : 'py-3 sm:py-4 px-3 sm:px-4 text-sm',
-    // Date input butuh color-scheme dark agar calendar picker dark
-    isDate.value ? '[color-scheme:dark]' : '',
     // Padding kiri/kanan tambahan jika ada icon (pakai !important agar tidak tertimpa p-3)
     props.$slots?.['icon-left'] ? '!pl-11' : '',
     props.$slots?.['icon-right'] ? '!pr-11' : '',
@@ -210,7 +208,7 @@ const hasIconRight = computed(() => false)
                     'focus:outline-none focus:ring-1',
                     'placeholder:text-[var(--color-text-muted)]',
                     'disabled:opacity-50 disabled:cursor-not-allowed',
-                    type === 'date' ? 'px-3 sm:px-4 py-2.5 sm:py-3 text-sm [color-scheme:dark]' : 'py-3 sm:py-4 px-3 sm:px-4 text-sm',
+                    type === 'date' ? 'px-3 sm:px-4 py-2.5 sm:py-3 text-sm' : 'py-3 sm:py-4 px-3 sm:px-4 text-sm',
                     $slots['icon-left'] ? '!pl-11' : '',
                     $slots['icon-right'] ? '!pr-11' : '',
                     error

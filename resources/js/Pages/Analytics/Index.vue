@@ -430,6 +430,13 @@ const renderBarChart = async (view) => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    // Warna canvas light-aware (tema aplikasi, bukan OS)
+    const isLight = document.documentElement.classList.contains('light');
+    const tickColor = isLight ? '#64748B' : '#9CA3AF';
+    const gridColor = isLight ? 'rgba(15, 23, 42, 0.07)' : 'rgba(255,255,255,0.05)';
+    const labelColor = isLight ? '#475569' : '#D1D5DB';
+    const labelShadow = isLight ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)';
+
     // Hitung Y scale awal dari 4 hari/periode terbaru (yang visible saat pertama load)
     const last4Idx = labels.map((_, i) => i).slice(-4);
     const initialVals = last4Idx.flatMap(i => [incomes[i] || 0, expenses[i] || 0, debts[i] || 0, receivables[i] || 0]).filter(v => v > 0);
@@ -455,7 +462,7 @@ const renderBarChart = async (view) => {
             scales: {
                 x: {
                     grid: { display: false },
-                    ticks: { color: '#9CA3AF', font: { size: 12, weight: 'bold' }, maxRotation: 0 }
+                    ticks: { color: tickColor, font: { size: 12, weight: 'bold' }, maxRotation: 0 }
                 },
                 y: {
                     display: true,
@@ -464,7 +471,7 @@ const renderBarChart = async (view) => {
                     // Grid lines sebagai garis bantu di background, axis & ticks tetap tersembunyi
                     grid: {
                         display: true,
-                        color: 'rgba(255,255,255,0.05)',
+                        color: gridColor,
                         drawBorder: false,
                     },
                     border: { display: false, dash: [4, 4] },
@@ -481,9 +488,9 @@ const renderBarChart = async (view) => {
                 const placedLabels = [];
                 
                 ctx2.font = `bold ${fontSize}px sans-serif`;
-                ctx2.fillStyle = '#D1D5DB';
+                ctx2.fillStyle = labelColor;
                 ctx2.textAlign = 'center';
-                ctx2.shadowColor = 'rgba(0, 0, 0, 0.5)';
+                ctx2.shadowColor = labelShadow;
                 ctx2.shadowBlur = 2;
                 ctx2.shadowOffsetY = 1;
                 

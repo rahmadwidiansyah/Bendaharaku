@@ -535,6 +535,13 @@
     html {
         background-color: var(--color-surface-overlay);
         overscroll-behavior: none;
+        /* Dark adalah default; .light menimpa agar native widgets
+           (date picker, scrollbar, autofill) mengikuti tema aplikasi */
+        color-scheme: dark;
+    }
+
+    .light {
+        color-scheme: light;
     }
 
     /* Autofill WebKit — adapt to current theme */

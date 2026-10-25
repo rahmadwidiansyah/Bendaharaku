@@ -175,28 +175,30 @@ const hasUserImage = computed(() => userImageComponents.value.length > 0)
 </template>
 
 <style scoped>
-/* Override warna teks markdown di dalam bubble user agar tetap putih */
+/* Warna teks di dalam bubble user mengikuti token tema: di dark bubble
+   bergradient brand gelap (teks terang), di light bubble wash pucat
+   (teks gelap) — tanpa !important yang memaksa putih di kedua mode. */
 .user-bubble :deep(.markdown-body),
 .user-bubble :deep(.markdown-body p),
 .user-bubble :deep(.markdown-body li),
 .user-bubble :deep(.markdown-body span),
 .user-bubble :deep(.markdown-inline) {
-    color: rgba(255, 255, 255, 0.95) !important;
+    color: var(--color-text-primary);
 }
 .user-bubble :deep(.markdown-body strong),
 .user-bubble :deep(.markdown-body b) {
-    color: #ffffff !important;
+    color: var(--color-text-primary);
 }
 .user-bubble :deep(.markdown-body em) {
-    color: rgba(255, 255, 255, 0.85) !important;
+    color: color-mix(in srgb, var(--color-text-primary) 80%, transparent);
 }
 .user-bubble :deep(.markdown-body a) {
-    color: rgba(255, 255, 255, 0.9);
-    text-decoration-color: rgba(255, 255, 255, 0.5);
+    color: var(--color-brand-tint);
+    text-decoration-color: color-mix(in srgb, var(--color-brand-tint) 55%, transparent);
 }
 .user-bubble :deep(.markdown-body code) {
-    background: rgba(255, 255, 255, 0.15);
-    color: #ffffff;
-    border-color: rgba(255, 255, 255, 0.2);
+    background: color-mix(in srgb, var(--color-text-primary) 12%, transparent);
+    color: var(--color-text-primary);
+    border-color: color-mix(in srgb, var(--color-text-primary) 20%, transparent);
 }
 </style>
