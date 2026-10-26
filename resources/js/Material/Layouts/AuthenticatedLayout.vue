@@ -359,6 +359,7 @@ const showSkeleton = computed(() =>
                 type="button"
                 class="m3-chat-bubble"
                 :aria-label="$t('nav.chat')"
+                :title="$t('nav.chat')"
                 @click="chatSheetOpen = true"
             >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
