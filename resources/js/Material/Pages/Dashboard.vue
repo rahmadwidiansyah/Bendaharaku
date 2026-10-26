@@ -492,6 +492,23 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
     }
 }
 
+/* ── Kepadatan desktop ringkas (1366x768 & laptop layar kompak) ── */
+@media (min-width: 1024px) and (max-width: 1400px), (min-width: 1024px) and (max-height: 820px) {
+    .m3-dash--desktop {
+        gap: var(--m3-space-5);
+        padding: var(--m3-space-4);
+    }
+
+    .m3-dash--desktop .m3-dash__assets {
+        width: 35%;
+        top: calc(var(--m3-size-appbar) + var(--m3-space-2));
+    }
+
+    .m3-dash--desktop .m3-dash__history {
+        width: 65%;
+    }
+}
+
 .m3-dash__assets {
     display: flex;
     flex-direction: column;

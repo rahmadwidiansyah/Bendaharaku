@@ -18,6 +18,8 @@ const props = defineProps({
     attachmentPreview: { type: String,  default: null },
     attachmentName:    { type: String,  default: '' },
     isUploading:       { type: Boolean, default: false },
+    /** Side sheet non-modal: jangan rebut ketikan dari halaman di belakangnya. */
+    enableGlobalShortcut: { type: Boolean, default: true },
 })
 
 const emit = defineEmits(['send', 'openCommands', 'openUpload', 'removeAttachment'])
@@ -78,6 +80,7 @@ function isOverlayOpen() {
 }
 
 function handleGlobalKeydown(e) {
+    if (!props.enableGlobalShortcut) return
     if (e.ctrlKey || e.altKey || e.metaKey) return
     if (e.key.length !== 1) return
     // Jangan rebut keyboard saat sheet/modal M3 terbuka (perbaikan UX)

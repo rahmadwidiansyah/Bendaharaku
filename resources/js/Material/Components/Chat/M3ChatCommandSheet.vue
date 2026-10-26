@@ -6,6 +6,7 @@
  */
 import { useI18n } from 'vue-i18n'
 import M3Modal from '@/Material/Components/M3Modal.vue'
+import M3CircularProgress from '@/Material/Components/M3CircularProgress.vue'
 import AppIcon from '@/Components/AppIcon.vue'
 import { toLucide } from '@/utils/chatIcons.js'
 
@@ -16,6 +17,7 @@ defineProps({
     commandsByCategory: { type: Object, default: () => ({}) },
     categories: { type: Array, default: () => [] },
     categoryLabels: { type: Object, default: () => ({}) },
+    isLoading: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['update:modelValue', 'select'])
@@ -47,30 +49,37 @@ function selectCommand(cmd) {
         </template>
 
         <div class="m3-cmd">
-            <section v-for="cat in categories" :key="cat" class="m3-cmd__group">
-                <h3 class="m3-cmd__group-label">{{ categoryLabels[cat] ?? cat }}</h3>
+            <div v-if="categories.length === 0" class="m3-cmd__state" role="status">
+                <M3CircularProgress v-if="isLoading" size="sm" />
+                <p>{{ isLoading ? t('common.loading') : t('chat.commandsEmpty') }}</p>
+            </div>
 
-                <button
-                    v-for="cmd in commandsByCategory[cat]"
-                    :key="cmd.command"
-                    type="button"
-                    class="m3-cmd__row"
-                    @click="selectCommand(cmd)"
-                >
-                    <span class="m3-cmd__icon" aria-hidden="true">
-                        <AppIcon :icon="toLucide(cmd.icon)" fallback="circle-help" />
-                    </span>
+            <template v-else>
+                <section v-for="cat in categories" :key="cat" class="m3-cmd__group">
+                    <h3 class="m3-cmd__group-label">{{ categoryLabels[cat] ?? cat }}</h3>
 
-                    <span class="m3-cmd__body">
-                        <span class="m3-cmd__name">{{ cmd.command }}</span>
-                        <span v-if="cmd.description" class="m3-cmd__hint">{{ cmd.description }}</span>
-                    </span>
+                    <button
+                        v-for="cmd in commandsByCategory[cat]"
+                        :key="cmd.command"
+                        type="button"
+                        class="m3-cmd__row"
+                        @click="selectCommand(cmd)"
+                    >
+                        <span class="m3-cmd__icon" aria-hidden="true">
+                            <AppIcon :icon="toLucide(cmd.icon)" fallback="circle-help" />
+                        </span>
 
-                    <svg class="m3-cmd__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
-                </button>
-            </section>
+                        <span class="m3-cmd__body">
+                            <span class="m3-cmd__name">{{ cmd.command }}</span>
+                            <span v-if="cmd.description" class="m3-cmd__hint">{{ cmd.description }}</span>
+                        </span>
+
+                        <svg class="m3-cmd__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                </section>
+            </template>
         </div>
     </M3Modal>
 </template>
@@ -98,6 +107,20 @@ function selectCommand(cmd) {
     display: flex;
     flex-direction: column;
     gap: var(--m3-space-4);
+}
+
+.m3-cmd__state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--m3-space-3);
+    min-height: 10rem;
+    padding: var(--m3-space-6) var(--m3-space-4);
+    color: var(--m3-color-on-surface-variant);
+    font-size: var(--m3-type-body-medium-size);
+    line-height: var(--m3-type-body-medium-line-height);
+    text-align: center;
 }
 
 .m3-cmd__group {

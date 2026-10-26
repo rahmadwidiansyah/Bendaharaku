@@ -36,7 +36,7 @@ import { initTheme } from '@/Composables/useTheme'
 import { syncUiThemeFromProps } from '@/Composables/useUiTheme.js'
 import { usePushNotifications } from '@/Composables/usePushNotifications'
 import { usePage, router, Link } from '@inertiajs/vue3'
-import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { initM3ColorScheme, syncM3ColorSchemeFromProps } from '@/Composables/useM3ColorScheme.js'
 import { consumeStaleForRoute } from '@/utils/stale.js'
@@ -84,6 +84,13 @@ const isChatRoute = computed(() => {
 const showChatBubble = computed(() => isDesktop.value && !isChatRoute.value)
 const { isDesktopLayout } = useLayoutPreference()
 const { isLoading, currentSkeletonM3, pendingUrl } = usePageLoading()
+
+// ── App bar scroll detection: surface default → surface-container on scroll ──
+const isScrolled = ref(false)
+function handleScroll() {
+    isScrolled.value = window.scrollY > 4
+}
+
 
 // ── Theme init: verifikasi (kelas sudah dipasang pre-paint oleh Blade) ──
 const page = usePage()
@@ -158,6 +165,8 @@ onMounted(() => {
     window.addEventListener('bendaharaku:stale', handleGlobalStaleEvent)
     window.addEventListener('dashboard:stale', handleGlobalStaleEvent)
     window.addEventListener('storage', handleGlobalStorage)
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    handleScroll() // init on mount
     setTimeout(() => {
         const r = currentRouteName()
         if (r && !r.startsWith('chat.') && consumeStaleForRoute(r)) {
@@ -172,7 +181,9 @@ onUnmounted(() => {
     window.removeEventListener('bendaharaku:stale', handleGlobalStaleEvent)
     window.removeEventListener('dashboard:stale', handleGlobalStaleEvent)
     window.removeEventListener('storage', handleGlobalStorage)
+    window.removeEventListener('scroll', handleScroll)
 })
+
 
 // ── Active detection (logika identik BottomNav Default) ──
 const isActive = (patterns) => {
@@ -227,11 +238,12 @@ const showSkeleton = computed(() =>
             :aria-label="$t('common.loading')"
         />
 
-        <!-- ── Top app bar (small, 4rem) — desktop only; mobile memakai judul in-content ── -->
+        <!-- ── Top app bar (small, 64dp) — desktop only; mobile memakai judul in-content ── -->
         <header
             v-if="isDesktop && !hideAppbar"
             class="m3-appbar"
             :class="{
+                'm3-appbar--scrolled': isScrolled,
                 'm3-appbar--rail': isDesktop && isRailOpen,
                 'm3-appbar--rail-collapsed': isDesktop && !isRailOpen,
             }"
@@ -246,11 +258,6 @@ const showSkeleton = computed(() =>
                 <p v-if="userName" class="m3-appbar__subtitle">{{ userName }}</p>
             </div>
             <div class="m3-appbar__actions">
-                <Link :href="route('chat.index')" class="m3-appbar__icon-btn" :aria-label="$t('nav.chat')">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 4v-4z" />
-                    </svg>
-                </Link>
                 <Link :href="route('search.page')" class="m3-appbar__icon-btn" :aria-label="$t('nav.search')">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
@@ -263,69 +270,142 @@ const showSkeleton = computed(() =>
             </div>
         </header>
 
+
         <!-- ── Desktop navigation rail ── -->
         <nav v-if="isDesktop && !hideNav" class="m3-rail" :class="isRailOpen ? 'm3-rail--open' : ''" :aria-label="$t('nav.mainNav')" role="navigation">
-            <Link :href="route('transactions.create')" class="m3-fab" :aria-label="$t('nav.record')">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true">
+            <!-- Extended FAB on rail open / Standard FAB on collapsed -->
+            <Link
+                :href="route('transactions.create')"
+                class="m3-fab"
+                :class="{ 'm3-fab--extended': isRailOpen }"
+                :aria-label="$t('nav.record')"
+                :title="$t('nav.record')"
+            >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true" class="m3-fab__icon">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>
+                <span v-if="isRailOpen" class="m3-fab__label">{{ $t('nav.record') }}</span>
             </Link>
+
             <div class="m3-rail__items">
-                <Link :href="route('dashboard')" class="m3-rail__item" :class="{ 'm3-rail__item--active': isActive(['dashboard']) }" :aria-current="isActive(['dashboard']) ? 'page' : undefined">
+                <!-- Dashboard -->
+                <Link :href="route('dashboard')" class="m3-rail__item" :class="{ 'm3-rail__item--active': isActive(['dashboard']) }" :aria-current="isActive(['dashboard']) ? 'page' : undefined" :title="$t('nav.home')">
                     <span class="m3-rail__indicator">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                        <svg v-if="isActive(['dashboard'])" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M11.47 2.47a.75.75 0 011.06 0l8.25 8.25a.75.75 0 01-1.06 1.06L19 11.06V20.25a.75.75 0 01-.75.75H14.25a.75.75 0 01-.75-.75V15a.75.75 0 00-.75-.75h-1.5a.75.75 0 00-.75.75v5.25a.75.75 0 01-.75.75H5.75a.75.75 0 01-.75-.75V11.06l-.72.72a.75.75 0 01-1.06-1.06l8.25-8.25z" clip-rule="evenodd" />
+                        </svg>
+                        <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
                         </svg>
                     </span>
                     <span v-if="isRailOpen" class="m3-rail__label">{{ $t('nav.home') }}</span>
                 </Link>
-                <Link :href="route('budgeting.index')" class="m3-rail__item" :class="{ 'm3-rail__item--active': isActive(['budgeting.*']) }" :aria-current="isActive(['budgeting.*']) ? 'page' : undefined">
+
+                <!-- Budgeting -->
+                <Link :href="route('budgeting.index')" class="m3-rail__item" :class="{ 'm3-rail__item--active': isActive(['budgeting.*']) }" :aria-current="isActive(['budgeting.*']) ? 'page' : undefined" :title="$t('nav.budgeting')">
                     <span class="m3-rail__indicator">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                        <svg v-if="isActive(['budgeting.*'])" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path d="M4.5 3.75a3 3 0 00-3 3v.75h21v-.75a3 3 0 00-3-3h-15z" />
+                            <path fill-rule="evenodd" d="M22.5 9.75h-21v7.5a3 3 0 003 3h15a3 3 0 003-3v-7.5zm-18 3.75a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75H5.25a.75.75 0 01-.75-.75v-.008zm10.5 2.25a3.75 3.75 0 100-7.5 3.75 3.75 0 000 7.5z" clip-rule="evenodd" />
+                        </svg>
+                        <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
                         </svg>
                     </span>
                     <span v-if="isRailOpen" class="m3-rail__label">{{ $t('nav.budgeting') }}</span>
                 </Link>
-                <Link :href="route('analytics.index')" class="m3-rail__item" :class="{ 'm3-rail__item--active': isActive(['analytics.*']) }" :aria-current="isActive(['analytics.*']) ? 'page' : undefined">
+
+                <!-- Analytics -->
+                <Link :href="route('analytics.index')" class="m3-rail__item" :class="{ 'm3-rail__item--active': isActive(['analytics.*']) }" :aria-current="isActive(['analytics.*']) ? 'page' : undefined" :title="$t('nav.analytics')">
                     <span class="m3-rail__indicator">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                        <svg v-if="isActive(['analytics.*'])" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path d="M13.5 2.5a.75.75 0 01.75.75 8.75 8.75 0 018.5 8.5.75.75 0 01-.75.75H13.5a.75.75 0 01-.75-.75V2.5z" />
+                            <path d="M11.25 3.54a9.75 9.75 0 109.21 9.21.75.75 0 00-.75-.75h-7.71a.75.75 0 01-.75-.75V3.54z" />
+                        </svg>
+                        <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.003 9.003 0 003.055 11H11V3.055zM20.945 13H13v7.945a9.003 9.003 0 007.945-7.945z" />
                         </svg>
                     </span>
                     <span v-if="isRailOpen" class="m3-rail__label">{{ $t('nav.analytics') }}</span>
                 </Link>
-                <Link :href="route('categories.index')" class="m3-rail__item" :class="{ 'm3-rail__item--active': isActive(['categories.*']) }" :aria-current="isActive(['categories.*']) ? 'page' : undefined">
+
+                <!-- Categories -->
+                <Link :href="route('categories.index')" class="m3-rail__item" :class="{ 'm3-rail__item--active': isActive(['categories.*']) }" :aria-current="isActive(['categories.*']) ? 'page' : undefined" :title="$t('nav.label')">
                     <span class="m3-rail__indicator">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                        <svg v-if="isActive(['categories.*'])" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M3 6a3 3 0 013-3h2.25a3 3 0 013 3v2.25a3 3 0 01-3 3H6a3 3 0 01-3-3V6zm9.75 0a3 3 0 013-3H18a3 3 0 013 3v2.25a3 3 0 01-3 3h-2.25a3 3 0 01-3-3V6zM3 15.75a3 3 0 013-3h2.25a3 3 0 013 3V18a3 3 0 01-3 3H6a3 3 0 01-3-3v-2.25zm9.75 0a3 3 0 013-3H18a3 3 0 013 3V18a3 3 0 01-3 3h-2.25a3 3 0 01-3-3v-2.25z" clip-rule="evenodd" />
+                        </svg>
+                        <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
                         </svg>
                     </span>
                     <span v-if="isRailOpen" class="m3-rail__label">{{ $t('nav.label') }}</span>
                 </Link>
-                <Link :href="route('loans.index', { type: 'debt' })" class="m3-rail__item" :class="{ 'm3-rail__item--active': isActive(['loans.*']) }" :aria-current="isActive(['loans.*']) ? 'page' : undefined">
+
+                <!-- Loans -->
+                <Link :href="route('loans.index', { type: 'debt' })" class="m3-rail__item" :class="{ 'm3-rail__item--active': isActive(['loans.*']) }" :aria-current="isActive(['loans.*']) ? 'page' : undefined" :title="$t('nav.loan')">
                     <span class="m3-rail__indicator">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75" />
+                        <svg v-if="isActive(['loans.*'])" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M1.5 6.375c0-1.036.84-1.875 1.875-1.875h17.25c1.035 0 1.875.84 1.875 1.875v11.25c0 1.035-.84 1.875-1.875 1.875H3.375A1.875 1.875 0 011.5 17.625V6.375zm1.5 1.5v7.875c0 .207.168.375.375.375h17.25a.375.375 0 00.375-.375V7.875H3zm0-1.5h18v-.75a.375.375 0 00-.375-.375H3.375a.375.375 0 00-.375.375v.75z" clip-rule="evenodd" />
+                            <path d="M4.5 12a.75.75 0 000 1.5h3a.75.75 0 000-1.5h-3z" />
+                        </svg>
+                        <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
                         </svg>
                     </span>
                     <span v-if="isRailOpen" class="m3-rail__label">{{ $t('nav.loan') }}</span>
                 </Link>
-                <Link :href="route('settings.index')" class="m3-rail__item" :class="{ 'm3-rail__item--active': isActive(['settings.*']) }" :aria-current="isActive(['settings.*']) ? 'page' : undefined">
+
+                <!-- Chat (primary nav destination) -->
+                <Link :href="route('chat.index')" class="m3-rail__item" :class="{ 'm3-rail__item--active': isActive(['chat.*']) }" :aria-current="isActive(['chat.*']) ? 'page' : undefined" :title="$t('nav.chat')">
                     <span class="m3-rail__indicator">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                        <svg v-if="isActive(['chat.*'])" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M4.848 2.771A49.144 49.144 0 0112 2.25c2.43 0 4.817.177 7.152.521 1.944.286 3.348 1.986 3.348 3.951v7.556c0 1.965-1.404 3.665-3.348 3.951-1.156.17-2.338.29-3.532.357-.226.013-.424.126-.547.314l-2.61 3.916a.75.75 0 01-1.25 0l-2.61-3.916a.75.75 0 00-.547-.314 47.95 47.95 0 01-3.532-.357C3.404 18.022 2 16.322 2 14.357V6.722c0-1.965 1.404-3.665 3.348-3.951zM8 9a1 1 0 100 2 1 1 0 000-2zm4 0a1 1 0 100 2 1 1 0 000-2zm5 1a1 1 0 11-2 0 1 1 0 012 0z" clip-rule="evenodd" />
+                        </svg>
+                        <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 4v-4z" />
+                        </svg>
+                    </span>
+                    <span v-if="isRailOpen" class="m3-rail__label">{{ $t('nav.chat') }}</span>
+                </Link>
+
+                <!-- Settings -->
+                <Link :href="route('settings.index')" class="m3-rail__item" :class="{ 'm3-rail__item--active': isActive(['settings.*']) }" :aria-current="isActive(['settings.*']) ? 'page' : undefined" :title="$t('nav.settings')">
+                    <span class="m3-rail__indicator">
+                        <svg v-if="isActive(['settings.*'])" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M11.078 2.25c-.917 0-1.699.663-1.85 1.567L9.05 4.889c-.02.12-.115.26-.297.348a7.493 7.493 0 00-.986.57c-.166.115-.334.126-.45.083L6.08 5.41a1.875 1.875 0 00-2.282.818l-1.5 2.6a1.875 1.875 0 00.433 2.382l1.073.879c.12.097.16.28.14.444a7.734 7.734 0 000 1.144c.02.165-.02.348-.14.444l-1.073.88a1.875 1.875 0 00-.433 2.38l1.5 2.599c.6 1.04 1.884 1.472 2.282.819l1.237-.48c.116-.045.284-.033.45.082.312.214.641.405.985.57.182.088.277.228.297.35l.178 1.071c.151.904.933 1.567 1.85 1.567h3c.917 0 1.699-.663 1.85-1.567l.178-1.072c.02-.12.114-.26.297-.349.344-.165.673-.356.985-.57.167-.114.335-.125.45-.082l1.237.48a1.875 1.875 0 002.282-.819l1.5-2.6a1.875 1.875 0 00-.433-2.381l-1.074-.88c-.12-.096-.16-.279-.14-.444a7.514 7.514 0 000-1.144c-.02-.165.02-.347.14-.444l1.073-.88a1.875 1.875 0 00.434-2.38l-1.5-2.6a1.875 1.875 0 00-2.282-.818l-1.237.478c-.116.044-.284.033-.45-.082a7.49 7.49 0 00-.985-.57c-.182-.088-.277-.229-.297-.35l-.178-1.07a1.875 1.875 0 00-1.85-1.568h-3zM12 15.75a3.75 3.75 0 100-7.5 3.75 3.75 0 000 7.5z" clip-rule="evenodd" />
+                        </svg>
+                        <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                     </span>
                     <span v-if="isRailOpen" class="m3-rail__label">{{ $t('nav.settings') }}</span>
                 </Link>
             </div>
-            <button type="button" class="m3-rail__toggle" :aria-expanded="isRailOpen" :aria-label="$t('common.close')" @click="toggleRail">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+
+            <!-- Toggle rail button (smooth spatial rotation) -->
+            <button
+                type="button"
+                class="m3-rail__toggle"
+                :aria-expanded="isRailOpen"
+                :aria-label="isRailOpen ? $t('common.close') : $t('nav.mainNav')"
+                :title="isRailOpen ? $t('common.close') : $t('nav.mainNav')"
+                @click="toggleRail"
+            >
+                <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                    :class="['m3-rail__toggle-icon', { 'm3-rail__toggle-icon--open': isRailOpen }]"
+                >
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                 </svg>
             </button>
         </nav>
+
 
         <!-- ── Content ── -->
         <div class="m3-content" :class="isDesktop && !hideNav ? (isRailOpen ? 'm3-content--rail-open' : 'm3-content--rail') : ''">
@@ -374,7 +454,10 @@ const showSkeleton = computed(() =>
         <nav v-if="!isDesktop && !hideNav" class="m3-navbar" :aria-label="$t('nav.mainNav')" role="navigation">
             <Link :href="route('dashboard')" class="m3-navbar__item" :class="{ 'm3-navbar__item--active': isActive(['dashboard']) }" :aria-current="isActive(['dashboard']) ? 'page' : undefined">
                 <span class="m3-navbar__indicator">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                    <svg v-if="isActive(['dashboard'])" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M11.47 2.47a.75.75 0 011.06 0l8.25 8.25a.75.75 0 01-1.06 1.06L19 11.06V20.25a.75.75 0 01-.75.75H14.25a.75.75 0 01-.75-.75V15a.75.75 0 00-.75-.75h-1.5a.75.75 0 00-.75.75v5.25a.75.75 0 01-.75.75H5.75a.75.75 0 01-.75-.75V11.06l-.72.72a.75.75 0 01-1.06-1.06l8.25-8.25z" clip-rule="evenodd" />
+                    </svg>
+                    <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
                     </svg>
                 </span>
@@ -382,15 +465,19 @@ const showSkeleton = computed(() =>
             </Link>
             <Link :href="route('budgeting.index')" class="m3-navbar__item" :class="{ 'm3-navbar__item--active': isActive(['budgeting.*']) }" :aria-current="isActive(['budgeting.*']) ? 'page' : undefined">
                 <span class="m3-navbar__indicator">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                    <svg v-if="isActive(['budgeting.*'])" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M4.5 3.75a3 3 0 00-3 3v.75h21v-.75a3 3 0 00-3-3h-15z" />
+                        <path fill-rule="evenodd" d="M22.5 9.75h-21v7.5a3 3 0 003 3h15a3 3 0 003-3v-7.5zm-18 3.75a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75H5.25a.75.75 0 01-.75-.75v-.008zm10.5 2.25a3.75 3.75 0 100-7.5 3.75 3.75 0 000 7.5z" clip-rule="evenodd" />
+                    </svg>
+                    <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
                     </svg>
                 </span>
                 <span class="m3-navbar__label">{{ $t('nav.budgeting') }}</span>
             </Link>
-            <Link :href="route('transactions.create')" class="m3-navbar__item">
+            <Link :href="route('transactions.create')" class="m3-navbar__item" :class="{ 'm3-navbar__item--active': isActive(['transactions.create']) }" :aria-current="isActive(['transactions.create']) ? 'page' : undefined">
                 <span class="m3-navbar__indicator">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" :stroke-width="isActive(['transactions.create']) ? 2.4 : 1.6" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                     </svg>
                 </span>
@@ -398,7 +485,11 @@ const showSkeleton = computed(() =>
             </Link>
             <Link :href="route('analytics.index')" class="m3-navbar__item" :class="{ 'm3-navbar__item--active': isActive(['analytics.*']) }" :aria-current="isActive(['analytics.*']) ? 'page' : undefined">
                 <span class="m3-navbar__indicator">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                    <svg v-if="isActive(['analytics.*'])" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M13.5 2.5a.75.75 0 01.75.75 8.75 8.75 0 018.5 8.5.75.75 0 01-.75.75H13.5a.75.75 0 01-.75-.75V2.5z" />
+                        <path d="M11.25 3.54a9.75 9.75 0 109.21 9.21.75.75 0 00-.75-.75h-7.71a.75.75 0 01-.75-.75V3.54z" />
+                    </svg>
+                    <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.003 9.003 0 003.055 11H11V3.055zM20.945 13H13v7.945a9.003 9.003 0 007.945-7.945z" />
                     </svg>
                 </span>
@@ -464,11 +555,19 @@ const showSkeleton = computed(() =>
     min-height: var(--m3-size-appbar);
     height: var(--m3-size-appbar);
     padding: var(--m3-space-2) var(--m3-space-4);
-    background: var(--m3-color-surface-container);
+    background: var(--m3-color-surface);
     color: var(--m3-color-on-surface);
+    border-bottom: 1px solid transparent;
     transition:
         padding-left var(--m3-motion-default-spatial-duration) var(--m3-motion-default-spatial),
-        padding-right var(--m3-motion-default-spatial-duration) var(--m3-motion-default-spatial);
+        padding-right var(--m3-motion-default-spatial-duration) var(--m3-motion-default-spatial),
+        background-color var(--m3-motion-default-effects-duration) var(--m3-motion-default-effects),
+        border-color var(--m3-motion-default-effects-duration) var(--m3-motion-default-effects);
+}
+
+.m3-appbar--scrolled {
+    background: var(--m3-color-surface-container);
+    border-bottom-color: var(--m3-color-outline-variant);
 }
 
 .m3-appbar--rail {
@@ -526,8 +625,9 @@ const showSkeleton = computed(() =>
 }
 
 .m3-appbar__subtitle {
-    font-size: var(--m3-type-body-medium-size);
-    line-height: var(--m3-type-body-medium-line-height);
+    font-size: var(--m3-type-label-medium-size);
+    line-height: var(--m3-type-label-medium-line-height);
+    letter-spacing: var(--m3-type-label-medium-tracking);
     color: var(--m3-color-on-surface-variant);
     margin: 0;
     overflow: hidden;
@@ -618,8 +718,15 @@ const showSkeleton = computed(() =>
     align-items: center;
     gap: var(--m3-space-3);
     width: var(--m3-size-rail);
-    padding: var(--m3-space-4) 0;
+    padding-top: 2.75rem; /* 44dp TopSpace per NavigationRailCollapsed spec */
+    padding-bottom: var(--m3-space-4);
+    padding-left: var(--m3-space-2);
+    padding-right: var(--m3-space-2);
     background: var(--m3-color-surface-container);
+    border-right: 1px solid var(--m3-color-outline-variant);
+    transition:
+        width var(--m3-motion-default-spatial-duration) var(--m3-motion-default-spatial),
+        padding var(--m3-motion-default-spatial-duration) var(--m3-motion-default-spatial);
 }
 
 @media (min-width: 1024px) {
@@ -631,8 +738,8 @@ const showSkeleton = computed(() =>
 .m3-rail--open {
     width: var(--m3-size-rail-open);
     align-items: stretch;
-    padding-left: var(--m3-space-4);
-    padding-right: var(--m3-space-4);
+    padding-left: var(--m3-space-3);
+    padding-right: var(--m3-space-3);
 }
 
 .m3-rail__items {
@@ -651,6 +758,7 @@ const showSkeleton = computed(() =>
     border-radius: var(--m3-radius-full);
     color: var(--m3-color-on-surface-variant);
     text-decoration: none;
+    transition: color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
 }
 
 .m3-rail__item:focus-visible {
@@ -688,6 +796,7 @@ const showSkeleton = computed(() =>
     z-index: 1;
     width: var(--m3-size-icon);
     height: var(--m3-size-icon);
+    transition: color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
 }
 
 .m3-rail__indicator::after {
@@ -724,10 +833,15 @@ const showSkeleton = computed(() =>
 .m3-rail__label {
     font-size: var(--m3-type-label-large-size);
     font-weight: var(--m3-type-label-large-weight);
+    letter-spacing: var(--m3-type-label-large-tracking);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
+/* Active label: secondary role per M3 Expressive May 2025 update */
 .m3-rail__item--active .m3-rail__label {
-    color: var(--m3-color-on-surface);
+    color: var(--m3-color-secondary);
     font-weight: var(--m3-type-emphasized-label-large-weight);
 }
 
@@ -774,13 +888,19 @@ const showSkeleton = computed(() =>
     outline-offset: 2px;
 }
 
-.m3-rail__toggle svg {
+.m3-rail__toggle-icon {
     width: var(--m3-size-icon-xs);
     height: var(--m3-size-icon-xs);
+    transition: transform var(--m3-motion-default-spatial-duration) var(--m3-motion-default-spatial);
 }
 
-/* ── FAB (56dp, primary-container, 28dp shape) ── */
+.m3-rail__toggle-icon--open {
+    transform: rotate(180deg);
+}
+
+/* ── FAB (nested in rail: Level0 elevation per M3 spec; Extended FAB when open) ── */
 .m3-fab {
+    position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -789,22 +909,46 @@ const showSkeleton = computed(() =>
     border-radius: var(--m3-radius-xl);
     background: var(--m3-color-primary-container);
     color: var(--m3-color-on-primary-container);
-    box-shadow: var(--m3-elevation-3);
+    box-shadow: none; /* Level0 resting elevation when nested in rail per M3 spec */
     text-decoration: none;
-    transition: transform var(--m3-motion-fast-spatial-duration) var(--m3-motion-fast-spatial);
+    flex-shrink: 0;
+    overflow: hidden;
+    transition:
+        width var(--m3-motion-default-spatial-duration) var(--m3-motion-default-spatial),
+        padding var(--m3-motion-default-spatial-duration) var(--m3-motion-default-spatial),
+        box-shadow var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects),
+        transform var(--m3-motion-fast-spatial-duration) var(--m3-motion-fast-spatial);
 }
 
 .m3-fab:hover {
-    box-shadow: var(--m3-elevation-4);
+    box-shadow: var(--m3-elevation-1);
 }
 
 .m3-fab:active {
-    transform: scale(0.94);
+    transform: scale(0.96);
 }
 
-.m3-fab svg {
+.m3-fab--extended {
+    width: 100%;
+    padding: 0 var(--m3-space-4);
+    justify-content: flex-start;
+    gap: var(--m3-space-3);
+}
+
+.m3-fab__icon {
     width: var(--m3-size-icon);
     height: var(--m3-size-icon);
+    flex-shrink: 0;
+}
+
+.m3-fab__label {
+    font-size: var(--m3-type-label-large-size);
+    line-height: var(--m3-type-label-large-line-height);
+    font-weight: var(--m3-type-emphasized-label-large-weight);
+    letter-spacing: var(--m3-type-label-large-tracking);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* ── Content ── */
@@ -829,6 +973,18 @@ const showSkeleton = computed(() =>
 
     .m3-content--rail-open {
         padding-left: var(--m3-size-rail-open);
+    }
+}
+
+/* ── Kepadatan desktop ringkas (1366x768 & laptop layar kompak) ── */
+@media (min-width: 1024px) and (max-width: 1400px), (min-width: 1024px) and (max-height: 820px) {
+    .m3-content {
+        padding-bottom: var(--m3-space-5);
+        padding-right: var(--m3-space-3);
+    }
+
+    .m3-appbar {
+        padding: var(--m3-space-1-5) var(--m3-space-3);
     }
 }
 

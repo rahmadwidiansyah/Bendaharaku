@@ -171,7 +171,7 @@
 
     /* ── Component sizes (single source; layouts and pages reference these) ── */
     --m3-size-appbar: 4rem;
-    --m3-size-rail: 5rem;
+    --m3-size-rail: 6rem;
     --m3-size-rail-open: 16rem;
     --m3-size-navbar: 5rem;
     --m3-size-navbar-item: 4.25rem;
@@ -191,6 +191,8 @@
     --m3-size-logo: 2rem;
     --m3-size-content-max: 72rem;
     --m3-size-list-max: 40rem;
+    /* Standard side sheet: max-width 400dp per M3 containment spec. */
+    --m3-size-side-sheet: 25rem;
     --m3-size-dialog-sm: 24rem;
     --m3-size-dialog-md: 32rem;
     --m3-size-dialog-lg: 44rem;

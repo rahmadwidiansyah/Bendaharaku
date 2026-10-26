@@ -23,6 +23,18 @@ const pendingIds = ref([])
 const pendingSince = new Map()
 let timer = null
 
+/**
+ * Sheet chat desktop juga menampilkan balasan secara langsung. Saat surface
+ * ini aktif, poller global tidak boleh ikut polling/toast — poller lokal
+ * useChat yang menangani bubble.
+ */
+const chatSurfaceOpen = ref(false)
+
+/** Dipanggil M3ChatSheet saat dibuka/ditutup. */
+export function setChatSurfaceOpen(open) {
+    chatSurfaceOpen.value = !!open
+}
+
 /** Batas umur pesan pending di poller global — setelahnya dilepas (job sudah 5 menit) */
 const MAX_AGE_MS = 10 * 60 * 1000
 
@@ -51,8 +63,9 @@ export function useChatPending() {
     }
 
     async function pollOnce() {
-        // Saat di halaman /chat, biarkan useChat.js yang menangani
-        if (page.url.startsWith('/chat')) return
+        // Saat di halaman /chat atau side sheet terbuka, biarkan useChat.js
+        // (instance permukaan chat yang terlihat) yang menangani bubble.
+        if (page.url.startsWith('/chat') || chatSurfaceOpen.value) return
 
         for (const id of [...pendingIds.value]) {
             // Lewat batas umur → lepas dari tracking, jangan polling selamanya
