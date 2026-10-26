@@ -227,10 +227,19 @@ class WebChatController extends Controller
         $conversationId = $validated['conversation_id'] ?? null;
         $conversation = $conversationId
             ? Conversation::where('id', $conversationId)->where('user_id', $user->id)->first()
-            : Conversation::where('user_id', $user->id)->where('is_active', true)->latest()->first();
+            : Conversation::where('user_id', $user->id)
+                ->where('is_active', true)
+                ->whereNull('archived_at')
+                ->whereNull('deleted_at')
+                ->latest()
+                ->first();
 
         if (! $conversation) {
-            return response()->json(['messages' => [], 'has_more' => false]);
+            return response()->json([
+                'conversation_id' => null,
+                'messages' => [],
+                'has_more' => false,
+            ]);
         }
 
         $limit = $validated['limit'] ?? 30;
@@ -243,6 +252,7 @@ class WebChatController extends Controller
         }
 
         return response()->json([
+            'conversation_id' => $conversation->id,
             'messages' => $messages,
             'has_more' => $hasMore,
         ]);

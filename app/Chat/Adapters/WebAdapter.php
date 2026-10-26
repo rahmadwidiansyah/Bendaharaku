@@ -317,6 +317,7 @@ class WebAdapter
     public function getHistory(Conversation $conversation, int $limit = 30, ?int $before = null): array
     {
         $query = $conversation->messages()
+            ->reorder()
             ->orderByDesc('id')
             ->limit($limit);
 
