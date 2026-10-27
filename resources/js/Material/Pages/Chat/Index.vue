@@ -400,8 +400,8 @@ async function handleRetryEvidence(uuid) {
     .m3-chat {
         /* Inset kiri-kanan agar bubble tidak menempel tepi viewport
            (max-width content-max > area konten saat rail terbuka). */
-        width: calc(100% - 2 * var(--m3-space-4));
-        height: calc(100dvh - var(--m3-space-8));
+        width: calc(100% - 2 * var(--m3-density-page-inset, var(--m3-space-4)));
+        height: 100dvh;
     }
 }
 </style>

@@ -67,7 +67,13 @@ const props = defineProps({
 // State collapse rail dipertahankan antar navigasi (layout di-remount
 // per halaman Inertia) dan antar reload via localStorage.
 const RAIL_OPEN_KEY = 'bendaharaku:m3-rail-open'
-const isRailOpen = ref(localStorage.getItem(RAIL_OPEN_KEY) !== 'closed')
+const savedRailPreference = localStorage.getItem(RAIL_OPEN_KEY)
+const compactDesktop = window.matchMedia(
+    '(min-width: 1024px) and (max-width: 1400px), (min-width: 1024px) and (max-height: 820px)',
+).matches
+const isRailOpen = ref(
+    savedRailPreference === 'open' || (savedRailPreference === null && !compactDesktop),
+)
 
 const toggleRail = () => {
     isRailOpen.value = !isRailOpen.value
@@ -408,7 +414,13 @@ const showSkeleton = computed(() =>
 
 
         <!-- ── Content ── -->
-        <div class="m3-content" :class="isDesktop && !hideNav ? (isRailOpen ? 'm3-content--rail-open' : 'm3-content--rail') : ''">
+        <div
+            class="m3-content"
+            :class="[
+                isDesktop && !hideNav ? (isRailOpen ? 'm3-content--rail-open' : 'm3-content--rail') : '',
+                { 'm3-content--chat': isChatRoute },
+            ]"
+        >
             <main
                 id="main-content"
                 tabindex="-1"
@@ -761,6 +773,10 @@ const showSkeleton = computed(() =>
     transition: color var(--m3-motion-fast-effects-duration) var(--m3-motion-fast-effects);
 }
 
+.m3-rail:not(.m3-rail--open) .m3-rail__item {
+    justify-content: center;
+}
+
 .m3-rail__item:focus-visible {
     outline: 2px solid var(--m3-color-primary);
     outline-offset: 2px;
@@ -967,6 +983,10 @@ const showSkeleton = computed(() =>
         padding-right: var(--m3-space-4);
     }
 
+    .m3-content--chat {
+        padding-bottom: 0;
+    }
+
     .m3-content--rail {
         padding-left: var(--m3-size-rail);
     }
@@ -983,8 +1003,14 @@ const showSkeleton = computed(() =>
         padding-right: var(--m3-space-3);
     }
 
+    .m3-content--chat {
+        padding-bottom: 0;
+    }
+
     .m3-appbar {
-        padding: var(--m3-space-1-5) var(--m3-space-3);
+        padding-top: var(--m3-space-1-5);
+        padding-bottom: var(--m3-space-1-5);
+        padding-right: var(--m3-space-3);
     }
 }
 

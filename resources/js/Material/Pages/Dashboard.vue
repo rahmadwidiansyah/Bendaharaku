@@ -499,13 +499,24 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
         padding: var(--m3-space-4);
     }
 
+    .m3-dash--desktop .m3-history-head {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--m3-space-3);
+    }
+
+    .m3-dash--desktop .m3-tabs {
+        width: 40%;
+    }
+
     .m3-dash--desktop .m3-dash__assets {
-        width: 35%;
+        width: 32%;
         top: calc(var(--m3-size-appbar) + var(--m3-space-2));
     }
 
     .m3-dash--desktop .m3-dash__history {
-        width: 65%;
+        width: 68%;
     }
 }
 

@@ -28,7 +28,13 @@ defineProps({
 </script>
 
 <template>
-    <div class="m3-settings-page" :class="`m3-settings-page--${width}`">
+    <div
+        class="m3-settings-page mx-auto w-full"
+        :class="[
+            `m3-settings-page--${width}`,
+            width === 'list' ? 'max-w-4xl' : 'max-w-6xl',
+        ]"
+    >
         <div v-if="backRoute" class="m3-settings-page__back">
             <M3IconButton :href="route(backRoute)" :aria-label="backLabel || $t('common.back')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -51,18 +57,9 @@ defineProps({
 .m3-settings-page {
     display: flex;
     flex-direction: column;
-    gap: var(--m3-space-6);
+    gap: var(--m3-density-section-gap, var(--m3-space-6));
     width: 100%;
-    margin: 0 auto;
-    padding: var(--m3-space-4);
-}
-
-.m3-settings-page--list {
-    max-width: var(--m3-size-list-max);
-}
-
-.m3-settings-page--content {
-    max-width: var(--m3-size-content-max);
+    padding: var(--m3-density-page-inset, var(--m3-space-4));
 }
 
 .m3-settings-page__back {

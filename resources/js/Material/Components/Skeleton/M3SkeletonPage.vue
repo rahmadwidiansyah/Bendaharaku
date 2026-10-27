@@ -134,6 +134,18 @@ defineProps({
     }
 }
 
+@media (min-width: 1024px) and (max-width: 1400px), (min-width: 1024px) and (max-height: 820px) {
+    .m3-skel-page {
+        padding: var(--m3-density-page-inset, var(--m3-space-4));
+    }
+
+    .m3-skel-page--gap-md,
+    .m3-skel-page--gap-lg,
+    .m3-skel-page--gap-xl {
+        gap: var(--m3-density-section-gap, var(--m3-space-5));
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .m3-skel-page {
         animation: none;

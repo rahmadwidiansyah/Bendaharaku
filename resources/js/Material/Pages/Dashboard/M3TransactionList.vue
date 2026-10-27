@@ -359,4 +359,16 @@ const amountSign = (trx) => {
     font-weight: var(--m3-type-emphasized-body-medium-weight);
     color: var(--m3-color-on-surface-variant);
 }
+
+@media (min-width: 1024px) and (max-width: 1400px), (min-width: 1024px) and (max-height: 820px) {
+    .m3-day-header {
+        padding-top: var(--m3-space-1-5);
+        padding-bottom: var(--m3-space-1-5);
+    }
+
+    .m3-trx {
+        padding-top: var(--m3-space-1-5);
+        padding-bottom: var(--m3-space-1-5);
+    }
+}
 </style>

@@ -156,6 +156,7 @@ const themeOptions = ['light', 'dark', 'system']
             :title="t('settings.application.appearance.title')"
             :subtitle="t('settings.application.appearance.description')"
             back-route="settings.index"
+            width="content"
         >
             <M3SettingsSection :title="t('settings.application.appearance.ui_theme.title')">
                 <M3Card variant="outlined" padding="none" class="m3-appearance__options">
@@ -549,6 +550,23 @@ const themeOptions = ['light', 'dark', 'system']
 @media (min-width: 600px) {
     .m3-appearance__schemes {
         grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 75rem) {
+    .m3-settings-page {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+        max-width: var(--m3-size-content-max);
+    }
+
+    .m3-settings-page :deep(.m3-settings-page__back) {
+        grid-column: 1 / -1;
+    }
+
+    .m3-settings-page > :deep(.m3-settings-section) {
+        min-width: 0;
     }
 }
 </style>

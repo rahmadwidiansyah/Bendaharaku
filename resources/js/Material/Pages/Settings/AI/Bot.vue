@@ -105,7 +105,7 @@ const confirmDeleteBotAvatar = () => {
     <M3Layout :title="t('settings.ai.bot.title')">
         <Head :title="t('settings.ai.bot.title')" />
 
-        <div class="m3-bot">
+        <div class="m3-bot mx-auto w-full max-w-4xl">
             <M3SettingsBack />
 
             <M3PageTitle
@@ -243,8 +243,6 @@ const confirmDeleteBotAvatar = () => {
     display: flex;
     flex-direction: column;
     gap: var(--m3-space-6);
-    width: 100%;
-    margin: 0 auto;
     padding: var(--m3-space-4);
 }
 

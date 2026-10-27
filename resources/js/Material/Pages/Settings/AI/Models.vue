@@ -356,7 +356,7 @@ async function saveRouting() {
     <M3Layout :title="t('settings.ai.models.title')">
         <Head :title="t('settings.ai.models.title')" />
 
-        <div class="m3-models">
+        <div class="m3-models mx-auto w-full max-w-6xl">
             <M3SettingsBack />
 
             <M3PageTitle
@@ -779,8 +779,6 @@ async function saveRouting() {
     display: flex;
     flex-direction: column;
     gap: var(--m3-space-6);
-    width: 100%;
-    margin: 0 auto;
     padding: var(--m3-space-4);
 }
 

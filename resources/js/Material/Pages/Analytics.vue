@@ -1086,13 +1086,16 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .m3-ana {
+    --m3-ana-gap: var(--m3-space-4);
+    --m3-ana-grid-gap: var(--m3-space-6);
+    --m3-ana-doughnut-height: 12rem;
     display: flex;
     flex-direction: column;
-    gap: var(--m3-space-4);
+    gap: var(--m3-ana-gap);
     width: 100%;
     max-width: var(--m3-size-content-max);
     margin: 0 auto;
-    padding: var(--m3-space-4) var(--m3-space-4) var(--m3-space-4);
+    padding: var(--m3-density-page-inset, var(--m3-space-4));
 }
 
 /* Kolom utama (KPI + grafik). Wrapper tetap berperilaku seperti
@@ -1100,7 +1103,7 @@ onBeforeUnmount(() => {
 .m3-ana__primary {
     display: flex;
     flex-direction: column;
-    gap: var(--m3-space-4);
+    gap: var(--m3-ana-gap);
     min-width: 0;
 }
 
@@ -1110,7 +1113,7 @@ onBeforeUnmount(() => {
 .m3-ana__aside {
     display: flex;
     flex-direction: column;
-    gap: var(--m3-space-4);
+    gap: var(--m3-ana-gap);
     min-width: 0;
 }
 
@@ -1118,7 +1121,7 @@ onBeforeUnmount(() => {
 .m3-ana__left {
     display: flex;
     flex-direction: column;
-    gap: var(--m3-space-4);
+    gap: var(--m3-ana-gap);
     min-width: 0;
 }
 
@@ -1127,22 +1130,31 @@ onBeforeUnmount(() => {
 .m3-ana__grid {
     display: flex;
     flex-direction: column;
-    gap: var(--m3-space-4);
+    gap: var(--m3-ana-gap);
     min-width: 0;
 }
 
-@media (min-width: 100rem) {
+@media (min-width: 96rem) {
     .m3-ana {
+        --m3-ana-gap: var(--m3-space-3);
+        --m3-ana-grid-gap: var(--m3-space-4);
+        --m3-ana-doughnut-height: 9.5rem;
+        --m3-density-page-inset: var(--m3-space-3);
+        --m3-density-card-padding-sm: var(--m3-space-2-5);
+        --m3-density-card-padding-md: var(--m3-space-3);
+        --m3-density-card-padding-lg: var(--m3-space-5);
+        --m3-density-chart-primary-height: 11rem;
+        --m3-density-chart-summary-height: 6rem;
         max-width: none;
     }
 
     .m3-ana__grid {
         display: grid;
-        grid-template-columns: minmax(0, var(--m3-size-content-max)) 28rem;
-        gap: var(--m3-space-6);
+        grid-template-columns: minmax(0, 1fr) 28rem;
+        gap: var(--m3-ana-grid-gap);
         align-items: start;
         justify-content: center;
-        max-width: none;
+        max-width: calc(var(--m3-size-content-max) + 28rem + var(--m3-ana-grid-gap));
     }
 
     .m3-ana__left {
@@ -1377,7 +1389,7 @@ onBeforeUnmount(() => {
 }
 
 .m3-ana__bar-box {
-    height: 220px;
+    height: var(--m3-density-chart-primary-height, 13.75rem);
 }
 
 /* ── Navigasi halaman chart arus kas ── */
@@ -1399,7 +1411,7 @@ onBeforeUnmount(() => {
 
 .m3-ana__cumulative-wrap {
     width: 100%;
-    height: 120px;
+    height: var(--m3-density-chart-summary-height, 7.5rem);
 }
 
 .m3-ana__canvas {
@@ -1422,8 +1434,8 @@ onBeforeUnmount(() => {
 .m3-ana__doughnut-wrap {
     position: relative;
     width: 100%;
-    height: 12rem;
-    margin-bottom: var(--m3-space-4);
+    height: var(--m3-ana-doughnut-height);
+    margin-bottom: var(--m3-ana-gap);
 }
 
 .m3-ana__canvas--front {
@@ -1552,6 +1564,20 @@ onBeforeUnmount(() => {
     text-overflow: ellipsis;
     max-width: 45%;
     text-align: right;
+}
+
+@media (min-width: 96rem) {
+    .m3-ana__card-head {
+        margin-bottom: var(--m3-space-2-5);
+    }
+
+    .m3-ana__legend {
+        margin-bottom: var(--m3-space-2-5);
+    }
+
+    .m3-ana__cat {
+        padding: var(--m3-space-2-5) 0;
+    }
 }
 
 /* ── Empty state ── */

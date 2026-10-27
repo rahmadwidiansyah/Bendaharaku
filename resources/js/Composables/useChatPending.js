@@ -95,5 +95,5 @@ export function useChatPending() {
         }
     }
 
-    return { trackBotMessage, untrackBotMessage }
+    return { trackBotMessage, untrackBotMessage, setChatSurfaceOpen }
 }

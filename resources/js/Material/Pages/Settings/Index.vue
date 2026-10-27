@@ -177,7 +177,7 @@ const handleLogout = () => router.post(route('logout'))
     <M3Layout :title="$t('settings.title')">
         <Head :title="$t('settings.title')" />
 
-        <M3SettingsPage :title="$t('settings.title')" :subtitle="$t('settings.subtitle')" width="list">
+        <M3SettingsPage :title="$t('settings.title')" :subtitle="$t('settings.subtitle')" width="content">
             <M3Card variant="outlined" class="m3-settings-user">
                 <div class="m3-settings-user__avatar">
                     <img v-if="avatarUrl" :src="avatarUrl" alt="" class="m3-settings-user__avatar-img" />
@@ -256,19 +256,14 @@ const handleLogout = () => router.post(route('logout'))
 </template>
 
 <style scoped>
-/* Seksional stack; di layar sangat lebar jadi 2 kolom (audit: kolom
-   640px tunggal menyisakan ±510px kosong per sisi pada 1920px).
-   Breakpoint 100rem konsisten dengan layout wide halaman Analytics. */
+/* Pakai lebar laptop untuk menampilkan grup pengaturan berdampingan. */
 .m3-settings-hub__sections {
     display: flex;
     flex-direction: column;
     gap: var(--m3-space-6);
 }
 
-@media (min-width: 100rem) {
-    /* Kontainer hub melebar mengikuti 2 kolom (tiap kolom selebar list-max
-       tunggal + jarak antar kolom) — .m3-settings-page adalah root komponen
-       anak sehingga bisa diseleksi langsung dari scoped style ini. */
+@media (min-width: 75rem) {
     .m3-settings-page {
         max-width: calc(2 * var(--m3-size-list-max) + var(--m3-space-6));
     }

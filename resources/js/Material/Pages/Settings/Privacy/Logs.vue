@@ -297,6 +297,7 @@ function typeIcon(type) {
     line-height: var(--m3-type-title-small-line-height);
     font-weight: var(--m3-type-emphasized-title-small-weight);
     color: var(--m3-color-on-surface);
+    overflow-wrap: anywhere;
 }
 
 .m3-logs__desc {
@@ -304,6 +305,7 @@ function typeIcon(type) {
     font-size: var(--m3-type-body-medium-size);
     line-height: var(--m3-type-body-medium-line-height);
     color: var(--m3-color-on-surface-variant);
+    overflow-wrap: anywhere;
 }
 
 .m3-logs__meta {
@@ -313,12 +315,14 @@ function typeIcon(type) {
 }
 
 .m3-logs__chip {
+    max-width: 100%;
     padding: var(--m3-space-0-5) var(--m3-space-2);
     border: 1px solid var(--m3-color-outline-variant);
     border-radius: var(--m3-radius-full);
     font-size: var(--m3-type-label-small-size);
     line-height: var(--m3-type-label-small-line-height);
     color: var(--m3-color-on-surface-variant);
+    overflow-wrap: anywhere;
 }
 
 .m3-logs__empty {
@@ -423,6 +427,24 @@ function typeIcon(type) {
 @media (min-width: 1024px) {
     .m3-logs__stats {
         grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1024px) and (max-width: 1400px), (min-width: 1024px) and (max-height: 820px) {
+    .m3-logs__stats {
+        gap: var(--m3-space-1);
+    }
+
+    .m3-logs__stat {
+        padding: var(--m3-space-2);
+    }
+
+    .m3-logs__list {
+        gap: var(--m3-space-2);
+    }
+
+    .m3-logs__item {
+        gap: var(--m3-space-1);
     }
 }
 </style>

@@ -81,7 +81,7 @@ const chevron = 'M8.25 4.5l7.5 7.5-7.5 7.5'
     <M3Layout :title="$t('settings.chat.hub.head')">
         <Head :title="$t('settings.chat.hub.head')" />
 
-        <div class="m3-hub">
+        <div class="m3-hub mx-auto w-full max-w-4xl">
             <M3PageTitle :title="$t('settings.chat.hub.title')" />
 
             <section class="m3-hub__section">
@@ -211,9 +211,6 @@ const chevron = 'M8.25 4.5l7.5 7.5-7.5 7.5'
     display: flex;
     flex-direction: column;
     gap: var(--m3-space-6);
-    width: 100%;
-    max-width: var(--m3-size-list-max);
-    margin: 0 auto;
     padding: var(--m3-space-4);
 }
 

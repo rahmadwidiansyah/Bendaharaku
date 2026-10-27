@@ -57,15 +57,15 @@ const classes = computed(() => [
 }
 
 .m3-card--pad-sm {
-    padding: var(--m3-space-3);
+    padding: var(--m3-density-card-padding-sm, var(--m3-space-3));
 }
 
 .m3-card--pad-md {
-    padding: var(--m3-space-4);
+    padding: var(--m3-density-card-padding-md, var(--m3-space-4));
 }
 
 .m3-card--pad-lg {
-    padding: var(--m3-space-6);
+    padding: var(--m3-density-card-padding-lg, var(--m3-space-6));
 }
 
 .m3-card--clickable {

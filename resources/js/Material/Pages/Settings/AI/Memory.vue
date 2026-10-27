@@ -53,7 +53,7 @@ const chevron = 'M8.25 4.5l7.5 7.5-7.5 7.5'
     <M3Layout :title="t('settings.ai.memory.title')">
         <Head :title="t('settings.ai.memory.title')" />
 
-        <div class="m3-memory">
+        <div class="m3-memory mx-auto w-full max-w-4xl">
             <M3SettingsBack />
 
             <M3PageTitle
@@ -115,8 +115,6 @@ const chevron = 'M8.25 4.5l7.5 7.5-7.5 7.5'
     display: flex;
     flex-direction: column;
     gap: var(--m3-space-6);
-    width: 100%;
-    margin: 0 auto;
     padding: var(--m3-space-4);
 }
 

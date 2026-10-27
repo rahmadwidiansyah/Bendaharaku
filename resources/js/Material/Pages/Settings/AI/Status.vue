@@ -47,7 +47,7 @@ const healthKind = (status) => {
     <M3Layout :title="$t('settings.ai.status.title')">
         <Head :title="$t('settings.ai.status.title')" />
 
-        <div class="m3-status">
+        <div class="m3-status mx-auto w-full max-w-4xl">
             <M3PageTitle
                 :title="$t('settings.ai.status.title')"
                 :subtitle="$t('settings.ai.status.description')"
@@ -136,9 +136,6 @@ const healthKind = (status) => {
     display: flex;
     flex-direction: column;
     gap: var(--m3-space-6);
-    width: 100%;
-    max-width: var(--m3-size-list-max);
-    margin: 0 auto;
     padding: var(--m3-space-4);
 }
 

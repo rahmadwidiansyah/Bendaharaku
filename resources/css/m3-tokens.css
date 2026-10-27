@@ -169,6 +169,15 @@
     --m3-space-10: 2.5rem;
     --m3-space-12: 3rem;
 
+    /* ── Adaptive desktop density (spacing only; never typography or targets) ── */
+    --m3-density-page-inset: var(--m3-space-4);
+    --m3-density-section-gap: var(--m3-space-5);
+    --m3-density-card-padding-sm: var(--m3-space-3);
+    --m3-density-card-padding-md: var(--m3-space-4);
+    --m3-density-card-padding-lg: var(--m3-space-6);
+    --m3-density-chart-primary-height: 13.75rem;
+    --m3-density-chart-summary-height: 7.5rem;
+
     /* ── Component sizes (single source; layouts and pages reference these) ── */
     --m3-size-appbar: 4rem;
     --m3-size-rail: 6rem;
@@ -319,5 +328,48 @@ html.ui-m3 #nprogress {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
+    }
+}
+
+@media (min-width: 1024px) and (max-width: 1400px), (min-width: 1024px) and (max-height: 820px) {
+    .ui-m3 {
+        --m3-density-page-inset: var(--m3-space-3);
+        --m3-density-section-gap: var(--m3-space-4);
+        --m3-density-card-padding-sm: var(--m3-space-2);
+        --m3-density-card-padding-md: var(--m3-space-3);
+        --m3-density-card-padding-lg: var(--m3-space-4);
+        --m3-density-chart-primary-height: 11.25rem;
+        --m3-density-chart-summary-height: 6rem;
+    }
+
+    html.ui-m3 .m3-content main > :is(
+        .m3-dash,
+        .m3-bc,
+        .m3-bud,
+        .m3-ana,
+        .m3-search,
+        .m3-more,
+        .m3-wallet-edit,
+        .m3-wallets,
+        .m3-wallet-show,
+        .m3-cat-edit,
+        .m3-cat-index,
+        .m3-cat-show,
+        .m3-tx,
+        .m3-loans,
+        .m3-settings-page,
+        .m3-hub,
+        .m3-bot,
+        .m3-status,
+        .m3-models,
+        .m3-memory,
+        .m3-memmanage
+    ) {
+        gap: var(--m3-density-section-gap);
+        padding: var(--m3-density-page-inset);
+    }
+
+    html.ui-m3 .m3-txn--desktop .m3-txn__body:not(.m3-txn__body--dock) {
+        padding: var(--m3-density-page-inset);
     }
 }
