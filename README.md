@@ -13,7 +13,7 @@
 ## Live Demo
 
 Ingin melihat dan mencoba Bendaharaku V4 secara langsung? Silakan kunjungi tautan berikut:  
- **[bendaharaku.sanding.online](https://bendaharaku.sanding.online)**
+ **[bendaharaku.web.id](https://bendaharaku.web.id)**
 
 ---
 

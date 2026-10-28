@@ -234,7 +234,7 @@ class CommandRouter
 
     private function buildWebLinkResponse(string $locale, array $metadata): ChatResponse
     {
-        $appUrl = config('app.url', 'https://bendaharaku.sanding.online');
+        $appUrl = config('app.url', 'https://bendaharaku.web.id');
 
         return ChatResponse::command([
             new TextComponent(
