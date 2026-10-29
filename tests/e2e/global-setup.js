@@ -7,6 +7,7 @@ const baseURL = process.env.E2E_BASE_URL || 'http://127.0.0.1:4000';
 const ACCOUNTS = {
     default: 'e2e-default@example.com',
     m3: 'e2e-m3@example.com',
+    owner: 'owner@bendaharaku.test',
 };
 
 export default async function globalSetup() {

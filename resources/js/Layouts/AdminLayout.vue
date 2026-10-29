@@ -88,9 +88,9 @@ const logout = () => {
             </div>
 
             <!-- Content -->
-            <div class="flex-1 overflow-auto bg-[rgb(var(--m3-color-surface-rgb))]">
+            <main class="flex-1 overflow-auto bg-[rgb(var(--m3-color-surface-rgb))]">
                 <slot />
-            </div>
+            </main>
         </div>
 
         <!-- Mobile overlay -->

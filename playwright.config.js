@@ -34,9 +34,9 @@ export default defineConfig({
     },
     projects: [
         {
-            name: 'default-light',
+            name: 'admin-light',
             use: {
-                storageState: 'tests/e2e/.auth/default.json',
+                storageState: 'tests/e2e/.auth/owner.json',
                 colorScheme: 'light',
             },
         },
