@@ -41,11 +41,11 @@ const handlePaginate = (url) => {
 
 const getStatusBadge = (status) => {
     const colors = {
-        'success': 'bg-green-100 text-green-800',
-        'error': 'bg-red-100 text-red-800',
-        'retry': 'bg-yellow-100 text-yellow-800',
-        'pending': 'bg-blue-100 text-blue-800',
-        'default': 'bg-gray-100 text-gray-800',
+        'success': 'bg-[rgb(var(--m3-color-tertiary-container-rgb))] text-[rgb(var(--m3-color-on-tertiary-container-rgb))]',
+        'error': 'bg-[rgb(var(--m3-color-error-container-rgb))] text-[rgb(var(--m3-color-on-error-container-rgb))]',
+        'retry': 'bg-[rgb(var(--m3-color-primary-container-rgb))] text-[rgb(var(--m3-color-on-primary-container-rgb))]',
+        'pending': 'bg-[rgb(var(--m3-color-secondary-container-rgb))] text-[rgb(var(--m3-color-on-secondary-container-rgb))]',
+        'default': 'bg-[rgb(var(--m3-color-surface-container-high-rgb))] text-[rgb(var(--m3-color-on-surface-variant-rgb))]',
     }
     return colors[status] || colors['default']
 }
@@ -66,21 +66,21 @@ const clearFilters = () => {
         <div class="space-y-6 p-6">
             <!-- Header -->
             <div class="mb-8">
-                <h1 class="text-3xl font-bold">AI Operations Logs</h1>
-                <p class="text-gray-600">Monitor AI provider calls, errors, and retry attempts</p>
+                <h1 class="text-3xl font-bold text-[rgb(var(--m3-color-on-surface-rgb))]">AI Operations Logs</h1>
+                <p class="text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Monitor AI provider calls, errors, and retry attempts</p>
             </div>
 
             <!-- Filters -->
-            <div class="bg-white rounded-lg p-6 border border-gray-200 space-y-4">
-                <h2 class="text-lg font-semibold">Filters</h2>
+            <div class="bg-[rgb(var(--m3-color-surface-container-rgb))] rounded-lg p-6 border border-[rgb(var(--m3-color-outline-variant-rgb))] space-y-4">
+                <h2 class="text-lg font-semibold text-[rgb(var(--m3-color-on-surface-rgb))]">Filters</h2>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                     <!-- Status Filter -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                        <label class="block text-sm font-medium text-[rgb(var(--m3-color-on-surface-rgb))] mb-2">Status</label>
                         <select
                             v-model="status"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            class="w-full px-4 py-2 bg-[rgb(var(--m3-color-surface-rgb))] text-[rgb(var(--m3-color-on-surface-rgb))] border border-[rgb(var(--m3-color-outline-variant-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--m3-color-primary-rgb))] focus:border-transparent"
                         >
                             <option value="">All Status</option>
                             <option value="success">Success</option>
@@ -92,29 +92,29 @@ const clearFilters = () => {
 
                     <!-- Date Range -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">From Date</label>
+                        <label class="block text-sm font-medium text-[rgb(var(--m3-color-on-surface-rgb))] mb-2">From Date</label>
                         <input
                             v-model="from_date"
                             type="date"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            class="w-full px-4 py-2 bg-[rgb(var(--m3-color-surface-rgb))] text-[rgb(var(--m3-color-on-surface-rgb))] border border-[rgb(var(--m3-color-outline-variant-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--m3-color-primary-rgb))] focus:border-transparent"
                         />
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">To Date</label>
+                        <label class="block text-sm font-medium text-[rgb(var(--m3-color-on-surface-rgb))] mb-2">To Date</label>
                         <input
                             v-model="to_date"
                             type="date"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            class="w-full px-4 py-2 bg-[rgb(var(--m3-color-surface-rgb))] text-[rgb(var(--m3-color-on-surface-rgb))] border border-[rgb(var(--m3-color-outline-variant-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--m3-color-primary-rgb))] focus:border-transparent"
                         />
                     </div>
 
                     <!-- Per Page -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Per Page</label>
+                        <label class="block text-sm font-medium text-[rgb(var(--m3-color-on-surface-rgb))] mb-2">Per Page</label>
                         <select
                             v-model.number="per_page"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            class="w-full px-4 py-2 bg-[rgb(var(--m3-color-surface-rgb))] text-[rgb(var(--m3-color-on-surface-rgb))] border border-[rgb(var(--m3-color-outline-variant-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--m3-color-primary-rgb))] focus:border-transparent"
                         >
                             <option :value="10">10</option>
                             <option :value="20">20</option>
@@ -128,13 +128,13 @@ const clearFilters = () => {
                         <button
                             @click="handleFilter"
                             :disabled="loading"
-                            class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                            class="flex-1 px-4 py-2 bg-[rgb(var(--m3-color-primary-rgb))] text-[rgb(var(--m3-color-on-primary-rgb))] rounded-lg hover:bg-[rgb(var(--m3-color-primary-container-rgb))] hover:text-[rgb(var(--m3-color-on-primary-container-rgb))] disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
                         >
                             {{ loading ? 'Loading...' : 'Filter' }}
                         </button>
                         <button
                             @click="clearFilters"
-                            class="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+                            class="px-3 py-2 border border-[rgb(var(--m3-color-outline-variant-rgb))] text-[rgb(var(--m3-color-on-surface-rgb))] rounded-lg hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))] transition-colors"
                         >
                             Clear
                         </button>
@@ -144,39 +144,39 @@ const clearFilters = () => {
 
             <!-- Stats -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="bg-white rounded-lg p-4 border border-gray-200">
-                    <div class="text-sm font-medium text-gray-600">Total Logs</div>
-                    <div class="text-2xl font-bold mt-1">{{ logs.total }}</div>
+                <div class="bg-[rgb(var(--m3-color-surface-container-rgb))] rounded-lg p-4 border border-[rgb(var(--m3-color-outline-variant-rgb))]">
+                    <div class="text-sm font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Total Logs</div>
+                    <div class="text-2xl font-bold mt-1 text-[rgb(var(--m3-color-on-surface-rgb))]">{{ logs.total }}</div>
                 </div>
-                <div class="bg-white rounded-lg p-4 border border-gray-200">
-                    <div class="text-sm font-medium text-gray-600">Current Page</div>
-                    <div class="text-2xl font-bold mt-1">{{ logs.current_page }} of {{ logs.last_page }}</div>
+                <div class="bg-[rgb(var(--m3-color-surface-container-rgb))] rounded-lg p-4 border border-[rgb(var(--m3-color-outline-variant-rgb))]">
+                    <div class="text-sm font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Current Page</div>
+                    <div class="text-2xl font-bold mt-1 text-[rgb(var(--m3-color-on-surface-rgb))]">{{ logs.current_page }} of {{ logs.last_page }}</div>
                 </div>
-                <div class="bg-white rounded-lg p-4 border border-gray-200">
-                    <div class="text-sm font-medium text-gray-600">Per Page</div>
-                    <div class="text-2xl font-bold mt-1">{{ logs.per_page }}</div>
+                <div class="bg-[rgb(var(--m3-color-surface-container-rgb))] rounded-lg p-4 border border-[rgb(var(--m3-color-outline-variant-rgb))]">
+                    <div class="text-sm font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Per Page</div>
+                    <div class="text-2xl font-bold mt-1 text-[rgb(var(--m3-color-on-surface-rgb))]">{{ logs.per_page }}</div>
                 </div>
             </div>
 
             <!-- Table -->
-            <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div class="bg-[rgb(var(--m3-color-surface-container-rgb))] rounded-lg border border-[rgb(var(--m3-color-outline-variant-rgb))] overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="w-full">
-                        <thead class="bg-gray-50 border-b border-gray-200">
+                        <thead class="bg-[rgb(var(--m3-color-surface-container-high-rgb))] border-b border-[rgb(var(--m3-color-outline-variant-rgb))]">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Subject</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Description</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Status</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Date & Time</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))] uppercase tracking-wider">Subject</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))] uppercase tracking-wider">Description</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))] uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))] uppercase tracking-wider">Date & Time</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))] uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-200">
-                            <tr v-for="log in logs.data" :key="log.id" class="hover:bg-gray-50 transition-colors">
-                                <td class="px-6 py-4 text-sm font-medium text-gray-900">
+                        <tbody class="divide-y divide-[rgb(var(--m3-color-outline-variant-rgb))]">
+                            <tr v-for="log in logs.data" :key="log.id" class="hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))] transition-colors">
+                                <td class="px-6 py-4 text-sm font-medium text-[rgb(var(--m3-color-on-surface-rgb))]">
                                     {{ log.subject || 'AI Call' }}
                                 </td>
-                                <td class="px-6 py-4 text-sm text-gray-700">
+                                <td class="px-6 py-4 text-sm text-[rgb(var(--m3-color-on-surface-rgb))]">
                                     <div class="max-w-xs truncate">{{ log.description || 'No description' }}</div>
                                 </td>
                                 <td class="px-6 py-4 text-sm">
@@ -184,14 +184,14 @@ const clearFilters = () => {
                                         {{ log.status || 'pending' }}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 text-sm text-gray-600">
+                                <td class="px-6 py-4 text-sm text-[rgb(var(--m3-color-on-surface-variant-rgb))]">
                                     <div>{{ new Date(log.created_at).toLocaleDateString() }}</div>
                                     <div class="text-xs">{{ new Date(log.created_at).toLocaleTimeString() }}</div>
                                 </td>
                                 <td class="px-6 py-4 text-sm">
                                     <button
                                         @click="$inertia.get(route('admin.ai_logs.show', log.id))"
-                                        class="text-blue-600 hover:text-blue-800 font-medium"
+                                        class="text-[rgb(var(--m3-color-primary-rgb))] hover:text-[rgb(var(--m3-color-primary-container-rgb))] font-medium"
                                     >
                                         View
                                     </button>
@@ -203,7 +203,7 @@ const clearFilters = () => {
 
                 <!-- Empty State -->
                 <div v-if="logs.data.length === 0" class="px-6 py-12 text-center">
-                    <p class="text-gray-500 text-sm">No AI logs found</p>
+                    <p class="text-[rgb(var(--m3-color-on-surface-variant-rgb))] text-sm">No AI logs found</p>
                 </div>
             </div>
 
@@ -213,7 +213,7 @@ const clearFilters = () => {
                 <button
                     v-if="logs.prev_page_url"
                     @click="handlePaginate(logs.prev_page_url)"
-                    class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-sm font-medium"
+                    class="px-4 py-2 border border-[rgb(var(--m3-color-outline-variant-rgb))] rounded-lg hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))] text-[rgb(var(--m3-color-on-surface-rgb))] text-sm font-medium transition-colors"
                 >
                     ← Previous
                 </button>
@@ -224,10 +224,10 @@ const clearFilters = () => {
                         v-for="page in logs.last_page"
                         :key="page"
                         :class="[
-                            'px-3 py-2 rounded text-sm font-medium',
+                            'px-3 py-2 rounded text-sm font-medium transition-colors',
                             page === logs.current_page
-                                ? 'bg-blue-600 text-white'
-                                : 'border border-gray-300 hover:bg-gray-100',
+                                ? 'bg-[rgb(var(--m3-color-primary-rgb))] text-[rgb(var(--m3-color-on-primary-rgb))]'
+                                : 'border border-[rgb(var(--m3-color-outline-variant-rgb))] text-[rgb(var(--m3-color-on-surface-rgb))] hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))]',
                         ]"
                         @click="handlePaginate(logs.path + '?page=' + page)"
                     >
@@ -239,16 +239,16 @@ const clearFilters = () => {
                 <button
                     v-if="logs.next_page_url"
                     @click="handlePaginate(logs.next_page_url)"
-                    class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-sm font-medium"
+                    class="px-4 py-2 border border-[rgb(var(--m3-color-outline-variant-rgb))] rounded-lg hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))] text-[rgb(var(--m3-color-on-surface-rgb))] text-sm font-medium transition-colors"
                 >
                     Next →
                 </button>
             </div>
 
             <!-- Info Box -->
-            <div class="bg-blue-50 rounded-lg p-6 border border-blue-200">
-                <h3 class="font-semibold text-gray-900 mb-2">About AI Logs</h3>
-                <ul class="text-sm text-gray-700 space-y-1 list-disc list-inside">
+            <div class="bg-[rgb(var(--m3-color-secondary-container-rgb))] rounded-lg p-6 border border-[rgb(var(--m3-color-secondary-rgb))]">
+                <h3 class="font-semibold text-[rgb(var(--m3-color-on-secondary-container-rgb))] mb-2">About AI Logs</h3>
+                <ul class="text-sm text-[rgb(var(--m3-color-on-secondary-container-rgb))] space-y-1 list-disc list-inside">
                     <li>Logs track all AI provider API calls and responses</li>
                     <li>Status indicates success, errors, or retry attempts</li>
                     <li>Sanitized logs do not expose user data or API secrets</li>

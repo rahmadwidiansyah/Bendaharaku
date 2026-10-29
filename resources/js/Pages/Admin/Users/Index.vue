@@ -83,10 +83,10 @@ const verificationBadge = (verified_at) => {
 
                     <!-- Status Filter -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                        <label class="block text-sm font-medium text-[rgb(var(--m3-color-on-surface-rgb))] mb-2">Status</label>
                         <select
                             v-model="status"
-                            class="w-full px-4 py-2 border border-[rgb(var(--m3-color-outline-variant-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--m3-color-primary-rgb))] focus:border-transparent"
+                            class="w-full px-4 py-2 bg-[rgb(var(--m3-color-surface-rgb))] text-[rgb(var(--m3-color-on-surface-rgb))] border border-[rgb(var(--m3-color-outline-variant-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--m3-color-primary-rgb))] focus:border-transparent"
                         >
                             <option value="">All</option>
                             <option value="verified">Verified</option>
@@ -120,34 +120,34 @@ const verificationBadge = (verified_at) => {
 
             <!-- Stats -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="bg-white rounded-lg p-4 border border-gray-200">
-                    <div class="text-sm font-medium text-gray-600">Total Results</div>
-                    <div class="text-2xl font-bold mt-1">{{ users.total }}</div>
+                <div class="bg-[rgb(var(--m3-color-surface-container-rgb))] rounded-lg p-4 border border-[rgb(var(--m3-color-outline-variant-rgb))]">
+                    <div class="text-sm font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Total Results</div>
+                    <div class="text-2xl font-bold mt-1 text-[rgb(var(--m3-color-on-surface-rgb))]">{{ users.total }}</div>
                 </div>
-                <div class="bg-white rounded-lg p-4 border border-gray-200">
-                    <div class="text-sm font-medium text-gray-600">Page</div>
-                    <div class="text-2xl font-bold mt-1">{{ users.current_page }} of {{ users.last_page }}</div>
+                <div class="bg-[rgb(var(--m3-color-surface-container-rgb))] rounded-lg p-4 border border-[rgb(var(--m3-color-outline-variant-rgb))]">
+                    <div class="text-sm font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Page</div>
+                    <div class="text-2xl font-bold mt-1 text-[rgb(var(--m3-color-on-surface-rgb))]">{{ users.current_page }} of {{ users.last_page }}</div>
                 </div>
             </div>
 
             <!-- Table -->
-            <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div class="bg-[rgb(var(--m3-color-surface-container-rgb))] rounded-lg border border-[rgb(var(--m3-color-outline-variant-rgb))] overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="w-full">
-                        <thead class="bg-gray-50 border-b border-gray-200">
+                        <thead class="bg-[rgb(var(--m3-color-surface-container-high-rgb))] border-b border-[rgb(var(--m3-color-outline-variant-rgb))]">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Name</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Email</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Verification</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Status</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Joined</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))] uppercase tracking-wider">Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))] uppercase tracking-wider">Email</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))] uppercase tracking-wider">Verification</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))] uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))] uppercase tracking-wider">Joined</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))] uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-200">
-                            <tr v-for="user in users.data" :key="user.id" class="hover:bg-gray-50 transition-colors">
-                                <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ user.name }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-700">{{ user.email }}</td>
+                        <tbody class="divide-y divide-[rgb(var(--m3-color-outline-variant-rgb))]">
+                            <tr v-for="user in users.data" :key="user.id" class="hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))] transition-colors">
+                                <td class="px-6 py-4 text-sm font-medium text-[rgb(var(--m3-color-on-surface-rgb))]">{{ user.name }}</td>
+                                <td class="px-6 py-4 text-sm text-[rgb(var(--m3-color-on-surface-rgb))]">{{ user.email }}</td>
                                 <td class="px-6 py-4 text-sm">
                                     <span :class="['px-3 py-1 rounded-full text-xs font-medium', verificationBadge(user.email_verified_at)]">
                                         {{ user.email_verified_at ? 'Verified' : 'Unverified' }}
@@ -158,30 +158,30 @@ const verificationBadge = (verified_at) => {
                                         {{ user.status || 'active' }}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 text-sm text-gray-600">
+                                <td class="px-6 py-4 text-sm text-[rgb(var(--m3-color-on-surface-variant-rgb))]">
                                     {{ new Date(user.created_at).toLocaleDateString() }}
                                 </td>
                                 <td class="px-6 py-4 text-sm space-x-2">
                                     <button
                                         @click="$inertia.get(route('admin.users.show', user.id))"
-                                        class="px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                                        class="px-3 py-1 bg-[rgb(var(--m3-color-primary-container-rgb))] text-[rgb(var(--m3-color-on-primary-container-rgb))] rounded hover:bg-[rgb(var(--m3-color-primary-rgb))] hover:text-[rgb(var(--m3-color-on-primary-rgb))] transition-colors"
                                     >
                                         View
                                     </button>
                                     <div class="inline-block relative group">
-                                        <button class="px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors">
+                                        <button class="px-3 py-1 bg-[rgb(var(--m3-color-secondary-container-rgb))] text-[rgb(var(--m3-color-on-secondary-container-rgb))] rounded hover:bg-[rgb(var(--m3-color-secondary-rgb))] hover:text-[rgb(var(--m3-color-on-secondary-rgb))] transition-colors">
                                             Status ▼
                                         </button>
-                                        <div class="absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded shadow-lg hidden group-hover:block z-10">
+                                        <div class="absolute right-0 mt-1 w-32 bg-[rgb(var(--m3-color-surface-container-rgb))] border border-[rgb(var(--m3-color-outline-variant-rgb))] rounded shadow-lg hidden group-hover:block z-10">
                                             <button
                                                 @click="handleStatusChange(user, 'active')"
-                                                class="block w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
+                                                class="block w-full text-left px-4 py-2 hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))] text-sm text-[rgb(var(--m3-color-on-surface-rgb))]"
                                             >
                                                 Active
                                             </button>
                                             <button
                                                 @click="handleStatusChange(user, 'suspended')"
-                                                class="block w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-red-700"
+                                                class="block w-full text-left px-4 py-2 hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))] text-sm text-[rgb(var(--m3-color-error-rgb))]"
                                             >
                                                 Suspend
                                             </button>
@@ -195,7 +195,7 @@ const verificationBadge = (verified_at) => {
 
                 <!-- Empty State -->
                 <div v-if="users.data.length === 0" class="px-6 py-12 text-center">
-                    <p class="text-gray-500 text-sm">No users found</p>
+                    <p class="text-[rgb(var(--m3-color-on-surface-variant-rgb))] text-sm">No users found</p>
                 </div>
             </div>
 
@@ -205,7 +205,7 @@ const verificationBadge = (verified_at) => {
                 <button
                     v-if="users.prev_page_url"
                     @click="handlePaginate(users.prev_page_url)"
-                    class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-sm font-medium"
+                    class="px-4 py-2 border border-[rgb(var(--m3-color-outline-variant-rgb))] rounded-lg hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))] text-[rgb(var(--m3-color-on-surface-rgb))] text-sm font-medium transition-colors"
                 >
                     ← Previous
                 </button>
@@ -216,10 +216,10 @@ const verificationBadge = (verified_at) => {
                         v-for="page in users.last_page"
                         :key="page"
                         :class="[
-                            'px-3 py-2 rounded text-sm font-medium',
+                            'px-3 py-2 rounded text-sm font-medium transition-colors',
                             page === users.current_page
-                                ? 'bg-blue-600 text-white'
-                                : 'border border-gray-300 hover:bg-gray-100',
+                                ? 'bg-[rgb(var(--m3-color-primary-rgb))] text-[rgb(var(--m3-color-on-primary-rgb))]'
+                                : 'border border-[rgb(var(--m3-color-outline-variant-rgb))] text-[rgb(var(--m3-color-on-surface-rgb))] hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))]',
                         ]"
                         @click="handlePaginate(users.path + '?page=' + page)"
                     >
@@ -231,7 +231,7 @@ const verificationBadge = (verified_at) => {
                 <button
                     v-if="users.next_page_url"
                     @click="handlePaginate(users.next_page_url)"
-                    class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-sm font-medium"
+                    class="px-4 py-2 border border-[rgb(var(--m3-color-outline-variant-rgb))] rounded-lg hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))] text-[rgb(var(--m3-color-on-surface-rgb))] text-sm font-medium transition-colors"
                 >
                     Next →
                 </button>
