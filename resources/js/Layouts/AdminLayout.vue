@@ -8,15 +8,26 @@ const sidebarOpen = ref(true)
 const user = computed(() => page.props.auth.user)
 
 const menuItems = computed(() => [
-    { label: 'Dashboard', href: route('admin.dashboard'), icon: '📊' },
-    { label: 'Users', href: route('admin.users.index'), icon: '👥' },
-    { label: 'Support', href: route('admin.support.index'), icon: '🆘' },
-    { label: 'AI Logs', href: route('admin.ai_logs.index'), icon: '🤖' },
-    { label: 'Audit Logs', href: route('admin.audit_logs.index'), icon: '📋' },
+    { label: 'Dashboard', href: route('admin.dashboard'), icon: 'dashboard' },
+    { label: 'Users', href: route('admin.users.index'), icon: 'users' },
+    { label: 'Support', href: route('admin.support.index'), icon: 'support' },
+    { label: 'AI Logs', href: route('admin.ai_logs.index'), icon: 'logs' },
+    { label: 'Audit Logs', href: route('admin.audit_logs.index'), icon: 'history' },
 ])
 
 const isActive = (href) => {
     return route().current()?.startsWith(href.split('/').pop())
+}
+
+const getIcon = (name) => {
+    const icons = {
+        dashboard: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-3m0 0l7-4 7 4M5 9v10a1 1 0 001 1h12a1 1 0 001-1V9m-9 16l4-4m0 0l4 4m-4-4v4"></path></svg>',
+        users: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 8.048 4 4 0 010-8.048M3 20.487a6 6 0 0111.933 0M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>',
+        support: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.172l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>',
+        logs: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>',
+        history: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>',
+    }
+    return icons[name] || icons.dashboard
 }
 
 const logout = () => {
@@ -35,18 +46,11 @@ const logout = () => {
         >
             <!-- Logo -->
             <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-lg font-bold text-gray-900">Bendaharaku Admin</h2>
+                <h2 class="text-lg font-bold text-gray-900">Admin Panel</h2>
             </div>
 
             <!-- Navigation -->
-            <nav class="flex-1 px-4 py-4 space-y-2">
-                <div
-                    v-for="item in menuItems"
-                    :key="item.href"
-                    class="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 py-2 mt-4 first:mt-0"
-                >
-                    {{ item.label }}
-                </div>
+            <nav class="flex-1 px-4 py-4 space-y-1">
                 <Link
                     v-for="item in menuItems"
                     :key="item.href"
@@ -58,7 +62,7 @@ const logout = () => {
                             : 'text-gray-700 hover:bg-gray-100',
                     ]"
                 >
-                    <span class="mr-3">{{ item.icon }}</span>
+                    <span class="mr-3 flex-shrink-0" v-html="getIcon(item.icon)"></span>
                     {{ item.label }}
                 </Link>
             </nav>
@@ -84,9 +88,11 @@ const logout = () => {
             <div class="bg-white border-b border-gray-200 px-4 lg:px-6 py-4 flex items-center justify-between">
                 <button
                     @click="sidebarOpen = !sidebarOpen"
-                    class="lg:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-md"
+                    class="lg:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
                 >
-                    ☰
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
                 </button>
                 <div class="flex-1 px-4">
                     <h1 class="text-xl font-semibold text-gray-900">Administration Panel</h1>
