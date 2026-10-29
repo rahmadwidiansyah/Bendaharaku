@@ -106,12 +106,17 @@ const confirmDeleteBotAvatar = () => {
         <Head :title="t('settings.ai.bot.title')" />
 
         <div class="m3-bot mx-auto w-full max-w-4xl">
-            <M3SettingsBack />
-
             <M3PageTitle
                 :title="t('settings.ai.bot.title')"
                 :subtitle="t('settings.ai.bot.description')"
-            />
+            >
+                <template #leading>
+                    <M3SettingsBack inline />
+                </template>
+            </M3PageTitle>
+
+            <!-- Bar kembali untuk desktop (judul in-content disembunyikan) -->
+            <M3SettingsBack />
 
             <form class="m3-bot__form" @submit.prevent="saveBotSettings">
                 <div class="m3-bot__avatar-block">

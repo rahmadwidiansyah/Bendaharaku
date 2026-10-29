@@ -1744,6 +1744,10 @@ categoryTab: {
         results: 'Hasil Pencarian',
         shortcuts: 'Pintasan Cepat',
         noResults: 'Tidak ada hasil untuk',
+        noResultsHint: 'Coba kata kunci lain atau periksa ejaan.',
+        introTitle: 'Cari apa saja di Bendaharaku',
+        subtitle: 'Cari transaksi, kategori, dan dompet',
+        hint: 'Cari menu, transaksi, atau dompet…',
         navigation: 'Navigasi',
         settings: 'Pengaturan',
         hints: {

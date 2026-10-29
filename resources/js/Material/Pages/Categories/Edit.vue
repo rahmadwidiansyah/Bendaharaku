@@ -7,6 +7,7 @@ import M3Layout from '@/Material/Layouts/AuthenticatedLayout.vue'
 import M3IconButton from '@/Material/Components/M3IconButton.vue'
 import M3CategoryForm from '@/Material/Components/Category/M3CategoryForm.vue'
 import AppIcon from '@/Components/AppIcon.vue'
+import { goBack } from '@/Material/utils/goBack.js'
 import { Head } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 
@@ -25,7 +26,7 @@ defineProps({
 
         <div class="m3-cat-edit">
             <header class="m3-cat-edit__topbar">
-                <M3IconButton :href="route('categories.index')" :aria-label="t('common.back')">
+                <M3IconButton :aria-label="t('common.back')" @click="goBack(route('categories.index'))">
                     <AppIcon icon="arrow-left" />
                 </M3IconButton>
                 <h1 class="m3-cat-edit__title">{{ t('category.titleEdit') }}</h1>

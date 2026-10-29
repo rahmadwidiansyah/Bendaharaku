@@ -5,6 +5,7 @@ import M3Layout from '@/Material/Layouts/AuthenticatedLayout.vue'
 import M3IconButton from '@/Material/Components/M3IconButton.vue'
 import M3WalletForm from '@/Material/Components/Wallet/M3WalletForm.vue'
 import AppIcon from '@/Components/AppIcon.vue'
+import { goBack } from '@/Material/utils/goBack.js'
 
 const { t } = useI18n()
 
@@ -19,7 +20,7 @@ defineProps({
 
         <div class="m3-wallet-edit">
             <header class="m3-wallet-edit__topbar">
-                <M3IconButton :href="route('wallets.index')" :aria-label="t('common.back')">
+                <M3IconButton :aria-label="t('common.back')" @click="goBack(route('wallets.index'))">
                     <AppIcon icon="arrow-left" />
                 </M3IconButton>
                 <h1 class="m3-wallet-edit__title">{{ t('wallet.titleEdit') }}</h1>

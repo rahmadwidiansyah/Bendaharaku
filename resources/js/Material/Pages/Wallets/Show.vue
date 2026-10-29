@@ -10,6 +10,7 @@ import M3IconButton from '@/Material/Components/M3IconButton.vue'
 import M3ListItem from '@/Material/Components/M3ListItem.vue'
 import M3TransactionDetailModal from '@/Material/Components/M3TransactionDetailModal.vue'
 import AppIcon from '@/Components/AppIcon.vue'
+import { goBack } from '@/Material/utils/goBack.js'
 import { getM3CategoryIconClass, getM3WalletIconClass } from '@/Material/utils/m3IconColor.js'
 import { formatDate, formatNumber } from '@/utils/format.js'
 
@@ -75,7 +76,7 @@ const openDetail = (trx) => {
 
         <div class="m3-wallet-show">
             <header class="m3-wallet-show__topbar">
-                <M3IconButton :href="route('wallets.index')" :aria-label="t('common.back')">
+                <M3IconButton :aria-label="t('common.back')" @click="goBack(route('wallets.index'))">
                     <AppIcon icon="arrow-left" />
                 </M3IconButton>
                 <h1 class="m3-wallet-show__topbar-title">{{ wallet.name }}</h1>

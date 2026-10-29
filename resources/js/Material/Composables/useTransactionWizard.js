@@ -25,6 +25,7 @@ import { router } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useTransactionForm } from '@/Composables/useTransactionForm.js'
 import { useWizardNavigation } from '@/Composables/useWizardNavigation.js'
+import { goBack } from '@/Material/utils/goBack.js'
 import { isFutureDateOnly } from '@/utils/format.js'
 
 export function useTransactionWizard({ form, props, isDesktopLayout, mode = 'create', initial = {} }) {
@@ -71,10 +72,13 @@ export function useTransactionWizard({ form, props, isDesktopLayout, mode = 'cre
         }
     }
 
-    const { goBack, pushStepState } = useWizardNavigation({
+    // Back dari langkah pertama: kembali ke halaman asal wizard dibuka
+    // (transactions.index, wallets.show, dashboard, dsb.); stack kosong
+    // (direct load) → fallback Dashboard.
+    const { goBack: wizardGoBack, pushStepState } = useWizardNavigation({
         formStep,
         resetToStep,
-        onBackFromFirstStep: () => router.visit(route('dashboard')),
+        onBackFromFirstStep: () => goBack(route('dashboard')),
     })
 
     onMounted(() => {
@@ -184,7 +188,9 @@ export function useTransactionWizard({ form, props, isDesktopLayout, mode = 'cre
     })
 
     // ─── Submit ────────────────────────────────────────────────────────
-    const handleBack = () => router.visit(route('dashboard'))
+    // Tutup wizard: kembali ke halaman asal wizard dibuka; stack kosong →
+    // fallback Dashboard.
+    const handleBack = () => goBack(route('dashboard'))
 
     const resetForNextEntry = ({ isTransfer }) => {
         form.amount = 0
@@ -255,7 +261,7 @@ export function useTransactionWizard({ form, props, isDesktopLayout, mode = 'cre
         activeCategories, selectedCategory, selectCategory, activeSubjects, isMoneyIn,
 
         // Wizard
-        formStep, typeConfirmed, resetToStep, goBack,
+        formStep, typeConfirmed, resetToStep, goBack: wizardGoBack,
 
         // Transfer
         transferErrors, transferAll, isSwapping, swapWallets, submitTransfer,

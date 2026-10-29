@@ -250,6 +250,13 @@ const periodLabel = computed(() =>
     ),
 )
 
+// Versi singkat label periode untuk toolbar satu baris di mobile ("Jan 2026").
+const periodLabelShort = computed(() =>
+    new Intl.DateTimeFormat('id-ID', { month: 'short', year: 'numeric' }).format(
+        new Date(currentYear.value, currentMonth.value - 1, 1),
+    ),
+)
+
 // Generate AI hanya untuk bulan berjalan; bulan lain (lampau/mendatang) hanya bisa dilihat & diedit manual
 const isCurrentPeriod = computed(() => {
     const now = new Date()
@@ -366,7 +373,7 @@ onUnmounted(stopGenerationPolling)
                 </template>
             </M3PageTitle>
 
-            <!-- ── Toolbar: navigasi periode + aksi kontekstual ── -->
+            <!-- ── Toolbar: navigasi periode + aksi kontekstual, satu baris ── -->
             <div class="m3-bud__toolbar">
                 <div class="m3-bud__period" role="group" :aria-label="t('budgeting.period')">
                     <M3IconButton :aria-label="t('btn.prev')" @click="shiftMonth(-1)">
@@ -374,7 +381,9 @@ onUnmounted(stopGenerationPolling)
                     </M3IconButton>
                     <span class="m3-bud__period-label" aria-live="polite">
                         <AppIcon icon="calendar" class="m3-bud__period-icon" />
-                        <span class="m3-bud__period-value">{{ periodLabel }}</span>
+                        <!-- Label singkat di mobile (satu baris), lengkap di ≥640px -->
+                        <span class="m3-bud__period-value m3-bud__period-value--short">{{ periodLabelShort }}</span>
+                        <span class="m3-bud__period-value m3-bud__period-value--long">{{ periodLabel }}</span>
                     </span>
                     <M3IconButton :aria-label="t('btn.next')" @click="shiftMonth(1)">
                         <AppIcon icon="chevron-right" />
@@ -382,15 +391,27 @@ onUnmounted(stopGenerationPolling)
                 </div>
 
                 <div v-if="isCurrentPeriod" class="m3-bud__actions">
-                    <M3Button
-                        v-if="!budgetData && isCurrentPeriod"
-                        variant="tonal"
-                        size="sm"
-                        :href="route('budgeting.create')"
-                    >
-                        <template #leading><AppIcon icon="plus" /></template>
-                        {{ t('budgeting.createManual') }}
-                    </M3Button>
+                    <!-- Belum ada budget: CTA buat manual — icon-only di mobile, berlabel ≥640px -->
+                    <template v-if="!budgetData && isCurrentPeriod">
+                        <M3IconButton
+                            variant="tonal"
+                            class="m3-bud__create-icon-only"
+                            :href="route('budgeting.create')"
+                            :aria-label="t('budgeting.createManual')"
+                            :title="t('budgeting.createManual')"
+                        >
+                            <AppIcon icon="plus" />
+                        </M3IconButton>
+                        <M3Button
+                            variant="tonal"
+                            size="sm"
+                            class="m3-bud__create-labeled"
+                            :href="route('budgeting.create')"
+                        >
+                            <template #leading><AppIcon icon="plus" /></template>
+                            {{ t('budgeting.createManual') }}
+                        </M3Button>
+                    </template>
                     <template v-if="budgetData && isCurrentPeriod">
                         <M3IconButton
                             variant="tonal"
@@ -711,23 +732,24 @@ onUnmounted(stopGenerationPolling)
 
 /* ── Toolbar ── */
 .m3-bud__toolbar {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--m3-space-3);
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--m3-space-2);
 }
 
 .m3-bud__period {
     display: flex;
+    flex: 0 1 auto;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     gap: var(--m3-space-1);
 }
 
 .m3-bud__period-label {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    flex: 1;
     gap: var(--m3-space-2);
     min-height: var(--m3-size-touch-target);
     padding: 0 var(--m3-space-4);
@@ -750,16 +772,27 @@ onUnmounted(stopGenerationPolling)
     letter-spacing: var(--m3-type-title-small-tracking);
 }
 
+/* Label periode: singkat di mobile ("Jan 2026"), lengkap di layar lebar */
+.m3-bud__period-value--short {
+    display: inline;
+}
+
+.m3-bud__period-value--long {
+    display: none;
+}
+
 .m3-bud__actions {
     display: flex;
-    flex-wrap: wrap;
+    flex-shrink: 0;
     align-items: center;
     justify-content: flex-end;
     gap: var(--m3-space-2);
 }
 
-.m3-bud__actions > :deep(.m3-btn) {
-    width: 100%;
+/* CTA "Buat manual": icon-only di mobile, berlabel mulai 640px (paritas
+   dengan tema default) */
+.m3-bud__create-labeled {
+    display: none;
 }
 
 /* ── States ── */
@@ -1398,32 +1431,23 @@ onUnmounted(stopGenerationPolling)
 
 /* ── Responsif ── */
 @media (min-width: 640px) {
-    .m3-bud__toolbar {
-        display: flex;
-        flex-wrap: nowrap;
-        align-items: center;
-        justify-content: space-between;
-        gap: var(--m3-space-3);
+    /* Label periode lengkap + CTA "Buat manual" berlabel di layar lebar.
+       Specificity .m3-bud__toolbar... ditingkatkan agar menang atas
+       display komponen (.m3-btn / .m3-icon-btn). */
+    .m3-bud__period-value--short {
+        display: none;
     }
 
-    .m3-bud__period {
-        flex: 0 1 auto;
-        justify-content: flex-start;
+    .m3-bud__period-value--long {
+        display: inline;
     }
 
-    .m3-bud__period-label {
-        flex: 0 1 auto;
+    .m3-bud__toolbar .m3-bud__create-icon-only {
+        display: none;
     }
 
-    .m3-bud__actions {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: flex-end;
-        gap: var(--m3-space-2);
-    }
-
-    .m3-bud__actions > :deep(.m3-btn) {
-        width: auto;
+    .m3-bud__toolbar .m3-bud__create-labeled {
+        display: inline-flex;
     }
 
     .m3-bud__summary-hero-value {

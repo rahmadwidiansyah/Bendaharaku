@@ -1723,6 +1723,10 @@ export default {
         results: 'Search Results',
         shortcuts: 'Quick Shortcuts',
         noResults: 'No results for',
+        noResultsHint: 'Try different keywords or check the spelling.',
+        introTitle: 'Search anything across Bendaharaku',
+        subtitle: 'Search transactions, categories, and wallets',
+        hint: 'Search menu, transactions, or wallets…',
         navigation: 'Navigation',
         settings: 'Settings',
         hints: {

@@ -16,6 +16,7 @@ import M3ListItem from '@/Material/Components/M3ListItem.vue'
 import M3DateRangeModal from '@/Material/Components/M3DateRangeModal.vue'
 import M3TransactionDetailModal from '@/Material/Components/M3TransactionDetailModal.vue'
 import AppIcon from '@/Components/AppIcon.vue'
+import { goBack } from '@/Material/utils/goBack.js'
 import { getM3CategoryIconClass } from '@/Material/utils/m3IconColor.js'
 import { Head } from '@inertiajs/vue3'
 import { computed, ref } from 'vue'
@@ -88,7 +89,7 @@ const totalClass = computed(() => `m3-cat-show__total--${typeKey(props.category.
 
         <div class="m3-cat-show">
             <header class="m3-cat-show__topbar">
-                <M3IconButton :href="route('categories.index')" :aria-label="t('category.show.back')">
+                <M3IconButton :aria-label="t('category.show.back')" @click="goBack(route('categories.index'))">
                     <AppIcon icon="arrow-left" />
                 </M3IconButton>
                 <h1 class="m3-cat-show__topbar-title">{{ t('category.title') }}</h1>

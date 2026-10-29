@@ -357,12 +357,17 @@ async function saveRouting() {
         <Head :title="t('settings.ai.models.title')" />
 
         <div class="m3-models mx-auto w-full max-w-6xl">
-            <M3SettingsBack />
-
             <M3PageTitle
                 :title="t('settings.ai.models.title')"
                 :subtitle="t('settings.ai.models.description')"
-            />
+            >
+                <template #leading>
+                    <M3SettingsBack inline />
+                </template>
+            </M3PageTitle>
+
+            <!-- Bar kembali untuk desktop (judul in-content disembunyikan) -->
+            <M3SettingsBack />
 
             <!-- ── Akun API ─────────────────────────────────────── -->
             <section class="m3-models__section">

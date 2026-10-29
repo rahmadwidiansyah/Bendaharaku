@@ -54,12 +54,17 @@ const chevron = 'M8.25 4.5l7.5 7.5-7.5 7.5'
         <Head :title="t('settings.ai.memory.title')" />
 
         <div class="m3-memory mx-auto w-full max-w-4xl">
-            <M3SettingsBack />
-
             <M3PageTitle
                 :title="t('settings.ai.memory.title')"
                 :subtitle="t('settings.ai.memory.description')"
-            />
+            >
+                <template #leading>
+                    <M3SettingsBack inline />
+                </template>
+            </M3PageTitle>
+
+            <!-- Bar kembali untuk desktop (judul in-content disembunyikan) -->
+            <M3SettingsBack />
 
             <section class="m3-memory__section">
                 <M3Card variant="outlined" padding="none" class="m3-memory__card">

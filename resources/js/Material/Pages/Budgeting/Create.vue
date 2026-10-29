@@ -12,6 +12,7 @@ import M3CircularProgress from '@/Material/Components/M3CircularProgress.vue'
 import M3AmountKeypad from '@/Material/Components/M3AmountKeypad.vue'
 import M3TextField from '@/Material/Components/M3TextField.vue'
 import AppIcon from '@/Components/AppIcon.vue'
+import { goBack } from '@/Material/utils/goBack.js'
 import { getM3CategoryIconClass } from '@/Material/utils/m3IconColor.js'
 import { formatNumber, formatRupiah } from '@/utils/format.js'
 
@@ -188,7 +189,7 @@ const submit = () => {
 
         <div class="m3-bc">
             <header class="m3-bc__topbar">
-                <M3IconButton :href="route('budgeting.index')" :aria-label="t('btn.back')">
+                <M3IconButton :aria-label="t('btn.back')" @click="goBack(route('budgeting.index'))">
                     <AppIcon icon="arrow-left" />
                 </M3IconButton>
                 <h1 class="m3-bc__title">{{ t('budgeting.titleCreate') }}</h1>

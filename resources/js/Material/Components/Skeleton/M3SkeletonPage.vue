@@ -32,7 +32,8 @@ defineProps({
         role="status"
         :aria-label="ariaLabel || undefined"
     >
-        <div v-if="back" class="m3-skel-page__back">
+        <!-- Back desktop: bar tersendiri (judul in-content disembunyikan). -->
+        <div v-if="back" class="m3-skel-page__back m3-skel-page__back--desktop">
             <M3SkeletonBlock
                 circle
                 width="var(--m3-size-touch-target)"
@@ -41,6 +42,15 @@ defineProps({
         </div>
 
         <div v-if="title" class="m3-skel-page__title">
+            <!-- Back mobile: sejajar satu baris dengan judul, mengikuti
+                 slot leading M3PageTitle di halaman final. -->
+            <div v-if="back" class="m3-skel-page__back m3-skel-page__back--inline">
+                <M3SkeletonBlock
+                    circle
+                    width="var(--m3-size-touch-target)"
+                    height="var(--m3-size-touch-target)"
+                />
+            </div>
             <div class="m3-skel-page__title-text">
                 <M3SkeletonBlock
                     width="10rem"
@@ -96,9 +106,24 @@ defineProps({
     gap: var(--m3-space-6);
 }
 
-.m3-skel-page__back {
+.m3-skel-page__back--desktop {
+    display: none;
+}
+
+.m3-skel-page__back--inline {
     display: flex;
-    margin-bottom: calc(-1 * var(--m3-space-3));
+    align-items: center;
+    flex-shrink: 0;
+}
+
+@media (min-width: 1024px) {
+    .m3-skel-page__back--desktop {
+        display: flex;
+    }
+
+    .m3-skel-page__back--inline {
+        display: none;
+    }
 }
 
 .m3-skel-page__title {
@@ -106,13 +131,15 @@ defineProps({
     align-items: center;
     justify-content: space-between;
     gap: var(--m3-space-3);
-    margin: calc(-1 * var(--m3-space-4)) calc(-1 * var(--m3-space-4)) 0;
-    padding: var(--m3-space-4);
+    margin: calc(-1 * var(--m3-space-4)) calc(-1 * var(--m3-space-4))
+        calc(-1 * var(--m3-space-2));
+    padding: var(--m3-space-4) var(--m3-space-4) var(--m3-space-2);
 }
 
 .m3-skel-page__title-text {
     display: flex;
     flex-direction: column;
+    flex: 1;
     gap: var(--m3-space-0-5);
     min-width: 0;
 }
