@@ -7,6 +7,7 @@ use App\Http\Controllers\BudgetingController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ChatBotProfileController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\EvidenceController;
 use App\Http\Controllers\EvidenceDebugController;
 use App\Http\Controllers\EvidenceReviewController;
@@ -606,6 +607,16 @@ Route::middleware(['auth'])->group(function () {
     Route::get('transactions/page', [TransactionController::class, 'page'])->name('transactions.page');
     Route::resource('transactions', TransactionController::class)->except(['show']);
     Route::get('/loans/{type}', [LoanController::class, 'index'])->name('loans.index');
+
+    // Admin routes
+    Route::middleware('admin')
+        ->prefix('admin')
+        ->name('admin.')
+        ->group(function () {
+            Route::get('/', AdminDashboardController::class)
+                ->middleware('permission:admin.dashboard.view')
+                ->name('dashboard');
+        });
 });
 
 // PWA — Digital Asset Links for TWA (env-based SHA256, fallback to file)
