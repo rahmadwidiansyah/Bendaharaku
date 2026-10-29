@@ -11,11 +11,7 @@ class AiLogController extends Controller
 {
     public function index(Request $request)
     {
-        // Fetch AI-related logs from activity_logs table or similar
-        // For now, this is a placeholder that shows the structure
         $query = DB::table('activity_logs')
-            ->where('subject', 'like', '%ai%')
-            ->orWhere('description', 'like', '%ai%')
             ->latest('created_at');
 
         // Filter by status
