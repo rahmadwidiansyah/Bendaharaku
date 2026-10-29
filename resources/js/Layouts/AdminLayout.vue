@@ -9,15 +9,14 @@ const user = computed(() => page.props.auth.user)
 
 const menuItems = computed(() => [
     { label: 'Dashboard', href: route('admin.dashboard'), icon: '📊' },
-    { label: 'Users', href: '#', icon: '👥' },
-    { label: 'Support', href: '#', icon: '🆘' },
-    { label: 'AI Logs', href: '#', icon: '🤖' },
-    { label: 'Audit Logs', href: '#', icon: '📋' },
+    { label: 'Users', href: route('admin.users.index'), icon: '👥' },
+    { label: 'Support', href: route('admin.support.index'), icon: '🆘' },
+    { label: 'AI Logs', href: route('admin.ai_logs.index'), icon: '🤖' },
+    { label: 'Audit Logs', href: route('admin.audit_logs.index'), icon: '📋' },
 ])
 
 const isActive = (href) => {
-    if (href === '#') return false
-    return route().current() === href.split('/').pop()
+    return route().current()?.startsWith(href.split('/').pop())
 }
 
 const logout = () => {
