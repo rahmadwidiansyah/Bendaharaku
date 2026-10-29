@@ -8,6 +8,10 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ChatBotProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Admin\SupportController as AdminSupportController;
+use App\Http\Controllers\Admin\AiLogController as AdminAiLogController;
+use App\Http\Controllers\Admin\AuditLogController as AdminAuditLogController;
 use App\Http\Controllers\EvidenceController;
 use App\Http\Controllers\EvidenceDebugController;
 use App\Http\Controllers\EvidenceReviewController;
@@ -616,6 +620,43 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/', AdminDashboardController::class)
                 ->middleware('permission:admin.dashboard.view')
                 ->name('dashboard');
+
+            Route::prefix('users')
+                ->name('users.')
+                ->middleware('permission:users.view')
+                ->group(function () {
+                    Route::get('/', [AdminUserController::class, 'index'])->name('index');
+                    Route::get('/{user}', [AdminUserController::class, 'show'])->name('show');
+                    Route::post('/{user}/status', [AdminUserController::class, 'updateStatus'])
+                        ->middleware('permission:users.update_status')
+                        ->name('update_status');
+                });
+
+            Route::prefix('support')
+                ->name('support.')
+                ->middleware('permission:support.manage')
+                ->group(function () {
+                    Route::get('/', [AdminSupportController::class, 'index'])->name('index');
+                    Route::post('/search', [AdminSupportController::class, 'search'])->name('search');
+                    Route::get('/user/{user}', [AdminSupportController::class, 'userDetail'])->name('user_detail');
+                    Route::post('/user/{user}/log-access', [AdminSupportController::class, 'logAccess'])->name('log_access');
+                });
+
+            Route::prefix('ai/logs')
+                ->name('ai_logs.')
+                ->middleware('permission:ai.logs.view')
+                ->group(function () {
+                    Route::get('/', [AdminAiLogController::class, 'index'])->name('index');
+                    Route::get('/{id}', [AdminAiLogController::class, 'show'])->name('show');
+                });
+
+            Route::prefix('audit-logs')
+                ->name('audit_logs.')
+                ->middleware('permission:audit_logs.view')
+                ->group(function () {
+                    Route::get('/', [AdminAuditLogController::class, 'index'])->name('index');
+                    Route::get('/{auditLog}', [AdminAuditLogController::class, 'show'])->name('show');
+                });
         });
 });
 
