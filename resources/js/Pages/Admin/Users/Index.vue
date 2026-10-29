@@ -47,11 +47,11 @@ const handleStatusChange = (user, newStatus) => {
 }
 
 const statusBadge = (status) => {
-    return status === 'suspended' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+    return status === 'suspended' ? 'bg-[rgb(var(--m3-color-error-container-rgb))] text-[rgb(var(--m3-color-on-error-container-rgb))]' : 'bg-[rgb(var(--m3-color-tertiary-container-rgb))] text-[rgb(var(--m3-color-on-tertiary-container-rgb))]'
 }
 
 const verificationBadge = (verified_at) => {
-    return verified_at ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
+    return verified_at ? 'bg-[rgb(var(--m3-color-primary-container-rgb))] text-[rgb(var(--m3-color-on-primary-container-rgb))]' : 'bg-[rgb(var(--m3-color-surface-container-high-rgb))] text-[rgb(var(--m3-color-on-surface-variant-rgb))]'
 }
 </script>
 
@@ -62,21 +62,21 @@ const verificationBadge = (verified_at) => {
         <div class="space-y-6 p-6">
             <!-- Header -->
             <div class="mb-8">
-                <h1 class="text-3xl font-bold">User Management</h1>
-                <p class="text-gray-600">Manage users, view details, and change status</p>
+                <h1 class="text-3xl font-bold text-[rgb(var(--m3-color-on-surface-rgb))]">User Management</h1>
+                <p class="text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Manage users, view details, and change status</p>
             </div>
 
             <!-- Filters -->
-            <div class="bg-white rounded-lg p-6 border border-gray-200 space-y-4">
+            <div class="bg-[rgb(var(--m3-color-surface-container-rgb))] rounded-lg p-6 border border-[rgb(var(--m3-color-outline-variant-rgb))] space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <!-- Search -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                        <label class="block text-sm font-medium text-[rgb(var(--m3-color-on-surface-rgb))] mb-2">Search</label>
                         <input
                             v-model="search"
                             type="text"
                             placeholder="Name or email..."
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            class="w-full px-4 py-2 border border-[rgb(var(--m3-color-outline-variant-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--m3-color-primary-rgb))] focus:border-transparent"
                             @keyup.enter="handleSearch"
                         />
                     </div>
@@ -86,7 +86,7 @@ const verificationBadge = (verified_at) => {
                         <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
                         <select
                             v-model="status"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            class="w-full px-4 py-2 border border-[rgb(var(--m3-color-outline-variant-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--m3-color-primary-rgb))] focus:border-transparent"
                         >
                             <option value="">All</option>
                             <option value="verified">Verified</option>
@@ -96,10 +96,10 @@ const verificationBadge = (verified_at) => {
 
                     <!-- Items Per Page -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Per Page</label>
+                        <label class="block text-sm font-medium text-[rgb(var(--m3-color-on-surface-rgb))] mb-2">Per Page</label>
                         <select
                             v-model.number="per_page"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            class="w-full px-4 py-2 border border-[rgb(var(--m3-color-outline-variant-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--m3-color-primary-rgb))] focus:border-transparent"
                         >
                             <option :value="10">10</option>
                             <option :value="15">15</option>
@@ -112,7 +112,7 @@ const verificationBadge = (verified_at) => {
                 <button
                     @click="handleSearch"
                     :disabled="loading"
-                    class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    class="w-full px-4 py-2 bg-[rgb(var(--m3-color-primary-rgb))] text-[rgb(var(--m3-color-on-primary-rgb))] rounded-lg font-medium hover:bg-[rgb(var(--m3-color-primary-container-rgb))] hover:text-[rgb(var(--m3-color-on-primary-container-rgb))] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                     {{ loading ? 'Loading...' : 'Search' }}
                 </button>

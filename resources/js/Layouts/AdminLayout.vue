@@ -36,17 +36,17 @@ const logout = () => {
 </script>
 
 <template>
-    <div class="flex h-screen bg-gray-50">
+    <div class="flex h-screen bg-[rgb(var(--m3-color-surface-rgb))]">
         <!-- Sidebar -->
         <div
             :class="[
-                'fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 lg:relative lg:translate-x-0 z-40',
+                'fixed inset-y-0 left-0 w-64 bg-[rgb(var(--m3-color-surface-container-rgb))] border-r border-[rgb(var(--m3-color-outline-variant-rgb))] transform transition-transform duration-300 lg:relative lg:translate-x-0 z-40',
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full',
             ]"
         >
             <!-- Logo -->
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-lg font-bold text-gray-900">Admin Panel</h2>
+            <div class="px-6 py-4 border-b border-[rgb(var(--m3-color-outline-variant-rgb))]">
+                <h2 class="text-lg font-bold text-[rgb(var(--m3-color-on-surface-rgb))]">Admin Panel</h2>
             </div>
 
             <!-- Navigation -->
@@ -56,10 +56,10 @@ const logout = () => {
                     :key="item.href"
                     :href="item.href"
                     :class="[
-                        'flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors',
+                        'flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors',
                         isActive(item.href)
-                            ? 'bg-blue-50 text-blue-600'
-                            : 'text-gray-700 hover:bg-gray-100',
+                            ? 'bg-[rgb(var(--m3-color-primary-container-rgb))] text-[rgb(var(--m3-color-on-primary-container-rgb))]'
+                            : 'text-[rgb(var(--m3-color-on-surface-variant-rgb))] hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))]',
                     ]"
                 >
                     <span class="mr-3 flex-shrink-0" v-html="getIcon(item.icon)"></span>
@@ -68,14 +68,14 @@ const logout = () => {
             </nav>
 
             <!-- User & Logout -->
-            <div class="px-4 py-4 border-t border-gray-200 space-y-3">
-                <div class="text-xs text-gray-500">
-                    <p class="font-semibold text-gray-900">{{ user?.name }}</p>
+            <div class="px-4 py-4 border-t border-[rgb(var(--m3-color-outline-variant-rgb))] space-y-3">
+                <div class="text-xs text-[rgb(var(--m3-color-on-surface-variant-rgb))]">
+                    <p class="font-semibold text-[rgb(var(--m3-color-on-surface-rgb))]">{{ user?.name }}</p>
                     <p>{{ user?.email }}</p>
                 </div>
                 <button
                     @click="logout"
-                    class="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                    class="w-full px-4 py-2 text-sm font-medium text-[rgb(var(--m3-color-on-secondary-container-rgb))] bg-[rgb(var(--m3-color-secondary-container-rgb))] rounded-lg hover:bg-[rgb(var(--m3-color-secondary-rgb))] hover:text-[rgb(var(--m3-color-on-secondary-rgb))] transition-colors"
                 >
                     Logout
                 </button>
@@ -85,22 +85,22 @@ const logout = () => {
         <!-- Main Content -->
         <div class="flex-1 flex flex-col overflow-hidden">
             <!-- Header -->
-            <div class="bg-white border-b border-gray-200 px-4 lg:px-6 py-4 flex items-center justify-between">
+            <div class="bg-[rgb(var(--m3-color-surface-container-rgb))] border-b border-[rgb(var(--m3-color-outline-variant-rgb))] px-4 lg:px-6 py-4 flex items-center justify-between">
                 <button
                     @click="sidebarOpen = !sidebarOpen"
-                    class="lg:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+                    class="lg:hidden p-2 text-[rgb(var(--m3-color-on-surface-rgb))] hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))] rounded-lg transition-colors"
                 >
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                     </svg>
                 </button>
                 <div class="flex-1 px-4">
-                    <h1 class="text-xl font-semibold text-gray-900">Administration Panel</h1>
+                    <h1 class="text-xl font-semibold text-[rgb(var(--m3-color-on-surface-rgb))]">Administration Panel</h1>
                 </div>
             </div>
 
             <!-- Content -->
-            <div class="flex-1 overflow-auto">
+            <div class="flex-1 overflow-auto bg-[rgb(var(--m3-color-surface-rgb))]">
                 <slot />
             </div>
         </div>
