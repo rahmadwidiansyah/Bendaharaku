@@ -22,10 +22,12 @@ import { ref, computed } from 'vue'
 import { router } from '@inertiajs/vue3'
 
 const MIN_MS = 300 // minimum skeleton display agar tidak berkedip
+const DELAY_MS = 150 // tunda tampil skeleton agar load instan dari cache tidak berkedip
 
 // ── Singleton state (module-level, tidak di-reset antar komponen) ──
 const isLoading      = ref(false)
 const pendingUrl     = ref(null)   // URL tujuan yang sedang dimuat
+const skeletonTimer  = ref(null)   // Timer penunda munculnya skeleton
 let   startedAt      = 0
 let   initialized    = false
 let   finishTimeout  = null
@@ -105,25 +107,40 @@ function initListeners() {
     router.on('start', (event) => {
         const visit = event.detail?.visit
 
-        // Abaikan request yang bukan full-page navigation (preserve state + url, misal: search/filter)
+        // Abaikan request yang bukan full-page navigation
         if (visit?.preserveState && visit?.preserveUrl) return
 
-        // Bersihkan timeout sebelumnya jika ada navigasi cepat berurutan
         if (finishTimeout) {
             clearTimeout(finishTimeout)
             finishTimeout = null
         }
+        if (skeletonTimer.value) {
+            clearTimeout(skeletonTimer.value)
+            skeletonTimer.value = null
+        }
 
         startedAt = Date.now()
-
-        // Gunakan URL tujuan dari visit.url, fallback ke lokasi browser saat ini
-        // Ini kunci agar skeleton selalu resolve dengan benar dari halaman MANAPUN
         const destination = visit?.url?.pathname ?? window.location.pathname
         pendingUrl.value  = destination
-        isLoading.value   = true
+
+        // Tunda tampil skeleton selama DELAY_MS (150ms)
+        // Jika halaman selesai dimuat sebelum 150ms (misal dari cache Inertia), skeleton tidak pernah muncul
+        skeletonTimer.value = setTimeout(() => {
+            isLoading.value = true
+        }, DELAY_MS)
     })
 
     const finish = () => {
+        if (skeletonTimer.value) {
+            clearTimeout(skeletonTimer.value)
+            skeletonTimer.value = null
+        }
+
+        if (!isLoading.value) {
+            // Skeleton belum sempat tampil (load sangat cepat / dari cache)
+            return
+        }
+
         const elapsed   = Date.now() - startedAt
         const remaining = MIN_MS - elapsed
 

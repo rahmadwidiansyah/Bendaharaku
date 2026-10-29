@@ -86,6 +86,8 @@ const labelClasses = computed(() => {
 <template>
     <Link
         :href="href"
+        :prefetch="true"
+        cache-for="60"
         :class="linkClasses"
         :aria-current="active ? 'page' : undefined"
         :aria-label="label"

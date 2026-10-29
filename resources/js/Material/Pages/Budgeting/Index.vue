@@ -21,7 +21,7 @@ import M3CircularProgress from '@/Material/Components/M3CircularProgress.vue'
 import M3ProgressBar from '@/Material/Components/M3ProgressBar.vue'
 import M3BudgetSkeleton from '@/Material/Components/Skeleton/M3BudgetSkeleton.vue'
 import AppIcon from '@/Components/AppIcon.vue'
-import { getM3CategoryIconClass } from '@/Material/utils/m3IconColor.js'
+import { cachedGet } from '@/Composables/useApiCache.js'
 import { useBotAvatar } from '@/Composables/useBotAvatar.js'
 import { useToast } from '@/Composables/useToast.js'
 import { Head } from '@inertiajs/vue3'
@@ -83,8 +83,8 @@ const fetchBudget = async () => {
     isLoading.value = true
     loadError.value = false
     try {
-        const response = await axios.get(`/api/v1/budget/${currentYear.value}/${currentMonth.value}`)
-        budgetData.value = response.data
+        const data = await cachedGet(`/api/v1/budget/${currentYear.value}/${currentMonth.value}`, 60000)
+        budgetData.value = data
         if (!budgetData.value) fetchLastBudget()
     } catch (error) {
         if (error.response && error.response.status === 404) {

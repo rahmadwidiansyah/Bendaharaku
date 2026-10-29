@@ -255,7 +255,7 @@ const showSkeleton = computed(() =>
             }"
         >
             <div class="m3-appbar__leading">
-                <Link :href="route('dashboard')" class="m3-appbar__brand-btn" aria-label="Bendaharaku">
+                <Link :href="route('dashboard')" :prefetch="true" cache-for="60" class="m3-appbar__brand-btn" aria-label="Bendaharaku">
                     <img src="/icons/logo.png" alt="Bendaharaku" class="m3-appbar__brand-logo" />
                 </Link>
             </div>
@@ -264,12 +264,12 @@ const showSkeleton = computed(() =>
                 <p v-if="userName" class="m3-appbar__subtitle">{{ userName }}</p>
             </div>
             <div class="m3-appbar__actions">
-                <Link :href="route('search.page')" class="m3-appbar__icon-btn" :aria-label="$t('nav.search')">
+                <Link :href="route('search.page')" :prefetch="true" cache-for="60" class="m3-appbar__icon-btn" :aria-label="$t('nav.search')">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
                     </svg>
                 </Link>
-                <Link :href="route('settings.index')" class="m3-appbar__avatar" :aria-label="$t('header.openSettings')">
+                <Link :href="route('settings.index')" :prefetch="true" cache-for="60" class="m3-appbar__avatar" :aria-label="$t('header.openSettings')">
                     <img v-if="avatarUrl" :src="avatarUrl" alt="" class="m3-appbar__avatar-img" />
                     <span v-else class="m3-appbar__avatar-fallback" aria-hidden="true">{{ (userName || 'B').charAt(0).toUpperCase() }}</span>
                 </Link>
