@@ -27,6 +27,7 @@ const lightMode = ref(false)
 const user = computed(() => page.props.auth?.user)
 const permissions = computed(() => page.props.auth?.permissions ?? [])
 const roles = computed(() => page.props.auth?.roles ?? [])
+const m3Scheme = computed(() => page.props.auth?.user?.ui_m3_color_scheme ?? 'teal')
 
 const can = (permission) => !permission || permissions.value.includes(permission)
 
@@ -121,7 +122,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div class="flex h-screen bg-[rgb(var(--m3-color-surface-rgb))]">
+    <div class="ui-m3 flex h-screen bg-[rgb(var(--m3-color-surface-rgb))]" :class="{ light: !lightMode }" :data-m3-scheme="m3Scheme">
         <!-- Sidebar -->
         <aside
             :class="[
