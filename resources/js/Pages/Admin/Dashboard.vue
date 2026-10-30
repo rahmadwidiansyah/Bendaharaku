@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { Head, Link, router } from '@inertiajs/vue3'
 import {
     Activity,
@@ -68,6 +68,67 @@ const roleSeries = computed(() => [
 const attentionCount = computed(
     () => (props.attention ?? []).filter((item) => item.severity !== 'ok' && item.value > 0).length,
 )
+
+// ── Detail failed queue jobs ──
+const showFailedJobs = ref(false)
+const openFailedJobs = () => {
+    showFailedJobs.value = true
+    if (failedJobs.value.length === 0) fetchFailedJobs()
+}
+const failedJobs = ref([])
+const failedJobsLoading = ref(false)
+const failedJobsError = ref(null)
+const failedJobsBusyId = ref(null)
+const failedJobsBusyAll = ref(false)
+
+const fetchFailedJobs = async () => {
+    failedJobsLoading.value = true
+    failedJobsError.value = null
+    try {
+        const { data } = await axios.get(route('admin.system.failed_jobs'))
+        failedJobs.value = (data.jobs ?? []).map((job) => ({
+            ...job,
+            exceptionExcerpt: (job.exception ?? '').split('\n')[0].slice(0, 140),
+        }))
+    } catch {
+        failedJobsError.value = 'Gagal memuat daftar failed job.'
+    } finally {
+        failedJobsLoading.value = false
+    }
+}
+
+const withFailedJobBusy = async (id, action) => {
+    failedJobsBusyId.value = id
+    try {
+        await action()
+        emitDashboardRefresh()
+        await fetchFailedJobs()
+    } catch {
+        failedJobsError.value = 'Aksi gagal. Coba lagi.'
+    } finally {
+        failedJobsBusyId.value = null
+    }
+}
+
+const retryFailedJob = (job) => withFailedJobBusy(job.id, async () => {
+    const { data } = await axios.post(route('admin.system.failed_jobs_retry', { id: job.id }))
+    failedJobsError.value = null
+    return data
+})
+
+const forgetFailedJob = (job) => withFailedJobBusy(job.id, async () => {
+    const { data } = await axios.post(route('admin.system.failed_jobs_forget', { id: job.id }))
+    failedJobs.value = failedJobs.value.filter((j) => j.id !== job.id)
+    return data
+})
+
+const retryAllFailedJobs = () => withFailedJobBusy('all', async () => {
+    const { data } = await axios.post(route('admin.system.failed_jobs_retry_all'))
+    failedJobs.value = []
+    return data
+})
+
+const emitDashboardRefresh = () => router.reload({ preserveScroll: true, preserveState: true })
 
 const formatNumber = (value) => new Intl.NumberFormat('id-ID').format(Number(value ?? 0))
 
@@ -237,9 +298,10 @@ const severityClass = (severity) => {
                     <ul class="space-y-2">
                         <li v-for="item in attention" :key="item.key">
                             <component
-                                :is="item.href ? Link : 'div'"
+                                :is="item.href ? Link : (item.key === 'failed_jobs' ? 'button' : 'div')"
                                 :href="item.href || undefined"
-                                :class="['flex items-center justify-between gap-3 rounded-xl border border-[rgb(var(--m3-color-outline-variant-rgb))] px-3 py-2.5 transition-colors', item.href ? 'hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))]' : '']"
+                                :class="['flex w-full items-center justify-between gap-3 rounded-xl border border-[rgb(var(--m3-color-outline-variant-rgb))] px-3 py-2.5 transition-colors', item.href || item.key === 'failed_jobs' ? 'cursor-pointer hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))]' : '']"
+                                @click="item.key === 'failed_jobs' && openFailedJobs()"
                             >
                                 <div class="flex min-w-0 items-center gap-2">
                                     <span :class="['flex h-7 w-7 shrink-0 items-center justify-center rounded-full', severityClass(item.severity)]">
@@ -315,14 +377,22 @@ const severityClass = (severity) => {
                         <Database class="h-4 w-4 text-[rgb(var(--m3-color-primary-rgb))]" />
                     </div>
                     <dl class="grid grid-cols-2 gap-3 text-sm">
-                        <div class="rounded-xl bg-[rgb(var(--m3-color-surface-container-high-rgb))] p-3">
+                        <button
+                            type="button"
+                            class="rounded-xl bg-[rgb(var(--m3-color-surface-container-high-rgb))] p-3 text-left transition-colors hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))]"
+                            @click="openFailedJobs"
+                        >
                             <dt class="text-xs text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Queue pending</dt>
                             <dd class="mt-1 text-lg font-bold text-[rgb(var(--m3-color-on-surface-rgb))]">{{ formatNumber(system.queue_pending) }}</dd>
-                        </div>
-                        <div class="rounded-xl bg-[rgb(var(--m3-color-surface-container-high-rgb))] p-3">
+                        </button>
+                        <button
+                            type="button"
+                            class="rounded-xl bg-[rgb(var(--m3-color-surface-container-high-rgb))] p-3 text-left transition-colors hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))]"
+                            @click="openFailedJobs"
+                        >
                             <dt class="text-xs text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Queue failed</dt>
-                            <dd class="mt-1 text-lg font-bold text-[rgb(var(--m3-color-on-surface-rgb))]">{{ formatNumber(system.queue_failed) }}</dd>
-                        </div>
+                            <dd class="mt-1 text-lg font-bold" :class="system.queue_failed > 0 ? 'text-[rgb(var(--m3-color-error-rgb))]' : 'text-[rgb(var(--m3-color-on-surface-rgb))]'">{{ formatNumber(system.queue_failed) }}</dd>
+                        </button>
                         <div class="rounded-xl bg-[rgb(var(--m3-color-surface-container-high-rgb))] p-3">
                             <dt class="text-xs text-[rgb(var(--m3-color-on-surface-variant-rgb))]">AI error 24 jam</dt>
                             <dd class="mt-1 text-lg font-bold text-[rgb(var(--m3-color-on-surface-rgb))]">{{ formatNumber(stats.failed_ai_24h) }}</dd>
@@ -333,10 +403,124 @@ const severityClass = (severity) => {
                         </div>
                     </dl>
                     <p v-if="system.last_failed_job_at" class="mt-3 text-xs text-[rgb(var(--m3-color-on-surface-variant-rgb))]">
-                        Failed job terakhir: {{ formatDateTime(system.last_failed_job_at) }}
+                        Failed job terakhir: {{ formatDateTime(system.last_failed_job_at) }} ·
+                        <button type="button" class="font-semibold text-[rgb(var(--m3-color-primary-rgb))] hover:underline" @click="openFailedJobs">Lihat detail</button>
                     </p>
                 </div>
             </div>
+
+            <!-- ── Modal detail failed queue jobs ── -->
+            <Teleport to="body">
+                <Transition name="fade">
+                    <div
+                        v-if="showFailedJobs"
+                        class="fixed inset-0 z-[300] flex items-end justify-center sm:items-center"
+                        @click.self="showFailedJobs = false"
+                    >
+                        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" aria-hidden="true" />
+                        <div
+                            class="relative flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-t-2xl border shadow-2xl sm:rounded-2xl
+                                   bg-[rgb(var(--m3-color-surface-container-lowest-rgb))] border-[rgb(var(--m3-color-outline-variant-rgb))]"
+                            role="dialog" aria-modal="true" aria-label="Detail failed queue jobs"
+                        >
+                            <div class="flex items-center justify-between gap-3 border-b border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-container-rgb))] px-5 py-4">
+                                <div>
+                                    <h2 class="text-base font-bold text-[rgb(var(--m3-color-on-surface-rgb))]">Failed queue jobs</h2>
+                                    <p class="text-xs text-[rgb(var(--m3-color-on-surface-variant-rgb))]">
+                                        {{ failedJobs.length }} job gagal · {{ failedQueuePending }} pending di queue
+                                    </p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <button
+                                        type="button" :disabled="failedJobsLoading || failedJobs.length === 0 || failedJobsBusyAll"
+                                        class="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold
+                                               bg-[rgb(var(--m3-color-tertiary-container-rgb))] text-[rgb(var(--m3-color-on-tertiary-container-rgb))]
+                                               hover:opacity-90 disabled:opacity-40 transition-opacity"
+                                        @click="retryAllFailedJobs"
+                                    >
+                                        {{ failedJobsBusyAll ? 'Memproses…' : 'Retry semua' }}
+                                    </button>
+                                    <button
+                                        type="button" class="flex h-9 w-9 items-center justify-center rounded-full text-[rgb(var(--m3-color-on-surface-variant-rgb))]
+                                             hover:bg-[rgb(var(--m3-color-surface-container-high-rgb))] transition-colors"
+                                        aria-label="Refresh daftar" :disabled="failedJobsLoading"
+                                        @click="fetchFailedJobs"
+                                    >
+                                        <svg :class="['h-4 w-4', failedJobsLoading ? 'animate-spin' : '']" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                        </svg>
+                                    </button>
+                                    <button
+                                        type="button" class="flex h-9 w-9 items-center justify-center rounded-full text-[rgb(var(--m3-color-on-surface-variant-rgb))]
+                                             hover:bg-[rgb(var(--m3-color-surface-container-high-rgb))] transition-colors"
+                                        aria-label="Tutup" @click="showFailedJobs = false"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="flex-1 overflow-y-auto px-5 py-4">
+                                <p v-if="failedJobsError" class="py-8 text-center text-sm text-[rgb(var(--m3-color-error-rgb))]">{{ failedJobsError }}</p>
+
+                                <p v-else-if="failedJobsLoading" class="py-10 text-center text-sm text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Memuat…</p>
+
+                                <p v-else-if="failedJobs.length === 0" class="py-10 text-center text-sm text-[rgb(var(--m3-color-on-surface-variant-rgb))]">
+                                    Tidak ada failed job. Queue sehat.
+                                </p>
+
+                                <ul v-else class="space-y-2.5">
+                                    <li
+                                        v-for="job in failedJobs" :key="job.id"
+                                        class="rounded-xl border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-rgb))]"
+                                    >
+                                        <div class="flex items-start justify-between gap-3 p-3.5">
+                                            <div class="min-w-0">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="rounded-md bg-[rgb(var(--m3-color-error-container-rgb))] px-1.5 py-0.5 text-[10px] font-bold text-[rgb(var(--m3-color-on-error-container-rgb))]">#{{ job.id }}</span>
+                                                    <p class="truncate text-sm font-semibold text-[rgb(var(--m3-color-on-surface-rgb))]">{{ job.job }}</p>
+                                                </div>
+                                                <p class="mt-1 truncate font-mono text-[11px] text-[rgb(var(--m3-color-error-rgb))]">{{ job.exceptionExcerpt }}</p>
+                                                <p class="mt-1 text-[11px] text-[rgb(var(--m3-color-on-surface-variant-rgb))]">
+                                                    Queue: <span class="font-semibold">{{ job.queue }}</span> · {{ job.failed_at ? new Date(job.failed_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '—' }}
+                                                </p>
+                                            </div>
+                                            <div class="flex shrink-0 items-center gap-1.5">
+                                                <button
+                                                    type="button" :disabled="failedJobsBusyId !== null"
+                                                    class="rounded-full bg-[rgb(var(--m3-color-tertiary-container-rgb))] px-2.5 py-1.5 text-[11px] font-bold
+                                                           text-[rgb(var(--m3-color-on-tertiary-container-rgb))] hover:opacity-90 disabled:opacity-40"
+                                                    :aria-label="`Retry job #${job.id}`"
+                                                    @click="retryFailedJob(job)"
+                                                >
+                                                    {{ failedJobsBusyId === job.id ? '…' : 'Retry' }}
+                                                </button>
+                                                <button
+                                                    type="button" :disabled="failedJobsBusyId !== null"
+                                                    class="rounded-full px-2.5 py-1.5 text-[11px] font-bold text-[rgb(var(--m3-color-error-rgb))]
+                                                           hover:bg-[rgb(var(--m3-color-error-container-rgb))] disabled:opacity-40"
+                                                    :aria-label="`Hapus job #${job.id}`"
+                                                    @click="forgetFailedJob(job)"
+                                                >
+                                                    Hapus
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <details class="border-t border-[rgb(var(--m3-color-outline-variant-rgb))] px-3.5 py-2.5">
+                                            <summary class="cursor-pointer text-[11px] font-semibold text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Exception lengkap</summary>
+                                            <pre class="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-all rounded-lg bg-[rgb(var(--m3-color-surface-container-rgb))] p-2.5 font-mono text-[10px] leading-relaxed text-[rgb(var(--m3-color-on-surface-variant-rgb))]">{{ job.exception }}</pre>
+                                        </details>
+                                    </li>
+                                </ul>
+
+                                <p class="flex items-center gap-1.5 pt-4 text-[11px] text-[rgb(var(--m3-color-on-surface-variant-rgb))]">
+                                    Retry mengembalikan job ke queue untuk diproses ulang worker. Hapus membuang job permanen.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </Transition>
+            </Teleport>
 
             <div class="rounded-2xl border border-[rgb(var(--m3-color-primary-container-rgb))] bg-[rgb(var(--m3-color-primary-container-rgb))] p-4 text-sm text-[rgb(var(--m3-color-on-primary-container-rgb))]">
                 Login sebagai <strong>{{ admin_user?.name }}</strong> ({{ admin_user?.email }}). Metrik active user memakai <code>last_active_at</code> dan tabel <code>user_activity_daily</code>.

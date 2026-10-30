@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\SupportController as AdminSupportController;
 use App\Http\Controllers\Admin\AiLogController as AdminAiLogController;
 use App\Http\Controllers\Admin\AuditLogController as AdminAuditLogController;
 use App\Http\Controllers\Admin\SearchController as AdminSearchController;
+use App\Http\Controllers\Admin\SystemController as AdminSystemController;
 use App\Http\Controllers\EvidenceController;
 use App\Http\Controllers\EvidenceDebugController;
 use App\Http\Controllers\EvidenceReviewController;
@@ -666,6 +667,22 @@ Route::middleware(['auth'])->group(function () {
                 ->group(function () {
                     Route::get('/', [AdminAiLogController::class, 'index'])->name('index');
                     Route::get('/{id}', [AdminAiLogController::class, 'show'])->name('show');
+                });
+
+            Route::prefix('system')
+                ->name('system.')
+                ->middleware('permission:admin.dashboard.view')
+                ->group(function () {
+                    Route::get('/failed-jobs', [AdminSystemController::class, 'failedJobs'])->name('failed_jobs');
+                    Route::post('/failed-jobs/{id}/retry', [AdminSystemController::class, 'retry'])
+                        ->middleware('throttle:30,1')
+                        ->name('failed_jobs_retry');
+                    Route::post('/failed-jobs/retry-all', [AdminSystemController::class, 'retryAll'])
+                        ->middleware('throttle:10,1')
+                        ->name('failed_jobs_retry_all');
+                    Route::post('/failed-jobs/{id}/forget', [AdminSystemController::class, 'forget'])
+                        ->middleware('throttle:30,1')
+                        ->name('failed_jobs_forget');
                 });
 
             Route::prefix('audit-logs')
