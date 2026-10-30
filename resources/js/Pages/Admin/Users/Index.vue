@@ -1,57 +1,237 @@
 <script setup>
-import { Head, router, usePage } from '@inertiajs/vue3'
-import { ref, computed } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3'
+import {
+    Ban,
+    CheckCircle2,
+    ChevronDown,
+    Columns3,
+    Eye,
+    Filter,
+    RotateCcw,
+    Search,
+    ShieldCheck,
+    Users as UsersIcon,
+} from 'lucide-vue-next'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
+import SortableTh from '@/Components/Admin/SortableTh.vue'
+import AdminPagination from '@/Components/Admin/AdminPagination.vue'
+import ConfirmDialog from '@/Components/Admin/ConfirmDialog.vue'
+import { useAdminTable } from '@/Composables/useAdminTable'
 
-const page = usePage()
-
-defineProps({
-    users: Object,
-    filters: Object,
+const props = defineProps({
+    users: { type: Object, required: true },
+    filters: { type: Object, default: () => ({}) },
+    roles: { type: Array, default: () => [] },
 })
 
-const search = ref(page.props.filters?.search || '')
-const status = ref(page.props.filters?.status || '')
-const per_page = ref(page.props.filters?.per_page || 15)
-const loading = ref(false)
+const page = usePage()
+const actor = computed(() => page.props.auth?.user)
+const actorRoles = computed(() => page.props.auth?.roles ?? [])
 
-const handleSearch = () => {
-    loading.value = true
-    router.get(route('admin.users.index'), {
+const { query, navigate, sortBy, reset } = useAdminTable()
+
+const search = ref(props.filters.search || '')
+const status = ref(props.filters.status || '')
+const activity = ref(props.filters.activity || '')
+const role = ref(props.filters.role || '')
+const perPage = ref(Number(props.filters.per_page || 15))
+
+const currentSort = computed(() => query.value.sort)
+const currentDirection = computed(() => query.value.direction || 'desc')
+
+const columns = [
+    { key: 'name', label: 'User', locked: true },
+    { key: 'role', label: 'Role' },
+    { key: 'status', label: 'Status' },
+    { key: 'verified', label: 'Verifikasi' },
+    { key: 'last_active', label: 'Terakhir aktif' },
+    { key: 'joined', label: 'Bergabung' },
+    { key: 'transactions', label: 'Transaksi' },
+]
+
+const visibleColumns = ref(Object.fromEntries(columns.map((column) => [column.key, true])))
+const columnsOpen = ref(false)
+
+onMounted(() => {
+    try {
+        const saved = JSON.parse(localStorage.getItem('admin.users.columns') || 'null')
+        if (saved && typeof saved === 'object') {
+            visibleColumns.value = { ...visibleColumns.value, ...saved, name: true }
+        }
+    } catch {
+        /* abaikan localStorage rusak */
+    }
+})
+
+watch(
+    visibleColumns,
+    (value) => {
+        try {
+            localStorage.setItem('admin.users.columns', JSON.stringify(value))
+        } catch {
+            /* storage penuh / disabled */
+        }
+    },
+    { deep: true },
+)
+
+const isVisible = (key) => visibleColumns.value[key] !== false
+
+const activeFilterCount = computed(
+    () => [search.value, status.value, activity.value, role.value].filter(Boolean).length,
+)
+
+const applyFilters = () => {
+    selected.value = []
+    navigate({
         search: search.value,
         status: status.value,
-        per_page: per_page.value,
-    }, {
-        onFinish: () => {
-            loading.value = false
+        activity: activity.value,
+        role: role.value,
+        per_page: perPage.value,
+    })
+}
+
+const changePerPage = () => {
+    navigate({ per_page: perPage.value })
+}
+
+const clearFilters = () => {
+    search.value = ''
+    status.value = ''
+    activity.value = ''
+    role.value = ''
+    perPage.value = 15
+    selected.value = []
+    reset()
+}
+
+const selected = ref([])
+const allSelected = computed(
+    () => props.users.data.length > 0 && selected.value.length === props.users.data.length,
+)
+
+const toggleAll = () => {
+    selected.value = allSelected.value ? [] : props.users.data.map((user) => user.id)
+}
+
+const toggleOne = (id) => {
+    selected.value = selected.value.includes(id)
+        ? selected.value.filter((item) => item !== id)
+        : [...selected.value, id]
+}
+
+const modal = ref({
+    open: false,
+    mode: 'single',
+    status: 'suspended',
+    user: null,
+})
+const reason = ref('')
+const reasonError = ref('')
+
+const form = useForm({
+    ids: [],
+    status: 'suspended',
+    reason: '',
+})
+
+const askStatus = (user, nextStatus) => {
+    reason.value = ''
+    reasonError.value = ''
+    form.clearErrors()
+    modal.value = { open: true, mode: 'single', status: nextStatus, user }
+}
+
+const askBulk = (nextStatus) => {
+    reason.value = ''
+    reasonError.value = ''
+    form.clearErrors()
+    modal.value = { open: true, mode: 'bulk', status: nextStatus, user: null }
+}
+
+const modalTitle = computed(() => {
+    if (modal.value.mode === 'bulk') {
+        return modal.value.status === 'suspended'
+            ? `Suspend ${selected.value.length} user?`
+            : `Aktifkan ${selected.value.length} user?`
+    }
+
+    return modal.value.status === 'suspended'
+        ? `Suspend ${modal.value.user?.name}?`
+        : `Aktifkan ${modal.value.user?.name}?`
+})
+
+const confirmStatus = () => {
+    reasonError.value = ''
+
+    if (modal.value.status === 'suspended' && !reason.value.trim()) {
+        reasonError.value = 'Alasan suspend wajib diisi untuk audit log.'
+        return
+    }
+
+    form.status = modal.value.status
+    form.reason = reason.value.trim()
+    form.ids = modal.value.mode === 'bulk' ? selected.value : [modal.value.user.id]
+
+    const options = {
+        preserveScroll: true,
+        onSuccess: () => {
+            modal.value.open = false
+            selected.value = []
         },
-    })
+    }
+
+    if (modal.value.mode === 'bulk') {
+        form.post(route('admin.users.bulk_status'), options)
+    } else {
+        form.post(route('admin.users.update_status', modal.value.user.id), options)
+    }
 }
 
-const handlePaginate = (url) => {
-    loading.value = true
-    router.get(url, {}, {
-        onFinish: () => {
-            loading.value = false
-        },
-    })
+const statusBadge = (value) =>
+    value === 'suspended'
+        ? 'bg-[rgb(var(--m3-color-error-container-rgb))] text-[rgb(var(--m3-color-on-error-container-rgb))]'
+        : 'bg-[rgb(var(--m3-color-tertiary-container-rgb))] text-[rgb(var(--m3-color-on-tertiary-container-rgb))]'
+
+const verificationBadge = (verifiedAt) =>
+    verifiedAt
+        ? 'bg-[rgb(var(--m3-color-primary-container-rgb))] text-[rgb(var(--m3-color-on-primary-container-rgb))]'
+        : 'bg-[rgb(var(--m3-color-surface-container-high-rgb))] text-[rgb(var(--m3-color-on-surface-variant-rgb))]'
+
+const roleBadge = (name) => {
+    const palette = {
+        owner: 'bg-[rgb(var(--m3-color-primary-container-rgb))] text-[rgb(var(--m3-color-on-primary-container-rgb))]',
+        admin: 'bg-[rgb(var(--m3-color-secondary-container-rgb))] text-[rgb(var(--m3-color-on-secondary-container-rgb))]',
+        support: 'bg-[rgb(var(--m3-color-tertiary-container-rgb))] text-[rgb(var(--m3-color-on-tertiary-container-rgb))]',
+    }
+    return palette[name] || 'bg-[rgb(var(--m3-color-surface-container-high-rgb))] text-[rgb(var(--m3-color-on-surface-variant-rgb))]'
 }
 
-const handleStatusChange = (user, newStatus) => {
-    if (!confirm(`Change ${user.name} status to ${newStatus}?`)) return
+const userRole = (user) => user.roles?.[0]?.name || 'user'
 
-    router.post(route('admin.users.update_status', user.id), {
-        status: newStatus,
-        reason: prompt('Reason (optional):'),
-    })
+const canModify = (user) => {
+    if (!user || user.id === actor.value?.id) return false
+    if (actorRoles.value.includes('owner')) return true
+    if (userRole(user) === 'owner') return false
+    if (actorRoles.value.includes('admin')) return true
+    return userRole(user) === 'user'
 }
 
-const statusBadge = (status) => {
-    return status === 'suspended' ? 'bg-[rgb(var(--m3-color-error-container-rgb))] text-[rgb(var(--m3-color-on-error-container-rgb))]' : 'bg-[rgb(var(--m3-color-tertiary-container-rgb))] text-[rgb(var(--m3-color-on-tertiary-container-rgb))]'
-}
+const formatDate = (value) => (value ? new Date(value).toLocaleDateString('id-ID') : '—')
 
-const verificationBadge = (verified_at) => {
-    return verified_at ? 'bg-[rgb(var(--m3-color-primary-container-rgb))] text-[rgb(var(--m3-color-on-primary-container-rgb))]' : 'bg-[rgb(var(--m3-color-surface-container-high-rgb))] text-[rgb(var(--m3-color-on-surface-variant-rgb))]'
+const relativeTime = (value) => {
+    if (!value) return 'Belum pernah'
+    const diff = Date.now() - new Date(value).getTime()
+    const minutes = Math.round(diff / 60000)
+    if (minutes < 1) return 'Baru saja'
+    if (minutes < 60) return `${minutes} menit lalu`
+    const hours = Math.round(minutes / 60)
+    if (hours < 24) return `${hours} jam lalu`
+    const days = Math.round(hours / 24)
+    if (days < 30) return `${days} hari lalu`
+    return new Date(value).toLocaleDateString('id-ID')
 }
 </script>
 
@@ -59,133 +239,186 @@ const verificationBadge = (verified_at) => {
     <AdminLayout>
         <Head title="User Management" />
 
-        <div class="space-y-6 p-6">
-            <!-- Header -->
-            <div class="mb-8">
-                <h1 class="text-3xl font-bold text-[rgb(var(--m3-color-on-surface-rgb))]">User Management</h1>
-                <p class="text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Manage users, view details, and change status</p>
+        <div class="space-y-6 p-4 sm:p-6">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[rgb(var(--m3-color-primary-rgb))]">Administration</p>
+                    <h1 class="mt-1 text-2xl font-bold text-[rgb(var(--m3-color-on-surface-rgb))] sm:text-3xl">User Management</h1>
+                    <p class="mt-1 text-sm text-[rgb(var(--m3-color-on-surface-variant-rgb))]">
+                        Kelola akun, pantau aktivitas, dan tangguhkan akses bila diperlukan.
+                    </p>
+                </div>
+                <div class="flex items-center gap-2 rounded-xl border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-container-rgb))] px-4 py-3">
+                    <UsersIcon class="h-5 w-5 text-[rgb(var(--m3-color-primary-rgb))]" />
+                    <div>
+                        <p class="text-xs text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Hasil filter</p>
+                        <p class="text-lg font-bold leading-none text-[rgb(var(--m3-color-on-surface-rgb))]">{{ users.total }}</p>
+                    </div>
+                </div>
             </div>
 
-            <!-- Filters -->
-            <div class="bg-[rgb(var(--m3-color-surface-container-rgb))] rounded-lg p-6 border border-[rgb(var(--m3-color-outline-variant-rgb))] space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <!-- Search -->
-                    <div>
-                        <label class="block text-sm font-medium text-[rgb(var(--m3-color-on-surface-rgb))] mb-2">Search</label>
-                        <input
-                            v-model="search"
-                            type="text"
-                            placeholder="Name or email..."
-                            class="w-full px-4 py-2 bg-[rgb(var(--m3-color-surface-rgb))] text-[rgb(var(--m3-color-on-surface-rgb))] border border-[rgb(var(--m3-color-outline-variant-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--m3-color-primary-rgb))] focus:border-transparent"
-                            @keyup.enter="handleSearch"
-                        />
+            <!-- Toolbar -->
+            <div class="rounded-2xl border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-container-rgb))] p-4 sm:p-5">
+                <form class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-12" @submit.prevent="applyFilters">
+                    <div class="xl:col-span-4">
+                        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Cari</label>
+                        <div class="relative">
+                            <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[rgb(var(--m3-color-on-surface-variant-rgb))]" />
+                            <input
+                                v-model="search"
+                                type="search"
+                                placeholder="Nama, email, Telegram, WhatsApp…"
+                                class="w-full rounded-xl border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-rgb))] py-2.5 pl-9 pr-3 text-sm text-[rgb(var(--m3-color-on-surface-rgb))] placeholder:text-[rgb(var(--m3-color-on-surface-variant-rgb))] focus:border-transparent focus:ring-2 focus:ring-[rgb(var(--m3-color-primary-rgb))]"
+                            />
+                        </div>
                     </div>
 
-                    <!-- Status Filter -->
-                    <div>
-                        <label class="block text-sm font-medium text-[rgb(var(--m3-color-on-surface-rgb))] mb-2">Status</label>
-                        <select
-                            v-model="status"
-                            class="w-full px-4 py-2 bg-[rgb(var(--m3-color-surface-rgb))] text-[rgb(var(--m3-color-on-surface-rgb))] border border-[rgb(var(--m3-color-outline-variant-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--m3-color-primary-rgb))] focus:border-transparent"
-                        >
-                            <option value="">All</option>
-                            <option value="verified">Verified</option>
-                            <option value="unverified">Unverified</option>
+                    <div class="xl:col-span-2">
+                        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Status</label>
+                        <select v-model="status" class="w-full rounded-xl border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-rgb))] px-3 py-2.5 text-sm text-[rgb(var(--m3-color-on-surface-rgb))] focus:border-transparent focus:ring-2 focus:ring-[rgb(var(--m3-color-primary-rgb))]">
+                            <option value="">Semua</option>
+                            <option value="active">Aktif</option>
+                            <option value="suspended">Ditangguhkan</option>
+                            <option value="verified">Terverifikasi</option>
+                            <option value="unverified">Belum verifikasi</option>
                         </select>
                     </div>
 
-                    <!-- Items Per Page -->
-                    <div>
-                        <label class="block text-sm font-medium text-[rgb(var(--m3-color-on-surface-rgb))] mb-2">Per Page</label>
-                        <select
-                            v-model.number="per_page"
-                            class="w-full px-4 py-2 bg-[rgb(var(--m3-color-surface-rgb))] text-[rgb(var(--m3-color-on-surface-rgb))] border border-[rgb(var(--m3-color-outline-variant-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--m3-color-primary-rgb))] focus:border-transparent"
-                        >
-                            <option :value="10">10</option>
-                            <option :value="15">15</option>
-                            <option :value="25">25</option>
-                            <option :value="50">50</option>
+                    <div class="xl:col-span-2">
+                        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Aktivitas</label>
+                        <select v-model="activity" class="w-full rounded-xl border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-rgb))] px-3 py-2.5 text-sm text-[rgb(var(--m3-color-on-surface-rgb))] focus:border-transparent focus:ring-2 focus:ring-[rgb(var(--m3-color-primary-rgb))]">
+                            <option value="">Semua</option>
+                            <option value="online">Online (5 menit)</option>
+                            <option value="7d">7 hari</option>
+                            <option value="30d">30 hari</option>
+                            <option value="dormant">Dormant &gt; 30 hari</option>
+                            <option value="never">Belum pernah</option>
                         </select>
                     </div>
-                </div>
 
-                <button
-                    @click="handleSearch"
-                    :disabled="loading"
-                    class="w-full px-4 py-2 bg-[rgb(var(--m3-color-primary-rgb))] text-[rgb(var(--m3-color-on-primary-rgb))] rounded-lg font-medium hover:bg-[rgb(var(--m3-color-primary-container-rgb))] hover:text-[rgb(var(--m3-color-on-primary-container-rgb))] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                    {{ loading ? 'Loading...' : 'Search' }}
-                </button>
+                    <div class="xl:col-span-2">
+                        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Role</label>
+                        <select v-model="role" class="w-full rounded-xl border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-rgb))] px-3 py-2.5 text-sm text-[rgb(var(--m3-color-on-surface-rgb))] focus:border-transparent focus:ring-2 focus:ring-[rgb(var(--m3-color-primary-rgb))]">
+                            <option value="">Semua</option>
+                            <option v-for="item in roles" :key="item" :value="item">{{ item }}</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-end gap-2 xl:col-span-2">
+                        <button type="submit" class="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[rgb(var(--m3-color-primary-rgb))] px-4 py-2.5 text-sm font-semibold text-[rgb(var(--m3-color-on-primary-rgb))] transition-colors hover:bg-[rgb(var(--m3-color-primary-container-rgb))] hover:text-[rgb(var(--m3-color-on-primary-container-rgb))]">
+                            <Filter class="h-4 w-4" /> Terapkan
+                        </button>
+                        <button type="button" class="rounded-xl border border-[rgb(var(--m3-color-outline-variant-rgb))] p-2.5 text-[rgb(var(--m3-color-on-surface-variant-rgb))] transition-colors hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))]" title="Reset filter" @click="clearFilters">
+                            <RotateCcw class="h-4 w-4" />
+                        </button>
+                    </div>
+                </form>
+
+                <div class="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-[rgb(var(--m3-color-on-surface-variant-rgb))]">
+                    <span v-if="activeFilterCount > 0" class="inline-flex items-center gap-1.5 rounded-full bg-[rgb(var(--m3-color-primary-container-rgb))] px-3 py-1 font-medium text-[rgb(var(--m3-color-on-primary-container-rgb))]">
+                        {{ activeFilterCount }} filter aktif
+                    </span>
+                    <span v-else>Semua user ditampilkan.</span>
+
+                    <div class="flex items-center gap-3">
+                        <label class="flex items-center gap-2">
+                            <span>Baris</span>
+                            <select v-model.number="perPage" class="rounded-lg border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-rgb))] px-2 py-1 text-xs text-[rgb(var(--m3-color-on-surface-rgb))]" @change="changePerPage">
+                                <option v-for="size in [10, 15, 25, 50, 100]" :key="size" :value="size">{{ size }}</option>
+                            </select>
+                        </label>
+
+                        <div class="relative">
+                            <button type="button" class="inline-flex items-center gap-1.5 rounded-lg border border-[rgb(var(--m3-color-outline-variant-rgb))] px-3 py-1.5 font-medium transition-colors hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))]" @click="columnsOpen = !columnsOpen">
+                                <Columns3 class="h-3.5 w-3.5" /> Kolom <ChevronDown class="h-3.5 w-3.5" />
+                            </button>
+                            <div v-if="columnsOpen" class="absolute right-0 z-20 mt-2 w-52 rounded-xl border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-container-high-rgb))] p-2 shadow-xl">
+                                <label v-for="column in columns" :key="column.key" class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))]" :class="{ 'opacity-50': column.locked }">
+                                    <input v-model="visibleColumns[column.key]" type="checkbox" :disabled="column.locked" class="rounded border-[rgb(var(--m3-color-outline-variant-rgb))] text-[rgb(var(--m3-color-primary-rgb))]" />
+                                    <span class="text-[rgb(var(--m3-color-on-surface-rgb))]">{{ column.label }}</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Stats -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="bg-[rgb(var(--m3-color-surface-container-rgb))] rounded-lg p-4 border border-[rgb(var(--m3-color-outline-variant-rgb))]">
-                    <div class="text-sm font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Total Results</div>
-                    <div class="text-2xl font-bold mt-1 text-[rgb(var(--m3-color-on-surface-rgb))]">{{ users.total }}</div>
-                </div>
-                <div class="bg-[rgb(var(--m3-color-surface-container-rgb))] rounded-lg p-4 border border-[rgb(var(--m3-color-outline-variant-rgb))]">
-                    <div class="text-sm font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Page</div>
-                    <div class="text-2xl font-bold mt-1 text-[rgb(var(--m3-color-on-surface-rgb))]">{{ users.current_page }} of {{ users.last_page }}</div>
+            <!-- Bulk bar -->
+            <div v-if="selected.length > 0" class="flex flex-col gap-3 rounded-2xl border border-[rgb(var(--m3-color-primary-rgb))] bg-[rgb(var(--m3-color-primary-container-rgb))] p-4 text-[rgb(var(--m3-color-on-primary-container-rgb))] sm:flex-row sm:items-center sm:justify-between">
+                <p class="text-sm font-semibold">{{ selected.length }} user dipilih</p>
+                <div class="flex flex-wrap gap-2">
+                    <button type="button" class="inline-flex items-center gap-2 rounded-xl bg-[rgb(var(--m3-color-tertiary-rgb))] px-3 py-2 text-xs font-semibold text-[rgb(var(--m3-color-on-tertiary-rgb))]" @click="askBulk('active')">
+                        <CheckCircle2 class="h-4 w-4" /> Aktifkan
+                    </button>
+                    <button type="button" class="inline-flex items-center gap-2 rounded-xl bg-[rgb(var(--m3-color-error-rgb))] px-3 py-2 text-xs font-semibold text-[rgb(var(--m3-color-on-error-rgb))]" @click="askBulk('suspended')">
+                        <Ban class="h-4 w-4" /> Suspend
+                    </button>
+                    <button type="button" class="rounded-xl border border-[rgb(var(--m3-color-outline-rgb))] px-3 py-2 text-xs font-semibold" @click="selected = []">Batal</button>
                 </div>
             </div>
 
             <!-- Table -->
-            <div class="bg-[rgb(var(--m3-color-surface-container-rgb))] rounded-lg border border-[rgb(var(--m3-color-outline-variant-rgb))] overflow-hidden">
+            <div class="overflow-hidden rounded-2xl border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-container-rgb))]">
                 <div class="overflow-x-auto">
-                    <table class="w-full">
-                        <thead class="bg-[rgb(var(--m3-color-surface-container-high-rgb))] border-b border-[rgb(var(--m3-color-outline-variant-rgb))]">
+                    <table class="w-full min-w-[860px]">
+                        <thead class="border-b border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-container-high-rgb))]">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))] uppercase tracking-wider">Name</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))] uppercase tracking-wider">Email</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))] uppercase tracking-wider">Verification</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))] uppercase tracking-wider">Status</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))] uppercase tracking-wider">Joined</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))] uppercase tracking-wider">Actions</th>
+                                <th class="w-12 px-4 py-3 text-left">
+                                    <input type="checkbox" :checked="allSelected" aria-label="Pilih semua user di halaman ini" class="rounded border-[rgb(var(--m3-color-outline-rgb))] text-[rgb(var(--m3-color-primary-rgb))]" @change="toggleAll" />
+                                </th>
+                                <SortableTh v-if="isVisible('name')" column="name" label="User" :sort="currentSort" :direction="currentDirection" @sort="sortBy" />
+                                <SortableTh v-if="isVisible('role')" column="role" label="Role" :sort="currentSort" :direction="currentDirection" @sort="sortBy" />
+                                <SortableTh v-if="isVisible('status')" column="status" label="Status" :sort="currentSort" :direction="currentDirection" @sort="sortBy" />
+                                <SortableTh v-if="isVisible('verified')" column="verified" label="Verifikasi" :sort="currentSort" :direction="currentDirection" @sort="sortBy" />
+                                <SortableTh v-if="isVisible('last_active')" column="last_active" label="Terakhir aktif" :sort="currentSort" :direction="currentDirection" @sort="sortBy" />
+                                <SortableTh v-if="isVisible('joined')" column="joined" label="Bergabung" :sort="currentSort" :direction="currentDirection" @sort="sortBy" />
+                                <SortableTh v-if="isVisible('transactions')" column="transactions" label="Transaksi" :sort="currentSort" :direction="currentDirection" align="right" @sort="sortBy" />
+                                <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-[rgb(var(--m3-color-outline-variant-rgb))]">
-                            <tr v-for="user in users.data" :key="user.id" class="hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))] transition-colors">
-                                <td class="px-6 py-4 text-sm font-medium text-[rgb(var(--m3-color-on-surface-rgb))]">{{ user.name }}</td>
-                                <td class="px-6 py-4 text-sm text-[rgb(var(--m3-color-on-surface-rgb))]">{{ user.email }}</td>
-                                <td class="px-6 py-4 text-sm">
-                                    <span :class="['px-3 py-1 rounded-full text-xs font-medium', verificationBadge(user.email_verified_at)]">
+                            <tr v-for="user in users.data" :key="user.id" class="transition-colors hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))]">
+                                <td class="px-4 py-3">
+                                    <input type="checkbox" :checked="selected.includes(user.id)" :aria-label="`Pilih ${user.name}`" class="rounded border-[rgb(var(--m3-color-outline-rgb))] text-[rgb(var(--m3-color-primary-rgb))]" @change="toggleOne(user.id)" />
+                                </td>
+                                <td v-if="isVisible('name')" class="px-4 py-3">
+                                    <Link :href="route('admin.users.show', user.id)" class="font-semibold text-[rgb(var(--m3-color-on-surface-rgb))] hover:text-[rgb(var(--m3-color-primary-rgb))]">
+                                        {{ user.name }}
+                                    </Link>
+                                    <p class="text-xs text-[rgb(var(--m3-color-on-surface-variant-rgb))]">{{ user.email }}</p>
+                                </td>
+                                <td v-if="isVisible('role')" class="px-4 py-3">
+                                    <span :class="['rounded-full px-2.5 py-1 text-xs font-medium capitalize', roleBadge(userRole(user))]">{{ userRole(user) }}</span>
+                                </td>
+                                <td v-if="isVisible('status')" class="px-4 py-3">
+                                    <span :class="['rounded-full px-2.5 py-1 text-xs font-medium capitalize', statusBadge(user.status)]">{{ user.status || 'active' }}</span>
+                                </td>
+                                <td v-if="isVisible('verified')" class="px-4 py-3">
+                                    <span :class="['inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium', verificationBadge(user.email_verified_at)]">
+                                        <ShieldCheck v-if="user.email_verified_at" class="h-3 w-3" />
                                         {{ user.email_verified_at ? 'Verified' : 'Unverified' }}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 text-sm">
-                                    <span :class="['px-3 py-1 rounded-full text-xs font-medium', statusBadge(user.status)]">
-                                        {{ user.status || 'active' }}
-                                    </span>
+                                <td v-if="isVisible('last_active')" class="px-4 py-3 text-sm text-[rgb(var(--m3-color-on-surface-variant-rgb))]">
+                                    <span :title="user.last_active_at || 'Belum pernah'">{{ relativeTime(user.last_active_at) }}</span>
                                 </td>
-                                <td class="px-6 py-4 text-sm text-[rgb(var(--m3-color-on-surface-variant-rgb))]">
-                                    {{ new Date(user.created_at).toLocaleDateString() }}
+                                <td v-if="isVisible('joined')" class="px-4 py-3 text-sm text-[rgb(var(--m3-color-on-surface-variant-rgb))]">
+                                    {{ formatDate(user.created_at) }}
                                 </td>
-                                <td class="px-6 py-4 text-sm space-x-2">
-                                    <button
-                                        @click="$inertia.get(route('admin.users.show', user.id))"
-                                        class="px-3 py-1 bg-[rgb(var(--m3-color-primary-container-rgb))] text-[rgb(var(--m3-color-on-primary-container-rgb))] rounded hover:bg-[rgb(var(--m3-color-primary-rgb))] hover:text-[rgb(var(--m3-color-on-primary-rgb))] transition-colors"
-                                    >
-                                        View
-                                    </button>
-                                    <div class="inline-block relative group">
-                                        <button class="px-3 py-1 bg-[rgb(var(--m3-color-secondary-container-rgb))] text-[rgb(var(--m3-color-on-secondary-container-rgb))] rounded hover:bg-[rgb(var(--m3-color-secondary-rgb))] hover:text-[rgb(var(--m3-color-on-secondary-rgb))] transition-colors">
-                                            Status ▼
+                                <td v-if="isVisible('transactions')" class="px-4 py-3 text-right text-sm font-semibold text-[rgb(var(--m3-color-on-surface-rgb))]">
+                                    {{ user.transaction_logs_count ?? 0 }}
+                                </td>
+                                <td class="px-4 py-3">
+                                    <div class="flex items-center justify-end gap-1">
+                                        <Link :href="route('admin.users.show', user.id)" class="rounded-lg p-2 text-[rgb(var(--m3-color-on-surface-variant-rgb))] transition-colors hover:bg-[rgb(var(--m3-color-primary-container-rgb))] hover:text-[rgb(var(--m3-color-on-primary-container-rgb))]" title="Lihat detail">
+                                            <Eye class="h-4 w-4" />
+                                        </Link>
+                                        <button v-if="canModify(user) && user.status === 'suspended'" type="button" class="rounded-lg p-2 text-[rgb(var(--m3-color-tertiary-rgb))] transition-colors hover:bg-[rgb(var(--m3-color-tertiary-container-rgb))]" title="Aktifkan user" @click="askStatus(user, 'active')">
+                                            <CheckCircle2 class="h-4 w-4" />
                                         </button>
-                                        <div class="absolute right-0 mt-1 w-32 bg-[rgb(var(--m3-color-surface-container-rgb))] border border-[rgb(var(--m3-color-outline-variant-rgb))] rounded shadow-lg hidden group-hover:block z-10">
-                                            <button
-                                                @click="handleStatusChange(user, 'active')"
-                                                class="block w-full text-left px-4 py-2 hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))] text-sm text-[rgb(var(--m3-color-on-surface-rgb))]"
-                                            >
-                                                Active
-                                            </button>
-                                            <button
-                                                @click="handleStatusChange(user, 'suspended')"
-                                                class="block w-full text-left px-4 py-2 hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))] text-sm text-[rgb(var(--m3-color-error-rgb))]"
-                                            >
-                                                Suspend
-                                            </button>
-                                        </div>
+                                        <button v-else-if="canModify(user)" type="button" class="rounded-lg p-2 text-[rgb(var(--m3-color-error-rgb))] transition-colors hover:bg-[rgb(var(--m3-color-error-container-rgb))]" title="Suspend user" @click="askStatus(user, 'suspended')">
+                                            <Ban class="h-4 w-4" />
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -193,49 +426,37 @@ const verificationBadge = (verified_at) => {
                     </table>
                 </div>
 
-                <!-- Empty State -->
-                <div v-if="users.data.length === 0" class="px-6 py-12 text-center">
-                    <p class="text-[rgb(var(--m3-color-on-surface-variant-rgb))] text-sm">No users found</p>
-                </div>
-            </div>
-
-            <!-- Pagination -->
-            <div v-if="users.last_page > 1" class="flex justify-center items-center space-x-2">
-                <!-- Previous -->
-                <button
-                    v-if="users.prev_page_url"
-                    @click="handlePaginate(users.prev_page_url)"
-                    class="px-4 py-2 border border-[rgb(var(--m3-color-outline-variant-rgb))] rounded-lg hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))] text-[rgb(var(--m3-color-on-surface-rgb))] text-sm font-medium transition-colors"
-                >
-                    ← Previous
-                </button>
-
-                <!-- Page Numbers -->
-                <div class="flex space-x-1">
-                    <button
-                        v-for="page in users.last_page"
-                        :key="page"
-                        :class="[
-                            'px-3 py-2 rounded text-sm font-medium transition-colors',
-                            page === users.current_page
-                                ? 'bg-[rgb(var(--m3-color-primary-rgb))] text-[rgb(var(--m3-color-on-primary-rgb))]'
-                                : 'border border-[rgb(var(--m3-color-outline-variant-rgb))] text-[rgb(var(--m3-color-on-surface-rgb))] hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))]',
-                        ]"
-                        @click="handlePaginate(users.path + '?page=' + page)"
-                    >
-                        {{ page }}
-                    </button>
+                <div v-if="users.data.length === 0" class="px-6 py-16 text-center">
+                    <UsersIcon class="mx-auto h-10 w-10 text-[rgb(var(--m3-color-on-surface-variant-rgb))] opacity-40" />
+                    <p class="mt-3 text-sm font-medium text-[rgb(var(--m3-color-on-surface-rgb))]">Tidak ada user yang cocok</p>
+                    <p class="mt-1 text-xs text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Coba ubah kata kunci atau reset filter.</p>
                 </div>
 
-                <!-- Next -->
-                <button
-                    v-if="users.next_page_url"
-                    @click="handlePaginate(users.next_page_url)"
-                    class="px-4 py-2 border border-[rgb(var(--m3-color-outline-variant-rgb))] rounded-lg hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))] text-[rgb(var(--m3-color-on-surface-rgb))] text-sm font-medium transition-colors"
-                >
-                    Next →
-                </button>
+                <AdminPagination :paginator="users" />
             </div>
         </div>
+
+        <ConfirmDialog
+            v-model:open="modal.open"
+            :title="modalTitle"
+            :description="modal.status === 'suspended' ? 'User tidak akan bisa login sampai diaktifkan kembali.' : 'User akan bisa login dan mengakses aplikasi kembali.'"
+            :confirm-label="modal.status === 'suspended' ? 'Suspend' : 'Aktifkan'"
+            :tone="modal.status === 'suspended' ? 'danger' : 'primary'"
+            :loading="form.processing"
+            @confirm="confirmStatus"
+        >
+            <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[rgb(var(--m3-color-on-surface-variant-rgb))]">
+                Alasan {{ modal.status === 'suspended' ? '(wajib)' : '(opsional)' }}
+            </label>
+            <textarea
+                v-model="reason"
+                rows="3"
+                maxlength="255"
+                placeholder="Contoh: penyalahgunaan akun, permintaan user, dsb."
+                class="w-full rounded-xl border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-rgb))] px-3 py-2 text-sm text-[rgb(var(--m3-color-on-surface-rgb))] placeholder:text-[rgb(var(--m3-color-on-surface-variant-rgb))] focus:border-transparent focus:ring-2 focus:ring-[rgb(var(--m3-color-primary-rgb))]"
+            />
+            <p v-if="reasonError" class="mt-1 text-xs font-medium text-[rgb(var(--m3-color-error-rgb))]">{{ reasonError }}</p>
+            <p v-if="form.errors.ids" class="mt-1 text-xs font-medium text-[rgb(var(--m3-color-error-rgb))]">{{ form.errors.ids }}</p>
+        </ConfirmDialog>
     </AdminLayout>
 </template>

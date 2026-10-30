@@ -3,37 +3,67 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Support\Admin\SortableTable;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
 
 class AiLogController extends Controller
 {
     public function index(Request $request)
     {
-        $query = DB::table('activity_logs')
-            ->latest('created_at');
+        $query = DB::table('activity_logs');
 
-        // Filter by status
         if ($request->filled('status')) {
-            $status = $request->input('status');
-            $query->where('status', $status);
+            $query->where('status', $request->input('status'));
         }
 
-        // Filter by date range
+        if ($request->filled('log_name')) {
+            $query->where('log_name', $request->input('log_name'));
+        }
+
+        if ($request->filled('search')) {
+            $search = trim((string) $request->input('search'));
+            $query->where(function ($q) use ($search) {
+                $q->where('description', 'ilike', "%{$search}%")
+                    ->orWhere('log_name', 'ilike', "%{$search}%");
+            });
+        }
+
         if ($request->filled('from_date')) {
-            $query->where('created_at', '>=', $request->input('from_date'));
-        }
-        if ($request->filled('to_date')) {
-            $query->where('created_at', '<=', $request->input('to_date'));
+            $request->validate(['from_date' => ['date']]);
+            $query->where('created_at', '>=', $request->date('from_date')->startOfDay());
         }
 
-        $per_page = $request->input('per_page', 20);
-        $logs = $query->paginate($per_page);
+        if ($request->filled('to_date')) {
+            $request->validate(['to_date' => ['date']]);
+            $query->where('created_at', '<=', $request->date('to_date')->endOfDay());
+        }
+
+        $perPage = SortableTable::perPage($request, 20);
+
+        $sort = SortableTable::apply($query, $request, [
+            'created_at' => 'created_at',
+            'status' => 'status',
+            'description' => 'description',
+            'log_name' => 'log_name',
+        ], 'created_at', 'desc', 'id');
+
+        $logs = $query->paginate($perPage)->withQueryString();
+
+        $logNames = DB::table('activity_logs')
+            ->whereNotNull('log_name')
+            ->distinct()
+            ->orderBy('log_name')
+            ->pluck('log_name');
 
         return Inertia::render('Admin/AiLogs/Index', [
             'logs' => $logs,
-            'filters' => $request->only(['status', 'from_date', 'to_date', 'per_page']),
+            'logNames' => $logNames,
+            'filters' => array_merge(
+                $request->only(['status', 'log_name', 'search', 'from_date', 'to_date']),
+                SortableTable::filters($request, $sort, $perPage),
+            ),
         ]);
     }
 
@@ -41,7 +71,7 @@ class AiLogController extends Controller
     {
         $log = DB::table('activity_logs')->where('id', $id)->first();
 
-        if (!$log) {
+        if (! $log) {
             abort(404, 'Log not found');
         }
 

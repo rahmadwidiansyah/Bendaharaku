@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -35,6 +36,7 @@ class User extends Authenticatable
         'auto_budget_enabled',
         'email_notifications',
         'push_notifications',
+        'status',
     ];
 
     protected $hidden = [
@@ -157,10 +159,27 @@ class User extends Authenticatable
         return asset('storage/'.$this->avatar);
     }
 
+    /**
+     * User non-staff yang tidak ditangguhkan.
+     *
+     * Definisi "customer" untuk metrik dashboard: staff (owner/admin/support)
+     * tidak dihitung sebagai pengguna aktif produk.
+     */
+    public function scopeCustomers(Builder $query): Builder
+    {
+        return $query
+            ->whereDoesntHave('roles', fn (Builder $roleQuery) => $roleQuery->whereIn('name', ['owner', 'admin', 'support']))
+            ->where(fn (Builder $statusQuery) => $statusQuery
+                ->whereNull('status')
+                ->orWhere('status', '!=', 'suspended'));
+    }
+
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
+            'last_active_at' => 'datetime',
+            'last_login_at' => 'datetime',
             'password' => 'hashed',
             'allow_negative_balance' => 'boolean',
             'category_icon_colored' => 'boolean',

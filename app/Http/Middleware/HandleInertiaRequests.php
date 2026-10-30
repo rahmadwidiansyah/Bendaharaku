@@ -53,6 +53,12 @@ class HandleInertiaRequests extends Middleware
                         ? asset('storage/' . $request->user()->bot_avatar)
                         : null,
                 ] : null,
+                'permissions' => $request->user()
+                    ? $request->user()->getAllPermissions()->pluck('name')->values()->all()
+                    : [],
+                'roles' => $request->user()
+                    ? $request->user()->getRoleNames()->values()->all()
+                    : [],
             ],
             'flash' => [
                 'success' => $request->session()->get('success'),

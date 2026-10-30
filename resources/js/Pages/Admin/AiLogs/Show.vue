@@ -1,161 +1,151 @@
 <script setup>
-import { Head, router } from '@inertiajs/vue3'
+import { computed } from 'vue'
+import { Head, Link } from '@inertiajs/vue3'
+import {
+    ArrowLeft,
+    Activity,
+    AlertTriangle,
+    CheckCircle2,
+    Clock,
+    Code2,
+    Info,
+    RotateCw,
+    XCircle,
+} from 'lucide-vue-next'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 
-defineProps({
-    log: Object,
+const props = defineProps({
+    log: { type: Object, required: true },
 })
 
-const goBack = () => {
-    router.get(route('admin.ai_logs.index'))
+const pretty = (value) => {
+    if (value === null || value === undefined || value === '') return null
+    try {
+        return JSON.stringify(typeof value === 'string' ? JSON.parse(value) : value, null, 2)
+    } catch {
+        return String(value)
+    }
 }
 
-const getStatusColor = (status) => {
-    const colors = {
-        'success': 'bg-green-100 text-green-800',
-        'error': 'bg-red-100 text-red-800',
-        'retry': 'bg-yellow-100 text-yellow-800',
-        'pending': 'bg-blue-100 text-blue-800',
-        'default': 'bg-gray-100 text-gray-800',
+const properties = computed(() => pretty(props.log.properties))
+const changes = computed(() => pretty(props.log.changes))
+const raw = computed(() => pretty(props.log))
+
+const statusBadge = computed(() => {
+    const palette = {
+        success: 'bg-[rgb(var(--m3-color-tertiary-container-rgb))] text-[rgb(var(--m3-color-on-tertiary-container-rgb))]',
+        error: 'bg-[rgb(var(--m3-color-error-container-rgb))] text-[rgb(var(--m3-color-on-error-container-rgb))]',
+        retry: 'bg-[rgb(var(--m3-color-primary-container-rgb))] text-[rgb(var(--m3-color-on-primary-container-rgb))]',
+        pending: 'bg-[rgb(var(--m3-color-secondary-container-rgb))] text-[rgb(var(--m3-color-on-secondary-container-rgb))]',
     }
-    return colors[status] || colors['default']
-}
+    return palette[props.log.status] || 'bg-[rgb(var(--m3-color-surface-container-high-rgb))] text-[rgb(var(--m3-color-on-surface-variant-rgb))]'
+})
+
+const StatusIcon = computed(() => {
+    if (props.log.status === 'success') return CheckCircle2
+    if (props.log.status === 'error') return XCircle
+    if (props.log.status === 'retry') return RotateCw
+    return Clock
+})
+
+const formatDateTime = (value) =>
+    value
+        ? new Date(value).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'medium' })
+        : '—'
 </script>
 
 <template>
     <AdminLayout>
-        <Head title="AI Log Details" />
+        <Head title="Detail AI Log" />
 
-        <div class="space-y-6 p-6">
-            <!-- Header -->
-            <div class="flex items-center justify-between mb-8">
-                <div>
-                    <h1 class="text-3xl font-bold">{{ log.subject || 'AI Log' }}</h1>
-                    <p class="text-gray-600">{{ new Date(log.created_at).toLocaleString() }}</p>
+        <div class="space-y-6 p-4 sm:p-6">
+            <Link :href="route('admin.ai_logs.index')" class="inline-flex items-center gap-2 text-sm font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))] hover:text-[rgb(var(--m3-color-primary-rgb))]">
+                <ArrowLeft class="h-4 w-4" /> Kembali ke AI Logs
+            </Link>
+
+            <div class="flex flex-col gap-4 rounded-2xl border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-container-rgb))] p-5 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex items-center gap-4">
+                    <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-[rgb(var(--m3-color-primary-container-rgb))] text-[rgb(var(--m3-color-on-primary-container-rgb))]">
+                        <Activity class="h-6 w-6" />
+                    </span>
+                    <div>
+                        <h1 class="text-2xl font-bold text-[rgb(var(--m3-color-on-surface-rgb))]">{{ log.log_name || 'AI Log' }}</h1>
+                        <p class="text-sm text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Log #{{ log.id }} · {{ formatDateTime(log.created_at) }}</p>
+                    </div>
                 </div>
-                <button
-                    @click="goBack"
-                    class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 font-medium transition-colors"
-                >
-                    ← Back to Logs
-                </button>
+                <span :class="['inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold capitalize', statusBadge]">
+                    <component :is="StatusIcon" class="h-3.5 w-3.5" />
+                    {{ log.status || 'pending' }}
+                </span>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Main Content -->
-                <div class="lg:col-span-2 space-y-6">
-                    <!-- Summary -->
-                    <div class="bg-white rounded-lg p-6 border border-gray-200">
-                        <h2 class="text-lg font-semibold mb-4">Log Summary</h2>
-                        <dl class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                <div class="space-y-4 lg:col-span-2">
+                    <section class="rounded-2xl border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-container-rgb))] p-5">
+                        <h2 class="mb-4 text-sm font-semibold uppercase tracking-wide text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Ringkasan</h2>
+                        <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div>
-                                <dt class="text-sm font-medium text-gray-600">Status</dt>
-                                <dd class="mt-1">
-                                    <span :class="['px-3 py-1 rounded-full text-xs font-medium', getStatusColor(log.status)]">
-                                        {{ log.status || 'pending' }}
-                                    </span>
-                                </dd>
+                                <dt class="text-xs text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Log name</dt>
+                                <dd class="mt-1 text-sm font-medium text-[rgb(var(--m3-color-on-surface-rgb))]">{{ log.log_name || '—' }}</dd>
                             </div>
                             <div>
-                                <dt class="text-sm font-medium text-gray-600">Subject</dt>
-                                <dd class="text-gray-900 mt-1">{{ log.subject || 'AI Call' }}</dd>
+                                <dt class="text-xs text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Log ID</dt>
+                                <dd class="mt-1 font-mono text-sm font-medium text-[rgb(var(--m3-color-on-surface-rgb))]">#{{ log.id }}</dd>
                             </div>
-                            <div class="md:col-span-2">
-                                <dt class="text-sm font-medium text-gray-600">Description</dt>
-                                <dd class="text-gray-900 mt-1">{{ log.description || 'No description provided' }}</dd>
+                            <div class="sm:col-span-2">
+                                <dt class="text-xs text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Deskripsi</dt>
+                                <dd class="mt-1 text-sm text-[rgb(var(--m3-color-on-surface-rgb))]">{{ log.description || 'Tanpa deskripsi' }}</dd>
                             </div>
-                            <div class="md:col-span-2">
-                                <dt class="text-sm font-medium text-gray-600">Timestamp</dt>
-                                <dd class="text-gray-900 mt-1">{{ new Date(log.created_at).toLocaleString() }}</dd>
+                            <div class="sm:col-span-2">
+                                <dt class="text-xs text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Waktu</dt>
+                                <dd class="mt-1 text-sm font-medium text-[rgb(var(--m3-color-on-surface-rgb))]">{{ formatDateTime(log.created_at) }}</dd>
                             </div>
                         </dl>
-                    </div>
+                    </section>
 
-                    <!-- Properties -->
-                    <div v-if="log.properties" class="bg-white rounded-lg p-6 border border-gray-200">
-                        <h2 class="text-lg font-semibold mb-4">Properties</h2>
-                        <pre class="bg-gray-50 border border-gray-200 rounded p-4 text-sm overflow-x-auto max-h-64 overflow-y-auto">{{ JSON.stringify(log.properties, null, 2) }}</pre>
-                    </div>
+                    <section v-if="properties" class="rounded-2xl border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-container-rgb))] p-5">
+                        <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-[rgb(var(--m3-color-on-surface-variant-rgb))]"><Code2 class="h-4 w-4" /> Properties</h2>
+                        <pre class="max-h-72 overflow-auto rounded-xl border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-container-high-rgb))] p-4 text-xs text-[rgb(var(--m3-color-on-surface-rgb))]">{{ properties }}</pre>
+                    </section>
 
-                    <!-- Changes -->
-                    <div v-if="log.changes" class="bg-white rounded-lg p-6 border border-gray-200">
-                        <h2 class="text-lg font-semibold mb-4">Changes</h2>
-                        <pre class="bg-gray-50 border border-gray-200 rounded p-4 text-sm overflow-x-auto max-h-64 overflow-y-auto">{{ JSON.stringify(log.changes, null, 2) }}</pre>
-                    </div>
-
-                    <!-- Causer Info -->
-                    <div v-if="log.causer_id" class="bg-white rounded-lg p-6 border border-gray-200">
-                        <h2 class="text-lg font-semibold mb-4">Causer</h2>
-                        <dl class="space-y-4">
-                            <div>
-                                <dt class="text-sm font-medium text-gray-600">Causer ID</dt>
-                                <dd class="text-gray-900 mt-1">#{{ log.causer_id }}</dd>
-                            </div>
-                            <div>
-                                <dt class="text-sm font-medium text-gray-600">Causer Type</dt>
-                                <dd class="text-gray-900 mt-1">{{ log.causer_type || 'System' }}</dd>
-                            </div>
-                        </dl>
-                    </div>
+                    <section v-if="changes" class="rounded-2xl border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-container-rgb))] p-5">
+                        <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-[rgb(var(--m3-color-on-surface-variant-rgb))]"><RotateCw class="h-4 w-4" /> Changes</h2>
+                        <pre class="max-h-72 overflow-auto rounded-xl border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-container-high-rgb))] p-4 text-xs text-[rgb(var(--m3-color-on-surface-rgb))]">{{ changes }}</pre>
+                    </section>
                 </div>
 
-                <!-- Sidebar -->
-                <div class="space-y-6">
-                    <!-- Quick Info -->
-                    <div class="bg-white rounded-lg p-6 border border-gray-200">
-                        <h2 class="text-lg font-semibold mb-4">Quick Info</h2>
-                        <dl class="space-y-3">
-                            <div>
-                                <dt class="text-xs font-medium text-gray-600 uppercase">Log ID</dt>
-                                <dd class="text-gray-900 text-sm mt-1 font-mono">#{{ log.id }}</dd>
+                <div class="space-y-4">
+                    <section class="rounded-2xl border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-container-rgb))] p-5">
+                        <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Quick info</h2>
+                        <dl class="space-y-3 text-sm">
+                            <div class="flex items-center justify-between gap-3">
+                                <dt class="text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Log ID</dt>
+                                <dd class="font-mono text-[rgb(var(--m3-color-on-surface-rgb))]">#{{ log.id }}</dd>
                             </div>
-                            <div>
-                                <dt class="text-xs font-medium text-gray-600 uppercase">Status</dt>
-                                <dd class="text-sm mt-1">
-                                    <span :class="['px-2 py-1 rounded text-xs font-medium', getStatusColor(log.status)]">
-                                        {{ log.status || 'pending' }}
-                                    </span>
-                                </dd>
+                            <div class="flex items-center justify-between gap-3">
+                                <dt class="text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Status</dt>
+                                <dd class="font-medium capitalize text-[rgb(var(--m3-color-on-surface-rgb))]">{{ log.status }}</dd>
                             </div>
-                            <div>
-                                <dt class="text-xs font-medium text-gray-600 uppercase">Date</dt>
-                                <dd class="text-gray-900 text-sm mt-1">{{ new Date(log.created_at).toLocaleDateString() }}</dd>
-                            </div>
-                            <div>
-                                <dt class="text-xs font-medium text-gray-600 uppercase">Time</dt>
-                                <dd class="text-gray-900 text-sm mt-1">{{ new Date(log.created_at).toLocaleTimeString() }}</dd>
+                            <div class="flex items-center justify-between gap-3">
+                                <dt class="text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Log name</dt>
+                                <dd class="text-right text-[rgb(var(--m3-color-on-surface-rgb))]">{{ log.log_name || '—' }}</dd>
                             </div>
                         </dl>
-                    </div>
+                    </section>
 
-                    <!-- Model Info -->
-                    <div v-if="log.subject_type" class="bg-white rounded-lg p-6 border border-gray-200">
-                        <h2 class="text-lg font-semibold mb-4">Related Model</h2>
-                        <dl class="space-y-3">
-                            <div>
-                                <dt class="text-xs font-medium text-gray-600 uppercase">Type</dt>
-                                <dd class="text-gray-900 text-sm mt-1">{{ log.subject_type }}</dd>
-                            </div>
-                            <div>
-                                <dt class="text-xs font-medium text-gray-600 uppercase">ID</dt>
-                                <dd class="text-gray-900 text-sm mt-1">#{{ log.subject_id }}</dd>
-                            </div>
-                        </dl>
-                    </div>
-
-                    <!-- Help -->
-                    <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                        <h3 class="text-sm font-semibold text-gray-900 mb-2">About This Log</h3>
-                        <p class="text-xs text-gray-700">This log tracks AI operations. No user data or secrets are exposed here for security and privacy.</p>
-                    </div>
+                    <section class="rounded-2xl border border-[rgb(var(--m3-color-secondary-container-rgb))] bg-[rgb(var(--m3-color-secondary-container-rgb))] p-4 text-sm text-[rgb(var(--m3-color-on-secondary-container-rgb))]">
+                        <div class="flex items-start gap-2">
+                            <Info class="mt-0.5 h-4 w-4 shrink-0" />
+                            <p>Log ini untuk operasional AI. Data sensitif dan secret provider tidak ditampilkan di panel admin.</p>
+                        </div>
+                    </section>
                 </div>
             </div>
 
-            <!-- Full JSON -->
-            <div class="bg-white rounded-lg p-6 border border-gray-200">
-                <h2 class="text-lg font-semibold mb-4">Raw JSON</h2>
-                <pre class="bg-gray-50 border border-gray-200 rounded p-4 text-xs overflow-x-auto max-h-96 overflow-y-auto">{{ JSON.stringify(log, null, 2) }}</pre>
-            </div>
+            <section v-if="raw" class="rounded-2xl border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-container-rgb))] p-5">
+                <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-[rgb(var(--m3-color-on-surface-variant-rgb))]"><AlertTriangle class="h-4 w-4" /> Raw JSON</h2>
+                <pre class="max-h-80 overflow-auto rounded-xl border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-container-high-rgb))] p-4 text-xs text-[rgb(var(--m3-color-on-surface-rgb))]">{{ raw }}</pre>
+            </section>
         </div>
     </AdminLayout>
 </template>

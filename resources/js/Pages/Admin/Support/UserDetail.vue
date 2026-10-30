@@ -1,5 +1,6 @@
 <script setup>
 import { Head, router } from '@inertiajs/vue3'
+import { ArrowLeft, CheckCircle2, XCircle } from 'lucide-vue-next'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 
 defineProps({
@@ -24,9 +25,9 @@ const goBack = () => {
                 </div>
                 <button
                     @click="goBack"
-                    class="px-4 py-2 border border-[rgb(var(--m3-color-outline-variant-rgb))] rounded-lg hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))] text-[rgb(var(--m3-color-on-surface-rgb))] font-medium transition-colors"
+                    class="inline-flex items-center gap-2 px-4 py-2 border border-[rgb(var(--m3-color-outline-variant-rgb))] rounded-lg hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))] text-[rgb(var(--m3-color-on-surface-rgb))] font-medium transition-colors"
                 >
-                    ← Back to Search
+                    <ArrowLeft class="h-4 w-4" /> Back to Search
                 </button>
             </div>
 
@@ -53,10 +54,12 @@ const goBack = () => {
                                 <dt class="text-sm font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Email Verified</dt>
                                 <dd class="mt-1">
                                     <span :class="[
-                                        'px-3 py-1 rounded-full text-xs font-medium',
+                                        'inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium',
                                         user.email_verified_at ? 'bg-[rgb(var(--m3-color-tertiary-container-rgb))] text-[rgb(var(--m3-color-on-tertiary-container-rgb))]' : 'bg-[rgb(var(--m3-color-surface-container-high-rgb))] text-[rgb(var(--m3-color-on-surface-variant-rgb))]'
                                     ]">
-                                        {{ user.email_verified_at ? '✓ Verified' : '⊘ Unverified' }}
+                                        <CheckCircle2 v-if="user.email_verified_at" class="h-3 w-3" />
+                                        <XCircle v-else class="h-3 w-3" />
+                                        {{ user.email_verified_at ? 'Verified' : 'Unverified' }}
                                     </span>
                                 </dd>
                             </div>
@@ -120,7 +123,9 @@ const goBack = () => {
                                         <p class="font-medium text-[rgb(var(--m3-color-on-surface-rgb))]">{{ wallet.name }}</p>
                                         <p class="text-xs text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Created: {{ new Date(wallet.created_at).toLocaleDateString() }}</p>
                                     </div>
-                                    <div class="text-sm font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))]">{{ wallet.currency }}</div>
+                                    <div class="text-sm font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))]">
+                                        {{ wallet.is_active === false ? 'Inactive' : 'Active' }}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -140,6 +145,14 @@ const goBack = () => {
                             <div>
                                 <dt class="text-sm font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Last Updated</dt>
                                 <dd class="text-[rgb(var(--m3-color-on-surface-rgb))] mt-1">{{ new Date(user.updated_at).toLocaleDateString() }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Last Active</dt>
+                                <dd class="text-[rgb(var(--m3-color-on-surface-rgb))] mt-1">{{ user.last_active_at ? new Date(user.last_active_at).toLocaleString() : 'Never' }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Last Login</dt>
+                                <dd class="text-[rgb(var(--m3-color-on-surface-rgb))] mt-1">{{ user.last_login_at ? new Date(user.last_login_at).toLocaleString() : 'Never' }}</dd>
                             </div>
                             <div>
                                 <dt class="text-sm font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Status</dt>

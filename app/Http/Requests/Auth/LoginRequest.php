@@ -50,6 +50,15 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        if (Auth::user()?->status === 'suspended') {
+            Auth::guard('web')->logout();
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'email' => 'Akun Anda sedang ditangguhkan. Hubungi dukungan.',
+            ]);
+        }
+
         RateLimiter::clear($this->throttleKey());
     }
 

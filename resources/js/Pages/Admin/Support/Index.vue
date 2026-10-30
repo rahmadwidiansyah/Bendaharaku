@@ -1,6 +1,17 @@
 <script setup>
-import { Head, router } from '@inertiajs/vue3'
 import { ref } from 'vue'
+import { Head, router } from '@inertiajs/vue3'
+import {
+    ArrowDown,
+    ArrowUp,
+    CheckCircle2,
+    ChevronsUpDown,
+    Headphones,
+    Search,
+    ShieldAlert,
+    UserRound,
+    XCircle,
+} from 'lucide-vue-next'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import axios from 'axios'
 
@@ -11,49 +22,80 @@ defineProps({
 const searchQuery = ref('')
 const searchResults = ref([])
 const isSearching = ref(false)
+const searchError = ref('')
 const selectedUser = ref(null)
 const accessReason = ref('')
+const accessError = ref('')
 const isLoggingAccess = ref(false)
+const sortKey = ref('joined')
+const sortDirection = ref('desc')
 
 const handleSearch = async () => {
-    if (!searchQuery.value || searchQuery.value.length < 3) {
-        alert('Search query must be at least 3 characters')
+    searchError.value = ''
+
+    if (!searchQuery.value || searchQuery.value.trim().length < 3) {
+        searchError.value = 'Kata kunci minimal 3 karakter.'
         return
     }
 
     isSearching.value = true
     try {
         const response = await axios.post(route('admin.support.search'), {
-            query: searchQuery.value,
+            query: searchQuery.value.trim(),
+            sort: sortKey.value,
+            direction: sortDirection.value,
         })
         searchResults.value = response.data.results
     } catch (error) {
-        alert('Search failed: ' + (error.response?.data?.message || error.message))
+        searchError.value = 'Pencarian gagal: ' + (error.response?.data?.message || error.message)
     } finally {
         isSearching.value = false
     }
 }
 
+const setSort = (key) => {
+    if (sortKey.value !== key) {
+        sortKey.value = key
+        sortDirection.value = 'asc'
+    } else if (sortDirection.value === 'asc') {
+        sortDirection.value = 'desc'
+    } else {
+        sortKey.value = 'joined'
+        sortDirection.value = 'desc'
+    }
+
+    if (searchResults.value.length > 0) {
+        handleSearch()
+    }
+}
+
+const sortIcon = (key) => {
+    if (sortKey.value !== key) return ChevronsUpDown
+    return sortDirection.value === 'asc' ? ArrowUp : ArrowDown
+}
+
 const selectUser = (user) => {
     selectedUser.value = user
     accessReason.value = ''
+    accessError.value = ''
 }
 
 const logAndViewAccess = async () => {
-    if (!accessReason.value) {
-        alert('Please provide a reason for accessing this user')
+    accessError.value = ''
+
+    if (!accessReason.value.trim()) {
+        accessError.value = 'Alasan akses wajib diisi dan akan dicatat di audit log.'
         return
     }
 
     isLoggingAccess.value = true
     try {
         await axios.post(route('admin.support.log_access', selectedUser.value.id), {
-            reason: accessReason.value,
+            reason: accessReason.value.trim(),
         })
-        // Navigate to user detail
         router.get(route('admin.support.user_detail', selectedUser.value.id))
     } catch (error) {
-        alert('Failed to log access: ' + (error.response?.data?.message || error.message))
+        accessError.value = 'Gagal mencatat akses: ' + (error.response?.data?.message || error.message)
     } finally {
         isLoggingAccess.value = false
     }
@@ -64,6 +106,17 @@ const clearSearch = () => {
     searchResults.value = []
     selectedUser.value = null
     accessReason.value = ''
+    searchError.value = ''
+    accessError.value = ''
+}
+
+const formatDate = (value) => (value ? new Date(value).toLocaleDateString('id-ID') : '—')
+const formatRelative = (value) => {
+    if (!value) return 'Belum pernah'
+    const days = Math.floor((Date.now() - new Date(value).getTime()) / 86400000)
+    if (days <= 0) return 'Hari ini'
+    if (days === 1) return 'Kemarin'
+    return `${days} hari lalu`
 }
 </script>
 
@@ -71,118 +124,132 @@ const clearSearch = () => {
     <AdminLayout>
         <Head title="Support Tools" />
 
-        <div class="space-y-6 p-6">
-            <!-- Header -->
-            <div class="mb-8">
-                <h1 class="text-3xl font-bold text-[rgb(var(--m3-color-on-surface-rgb))]">Support Tools</h1>
-                <p class="text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Search for users and access support information</p>
-            </div>
-
-            <!-- Search Card -->
-            <div class="bg-[rgb(var(--m3-color-surface-container-rgb))] rounded-lg p-6 border border-[rgb(var(--m3-color-outline-variant-rgb))] space-y-4">
-                <h2 class="text-lg font-semibold text-[rgb(var(--m3-color-on-surface-rgb))]">Find User</h2>
-                
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-[rgb(var(--m3-color-on-surface-rgb))] mb-2">Search by Name, Email, Phone, or Telegram ID</label>
-                        <div class="flex gap-2">
-                            <input
-                                v-model="searchQuery"
-                                type="text"
-                                placeholder="Enter name, email, phone, or telegram ID..."
-                                class="flex-1 px-4 py-2 bg-[rgb(var(--m3-color-surface-rgb))] text-[rgb(var(--m3-color-on-surface-rgb))] border border-[rgb(var(--m3-color-outline-variant-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--m3-color-primary-rgb))] focus:border-transparent"
-                                @keyup.enter="handleSearch"
-                            />
-                            <button
-                                @click="handleSearch"
-                                :disabled="isSearching"
-                                class="px-6 py-2 bg-[rgb(var(--m3-color-primary-rgb))] text-[rgb(var(--m3-color-on-primary-rgb))] rounded-lg hover:bg-[rgb(var(--m3-color-primary-container-rgb))] hover:text-[rgb(var(--m3-color-on-primary-container-rgb))] disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-                            >
-                                {{ isSearching ? 'Searching...' : 'Search' }}
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Search Results -->
-                    <div v-if="searchResults.length > 0" class="mt-4">
-                        <h3 class="text-sm font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))] mb-3">Results ({{ searchResults.length }})</h3>
-                        <div class="space-y-2 max-h-64 overflow-y-auto">
-                            <button
-                                v-for="user in searchResults"
-                                :key="user.id"
-                                @click="selectUser(user)"
-                                :class="[
-                                    'w-full text-left px-4 py-3 border rounded-lg transition-colors',
-                                    selectedUser?.id === user.id
-                                        ? 'bg-[rgb(var(--m3-color-primary-container-rgb))] border-[rgb(var(--m3-color-primary-rgb))]'
-                                        : 'border-[rgb(var(--m3-color-outline-variant-rgb))] hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))]'
-                                ]"
-                            >
-                                <div class="font-medium text-[rgb(var(--m3-color-on-surface-rgb))]">{{ user.name }}</div>
-                                <div class="text-sm text-[rgb(var(--m3-color-on-surface-variant-rgb))]">{{ user.email }}</div>
-                                <div class="text-xs text-[rgb(var(--m3-color-on-surface-variant-rgb))] mt-1">
-                                    Joined: {{ new Date(user.created_at).toLocaleDateString() }}
-                                    <span v-if="user.email_verified_at" class="ml-2 text-[rgb(var(--m3-color-tertiary-rgb))]">✓ Verified</span>
-                                    <span v-else class="ml-2 text-[rgb(var(--m3-color-error-rgb))]">⊘ Unverified</span>
-                                </div>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- No Results -->
-                    <div v-if="searchQuery && searchResults.length === 0 && !isSearching" class="text-center py-6 text-[rgb(var(--m3-color-on-surface-variant-rgb))]">
-                        No users found matching your search
-                    </div>
-                </div>
-            </div>
-
-            <!-- Access Reason Card -->
-            <div v-if="selectedUser" class="bg-[rgb(var(--m3-color-surface-container-rgb))] rounded-lg p-6 border border-[rgb(var(--m3-color-outline-variant-rgb))] space-y-4">
-                <h2 class="text-lg font-semibold text-[rgb(var(--m3-color-on-surface-rgb))]">Access Reason</h2>
-                
-                <div class="bg-[rgb(var(--m3-color-primary-container-rgb))] rounded p-4 border border-[rgb(var(--m3-color-primary-rgb))] mb-4">
-                    <p class="text-sm text-[rgb(var(--m3-color-on-primary-container-rgb))]">
-                        Selected user: <strong>{{ selectedUser.name }}</strong> ({{ selectedUser.email }})
-                    </p>
-                </div>
-
+        <div class="space-y-6 p-4 sm:p-6">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                    <label class="block text-sm font-medium text-[rgb(var(--m3-color-on-surface-rgb))] mb-2">Why are you accessing this user's information?</label>
-                    <textarea
-                        v-model="accessReason"
-                        placeholder="e.g., User reported issue with wallet, Help with transaction verification, etc."
-                        class="w-full px-4 py-2 bg-[rgb(var(--m3-color-surface-rgb))] text-[rgb(var(--m3-color-on-surface-rgb))] border border-[rgb(var(--m3-color-outline-variant-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--m3-color-primary-rgb))] focus:border-transparent"
-                        rows="4"
-                    ></textarea>
-                    <p class="text-xs text-[rgb(var(--m3-color-on-surface-variant-rgb))] mt-2">This reason will be logged in the audit trail for compliance.</p>
+                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[rgb(var(--m3-color-primary-rgb))]">Support</p>
+                    <h1 class="mt-1 text-2xl font-bold text-[rgb(var(--m3-color-on-surface-rgb))] sm:text-3xl">Support Tools</h1>
+                    <p class="mt-1 text-sm text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Cari user dan akses informasi dukungan dengan alasan yang tercatat.</p>
                 </div>
-
-                <div class="flex gap-2">
-                    <button
-                        @click="logAndViewAccess"
-                        :disabled="isLoggingAccess || !accessReason"
-                        class="flex-1 px-4 py-2 bg-[rgb(var(--m3-color-tertiary-rgb))] text-[rgb(var(--m3-color-on-tertiary-rgb))] rounded-lg hover:bg-[rgb(var(--m3-color-tertiary-container-rgb))] hover:text-[rgb(var(--m3-color-on-tertiary-container-rgb))] disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-                    >
-                        {{ isLoggingAccess ? 'Logging...' : 'View User & Log Access' }}
-                    </button>
-                    <button
-                        @click="clearSearch"
-                        class="px-4 py-2 border border-[rgb(var(--m3-color-outline-variant-rgb))] text-[rgb(var(--m3-color-on-surface-rgb))] rounded-lg hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))] transition-colors font-medium"
-                    >
-                        Clear
-                    </button>
+                <div class="flex items-center gap-2 rounded-xl border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-container-rgb))] px-4 py-3">
+                    <Headphones class="h-5 w-5 text-[rgb(var(--m3-color-primary-rgb))]" />
+                    <div>
+                        <p class="text-xs text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Support</p>
+                        <p class="text-sm font-semibold leading-none text-[rgb(var(--m3-color-on-surface-rgb))]">{{ support_user?.name }}</p>
+                    </div>
                 </div>
             </div>
 
-            <!-- Info Box -->
-            <div class="bg-[rgb(var(--m3-color-secondary-container-rgb))] rounded-lg p-6 border border-[rgb(var(--m3-color-secondary-rgb))]">
-                <h3 class="font-semibold text-[rgb(var(--m3-color-on-secondary-container-rgb))] mb-2">Important</h3>
-                <ul class="text-sm text-[rgb(var(--m3-color-on-secondary-container-rgb))] space-y-1 list-disc list-inside">
-                    <li>All access is logged and audited for security and compliance</li>
-                    <li>Search results show limited user data to protect privacy</li>
-                    <li>Always provide a legitimate business reason for accessing user information</li>
-                    <li>Do not share or misuse user data accessed through this tool</li>
-                </ul>
+            <div class="rounded-2xl border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-container-rgb))] p-4 sm:p-5">
+                <h2 class="text-sm font-semibold uppercase tracking-wide text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Cari user</h2>
+                <form class="mt-3 flex flex-col gap-2 sm:flex-row" @submit.prevent="handleSearch">
+                    <div class="relative flex-1">
+                        <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[rgb(var(--m3-color-on-surface-variant-rgb))]" />
+                        <input
+                            v-model="searchQuery"
+                            type="search"
+                            placeholder="Nama, email, nomor HP, atau Telegram ID…"
+                            class="w-full rounded-xl border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-rgb))] py-2.5 pl-9 pr-3 text-sm text-[rgb(var(--m3-color-on-surface-rgb))] placeholder:text-[rgb(var(--m3-color-on-surface-variant-rgb))] focus:border-transparent focus:ring-2 focus:ring-[rgb(var(--m3-color-primary-rgb))]"
+                        />
+                    </div>
+                    <button type="submit" :disabled="isSearching" class="rounded-xl bg-[rgb(var(--m3-color-primary-rgb))] px-6 py-2.5 text-sm font-semibold text-[rgb(var(--m3-color-on-primary-rgb))] transition-colors hover:bg-[rgb(var(--m3-color-primary-container-rgb))] hover:text-[rgb(var(--m3-color-on-primary-container-rgb))] disabled:opacity-50">
+                        {{ isSearching ? 'Mencari…' : 'Cari' }}
+                    </button>
+                    <button type="button" class="rounded-xl border border-[rgb(var(--m3-color-outline-variant-rgb))] px-4 py-2.5 text-sm font-medium text-[rgb(var(--m3-color-on-surface-rgb))] hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))]" @click="clearSearch">Reset</button>
+                </form>
+                <p v-if="searchError" class="mt-2 text-xs font-medium text-[rgb(var(--m3-color-error-rgb))]">{{ searchError }}</p>
+
+                <div v-if="searchResults.length > 0" class="mt-5">
+                    <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Hasil ({{ searchResults.length }})</p>
+                        <div class="flex items-center gap-1 text-xs">
+                            <button
+                                v-for="sort in [{ key: 'name', label: 'Nama' }, { key: 'last_active', label: 'Aktif' }, { key: 'joined', label: 'Bergabung' }]"
+                                :key="sort.key"
+                                type="button"
+                                class="inline-flex items-center gap-1 rounded-lg border border-[rgb(var(--m3-color-outline-variant-rgb))] px-2 py-1 font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))] hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))]"
+                                :class="{ 'text-[rgb(var(--m3-color-primary-rgb))]': sortKey === sort.key }"
+                                @click="setSort(sort.key)"
+                            >
+                                {{ sort.label }}
+                                <component :is="sortIcon(sort.key)" class="h-3 w-3" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="max-h-80 space-y-2 overflow-y-auto pr-1">
+                        <button
+                            v-for="user in searchResults"
+                            :key="user.id"
+                            type="button"
+                            :class="[
+                                'w-full rounded-xl border p-3 text-left transition-colors',
+                                selectedUser?.id === user.id
+                                    ? 'border-[rgb(var(--m3-color-primary-rgb))] bg-[rgb(var(--m3-color-primary-container-rgb))]'
+                                    : 'border-[rgb(var(--m3-color-outline-variant-rgb))] hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))]',
+                            ]"
+                            @click="selectUser(user)"
+                        >
+                            <div class="flex flex-wrap items-center gap-2">
+                                <UserRound class="h-4 w-4 text-[rgb(var(--m3-color-primary-rgb))]" />
+                                <span class="font-semibold text-[rgb(var(--m3-color-on-surface-rgb))]">{{ user.name }}</span>
+                                <span :class="['rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize', user.status === 'suspended' ? 'bg-[rgb(var(--m3-color-error-container-rgb))] text-[rgb(var(--m3-color-on-error-container-rgb))]' : 'bg-[rgb(var(--m3-color-tertiary-container-rgb))] text-[rgb(var(--m3-color-on-tertiary-container-rgb))]']">{{ user.status }}</span>
+                                <span class="inline-flex items-center gap-1 text-[10px] text-[rgb(var(--m3-color-on-surface-variant-rgb))]">
+                                    <CheckCircle2 v-if="user.email_verified_at" class="h-3 w-3" />
+                                    <XCircle v-else class="h-3 w-3" />
+                                    {{ user.email_verified_at ? 'Verified' : 'Unverified' }}
+                                </span>
+                            </div>
+                            <p class="mt-1 text-sm text-[rgb(var(--m3-color-on-surface-variant-rgb))]">{{ user.email }}</p>
+                            <p class="mt-1 text-xs text-[rgb(var(--m3-color-on-surface-variant-rgb))]">
+                                Bergabung {{ formatDate(user.created_at) }} · Aktif {{ formatRelative(user.last_active_at) }}
+                            </p>
+                        </button>
+                    </div>
+                </div>
+
+                <div v-else-if="searchQuery && !isSearching" class="mt-6 rounded-xl border border-dashed border-[rgb(var(--m3-color-outline-variant-rgb))] px-4 py-8 text-center text-sm text-[rgb(var(--m3-color-on-surface-variant-rgb))]">
+                    Tidak ada user yang cocok. Coba kata kunci lain.
+                </div>
+            </div>
+
+            <div v-if="selectedUser" class="rounded-2xl border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-container-rgb))] p-4 sm:p-5">
+                <h2 class="text-sm font-semibold uppercase tracking-wide text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Alasan akses</h2>
+                <div class="mt-3 rounded-xl bg-[rgb(var(--m3-color-primary-container-rgb))] p-3 text-sm text-[rgb(var(--m3-color-on-primary-container-rgb))]">
+                    User terpilih: <strong>{{ selectedUser.name }}</strong> ({{ selectedUser.email }})
+                </div>
+
+                <label class="mt-4 block text-xs font-semibold uppercase tracking-wide text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Mengapa Anda mengakses data user ini?</label>
+                <textarea
+                    v-model="accessReason"
+                    rows="3"
+                    maxlength="255"
+                    placeholder="Contoh: user melaporkan transaksi tidak muncul, verifikasi kendala login, dsb."
+                    class="mt-1.5 w-full rounded-xl border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-rgb))] px-3 py-2 text-sm text-[rgb(var(--m3-color-on-surface-rgb))] placeholder:text-[rgb(var(--m3-color-on-surface-variant-rgb))] focus:border-transparent focus:ring-2 focus:ring-[rgb(var(--m3-color-primary-rgb))]"
+                />
+                <p class="mt-1 text-xs text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Alasan ini dicatat di audit trail untuk kepatuhan.</p>
+                <p v-if="accessError" class="mt-1 text-xs font-medium text-[rgb(var(--m3-color-error-rgb))]">{{ accessError }}</p>
+
+                <div class="mt-4 flex flex-col gap-2 sm:flex-row">
+                    <button type="button" :disabled="isLoggingAccess" class="rounded-xl bg-[rgb(var(--m3-color-tertiary-rgb))] px-4 py-2.5 text-sm font-semibold text-[rgb(var(--m3-color-on-tertiary-rgb))] transition-colors hover:bg-[rgb(var(--m3-color-tertiary-container-rgb))] hover:text-[rgb(var(--m3-color-on-tertiary-container-rgb))] disabled:opacity-50" @click="logAndViewAccess">
+                        {{ isLoggingAccess ? 'Mencatat…' : 'Lihat user & catat akses' }}
+                    </button>
+                    <button type="button" class="rounded-xl border border-[rgb(var(--m3-color-outline-variant-rgb))] px-4 py-2.5 text-sm font-medium text-[rgb(var(--m3-color-on-surface-rgb))] hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))]" @click="selectedUser = null">Batal</button>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-[rgb(var(--m3-color-secondary-container-rgb))] bg-[rgb(var(--m3-color-secondary-container-rgb))] p-4 text-sm text-[rgb(var(--m3-color-on-secondary-container-rgb))]">
+                <div class="flex items-start gap-2">
+                    <ShieldAlert class="mt-0.5 h-4 w-4 shrink-0" />
+                    <div>
+                        <p class="font-semibold">Penting</p>
+                        <ul class="mt-1 list-inside list-disc space-y-0.5 text-xs">
+                            <li>Semua akses dicatat dan diaudit.</li>
+                            <li>Hasil pencarian hanya menampilkan data minimal untuk privasi.</li>
+                            <li>Selalu isi alasan bisnis yang sah sebelum mengakses data user.</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
     </AdminLayout>

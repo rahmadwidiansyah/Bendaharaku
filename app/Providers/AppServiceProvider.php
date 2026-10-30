@@ -7,6 +7,8 @@ use App\Policies\BudgetGroupPolicy;
 use App\Services\Budgeting\AIBudgetService;
 use App\Services\Budgeting\BudgetingServiceInterface;
 use App\Support\Inertia\MaterialAwareViewFinder;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
@@ -47,5 +49,13 @@ class AppServiceProvider extends ServiceProvider
         if (config('app.env') === 'production') {
             URL::forceScheme('https');
         }
+
+        // Sinyal login terakhir untuk metrik admin (active users).
+        Event::listen(Login::class, function (Login $event): void {
+            $event->user->forceFill([
+                'last_login_at' => now(),
+                'last_active_at' => now(),
+            ])->saveQuietly();
+        });
     }
 }

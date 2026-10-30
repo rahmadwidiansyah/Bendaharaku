@@ -1,269 +1,218 @@
 <script setup>
-import { Head, router, usePage } from '@inertiajs/vue3'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import { Head, Link } from '@inertiajs/vue3'
+import {
+    CheckCircle2,
+    Eye,
+    Filter,
+    History,
+    RotateCcw,
+    XCircle,
+} from 'lucide-vue-next'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
+import SortableTh from '@/Components/Admin/SortableTh.vue'
+import AdminPagination from '@/Components/Admin/AdminPagination.vue'
+import { useAdminTable } from '@/Composables/useAdminTable'
 
-const page = usePage()
-
-defineProps({
-    logs: Object,
-    actions: Array,
-    filters: Object,
+const props = defineProps({
+    logs: { type: Object, required: true },
+    actions: { type: Array, default: () => [] },
+    admins: { type: Array, default: () => [] },
+    filters: { type: Object, default: () => ({}) },
 })
 
-const action = ref(page.props.filters?.action || '')
-const admin_id = ref(page.props.filters?.admin_id || '')
-const from_date = ref(page.props.filters?.from_date || '')
-const to_date = ref(page.props.filters?.to_date || '')
-const per_page = ref(page.props.filters?.per_page || 20)
-const loading = ref(false)
+const { query, navigate, sortBy, reset } = useAdminTable()
 
-const handleFilter = () => {
-    loading.value = true
-    router.get(route('admin.audit_logs.index'), {
+const action = ref(props.filters.action || '')
+const adminId = ref(props.filters.admin_id || '')
+const success = ref(props.filters.success ?? '')
+const fromDate = ref(props.filters.from_date || '')
+const toDate = ref(props.filters.to_date || '')
+const perPage = ref(Number(props.filters.per_page || 20))
+
+const currentSort = computed(() => query.value.sort)
+const currentDirection = computed(() => query.value.direction || 'desc')
+
+const activeFilterCount = computed(
+    () => [action.value, adminId.value, success.value, fromDate.value, toDate.value].filter((value) => value !== '').length,
+)
+
+const applyFilters = () => {
+    navigate({
         action: action.value,
-        admin_id: admin_id.value,
-        from_date: from_date.value,
-        to_date: to_date.value,
-        per_page: per_page.value,
-    }, {
-        onFinish: () => {
-            loading.value = false
-        },
+        admin_id: adminId.value,
+        success: success.value,
+        from_date: fromDate.value,
+        to_date: toDate.value,
+        per_page: perPage.value,
     })
 }
 
-const handlePaginate = (url) => {
-    loading.value = true
-    router.get(url, {}, {
-        onFinish: () => {
-            loading.value = false
-        },
-    })
-}
-
-const getActionBadge = (action) => {
-    const colors = {
-        'user_status_changed': 'bg-[rgb(var(--m3-color-error-container-rgb))] text-[rgb(var(--m3-color-on-error-container-rgb))]',
-        'support_search': 'bg-[rgb(var(--m3-color-primary-container-rgb))] text-[rgb(var(--m3-color-on-primary-container-rgb))]',
-        'support_view_user': 'bg-[rgb(var(--m3-color-primary-container-rgb))] text-[rgb(var(--m3-color-on-primary-container-rgb))]',
-        'support_access_logged': 'bg-[rgb(var(--m3-color-tertiary-container-rgb))] text-[rgb(var(--m3-color-on-tertiary-container-rgb))]',
-        'ai_provider_updated': 'bg-[rgb(var(--m3-color-secondary-container-rgb))] text-[rgb(var(--m3-color-on-secondary-container-rgb))]',
-        'default': 'bg-[rgb(var(--m3-color-surface-container-high-rgb))] text-[rgb(var(--m3-color-on-surface-variant-rgb))]',
-    }
-    return colors[action] || colors['default']
-}
-
-const formatAction = (action) => {
-    return action
-        .split('_')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ')
-}
-
-const getSuccessBadge = (success) => {
-    return success 
-        ? 'bg-[rgb(var(--m3-color-tertiary-container-rgb))] text-[rgb(var(--m3-color-on-tertiary-container-rgb))]'
-        : 'bg-[rgb(var(--m3-color-error-container-rgb))] text-[rgb(var(--m3-color-on-error-container-rgb))]'
-}
+const changePerPage = () => navigate({ per_page: perPage.value })
 
 const clearFilters = () => {
     action.value = ''
-    admin_id.value = ''
-    from_date.value = ''
-    to_date.value = ''
-    per_page.value = 20
-    handleFilter()
+    adminId.value = ''
+    success.value = ''
+    fromDate.value = ''
+    toDate.value = ''
+    perPage.value = 20
+    reset()
 }
+
+const formatAction = (value) =>
+    String(value || '')
+        .split('_')
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ')
+
+const actionBadge = (value) => {
+    const palette = {
+        user_status_changed: 'bg-[rgb(var(--m3-color-error-container-rgb))] text-[rgb(var(--m3-color-on-error-container-rgb))]',
+        user_viewed: 'bg-[rgb(var(--m3-color-primary-container-rgb))] text-[rgb(var(--m3-color-on-primary-container-rgb))]',
+        support_search: 'bg-[rgb(var(--m3-color-primary-container-rgb))] text-[rgb(var(--m3-color-on-primary-container-rgb))]',
+        support_view_user: 'bg-[rgb(var(--m3-color-secondary-container-rgb))] text-[rgb(var(--m3-color-on-secondary-container-rgb))]',
+        support_access_logged: 'bg-[rgb(var(--m3-color-tertiary-container-rgb))] text-[rgb(var(--m3-color-on-tertiary-container-rgb))]',
+    }
+    return palette[value] || 'bg-[rgb(var(--m3-color-surface-container-high-rgb))] text-[rgb(var(--m3-color-on-surface-variant-rgb))]'
+}
+
+const formatDateTime = (value) =>
+    value
+        ? new Date(value).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })
+        : '—'
 </script>
 
 <template>
     <AdminLayout>
         <Head title="Audit Logs" />
 
-        <div class="space-y-6 p-6">
-            <!-- Header -->
-            <div class="mb-8">
-                <h1 class="text-3xl font-bold text-[rgb(var(--m3-color-on-surface-rgb))]">Audit Logs</h1>
-                <p class="text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Track all administrative actions and changes</p>
+        <div class="space-y-6 p-4 sm:p-6">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[rgb(var(--m3-color-primary-rgb))]">Administration</p>
+                    <h1 class="mt-1 text-2xl font-bold text-[rgb(var(--m3-color-on-surface-rgb))] sm:text-3xl">Audit Logs</h1>
+                    <p class="mt-1 text-sm text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Jejak semua aksi administratif dan perubahan data sensitif.</p>
+                </div>
+                <div class="flex items-center gap-2 rounded-xl border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-container-rgb))] px-4 py-3">
+                    <History class="h-5 w-5 text-[rgb(var(--m3-color-primary-rgb))]" />
+                    <div>
+                        <p class="text-xs text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Total log</p>
+                        <p class="text-lg font-bold leading-none text-[rgb(var(--m3-color-on-surface-rgb))]">{{ logs.total }}</p>
+                    </div>
+                </div>
             </div>
 
-            <!-- Filters -->
-            <div class="bg-[rgb(var(--m3-color-surface-container-rgb))] rounded-lg p-6 border border-[rgb(var(--m3-color-outline-variant-rgb))] space-y-4">
-                <h2 class="text-lg font-semibold text-[rgb(var(--m3-color-on-surface-rgb))]">Filters</h2>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                    <!-- Action Filter -->
-                    <div>
-                        <label class="block text-sm font-medium text-[rgb(var(--m3-color-on-surface-rgb))] mb-2">Action</label>
-                        <select
-                            v-model="action"
-                            class="w-full px-4 py-2 bg-[rgb(var(--m3-color-surface-rgb))] text-[rgb(var(--m3-color-on-surface-rgb))] border border-[rgb(var(--m3-color-outline-variant-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--m3-color-primary-rgb))] focus:border-transparent"
-                        >
-                            <option value="">All Actions</option>
-                            <option v-for="act in actions" :key="act" :value="act">
-                                {{ formatAction(act) }}
-                            </option>
+            <div class="rounded-2xl border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-container-rgb))] p-4 sm:p-5">
+                <form class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-12" @submit.prevent="applyFilters">
+                    <div class="xl:col-span-3">
+                        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Aksi</label>
+                        <select v-model="action" class="w-full rounded-xl border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-rgb))] px-3 py-2.5 text-sm text-[rgb(var(--m3-color-on-surface-rgb))] focus:border-transparent focus:ring-2 focus:ring-[rgb(var(--m3-color-primary-rgb))]">
+                            <option value="">Semua aksi</option>
+                            <option v-for="item in actions" :key="item" :value="item">{{ formatAction(item) }}</option>
                         </select>
                     </div>
 
-                    <!-- Date Range -->
-                    <div>
-                        <label class="block text-sm font-medium text-[rgb(var(--m3-color-on-surface-rgb))] mb-2">From Date</label>
-                        <input
-                            v-model="from_date"
-                            type="date"
-                            class="w-full px-4 py-2 bg-[rgb(var(--m3-color-surface-rgb))] text-[rgb(var(--m3-color-on-surface-rgb))] border border-[rgb(var(--m3-color-outline-variant-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--m3-color-primary-rgb))] focus:border-transparent"
-                        />
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-[rgb(var(--m3-color-on-surface-rgb))] mb-2">To Date</label>
-                        <input
-                            v-model="to_date"
-                            type="date"
-                            class="w-full px-4 py-2 bg-[rgb(var(--m3-color-surface-rgb))] text-[rgb(var(--m3-color-on-surface-rgb))] border border-[rgb(var(--m3-color-outline-variant-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--m3-color-primary-rgb))] focus:border-transparent"
-                        />
-                    </div>
-
-                    <!-- Per Page -->
-                    <div>
-                        <label class="block text-sm font-medium text-[rgb(var(--m3-color-on-surface-rgb))] mb-2">Per Page</label>
-                        <select
-                            v-model.number="per_page"
-                            class="w-full px-4 py-2 bg-[rgb(var(--m3-color-surface-rgb))] text-[rgb(var(--m3-color-on-surface-rgb))] border border-[rgb(var(--m3-color-outline-variant-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--m3-color-primary-rgb))] focus:border-transparent"
-                        >
-                            <option :value="10">10</option>
-                            <option :value="20">20</option>
-                            <option :value="50">50</option>
-                            <option :value="100">100</option>
+                    <div class="xl:col-span-2">
+                        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Admin</label>
+                        <select v-model="adminId" class="w-full rounded-xl border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-rgb))] px-3 py-2.5 text-sm text-[rgb(var(--m3-color-on-surface-rgb))] focus:border-transparent focus:ring-2 focus:ring-[rgb(var(--m3-color-primary-rgb))]">
+                            <option value="">Semua admin</option>
+                            <option v-for="item in admins" :key="item.id" :value="item.id">{{ item.name }}</option>
                         </select>
                     </div>
 
-                    <!-- Buttons -->
-                    <div class="flex items-end gap-2">
-                        <button
-                            @click="handleFilter"
-                            :disabled="loading"
-                            class="flex-1 px-4 py-2 bg-[rgb(var(--m3-color-primary-rgb))] text-[rgb(var(--m3-color-on-primary-rgb))] rounded-lg hover:bg-[rgb(var(--m3-color-primary-container-rgb))] hover:text-[rgb(var(--m3-color-on-primary-container-rgb))] disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-                        >
-                            {{ loading ? 'Loading...' : 'Filter' }}
+                    <div class="xl:col-span-2">
+                        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Hasil</label>
+                        <select v-model="success" class="w-full rounded-xl border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-rgb))] px-3 py-2.5 text-sm text-[rgb(var(--m3-color-on-surface-rgb))] focus:border-transparent focus:ring-2 focus:ring-[rgb(var(--m3-color-primary-rgb))]">
+                            <option value="">Semua</option>
+                            <option value="1">Berhasil</option>
+                            <option value="0">Gagal</option>
+                        </select>
+                    </div>
+
+                    <div class="xl:col-span-2">
+                        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Dari</label>
+                        <input v-model="fromDate" type="date" class="w-full rounded-xl border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-rgb))] px-3 py-2.5 text-sm text-[rgb(var(--m3-color-on-surface-rgb))] focus:border-transparent focus:ring-2 focus:ring-[rgb(var(--m3-color-primary-rgb))]" />
+                    </div>
+
+                    <div class="xl:col-span-2">
+                        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Sampai</label>
+                        <input v-model="toDate" type="date" class="w-full rounded-xl border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-rgb))] px-3 py-2.5 text-sm text-[rgb(var(--m3-color-on-surface-rgb))] focus:border-transparent focus:ring-2 focus:ring-[rgb(var(--m3-color-primary-rgb))]" />
+                    </div>
+
+                    <div class="flex items-end gap-2 xl:col-span-1">
+                        <button type="submit" class="inline-flex flex-1 items-center justify-center rounded-xl bg-[rgb(var(--m3-color-primary-rgb))] px-3 py-2.5 text-sm font-semibold text-[rgb(var(--m3-color-on-primary-rgb))]" title="Terapkan filter">
+                            <Filter class="h-4 w-4" />
                         </button>
-                        <button
-                            @click="clearFilters"
-                            class="px-3 py-2 border border-[rgb(var(--m3-color-outline-variant-rgb))] text-[rgb(var(--m3-color-on-surface-rgb))] rounded-lg hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))] transition-colors"
-                        >
-                            Clear
+                        <button type="button" class="rounded-xl border border-[rgb(var(--m3-color-outline-variant-rgb))] p-2.5 text-[rgb(var(--m3-color-on-surface-variant-rgb))]" title="Reset filter" @click="clearFilters">
+                            <RotateCcw class="h-4 w-4" />
                         </button>
                     </div>
+                </form>
+
+                <div class="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-[rgb(var(--m3-color-on-surface-variant-rgb))]">
+                    <span v-if="activeFilterCount > 0">{{ activeFilterCount }} filter aktif</span>
+                    <span v-else>Menampilkan semua log.</span>
+                    <label class="flex items-center gap-2">
+                        <span>Baris</span>
+                        <select v-model.number="perPage" class="rounded-lg border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-rgb))] px-2 py-1 text-xs text-[rgb(var(--m3-color-on-surface-rgb))]" @change="changePerPage">
+                            <option v-for="size in [10, 20, 50, 100]" :key="size" :value="size">{{ size }}</option>
+                        </select>
+                    </label>
                 </div>
             </div>
 
-            <!-- Stats -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="bg-[rgb(var(--m3-color-surface-container-rgb))] rounded-lg p-4 border border-[rgb(var(--m3-color-outline-variant-rgb))]">
-                    <div class="text-sm font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Total Logs</div>
-                    <div class="text-2xl font-bold mt-1 text-[rgb(var(--m3-color-on-surface-rgb))]">{{ logs.total }}</div>
-                </div>
-                <div class="bg-[rgb(var(--m3-color-surface-container-rgb))] rounded-lg p-4 border border-[rgb(var(--m3-color-outline-variant-rgb))]">
-                    <div class="text-sm font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Page</div>
-                    <div class="text-2xl font-bold mt-1 text-[rgb(var(--m3-color-on-surface-rgb))]">{{ logs.current_page }} of {{ logs.last_page }}</div>
-                </div>
-            </div>
-
-            <!-- Table -->
-            <div class="bg-[rgb(var(--m3-color-surface-container-rgb))] rounded-lg border border-[rgb(var(--m3-color-outline-variant-rgb))] overflow-hidden">
+            <div class="overflow-hidden rounded-2xl border border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-container-rgb))]">
                 <div class="overflow-x-auto">
-                    <table class="w-full">
-                        <thead class="bg-[rgb(var(--m3-color-surface-container-high-rgb))] border-b border-[rgb(var(--m3-color-outline-variant-rgb))]">
+                    <table class="w-full min-w-[820px]">
+                        <thead class="border-b border-[rgb(var(--m3-color-outline-variant-rgb))] bg-[rgb(var(--m3-color-surface-container-high-rgb))]">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))] uppercase tracking-wider">Admin</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))] uppercase tracking-wider">Action</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))] uppercase tracking-wider">Target</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))] uppercase tracking-wider">Status</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))] uppercase tracking-wider">Date & Time</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-[rgb(var(--m3-color-on-surface-variant-rgb))] uppercase tracking-wider">Details</th>
+                                <SortableTh column="admin" label="Admin" :sort="currentSort" :direction="currentDirection" @sort="sortBy" />
+                                <SortableTh column="action" label="Aksi" :sort="currentSort" :direction="currentDirection" @sort="sortBy" />
+                                <SortableTh column="target_type" label="Target" :sort="currentSort" :direction="currentDirection" @sort="sortBy" />
+                                <SortableTh column="success" label="Hasil" :sort="currentSort" :direction="currentDirection" @sort="sortBy" />
+                                <SortableTh column="created_at" label="Waktu" :sort="currentSort" :direction="currentDirection" @sort="sortBy" />
+                                <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-[rgb(var(--m3-color-outline-variant-rgb))]">
-                            <tr v-for="log in logs.data" :key="log.id" class="hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))] transition-colors">
-                                <td class="px-6 py-4 text-sm font-medium text-[rgb(var(--m3-color-on-surface-rgb))]">
-                                    {{ log.admin?.name || 'Unknown' }}
-                                    <div class="text-xs text-[rgb(var(--m3-color-on-surface-variant-rgb))]">{{ log.admin?.email }}</div>
+                            <tr v-for="log in logs.data" :key="log.id" class="transition-colors hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))]">
+                                <td class="px-4 py-3">
+                                    <p class="text-sm font-medium text-[rgb(var(--m3-color-on-surface-rgb))]">{{ log.admin?.name || log.admin_name || 'Unknown' }}</p>
+                                    <p class="text-xs text-[rgb(var(--m3-color-on-surface-variant-rgb))]">{{ log.admin?.email }}</p>
                                 </td>
-                                <td class="px-6 py-4 text-sm">
-                                    <span :class="['px-3 py-1 rounded-full text-xs font-medium', getActionBadge(log.action)]">
-                                        {{ formatAction(log.action) }}
+                                <td class="px-4 py-3">
+                                    <span :class="['inline-block rounded-full px-2.5 py-1 text-xs font-medium', actionBadge(log.action)]">{{ formatAction(log.action) }}</span>
+                                </td>
+                                <td class="px-4 py-3 text-sm">
+                                    <p class="text-[rgb(var(--m3-color-on-surface-rgb))]">{{ log.target_type || '—' }}</p>
+                                    <p class="text-xs text-[rgb(var(--m3-color-on-surface-variant-rgb))]">#{{ log.target_id ?? '—' }}</p>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span :class="['inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium', log.success ? 'bg-[rgb(var(--m3-color-tertiary-container-rgb))] text-[rgb(var(--m3-color-on-tertiary-container-rgb))]' : 'bg-[rgb(var(--m3-color-error-container-rgb))] text-[rgb(var(--m3-color-on-error-container-rgb))]']">
+                                        <CheckCircle2 v-if="log.success" class="h-3 w-3" />
+                                        <XCircle v-else class="h-3 w-3" />
+                                        {{ log.success ? 'Berhasil' : 'Gagal' }}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 text-sm">
-                                    <div class="text-[rgb(var(--m3-color-on-surface-rgb))]">{{ log.target_type }}</div>
-                                    <div class="text-xs text-[rgb(var(--m3-color-on-surface-variant-rgb))]">#{{ log.target_id }}</div>
-                                </td>
-                                <td class="px-6 py-4 text-sm">
-                                    <span :class="['px-3 py-1 rounded-full text-xs font-medium', getSuccessBadge(log.success)]">
-                                        {{ log.success ? '✓ Success' : '✗ Failed' }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 text-sm text-[rgb(var(--m3-color-on-surface-variant-rgb))]">
-                                    <div>{{ new Date(log.created_at).toLocaleDateString() }}</div>
-                                    <div class="text-xs">{{ new Date(log.created_at).toLocaleTimeString() }}</div>
-                                </td>
-                                <td class="px-6 py-4 text-sm">
-                                    <button
-                                        @click="$inertia.get(route('admin.audit_logs.show', log.id))"
-                                        class="text-[rgb(var(--m3-color-primary-rgb))] hover:text-[rgb(var(--m3-color-primary-container-rgb))] font-medium"
-                                    >
-                                        View
-                                    </button>
+                                <td class="px-4 py-3 text-sm text-[rgb(var(--m3-color-on-surface-variant-rgb))]">{{ formatDateTime(log.created_at) }}</td>
+                                <td class="px-4 py-3 text-right">
+                                    <Link :href="route('admin.audit_logs.show', log.id)" class="inline-flex rounded-lg p-2 text-[rgb(var(--m3-color-on-surface-variant-rgb))] transition-colors hover:bg-[rgb(var(--m3-color-primary-container-rgb))] hover:text-[rgb(var(--m3-color-on-primary-container-rgb))]" title="Lihat detail">
+                                        <Eye class="h-4 w-4" />
+                                    </Link>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
 
-                <!-- Empty State -->
-                <div v-if="logs.data.length === 0" class="px-6 py-12 text-center">
-                    <p class="text-[rgb(var(--m3-color-on-surface-variant-rgb))] text-sm">No audit logs found</p>
-                </div>
-            </div>
-
-            <!-- Pagination -->
-            <div v-if="logs.last_page > 1" class="flex justify-center items-center space-x-2">
-                <!-- Previous -->
-                <button
-                    v-if="logs.prev_page_url"
-                    @click="handlePaginate(logs.prev_page_url)"
-                    class="px-4 py-2 border border-[rgb(var(--m3-color-outline-variant-rgb))] rounded-lg hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))] text-[rgb(var(--m3-color-on-surface-rgb))] text-sm font-medium transition-colors"
-                >
-                    ← Previous
-                </button>
-
-                <!-- Page Numbers -->
-                <div class="flex space-x-1">
-                    <button
-                        v-for="page in logs.last_page"
-                        :key="page"
-                        :class="[
-                            'px-3 py-2 rounded text-sm font-medium transition-colors',
-                            page === logs.current_page
-                                ? 'bg-[rgb(var(--m3-color-primary-rgb))] text-[rgb(var(--m3-color-on-primary-rgb))]'
-                                : 'border border-[rgb(var(--m3-color-outline-variant-rgb))] text-[rgb(var(--m3-color-on-surface-rgb))] hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))]',
-                        ]"
-                        @click="handlePaginate(logs.path + '?page=' + page)"
-                    >
-                        {{ page }}
-                    </button>
+                <div v-if="logs.data.length === 0" class="px-6 py-16 text-center">
+                    <History class="mx-auto h-10 w-10 text-[rgb(var(--m3-color-on-surface-variant-rgb))] opacity-40" />
+                    <p class="mt-3 text-sm font-medium text-[rgb(var(--m3-color-on-surface-rgb))]">Tidak ada audit log</p>
+                    <p class="mt-1 text-xs text-[rgb(var(--m3-color-on-surface-variant-rgb))]">Coba longgarkan filter atau reset.</p>
                 </div>
 
-                <!-- Next -->
-                <button
-                    v-if="logs.next_page_url"
-                    @click="handlePaginate(logs.next_page_url)"
-                    class="px-4 py-2 border border-[rgb(var(--m3-color-outline-variant-rgb))] rounded-lg hover:bg-[rgb(var(--m3-color-surface-container-highest-rgb))] text-[rgb(var(--m3-color-on-surface-rgb))] text-sm font-medium transition-colors"
-                >
-                    Next →
-                </button>
+                <AdminPagination :paginator="logs" />
             </div>
         </div>
     </AdminLayout>

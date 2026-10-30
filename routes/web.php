@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\SupportController as AdminSupportController;
 use App\Http\Controllers\Admin\AiLogController as AdminAiLogController;
 use App\Http\Controllers\Admin\AuditLogController as AdminAuditLogController;
+use App\Http\Controllers\Admin\SearchController as AdminSearchController;
 use App\Http\Controllers\EvidenceController;
 use App\Http\Controllers\EvidenceDebugController;
 use App\Http\Controllers\EvidenceReviewController;
@@ -621,14 +622,31 @@ Route::middleware(['auth'])->group(function () {
                 ->middleware('permission:admin.dashboard.view')
                 ->name('dashboard');
 
+            Route::post('/preferences/theme', function (Request $request) {
+                $validated = $request->validate([
+                    'theme' => ['required', 'string', 'in:dark,light,system'],
+                ]);
+
+                $request->user()->update(['theme' => $validated['theme']]);
+
+                return back();
+            })->name('preferences.theme');
+
+            Route::get('/search', AdminSearchController::class)
+                ->middleware(['permission:users.view', 'throttle:60,1'])
+                ->name('search');
+
             Route::prefix('users')
                 ->name('users.')
                 ->middleware('permission:users.view')
                 ->group(function () {
                     Route::get('/', [AdminUserController::class, 'index'])->name('index');
+                    Route::post('/bulk-status', [AdminUserController::class, 'bulkStatus'])
+                        ->middleware(['permission:users.update_status', 'throttle:30,1'])
+                        ->name('bulk_status');
                     Route::get('/{user}', [AdminUserController::class, 'show'])->name('show');
                     Route::post('/{user}/status', [AdminUserController::class, 'updateStatus'])
-                        ->middleware('permission:users.update_status')
+                        ->middleware(['permission:users.update_status', 'throttle:30,1'])
                         ->name('update_status');
                 });
 

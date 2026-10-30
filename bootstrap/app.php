@@ -16,7 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
+            \App\Http\Middleware\EnsureUserIsActive::class,
             HandleInertiaRequests::class,
+            \App\Http\Middleware\TrackUserActivity::class,
         ]);
         $middleware->api(prepend: [
             EnsureFrontendRequestsAreStateful::class,
