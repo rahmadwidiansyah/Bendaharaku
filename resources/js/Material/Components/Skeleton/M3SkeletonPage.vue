@@ -161,6 +161,12 @@ defineProps({
     }
 }
 
+@media (min-width: 1600px) {
+    .m3-skel-page--content {
+        max-width: 100rem;
+    }
+}
+
 @media (min-width: 1024px) and (max-width: 1400px), (min-width: 1024px) and (max-height: 820px) {
     .m3-skel-page {
         padding: var(--m3-density-page-inset, var(--m3-space-4));

@@ -16,6 +16,9 @@ import M3Layout from '@/Material/Layouts/AuthenticatedLayout.vue'
 import M3PortfolioCard from '@/Material/Pages/Dashboard/M3PortfolioCard.vue'
 import M3CashflowCard from '@/Material/Pages/Dashboard/M3CashflowCard.vue'
 import M3UpcomingDebts from '@/Material/Pages/Dashboard/M3UpcomingDebts.vue'
+import M3MiniCashflowChart from '@/Material/Pages/Dashboard/M3MiniCashflowChart.vue'
+import M3BudgetCard from '@/Material/Pages/Dashboard/M3BudgetCard.vue'
+import M3AiUsageCard from '@/Material/Pages/Dashboard/M3AiUsageCard.vue'
 import M3TransactionList from '@/Material/Pages/Dashboard/M3TransactionList.vue'
 import M3Calendar from '@/Material/Pages/Dashboard/M3Calendar.vue'
 import M3Modal from '@/Material/Components/M3Modal.vue'
@@ -62,6 +65,8 @@ const props = defineProps({
     endDate: String,
     filters: Object,
     upcomingDebts: Array,
+    budget: { type: Object, default: null },
+    aiUsage: { type: Object, default: null },
 })
 
 // ─── Transaction modal ───
@@ -261,9 +266,11 @@ const visibleTransactions = computed(() =>
 const formattedPeriod = computed(() => {
     const start = parseDateOnly(props.startDate)
     const end = parseDateOnly(props.endDate)
+    // day: undefined — matikan default '2-digit' dari formatDate agar
+    // bulan penuh tampil "Oktober 2026", bukan "01 Oktober 2026".
     if (start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()
         && start.getDate() === 1 && end.getDate() >= 28) {
-        return formatDate(props.startDate, { month: 'long', year: 'numeric' })
+        return formatDate(props.startDate, { day: undefined, month: 'long', year: 'numeric' })
     }
     return `${formatDate(props.startDate, { day: 'numeric', month: 'short' })} - ${formatDate(props.endDate, { day: 'numeric', month: 'short', year: 'numeric' })}`
 })
@@ -331,7 +338,10 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
                     :expense="thisMonthExpense"
                     :is-visible="isBalanceVisible"
                 />
+                <M3MiniCashflowChart :daily-totals="dailyTotals" :is-visible="isBalanceVisible" />
                 <M3UpcomingDebts :upcoming-debts="upcomingDebts" :is-visible="isBalanceVisible" />
+                <M3BudgetCard :budget="budget" />
+                <M3AiUsageCard :ai-usage="aiUsage" />
             </div>
 
             <!-- Kolom kanan: histori -->
@@ -370,7 +380,7 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
                             :aria-label="$t('common.dateRange')"
                             @click="showPeriodModal = true"
                         >
-                            <span class="m3-period__eyebrow">Periode</span>
+                            <span class="m3-period__eyebrow">{{ $t('dashboard.periodLabel') }}</span>
                             <span class="m3-period__value">{{ formattedPeriod }}</span>
                         </button>
                         <M3IconButton :aria-label="$t('common.next')" :disabled="!canGoNextMonth" @click="nextMonth">
@@ -481,10 +491,32 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
         padding: var(--m3-space-5);
     }
 
+    /* Layar lebar (≥1600px): dashboard melebar mengikuti layar agar
+       proporsi 1/3-2/3 terjaga (sebelumnya terkunci 72rem → kosong besar
+       di 1920). */
+    .m3-dash--desktop {
+        max-width: 100rem;
+    }
+
     .m3-dash--desktop .m3-dash__assets {
         width: 33.333%;
         position: sticky;
         top: calc(var(--m3-size-appbar) + var(--m3-space-4));
+        /* Kolom kiri = scroll container mandiri: widget baru membuat kolom
+           bisa lebih tinggi dari viewport (laptop) — kartu bawah tetap
+           terjangkau dengan menggulir kolom itu sendiri. */
+        max-height: calc(100vh - var(--m3-size-appbar) - var(--m3-space-5));
+        /* Sumbu X dikunci hidden: overflow-y auto membuat overflow-x ikut
+           auto (aturan CSS), yang memunculkan scrollbar samping saat ada
+           konten 1-2px lebih lebar — kartu fluid, tak ada gunanya. */
+        overflow-x: hidden;
+        overflow-y: auto;
+        /* overscroll-behavior default (auto): bila kolom muat, wheel
+           berantai ke halaman; bila kolom lebih tinggi, kolom yang
+           menggulir dulu lalu berantai — tidak ada dead-zone. */
+        scrollbar-width: thin;
+        scrollbar-color: var(--m3-color-outline-variant) transparent;
+        padding-right: var(--m3-space-1);
     }
 
     .m3-dash--desktop .m3-dash__history {
@@ -513,6 +545,7 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
     .m3-dash--desktop .m3-dash__assets {
         width: 32%;
         top: calc(var(--m3-size-appbar) + var(--m3-space-2));
+        max-height: calc(100vh - var(--m3-size-appbar) - var(--m3-space-4));
     }
 
     .m3-dash--desktop .m3-dash__history {

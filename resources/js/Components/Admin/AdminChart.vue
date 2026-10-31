@@ -12,7 +12,18 @@ const props = defineProps({
     height: { type: Number, default: 260 },
     legend: { type: Boolean, default: false },
     yLabel: { type: String, default: '' },
+    // Tick Y ringkas (K/M) untuk kartu mini — flag false = perilaku admin utuh.
+    yCompact: { type: Boolean, default: false },
 })
+
+const compact = (value) => {
+    const n = Number(value) || 0
+    const abs = Math.abs(n)
+    if (abs >= 1e9) return (n / 1e9).toFixed(1).replace(/\.0$/, '') + 'M'
+    if (abs >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'jt'
+    if (abs >= 1e3) return (n / 1e3).toFixed(0) + 'rb'
+    return String(n)
+}
 
 const canvas = ref(null)
 let chart = null
@@ -112,7 +123,7 @@ const build = async () => {
                               color: chrome.ticks,
                               precision: 0,
                               font: { size: 11 },
-                              callback: (value) => (props.yLabel ? `${value}${props.yLabel}` : value),
+                              callback: (value) => (props.yCompact ? compact(value) : props.yLabel ? `${value}${props.yLabel}` : value),
                           },
                       },
                   },

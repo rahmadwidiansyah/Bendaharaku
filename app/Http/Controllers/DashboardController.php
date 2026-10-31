@@ -2,7 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AiParseLog;
+use App\Models\BudgetGroup;
+use App\Services\Budgeting\BudgetingServiceInterface;
 use App\Services\Loan\ActiveLoanCycleService;
+use App\Support\TransactionTypeIds;
 use App\Services\Transaction\TransactionListService;
 use App\Traits\CalculatesDebtAndReceivable;
 use Carbon\Carbon;
@@ -16,24 +20,12 @@ class DashboardController extends Controller
 {
     use CalculatesDebtAndReceivable;
 
-    // Constant mapping untuk menghindari query `whereHas` berulang kali
-    private const TYPE_INCOME = 1;
+    public function __construct(
+        private readonly BudgetingServiceInterface $budgetService,
+    ) {}
 
-    private const TYPE_EXPENSE = 2;
-
-    private const TYPE_TRANSFER = 3;
-
-    private const TYPE_DEBT = 4;
-
-    private const TYPE_RECEIVABLE = 5;
-
-    private const TYPE_MAP = [
-        'income' => self::TYPE_INCOME,
-        'expense' => self::TYPE_EXPENSE,
-        'transfer' => self::TYPE_TRANSFER,
-        'debt' => self::TYPE_DEBT,
-        'receivable' => self::TYPE_RECEIVABLE,
-    ];
+    // Id tipe transaksi di-resolve dari DB by name (jangan hardcode —
+    // id tabel transaction_types di-generate seeder dan bisa bergeser).
 
     public function index(Request $request, TransactionListService $lists): Response
     {
@@ -62,10 +54,10 @@ class DashboardController extends Controller
             ->where('is_cleared', true)
             ->whereNull('deleted_at')
             ->whereBetween('date', [$startOfMonth, $endOfMonth])
-            ->whereIn('type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE])
+            ->whereIn('type_id', [TransactionTypeIds::income(), TransactionTypeIds::expense()])
             ->selectRaw('
-                COALESCE(SUM(CASE WHEN type_id = '.self::TYPE_INCOME.' THEN amount ELSE 0 END), 0) as total_income,
-                COALESCE(SUM(CASE WHEN type_id = '.self::TYPE_EXPENSE.' THEN amount ELSE 0 END), 0) as total_expense
+                COALESCE(SUM(CASE WHEN type_id = '.TransactionTypeIds::income().' THEN amount ELSE 0 END), 0) as total_income,
+                COALESCE(SUM(CASE WHEN type_id = '.TransactionTypeIds::expense().' THEN amount ELSE 0 END), 0) as total_expense
             ')
             ->first();
 
@@ -187,6 +179,82 @@ class DashboardController extends Controller
             'endDate' => $endDate,
             'filters' => $request->only(['type']),
             'upcomingDebts' => $upcomingDebts,
+            'budget' => $this->buildBudgetWidget($userId),
+            'aiUsage' => $this->buildAiUsageWidget($userId),
         ]);
+    }
+
+    /**
+     * Widget "Ringkasan budget bulan ini" untuk dashboard M3.
+     * Reuse getBudgetSummary() — tanpa logika hitung baru. Null bila user
+     * belum membuat budget bulan berjalan (kartu disembunyikan di frontend).
+     */
+    private function buildBudgetWidget(int $userId): ?array
+    {
+        $group = BudgetGroup::where('user_id', $userId)
+            ->where('period_month', now()->format('n'))
+            ->where('period_year', now()->format('Y'))
+            ->with(['items.budgetable'])
+            ->first();
+
+        if (! $group || $group->items->isEmpty()) {
+            return null;
+        }
+
+        $summary = $this->budgetService->getBudgetSummary($group);
+
+        $items = [];
+        foreach ($group->items as $item) {
+            $s = $summary[$item->id] ?? null;
+            $name = $item->budgetable?->category_name ?? $item->budgetable?->name ?? null;
+            if ($s === null || $name === null) {
+                continue;
+            }
+            $items[] = [
+                'name' => $name,
+                'target' => (float) $s['target'],
+                'spent' => (float) $s['spent'],
+                'percentage' => (float) $s['percentage'],
+            ];
+        }
+
+        if ($items === []) {
+            return null;
+        }
+
+        $totalBudget = array_sum(array_column($items, 'target'));
+        $totalSpent = array_sum(array_column($items, 'spent'));
+
+        // Top 3 kategori dengan target terbesar — paling representatif di kartu mini.
+        usort($items, fn (array $a, array $b) => $b['target'] <=> $a['target']);
+
+        return [
+            'totalBudget' => $totalBudget,
+            'totalSpent' => $totalSpent,
+            'percentage' => $totalBudget > 0 ? min(100, round(($totalSpent / $totalBudget) * 100, 1)) : 0,
+            'items' => array_slice($items, 0, 3),
+        ];
+    }
+
+    /**
+     * Widget "Pemakaian AI hari ini": jumlah pesan diproses, token, success
+     * rate — data nyata dari ai_parse_logs. Null bila belum ada pemakaian.
+     */
+    private function buildAiUsageWidget(int $userId): ?array
+    {
+        $row = AiParseLog::where('user_id', $userId)
+            ->whereDate('created_at', today())
+            ->selectRaw('COUNT(*) as requests, COALESCE(SUM(total_tokens), 0) as tokens, COALESCE(AVG(CASE WHEN is_success THEN 1.0 ELSE 0 END), 0) as success_rate')
+            ->first();
+
+        if (! $row || (int) $row->requests === 0) {
+            return null;
+        }
+
+        return [
+            'requests' => (int) $row->requests,
+            'tokens' => (int) $row->tokens,
+            'successRate' => round((float) $row->success_rate * 100, 1),
+        ];
     }
 }

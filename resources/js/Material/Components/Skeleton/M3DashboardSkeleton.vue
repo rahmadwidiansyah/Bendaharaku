@@ -49,6 +49,16 @@ const { t } = useI18n()
                     </M3Card>
                 </div>
 
+                <!-- Skeleton mini chart arus kas -->
+                <M3Card variant="outlined" padding="md">
+                    <M3SkeletonBlock width="8rem" height="var(--m3-space-3)" radius="var(--m3-radius-full)" />
+                    <M3SkeletonBlock class="m3-dash-skel__chart" height="9rem" radius="var(--m3-radius-md)" />
+                    <div class="m3-dash-skel__chart-legend">
+                        <M3SkeletonBlock width="4rem" height="var(--m3-space-2)" radius="var(--m3-radius-full)" />
+                        <M3SkeletonBlock width="4rem" height="var(--m3-space-2)" radius="var(--m3-radius-full)" />
+                    </div>
+                </M3Card>
+
                 <M3Card variant="outlined" padding="sm">
                     <M3SkeletonBlock width="7rem" height="var(--m3-space-3)" radius="var(--m3-radius-full)" />
                     <div class="m3-dash-skel__debt-list">
@@ -59,6 +69,31 @@ const { t } = useI18n()
                             </div>
                             <M3SkeletonBlock width="4.5rem" height="var(--m3-space-3)" radius="var(--m3-radius-full)" />
                         </div>
+                    </div>
+                </M3Card>
+
+                <!-- Skeleton ringkasan budget -->
+                <M3Card variant="outlined" padding="md">
+                    <div class="m3-dash-skel__budget-head">
+                        <M3SkeletonBlock width="8rem" height="var(--m3-space-3)" radius="var(--m3-radius-full)" />
+                        <M3SkeletonBlock width="3rem" height="var(--m3-space-3)" radius="var(--m3-radius-full)" />
+                    </div>
+                    <M3SkeletonBlock width="70%" height="var(--m3-space-3)" radius="var(--m3-radius-full)" />
+                    <M3SkeletonBlock height="var(--m3-space-2)" radius="var(--m3-radius-full)" />
+                    <div v-for="i in 3" :key="i" class="m3-dash-skel__budget-item">
+                        <M3SkeletonBlock width="45%" height="var(--m3-space-2)" radius="var(--m3-radius-full)" />
+                        <M3SkeletonBlock height="var(--m3-space-1-5)" radius="var(--m3-radius-full)" />
+                    </div>
+                </M3Card>
+
+                <!-- Skeleton pemakaian AI -->
+                <M3Card variant="outlined" padding="md">
+                    <div class="m3-dash-skel__budget-head">
+                        <div class="m3-dash-skel__ai-row">
+                            <M3SkeletonBlock circle width="var(--m3-size-touch-target)" height="var(--m3-size-touch-target)" />
+                            <M3SkeletonBlock width="60%" height="var(--m3-space-3)" radius="var(--m3-radius-full)" />
+                        </div>
+                        <M3SkeletonBlock width="35%" height="var(--m3-space-2)" radius="var(--m3-radius-full)" />
                     </div>
                 </M3Card>
             </div>
@@ -246,6 +281,12 @@ const { t } = useI18n()
     }
 
     .m3-dash-skel__layout {
+        max-width: 100rem;
+        margin: 0 auto;
+        width: 100%;
+    }
+
+    .m3-dash-skel__layout {
         flex-direction: row;
         align-items: flex-start;
         gap: var(--m3-space-8);
@@ -255,6 +296,44 @@ const { t } = useI18n()
         position: sticky;
         top: calc(var(--m3-size-appbar) + var(--m3-space-4));
         width: 33.333%;
+        /* Scroll container mandiri — paritas dengan dashboard asli */
+        max-height: calc(100vh - var(--m3-size-appbar) - var(--m3-space-5));
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--m3-color-outline-variant) transparent;
+    }
+
+    .m3-dash-skel__chart {
+        margin-top: var(--m3-space-3);
+        background: var(--m3-color-surface-container);
+    }
+
+    .m3-dash-skel__chart-legend {
+        display: flex;
+        justify-content: center;
+        gap: var(--m3-space-4);
+        margin-top: var(--m3-space-2);
+    }
+
+    .m3-dash-skel__budget-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--m3-space-2);
+        margin-bottom: var(--m3-space-2);
+    }
+
+    .m3-dash-skel__budget-item {
+        display: flex;
+        flex-direction: column;
+        gap: var(--m3-space-1);
+        margin-top: var(--m3-space-2);
+    }
+
+    .m3-dash-skel__ai-row {
+        display: flex;
+        align-items: center;
+        gap: var(--m3-space-3);
     }
 
     .m3-dash-skel__history {
@@ -274,6 +353,7 @@ const { t } = useI18n()
     .m3-dash-skel__assets {
         top: calc(var(--m3-size-appbar) + var(--m3-space-2));
         width: 32%;
+        max-height: calc(100vh - var(--m3-size-appbar) - var(--m3-space-4));
     }
 
     .m3-dash-skel__history {

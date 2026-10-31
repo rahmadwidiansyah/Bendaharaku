@@ -269,7 +269,7 @@ const showSkeleton = computed(() =>
                         <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
                     </svg>
                 </Link>
-                <Link :href="route('settings.index')" :prefetch="true" cache-for="60" class="m3-appbar__avatar" :aria-label="$t('header.openSettings')">
+                <Link :href="isDesktop ? route('settings.account.profile') : route('settings.index')" :prefetch="true" cache-for="60" class="m3-appbar__avatar" :aria-label="$t('header.openSettings')">
                     <img v-if="avatarUrl" :src="avatarUrl" alt="" class="m3-appbar__avatar-img" />
                     <span v-else class="m3-appbar__avatar-fallback" aria-hidden="true">{{ (userName || 'B').charAt(0).toUpperCase() }}</span>
                 </Link>
@@ -376,7 +376,7 @@ const showSkeleton = computed(() =>
                 </Link>
 
                 <!-- Settings -->
-                <Link :href="route('settings.index')" class="m3-rail__item" :class="{ 'm3-rail__item--active': isActive(['settings.*']) }" :aria-current="isActive(['settings.*']) ? 'page' : undefined" :title="$t('nav.settings')">
+                <Link :href="isDesktop ? route('settings.account.profile') : route('settings.index')" class="m3-rail__item" :class="{ 'm3-rail__item--active': isActive(['settings.*']) }" :aria-current="isActive(['settings.*']) ? 'page' : undefined" :title="$t('nav.settings')">
                     <span class="m3-rail__indicator">
                         <svg v-if="isActive(['settings.*'])" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                             <path fill-rule="evenodd" d="M11.078 2.25c-.917 0-1.699.663-1.85 1.567L9.05 4.889c-.02.12-.115.26-.297.348a7.493 7.493 0 00-.986.57c-.166.115-.334.126-.45.083L6.08 5.41a1.875 1.875 0 00-2.282.818l-1.5 2.6a1.875 1.875 0 00.433 2.382l1.073.879c.12.097.16.28.14.444a7.734 7.734 0 000 1.144c.02.165-.02.348-.14.444l-1.073.88a1.875 1.875 0 00-.433 2.38l1.5 2.599c.6 1.04 1.884 1.472 2.282.819l1.237-.48c.116-.045.284-.033.45.082.312.214.641.405.985.57.182.088.277.228.297.35l.178 1.071c.151.904.933 1.567 1.85 1.567h3c.917 0 1.699-.663 1.85-1.567l.178-1.072c.02-.12.114-.26.297-.349.344-.165.673-.356.985-.57.167-.114.335-.125.45-.082l1.237.48a1.875 1.875 0 002.282-.819l1.5-2.6a1.875 1.875 0 00-.433-2.381l-1.074-.88c-.12-.096-.16-.279-.14-.444a7.514 7.514 0 000-1.144c-.02-.165.02-.347.14-.444l1.073-.88a1.875 1.875 0 00.434-2.38l-1.5-2.6a1.875 1.875 0 00-2.282-.818l-1.237.478c-.116.044-.284.033-.45-.082a7.49 7.49 0 00-.985-.57c-.182-.088-.277-.229-.297-.35l-.178-1.07a1.875 1.875 0 00-1.85-1.568h-3zM12 15.75a3.75 3.75 0 100-7.5 3.75 3.75 0 000 7.5z" clip-rule="evenodd" />
@@ -634,6 +634,13 @@ const showSkeleton = computed(() =>
     line-height: var(--m3-type-title-large-line-height);
     font-weight: var(--m3-type-title-large-weight);
     margin: 0;
+    /* Kunci satu baris: tinggi app bar konstan di semua halaman — judul
+       panjang di-ellipsis, bukan wrap (mencegah konten bergeser vertikal
+       saat pindah halaman). */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
 }
 
 .m3-appbar__subtitle {

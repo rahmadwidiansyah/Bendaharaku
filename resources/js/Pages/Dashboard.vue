@@ -248,15 +248,17 @@ const visibleTransactions = computed(() =>
 )
 
 // ─── Period label ─────────────────────────────────────────────────
-const formattedPeriod = computed(() => {
-	const start = parseDateOnly(props.startDate)
-	const end = parseDateOnly(props.endDate)
-	if (start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()
-		&& start.getDate() === 1 && end.getDate() >= 28) {
-		return formatDate(props.startDate, { month: 'long', year: 'numeric' })
-	}
-	return `${formatDate(props.startDate, { day: 'numeric', month: 'short' })} - ${formatDate(props.endDate, { day: 'numeric', month: 'short', year: 'numeric' })}`
-})
+	const formattedPeriod = computed(() => {
+		const start = parseDateOnly(props.startDate)
+		const end = parseDateOnly(props.endDate)
+		// day: undefined — matikan default '2-digit' dari formatDate agar
+		// bulan penuh tampil "Oktober 2026", bukan "01 Oktober 2026".
+		if (start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()
+			&& start.getDate() === 1 && end.getDate() >= 28) {
+			return formatDate(props.startDate, { day: undefined, month: 'long', year: 'numeric' })
+		}
+		return `${formatDate(props.startDate, { day: 'numeric', month: 'short' })} - ${formatDate(props.endDate, { day: 'numeric', month: 'short', year: 'numeric' })}`
+	})
 
 // ─── Type helpers ─────────────────────────────────────────────────
 const getTypeName = (typeName) => t(TYPE_NAME_KEYS[typeName] ?? 'types.other')
@@ -385,7 +387,7 @@ const calendarDayNames = computed(() => [
 								</svg>
 							</button>
 							<p class="min-w-0 flex-1 text-center">
-								<span class="block text-[10px] font-bold text-[var(--color-brand)] uppercase tracking-[0.18em]">Periode</span>
+								<span class="block text-[10px] font-bold text-[var(--color-brand)] uppercase tracking-[0.18em]">{{ $t('dashboard.periodLabel') }}</span>
 								<span class="block text-sm font-bold text-[var(--color-text-primary)] tracking-tight leading-tight truncate">{{ formattedPeriod }}</span>
 							</p>
 							<button @click="nextMonth" :disabled="!canGoNextMonth" :aria-label="$t('btn.next')"
