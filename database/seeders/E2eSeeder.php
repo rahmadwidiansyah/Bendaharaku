@@ -44,7 +44,6 @@ class E2eSeeder extends Seeder
                     'accent_color' => 'teal',
                     'ui_theme' => $attributes['ui_theme'],
                     'ui_m3_color_scheme' => $attributes['ui_theme'] === 'm3' ? 'rose' : 'teal',
-                    'ui_density' => 'comfortable',
                     'category_icon_colored' => true,
                 ]
             );

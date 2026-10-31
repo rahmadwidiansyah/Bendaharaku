@@ -24,10 +24,19 @@ export default async function globalSetup() {
             await page.goto('/login');
             await page.fill('#login-email', email);
             await page.fill('#login-password', 'password');
-            await Promise.all([
-                page.waitForURL(/\/dashboard/, { timeout: 30_000 }),
-                page.locator('form button[type="submit"]').click(),
-            ]);
+            page.on('pageerror', (e) => console.log(`[login:${name}] pageerror:`, e.message));
+            try {
+                await Promise.all([
+                    page.waitForURL(/\/dashboard/, { timeout: 30_000 }),
+                    page.locator('form button[type="submit"]').click(),
+                ]);
+            } catch (error) {
+                // Bukti debug: URL + isi halaman + screenshot saat login gagal.
+                console.log(`[login:${name}] masih di:`, page.url());
+                console.log(`[login:${name}] body:`, (await page.locator('body').innerText()).replace(/\s+/g, ' ').slice(0, 400));
+                await page.screenshot({ path: `/tmp/e2e-login-fail-${name}.png`, fullPage: true });
+                throw error;
+            }
             await page.locator('main').first().waitFor({ state: 'visible' });
 
             await context.storageState({ path: path.join(authDir, `${name}.json`) });
