@@ -49,7 +49,11 @@ Route::get('/', function () {
         return redirect()->route('dashboard');
     }
 
-    return Inertia::render('Welcome', [
+    // Halaman welcome mengikuti tema UI: M3 (default aplikasi) memakai
+    // Material/Welcome; Default UI memakai Welcome.
+    $view = (Auth::user()?->ui_theme ?? 'm3') === 'm3' ? 'Material/Welcome' : 'Welcome';
+
+    return Inertia::render($view, [
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
     ]);

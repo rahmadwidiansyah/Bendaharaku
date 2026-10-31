@@ -31,7 +31,7 @@ const submit = () => {
     <GuestLayout title="Masuk">
         <template #header>
             <h1 class="text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">Masuk</h1>
-            <p class="text-xs font-medium text-[var(--color-text-secondary)] mt-1.5">Sign in to continue</p>
+            <p class="text-xs font-medium text-[var(--color-text-secondary)] mt-1.5">Masuk untuk melanjutkan</p>
         </template>
 
         <div v-if="status" role="alert" class="mb-5 p-3 rounded-xl bg-[var(--color-income-bg)] text-[var(--color-income-text)] border border-[var(--color-income-border)] text-xs font-medium">

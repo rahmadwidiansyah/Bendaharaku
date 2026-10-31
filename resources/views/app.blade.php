@@ -29,8 +29,9 @@
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800,900&display=swap" rel="stylesheet" />
 
     <!-- Multi-UI: preferensi ui_theme user (default | m3). Dibaca oleh
-         useUiTheme.js. Nilai hanya dari database, tidak ada state kedua. -->
-    <meta name="ui-theme" content="{{ auth()->user()?->ui_theme ?? 'default' }}">
+         useUiTheme.js. Nilai hanya dari database; guest ikut default
+         aplikasi (m3) sehingga halaman guest tampil M3. -->
+    <meta name="ui-theme" content="{{ auth()->user()?->ui_theme ?? 'm3' }}">
     <!-- Multi-UI: skema warna M3 user (teal | baseline | ocean | forest |
          sunset | rose | midnight). Dibaca oleh useM3ColorScheme.js. -->
     <meta name="m3-color-scheme" content="{{ auth()->user()?->ui_m3_color_scheme ?? 'teal' }}">

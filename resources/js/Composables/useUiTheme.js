@@ -18,11 +18,14 @@ import { ref } from 'vue';
 
 const UI_THEMES = ['default', 'm3'];
 
-const uiTheme = ref('default');
+// Default aplikasi = M3 (lihat migrasi make_m3_default_ui_theme).
+const DEFAULT_UI_THEME = 'm3';
+
+const uiTheme = ref(DEFAULT_UI_THEME);
 let initialized = false;
 
 function normalize(value) {
-    return UI_THEMES.includes(value) ? value : 'default';
+    return UI_THEMES.includes(value) ? value : DEFAULT_UI_THEME;
 }
 
 function readFromMeta() {

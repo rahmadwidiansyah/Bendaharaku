@@ -278,6 +278,120 @@
 }
 
 /* ════════════════════════════════════════════════════════════════════
+   GUEST PAGE TOKEN BRIDGE — `html.ui-m3`
+   Halaman guest (Welcome, Login, Register, dll) memakai token Default
+   `--color-*`. Ketika M3 aktif, jembatan ini memetakan token tersebut ke
+   role M3 sehingga halaman guest ikut tampil M3 tanpa duplikasi markup.
+   Nilai otomatis mengikuti skema light/dark karena hanya mereferensikan
+   var(--m3-color-*) yang scheme-aware. Specificity html.ui-m3 (0,1,1)
+   sengaja lebih tinggi dari :root accent override (0,1,0) agar brand
+   di guest selalu konsisten dengan skema M3 aktif.
+   ════════════════════════════════════════════════════════════════════ */
+html.ui-m3 {
+    /* Surfaces */
+    --color-surface-base: var(--m3-color-surface);
+    --color-surface-raised: var(--m3-color-surface-container-low);
+    --color-surface-muted: var(--m3-color-surface-container);
+    --color-surface-overlay: var(--m3-color-surface-container-high);
+
+    /* Border */
+    --color-border-default: var(--m3-color-outline-variant);
+    --color-border-subtle: var(--m3-color-outline-variant);
+    --color-border-strong: var(--m3-color-outline);
+
+    /* Text */
+    --color-text-primary: var(--m3-color-on-surface);
+    --color-text-secondary: var(--m3-color-on-surface-variant);
+    --color-text-muted: color-mix(in srgb, var(--m3-color-on-surface) 60%, transparent);
+    --color-text-disabled: color-mix(in srgb, var(--m3-color-on-surface) 38%, transparent);
+
+    /* Brand → M3 primary (button gradient menjadi solid primary, sesuai M3) */
+    --color-brand: var(--m3-color-primary);
+    --color-brand-hover: var(--m3-color-primary);
+    --color-brand-pressed: var(--m3-color-primary);
+    --color-brand-muted: var(--m3-color-primary);
+    --color-brand-subtle: color-mix(in srgb, var(--m3-color-primary) 10%, transparent);
+    --color-brand-border: color-mix(in srgb, var(--m3-color-primary) 30%, transparent);
+    --color-brand-deep: var(--m3-color-primary);
+    --color-brand-mid: var(--m3-color-primary);
+    --color-brand-soft: var(--m3-color-primary);
+    --color-brand-tint: var(--m3-color-on-primary-container);
+
+    /* Semantik finansial */
+    --color-income-bg: var(--m3-color-income-container);
+    --color-income-text: var(--m3-color-income);
+    --color-income-border: color-mix(in srgb, var(--m3-color-income) 30%, transparent);
+    --color-expense-bg: var(--m3-color-expense-container);
+    --color-expense-text: var(--m3-color-expense);
+    --color-expense-border: color-mix(in srgb, var(--m3-color-expense) 30%, transparent);
+}
+
+/* ── Kolom konten subpage Settings (desktop) ──
+   Utility bersama: section bertumpuk menjadi grid 2 kolom ≥1024px.
+   Modifier --3 = tiga kolom; __full = sel span penuh. */
+.ui-m3 .m3-settings-cols {
+    display: flex;
+    flex-direction: column;
+    gap: var(--m3-space-6);
+    width: 100%;
+    min-width: 0;
+}
+
+@media (min-width: 1024px) {
+    .ui-m3 .m3-settings-cols {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+    }
+
+    .ui-m3 .m3-settings-cols--3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .ui-m3 .m3-settings-cols__full {
+        grid-column: 1 / -1;
+    }
+}
+
+/* ── Halaman Settings custom di dalam shell (Models, Bot, Memory,
+   Status, Chat hub) ── container-nya membawa padding sendiri; di dalam
+   shell desktop padding-inline ganda membuat konten lebih menjorok
+   daripada subpage embedded. Samakan: shell yang menanggung inset. */
+@media (min-width: 1024px) {
+    .ui-m3 .m3-settings-shell .m3-models,
+    .ui-m3 .m3-settings-shell .m3-bot,
+    .ui-m3 .m3-settings-shell .m3-memory,
+    .ui-m3 .m3-settings-shell .m3-status,
+    .ui-m3 .m3-settings-shell .m3-hub {
+        padding-inline: 0;
+    }
+}
+
+/* ── Judul seksi halaman Settings custom (Models, Memory, Status,
+   Chat hub) — samakan dengan M3SettingsSection (title-medium 16px +
+   padding-left agar sejajar isi kartu). Sebelumnya title-small 14px
+   sehingga terlihat lebih kecil/kedap dari subpage embedded. */
+@media (min-width: 1024px) {
+    .ui-m3 .m3-settings-shell .m3-models__section-title,
+    .ui-m3 .m3-settings-shell .m3-memory__section-title,
+    .ui-m3 .m3-settings-shell .m3-status__section-title,
+    .ui-m3 .m3-settings-shell .m3-hub__section-title {
+        padding-left: var(--m3-space-4);
+        font-size: var(--m3-type-title-medium-size);
+        line-height: var(--m3-type-title-medium-line-height);
+        font-weight: var(--m3-type-title-medium-weight);
+        letter-spacing: var(--m3-type-title-medium-tracking);
+    }
+}
+
+/* Tombol primary Default (gradient brand + text-white) yang ter-bridge ke
+   primary M3 harus memakai on-primary — teal terang butuh teks gelap agar
+   kontrasnya memenuhi M3. Specificity (0,2,1) mengalahkan .text-white. */
+html.ui-m3 .from-brand-deep {
+    color: var(--m3-color-on-primary);
+}
+
+/* ════════════════════════════════════════════════════════════════════
    Shared M3 helpers (still namespaced — no effect without .ui-m3)
    ════════════════════════════════════════════════════════════════════ */
 .ui-m3 :where(:focus-visible) {
