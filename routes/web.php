@@ -467,6 +467,7 @@ Route::middleware(['auth'])->group(function () {
                 'botAvatar' => $user->bot_avatar
                     ? asset('storage/'.$user->bot_avatar)
                     : null,
+                'botPersona' => \App\Services\AI\Assistant\PersonaDefaults::merge($user->bot_persona),
             ];
 
             return $user->ui_theme === 'm3'

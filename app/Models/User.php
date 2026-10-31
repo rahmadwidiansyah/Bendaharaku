@@ -27,6 +27,7 @@ class User extends Authenticatable
         'timezone',
         'bot_name',
         'bot_avatar',
+        'bot_persona',
         'date_format',
         'accent_color',
         'theme',
@@ -186,6 +187,7 @@ class User extends Authenticatable
             'auto_budget_enabled' => 'boolean',
             'email_notifications' => 'boolean',
             'push_notifications' => 'boolean',
+            'bot_persona' => 'array',
         ];
     }
 

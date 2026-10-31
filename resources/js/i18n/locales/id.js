@@ -1620,6 +1620,33 @@ categoryTab: {
     // CHAT BOT PROFILE
     // ────────────────────────────────────────────────────────────────
     chatBot: {
+        persona: {
+            title:       'Persona Asisten',
+            description: 'Atur gaya bicara asisten — hanya memengaruhi cara bicara, bukan aturan keamanan atau data.',
+            reset:       'Reset ke default',
+            tone:        'Gaya bicara',
+            formality:   'Formalitas',
+            length:      'Panjang respons',
+            emoji:       'Emoji',
+            custom: {
+                label:       'Instruksi tambahan (opsional)',
+                placeholder: 'Contoh: hindari kata Inggris, panggil aku "Bos"',
+            },
+            values: {
+                ramah:        'Ramah',
+                profesional:  'Profesional',
+                santai:       'Santai',
+                energik:      'Energik',
+                'semi-formal': 'Semi-formal',
+                formal:       'Formal',
+                singkat:      'Singkat',
+                sedang:       'Sedang',
+                detail:       'Detail',
+                tanpa:        'Tanpa',
+                sedikit:      'Sedikit',
+                sering:       'Sering',
+            },
+        },
         title:          'Profil Bot',
         subtitle:       'Personalisasi asisten AI kamu',
         photoSection:   'Foto Bot',

@@ -16,11 +16,13 @@ const { showToast } = useToast();
 interface Props {
   botName?: string;
   botAvatar?: string | null;
+  botPersona?: Record<string, any> | null;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   botName: 'Ken-Chan',
   botAvatar: null,
+  botPersona: () => ({}),
 });
 
 const botAvatarUrl = computed(() => previewFile.value || props.botAvatar);
@@ -28,8 +30,37 @@ const botAvatarUrl = computed(() => previewFile.value || props.botAvatar);
 const form = useForm({
   bot_name: props.botName,
   bot_avatar: null as any,
+  bot_persona: {
+    tone: props.botPersona?.tone ?? 'ramah',
+    formality: props.botPersona?.formality ?? 'semi-formal',
+    response_length: props.botPersona?.response_length ?? 'singkat',
+    emoji: props.botPersona?.emoji ?? 'sedikit',
+    custom_instructions: props.botPersona?.custom_instructions ?? '',
+  },
   _method: 'PATCH',
 });
+
+const personaOptions = [
+  { key: 'tone', label: t('chatBot.persona.tone'), options: ['ramah', 'profesional', 'santai', 'energik'] },
+  { key: 'formality', label: t('chatBot.persona.formality'), options: ['santai', 'semi-formal', 'formal'] },
+  { key: 'response_length', label: t('chatBot.persona.length'), options: ['singkat', 'sedang', 'detail'] },
+  { key: 'emoji', label: t('chatBot.persona.emoji'), options: ['tanpa', 'sedikit', 'sering'] },
+];
+
+const resetPersona = () => {
+  form.bot_persona = {
+    tone: 'ramah',
+    formality: 'semi-formal',
+    response_length: 'singkat',
+    emoji: 'sedikit',
+    custom_instructions: '',
+  };
+  form.post(route('settings.chat.bot-profile.update'), {
+    preserveScroll: true,
+    onSuccess: () => showToast(t('toast.updated'), 'success'),
+    onError: () => showToast(t('errors.generic'), 'error'),
+  });
+};
 
 const previewFile = ref<string | null>(null);
 const showCropModal = ref(false);
@@ -187,6 +218,52 @@ onUnmounted(() => document.removeEventListener('click', closePhotoMenu));
             <p class="text-2xs text-[var(--color-text-secondary)]">
               {{ t('settings.ai.bot.name.hint') }}
             </p>
+          </div>
+        </SettingsCard>
+
+        <!-- Persona -->
+        <SettingsCard
+          :title="t('chatBot.persona.title')"
+          :description="t('chatBot.persona.description')"
+        >
+          <div class="space-y-4">
+            <div v-for="opt in personaOptions" :key="opt.key" class="space-y-1.5">
+              <p class="text-2xs text-[var(--color-text-muted)] font-medium">{{ opt.label }}</p>
+              <div class="flex flex-wrap gap-1.5">
+                <button
+                  v-for="option in opt.options"
+                  :key="option"
+                  type="button"
+                  @click="form.bot_persona[opt.key] = option"
+                  class="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full border text-2xs sm:text-xs transition-all cursor-pointer"
+                  :class="form.bot_persona[opt.key] === option
+                    ? 'bg-purple-500/15 border-purple-500/60 text-purple-300'
+                    : 'bg-[var(--color-surface-muted)] border-white/8 text-gray-300 hover:text-[var(--color-text-primary)] hover:border-purple-500/50'"
+                >
+                  {{ t(`chatBot.persona.values.${option}`) }}
+                </button>
+              </div>
+            </div>
+
+            <div class="space-y-1.5">
+              <p class="text-2xs text-[var(--color-text-muted)] font-medium">{{ t('chatBot.persona.custom.label') }}</p>
+              <textarea
+                v-model="form.bot_persona.custom_instructions"
+                rows="2"
+                maxlength="500"
+                :placeholder="t('chatBot.persona.custom.placeholder')"
+                class="w-full px-3 py-1.5 sm:px-4 sm:py-2.5 bg-[var(--color-surface-muted)] border border-[var(--color-border-default)] rounded-lg sm:rounded-xl text-[var(--color-text-primary)] placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-all text-sm resize-none"
+              ></textarea>
+              <p v-if="form.errors['bot_persona.custom_instructions']" class="text-2xs text-red-400">{{ form.errors['bot_persona.custom_instructions'] }}</p>
+            </div>
+
+            <button
+              type="button"
+              @click="resetPersona"
+              class="text-2xs font-semibold text-purple-400 hover:text-purple-300 transition-colors"
+            >
+              {{ t('chatBot.persona.reset') }}
+            </button>
           </div>
         </SettingsCard>
 

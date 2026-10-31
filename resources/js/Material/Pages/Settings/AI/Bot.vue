@@ -25,6 +25,7 @@ import { useToast } from '@/Composables/useToast'
 const props = defineProps({
     botName: { type: String, default: 'Ken-Chan' },
     botAvatar: { type: String, default: null },
+    botPersona: { type: Object, default: () => ({}) },
 })
 
 const { t } = useI18n()
@@ -33,8 +34,34 @@ const { showToast } = useToast()
 const form = useForm({
     bot_name: props.botName,
     bot_avatar: null,
+    bot_persona: {
+        tone: props.botPersona?.tone ?? 'ramah',
+        formality: props.botPersona?.formality ?? 'semi-formal',
+        response_length: props.botPersona?.response_length ?? 'singkat',
+        emoji: props.botPersona?.emoji ?? 'sedikit',
+        custom_instructions: props.botPersona?.custom_instructions ?? '',
+    },
     _method: 'PATCH',
 })
+
+// Opsi persona (label i18n) — urutan = PersonaDefaults::OPTIONS
+const personaOptions = [
+    { key: 'tone', label: t('chatBot.persona.tone'), options: ['ramah', 'profesional', 'santai', 'energik'] },
+    { key: 'formality', label: t('chatBot.persona.formality'), options: ['santai', 'semi-formal', 'formal'] },
+    { key: 'response_length', label: t('chatBot.persona.length'), options: ['singkat', 'sedang', 'detail'] },
+    { key: 'emoji', label: t('chatBot.persona.emoji'), options: ['tanpa', 'sedikit', 'sering'] },
+]
+
+const resetPersona = () => {
+    form.bot_persona = {
+        tone: 'ramah',
+        formality: 'semi-formal',
+        response_length: 'singkat',
+        emoji: 'sedikit',
+        custom_instructions: '',
+    }
+    saveBotSettings()
+}
 
 const previewFile = ref(null)
 const showPhotoDialog = ref(false)
@@ -175,6 +202,41 @@ const confirmDeleteBotAvatar = () => {
 
                         <p class="m3-bot__hint">{{ t('settings.ai.bot.name.hint') }}</p>
                     </div>
+                </M3Card>
+
+                <M3Card variant="outlined" padding="md">
+                    <div class="m3-bot__persona-head">
+                        <p class="m3-bot__persona-title">{{ t('chatBot.persona.title') }}</p>
+                        <M3Button variant="text" type="button" :disabled="form.processing" @click="resetPersona">
+                            {{ t('chatBot.persona.reset') }}
+                        </M3Button>
+                    </div>
+                    <p class="m3-bot__persona-desc">{{ t('chatBot.persona.description') }}</p>
+
+                    <div v-for="opt in personaOptions" :key="opt.key" class="m3-bot__persona-row">
+                        <p class="m3-bot__persona-label">{{ opt.label }}</p>
+                        <div class="m3-bot__persona-chips">
+                            <M3Chip
+                                v-for="option in opt.options"
+                                :key="option"
+                                variant="filter"
+                                :selected="form.bot_persona[opt.key] === option"
+                                @click="form.bot_persona[opt.key] = option"
+                            >
+                                {{ t(`chatBot.persona.values.${option}`) }}
+                            </M3Chip>
+                        </div>
+                    </div>
+
+                    <M3TextField
+                        v-model="form.bot_persona.custom_instructions"
+                        :label="t('chatBot.persona.custom.label')"
+                        :placeholder="t('chatBot.persona.custom.placeholder')"
+                        :error="form.errors['bot_persona.custom_instructions']"
+                    />
+                    <p v-if="form.errors.bot_persona" class="m3-bot__avatar-error" role="alert">
+                        {{ form.errors.bot_persona }}
+                    </p>
                 </M3Card>
 
                 </div>
@@ -395,6 +457,47 @@ const confirmDeleteBotAvatar = () => {
 }
 
 .m3-bot__suggestions-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--m3-space-2);
+}
+
+.m3-bot__persona-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--m3-space-2);
+}
+
+.m3-bot__persona-title {
+    margin: 0;
+    font-size: var(--m3-type-title-medium-size);
+    line-height: var(--m3-type-title-medium-line-height);
+    font-weight: var(--m3-type-emphasized-title-medium-weight);
+    color: var(--m3-color-on-surface);
+}
+
+.m3-bot__persona-desc {
+    margin: 0 0 var(--m3-space-3);
+    font-size: var(--m3-type-body-small-size);
+    line-height: var(--m3-type-body-small-line-height);
+    color: var(--m3-color-on-surface-variant);
+}
+
+.m3-bot__persona-row {
+    margin-top: var(--m3-space-3);
+}
+
+.m3-bot__persona-label {
+    margin: 0 0 var(--m3-space-1-5);
+    font-size: var(--m3-type-label-medium-size);
+    line-height: var(--m3-type-label-medium-line-height);
+    font-weight: var(--m3-type-label-large-weight);
+    letter-spacing: var(--m3-type-label-medium-tracking);
+    color: var(--m3-color-on-surface-variant);
+}
+
+.m3-bot__persona-chips {
     display: flex;
     flex-wrap: wrap;
     gap: var(--m3-space-2);

@@ -1599,6 +1599,33 @@ export default {
     // CHAT BOT PROFILE
     // ────────────────────────────────────────────────────────────────
     chatBot: {
+        persona: {
+            title:       'Assistant Persona',
+            description: 'Tune how the assistant speaks — only affects tone, not security rules or data.',
+            reset:       'Reset to default',
+            tone:        'Tone',
+            formality:   'Formality',
+            length:      'Response length',
+            emoji:       'Emoji',
+            custom: {
+                label:       'Extra instructions (optional)',
+                placeholder: 'Example: avoid English words, call me "Boss"',
+            },
+            values: {
+                ramah:        'Friendly',
+                profesional:  'Professional',
+                santai:       'Casual',
+                energik:      'Energetic',
+                'semi-formal': 'Semi-formal',
+                formal:       'Formal',
+                singkat:      'Short',
+                sedang:       'Medium',
+                detail:       'Detailed',
+                tanpa:        'None',
+                sedikit:      'A few',
+                sering:       'Often',
+            },
+        },
         title:          'Bot Profile',
         subtitle:       'Personalize your AI assistant',
         photoSection:   'Bot Photo',

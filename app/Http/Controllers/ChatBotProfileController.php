@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Services\AI\Assistant\PersonaDefaults;
+use App\Services\AI\Assistant\PersonaValidator;
 use App\Support\SettingsChangeLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -65,10 +67,10 @@ class ChatBotProfileController extends Controller
             }
         }
 
-        $validated = $request->validate([
+        $validated = $request->validate(array_merge([
             'bot_name' => ['nullable', 'string', 'max:50'],
             'bot_avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-        ]);
+        ], PersonaValidator::rules()));
 
         logger()->info('ChatBotProfileController:update called', ['validated' => $validated, 'hasFile' => $request->hasFile('bot_avatar')]);
 
@@ -95,6 +97,14 @@ class ChatBotProfileController extends Controller
             );
 
             $updates['bot_avatar'] = $path;
+        }
+
+        // Persona (lapis B): reset → null (persona default); selain itu
+        // sanitasi via PersonaValidator. Tidak pernah menyimpan core instructions.
+        if ($request->boolean('reset_persona')) {
+            $updates['bot_persona'] = null;
+        } elseif ($request->has('bot_persona')) {
+            $updates['bot_persona'] = PersonaValidator::sanitize($request->input('bot_persona'));
         }
 
         if (! empty($updates)) {
