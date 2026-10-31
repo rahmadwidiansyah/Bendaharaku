@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\TransactionTypeIds;
+
 use App\Jobs\BuildNetWorthSnapshotsJob;
 use App\Traits\CalculatesDebtAndReceivable;
 use Carbon\Carbon;
@@ -17,13 +19,8 @@ class AnalyticsController extends Controller
 {
     use CalculatesDebtAndReceivable;
 
-    private const TYPE_INCOME = 1;
-
-    private const TYPE_EXPENSE = 2;
-
-    private const TYPE_DEBT = 4;
-
-    private const TYPE_RECEIVABLE = 5;
+    // Id tipe transaksi di-resolve dari DB by name (jangan hardcode —
+    // id tabel transaction_types di-generate seeder dan bisa bergeser).
 
     /**
      * Arah kas REAL (masuk = +, keluar = -) untuk cumulative balance chart.
@@ -97,12 +94,12 @@ class AnalyticsController extends Controller
             ->where('is_cleared', true)
             ->whereNull('deleted_at')
             ->whereBetween('date', [$startDate, $endDate])
-            ->whereIn('type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE])
+            ->whereIn('type_id', [TransactionTypeIds::income(), TransactionTypeIds::expense()])
             ->groupBy('type_id')
             ->pluck('total', 'type_id');
 
-        $totalIncome = (float) ($totalsRaw[self::TYPE_INCOME] ?? 0);
-        $totalExpense = (float) ($totalsRaw[self::TYPE_EXPENSE] ?? 0);
+        $totalIncome = (float) ($totalsRaw[TransactionTypeIds::income()] ?? 0);
+        $totalExpense = (float) ($totalsRaw[TransactionTypeIds::expense()] ?? 0);
 
         // 2. Running balance awal (sebelum startDate)
         $runningBalance = (float) DB::table('transaction_logs')
@@ -111,7 +108,7 @@ class AnalyticsController extends Controller
             ->where('transaction_logs.is_cleared', true)
             ->whereNull('transaction_logs.deleted_at')
             ->where('transaction_logs.date', '<', $startDate)
-            ->whereIn('transaction_logs.type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE, self::TYPE_DEBT, self::TYPE_RECEIVABLE])
+            ->whereIn('transaction_logs.type_id', [TransactionTypeIds::income(), TransactionTypeIds::expense(), TransactionTypeIds::debt(), TransactionTypeIds::receivable()])
             ->sum(DB::raw($this->signedCashCase()));
 
         // Saldo awal sebelum rentang (untuk lazy history: chart kumulatif
@@ -126,7 +123,7 @@ class AnalyticsController extends Controller
             ->where('transaction_logs.is_cleared', true)
             ->whereNull('transaction_logs.deleted_at')
             ->whereBetween('transaction_logs.date', [$startDate, $endDate])
-            ->whereIn('transaction_logs.type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE, self::TYPE_DEBT, self::TYPE_RECEIVABLE])
+            ->whereIn('transaction_logs.type_id', [TransactionTypeIds::income(), TransactionTypeIds::expense(), TransactionTypeIds::debt(), TransactionTypeIds::receivable()])
             ->groupBy('transaction_logs.date')
             ->pluck('net_change', 'tx_date');
 
@@ -137,7 +134,7 @@ class AnalyticsController extends Controller
             ->where('is_cleared', true)
             ->whereNull('deleted_at')
             ->whereBetween('date', [$startDate, $endDate])
-            ->whereIn('type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE])
+            ->whereIn('type_id', [TransactionTypeIds::income(), TransactionTypeIds::expense()])
             ->groupBy('date', 'type_id')
             ->get()
             ->groupBy('date');
@@ -159,12 +156,12 @@ class AnalyticsController extends Controller
                 $todayIndex = $currentIndex;
             }
 
-            $dailyLabels[] = $dateObj->format('d M');
+            $dailyLabels[] = $dateObj->translatedFormat('d M');
 
             $dayTx = $dailyDataRaw->get($dateStr, collect());
 
-            $dInc = (float) ($dayTx->firstWhere('type_id', self::TYPE_INCOME)?->total ?? 0);
-            $dExp = (float) ($dayTx->firstWhere('type_id', self::TYPE_EXPENSE)?->total ?? 0);
+            $dInc = (float) ($dayTx->firstWhere('type_id', TransactionTypeIds::income())?->total ?? 0);
+            $dExp = (float) ($dayTx->firstWhere('type_id', TransactionTypeIds::expense())?->total ?? 0);
 
             $dailyIncome[] = $dInc;
             $dailyExpense[] = $dExp;
@@ -185,17 +182,17 @@ class AnalyticsController extends Controller
             ->where('transaction_logs.is_cleared', true)
             ->whereNull('transaction_logs.deleted_at')
             ->whereBetween('transaction_logs.date', [$startDate, $endDate])
-            ->whereIn('transaction_logs.type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE, self::TYPE_DEBT, self::TYPE_RECEIVABLE])
+            ->whereIn('transaction_logs.type_id', [TransactionTypeIds::income(), TransactionTypeIds::expense(), TransactionTypeIds::debt(), TransactionTypeIds::receivable()])
             ->groupBy('categories.id', 'categories.category_name', 'categories.icon', 'transaction_logs.type_id')
             ->orderByDesc('total')
             ->get();
 
         $formatCategory = fn ($c) => ['id' => $c->id, 'name' => $c->name, 'icon' => $c->icon, 'total' => (float) $c->total];
 
-        $expensesByCategory = $categoriesRaw->where('type_id', self::TYPE_EXPENSE)->map($formatCategory)->values()->toArray();
-        $incomesByCategory = $categoriesRaw->where('type_id', self::TYPE_INCOME)->map($formatCategory)->values()->toArray();
-        $debtsByCategory = $categoriesRaw->where('type_id', self::TYPE_DEBT)->map($formatCategory)->values()->toArray();
-        $receivablesByCategory = $categoriesRaw->where('type_id', self::TYPE_RECEIVABLE)->map($formatCategory)->values()->toArray();
+        $expensesByCategory = $categoriesRaw->where('type_id', TransactionTypeIds::expense())->map($formatCategory)->values()->toArray();
+        $incomesByCategory = $categoriesRaw->where('type_id', TransactionTypeIds::income())->map($formatCategory)->values()->toArray();
+        $debtsByCategory = $categoriesRaw->where('type_id', TransactionTypeIds::debt())->map($formatCategory)->values()->toArray();
+        $receivablesByCategory = $categoriesRaw->where('type_id', TransactionTypeIds::receivable())->map($formatCategory)->values()->toArray();
 
         // 5. Full history — Income/Expense gross, Debt/Receivable NET per hari.
         // Dilewati bila history=range (lazy): klien mengambil on-demand via
@@ -281,7 +278,7 @@ class AnalyticsController extends Controller
             ->where('user_id', $userId)
             ->where('is_cleared', true)
             ->whereNull('deleted_at')
-            ->whereIn('type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE])
+            ->whereIn('type_id', [TransactionTypeIds::income(), TransactionTypeIds::expense()])
             ->groupBy('date', 'type_id')
             ->orderBy('date', 'asc')
             ->get()
@@ -319,12 +316,12 @@ class AnalyticsController extends Controller
             ->values();
 
         foreach ($allDateKeys as $date) {
-            $labels[] = Carbon::parse($date)->format('d M Y');
+            $labels[] = Carbon::parse($date)->translatedFormat('d M Y');
             $dates[] = Carbon::parse($date)->format('Y-m-d');
 
             $dayTx = $allHistoryRaw->get($date, collect());
-            $income[] = (float) ($dayTx->firstWhere('type_id', self::TYPE_INCOME)?->total ?? 0);
-            $expense[] = (float) ($dayTx->firstWhere('type_id', self::TYPE_EXPENSE)?->total ?? 0);
+            $income[] = (float) ($dayTx->firstWhere('type_id', TransactionTypeIds::income())?->total ?? 0);
+            $expense[] = (float) ($dayTx->firstWhere('type_id', TransactionTypeIds::expense())?->total ?? 0);
             $debt[] = (float) ($allDebtRaw[$date] ?? 0);
             $receivable[] = (float) ($allReceivableRaw[$date] ?? 0);
         }

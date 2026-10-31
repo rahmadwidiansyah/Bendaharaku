@@ -43,16 +43,12 @@ const charts = shallowRef({});
 const barView = ref('harian');
 const categoryView = ref('expense');
 const barChartRef = ref(null);
-const barScrollRef = ref(null); // ref ke div overflow-x-auto
 const cumulativeChartRef = ref(null);
 const cumulativeContainerRef = ref(null); // ref ke div container canvas kumulatif
 const doughnutChartRef = ref(null);
 const barChartKey = ref(0);
 const cumulativeChartKey = ref(0);
 const doughnutChartKey = ref(0);
-
-// Simpan data bar terakhir agar bisa rekalkulasi scale saat scroll
-const barChartData = ref({ labels: [], incomes: [], expenses: [], debts: [], receivables: [] });
 
 // State doughnut: false = sedang loading/render, true = sudah siap
 const doughnutReady = ref(false);
@@ -64,9 +60,11 @@ const doughnutReady = ref(false);
 // 0 adalah yang paling baru — dan lebar canvas di-clamp sebagai pengaman.
 const isMobileViewport = () => typeof window !== 'undefined' && window.innerWidth < 640;
 const BAR_PAGE_SIZE = {
-    harian: () => (isMobileViewport() ? 30 : 60),
-    mingguan: () => 52,
-    bulanan: () => 120,
+    // Halaman disesuaikan agar satu halaman muat penuh di lebar kontainer
+    // (canvas fixed-width ala chart Admin — y axis selalu terlihat).
+    harian: () => (isMobileViewport() ? 16 : 31),
+    mingguan: () => 26,
+    bulanan: () => 36,
 };
 const CANVAS_MAX_WIDTH = 16000;
 const barPage = ref(0);
@@ -104,6 +102,39 @@ const isDateFilterActive = computed(() => usePage().url.includes('start_date='))
 
 const cssVar = (name, fallback) =>
     getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+
+// Chrome chart & tooltip theme-aware (paritas dengan AdminChart/m3Chart):
+// tooltip memakai pasangan inverse agar kontras di kedua tema, grid/tick
+// mengikuti tema, surface dipakai sebagai warna pemisah irisan doughnut.
+const isLightScheme = () => document.documentElement.classList.contains('light');
+
+const chartChrome = () => {
+    const light = isLightScheme();
+    return {
+        grid: light ? 'rgba(15, 23, 42, 0.07)' : 'rgba(255,255,255,0.05)',
+        ticks: light ? '#64748B' : '#9CA3AF',
+        labels: light ? '#475569' : '#D1D5DB',
+        surface: cssVar('--color-surface-raised', light ? '#FFFFFF' : '#121212'),
+        brand: cssVar('--color-brand', '#a855f7'),
+    };
+};
+
+// Tooltip gaya AdminChart untuk Default UI: inverse surface (kontras di
+// light & dark), judul redup, body tebal, swatch opsional untuk multi-seri.
+const buildChartTooltip = ({ swatch = false } = {}) => ({
+    enabled: true,
+    backgroundColor: isLightScheme() ? 'rgba(241, 245, 249, 0.98)' : 'rgba(18, 18, 18, 0.95)',
+    titleColor: isLightScheme() ? 'rgba(15, 23, 42, 0.7)' : '#9CA3AF',
+    titleFont: { size: 11, weight: 'bold' },
+    bodyColor: isLightScheme() ? '#0F172A' : '#FFFFFF',
+    bodyFont: { size: 13, weight: 'bold' },
+    padding: { x: 12, y: 8 },
+    cornerRadius: 8,
+    displayColors: swatch,
+    boxWidth: 12,
+    boxHeight: 12,
+    boxPadding: 4,
+});
 
 // Warna arus kas — baca token CSS (otomatis mengikuti tema dark/light):
 // masuk hijau, keluar merah, hutang kuning, piutang ungu (statis)
@@ -174,43 +205,20 @@ const initCumulativeChart = async () => {
             if (!ctx) return;
 
             const brand = cssVar('--color-brand', '#a855f7');
+            const chrome = chartChrome();
 
-            // Gunakan full history (allDailyDates) agar selalu ada cukup titik untuk garis
-            // Ambil 7 titik terakhir dari seluruh riwayat transaksi
-            let visibleLabels, visibleData;
-            const allDates = props.allDailyDates || [];
+            // Data kumulatif PAKAI hasil server (openingBalance + arus harian
+            // rentang terpilih, props dailyLabels/cumulativeData) — konsisten
+            // dengan angka hero. Recompute dari allDaily* mengabaikan saldo
+            // awal wallet dan menghasilkan nilai salah pada data ber-saldo awal.
+            const allLabels = props.dailyLabels || [];
+            const allData = props.cumulativeData || [];
+            const take = Math.min(31, allLabels.length);
+            const visibleLabels = allLabels.slice(-take);
+            const visibleData = allData.slice(-take);
 
-            if (allDates.length >= 2) {
-                // Hitung cumulative dari seluruh history
-                let running = 0;
-                const allCumulative = allDates.map((_, i) => {
-                    const inc = Math.abs(props.allDailyIncome?.[i] || 0);
-                    const exp = Math.abs(props.allDailyExpense?.[i] || 0);
-                    const debt = props.allDailyDebt?.[i] || 0;
-                    const rec = props.allDailyReceivable?.[i] || 0;
-                    running += inc - exp + debt - rec;
-                    return running;
-                });
-
-                const take = Math.min(7, allDates.length);
-                visibleLabels = allDates.slice(-take).map(d =>
-                    formatDate(d, { day: '2-digit', month: 'short' })
-                );
-                visibleData = allCumulative.slice(-take);
-            } else {
-                // Fallback: hanya 1 hari, pakai data periode filter
-                visibleLabels = props.dailyLabels.slice(-4);
-                visibleData = props.cumulativeData.slice(-4);
-            }
-
-            let grad = ctx.createLinearGradient(0, 0, 0, h);
-            grad.addColorStop(0, hexToRgba(brand, 0.35));
-            grad.addColorStop(1, hexToRgba(brand, 0));
-
-            const minVal = Math.min(...visibleData);
-            const maxVal = Math.max(...visibleData);
-            const range = maxVal - minVal || Math.abs(minVal) * 0.2 || 1000;
-            const yPad = range * 0.15;
+            // Area fill flat lembut seperti AdminChart (bukan gradient).
+            const softFill = hexToRgba(brand, 0.16);
 
             const chart = new Chart(ctx, {
                 type: 'line',
@@ -219,17 +227,20 @@ const initCumulativeChart = async () => {
                     datasets: [{
                         data: visibleData,
                         borderColor: brand,
-                        borderWidth: 2.5,
-                        backgroundColor: grad,
+                        borderWidth: 2,
+                        backgroundColor: softFill,
                         fill: true,
-                        tension: 0.4,
-                        pointRadius: visibleData.length === 1 ? 8 : 3,
-                        pointHoverRadius: 9,
+                        // Bahasa dataset mengikuti AdminChart: garis bersih
+                        // tanpa titik, titik hanya muncul saat hover.
+                        tension: 0.35,
+                        pointRadius: visibleData.length === 1 ? 6 : 0,
+                        pointHoverRadius: 5,
+                        pointHitRadius: 16,
                         pointBackgroundColor: brand,
-                        pointBorderColor: cssVar('--color-gray-950', '#121212'),
+                        pointBorderColor: chrome.surface,
                         pointBorderWidth: 2,
                         pointHoverBackgroundColor: brand,
-                        pointHoverBorderColor: '#fff',
+                        pointHoverBorderColor: chrome.surface,
                         pointHoverBorderWidth: 2,
                         spanGaps: true,
                     }]
@@ -243,15 +254,7 @@ const initCumulativeChart = async () => {
                     plugins: {
                         legend: { display: false },
                         tooltip: {
-                            enabled: true,
-                            backgroundColor: 'rgba(18,18,18,0.95)',
-                            titleColor: '#9CA3AF',
-                            titleFont: { size: 11, weight: 'bold' },
-                            bodyColor: '#fff',
-                            bodyFont: { size: 13, weight: 'bold' },
-                            padding: { x: 12, y: 8 },
-                            cornerRadius: 8,
-                            displayColors: false,
+                            ...buildChartTooltip(),
                             callbacks: {
                                 title: (items) => {
                                     const d = parseDateOnly(items[0]?.label);
@@ -262,8 +265,31 @@ const initCumulativeChart = async () => {
                         },
                     },
                     scales: {
-                        x: { display: false, offset: false, bounds: 'data' },
-                        y: { display: false, min: minVal - yPad, max: maxVal + yPad }
+                        // Sumbu terlihat ala AdminChart: label X renggang
+                        // (autoSkip) dan tick Y ringkas (jt/rb/M).
+                        x: {
+                            display: true,
+                            grid: { display: false },
+                            border: { display: false },
+                            ticks: {
+                                color: tickColor,
+                                font: { size: 11 },
+                                maxRotation: 0,
+                                autoSkip: true,
+                                maxTicksLimit: 8,
+                            },
+                        },
+                        y: {
+                            display: true,
+                            grid: { display: true, color: gridColor },
+                            border: { display: false },
+                            ticks: {
+                                display: true,
+                                color: tickColor,
+                                font: { size: 11 },
+                                callback: (value) => formatCompact(value),
+                            },
+                        }
                     }
                 }
             });
@@ -296,9 +322,12 @@ const initCumulativeChart = async () => {
 };
 
 function formatCompact(n) {
-    if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
-    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
-    if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K';
+    // Satuan Indonesia: rb (ribu), jt (juta), M (miliar) — konsisten
+    // dengan tick chart lain (AdminChart yCompact).
+    const abs = Math.abs(n);
+    if (abs >= 1e9) return (n / 1e9).toFixed(1).replace(/\.0$/, '') + 'M';
+    if (abs >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'jt';
+    if (abs >= 1e3) return (n / 1e3).toFixed(0) + 'rb';
     return n.toString();
 }
 
@@ -404,74 +433,12 @@ function buildBarData(view) {
     return { labels, incomes, expenses, debts, receivables };
 }
 
-/**
- * Hitung indeks kolom yang sedang visible di scroll container.
- * Digunakan untuk update Y scale berdasar data yang tampil saja.
- */
-function getVisibleIndices(scrollEl, chart) {
-    if (!scrollEl || !chart) return null;
-    const scrollLeft = scrollEl.scrollLeft;
-    const containerWidth = scrollEl.clientWidth;
-    const scrollRight = scrollLeft + containerWidth;
-
-    const meta = chart.getDatasetMeta(0);
-    if (!meta?.data?.length) return null;
-
-    const visible = [];
-    meta.data.forEach((el, i) => {
-        if (el.x >= scrollLeft && el.x <= scrollRight) {
-            visible.push(i);
-        }
-    });
-    return visible.length ? visible : null;
-}
-
-/**
- * Update Y scale chart berdasar indeks yang visible.
- * Dipanggil saat scroll berhenti (scrollend) maupun setelah render awal.
- */
-function updateBarYScale() {
-    const chart = charts.value['bar'];
-    const scrollEl = barScrollRef.value;
-    if (!chart || !scrollEl) return;
-
-    const visibleIdx = getVisibleIndices(scrollEl, chart);
-    if (!visibleIdx) return;
-
-    const { incomes, expenses, debts, receivables } = barChartData.value;
-    const vals = visibleIdx.flatMap(i => [
-        incomes[i] || 0,
-        expenses[i] || 0,
-        debts[i] || 0,
-        receivables[i] || 0,
-    ]).filter(v => v > 0);
-
-    const newMax = vals.length ? Math.max(...vals) * 1.25 : 1000;
-    if (chart.options.scales.y.max === newMax) return;
-
-    chart.options.scales.y.max = newMax;
-    chart.update('none'); // update tanpa animasi
-}
-
-let barScrollTimer = null;
-
-function onBarScroll() {
-    // Debounce: update scale hanya setelah scroll berhenti ~120ms
-    clearTimeout(barScrollTimer);
-    barScrollTimer = setTimeout(() => {
-        updateBarYScale();
-    }, 120);
-}
-
 const renderBarChart = async (view, keepPage = false) => {
     barView.value = view;
     if (!keepPage) barPage.value = 0;
     const full = buildBarData(view);
     const { labels, incomes, expenses, debts, receivables, pageCount, page } = sliceBarPage(full, view);
     barPager.value = { page, count: pageCount };
-
-    // Simpan data untuk rekalkulasi scale saat scroll
-    barChartData.value = { labels, incomes, expenses, debts, receivables };
 
     destroyChart('bar');
     barChartKey.value++;
@@ -481,9 +448,11 @@ const renderBarChart = async (view, keepPage = false) => {
     if (!canvas) return;
 
     // Set canvas size eksplisit agar responsive:false tidak bikin chart kosong.
-    // Clamp lebar canvas: pengaman terhadap batas render browser (~32.767px).
+    // Lebar canvas = lebar kontainer (tanpa scroll horizontal): struktur ala
+    // chart Admin — y axis selalu terlihat, label X ditata autoSkip, dan
+    // navigasi rentang memakai pager.
     const container = canvas.parentElement;
-    const canvasWidth = Math.min(container?.offsetWidth || Math.max(labels.length * 80, 300), CANVAS_MAX_WIDTH);
+    const canvasWidth = Math.min(container?.offsetWidth || 600, CANVAS_MAX_WIDTH);
     const canvasHeight = container?.offsetHeight || 220;
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
@@ -498,22 +467,20 @@ const renderBarChart = async (view, keepPage = false) => {
     const tickColor = isLight ? '#64748B' : '#9CA3AF';
     const gridColor = isLight ? 'rgba(15, 23, 42, 0.07)' : 'rgba(255,255,255,0.05)';
     const labelColor = isLight ? '#475569' : '#D1D5DB';
-    const labelShadow = isLight ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)';
 
-    // Hitung Y scale awal dari 4 hari/periode terbaru (yang visible saat pertama load)
-    const last4Idx = labels.map((_, i) => i).slice(-4);
-    const initialVals = last4Idx.flatMap(i => [incomes[i] || 0, expenses[i] || 0, debts[i] || 0, receivables[i] || 0]).filter(v => v > 0);
-    const initialYMax = initialVals.length ? Math.max(...initialVals) * 1.25 : 1000;
+    // Y max dari seluruh label halaman aktif (satu halaman = satu layar penuh)
+    const pageVals = [incomes, expenses, debts, receivables].flatMap(arr => arr.filter(v => v > 0));
+    const initialYMax = pageVals.length ? Math.max(...pageVals) * 1.25 : 1000;
 
     charts.value['bar'] = new Chart(ctx, {
         type: 'bar',
         data: {
             labels,
             datasets: [
-                { label: t('analytics.chartLabels.income'), data: incomes, backgroundColor: FLOW_COLORS.value.income, borderRadius: 5, barPercentage: 0.9, categoryPercentage: 0.85 },
-                { label: t('analytics.chartLabels.expense'), data: expenses, backgroundColor: FLOW_COLORS.value.expense, borderRadius: 5, barPercentage: 0.9, categoryPercentage: 0.85 },
-                { label: t('analytics.chartLabels.debt'), data: debts, backgroundColor: FLOW_COLORS.value.debt, borderRadius: 5, barPercentage: 0.9, categoryPercentage: 0.85 },
-                { label: t('analytics.chartLabels.receivable'), data: receivables, backgroundColor: FLOW_COLORS.value.receivable, borderRadius: 5, barPercentage: 0.9, categoryPercentage: 0.85 }
+                { label: t('analytics.chartLabels.income'), data: incomes, backgroundColor: hexToRgba(FLOW_COLORS.value.income, 0.75), hoverBackgroundColor: FLOW_COLORS.value.income, borderRadius: 6, maxBarThickness: 12, barPercentage: 0.9, categoryPercentage: 0.85 },
+                { label: t('analytics.chartLabels.expense'), data: expenses, backgroundColor: hexToRgba(FLOW_COLORS.value.expense, 0.75), hoverBackgroundColor: FLOW_COLORS.value.expense, borderRadius: 6, maxBarThickness: 12, barPercentage: 0.9, categoryPercentage: 0.85 },
+                { label: t('analytics.chartLabels.debt'), data: debts, backgroundColor: hexToRgba(FLOW_COLORS.value.debt, 0.75), hoverBackgroundColor: FLOW_COLORS.value.debt, borderRadius: 6, maxBarThickness: 12, barPercentage: 0.9, categoryPercentage: 0.85 },
+                { label: t('analytics.chartLabels.receivable'), data: receivables, backgroundColor: hexToRgba(FLOW_COLORS.value.receivable, 0.75), hoverBackgroundColor: FLOW_COLORS.value.receivable, borderRadius: 6, maxBarThickness: 12, barPercentage: 0.9, categoryPercentage: 0.85 }
             ]
         },
         options: {
@@ -521,105 +488,60 @@ const renderBarChart = async (view, keepPage = false) => {
             responsive: false,
             maintainAspectRatio: false,
             animation: { duration: 400 },
-            plugins: { legend: { display: false } },
+            plugins: {
+                // Legend bawaan di bawah-tengah (gaya chart Admin): titik
+                // round, klik untuk sembunyikan/tampilkan seri.
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                    labels: {
+                        color: labelColor,
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        boxWidth: 8,
+                        boxHeight: 8,
+                        padding: 16,
+                        font: { size: 12 },
+                    },
+                },
+                // Tooltip gaya AdminChart (sebelumnya tooltip bawaan tanpa gaya)
+                tooltip: {
+                    ...buildChartTooltip({ swatch: true }),
+                    callbacks: {
+                        label: (item) => `${item.dataset.label}: Rp ${Number(item.raw).toLocaleString('id-ID')}`,
+                    },
+                },
+            },
             scales: {
                 x: {
                     grid: { display: false },
-                    ticks: { color: tickColor, font: { size: 12, weight: 'bold' }, maxRotation: 0 }
+                    border: { display: false },
+                    ticks: { color: tickColor, font: { size: 12, weight: 'bold' }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }
                 },
                 y: {
                     display: true,
                     min: 0,
                     max: initialYMax,
-                    // Grid lines sebagai garis bantu di background, axis & ticks tetap tersembunyi
+                    // Grid lines sebagai garis bantu di background, axis tanpa garis
                     grid: {
                         display: true,
                         color: gridColor,
                         drawBorder: false,
                     },
-                    border: { display: false, dash: [4, 4] },
-                    ticks: { display: false }
+                    border: { display: false },
+                    ticks: {
+                        display: true,
+                        color: tickColor,
+                        font: { size: 11 },
+                        precision: 0,
+                        callback: (value) => formatCompact(value)
+                    }
                 }
             }
         },
-        plugins: [{
-            id: 'barLabels',
-            afterDraw(chart) {
-                const ctx2 = chart.ctx;
-                const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
-                const fontSize = isMobile ? 10 : 12;
-                const placedLabels = [];
-                
-                ctx2.font = `bold ${fontSize}px sans-serif`;
-                ctx2.fillStyle = labelColor;
-                ctx2.textAlign = 'center';
-                ctx2.shadowColor = labelShadow;
-                ctx2.shadowBlur = 2;
-                ctx2.shadowOffsetY = 1;
-                
-                chart.data.datasets.forEach((ds, dsIndex) => {
-                    const meta = chart.getDatasetMeta(dsIndex);
-                    meta.data.forEach((el, i) => {
-                        const val = Number(ds.data[i]);
-                        if (!val || val <= 0) return;
-                        
-                        const text = formatCompact(val);
-                        const textWidth = ctx2.measureText(text).width;
-                        const textHeight = fontSize;
-                        
-                        const positions = [
-                            { x: el.x, y: el.y - 4, baseline: 'bottom' },
-                            { x: el.x, y: el.y - 12, baseline: 'bottom' },
-                            { x: el.x, y: el.y - 20, baseline: 'bottom' },
-                            { x: el.x, y: el.y + 12, baseline: 'top' }
-                        ];
-                        
-                        let placed = false;
-                        for (const pos of positions) {
-                            const labelBounds = {
-                                x: pos.x - textWidth / 2 - 2,
-                                y: pos.baseline === 'bottom' ? pos.y - textHeight - 2 : pos.y,
-                                width: textWidth + 4,
-                                height: textHeight + 4
-                            };
-                            
-                            const hasCollision = placedLabels.some(placed => {
-                                return !(labelBounds.x + labelBounds.width < placed.x ||
-                                        labelBounds.x > placed.x + placed.width ||
-                                        labelBounds.y + labelBounds.height < placed.y ||
-                                        labelBounds.y > placed.y + placed.height);
-                            });
-                            
-                            if (!hasCollision && pos.y > 10 && pos.y < chart.height - 10) {
-                                ctx2.textBaseline = pos.baseline;
-                                ctx2.fillText(text, pos.x, pos.y);
-                                placedLabels.push(labelBounds);
-                                placed = true;
-                                break;
-                            }
-                        }
-                    });
-                });
-                
-                ctx2.shadowColor = 'transparent';
-            }
-        }]
     });
 
-    // Auto-scroll ke ujung kanan agar 4 hari terbaru langsung terlihat
-    await nextTick();
-    if (barScrollRef.value) {
-        barScrollRef.value.scrollLeft = barScrollRef.value.scrollWidth;
-        // Setelah scroll ke kanan, update scale ke 4 hari yang visible
-        setTimeout(() => updateBarYScale(), 50);
-    }
 };
-
-const chartMinWidth = computed(() => {
-    const { labels } = sliceBarPage(buildBarData(barView.value), barView.value);
-    const minWidthPerLabel = 80; // 80px per time period
-    return Math.max(labels.length * minWidthPerLabel, 300); // minimum 300px
-});
 
 const cumulativeChartMinWidth = computed(() => {
     // Cumulative chart selalu tampil 4 hari terakhir, tidak perlu minWidth besar
@@ -748,8 +670,13 @@ const renderDoughnutChart = async () => {
             datasets: [{
                 data: dataObj.values,
                 backgroundColor: paint,
+                // Pemisah antar irisan memakai warna kartu (gaya AdminChart),
+                // bukan ring gelap yang menabrak di light scheme.
                 borderWidth: 2,
-                borderColor: cssVar('--color-gray-950', '#121212')
+                borderColor: chartChrome().surface,
+                spacing: 2,
+                borderRadius: 4,
+                hoverOffset: 6
             }]
         },
         options: {
@@ -767,7 +694,15 @@ const renderDoughnutChart = async () => {
                     doughnutReady.value = true;
                 }
             },
-            plugins: { legend: { display: false } },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    ...buildChartTooltip({ swatch: true }),
+                    callbacks: {
+                        label: (item) => `Rp ${Number(item.raw).toLocaleString('id-ID')}`,
+                    },
+                },
+            },
             onResize: (chart) => {
                 const d = activeCategoryData.value;
                 const p = activeColors.value;
@@ -797,12 +732,6 @@ onMounted(() => {
     renderBarChart('harian');
     renderDoughnutChart();
 
-    // Pasang scroll listener untuk update Y scale secara dinamis
-    nextTick(() => {
-        if (barScrollRef.value) {
-            barScrollRef.value.addEventListener('scroll', onBarScroll, { passive: true });
-        }
-    });
 });
 
 // Reinitialize cumulative chart when data changes
@@ -833,9 +762,6 @@ watch(
 
 onBeforeUnmount(() => {
     clearTimeout(barScrollTimer);
-    if (barScrollRef.value) {
-        barScrollRef.value.removeEventListener('scroll', onBarScroll);
-    }
     Object.keys(charts.value).forEach(destroyChart);
 });
 </script>
@@ -899,7 +825,7 @@ onBeforeUnmount(() => {
                         <span class="text-2xs text-[var(--color-text-muted)] mr-1">Rp</span>{{ formatNumber(cumulativeBalance) }}
                     </p>
                 </div>
-                <div class="w-full h-[120px] lg:h-[140px] relative z-10" ref="cumulativeContainerRef">
+                <div class="w-full h-[150px] lg:h-[176px] relative z-10" ref="cumulativeContainerRef">
                     <canvas ref="cumulativeChartRef" width="300" height="120" style="display:block;width:100%;height:100%"></canvas>
                 </div>
             </div>
@@ -921,31 +847,9 @@ onBeforeUnmount(() => {
                     </div>
                 </div>
 
-                <!-- Legend manual, karena legend chart.js dimatikan -->
-                <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mb-4 relative z-10">
-                    <div class="flex items-center gap-1.5">
-                        <span class="w-2 h-2 rounded-full" :style="{ backgroundColor: FLOW_COLORS.income }"></span>
-                        <span class="text-[10px] text-[var(--color-text-secondary)] font-bold uppercase tracking-wide">{{ $t('analytics.chartLabels.income') }}</span>
-                    </div>
-                    <div class="flex items-center gap-1.5">
-                        <span class="w-2 h-2 rounded-full" :style="{ backgroundColor: FLOW_COLORS.expense }"></span>
-                        <span class="text-[10px] text-[var(--color-text-secondary)] font-bold uppercase tracking-wide">{{ $t('analytics.chartLabels.expense') }}</span>
-                    </div>
-                    <div class="flex items-center gap-1.5">
-                        <span class="w-2 h-2 rounded-full" :style="{ backgroundColor: FLOW_COLORS.debt }"></span>
-                        <span class="text-[10px] text-[var(--color-text-secondary)] font-bold uppercase tracking-wide">{{ $t('analytics.chartLabels.debt') }}</span>
-                    </div>
-                    <div class="flex items-center gap-1.5">
-                        <span class="w-2 h-2 rounded-full" :style="{ backgroundColor: FLOW_COLORS.receivable }"></span>
-                        <span class="text-[10px] text-[var(--color-text-secondary)] font-bold uppercase tracking-wide">{{ $t('analytics.chartLabels.receivable') }}</span>
-                    </div>
-                </div>
-
                 <!-- Chart container dengan horizontal scroll -->
-                <div ref="barScrollRef" class="overflow-x-auto scrollbar-custom">
-                    <div :style="{ minWidth: chartMinWidth + 'px', height: '220px' }">
-                        <canvas ref="barChartRef" :key="barChartKey"></canvas>
-                    </div>
+                <div :style="{ height: '220px' }">
+                    <canvas ref="barChartRef" :key="barChartKey"></canvas>
                 </div>
 
                 <!-- Paging chart (muncul saat label melebihi kapasitas satu halaman) -->
