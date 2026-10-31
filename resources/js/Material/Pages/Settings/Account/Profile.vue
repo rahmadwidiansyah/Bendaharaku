@@ -88,9 +88,12 @@ function removeAvatar() {
             :title="t('settings.account.profile.title')"
             :subtitle="t('settings.account.profile.description')"
             back-route="settings.index"
+            shell
         >
             <form class="m3-profile" @submit.prevent="handleSave">
-                <div class="m3-profile__hero">
+                <!-- Identity header horizontal: avatar medium + nama/email —
+                     bukan kolom terpusat raksasa (audit desktop). -->
+                <M3Card variant="outlined" padding="lg" class="m3-profile__identity">
                     <button
                         type="button"
                         class="m3-profile__avatar"
@@ -100,67 +103,77 @@ function removeAvatar() {
                         <img v-if="avatarSrc" :src="avatarSrc" alt="" class="m3-profile__avatar-img" />
                         <span v-else aria-hidden="true">{{ avatarInitial }}</span>
                     </button>
-                    <p class="m3-profile__name">{{ user.name }}</p>
-                    <p class="m3-profile__email">{{ user.email }}</p>
-                    <p v-if="form.errors.avatar_file" class="m3-profile__error">{{ form.errors.avatar_file }}</p>
+                    <div class="m3-profile__identity-body">
+                        <p class="m3-profile__name">{{ user.name }}</p>
+                        <p class="m3-profile__email">{{ user.email }}</p>
+                        <p v-if="form.errors.avatar_file" class="m3-profile__error">{{ form.errors.avatar_file }}</p>
+                    </div>
+                    <M3Button variant="text" type="button" class="m3-profile__photo-cta" @click="showPhotoMenu = true">
+                        {{ t('profile.choosePhoto') }}
+                    </M3Button>
+                </M3Card>
+
+                <!-- Grid 2 kolom desktop: data diri kiri, koneksi kanan -->
+                <div class="m3-profile__grid">
+                    <M3SettingsSection :title="t('profile.personalInfo')">
+                        <M3Card variant="outlined" padding="lg" class="m3-profile__form-card">
+                            <M3TextField
+                                v-model="form.name"
+                                :label="t('profile.name')"
+                                :error="form.errors.name || ''"
+                                autocomplete="name"
+                            />
+                            <M3TextField
+                                v-model="form.email"
+                                type="email"
+                                :label="t('profile.email')"
+                                :error="form.errors.email || ''"
+                                autocomplete="email"
+                            />
+                        </M3Card>
+                    </M3SettingsSection>
+
+                    <div class="m3-profile__side">
+                        <M3SettingsSection :title="t('profile.socialConnections')">
+                            <M3Card variant="outlined" padding="lg" class="m3-profile__form-card">
+                                <p class="m3-profile__hint">{{ t('profile.socialConnectionsDesc') }}</p>
+                                <M3TextField
+                                    v-model="form.whatsapp_number"
+                                    :label="t('profile.whatsapp')"
+                                    placeholder="0812xxxx"
+                                    inputmode="tel"
+                                    :error="form.errors.whatsapp_number || ''"
+                                />
+                                <M3TextField
+                                    v-model="form.telegram_id"
+                                    :label="t('profile.telegram')"
+                                    placeholder="@username"
+                                    :error="form.errors.telegram_id || ''"
+                                />
+                            </M3Card>
+                        </M3SettingsSection>
+
+                        <M3SettingsSection :title="t('profile.google.label')">
+                            <M3Card variant="outlined" padding="lg">
+                                <div v-if="!user.google_id" class="m3-profile__google">
+                                    <p class="m3-profile__hint">{{ t('profile.google.connect') }}</p>
+                                    <M3Button :href="route('google.login')" variant="tonal">
+                                        <template #leading>
+                                            <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" alt="" />
+                                        </template>
+                                        {{ t('profile.google.connect') }}
+                                    </M3Button>
+                                </div>
+                                <div v-else class="m3-profile__connected">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span>{{ t('profile.google.connected') }}</span>
+                                </div>
+                            </M3Card>
+                        </M3SettingsSection>
+                    </div>
                 </div>
-
-                <M3SettingsSection>
-                    <M3Card variant="outlined" padding="lg" class="m3-profile__form-card">
-                        <M3TextField
-                            v-model="form.name"
-                            :label="t('profile.name')"
-                            :error="form.errors.name || ''"
-                            autocomplete="name"
-                        />
-                        <M3TextField
-                            v-model="form.email"
-                            type="email"
-                            :label="t('profile.email')"
-                            :error="form.errors.email || ''"
-                            autocomplete="email"
-                        />
-                    </M3Card>
-                </M3SettingsSection>
-
-                <M3SettingsSection :title="t('profile.socialConnections')">
-                    <M3Card variant="outlined" padding="lg" class="m3-profile__form-card">
-                        <p class="m3-profile__hint">{{ t('profile.socialConnectionsDesc') }}</p>
-                        <M3TextField
-                            v-model="form.whatsapp_number"
-                            :label="t('profile.whatsapp')"
-                            placeholder="0812xxxx"
-                            inputmode="tel"
-                            :error="form.errors.whatsapp_number || ''"
-                        />
-                        <M3TextField
-                            v-model="form.telegram_id"
-                            :label="t('profile.telegram')"
-                            placeholder="@username"
-                            :error="form.errors.telegram_id || ''"
-                        />
-                    </M3Card>
-                </M3SettingsSection>
-
-                <M3SettingsSection :title="t('profile.google.label')">
-                    <M3Card variant="outlined" padding="lg">
-                        <div v-if="!user.google_id" class="m3-profile__google">
-                            <p class="m3-profile__hint">{{ t('profile.google.connect') }}</p>
-                            <M3Button :href="route('google.login')" variant="tonal">
-                                <template #leading>
-                                    <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" alt="" />
-                                </template>
-                                {{ t('profile.google.connect') }}
-                            </M3Button>
-                        </div>
-                        <div v-else class="m3-profile__connected">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span>{{ t('profile.google.connected') }}</span>
-                        </div>
-                    </M3Card>
-                </M3SettingsSection>
 
                 <div class="m3-profile__actions">
                     <M3Button type="submit" :disabled="form.processing">
@@ -219,28 +232,62 @@ function removeAvatar() {
     width: 100%;
 }
 
-.m3-profile__hero {
+.m3-profile__identity {
+    display: flex;
+    align-items: center;
+    gap: var(--m3-space-4);
+}
+
+.m3-profile__identity-body {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: var(--m3-space-1);
-    text-align: center;
+    gap: var(--m3-space-0-5);
+    flex: 1;
+    min-width: 0;
+}
+
+.m3-profile__grid {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+@media (min-width: 1024px) {
+    .m3-profile__grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--m3-space-6);
+        align-items: start;
+    }
+
+    .m3-profile__side {
+        display: flex;
+        flex-direction: column;
+        gap: var(--m3-space-6);
+    }
+}
+
+/* Mobile: avatar sendiri adalah tombol ganti foto — teks CTA cukup di desktop */
+@media (max-width: 639px) {
+    .m3-profile__photo-cta {
+        display: none;
+    }
 }
 
 .m3-profile__avatar {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 6rem;
-    height: 6rem;
-    margin-bottom: var(--m3-space-2);
+    width: 4.5rem;
+    height: 4.5rem;
+    flex-shrink: 0;
     border: none;
     border-radius: var(--m3-radius-full);
     overflow: hidden;
     background: var(--m3-color-primary-container);
     color: var(--m3-color-on-primary-container);
-    font-size: var(--m3-type-headline-medium-size);
-    font-weight: var(--m3-type-emphasized-headline-medium-weight);
+    font-size: var(--m3-type-title-large-size);
+    font-weight: var(--m3-type-emphasized-title-large-weight);
     cursor: pointer;
     transition: transform var(--m3-motion-fast-spatial-duration) var(--m3-motion-fast-spatial);
 }

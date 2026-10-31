@@ -42,6 +42,7 @@ async function handleDeleteAccount() {
             :title="t('settings.privacy.danger.title')"
             :subtitle="t('settings.privacy.danger.description')"
             back-route="settings.index"
+            shell
         >
             <M3Card variant="outlined" padding="lg" class="m3-danger">
                 <div class="m3-danger__head">

@@ -8,6 +8,7 @@
  */
 import M3Layout from '@/Material/Layouts/AuthenticatedLayout.vue'
 import M3PageTitle from '@/Material/Components/M3PageTitle.vue'
+import M3SettingsShell from '@/Material/Components/Settings/M3SettingsShell.vue'
 import M3Card from '@/Material/Components/M3Card.vue'
 import M3ListItem from '@/Material/Components/M3ListItem.vue'
 import M3Switch from '@/Material/Components/M3Switch.vue'
@@ -81,6 +82,7 @@ const chevron = 'M8.25 4.5l7.5 7.5-7.5 7.5'
     <M3Layout :title="$t('settings.chat.hub.head')">
         <Head :title="$t('settings.chat.hub.head')" />
 
+    <M3SettingsShell width="list">
         <div class="m3-hub mx-auto w-full max-w-4xl">
             <M3PageTitle :title="$t('settings.chat.hub.title')" />
 
@@ -203,6 +205,7 @@ const chevron = 'M8.25 4.5l7.5 7.5-7.5 7.5'
                 </M3Card>
             </section>
         </div>
+    </M3SettingsShell>
     </M3Layout>
 </template>
 

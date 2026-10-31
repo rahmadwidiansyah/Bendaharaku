@@ -10,6 +10,7 @@
 import M3Layout from '@/Material/Layouts/AuthenticatedLayout.vue'
 import M3PageTitle from '@/Material/Components/M3PageTitle.vue'
 import M3SettingsBack from '@/Material/Components/Settings/M3SettingsBack.vue'
+import M3SettingsShell from '@/Material/Components/Settings/M3SettingsShell.vue'
 import M3Card from '@/Material/Components/M3Card.vue'
 import M3Chip from '@/Material/Components/M3Chip.vue'
 import M3Button from '@/Material/Components/M3Button.vue'
@@ -356,6 +357,7 @@ async function saveRouting() {
     <M3Layout :title="t('settings.ai.models.title')">
         <Head :title="t('settings.ai.models.title')" />
 
+    <M3SettingsShell width="content">
         <div class="m3-models mx-auto w-full max-w-6xl">
             <M3PageTitle
                 :title="t('settings.ai.models.title')"
@@ -366,8 +368,6 @@ async function saveRouting() {
                 </template>
             </M3PageTitle>
 
-            <!-- Bar kembali untuk desktop (judul in-content disembunyikan) -->
-            <M3SettingsBack />
 
             <!-- ── Akun API ─────────────────────────────────────── -->
             <section class="m3-models__section">
@@ -758,6 +758,7 @@ async function saveRouting() {
                 </template>
             </section>
         </div>
+    </M3SettingsShell>
 
         <!-- Konfirmasi hapus akun -->
         <M3Modal :show="!!removeTarget" max-width="sm" @close="removeTarget = null">

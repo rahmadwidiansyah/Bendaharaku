@@ -27,6 +27,7 @@ const isTelegramActive = computed(() => !!telegramId.value)
             :title="t('settings.ai.integration.title')"
             :subtitle="t('settings.ai.integration.description')"
             back-route="settings.index"
+            shell
         >
             <M3Card variant="outlined" padding="lg" class="m3-integration">
                 <div class="m3-integration__head">

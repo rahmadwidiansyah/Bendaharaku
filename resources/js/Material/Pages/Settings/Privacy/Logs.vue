@@ -88,6 +88,7 @@ function typeIcon(type) {
             :title="t('settings.privacy.logs.page_title')"
             :subtitle="t('settings.privacy.logs.page_desc')"
             back-route="settings.index"
+            shell
         >
             <div class="m3-logs__stats">
                 <button

@@ -9,6 +9,7 @@
 import M3Layout from '@/Material/Layouts/AuthenticatedLayout.vue'
 import M3PageTitle from '@/Material/Components/M3PageTitle.vue'
 import M3SettingsBack from '@/Material/Components/Settings/M3SettingsBack.vue'
+import M3SettingsShell from '@/Material/Components/Settings/M3SettingsShell.vue'
 import M3Card from '@/Material/Components/M3Card.vue'
 import M3ListItem from '@/Material/Components/M3ListItem.vue'
 import M3Switch from '@/Material/Components/M3Switch.vue'
@@ -53,6 +54,7 @@ const chevron = 'M8.25 4.5l7.5 7.5-7.5 7.5'
     <M3Layout :title="t('settings.ai.memory.title')">
         <Head :title="t('settings.ai.memory.title')" />
 
+    <M3SettingsShell width="list">
         <div class="m3-memory mx-auto w-full max-w-4xl">
             <M3PageTitle
                 :title="t('settings.ai.memory.title')"
@@ -63,8 +65,6 @@ const chevron = 'M8.25 4.5l7.5 7.5-7.5 7.5'
                 </template>
             </M3PageTitle>
 
-            <!-- Bar kembali untuk desktop (judul in-content disembunyikan) -->
-            <M3SettingsBack />
 
             <section class="m3-memory__section">
                 <M3Card variant="outlined" padding="none" class="m3-memory__card">
@@ -112,6 +112,7 @@ const chevron = 'M8.25 4.5l7.5 7.5-7.5 7.5'
 
             <p class="m3-memory__help">{{ t('settings.ai.memory.help_text') }}</p>
         </div>
+    </M3SettingsShell>
     </M3Layout>
 </template>
 

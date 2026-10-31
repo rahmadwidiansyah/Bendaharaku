@@ -110,6 +110,7 @@ async function handleSave() {
             :title="t('settings.account.preferences.title')"
             :subtitle="t('settings.account.preferences.description')"
             back-route="settings.index"
+            shell
         >
             <!-- Seksi tunggal: judul == judul halaman, tak perlu diulang -->
             <M3SettingsSection>

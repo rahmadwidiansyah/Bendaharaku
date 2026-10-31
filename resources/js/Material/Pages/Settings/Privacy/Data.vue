@@ -49,7 +49,10 @@ async function handleExport() {
             :title="t('settings.privacy.data.title')"
             :subtitle="t('settings.privacy.data.description')"
             back-route="settings.index"
+            width="content"
+            shell
         >
+            <div class="m3-settings-cols">
             <M3SettingsSection :title="t('settings.privacy.data.export.title')">
                 <M3Card variant="outlined" padding="lg" class="m3-data__card">
                     <div class="m3-data__row">
@@ -101,6 +104,7 @@ async function handleExport() {
                     </div>
                 </M3Card>
             </M3SettingsSection>
+            </div>
         </M3SettingsPage>
     </M3Layout>
 </template>

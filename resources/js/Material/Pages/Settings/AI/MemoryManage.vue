@@ -89,6 +89,7 @@ const chevron = 'M8.25 4.5l7.5 7.5-7.5 7.5'
             :subtitle="t('settings.ai.memory.manage.description')"
             back-route="settings.ai.memory"
             width="list"
+            shell
         >
             <div class="m3-memmanage__toolbar">
                 <M3TextField

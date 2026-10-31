@@ -267,9 +267,19 @@ export default {
         searchPlaceholder:  'Search notes or ID...',
         noTransactions:     'No transactions found',
         calendarTab:        'Calendar',
+        periodLabel:        'Period',
         detailTab:          'Detail',
         income:             'Income',
         expense:            'Expense',
+        widgets: {
+            cashflowTitle: '14-Day Cash Flow',
+            income:         'Income',
+            expense:        'Expense',
+            budgetTitle:    "This Month's Budget",
+            aiTitle:        '{bot} today',
+            aiRequests:     '{count} messages parsed',
+            aiTokens:       '{tokens} tokens',
+        },
         cashflow:           'Cash Flow',
 
         calendar: {
@@ -1422,6 +1432,7 @@ export default {
         deleteAccountConfirm: 'CONFIRM PERMANENT DELETION? All your financial data will be lost.',
         passwordUpdated: 'Password updated successfully.',
         newPhotoSelected: 'New photo selected — save to apply',
+        personalInfo: 'Personal information',
         socialConnections: 'Social & Messaging',
         socialConnectionsDesc: 'Connect messaging apps for AI integration',
         whatsapp: 'WhatsApp',

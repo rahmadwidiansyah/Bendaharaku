@@ -51,6 +51,7 @@ async function handleToggle() {
             :title="t('settings.finance.defaults.transaction_logic.title')"
             :subtitle="t('settings.finance.defaults.transaction_logic.description')"
             back-route="settings.index"
+            shell
         >
             <!-- Satu-satunya seksi: judul seksi == judul halaman, cukup sekali -->
             <M3SettingsSection>

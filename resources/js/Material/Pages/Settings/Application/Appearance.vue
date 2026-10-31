@@ -157,7 +157,9 @@ const themeOptions = ['light', 'dark', 'system']
             :subtitle="t('settings.application.appearance.description')"
             back-route="settings.index"
             width="content"
+            shell
         >
+            <div class="m3-settings-cols">
             <M3SettingsSection :title="t('settings.application.appearance.ui_theme.title')">
                 <M3Card variant="outlined" padding="none" class="m3-appearance__options">
                     <button
@@ -178,6 +180,25 @@ const themeOptions = ['light', 'dark', 'system']
                     </button>
                 </M3Card>
             </M3SettingsSection>
+
+            <M3SettingsSection :title="t('settings.application.appearance.theme.title')">
+                <M3Card variant="outlined" padding="none" class="m3-appearance__options">
+                    <button
+                        v-for="(value, index) in themeOptions"
+                        :key="value"
+                        type="button"
+                        :class="['m3-appearance__option', theme === value ? 'm3-appearance__option--selected' : '', index < themeOptions.length - 1 ? 'm3-appearance__option--divider' : '']"
+                        :aria-pressed="theme === value"
+                        @click="theme = value"
+                    >
+                        <span class="m3-appearance__option-label">{{ t(`settings.application.appearance.theme.${value}`) }}</span>
+                        <svg v-if="theme === value" class="m3-appearance__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                        </svg>
+                    </button>
+                </M3Card>
+            </M3SettingsSection>
+            </div>
 
             <M3SettingsSection
                 v-if="isM3Active"
@@ -209,24 +230,7 @@ const themeOptions = ['light', 'dark', 'system']
                 </M3Card>
             </M3SettingsSection>
 
-            <M3SettingsSection :title="t('settings.application.appearance.theme.title')">
-                <M3Card variant="outlined" padding="none" class="m3-appearance__options">
-                    <button
-                        v-for="(value, index) in themeOptions"
-                        :key="value"
-                        type="button"
-                        :class="['m3-appearance__option', theme === value ? 'm3-appearance__option--selected' : '', index < themeOptions.length - 1 ? 'm3-appearance__option--divider' : '']"
-                        :aria-pressed="theme === value"
-                        @click="theme = value"
-                    >
-                        <span class="m3-appearance__option-label">{{ t(`settings.application.appearance.theme.${value}`) }}</span>
-                        <svg v-if="theme === value" class="m3-appearance__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                        </svg>
-                    </button>
-                </M3Card>
-            </M3SettingsSection>
-
+<div class="m3-settings-cols">
             <M3SettingsSection :title="t('settings.application.appearance.category_icon_color.title')">
                 <M3Card variant="outlined" padding="lg">
                     <div class="m3-appearance__switch-row">
@@ -297,6 +301,7 @@ const themeOptions = ['light', 'dark', 'system']
                     </p>
                 </M3Card>
             </M3SettingsSection>
+            </div>
         </M3SettingsPage>
     </M3Layout>
 </template>

@@ -61,6 +61,7 @@ onMounted(loadSettings)
             :title="t('settings.finance.budget.title')"
             :subtitle="t('settings.finance.budget.description')"
             back-route="settings.index"
+            shell
         >
             <M3SettingsSection :title="t('settings.finance.budget.auto_title')">
                 <M3Card variant="outlined" padding="none" class="m3-finance__card">

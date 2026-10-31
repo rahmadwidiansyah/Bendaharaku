@@ -89,6 +89,7 @@ onUnmounted(() => {
             :title="t('settings.application.notifications.title')"
             :subtitle="t('settings.application.notifications.description')"
             back-route="settings.index"
+            shell
         >
             <M3SettingsSection :title="t('settings.application.notifications.email.title')">
                 <M3Card variant="outlined" padding="none" class="m3-notifications__card">

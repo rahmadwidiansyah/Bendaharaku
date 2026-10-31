@@ -34,7 +34,9 @@ const credits = [
             :title="t('settings.system.about.title')"
             :subtitle="t('settings.system.about.description')"
             back-route="settings.index"
+            shell
         >
+            <div class="m3-settings-cols">
             <M3SettingsSection :title="t('settings.system.about.app_name')">
                 <M3Card variant="outlined" padding="lg" class="m3-about__card">
                     <p class="m3-about__desc">{{ t('settings.system.about.app_description') }}</p>
@@ -52,7 +54,7 @@ const credits = [
                 </M3Card>
             </M3SettingsSection>
 
-            <M3SettingsSection :title="t('settings.system.about.credits.title')">
+            <M3SettingsSection :title="t('settings.system.about.credits.title')" class="m3-settings-cols__full">
                 <M3Card variant="outlined" padding="lg" class="m3-about__card">
                     <p class="m3-about__desc">{{ t('settings.system.about.credits.description') }}</p>
                     <ul class="m3-about__credits">
@@ -65,6 +67,7 @@ const credits = [
                     </ul>
                 </M3Card>
             </M3SettingsSection>
+            </div>
         </M3SettingsPage>
     </M3Layout>
 </template>

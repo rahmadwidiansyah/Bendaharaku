@@ -22,6 +22,7 @@ const { t } = useI18n()
             :title="t('settings.privacy.settings.title')"
             :subtitle="t('settings.privacy.settings.description')"
             back-route="settings.index"
+            shell
         >
             <M3SettingsSection :title="t('settings.privacy.settings.data_collection.title')">
                 <M3Card variant="outlined" padding="lg" class="m3-privacy__card">

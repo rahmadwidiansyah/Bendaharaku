@@ -78,6 +78,7 @@ const targetLabel = () => props.memory.target_type ?? 'category'
             :subtitle="memory.keyword"
             back-route="settings.ai.memory.manage"
             :back-label="t('settings.ai.memory.detail.back')"
+            shell
         >
             <M3Card variant="outlined" padding="lg" class="m3-memdetail__hero">
                 <div class="m3-memdetail__badges">

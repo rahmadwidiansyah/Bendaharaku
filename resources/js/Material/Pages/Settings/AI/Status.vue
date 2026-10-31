@@ -8,6 +8,7 @@
  */
 import M3Layout from '@/Material/Layouts/AuthenticatedLayout.vue'
 import M3PageTitle from '@/Material/Components/M3PageTitle.vue'
+import M3SettingsShell from '@/Material/Components/Settings/M3SettingsShell.vue'
 import M3Card from '@/Material/Components/M3Card.vue'
 import M3ListItem from '@/Material/Components/M3ListItem.vue'
 import { Head } from '@inertiajs/vue3'
@@ -47,6 +48,7 @@ const healthKind = (status) => {
     <M3Layout :title="$t('settings.ai.status.title')">
         <Head :title="$t('settings.ai.status.title')" />
 
+        <M3SettingsShell width="list">
         <div class="m3-status mx-auto w-full max-w-4xl">
             <M3PageTitle
                 :title="$t('settings.ai.status.title')"
@@ -127,7 +129,8 @@ const healthKind = (status) => {
                     </M3ListItem>
                 </M3Card>
             </section>
-        </div>
+    </div>
+    </M3SettingsShell>
     </M3Layout>
 </template>
 

@@ -107,7 +107,10 @@ function handleUpdatePassword() {
             :title="t('settings.account.security.title')"
             :subtitle="t('settings.account.security.description')"
             back-route="settings.index"
+            width="content"
+            shell
         >
+            <div class="m3-settings-cols">
             <M3SettingsSection :title="t('settings.account.security.password.title')">
                 <M3Card variant="outlined" padding="lg" class="m3-security__form">
                     <form class="m3-security__form-fields" @submit.prevent="handleUpdatePassword">
@@ -166,6 +169,7 @@ function handleUpdatePassword() {
                     <div v-if="sessions.length === 0" class="m3-security__empty">{{ t('common.noData') }}</div>
                 </M3Card>
             </M3SettingsSection>
+            </div>
         </M3SettingsPage>
     </M3Layout>
 </template>

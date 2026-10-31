@@ -267,9 +267,19 @@ export default {
         searchPlaceholder:  'Cari catatan atau ID...',
         noTransactions:     'Tidak ada transaksi',
         calendarTab:        'Kalender',
+        periodLabel:        'Periode',
         detailTab:          'Detail',
         income:             'Pemasukan',
         expense:            'Pengeluaran',
+        widgets: {
+            cashflowTitle: 'Arus Kas 14 Hari',
+            income:         'Masuk',
+            expense:        'Keluar',
+            budgetTitle:    'Budget Bulan Ini',
+            aiTitle:        '{bot} hari ini',
+            aiRequests:     '{count} pesan diproses',
+            aiTokens:       '{tokens} token',
+        },
         cashflow:           'Arus Kas',
 
         // Hari-hari kalender (singkatan)
@@ -1441,6 +1451,7 @@ categoryTab: {
         deleteAccountConfirm: 'YAKIN HAPUS PERMANEN? Semua data keuangan kamu akan hilang.',
         passwordUpdated: 'Password berhasil diperbarui.',
         newPhotoSelected: 'Foto baru terpilih — simpan untuk menerapkan',
+        personalInfo: 'Informasi Pribadi',
         socialConnections: 'Koneksi Sosial & Pesan',
         socialConnectionsDesc: 'Hubungkan aplikasi perpesanan untuk integrasi AI',
         whatsapp: 'WhatsApp',

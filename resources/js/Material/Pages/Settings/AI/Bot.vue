@@ -9,6 +9,7 @@
 import M3Layout from '@/Material/Layouts/AuthenticatedLayout.vue'
 import M3PageTitle from '@/Material/Components/M3PageTitle.vue'
 import M3SettingsBack from '@/Material/Components/Settings/M3SettingsBack.vue'
+import M3SettingsShell from '@/Material/Components/Settings/M3SettingsShell.vue'
 import M3Card from '@/Material/Components/M3Card.vue'
 import M3ListItem from '@/Material/Components/M3ListItem.vue'
 import M3TextField from '@/Material/Components/M3TextField.vue'
@@ -105,6 +106,7 @@ const confirmDeleteBotAvatar = () => {
     <M3Layout :title="t('settings.ai.bot.title')">
         <Head :title="t('settings.ai.bot.title')" />
 
+    <M3SettingsShell width="list">
         <div class="m3-bot mx-auto w-full max-w-4xl">
             <M3PageTitle
                 :title="t('settings.ai.bot.title')"
@@ -115,10 +117,9 @@ const confirmDeleteBotAvatar = () => {
                 </template>
             </M3PageTitle>
 
-            <!-- Bar kembali untuk desktop (judul in-content disembunyikan) -->
-            <M3SettingsBack />
 
             <form class="m3-bot__form" @submit.prevent="saveBotSettings">
+                <div class="m3-bot__avatar-side">
                 <div class="m3-bot__avatar-block">
                     <button
                         type="button"
@@ -144,7 +145,9 @@ const confirmDeleteBotAvatar = () => {
                         {{ form.errors.bot_avatar }}
                     </p>
                 </div>
+                </div>
 
+                <div class="m3-bot__fields-side">
                 <M3Card variant="outlined" padding="md">
                     <div class="m3-bot__name-fields">
                         <M3TextField
@@ -174,11 +177,14 @@ const confirmDeleteBotAvatar = () => {
                     </div>
                 </M3Card>
 
-                <M3Button type="submit" variant="filled" :disabled="form.processing" full-width>
+                </div>
+
+                <M3Button type="submit" variant="filled" :disabled="form.processing">
                     {{ form.processing ? t('common.saving') : t('common.save') }}
                 </M3Button>
             </form>
         </div>
+    </M3SettingsShell>
 
         <!-- Aksi foto: dialog di desktop, bottom sheet di mobile -->
         <M3Modal
@@ -255,6 +261,28 @@ const confirmDeleteBotAvatar = () => {
     display: flex;
     flex-direction: column;
     gap: var(--m3-space-4);
+}
+
+/* Desktop: avatar di kolom kiri, form di kanan — bukan kolom terpusat */
+@media (min-width: 1024px) {
+    .m3-bot__form {
+        display: grid;
+        grid-template-columns: 15rem minmax(0, 1fr);
+        gap: var(--m3-space-8);
+        align-items: start;
+    }
+
+    .m3-bot__fields-side {
+        display: flex;
+        flex-direction: column;
+        gap: var(--m3-space-4);
+        grid-column: 2;
+    }
+
+    .m3-bot__avatar-side {
+        grid-column: 1;
+        grid-row: 1 / span 2;
+    }
 }
 
 .m3-bot__avatar-block {
