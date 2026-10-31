@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services\AI\Adapters;
 
+use App\DTO\AgentRequest;
+use App\DTO\AgentTurn;
+
 class OpenAIAdapter extends BaseAdapter
 {
     protected function getProviderName(): string
@@ -23,6 +26,16 @@ class OpenAIAdapter extends BaseAdapter
             'messages' => [['role' => 'user', 'content' => $prompt]],
             'response_format' => ['type' => 'json_object'],
         ];
+    }
+
+    protected function buildAgentRequestBody(AgentRequest $request): array
+    {
+        return $this->buildOpenAiAgentRequestBody($request);
+    }
+
+    protected function extractAgentTurn(array $responseData): AgentTurn
+    {
+        return $this->extractOpenAiAgentTurn($responseData);
     }
 
     protected function extractResponseContent(array $responseData): ?string

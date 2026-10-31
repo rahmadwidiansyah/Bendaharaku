@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\AI\Adapters;
 
+use App\DTO\AgentRequest;
+use App\DTO\AgentTurn;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
@@ -27,6 +29,16 @@ class GeminiAdapter extends BaseAdapter
         return [
             'contents' => [['parts' => [['text' => $prompt]]]],
         ];
+    }
+
+    protected function buildAgentRequestBody(AgentRequest $request): array
+    {
+        return $this->buildGeminiAgentRequestBody($request);
+    }
+
+    protected function extractAgentTurn(array $responseData): AgentTurn
+    {
+        return $this->extractGeminiAgentTurn($responseData);
     }
 
     protected function sendRequest(string $url, string $apiKey, array $body, int $timeout): Response

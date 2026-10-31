@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\AI\Adapters;
 
+use App\DTO\AgentRequest;
+use App\DTO\AgentTurn;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 
@@ -27,6 +29,16 @@ class OpenAiCompatibleAdapter extends BaseAdapter
             'response_format' => ['type' => 'json_object'],
             'stream' => false,
         ];
+    }
+
+    protected function buildAgentRequestBody(AgentRequest $request): array
+    {
+        return $this->buildOpenAiAgentRequestBody($request, stream: true);
+    }
+
+    protected function extractAgentTurn(array $responseData): AgentTurn
+    {
+        return $this->extractOpenAiAgentTurn($responseData);
     }
 
     protected function extractResponseContent(array $responseData): ?string

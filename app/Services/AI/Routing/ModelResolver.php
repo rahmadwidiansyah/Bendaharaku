@@ -25,7 +25,7 @@ class ModelResolver
     /**
      * @return array{candidates:list<array{account:AiProviderAccount,model:AiModelCatalog|string,provider:AiProvider,model_id:string,source:string,score:float}>,skipped:list<array{provider:string,model:string,reason:string}>,method:string,primary_count:int,total_eligible:int}
      */
-    public function resolve(User $user, ?AiRoutingPreference $routing = null): array
+    public function resolve(User $user, ?AiRoutingPreference $routing = null, bool $requireTools = false): array
     {
         $routing ??= AiRoutingPreference::where('user_id', $user->id)->first();
         $mode = $routing?->mode ?? 'automatic';
@@ -48,6 +48,21 @@ class ModelResolver
         }
 
         $usable = $accounts->filter(fn ($a) => $this->health->isUsable($a))->values();
+        $toolSkipped = [];
+
+        if ($requireTools) {
+            $toolSkipped = $usable
+                ->filter(fn ($a) => ! $this->accountSupportsTools($a))
+                ->map(fn ($a) => [
+                    'provider' => (string) ($a->provider->value ?? $a->provider),
+                    'model' => '*',
+                    'reason' => 'akun/provider tidak mendukung tool calling',
+                ])
+                ->values()
+                ->all();
+            $usable = $usable->filter(fn ($a) => $this->accountSupportsTools($a))->values();
+        }
+
         if ($usable->isEmpty()) {
             // Semua cooldown/invalid: kembalikan alasan agar caller fallback lokal/legacy.
             $skipped = $accounts->map(fn ($a) => [
@@ -56,14 +71,76 @@ class ModelResolver
                 'reason' => $a->isInCooldown() ? 'cooldown ('.($a->health_status ?? 'unknown').')' : 'akun nonaktif/tidak valid ('.($a->health_status ?? 'unknown').')',
             ])->all();
 
-            return ['candidates' => [], 'skipped' => $skipped, 'method' => 'none_no_usable_account', 'primary_count' => 0, 'total_eligible' => 0];
+            return [
+                'candidates' => [],
+                'skipped' => array_merge($skipped, $toolSkipped),
+                'method' => 'none_no_usable_account',
+                'primary_count' => 0,
+                'total_eligible' => 0,
+            ];
         }
 
-        if ($mode === 'manual' && ($routing?->primary_model || $routing?->fallbackList() !== [])) {
-            return $this->resolveManual($usable, $routing, $providerPriority, $freePolicy, $allowPaid, $maxCandidates);
+        $result = $mode === 'manual' && ($routing?->primary_model || $routing?->fallbackList() !== [])
+            ? $this->resolveManual($usable, $routing, $providerPriority, $freePolicy, $allowPaid, $maxCandidates)
+            : $this->resolveAutomatic($usable, $providerPriority, $freePolicy, $allowPaid, $maxCandidates);
+
+        if ($requireTools) {
+            $before = count($result['candidates']);
+            $result['candidates'] = array_values(array_filter(
+                $result['candidates'],
+                fn ($candidate) => $this->modelSupportsTools((string) $candidate['model_id'])
+            ));
+
+            if (count($result['candidates']) < $before) {
+                $result['skipped'][] = [
+                    'provider' => '*',
+                    'model' => '*',
+                    'reason' => 'model tanpa dukungan tool calling dilewati',
+                ];
+            }
+
+            if ($result['candidates'] === []) {
+                $result['method'] = 'none_no_tool_capable_model';
+            }
+
+            $result['primary_count'] = min(count($result['candidates']), $maxCandidates);
+            $result['total_eligible'] = count($result['candidates']);
         }
 
-        return $this->resolveAutomatic($usable, $providerPriority, $freePolicy, $allowPaid, $maxCandidates);
+        $result['skipped'] = array_values(array_merge($result['skipped'], $toolSkipped));
+
+        return $result;
+    }
+
+    private function accountSupportsTools(AiProviderAccount $account): bool
+    {
+        $provider = $account->provider instanceof AiProvider
+            ? $account->provider
+            : AiProvider::tryFrom((string) $account->provider);
+
+        if (! $provider || ! $provider->supportsTools()) {
+            return false;
+        }
+
+        return ! (bool) data_get($account->metadata, 'disable_tools', false);
+    }
+
+    /**
+     * Heuristik model non-chat / varian lama yang tidak aman diasumsikan
+     * mendukung function calling. Dokumentasi terbuka: daftar ini bisa
+     * diperluas saat discovery menyediakan capability flag eksplisit.
+     */
+    private function modelSupportsTools(string $modelId): bool
+    {
+        $lower = strtolower($modelId);
+
+        foreach (['embedding', 'whisper', 'tts', 'dall-e', 'moderation', 'image'] as $needle) {
+            if (str_contains($lower, $needle)) {
+                return false;
+            }
+        }
+
+        return ! (bool) preg_match('/flash-lite|flash-8b|gemini-1\.0/', $lower);
     }
 
     private function resolveManual($usableAccounts, AiRoutingPreference $routing, array $providerPriority, string $freePolicy, bool $allowPaid, int $maxCandidates): array

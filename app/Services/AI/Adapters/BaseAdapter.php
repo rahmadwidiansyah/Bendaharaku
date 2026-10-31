@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\AI\Adapters;
 
+use App\DTO\AgentRequest;
+use App\DTO\AgentTurn;
 use App\DTO\AIParseResult;
 use App\DTO\AIParseResultMulti;
 use App\DTO\MemoryCandidate;
@@ -32,9 +34,22 @@ abstract class BaseAdapter implements LLMAdapterInterface
 
     abstract protected function extractUsage(array $responseData): array;
 
+    /** Bangun body request untuk satu turn agent (provider-specific). */
+    abstract protected function buildAgentRequestBody(AgentRequest $request): array;
+
+    /** Ekstrak content + tool calls dari response provider (provider-specific). */
+    abstract protected function extractAgentTurn(array $responseData): AgentTurn;
+
     protected function getSingleTimeout(): int
     {
         return 15;
+    }
+
+    protected function getAgentTimeout(): int
+    {
+        // Loop agent sendiri dibatasi 45 dtk oleh AgentLoop; satu HTTP call
+        // harus lebih pendek agar masih ada ruang untuk iterasi berikutnya.
+        return 30;
     }
 
     protected function getMultiTimeout(): int
@@ -206,7 +221,278 @@ abstract class BaseAdapter implements LLMAdapterInterface
         }
     }
 
+    public function chatWithTools(AgentRequest $request): AgentTurn
+    {
+        $responseData = [];
+
+        try {
+            $url = $this->getBaseUrl($request->model);
+            $body = $this->buildAgentRequestBody($request);
+
+            $response = $this->sendRequest($url, $request->apiKey, $body, $this->getAgentTimeout());
+
+            $this->assertSuccessful($response);
+
+            $responseData = $response->json() ?? [];
+            $turn = $this->extractAgentTurn($responseData);
+
+            if ($turn->content === null && ! $turn->hasToolCalls()) {
+                throw new AiProviderException($this->getProviderName(), 'Response agent kosong.');
+            }
+
+            return $turn;
+        } catch (AiRateLimitException|AiTimeoutException|AiProviderException $e) {
+            throw $e;
+        } catch (ConnectionException $e) {
+            Log::warning($this->getProviderName().' Agent Connection Timeout', ['message' => $e->getMessage()]);
+            throw new AiTimeoutException($this->getProviderName());
+        } catch (Throwable $e) {
+            $this->logProviderCrash($e, $request->model, $responseData);
+            throw new AiProviderException($this->getProviderName(), $e->getMessage());
+        }
+    }
+
     // ── Shared Helpers ────────────────────────────────────────────────
+
+    /**
+     * Body request keluarga OpenAI (OpenAI, DeepSeek, OpenAI-compatible).
+     * response_format sengaja TIDAK dipasang saat tools aktif karena beberapa
+     * server menolak kombinasi tersebut.
+     */
+    protected function buildOpenAiAgentRequestBody(AgentRequest $request, bool $stream = false): array
+    {
+        $messages = [];
+
+        foreach ($request->messages as $message) {
+            $role = (string) ($message['role'] ?? 'user');
+
+            if ($role === 'assistant') {
+                $mapped = ['role' => 'assistant', 'content' => $message['content'] ?? null];
+                $toolCalls = $message['tool_calls'] ?? [];
+
+                if (is_array($toolCalls) && $toolCalls !== []) {
+                    $mapped['tool_calls'] = array_map(function (array $call): array {
+                        return [
+                            'id' => (string) ($call['id'] ?? ''),
+                            'type' => 'function',
+                            'function' => [
+                                'name' => (string) ($call['name'] ?? ''),
+                                'arguments' => json_encode($call['arguments'] ?? new \stdClass, JSON_UNESCAPED_UNICODE),
+                            ],
+                        ];
+                    }, $toolCalls);
+                }
+
+                $messages[] = $mapped;
+
+                continue;
+            }
+
+            if ($role === 'tool') {
+                $messages[] = [
+                    'role' => 'tool',
+                    'tool_call_id' => (string) ($message['tool_call_id'] ?? ''),
+                    'content' => (string) ($message['content'] ?? ''),
+                ];
+
+                continue;
+            }
+
+            $messages[] = [
+                'role' => $role,
+                'content' => (string) ($message['content'] ?? ''),
+            ];
+        }
+
+        $body = [
+            'model' => $request->model,
+            'messages' => $messages,
+        ];
+
+        if ($stream) {
+            $body['stream'] = false;
+        }
+
+        if ($request->tools !== []) {
+            $body['tools'] = array_map(function (array $tool): array {
+                return [
+                    'type' => 'function',
+                    'function' => [
+                        'name' => (string) ($tool['name'] ?? ''),
+                        'description' => (string) ($tool['description'] ?? ''),
+                        'parameters' => $tool['parameters'] ?? [
+                            'type' => 'object',
+                            'properties' => new \stdClass,
+                            'required' => [],
+                        ],
+                    ],
+                ];
+            }, $request->tools);
+        }
+
+        return $body;
+    }
+
+    protected function extractOpenAiAgentTurn(array $responseData): AgentTurn
+    {
+        $message = $responseData['choices'][0]['message'] ?? [];
+        $toolCalls = [];
+
+        foreach (($message['tool_calls'] ?? []) as $index => $call) {
+            $arguments = $call['function']['arguments'] ?? [];
+            if (is_string($arguments)) {
+                $decoded = json_decode($arguments, true);
+                $arguments = is_array($decoded) ? $decoded : [];
+            }
+
+            $name = (string) ($call['function']['name'] ?? '');
+            $toolCalls[] = [
+                'id' => (string) ($call['id'] ?? $this->agentToolCallId($index, $name, is_array($arguments) ? $arguments : [])),
+                'name' => $name,
+                'arguments' => is_array($arguments) ? $arguments : [],
+            ];
+        }
+
+        $content = $message['content'] ?? null;
+
+        return new AgentTurn(
+            content: is_string($content) && trim($content) !== '' ? $content : null,
+            toolCalls: $toolCalls,
+            usage: $this->normalizeUsage($this->extractUsage($responseData)),
+            finishReason: $responseData['choices'][0]['finish_reason'] ?? null,
+            raw: $responseData,
+        );
+    }
+
+    /**
+     * Body request Gemini: systemInstruction terpisah, contents berisi turn
+     * user/model/functionResponse, dan functionDeclarations untuk tools.
+     */
+    protected function buildGeminiAgentRequestBody(AgentRequest $request): array
+    {
+        $systemParts = [];
+        $contents = [];
+
+        foreach ($request->messages as $message) {
+            $role = (string) ($message['role'] ?? 'user');
+
+            if ($role === 'system') {
+                $systemParts[] = ['text' => (string) ($message['content'] ?? '')];
+
+                continue;
+            }
+
+            if ($role === 'assistant') {
+                $parts = [];
+                if (! empty($message['content'])) {
+                    $parts[] = ['text' => (string) $message['content']];
+                }
+                foreach (($message['tool_calls'] ?? []) as $call) {
+                    $parts[] = [
+                        'functionCall' => [
+                            'name' => (string) ($call['name'] ?? ''),
+                            'args' => (object) ($call['arguments'] ?? []),
+                        ],
+                    ];
+                }
+                if ($parts !== []) {
+                    $contents[] = ['role' => 'model', 'parts' => $parts];
+                }
+
+                continue;
+            }
+
+            if ($role === 'tool') {
+                $content = $message['content'] ?? '';
+                $decoded = is_string($content) ? json_decode($content, true) : $content;
+                $response = is_array($decoded) ? $decoded : ['result' => (string) $content];
+
+                $contents[] = [
+                    'role' => 'user',
+                    'parts' => [[
+                        'functionResponse' => [
+                            'name' => (string) ($message['name'] ?? 'tool'),
+                            'response' => $response,
+                        ],
+                    ]],
+                ];
+
+                continue;
+            }
+
+            $contents[] = [
+                'role' => 'user',
+                'parts' => [['text' => (string) ($message['content'] ?? '')]],
+            ];
+        }
+
+        $body = ['contents' => $contents];
+
+        if ($systemParts !== []) {
+            $body['systemInstruction'] = ['parts' => $systemParts];
+        }
+
+        if ($request->tools !== []) {
+            $body['tools'] = [[
+                'functionDeclarations' => array_map(function (array $tool): array {
+                    return [
+                        'name' => (string) ($tool['name'] ?? ''),
+                        'description' => (string) ($tool['description'] ?? ''),
+                        'parameters' => $tool['parameters'] ?? [
+                            'type' => 'object',
+                            'properties' => new \stdClass,
+                            'required' => [],
+                        ],
+                    ];
+                }, $request->tools),
+            ]];
+        }
+
+        return $body;
+    }
+
+    protected function extractGeminiAgentTurn(array $responseData): AgentTurn
+    {
+        $parts = $responseData['candidates'][0]['content']['parts'] ?? [];
+        $text = '';
+        $toolCalls = [];
+
+        foreach ($parts as $index => $part) {
+            if (isset($part['text']) && is_string($part['text'])) {
+                $text .= $part['text'];
+            }
+
+            if (! isset($part['functionCall'])) {
+                continue;
+            }
+
+            $name = (string) ($part['functionCall']['name'] ?? '');
+            $arguments = $part['functionCall']['args'] ?? [];
+            if (is_string($arguments)) {
+                $decoded = json_decode($arguments, true);
+                $arguments = is_array($decoded) ? $decoded : [];
+            }
+
+            $toolCalls[] = [
+                'id' => $this->agentToolCallId($index, $name, is_array($arguments) ? $arguments : []),
+                'name' => $name,
+                'arguments' => is_array($arguments) ? $arguments : [],
+            ];
+        }
+
+        return new AgentTurn(
+            content: trim($text) !== '' ? $text : null,
+            toolCalls: $toolCalls,
+            usage: $this->normalizeUsage($this->extractUsage($responseData)),
+            finishReason: $responseData['candidates'][0]['finishReason'] ?? null,
+            raw: $responseData,
+        );
+    }
+
+    protected function agentToolCallId(int $index, string $name, array $arguments): string
+    {
+        return 'call_'.$index.'_'.substr(hash('sha256', $name.json_encode($arguments)), 0, 12);
+    }
 
     protected function assertSuccessful(Response $response): void
     {

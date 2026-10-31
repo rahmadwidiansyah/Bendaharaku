@@ -20,4 +20,18 @@ enum AiProvider: string
             self::OpenAiCompatible => (string) config('bendaharaku.ai.openai_compatible.model'),
         };
     }
+
+    /**
+     * Dukungan tool-calling tingkat provider.
+     *
+     * Semua provider yang didukung saat ini bisa mengirim tools. Khusus
+     * openai-compatible, akun dapat menonaktifkannya via metadata.disable_tools
+     * (lihat ModelResolver::resolve(..., requireTools: true)).
+     */
+    public function supportsTools(): bool
+    {
+        return match ($this) {
+            self::Gemini, self::OpenAI, self::DeepSeek, self::OpenAiCompatible => true,
+        };
+    }
 }
