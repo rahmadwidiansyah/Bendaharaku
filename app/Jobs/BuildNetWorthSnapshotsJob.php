@@ -2,6 +2,8 @@
 
 namespace App\Jobs;
 
+use App\Support\TransactionTypeIds;
+
 use App\Models\NetWorthSnapshot;
 use App\Models\User;
 use Carbon\Carbon;
@@ -17,13 +19,8 @@ class BuildNetWorthSnapshotsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    private const TYPE_INCOME = 1;
-
-    private const TYPE_EXPENSE = 2;
-
-    private const TYPE_DEBT = 4;
-
-    private const TYPE_RECEIVABLE = 5;
+    // Id tipe transaksi di-resolve dari DB by name (jangan hardcode —
+    // id tabel transaction_types di-generate seeder dan bisa bergeser).
 
     public int $tries = 3;
 
@@ -96,7 +93,7 @@ class BuildNetWorthSnapshotsJob implements ShouldQueue
             ->where('user_id', $this->userId)
             ->where('is_cleared', true)
             ->whereNull('deleted_at')
-            ->whereIn('type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE, self::TYPE_DEBT, self::TYPE_RECEIVABLE])
+            ->whereIn('type_id', [TransactionTypeIds::income(), TransactionTypeIds::expense(), TransactionTypeIds::debt(), TransactionTypeIds::receivable()])
             ->min('date');
 
         if (! $firstTxDate) {
@@ -121,7 +118,7 @@ class BuildNetWorthSnapshotsJob implements ShouldQueue
             ->where('transaction_logs.is_cleared', true)
             ->whereNull('transaction_logs.deleted_at')
             ->where('transaction_logs.date', '<=', $this->endDate)
-            ->whereIn('transaction_logs.type_id', [self::TYPE_INCOME, self::TYPE_EXPENSE, self::TYPE_DEBT, self::TYPE_RECEIVABLE])
+            ->whereIn('transaction_logs.type_id', [TransactionTypeIds::income(), TransactionTypeIds::expense(), TransactionTypeIds::debt(), TransactionTypeIds::receivable()])
             ->groupBy('transaction_logs.date')
             ->get()
             ->keyBy('tx_date');

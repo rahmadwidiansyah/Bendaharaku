@@ -54,6 +54,7 @@ class ChatTransactionOrchestrator
         private readonly AiParseLogService $parseLogService,
         private readonly MultiTransactionRouter $multiRouter,
         private readonly MultiTransactionProcessor $multiProcessor,
+        private readonly CommaMultiParser $commaMultiParser,
         private readonly WalletResolutionService $walletResolution,
         private readonly DraftPayloadBuilder $draftBuilder,
     ) {}
@@ -94,6 +95,16 @@ class ChatTransactionOrchestrator
 
             // ── ROUTING: single vs multi ──────────────────────────────
             if ($this->multiRouter->isMultiTransaction($text)) {
+                // Jalur lokal dulu: multi yang dipisah koma diparse per segmen
+                // dengan parser lokal (Python NLP, gratis). Hanya jika ada
+                // segmen yang gagal / skornya di bawah ambang → LLM multi.
+                $localMulti = $this->commaMultiParser->tryProcess(
+                    $user, $text, $wallets->toArray(), $categories->toArray(), $activeMemories, $source, $options,
+                );
+                if ($localMulti !== null) {
+                    return $localMulti;
+                }
+
                 return $this->processMulti($user, $text, $wallets, $categories, $activeMemories, $source, $prompt, $options);
             }
 

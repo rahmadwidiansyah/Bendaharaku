@@ -243,13 +243,14 @@ class AIManager
 
     /**
      * Suntik keyword memory dari LLM ke payload Python (kategori + wallet).
+     * Public: dipakai ulang CommaMultiParser untuk parse per segmen koma.
      *
      * @param  list<array>  $wallets
      * @param  list<array>  $categories
      * @param  list<array>  $activeMemories
      * @return array{wallets: list<array>, categories: list<array>}
      */
-    private function injectMemories(array $wallets, array $categories, array $activeMemories): array
+    public function injectMemories(array $wallets, array $categories, array $activeMemories): array
     {
         $outWallets = $wallets;
         $outCategories = $categories;

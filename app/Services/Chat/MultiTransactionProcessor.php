@@ -200,6 +200,97 @@ class MultiTransactionProcessor
         ];
     }
 
+    /**
+     * Proses hasil parser lokal (CommaMultiParser) memakai pipeline per-item
+     * yang sama dengan jalur LLM: guard → resolve → auto-clear by threshold →
+     * transaction/draft. Bentuk return identik dengan process() agar caller
+     * (formatter chat) tidak perlu tahu asal jalurnya.
+     *
+     * @param  AIParseResult[]  $parsedResults  Satu hasil per segmen koma, terurut
+     * @return array{success: bool, is_multi: true, multi_result: MultiTransactionResult}
+     */
+    public function processLocalSegments(
+        User $user,
+        array $parsedResults,
+        string $text,
+        string $source,
+        ?ChatProcessOptions $options = null,
+    ): array {
+        $options ??= new ChatProcessOptions;
+
+        $provider = $parsedResults[0]->provider ?? 'python-nlp';
+        $model = $parsedResults[0]->model ?? 'local';
+        // Konservatif: ambil skor TERENDAH antar segmen sebagai confidence gabungan.
+        // Semua segmen sudah tergaror ≥ ambang oleh CommaMultiParser.
+        $confidence = min(array_map(fn ($r) => $r->confidence, $parsedResults));
+        $usage = ['prompt' => 0, 'completion' => 0, 'total' => 0]; // parser lokal: tanpa token LLM
+
+        $syntheticMulti = new AIParseResultMulti(
+            success: true,
+            transactions: array_map(fn ($r) => $r->transaction, $parsedResults),
+            confidence: $confidence,
+            error: null,
+            usage: $usage,
+            provider: $provider,
+            model: $model,
+        );
+
+        $autoClear = strtoupper($source) !== 'WEB';
+        $results = [];
+        foreach ($syntheticMulti->transactions as $idx => $parsed) {
+            $results[] = $this->processItem($user, $parsed, $idx, $autoClear, $syntheticMulti, $source);
+        }
+
+        $routing = [
+            'selected_provider' => $provider,
+            'selected_model' => $model,
+            'selection_method' => 'local_comma_split',
+            'attempt_count' => 1,
+            'final_status' => 'local_success',
+            'segment_count' => count($parsedResults),
+        ];
+
+        $multiTxResult = new MultiTransactionResult(
+            results: $results,
+            provider: $provider,
+            model: $model,
+            confidence: $confidence,
+            routing: $routing,
+        );
+
+        Log::info('MultiTx lokal (comma-split) selesai.', [
+            'user_id' => $user->id,
+            'summary' => $multiTxResult->summary(),
+            'failed' => array_map(
+                fn (MultiTransactionItem $i) => [
+                    'index' => $i->index,
+                    'raw' => $i->raw,
+                    'error_code' => $i->errorCode?->value,
+                    'reason' => $i->reason,
+                ],
+                $multiTxResult->failedItems()
+            ),
+        ]);
+
+        $this->parseLogService->createMultiLog(
+            user: $user,
+            inputText: $text,
+            provider: $provider,
+            model: $model,
+            confidence: $confidence,
+            successCount: $multiTxResult->successCount(),
+            totalCount: $multiTxResult->totalCount(),
+            usage: $usage,
+            routing: $routing,
+        );
+
+        return [
+            'success' => $multiTxResult->hasAnySuccess(),
+            'is_multi' => true,
+            'multi_result' => $multiTxResult,
+        ];
+    }
+
     /** @return array{success:false,error_code:string,retryable:bool,message:string} */
     private function poolExhaustedResult(): array
     {
