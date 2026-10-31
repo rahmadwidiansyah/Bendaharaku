@@ -27,15 +27,26 @@ class ChatResponseConverter
         ChatContext $context,
         array $metadata,
         string $originalText,
+        ?string $assistantMessage = null,
     ): ChatResponse {
         if (! empty($result['is_web_draft'])) {
-            return $this->convertWebDraftSuccess($result, $context, $metadata);
+            return $this->convertWebDraftSuccess($result, $context, $metadata, $assistantMessage);
         }
 
         $trx = $result['transaction'];
         $isCleared = $trx->is_cleared;
 
         $components = [];
+
+        // Pesan natural hasil AI (lapis D) menjadi teks percakapan pembuka;
+        // kartu transaksi tetap sumber detail. Tanpa pesan → perilaku lama.
+        if ($assistantMessage !== null && $assistantMessage !== '') {
+            $components[] = new TextComponent(
+                translationKey: $assistantMessage,
+                literal: true,
+                bold: true,
+            );
+        }
 
         $components[] = new TransactionCardComponent(
             transaction: $trx,
@@ -73,6 +84,7 @@ class ChatResponseConverter
         array $result,
         ChatContext $context,
         array $metadata,
+        ?string $assistantMessage = null,
     ): ChatResponse {
         $draft = $result['draft'];
         $payload = $draft->payload ?? [];
@@ -82,6 +94,14 @@ class ChatResponseConverter
         $needsWallet = (bool) ($payload['needs_wallet'] ?? false);
 
         $components = [];
+
+        if ($assistantMessage !== null && $assistantMessage !== '') {
+            $components[] = new TextComponent(
+                translationKey: $assistantMessage,
+                literal: true,
+                bold: true,
+            );
+        }
 
         $components[] = new TransactionCardComponent(
             transaction: $fakeTrx,
@@ -143,8 +163,17 @@ class ChatResponseConverter
         MultiTransactionResult $multiResult,
         ChatContext $context,
         array $metadata,
+        ?string $assistantMessage = null,
     ): ChatResponse {
         $components = [];
+
+        if ($assistantMessage !== null && $assistantMessage !== '') {
+            $components[] = new TextComponent(
+                translationKey: $assistantMessage,
+                literal: true,
+                bold: true,
+            );
+        }
 
         $components[] = new SummaryCardComponent(
             total: $multiResult->totalCount(),

@@ -116,7 +116,9 @@ class WebFormatter implements ChatFormatterInterface
     {
         return [
             'type' => 'text',
-            'text' => trans($c->translationKey, $c->params, $locale),
+            'text' => $c->literal
+                ? $c->translationKey
+                : trans($c->translationKey, $c->params, $locale),
             'bold' => $c->bold,
         ];
     }
