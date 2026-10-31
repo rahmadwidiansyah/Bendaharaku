@@ -19,6 +19,7 @@ import M3UpcomingDebts from '@/Material/Pages/Dashboard/M3UpcomingDebts.vue'
 import M3MiniCashflowChart from '@/Material/Pages/Dashboard/M3MiniCashflowChart.vue'
 import M3BudgetCard from '@/Material/Pages/Dashboard/M3BudgetCard.vue'
 import M3AiUsageCard from '@/Material/Pages/Dashboard/M3AiUsageCard.vue'
+import M3MobileWidgetSkeleton from '@/Material/Components/Skeleton/M3MobileWidgetSkeleton.vue'
 import M3TransactionList from '@/Material/Pages/Dashboard/M3TransactionList.vue'
 import M3Calendar from '@/Material/Pages/Dashboard/M3Calendar.vue'
 import M3Modal from '@/Material/Components/M3Modal.vue'
@@ -338,10 +339,13 @@ const showSelectedDateLabel = computed(() => activeHistoryTab.value === 'calenda
                     :expense="thisMonthExpense"
                     :is-visible="isBalanceVisible"
                 />
-                <M3MiniCashflowChart :daily-totals="dailyTotals" :is-visible="isBalanceVisible" />
+                <M3MiniCashflowChart v-if="isDesktopLayout" :daily-totals="dailyTotals" :is-visible="isBalanceVisible" />
+                <M3MobileWidgetSkeleton v-else variant="cashflow" />
                 <M3UpcomingDebts :upcoming-debts="upcomingDebts" :is-visible="isBalanceVisible" />
-                <M3BudgetCard :budget="budget" />
-                <M3AiUsageCard :ai-usage="aiUsage" />
+                <M3BudgetCard v-if="isDesktopLayout" :budget="budget" />
+                <M3MobileWidgetSkeleton v-else variant="budget" />
+                <M3AiUsageCard v-if="isDesktopLayout" :ai-usage="aiUsage" />
+                <M3MobileWidgetSkeleton v-else variant="ai" />
             </div>
 
             <!-- Kolom kanan: histori -->
