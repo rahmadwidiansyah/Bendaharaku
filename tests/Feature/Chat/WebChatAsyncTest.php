@@ -3,7 +3,10 @@
 namespace Tests\Feature\Chat;
 
 use App\Chat\ChatApplicationService;
+use App\Chat\Components\TextComponent;
+use App\Chat\DTOs\ChatResponse;
 use App\Chat\Formatters\WebFormatter;
+use App\Enums\ChatIntent;
 use App\Jobs\ProcessChatMessageJob;
 use App\Models\ChatMessage;
 use App\Models\Conversation;
@@ -150,5 +153,50 @@ class WebChatAsyncTest extends TestCase
         $this->assertSame('failed', $botMessage->status);
         $this->assertSame('LLM down', $botMessage->error_message);
         $this->assertNotEmpty($botMessage->content);
+    }
+
+    public function test_process_chat_message_job_persists_natural_message_without_raw_json(): void
+    {
+        $conversation = Conversation::create(['user_id' => $this->user->id, 'is_active' => true]);
+        $userMessage = ChatMessage::create([
+            'conversation_id' => $conversation->id,
+            'role' => 'user',
+            'content' => [['type' => 'text', 'text' => 'halo']],
+            'raw_text' => 'halo',
+            'status' => 'completed',
+        ]);
+        $botMessage = ChatMessage::create([
+            'conversation_id' => $conversation->id,
+            'role' => 'assistant',
+            'content' => [],
+            'status' => 'pending',
+        ]);
+
+        $this->mock(ChatApplicationService::class, function ($mock) {
+            // Fase 6 pipeline (AssistantConversationPipeline) sudah melepas
+            // JSON kontrak Lapis D; job baru menerima teks natural jadi.
+            $mock->shouldReceive('handleMessage')->once()->andReturn(
+                ChatResponse::assistant(
+                    intent: ChatIntent::Conversation,
+                    components: [
+                        new TextComponent(
+                            translationKey: 'halo, aku Ken-Chan',
+                            literal: true,
+                        ),
+                    ],
+                )
+            );
+        });
+
+        $job = new ProcessChatMessageJob($this->user->id, $conversation->id, $userMessage->id, $botMessage->id);
+        $job->handle(app(ChatApplicationService::class), app(WebFormatter::class));
+
+        $botMessage->refresh();
+        $this->assertSame('completed', $botMessage->status);
+        // Fase 7: pesan natural muncul sebagai text pertama, tanpa raw JSON.
+        $this->assertSame('text', $botMessage->content[0]['type']);
+        $this->assertSame('halo, aku Ken-Chan', $botMessage->content[0]['text']);
+        $this->assertStringNotContainsString('assistant_response', (string) $botMessage->raw_text);
+        $this->assertStringNotContainsString('"type"', (string) $botMessage->raw_text);
     }
 }

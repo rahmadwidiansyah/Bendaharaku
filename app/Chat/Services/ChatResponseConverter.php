@@ -63,15 +63,19 @@ class ChatResponseConverter
         $components[] = new TextComponent(
             translationKey: 'chat.transaction.label_original_msg',
         );
-        $components[] = new TextComponent(
-            translationKey: 'chat.transaction.label_ai_provider',
-            params: [
-                'provider' => $metadata['provider'] ?? '',
-                'confidence' => isset($metadata['confidence'])
-                    ? round($metadata['confidence'] * 100).'%'
-                    : '-',
-            ],
-        );
+        // Fase 7: label "Diproses oleh" hanya meta ketika TIDAK ada pesan AI;
+        // pesan natural sudah menjadi teks pembuka di bubble.
+        if ($assistantMessage === null || $assistantMessage === '') {
+            $components[] = new TextComponent(
+                translationKey: 'chat.transaction.label_ai_provider',
+                params: [
+                    'provider' => $metadata['provider'] ?? '',
+                    'confidence' => isset($metadata['confidence'])
+                        ? round($metadata['confidence'] * 100).'%'
+                        : '-',
+                ],
+            );
+        }
 
         if ($isCleared) {
             return ChatResponse::singleSuccess($components, $metadata);
@@ -122,15 +126,18 @@ class ChatResponseConverter
         $components[] = new TextComponent(
             translationKey: 'chat.transaction.label_original_msg',
         );
-        $components[] = new TextComponent(
-            translationKey: 'chat.transaction.label_ai_provider',
-            params: [
-                'provider' => $metadata['provider'] ?? '',
-                'confidence' => isset($metadata['confidence'])
-                    ? round($metadata['confidence'] * 100).'%'
-                    : '-',
-            ],
-        );
+        // Fase 7: label "Diproses oleh" hanya meta ketika TIDAK ada pesan AI.
+        if ($assistantMessage === null || $assistantMessage === '') {
+            $components[] = new TextComponent(
+                translationKey: 'chat.transaction.label_ai_provider',
+                params: [
+                    'provider' => $metadata['provider'] ?? '',
+                    'confidence' => isset($metadata['confidence'])
+                        ? round($metadata['confidence'] * 100).'%'
+                        : '-',
+                ],
+            );
+        }
 
         return ChatResponse::draft($components, $metadata);
     }
@@ -217,15 +224,18 @@ class ChatResponseConverter
         }
 
         $components[] = new DividerComponent;
-        $components[] = new TextComponent(
-            translationKey: 'chat.transaction.label_ai_provider',
-            params: [
-                'provider' => $metadata['provider'] ?? '',
-                'confidence' => isset($metadata['confidence'])
-                    ? round($metadata['confidence'] * 100).'%'
-                    : '-',
-            ],
-        );
+        // Fase 7: label "Diproses oleh" hanya meta ketika TIDAK ada pesan AI.
+        if ($assistantMessage === null || $assistantMessage === '') {
+            $components[] = new TextComponent(
+                translationKey: 'chat.transaction.label_ai_provider',
+                params: [
+                    'provider' => $metadata['provider'] ?? '',
+                    'confidence' => isset($metadata['confidence'])
+                        ? round($metadata['confidence'] * 100).'%'
+                        : '-',
+                ],
+            );
+        }
 
         return ChatResponse::multiResult(
             hasAnySuccess: $multiResult->hasAnySuccess(),

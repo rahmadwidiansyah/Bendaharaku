@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
+use App\Chat\Components\TextComponent;
 use App\Chat\DTOs\ChatContext;
 use App\Chat\Services\ChatResponseConverter;
 use App\Chat\Services\DraftViewModelBuilder;
 use App\DTO\MultiTransactionResult;
 use App\Enums\ChatPlatform;
+use App\Models\TransactionLog;
 use PHPUnit\Framework\TestCase;
 
 class ChatResponseConverterRoutingTest extends TestCase
@@ -130,5 +132,52 @@ class ChatResponseConverterRoutingTest extends TestCase
         ], $this->context, 50);
 
         $this->assertArrayNotHasKey('routing', $metadata);
+    }
+
+    private function providerLabelComponents(array $components): array
+    {
+        return array_values(array_filter(
+            $components,
+            fn ($c) => $c instanceof TextComponent
+                && $c->translationKey === 'chat.transaction.label_ai_provider'
+        ));
+    }
+
+    private function makeTransaction(): TransactionLog
+    {
+        return new TransactionLog([
+            'amount' => 15000,
+            'subject' => 'Nasi goreng',
+            'is_cleared' => true,
+        ]);
+    }
+
+    public function test_label_provider_hidden_when_natural_message_present(): void
+    {
+        $response = $this->converter->convertSingleSuccess(
+            result: ['transaction' => $this->makeTransaction()],
+            context: $this->context,
+            metadata: ['provider' => 'gemini', 'confidence' => 0.95],
+            originalText: 'beli nasi goreng 15 ribu',
+            assistantMessage: 'Siap, sudah kucatat.',
+        );
+
+        $texts = $this->providerLabelComponents($response->components);
+        $this->assertSame([], $texts);
+        $this->assertInstanceOf(TextComponent::class, $response->components[0]);
+        $this->assertSame('Siap, sudah kucatat.', $response->components[0]->translationKey);
+    }
+
+    public function test_label_provider_kept_when_no_natural_message(): void
+    {
+        $response = $this->converter->convertSingleSuccess(
+            result: ['transaction' => $this->makeTransaction()],
+            context: $this->context,
+            metadata: ['provider' => 'gemini', 'confidence' => 0.95],
+            originalText: 'beli nasi goreng 15 ribu',
+        );
+
+        $texts = $this->providerLabelComponents($response->components);
+        $this->assertCount(1, $texts);
     }
 }

@@ -95,6 +95,12 @@ class TelegramFormatter implements ChatFormatterInterface
             return '';
         }
 
+        // Pesan natural hasil AI (lapis D) TIDAK boleh dikenakan trans() —
+        // teks literal bisa mengandung ':' yang salah dianggap placeholder.
+        if ($c->literal) {
+            return $c->translationKey;
+        }
+
         $text = trans($c->translationKey, $c->params, $locale);
 
         return $c->bold ? $text : $text;  // Bold sudah di-embed di translation string
