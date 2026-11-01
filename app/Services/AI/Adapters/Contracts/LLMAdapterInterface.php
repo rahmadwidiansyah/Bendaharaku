@@ -15,6 +15,7 @@ interface LLMAdapterInterface
         string $prompt,
         string $apiKey,
         string $model,
+        ?int $timeoutSeconds = null,
     ): string;
 
     public function parseTransaction(

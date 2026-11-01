@@ -50,7 +50,7 @@ final class PersonaValidator
             'bot_persona.formality' => ['sometimes', 'string', 'max:32'],
             'bot_persona.response_length' => ['sometimes', 'string', 'max:32'],
             'bot_persona.emoji' => ['sometimes', 'string', 'max:32'],
-            'bot_persona.custom_instructions' => ['sometimes', 'nullable', 'string', 'max:' . self::MAX_CUSTOM_LENGTH],
+            'bot_persona.custom_instructions' => ['sometimes', 'nullable', 'string', 'max:'.self::MAX_CUSTOM_LENGTH],
             'reset_persona' => ['sometimes', 'boolean'],
         ];
     }

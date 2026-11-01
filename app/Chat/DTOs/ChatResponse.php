@@ -101,6 +101,22 @@ class ChatResponse
     }
 
     /**
+     * Jawaban percakapan / pertanyaan keuangan (tanpa transaksi).
+     */
+    public static function assistant(
+        ChatIntent $intent,
+        array $components,
+        array $metadata = [],
+    ): self {
+        return new self(
+            success: true,
+            intent: $intent,
+            components: $components,
+            metadata: $metadata,
+        );
+    }
+
+    /**
      * Error — AI gagal, konfigurasi salah, dll.
      *
      * @param  ErrorDetail[]  $errors

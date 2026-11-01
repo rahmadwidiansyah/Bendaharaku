@@ -20,7 +20,7 @@ final class AssistantFallback
     {
         $status = in_array($status, AssistantResponse::STATUSES, true) ? $status : 'conversation';
 
-        return (string) trans('assistant.fallback.' . $status);
+        return (string) trans('assistant.fallback.'.$status);
     }
 
     public static function response(string $status): AssistantResponse

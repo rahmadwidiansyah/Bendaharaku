@@ -30,4 +30,10 @@ enum ChatIntent: string
 
     /** Transaksi disimpan sebagai draft karena confidence rendah */
     case Draft = 'draft';
+
+    /** Percakapan biasa / sapaan / obrolan ringan */
+    case Conversation = 'conversation';
+
+    /** Pertanyaan keuangan yang dijawab dengan tool read-only */
+    case Question = 'question';
 }

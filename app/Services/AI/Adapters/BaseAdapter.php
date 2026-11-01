@@ -68,6 +68,7 @@ abstract class BaseAdapter implements LLMAdapterInterface
         string $prompt,
         string $apiKey,
         string $model,
+        ?int $timeoutSeconds = null,
     ): string {
         $responseData = [];
 
@@ -75,7 +76,7 @@ abstract class BaseAdapter implements LLMAdapterInterface
             $url = $this->getBaseUrl($model);
             $body = $this->buildRequestBody($model, $prompt);
 
-            $response = $this->sendRequest($url, $apiKey, $body, $this->getSingleTimeout());
+            $response = $this->sendRequest($url, $apiKey, $body, $timeoutSeconds ?? $this->getSingleTimeout());
 
             $this->assertSuccessful($response);
 

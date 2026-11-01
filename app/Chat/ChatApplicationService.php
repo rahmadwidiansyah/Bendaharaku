@@ -17,6 +17,9 @@ use App\Exceptions\AiTimeoutException;
 use App\Exceptions\AiTokenLimitException;
 use App\Exceptions\CategoryNotFoundException;
 use App\Exceptions\WalletNotFoundException;
+use App\Services\AI\Assistant\AssistantConversationPipeline;
+use App\Services\AI\Assistant\AssistantReply;
+use App\Services\AI\Assistant\ChatIntentClassifier;
 use App\Services\Chat\ChatTransactionOrchestrator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Log;
@@ -29,6 +32,9 @@ class ChatApplicationService
         private readonly ChatTransactionOrchestrator $orchestrator,
         private readonly CommandRouter $commandRouter,
         private readonly ChatResponseConverter $responseConverter,
+        private readonly ChatIntentClassifier $intentClassifier,
+        private readonly AssistantConversationPipeline $conversationPipeline,
+        private readonly AssistantReply $assistantReply,
     ) {}
 
     public function handleMessage(ChatRequest $request): ChatResponse
@@ -62,6 +68,27 @@ class ChatApplicationService
         }
 
         try {
+            // Lapis C: klasifikasi intent sebelum orchestrator. Pesan percakapan/
+            // pertanyaan tidak boleh masuk jalur parsing transaksi.
+            $classified = $this->intentClassifier->classify($user, $text);
+
+            Log::debug('[PIPELINE:CAS] intent classified', [
+                'trace_id' => $context->traceId,
+                'intent' => $classified['intent'] ?? null,
+                'confidence' => $classified['confidence'] ?? null,
+                'source' => $classified['source'] ?? null,
+            ]);
+
+            if (in_array($classified['intent'] ?? 'transaction', ['conversation', 'question'], true)) {
+                return $this->conversationPipeline->handle(
+                    user: $user,
+                    text: $text,
+                    intent: (string) $classified['intent'],
+                    context: $context,
+                    startTime: $startTime,
+                );
+            }
+
             $result = $this->orchestrator->process($user, $text, $source);
 
             Log::debug('[PIPELINE:CAS] orchestrator->process result', [
@@ -76,8 +103,20 @@ class ChatApplicationService
             $latency = (int) round((microtime(true) - $startTime) * 1000);
             $metadata = $this->responseConverter->buildMetadata($result, $context, $latency);
 
+            // Pesan natural (lapis D) SETELAH transaksi/draft tersimpan.
+            // Gagal di sini tidak pernah membatalkan transaksi; converter
+            // kembali ke perilaku lama bila hasilnya null.
+            $assistantMessage = $this->shouldGenerateNaturalReply($result)
+                ? $this->assistantReply->forTransaction($user, $result, $context->locale)
+                : null;
+
             if (! empty($result['is_multi'])) {
-                return $this->responseConverter->convertMultiResult($result['multi_result'], $context, $metadata);
+                return $this->responseConverter->convertMultiResult(
+                    $result['multi_result'],
+                    $context,
+                    $metadata,
+                    $assistantMessage,
+                );
             }
 
             if (! $result['success']) {
@@ -92,7 +131,7 @@ class ChatApplicationService
 
             Log::debug('[PIPELINE:CAS] convertSingleSuccess', ['trace_id' => $context->traceId]);
 
-            return $this->responseConverter->convertSingleSuccess($result, $context, $metadata, $text);
+            return $this->responseConverter->convertSingleSuccess($result, $context, $metadata, $text, $assistantMessage);
 
         } catch (AiConfigurationException $e) {
             return $this->responseConverter->failureResponse([ErrorDetail::aiNotConfigured()], $context, $startTime);
@@ -146,5 +185,22 @@ class ChatApplicationService
 
             return $this->responseConverter->failureResponse([ErrorDetail::systemError()], $context, $startTime);
         }
+    }
+
+    private function shouldGenerateNaturalReply(array $result): bool
+    {
+        if (! (bool) config('bendaharaku.ai.assistant.natural_reply', true)) {
+            return false;
+        }
+
+        if (! empty($result['is_multi'])) {
+            return (bool) (($result['multi_result'] ?? null)?->hasAnySuccess() ?? false);
+        }
+
+        if (! empty($result['is_web_draft'])) {
+            return true;
+        }
+
+        return ! empty($result['success']) && isset($result['transaction']);
     }
 }

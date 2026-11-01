@@ -22,6 +22,16 @@ return [
     */
     'ai_context_v2_enabled' => env('AI_CONTEXT_V2', true),
 
+    'assistant' => [
+        // Pesan natural setelah transaksi tersimpan (try-catch terpisah).
+        'natural_reply' => env('AI_ASSISTANT_NATURAL_REPLY', true),
+        // Satu panggilan LLM klasifikasi untuk pesan ambigu; heuristik selalu jadi fallback.
+        'intent_llm' => env('AI_ASSISTANT_INTENT_LLM', true),
+        'max_tool_iterations' => 5,
+        'loop_deadline_seconds' => 45,
+        'max_history_messages' => 6,
+    ],
+
     'ai' => [
         'feedback_weights' => [
             'transaction_type' => 0.40,

@@ -66,7 +66,10 @@ class ProcessChatMessageJob implements ShouldQueue
             locale: $locale,
             timezone: $timezone,
             sessionId: (string) $conversation->id,
-            metadata: ['web_message_id' => $userMessage->id],
+            metadata: [
+                'web_message_id' => $userMessage->id,
+                'conversation_db_id' => $conversation->id,
+            ],
         );
 
         $request = ChatRequest::make(

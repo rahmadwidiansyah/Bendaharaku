@@ -11,7 +11,10 @@ use App\Services\AI\Adapters\GeminiAdapter;
 use App\Services\AI\Adapters\OpenAIAdapter;
 use App\Services\AI\Adapters\OpenAiCompatibleAdapter;
 
-readonly class AiProviderFactory
+// Sengaja bukan readonly: Mockery tidak bisa membuat mock subclass dari
+// readonly class (fatal "cannot extend readonly class"), dan factory ini
+// di-mock di ChatIntentClassifierTest / AgentLoopTest.
+class AiProviderFactory
 {
     public function __construct(
         private GeminiAdapter $geminiAdapter,

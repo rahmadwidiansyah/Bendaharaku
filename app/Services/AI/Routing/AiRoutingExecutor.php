@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\AI\Routing;
 
+use App\DTO\AgentTurn;
 use App\DTO\AIParseResult;
 use App\DTO\AIParseResultMulti;
 use App\Enums\AiProvider;
@@ -417,6 +418,132 @@ class AiRoutingExecutor
             }
         }
         throw new AiProviderException('ai-router', 'Semua kandidat generateText gagal ('.$calls.' percobaan).');
+    }
+
+    /**
+     * Eksekusi agent loop lintas kandidat yang mendukung tool-calling.
+     *
+     * Closure $attempt menjalankan SATU loop agent penuh untuk kandidat tsb.
+     * Jika kandidat gagal mid-loop, executor pindah kandidat dan loop diulang
+     * dari messages awal (tool read-only, aman).
+     *
+     * @param  callable(AiProviderAccount, string $model, AiProvider $provider): AgentTurn  $attempt
+     * @return array{turn:AgentTurn, routing:array}
+     *
+     * @throws AiProviderException jika semua kandidat habis
+     */
+    public function executeAgent(User $user, callable $attempt, ?AiRoutingPreference $routing = null, ?callable $sleepFn = null): array
+    {
+        $sleepFn ??= fn (float $seconds) => usleep((int) round($seconds * 1_000_000));
+        $routing ??= AiRoutingPreference::where('user_id', $user->id)->first();
+        $maxAttempts = max(1, min(12, (int) ($routing?->max_attempts ?? 8)));
+
+        $resolved = $this->resolver->resolve($user, $routing, true);
+        $candidates = $resolved['candidates'];
+        $traceId = (string) \Str::uuid();
+        $started = microtime(true);
+        $attempts = [];
+        $failures = [];
+        $skippedAccounts = [];
+        $skippedProviders = [];
+        $tried = 0;
+        $calls = 0;
+        $maxCalls = $maxAttempts * 2;
+
+        if ($candidates === []) {
+            throw new AiProviderException('ai-router', 'Tidak ada kandidat model yang mendukung tool-calling.');
+        }
+
+        foreach ($candidates as $index => $candidate) {
+            /** @var AiProviderAccount $account */
+            $account = $candidate['account'];
+            /** @var AiProvider $provider */
+            $provider = $candidate['provider'];
+            $modelId = (string) $candidate['model_id'];
+            /** @var AiModelCatalog|string|null $catalogOrId */
+            $catalogOrId = $candidate['model'];
+            $catalog = $catalogOrId instanceof AiModelCatalog ? $catalogOrId : null;
+
+            if (isset($skippedAccounts[$account->id]) || isset($skippedProviders[$provider->value])) {
+                continue;
+            }
+            if ($tried >= $maxAttempts || (microtime(true) - $started) > self::TOTAL_BUDGET_SECONDS) {
+                break;
+            }
+
+            $tried++;
+            $accountCoolingDown = false;
+            $retriesLeft = 1;
+            $attemptNo = 0;
+
+            while (true) {
+                if ($calls >= $maxCalls || (microtime(true) - $started) > self::TOTAL_BUDGET_SECONDS) {
+                    break 2;
+                }
+                $calls++;
+                $attemptNo++;
+                $t0 = microtime(true);
+
+                try {
+                    $turn = $attempt($account, $modelId, $provider);
+                    $latency = (int) round((microtime(true) - $t0) * 1000);
+                    $attempts[] = $this->attemptRecord($provider, $account, $modelId, $latency, 'OK', null, $index, $attemptNo);
+                    if ($account->id > 0) {
+                        $this->health->recordSuccess($account->fresh(), $catalog?->exists ? $catalog->fresh() : null);
+                    }
+
+                    return ['turn' => $turn, 'routing' => [
+                        'trace_id' => $traceId,
+                        'selected_provider' => $provider->value,
+                        'selected_account_id' => $account->id,
+                        'selected_model' => $modelId,
+                        'attempt_count' => $calls,
+                        'latency_ms' => (int) round((microtime(true) - $started) * 1000),
+                        'attempts' => $attempts,
+                        'failures' => $failures,
+                        'final_status' => 'success',
+                    ]];
+                } catch (\Throwable $e) {
+                    $latency = (int) round((microtime(true) - $t0) * 1000);
+                    $classified = AiErrorClassifier::classify($e);
+                    $attempts[] = $this->attemptRecord($provider, $account, $modelId, $latency, $classified['category'], $classified['safe_message'], $index, $attemptNo);
+                    $failures[] = ['provider' => $provider->value, 'account_id' => $account->id, 'model' => $modelId, 'category' => $classified['category'], 'action' => $classified['action']];
+
+                    if ($account->id > 0) {
+                        $freshAccount = $account->fresh();
+                        $this->health->recordFailure($freshAccount, $catalog?->exists ? $catalog->fresh() : null, $classified, $e->getMessage());
+                        if (! $this->health->isUsable($freshAccount)) {
+                            $accountCoolingDown = true;
+                        }
+                    }
+
+                    if ($classified['action'] === AiErrorClassifier::ACTION_PERMANENT) {
+                        throw new AiProviderException($provider->value, $classified['safe_message']);
+                    }
+                    if ($classified['action'] === AiErrorClassifier::ACTION_NEXT_PROVIDER) {
+                        $skippedProviders[$provider->value] = true;
+                        break;
+                    }
+                    if ($classified['action'] === AiErrorClassifier::ACTION_NEXT_ACCOUNT) {
+                        $skippedAccounts[$account->id] = true;
+                        break;
+                    }
+                    if ($classified['action'] === AiErrorClassifier::ACTION_RETRY_SAME && $classified['retryable'] && $retriesLeft > 0) {
+                        $retriesLeft--;
+                        $sleepFn($this->backoffSeconds($attemptNo, $classified['retry_after_s']));
+
+                        continue;
+                    }
+                    break;
+                }
+            }
+
+            if ($accountCoolingDown) {
+                $skippedAccounts[$account->id] = true;
+            }
+        }
+
+        throw new AiProviderException('ai-router', 'Semua kandidat agent gagal ('.$calls.' percobaan).');
     }
 
     private function backoffSeconds(int $attemptNo, ?float $retryAfter): float

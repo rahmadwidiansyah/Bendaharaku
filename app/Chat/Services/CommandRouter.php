@@ -99,7 +99,10 @@ class CommandRouter
             return $this->buildWebLinkResponse($locale, $metadata);
         }
 
-        if (in_array($command ?? $lower, ['/help', '/start', 'hai', 'halo', 'hello', 'hi', 'ping', 'p', 'tes', 'test', 'help', 'tolong'])) {
+        // Sapaan natural ('hai/halo/hello/hi') TIDAK dipotong di sini lagi —
+        // lewat intent classifier → conversation pipeline agar dijawab AI
+        // dengan persona pengguna (spesifikasi assistant §4/§6 alur G).
+        if (in_array($command ?? $lower, ['/help', '/start', 'ping', 'p', 'tes', 'test', 'help', 'tolong'])) {
             return $this->buildHelpResponse($user, $locale, $metadata);
         }
 

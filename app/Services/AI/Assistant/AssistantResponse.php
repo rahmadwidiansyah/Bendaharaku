@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Services\AI\Assistant;
 
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\ValidationException;
 
 /**
  * AssistantResponse — Lapis D arsitektur assistant: kontrak respons
@@ -67,7 +66,7 @@ final class AssistantResponse
         // lewat pemotongan di sanitizeMessage, bukan ditolak.
         $validator = Validator::make($data, [
             'message' => ['required', 'string', 'max:4000'],
-            'status' => ['sometimes', 'string', 'in:' . implode(',', self::STATUSES)],
+            'status' => ['sometimes', 'string', 'in:'.implode(',', self::STATUSES)],
         ]);
 
         if ($validator->fails()) {
@@ -96,7 +95,7 @@ final class AssistantResponse
         $status = in_array($status, self::STATUSES, true) ? $status : 'conversation';
 
         return new self(
-            message: trans('assistant.fallback.' . $status),
+            message: trans('assistant.fallback.'.$status),
             status: $status,
         );
     }
@@ -204,16 +203,19 @@ final class AssistantResponse
 
             if ($escaped) {
                 $escaped = false;
+
                 continue;
             }
 
             if ($ch === '\\' && $inString) {
                 $escaped = true;
+
                 continue;
             }
 
             if ($ch === '"') {
                 $inString = ! $inString;
+
                 continue;
             }
 
