@@ -256,7 +256,7 @@ class TransactionFlowTest extends TestCase
             ->get(route('transactions.edit', $transaction->id));
 
         $response->assertInertia(fn ($page) => $page
-            ->component('Transactions/Edit')
+            ->component('Material/Transactions/Edit')
             ->where('transaction.date', '2026-07-30')
             ->where('transaction.due_date', null)
         );

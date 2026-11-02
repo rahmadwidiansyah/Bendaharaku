@@ -58,7 +58,7 @@ class BudgetApiTest extends TestCase
             ->assertOk();
 
         $response->assertInertia(fn ($page) => $page
-            ->component('Budgeting/Index')
+            ->component('Material/Budgeting/Index')
             ->has('categories')
             ->has('expenseGroups')
             ->where('botName', $this->user->bot_display_name));

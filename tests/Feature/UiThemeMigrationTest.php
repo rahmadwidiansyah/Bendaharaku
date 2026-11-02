@@ -10,11 +10,12 @@ class UiThemeMigrationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_new_user_defaults_to_default_ui_theme()
+    public function test_new_user_defaults_to_m3_ui_theme()
     {
         $user = User::factory()->create();
 
-        $this->assertSame('default', $user->fresh()->ui_theme);
+        // Sejak migrasi 2026_10_31: default kolom users.ui_theme = 'm3'.
+        $this->assertSame('m3', $user->fresh()->ui_theme);
     }
 
     public function test_ui_theme_is_mass_assignable()

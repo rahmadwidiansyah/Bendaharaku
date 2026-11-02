@@ -72,7 +72,7 @@ class BudgetingCreateTest extends TestCase
         $response = $this->actingAs($this->user)->get('/budgeting/create')->assertOk();
 
         $response->assertInertia(fn ($page) => $page
-            ->component('Budgeting/Create')
+            ->component('Material/Budgeting/Create')
             ->has('categories')
             ->has('expenseGroups')
             ->where('existingBudget', null)
@@ -89,7 +89,7 @@ class BudgetingCreateTest extends TestCase
         $this->actingAs($this->user)
             ->get('/budgeting/create')
             ->assertInertia(fn ($page) => $page
-                ->component('Budgeting/Create')
+                ->component('Material/Budgeting/Create')
                 ->where('existingBudget.generated_by', 'ai')
                 ->where('existingBudget.items.0.budgetable_id', $category->id));
     }

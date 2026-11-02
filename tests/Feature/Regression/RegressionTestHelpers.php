@@ -50,11 +50,15 @@ trait RegressionTestHelpers
         $this->user->wallets()->forceDelete();
         $this->user->categories()->forceDelete();
 
-        $this->expenseType = TransactionType::create(['name' => 'Expense']);
-        $this->incomeType = TransactionType::create(['name' => 'Income']);
-        $this->transferType = TransactionType::create(['name' => 'Transfer']);
-        $this->debtType = TransactionType::create(['name' => 'Debt']);
-        $this->receivableType = TransactionType::create(['name' => 'Receivable']);
+        // REUSE tipe yang sudah dibuat hook default User (lihat User model —
+        // user baru otomatis dapat 5 tipe + kategori default). Membuat duplikat
+        // membuat resolver menemukan tipe FIRST (dari hook) sehingga kategori
+        // helper (type_id tipe kedua) tidak pernah cocok.
+        $this->expenseType = TransactionType::firstOrCreate(['name' => 'Expense'], ['keyword' => 'out, -']);
+        $this->incomeType = TransactionType::firstOrCreate(['name' => 'Income'], ['keyword' => 'in, +']);
+        $this->transferType = TransactionType::firstOrCreate(['name' => 'Transfer'], ['keyword' => 'trf']);
+        $this->debtType = TransactionType::firstOrCreate(['name' => 'Debt'], ['keyword' => 'debt']);
+        $this->receivableType = TransactionType::firstOrCreate(['name' => 'Receivable'], ['keyword' => 'rec']);
 
         $this->foodCategory = $this->user->categories()->create([
             'category_name' => 'Makan & Minum',

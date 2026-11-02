@@ -50,6 +50,17 @@ class TransactionTypeIds
         return self::$ids[$name] ?? 0;
     }
 
+    /**
+     * Reset memoize per proses. WAJIB dipanggil di lingkungan test —
+     * RefreshDatabase me-rollback transaksi per test sehingga sequence
+     * Postgres berlanjut dan id tipe berubah antar test; cache lama
+     * akan menghasilkan agregat nol.
+     */
+    public static function flush(): void
+    {
+        self::$ids = null;
+    }
+
     private static function load(): void
     {
         if (self::$ids !== null) {

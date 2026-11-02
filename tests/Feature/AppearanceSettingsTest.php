@@ -50,7 +50,8 @@ class AppearanceSettingsTest extends TestCase
             ->patchJson(route('settings.application.appearance.update'), $this->appearancePayload(['ui_theme' => 'material']))
             ->assertStatus(422);
 
-        $this->assertSame('default', $user->fresh()->ui_theme);
+        // Invalid value ditolak — nilai tersimpan tidak berubah (default user baru = m3).
+        $this->assertSame('m3', $user->fresh()->ui_theme);
     }
 
     public function test_patch_without_ui_theme_keeps_stored_value()

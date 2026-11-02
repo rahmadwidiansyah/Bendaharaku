@@ -28,7 +28,7 @@ class SettingsNotificationsTest extends TestCase
             ->get('/settings/application/notifications')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->component('Settings/Application/Notifications')
+                ->component('Material/Settings/Application/Notifications')
                 ->has('emailNotifications')
                 ->has('pushNotifications')
                 ->has('vapidPublicKey'));
