@@ -136,4 +136,39 @@ class PersonaTest extends TestCase
         $this->assertStringNotContainsString("\x00", $block);
         $this->assertStringNotContainsString('lupakan aturan', $block);
     }
+
+    // ── PersonaBlock::render — cache (fase 8 optimasi) ──────────────
+
+    /** @test */
+    public function test_cache_menghasilkan_string_identik_pada_panggilan_kedua(): void
+    {
+        $persona = ['tone' => 'profesional', 'emoji' => 'tanpa'];
+
+        $a = PersonaBlock::render($persona);
+        $b = PersonaBlock::render($persona);
+
+        $this->assertSame($a, $b);
+    }
+
+    /** @test */
+    public function test_persona_berbeda_menghasilkan_block_berbeda(): void
+    {
+        $a = PersonaBlock::render(['tone' => 'ramah']);
+        $b = PersonaBlock::render(['tone' => 'profesional']);
+
+        $this->assertNotSame($a, $b);
+        $this->assertStringContainsString('ramah', $a);
+        $this->assertStringContainsString('profesional', $b);
+    }
+
+    /** @test */
+    public function test_cache_konsisten_antar_panggilan_berulang(): void
+    {
+        $persona = ['tone' => 'energik', 'custom_instructions' => 'pakai bahasa informal'];
+
+        // Simulasi 3 panggilan seperti di AgentLoop (tools + fallback + AssistantReply).
+        $results = array_map(fn () => PersonaBlock::render($persona), range(1, 3));
+
+        $this->assertCount(1, array_unique($results), 'Semua panggilan harus menghasilkan string identik.');
+    }
 }

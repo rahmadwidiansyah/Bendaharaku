@@ -15,10 +15,38 @@ namespace App\Services\AI\Assistant;
  */
 final class PersonaBlock
 {
+    /**
+     * Cache render persona (fase 8 — optimasi latensi). render() dipanggil
+     * berulang per request (AgentLoop jalur tools, fallback non-tools,
+     * AssistantReply) dengan persona identik; hasil render murni fungsi
+     * dari input sehingga aman di-memoize. Dibatasi 32 entri agar tidak
+     * menumpuk di long-lived worker (Octane).
+     *
+     * @var array<string, string>
+     */
+    private static array $cache = [];
+
+    private const CACHE_MAX = 32;
+
     public static function render(array $persona): string
     {
-        $persona = PersonaValidator::sanitize($persona);
+        $key = md5(json_encode($persona, JSON_UNESCAPED_UNICODE) ?: '{}');
+        if (isset(self::$cache[$key])) {
+            return self::$cache[$key];
+        }
 
+        $rendered = self::build(PersonaValidator::sanitize($persona));
+
+        if (count(self::$cache) >= self::CACHE_MAX) {
+            array_shift(self::$cache);
+        }
+        self::$cache[$key] = $rendered;
+
+        return $rendered;
+    }
+
+    private static function build(array $persona): string
+    {
         $lines = [
             '### PERSONA PENGGUNA (aturan gaya — otoritas di bawah aturan inti) ###',
             '',
