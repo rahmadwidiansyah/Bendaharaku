@@ -272,7 +272,7 @@ export default {
         income:             'Pemasukan',
         expense:            'Pengeluaran',
         widgets: {
-            cashflowTitle: 'Arus Kas 14 Hari',
+            cashflowTitle: 'Arus Kas 7 Hari',
             income:         'Masuk',
             expense:        'Keluar',
             budgetTitle:    'Budget Bulan Ini',

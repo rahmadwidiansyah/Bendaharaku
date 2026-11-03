@@ -272,7 +272,7 @@ export default {
         income:             'Income',
         expense:            'Expense',
         widgets: {
-            cashflowTitle: '14-Day Cash Flow',
+            cashflowTitle: '7-Day Cash Flow',
             income:         'Income',
             expense:        'Expense',
             budgetTitle:    "This Month's Budget",
