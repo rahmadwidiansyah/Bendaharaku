@@ -104,8 +104,10 @@ final class ChatIntentClassifier
     private function heuristic(string $text): array
     {
         $normalized = mb_strtolower(trim($text));
+        // Amount: angka berpemisah (1.500/1.500,50), suffix (50k/2jt), DAN
+        // angka polos >= 4 digit (15000/50000) yang umum ditulis user.
         $hasAmount = (bool) preg_match(
-            '/(?:rp\.?\s*)?\b\d{1,3}(?:[.,]\d{3})*(?:[.,]\d+)?\b|\b\d+\s*(?:rb|ribu|k|juta|jt)\b/iu',
+            '/(?:rp\.?\s*)?\b\d{1,3}(?:[.,]\d{3})*(?:[.,]\d+)?\b|\b\d+\s*(?:rb|ribu|k|juta|jt)\b|\b\d{4,}\b/iu',
             $normalized
         );
         $hasVerb = $this->containsAny($normalized, self::TRANSACTION_VERBS);

@@ -982,6 +982,14 @@ const showSkeleton = computed(() =>
     padding-bottom: calc(var(--m3-size-navbar) + var(--m3-space-6) + env(safe-area-inset-bottom, 0px));
 }
 
+/* Mobile: halaman chat memakai .m3-chat--mobile (position:fixed; inset:0)
+   sehingga alur normal main kosong (height 0). Beri min-height supaya
+   #main-content tetap punya bounding box (jump-link & a11y navigation
+   tetap berfungsi; overlay chat fixed menutupi area ini). */
+.m3-content--chat .m3-main {
+    min-height: 100dvh;
+}
+
 @media (min-width: 1024px) {
     .m3-content {
         padding-bottom: var(--m3-space-8);

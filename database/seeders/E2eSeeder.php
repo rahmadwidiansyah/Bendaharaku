@@ -60,14 +60,18 @@ class E2eSeeder extends Seeder
         Category::where('user_id', $user->id)->forceDelete();
         Wallet::where('user_id', $user->id)->forceDelete();
 
+        // Nama dompet sistem DERET SSOT: WalletResolutionService mencari
+        // dari config('bendaharaku.system_wallets.*'), bukan nama hardcode.
+        $sw = config('bendaharaku.system_wallets');
+
         $wallets = [
             'BCA' => ['balance' => 10000000, 'group_type' => 'Liquid', 'icon' => 'credit-card'],
             'Cash' => ['balance' => 1500000, 'group_type' => 'Liquid', 'icon' => 'wallet'],
             'Tabungan' => ['balance' => 25000000, 'group_type' => 'Asset', 'icon' => 'home'],
-            'Merchant' => ['balance' => 0, 'group_type' => 'System', 'icon' => 'store'],
-            'External' => ['balance' => 0, 'group_type' => 'System', 'icon' => 'globe'],
-            'Hutang System' => ['balance' => 0, 'group_type' => 'System', 'icon' => 'hand-coins'],
-            'Piutang System' => ['balance' => 0, 'group_type' => 'System', 'icon' => 'receipt'],
+            $sw['merchant'] => ['balance' => 0, 'group_type' => 'System', 'icon' => 'store'],
+            $sw['external'] => ['balance' => 0, 'group_type' => 'System', 'icon' => 'globe'],
+            $sw['debt'] => ['balance' => 0, 'group_type' => 'System', 'icon' => 'hand-coins'],
+            $sw['receivable'] => ['balance' => 0, 'group_type' => 'System', 'icon' => 'receipt'],
         ];
 
         $walletModels = [];
@@ -83,11 +87,16 @@ class E2eSeeder extends Seeder
         }
 
         $categories = [
-            'Makan' => ['type' => 'Expense', 'icon' => 'utensils', 'system_key' => null],
-            'Transport' => ['type' => 'Expense', 'icon' => 'car', 'system_key' => null],
-            'Belanja' => ['type' => 'Expense', 'icon' => 'shopping-bag', 'system_key' => null],
-            'Gaji' => ['type' => 'Income', 'icon' => 'banknote', 'system_key' => null],
-            'Bonus' => ['type' => 'Income', 'icon' => 'gift', 'system_key' => null],
+            'Makan' => ['type' => 'Expense', 'icon' => 'utensils', 'system_key' => null,
+                'keyword' => 'makan, minum, kopi, warung, bakso, nasi, restoran'],
+            'Transport' => ['type' => 'Expense', 'icon' => 'car', 'system_key' => null,
+                'keyword' => 'bensin, parkir, ojek, karcis, tol, transport'],
+            'Belanja' => ['type' => 'Expense', 'icon' => 'shopping-bag', 'system_key' => null,
+                'keyword' => 'belanja, baju, sepatu, minyak, pasar'],
+            'Gaji' => ['type' => 'Income', 'icon' => 'banknote', 'system_key' => null,
+                'keyword' => 'gaji, salary, upah'],
+            'Bonus' => ['type' => 'Income', 'icon' => 'gift', 'system_key' => null,
+                'keyword' => 'bonus, keuntungan, komisi'],
             'Transfer Saldo' => ['type' => 'Transfer', 'icon' => 'arrow-left-right', 'system_key' => 'TRANSFER'],
             'Dapat Hutangan' => ['type' => 'Debt', 'icon' => 'hand-coins', 'system_key' => 'LOAN'],
             'Bayar Cicilan Hutang' => ['type' => 'Debt', 'icon' => 'circle-dollar-sign', 'system_key' => 'DEBT_PAYMENT'],
@@ -101,6 +110,7 @@ class E2eSeeder extends Seeder
                 'user_id' => $user->id,
                 'type_id' => $types[$data['type']],
                 'category_name' => $name,
+                'keyword' => $data['keyword'] ?? null,
                 'icon' => $data['icon'],
                 'system_key' => $data['system_key'],
                 'is_active' => true,
@@ -108,14 +118,14 @@ class E2eSeeder extends Seeder
         }
 
         $rows = [
-            ['Gaji', 'Income', 'External', 'BCA', 8500000, 'Gaji bulanan'],
-            ['Bonus', 'Income', 'External', 'BCA', 1250000, 'Bonus proyek'],
-            ['Makan', 'Expense', 'BCA', 'Merchant', 125000, 'Makan siang'],
-            ['Transport', 'Expense', 'Cash', 'Merchant', 45000, 'Transport kantor'],
-            ['Belanja', 'Expense', 'BCA', 'Merchant', 350000, 'Belanja bulanan'],
+            ['Gaji', 'Income', $sw['external'], 'BCA', 8500000, 'Gaji bulanan'],
+            ['Bonus', 'Income', $sw['external'], 'BCA', 1250000, 'Bonus proyek'],
+            ['Makan', 'Expense', 'BCA', $sw['merchant'], 125000, 'Makan siang'],
+            ['Transport', 'Expense', 'Cash', $sw['merchant'], 45000, 'Transport kantor'],
+            ['Belanja', 'Expense', 'BCA', $sw['merchant'], 350000, 'Belanja bulanan'],
             ['Transfer Saldo', 'Transfer', 'BCA', 'Cash', 500000, 'Isi uang tunai'],
-            ['Dapat Hutangan', 'Debt', 'Hutang System', 'BCA', 1000000, 'Pinjaman teman'],
-            ['Ngasih Piutang', 'Receivable', 'BCA', 'Piutang System', 750000, 'Piutang keluarga'],
+            ['Dapat Hutangan', 'Debt', $sw['debt'], 'BCA', 1000000, 'Pinjaman teman'],
+            ['Ngasih Piutang', 'Receivable', 'BCA', $sw['receivable'], 750000, 'Piutang keluarga'],
         ];
 
         $reference = 0;

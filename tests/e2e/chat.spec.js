@@ -7,13 +7,18 @@ const IGNORED_CONSOLE_ERRORS = [
     'Failed to load resource',
 ];
 
-const TEXTAREA = 'textarea[aria-label="Ketik pesan..."]';
-const SEND = 'button[aria-label="Kirim pesan"]';
+// Selector locale-agnostic: label i18n tergantung locale akun seeder
+// ('en' → "Ask me anything..."/"Send message"; 'id' → "Ketik pesan..."/"Kirim pesan").
+const TEXTAREA = 'textarea[aria-label="Ketik pesan..."], textarea[aria-label="Ask me anything..."]';
+const SEND = 'button[aria-label="Kirim pesan"], button[aria-label="Send message"]';
 
 // Bubble per tema: Default memakai .user-bubble; M3 memakai .m3-msg--user.
 // Bubble bot: Default .rounded-tl-md (unik untuk bot), M3 .m3-msg--bot.
 const USER_BUBBLE = '.user-bubble, .m3-msg--user';
 const BOT_BUBBLE = 'div.rounded-tl-md, .m3-msg--bot';
+
+// Tombol konfirmasi draft: id "Konfirmasi", en "Confirm".
+const confirmButton = (page) => page.getByRole('button', { name: /Konfirmasi|Confirm/ });
 
 test.beforeEach(async ({ page }) => {
     await blockThirdParty(page);
@@ -51,10 +56,11 @@ test('chat: kirim pesan, bubble user muncul, polling selesai, bubble bot tanpa r
     await pollSeen.catch(() => {});
 
     // Pesan bot selesai: typing indicator hilang dan bubble bot ada.
+    await test.setTimeout(180_000); // poll 120s di bawah butuh ruang (test timeout global 60s).
     await expect
         .poll(async () => {
-            const pending = page.locator('.m3-typing').count();
-            const hasBot = page.locator(BOT_BUBBLE).count();
+            const pending = await page.locator('.m3-typing').count();
+            const hasBot = await page.locator(BOT_BUBBLE).count();
             return { pending, hasBot };
         }, { timeout: 120_000, message: 'bubble bot harus muncul setelah polling selesai' })
         .toEqual(expect.objectContaining({ pending: 0, hasBot: expect.anything() }));
@@ -68,6 +74,7 @@ test('chat: kirim pesan, bubble user muncul, polling selesai, bubble bot tanpa r
 });
 
 test('chat: pesan transaksi menghasilkan kartu draft dengan aksi konfirmasi', async ({ page }) => {
+    test.setTimeout(180_000); // pipeline draft (parser+LLM) bisa lamban di dev.
     const errors = [];
 
     page.on('pageerror', (error) => errors.push(error.message));
@@ -87,7 +94,7 @@ test('chat: pesan transaksi menghasilkan kartu draft dengan aksi konfirmasi', as
 
     // Kartu transaksi: tombol aksi draft (Edit / Konfirmasi / Batal) atau
     // kartu transaksi tersimpan. Salah satu harus muncul setelah pipeline.
-    const confirmBtn = page.getByRole('button', { name: 'Konfirmasi' }).first();
+    const confirmBtn = confirmButton(page).first();
     await confirmBtn.waitFor({ state: 'visible', timeout: 120_000 }).catch(() => {});
 
     const bodyText = (await page.locator('body').innerText()).replace(/\s+/g, ' ');
