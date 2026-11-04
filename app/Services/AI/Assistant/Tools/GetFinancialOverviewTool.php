@@ -25,7 +25,9 @@ final class GetFinancialOverviewTool implements AssistantTool
 
     public function description(): string
     {
-        return 'Ringkasan menyeluruh: total portofolio, aset likuid, investasi, hutang, piutang, dan arus kas bulan berjalan.';
+        return 'Ringkasan menyeluruh: total portofolio, aset likuid, investasi, hutang, '
+            .'piutang, dan arus kas bulan berjalan SAJA. Untuk bulan lain, gunakan '
+            .'get_monthly_summary atau get_transactions dengan period.';
     }
 
     public function schema(): array

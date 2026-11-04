@@ -19,7 +19,9 @@ final class GetMonthlySummaryTool implements AssistantTool
 
     public function description(): string
     {
-        return 'Ringkasan pemasukan, pengeluaran, dan selisih bersih untuk satu bulan (maksimal 12 bulan terakhir).';
+        return 'Ringkasan pemasukan, pengeluaran, dan selisih bersih untuk satu bulan '
+            .'(maksimal 12 bulan terakhir). Untuk bulan selain bulan berjalan, '
+            .'WAJIB isi year dan month secara eksplisit.';
     }
 
     public function schema(): array
@@ -32,13 +34,13 @@ final class GetMonthlySummaryTool implements AssistantTool
                 'properties' => [
                     'year' => [
                         'type' => 'integer',
-                        'description' => 'Tahun, misalnya 2026. Default tahun berjalan.',
+                        'description' => 'Tahun, misalnya 2026. WAJIB untuk bulan selain bulan berjalan.',
                     ],
                     'month' => [
                         'type' => 'integer',
                         'minimum' => 1,
                         'maximum' => 12,
-                        'description' => 'Bulan 1-12. Default bulan berjalan.',
+                        'description' => 'Bulan 1-12. WAJIB untuk bulan selain bulan berjalan.',
                     ],
                 ],
                 'required' => [],

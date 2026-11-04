@@ -17,7 +17,7 @@ use Illuminate\Validation\ValidationException;
 trait SummarizesCashflow
 {
     /**
-     * @return array{year:int,month:int,label:string,income:float,expense:float,net:float,transaction_count:int}
+     * @return array{year:int,month:int,label:string,income:float,expense:float,net:float,transaction_count:int,transfer_count:int}
      */
     protected function summarizeMonth(User $user, int $year, int $month): array
     {
@@ -27,6 +27,7 @@ trait SummarizesCashflow
         $end = $start->copy()->endOfMonth();
         $incomeId = TransactionTypeIds::income();
         $expenseId = TransactionTypeIds::expense();
+        $transferId = TransactionTypeIds::transfer();
 
         $row = DB::table('transaction_logs')
             ->where('user_id', $user->id)
@@ -55,6 +56,17 @@ trait SummarizesCashflow
             ->whereBetween('date', [$start->toDateString(), $end->toDateString()])
             ->count();
 
+        // Transfer tidak termasuk income/expense (uang berpindah dompet,
+        // bukan berubah nilai). Dilaporkan terpisah agar bulan yang hanya
+        // berisi transfer tidak terlihat "kosong" bagi LLM.
+        $transferCount = DB::table('transaction_logs')
+            ->where('user_id', $user->id)
+            ->where('is_cleared', true)
+            ->whereNull('deleted_at')
+            ->whereBetween('date', [$start->toDateString(), $end->toDateString()])
+            ->where('type_id', $transferId)
+            ->count();
+
         return [
             'year' => $year,
             'month' => $month,
@@ -63,6 +75,7 @@ trait SummarizesCashflow
             'expense' => $expense,
             'net' => $income - $expense,
             'transaction_count' => (int) ($row->transaction_count ?? 0),
+            'transfer_count' => $transferCount,
             'draft_count' => $draftCount,
         ];
     }

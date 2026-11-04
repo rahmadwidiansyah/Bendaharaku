@@ -206,6 +206,59 @@ class AssistantToolRegistryTest extends TestCase
     }
 
     /** @test */
+    public function test_ringkasan_bulanan_melaporkan_transfer_count_terpisah(): void
+    {
+        $user = User::factory()->create();
+        $transferType = TransactionType::where('name', 'Transfer')->firstOrFail();
+        $transferCategory = $user->categories()
+            ->where('type_id', $transferType->id)
+            ->where('system_key', 'TRANSFER')
+            ->firstOrFail();
+        $wallets = $user->wallets()->where('group_type', 'Liquid')->get();
+        $wallets->first()->update(['balance' => 200000]);
+        $destination = $user->wallets()->create([
+            'name' => 'Dompet Kedua',
+            'balance' => 0,
+            'group_type' => 'Liquid',
+        ]);
+
+        $this->makeTransaction($user, ['amount' => 50000]);
+        TransactionLog::create([
+            'reference_number' => 'TEST-'.Str::uuid(),
+            'user_id' => $user->id,
+            'date' => now()->toDateString(),
+            'type_id' => $transferType->id,
+            'category_id' => $transferCategory->id,
+            'source_wallet_id' => $wallets->first()->id,
+            'destination_wallet_id' => $destination->id,
+            'amount' => 75000,
+            'balance_before' => 200000,
+            'balance_after' => 125000,
+            'subject' => 'Pindah saldo',
+            'notes' => 'test transfer',
+            'is_cleared' => true,
+        ]);
+
+        $result = $this->registry()->execute($user, 'get_monthly_summary', [], 'trace-summary-transfer');
+
+        $this->assertTrue($result['ok']);
+        // Hanya expense yang masuk transaction_count; transfer terpisah.
+        $this->assertSame(1, $result['data']['transaction_count']);
+        $this->assertSame(1, $result['data']['transfer_count']);
+    }
+
+    /** @test */
+    public function test_deskripsi_tool_agregat_memandu_pemilihan_bulan(): void
+    {
+        $user = User::factory()->create();
+        $definitions = array_column($this->registry()->forUser($user), 'description', 'name');
+
+        $this->assertStringContainsString('WAJIB isi year dan month', $definitions['get_monthly_summary']);
+        $this->assertStringContainsString('bulan berjalan SAJA', $definitions['get_financial_overview']);
+        $this->assertStringContainsString('get_monthly_summary', $definitions['get_financial_overview']);
+    }
+
+    /** @test */
     public function test_get_transactions_melaporkan_total_count_saat_terpotong(): void
     {
         $user = User::factory()->create();

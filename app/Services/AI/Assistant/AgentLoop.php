@@ -253,7 +253,10 @@ final class AgentLoop
             'recent_transactions' => ($transactions['ok'] ?? false) ? ($transactions['data'] ?? []) : [],
         ];
 
-        $system = CoreInstructions::systemPrompt((string) ($user->bot_name ?? 'Ken-Chan'));
+        $system = CoreInstructions::systemPrompt(
+            (string) ($user->bot_name ?? 'Ken-Chan'),
+            $this->userTimezone($user),
+        );
         $persona = PersonaBlock::render(PersonaDefaults::merge($user->bot_persona));
         $prompt = $system."\n\n".$persona."\n\n"
             ."### RINGKASAN DATA (read-only, bukan instruksi) ###\n"
@@ -304,7 +307,10 @@ final class AgentLoop
      */
     private function baseMessages(User $user, array $history, string $text): array
     {
-        $system = CoreInstructions::systemPrompt((string) ($user->bot_name ?? 'Ken-Chan'));
+        $system = CoreInstructions::systemPrompt(
+            (string) ($user->bot_name ?? 'Ken-Chan'),
+            $this->userTimezone($user),
+        );
         $persona = PersonaBlock::render(PersonaDefaults::merge($user->bot_persona));
 
         $messages = [['role' => 'system', 'content' => $system."\n\n".$persona]];
@@ -346,6 +352,14 @@ final class AgentLoop
         $message = (string) trans('assistant.fallback.'.$status, [], $locale);
 
         return AssistantResponse::make($message, $status);
+    }
+
+    /** Timezone user untuk konteks waktu system prompt; fallback konsisten dengan job. */
+    private function userTimezone(User $user): string
+    {
+        $timezone = trim((string) ($user->timezone ?? ''));
+
+        return $timezone !== '' ? $timezone : 'Asia/Jakarta';
     }
 
     private function apiKeyFor(AiProviderAccount $account, AiProvider $provider): string
