@@ -140,9 +140,74 @@ class AssistantToolRegistryTest extends TestCase
     }
 
     /** @test */
-    public function test_rentang_tanggal_lebih_dari_92_hari_ditolak(): void
+    public function test_get_transactions_sort_amount_mengurutkan_nominal(): void
     {
         $user = User::factory()->create();
+
+        $this->makeTransaction($user, ['amount' => 50000, 'subject' => 'Kecil']);
+        $this->makeTransaction($user, ['amount' => 200000, 'subject' => 'Besar']);
+        $this->makeTransaction($user, ['amount' => 75000, 'subject' => 'Tengah']);
+
+        $desc = $this->registry()->execute($user, 'get_transactions', [
+            'sort' => 'amount_desc',
+        ], 'trace-sort-desc');
+
+        $this->assertTrue($desc['ok']);
+        $subjectsDesc = array_column($desc['data']['transactions'], 'subject');
+        $this->assertSame(['Besar', 'Tengah', 'Kecil'], $subjectsDesc);
+
+        $asc = $this->registry()->execute($user, 'get_transactions', [
+            'sort' => 'amount_asc',
+        ], 'trace-sort-asc');
+
+        $this->assertTrue($asc['ok']);
+        $subjectsAsc = array_column($asc['data']['transactions'], 'subject');
+        $this->assertSame(['Kecil', 'Tengah', 'Besar'], $subjectsAsc);
+    }
+
+    /** @test */
+    public function test_get_transactions_melaporkan_draft_count_tanpa_menyertakan_draft(): void
+    {
+        $user = User::factory()->create();
+
+        $this->makeTransaction($user, ['amount' => 50000, 'subject' => 'Cleared']);
+        $this->makeTransaction($user, [
+            'amount' => 999000,
+            'subject' => 'Draft belum konfirmasi',
+            'is_cleared' => false,
+        ]);
+
+        $result = $this->registry()->execute($user, 'get_transactions', [], 'trace-draft');
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame(1, $result['data']['count']);
+        $this->assertSame(1, $result['data']['draft_count']);
+        $subjects = array_column($result['data']['transactions'], 'subject');
+        $this->assertContains('Cleared', $subjects);
+        $this->assertNotContains('Draft belum konfirmasi', $subjects);
+    }
+
+    /** @test */
+    public function test_ringkasan_bulanan_melaporkan_draft_count(): void
+    {
+        $user = User::factory()->create();
+        $this->makeTransaction($user, ['amount' => 50000]);
+        $this->makeTransaction($user, [
+            'amount' => 999000,
+            'subject' => 'Draft belum konfirmasi',
+            'is_cleared' => false,
+        ]);
+
+        $result = $this->registry()->execute($user, 'get_monthly_summary', [], 'trace-summary-draft');
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame(1, $result['data']['transaction_count']);
+        $this->assertSame(1, $result['data']['draft_count']);
+    }
+
+    /** @test */
+    public function test_rentang_tanggal_lebih_dari_92_hari_ditolak(): void
+    {        $user = User::factory()->create();
 
         $result = $this->registry()->execute($user, 'get_transactions', [
             'start_date' => now()->subDays(100)->toDateString(),

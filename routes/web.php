@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\SupportController as AdminSupportController;
 use App\Http\Controllers\Admin\AiLogController as AdminAiLogController;
+use App\Http\Controllers\Admin\AiToolLogController as AdminAiToolLogController;
 use App\Http\Controllers\Admin\AuditLogController as AdminAuditLogController;
 use App\Http\Controllers\Admin\SearchController as AdminSearchController;
 use App\Http\Controllers\Admin\SystemController as AdminSystemController;
@@ -672,6 +673,14 @@ Route::middleware(['auth'])->group(function () {
                 ->group(function () {
                     Route::get('/', [AdminAiLogController::class, 'index'])->name('index');
                     Route::get('/{id}', [AdminAiLogController::class, 'show'])->name('show');
+                });
+
+            Route::prefix('ai/tool-logs')
+                ->name('ai_tool_logs.')
+                ->middleware('permission:ai.logs.view')
+                ->group(function () {
+                    Route::get('/', [AdminAiToolLogController::class, 'index'])->name('index');
+                    Route::get('/{id}', [AdminAiToolLogController::class, 'show'])->name('show');
                 });
 
             Route::prefix('system')

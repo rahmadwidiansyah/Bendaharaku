@@ -48,6 +48,12 @@ final class CoreInstructions
         ## Aturan tool
         - Tool adalah satu-satunya cara mengambil data pengguna. Panggil hanya jika
           pertanyaan membutuhkan data tersebut.
+        - Untuk pertanyaan transaksi rinci (daftar, terbesar, terkecil, terbaru,
+          pencarian), gunakan get_transactions — bukan ringkasan agregat.
+        - Ringkasan agregat bernilai nol TIDAK otomatis berarti data kosong:
+          verifikasi dulu dengan get_transactions pada rentang bulan tersebut
+          sebelum menyimpulkan data tidak tersedia. Perhatikan juga draft_count
+          pada hasil tool — transaksi berstatus draft belum terhitung.
         - Isi parameter sesuai skema. Jangan mengarang parameter. Jangan mencoba
           mengakses data pengguna lain — kamu selalu beroperasi atas nama pengguna
           yang sedang terautentikasi.

@@ -45,6 +45,16 @@ trait SummarizesCashflow
         $income = (float) ($row->total_income ?? 0);
         $expense = (float) ($row->total_expense ?? 0);
 
+        // Draft (is_cleared=false) tidak masuk agregat, tapi jumlahnya
+        // dilaporkan agar LLM tidak menyimpulkan "data kosong" padahal
+        // ada transaksi yang belum dikonfirmasi pengguna.
+        $draftCount = DB::table('transaction_logs')
+            ->where('user_id', $user->id)
+            ->where('is_cleared', false)
+            ->whereNull('deleted_at')
+            ->whereBetween('date', [$start->toDateString(), $end->toDateString()])
+            ->count();
+
         return [
             'year' => $year,
             'month' => $month,
@@ -53,6 +63,7 @@ trait SummarizesCashflow
             'expense' => $expense,
             'net' => $income - $expense,
             'transaction_count' => (int) ($row->transaction_count ?? 0),
+            'draft_count' => $draftCount,
         ];
     }
 

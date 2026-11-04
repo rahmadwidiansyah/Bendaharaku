@@ -14,6 +14,7 @@ import {
     Search,
     Sun,
     Users,
+    Wrench,
     X,
 } from 'lucide-vue-next'
 import GlobalSearch from '@/Components/Admin/GlobalSearch.vue'
@@ -37,6 +38,7 @@ const menuItems = computed(() =>
         { label: 'Users', href: route('admin.users.index'), icon: Users, permission: 'users.view', match: ['admin.users.*'] },
         { label: 'Support', href: route('admin.support.index'), icon: Headphones, permission: 'support.manage', match: ['admin.support.*'] },
         { label: 'AI Logs', href: route('admin.ai_logs.index'), icon: Activity, permission: 'ai.logs.view', match: ['admin.ai_logs.*'] },
+        { label: 'AI Tool Logs', href: route('admin.ai_tool_logs.index'), icon: Wrench, permission: 'ai.logs.view', match: ['admin.ai_tool_logs.*'] },
         { label: 'Audit Logs', href: route('admin.audit_logs.index'), icon: FileClock, permission: 'audit_logs.view', match: ['admin.audit_logs.*'] },
     ].filter((item) => can(item.permission)),
 )
@@ -49,6 +51,8 @@ const pageTitle = computed(() => {
     if (current.startsWith('admin.support')) return 'Support Tools'
     if (current.startsWith('admin.ai_logs.show')) return 'Detail AI Log'
     if (current.startsWith('admin.ai_logs')) return 'AI Logs'
+    if (current.startsWith('admin.ai_tool_logs.show')) return 'Detail AI Tool Log'
+    if (current.startsWith('admin.ai_tool_logs')) return 'AI Tool Logs'
     if (current.startsWith('admin.audit_logs.show')) return 'Detail Audit Log'
     if (current.startsWith('admin.audit_logs')) return 'Audit Logs'
 

@@ -40,6 +40,8 @@ final class ChatIntentClassifier
         'vs', 'lebih besar', 'lebih kecil', 'lebih banyak', 'lebih sedikit', 'total',
         'ringkasan', 'rekap', 'laporan', 'saldo', 'pengeluaran', 'pemasukan', 'hutang',
         'piutang', 'budget', 'anggaran', 'sisa uang', 'arus kas',
+        'terbesar', 'terkecil', 'terbaru', 'terlama',
+        'paling besar', 'paling kecil', 'paling banyak', 'paling sedikit',
     ];
 
     private const GREETINGS = [

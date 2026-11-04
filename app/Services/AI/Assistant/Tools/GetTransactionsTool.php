@@ -61,6 +61,11 @@ final class GetTransactionsTool implements AssistantTool
                         'maximum' => self::MAX_LIMIT,
                         'description' => 'Jumlah baris maksimum (default 20, maksimal 50).',
                     ],
+                    'sort' => [
+                        'type' => 'string',
+                        'enum' => ['date_desc', 'date_asc', 'amount_desc', 'amount_asc'],
+                        'description' => 'Urutan hasil. Gunakan amount_desc untuk pertanyaan transaksi terbesar, amount_asc untuk terkecil. Default date_desc.',
+                    ],
                 ],
                 'required' => [],
             ],
@@ -76,6 +81,7 @@ final class GetTransactionsTool implements AssistantTool
             'type' => ['sometimes', 'string', 'in:income,expense,transfer,debt,receivable'],
             'wallet_id' => ['sometimes', 'integer', 'min:1'],
             'limit' => ['sometimes', 'integer', 'min:1', 'max:'.self::MAX_LIMIT],
+            'sort' => ['sometimes', 'string', 'in:date_desc,date_asc,amount_desc,amount_asc'],
         ];
     }
 
@@ -112,14 +118,25 @@ final class GetTransactionsTool implements AssistantTool
                 ->orWhere('destination_wallet_id', $walletId));
         }
 
+        $this->applySort($query, (string) ($params['sort'] ?? 'date_desc'));
+
         $transactions = $query
-            ->orderByDesc('date')
-            ->orderByDesc('id')
             ->limit($limit)
             ->get();
 
+        // Draft (is_cleared=false) sengaja tidak masuk daftar, tapi jumlahnya
+        // dilaporkan agar LLM bisa menyebut "X draft belum dikonfirmasi"
+        // alih-alih keliru menyimpulkan data kosong.
+        $draftCount = TransactionLog::query()
+            ->where('user_id', $user->id)
+            ->where('is_cleared', false)
+            ->whereNull('deleted_at')
+            ->whereBetween('date', [$start, $end])
+            ->count();
+
         return [
             'count' => $transactions->count(),
+            'draft_count' => $draftCount,
             'start_date' => $start,
             'end_date' => $end,
             'transactions' => $transactions->map(fn (TransactionLog $transaction) => [
@@ -161,5 +178,15 @@ final class GetTransactionsTool implements AssistantTool
         }
 
         return [$start->toDateString(), $end->toDateString()];
+    }
+
+    private function applySort($query, string $sort): void
+    {
+        match ($sort) {
+            'date_asc' => $query->orderBy('date')->orderBy('id'),
+            'amount_desc' => $query->orderByDesc('amount')->orderByDesc('date')->orderByDesc('id'),
+            'amount_asc' => $query->orderBy('amount')->orderByDesc('date')->orderByDesc('id'),
+            default => $query->orderByDesc('date')->orderByDesc('id'),
+        };
     }
 }
