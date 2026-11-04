@@ -128,6 +128,10 @@ final class GetTransactionsTool implements AssistantTool
 
         $this->applySort($query, (string) ($params['sort'] ?? 'date_desc'));
 
+        // total_count = jumlah baris yang cocok TANPA limit — sinyal untuk
+        // LLM bahwa hasil terpotong bila total_count > count.
+        $totalCount = (clone $query)->count();
+
         $transactions = $query
             ->limit($limit)
             ->get();
@@ -144,6 +148,7 @@ final class GetTransactionsTool implements AssistantTool
 
         return [
             'count' => $transactions->count(),
+            'total_count' => $totalCount,
             'draft_count' => $draftCount,
             'period' => $params['period'] ?? null,
             'start_date' => $start,

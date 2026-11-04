@@ -206,6 +206,25 @@ class AssistantToolRegistryTest extends TestCase
     }
 
     /** @test */
+    public function test_get_transactions_melaporkan_total_count_saat_terpotong(): void
+    {
+        $user = User::factory()->create();
+
+        $this->makeTransaction($user, ['amount' => 10000]);
+        $this->makeTransaction($user, ['amount' => 20000]);
+        $this->makeTransaction($user, ['amount' => 30000]);
+
+        $result = $this->registry()->execute($user, 'get_transactions', [
+            'limit' => 2,
+        ], 'trace-truncated');
+
+        $this->assertTrue($result['ok']);
+        $this->assertCount(2, $result['data']['transactions']);
+        $this->assertSame(2, $result['data']['count']);
+        $this->assertSame(3, $result['data']['total_count']);
+    }
+
+    /** @test */
     public function test_get_transactions_period_mengunci_bulan_yang_ditanyakan(): void
     {
         $user = User::factory()->create();

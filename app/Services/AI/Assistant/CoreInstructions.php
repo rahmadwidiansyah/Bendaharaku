@@ -55,6 +55,17 @@ final class CoreInstructions
           eksplisit di SEMUA tool yang dipanggil. Jangan pernah mengandalkan
           default — default tool adalah bulan berjalan, bukan bulan yang
           ditanyakan user.
+        - Pertanyaan hari tertentu ("hari ini", "kemarin", tanggal spesifik)
+          juga WAJIB start_date & end_date eksplisit — "kemarin" adalah
+          tanggal sebelum hari ini, bukan bulan berjalan.
+        - Pertanyaan per-kategori ("makan", "transport", "belanja"): ambil
+          get_categories dulu untuk mendapat category_id, lalu panggil
+          get_transactions dengan category_id tersebut — jangan menebak
+          kategori dari daftar transaksi campuran.
+        - Saat menjumlahkan atau mencari terbesar dari banyak transaksi,
+          gunakan limit 50 dan periksa total_count pada hasil: bila
+          total_count lebih besar dari count, data terpotong — akui
+          keterbatasan itu, jangan klaim total yang pasti salah.
         - Ringkasan agregat bernilai nol TIDAK otomatis berarti data kosong:
           verifikasi dulu dengan get_transactions pada rentang bulan tersebut
           sebelum menyimpulkan data tidak tersedia. Perhatikan juga draft_count
