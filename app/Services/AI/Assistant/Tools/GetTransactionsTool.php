@@ -7,11 +7,14 @@ namespace App\Services\AI\Assistant\Tools;
 use App\Models\TransactionLog;
 use App\Models\User;
 use App\Services\AI\Assistant\AssistantTool;
+use App\Services\AI\Assistant\Tools\Concerns\SummarizesCashflow;
 use Carbon\Carbon;
 use Illuminate\Validation\ValidationException;
 
 final class GetTransactionsTool implements AssistantTool
 {
+    use SummarizesCashflow;
+
     public const MAX_DAYS = 92;
 
     public const MAX_LIMIT = 50;
@@ -23,7 +26,7 @@ final class GetTransactionsTool implements AssistantTool
 
     public function description(): string
     {
-        return 'Ambil transaksi pengguna pada rentang tanggal tertentu, opsional difilter kategori, tipe, atau dompet.';
+        return 'Ambil transaksi pengguna pada rentang tanggal tertentu, opsional difilter kategori, tipe, atau dompet. Untuk pertanyaan tentang bulan tertentu (mis. "oktober"), WAJIB isi period (YYYY-MM) — jangan mengandalkan default, karena default adalah bulan berjalan.';
     }
 
     public function schema(): array
@@ -34,13 +37,17 @@ final class GetTransactionsTool implements AssistantTool
             'parameters' => [
                 'type' => 'object',
                 'properties' => [
+                    'period' => [
+                        'type' => 'string',
+                        'description' => 'Bulan yang ditanyakan user, format YYYY-MM (mis. 2026-10 untuk Oktober 2026). WAJIB untuk pertanyaan per-bulan; hanya boleh dalam 12 bulan terakhir.',
+                    ],
                     'start_date' => [
                         'type' => 'string',
-                        'description' => 'Tanggal awal YYYY-MM-DD. Default awal bulan berjalan.',
+                        'description' => 'Tanggal awal YYYY-MM-DD untuk rentang kustom. Default awal bulan berjalan.',
                     ],
                     'end_date' => [
                         'type' => 'string',
-                        'description' => 'Tanggal akhir YYYY-MM-DD. Default akhir bulan berjalan.',
+                        'description' => 'Tanggal akhir YYYY-MM-DD untuk rentang kustom. Default akhir bulan berjalan.',
                     ],
                     'category_id' => [
                         'type' => 'integer',
@@ -75,6 +82,7 @@ final class GetTransactionsTool implements AssistantTool
     public function rules(): array
     {
         return [
+            'period' => ['sometimes', 'string', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/'],
             'start_date' => ['sometimes', 'date_format:Y-m-d'],
             'end_date' => ['sometimes', 'date_format:Y-m-d', 'after_or_equal:start_date'],
             'category_id' => ['sometimes', 'integer', 'min:1'],
@@ -137,6 +145,7 @@ final class GetTransactionsTool implements AssistantTool
         return [
             'count' => $transactions->count(),
             'draft_count' => $draftCount,
+            'period' => $params['period'] ?? null,
             'start_date' => $start,
             'end_date' => $end,
             'transactions' => $transactions->map(fn (TransactionLog $transaction) => [
@@ -158,6 +167,19 @@ final class GetTransactionsTool implements AssistantTool
     /** @return array{0:string,1:string} */
     private function resolveRange(array $params): array
     {
+        // period (YYYY-MM) adalah jalur utama untuk pertanyaan per-bulan:
+        // LLM sering gagal menghitung start/end date eksplisit dan diam-diam
+        // memakai default bulan berjalan (kasus "oktober" ter-query November).
+        if (isset($params['period'])) {
+            ['year' => $year, 'month' => $month] = $this->parsePeriod((string) $params['period']);
+            $this->assertMonthInRange($year, $month);
+
+            $start = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+            $end = $start->copy()->endOfMonth();
+
+            return [$start->toDateString(), $end->toDateString()];
+        }
+
         $start = isset($params['start_date'])
             ? Carbon::parse((string) $params['start_date'])
             : now()->startOfMonth();

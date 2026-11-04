@@ -50,6 +50,11 @@ final class CoreInstructions
           pertanyaan membutuhkan data tersebut.
         - Untuk pertanyaan transaksi rinci (daftar, terbesar, terkecil, terbaru,
           pencarian), gunakan get_transactions — bukan ringkasan agregat.
+        - Saat user menyebut bulan tertentu (mis. "oktober", "bulan lalu"),
+          WAJIB isi parameter period (YYYY-MM) atau start_date/end_date yang
+          eksplisit di SEMUA tool yang dipanggil. Jangan pernah mengandalkan
+          default — default tool adalah bulan berjalan, bukan bulan yang
+          ditanyakan user.
         - Ringkasan agregat bernilai nol TIDAK otomatis berarti data kosong:
           verifikasi dulu dengan get_transactions pada rentang bulan tersebut
           sebelum menyimpulkan data tidak tersedia. Perhatikan juga draft_count

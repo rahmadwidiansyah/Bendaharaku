@@ -206,6 +206,60 @@ class AssistantToolRegistryTest extends TestCase
     }
 
     /** @test */
+    public function test_get_transactions_period_mengunci_bulan_yang_ditanyakan(): void
+    {
+        $user = User::factory()->create();
+
+        // Transaksi Oktober (bulan lampau) + November (bulan berjalan).
+        $this->makeTransaction($user, [
+            'date' => now()->subMonthNoOverflow()->startOfMonth()->addDays(5)->toDateString(),
+            'amount' => 111000,
+            'subject' => 'Oktober',
+        ]);
+        $this->makeTransaction($user, [
+            'date' => now()->toDateString(),
+            'amount' => 222000,
+            'subject' => 'November',
+        ]);
+
+        $result = $this->registry()->execute($user, 'get_transactions', [
+            'period' => now()->subMonthNoOverflow()->format('Y-m'),
+        ], 'trace-period');
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame(1, $result['data']['count']);
+        $this->assertSame(0, $result['data']['draft_count']);
+        $subjects = array_column($result['data']['transactions'], 'subject');
+        $this->assertSame(['Oktober'], $subjects);
+    }
+
+    /** @test */
+    public function test_get_transactions_period_di_masa_depan_ditolak(): void
+    {
+        $user = User::factory()->create();
+
+        $result = $this->registry()->execute($user, 'get_transactions', [
+            'period' => now()->addMonth()->format('Y-m'),
+        ], 'trace-period-future');
+
+        $this->assertFalse($result['ok']);
+        $this->assertSame('validation_error', $result['error']);
+    }
+
+    /** @test */
+    public function test_get_transactions_period_format_salah_ditolak(): void
+    {
+        $user = User::factory()->create();
+
+        $result = $this->registry()->execute($user, 'get_transactions', [
+            'period' => 'oktober',
+        ], 'trace-period-bad');
+
+        $this->assertFalse($result['ok']);
+        $this->assertSame('validation_error', $result['error']);
+    }
+
+    /** @test */
     public function test_rentang_tanggal_lebih_dari_92_hari_ditolak(): void
     {        $user = User::factory()->create();
 
