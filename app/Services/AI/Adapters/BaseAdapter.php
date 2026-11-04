@@ -389,12 +389,24 @@ abstract class BaseAdapter implements LLMAdapterInterface
                     $parts[] = ['text' => (string) $message['content']];
                 }
                 foreach (($message['tool_calls'] ?? []) as $call) {
-                    $parts[] = [
-                        'functionCall' => [
-                            'name' => (string) ($call['name'] ?? ''),
-                            'args' => (object) ($call['arguments'] ?? []),
-                        ],
+                    $functionCall = [
+                        'name' => (string) ($call['name'] ?? ''),
+                        'args' => (object) ($call['arguments'] ?? []),
                     ];
+                    // Echo HANYA id native dari provider (Gemini 3.x menuntut
+                    // konsistensi dengan functionResponse); id sintetis aplikasi
+                    // tidak pernah dikirim balik ke provider.
+                    if (is_string($call['provider_id'] ?? null) && $call['provider_id'] !== '') {
+                        $functionCall['id'] = $call['provider_id'];
+                    }
+                    $callPart = ['functionCall' => $functionCall];
+                    // thoughtSignature wajib di-echo verbatim pada level part —
+                    // tanpa itu Gemini 3.x menolak request dengan 400.
+                    $signature = $call['thought_signature'] ?? null;
+                    if (is_string($signature) && $signature !== '') {
+                        $callPart['thoughtSignature'] = $signature;
+                    }
+                    $parts[] = $callPart;
                 }
                 if ($parts !== []) {
                     $contents[] = ['role' => 'model', 'parts' => $parts];
@@ -474,10 +486,22 @@ abstract class BaseAdapter implements LLMAdapterInterface
                 $arguments = is_array($decoded) ? $decoded : [];
             }
 
+            // Gemini 3.x menuntut thoughtSignature di-echo balik pada
+            // functionCall part saat riwayat dikirim ulang — tanpa itu
+            // request berikutnya ditolak 400 INVALID_ARGUMENT. Id asli
+            // dari provider dipertahankan terpisah agar hanya id native
+            // yang di-echo (id sintetis tidak pernah dikirim balik).
+            $providerId = (string) ($part['functionCall']['id'] ?? '');
+            $signature = $part['thoughtSignature'] ?? $part['thought_signature'] ?? null;
+
             $toolCalls[] = [
-                'id' => $this->agentToolCallId($index, $name, is_array($arguments) ? $arguments : []),
+                'id' => $providerId !== ''
+                    ? $providerId
+                    : $this->agentToolCallId($index, $name, is_array($arguments) ? $arguments : []),
                 'name' => $name,
                 'arguments' => is_array($arguments) ? $arguments : [],
+                'provider_id' => $providerId !== '' ? $providerId : null,
+                'thought_signature' => is_string($signature) && $signature !== '' ? $signature : null,
             ];
         }
 
@@ -503,6 +527,14 @@ abstract class BaseAdapter implements LLMAdapterInterface
 
         $statusCode = $response->status();
         $provider = $this->getProviderName();
+
+        // Body error provider wajib tercatat: AiErrorClassifier mengganti
+        // pesan exception dengan safe message sehingga tanpa log ini alasan
+        // persis (mis. field yang ditolak) hilang dari jejak produksi.
+        Log::warning($provider.' HTTP error body', [
+            'status' => $statusCode,
+            'body' => substr($response->body(), 0, 500),
+        ]);
 
         if ($statusCode === 429) {
             throw new AiRateLimitException($provider);

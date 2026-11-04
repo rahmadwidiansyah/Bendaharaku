@@ -82,6 +82,144 @@ class ChatWithToolsAdapterTest extends TestCase
     }
 
     /** @test */
+    public function test_gemini_mempertahankan_id_dan_thought_signature_pada_riwayat_tool(): void
+    {
+        $signature = 'sig-test-base64==';
+        Http::fake([
+            '*' => Http::response([
+                'candidates' => [[
+                    'content' => ['parts' => [[
+                        'functionCall' => [
+                            'name' => 'get_wallets',
+                            'args' => [],
+                            'id' => 'call_122760',
+                        ],
+                        'thoughtSignature' => $signature,
+                    ]]],
+                    'finishReason' => 'STOP',
+                ]],
+            ], 200),
+        ]);
+
+        $first = new AgentRequest(
+            provider: AiProvider::Gemini,
+            model: 'gemini-3.6-flash',
+            apiKey: 'test-key',
+            messages: [
+                ['role' => 'system', 'content' => 'ATURAN INTI'],
+                ['role' => 'user', 'content' => 'Berapa saldo?'],
+            ],
+            tools: $this->tools(),
+        );
+
+        $turn = app(GeminiAdapter::class)->chatWithTools($first);
+
+        // Id asli Gemini dan thoughtSignature ikut diekstrak.
+        $this->assertSame('call_122760', $turn->toolCalls[0]['id']);
+        $this->assertSame('call_122760', $turn->toolCalls[0]['provider_id']);
+        $this->assertSame($signature, $turn->toolCalls[0]['thought_signature']);
+
+        // Kirim ulang riwayat: assistant(functionCall) + tool(functionResponse).
+        $second = new AgentRequest(
+            provider: AiProvider::Gemini,
+            model: 'gemini-3.6-flash',
+            apiKey: 'test-key',
+            messages: [
+                ['role' => 'system', 'content' => 'ATURAN INTI'],
+                ['role' => 'user', 'content' => 'Berapa saldo?'],
+                ['role' => 'assistant', 'content' => null, 'tool_calls' => $turn->toolCalls],
+                [
+                    'role' => 'tool',
+                    'tool_call_id' => 'call_122760',
+                    'name' => 'get_wallets',
+                    'content' => json_encode(['ok' => true, 'data' => []]),
+                ],
+            ],
+            tools: $this->tools(),
+        );
+
+        app(GeminiAdapter::class)->chatWithTools($second);
+
+        // functionCall di-echo dengan id native + thoughtSignature di level part.
+        // system masuk systemInstruction → contents: [user, model, functionResponse].
+        Http::assertSent(function (Request $sent) use ($signature): bool {
+            $data = $sent->data();
+            $modelTurn = $data['contents'][1] ?? null;
+
+            return $modelTurn !== null
+                && ($modelTurn['role'] ?? '') === 'model'
+                && ($modelTurn['parts'][0]['functionCall']['id'] ?? null) === 'call_122760'
+                && ($modelTurn['parts'][0]['thoughtSignature'] ?? null) === $signature
+                && ($data['contents'][2]['parts'][0]['functionResponse']['name'] ?? null) === 'get_wallets';
+        });
+    }
+
+    /** @test */
+    public function test_gemini_tanpa_id_dan_signature_tetap_kompatibel_ke_belakang(): void
+    {
+        Http::fake([
+            '*' => Http::response([
+                'candidates' => [[
+                    'content' => ['parts' => [[
+                        'functionCall' => ['name' => 'get_wallets', 'args' => []],
+                    ]]],
+                    'finishReason' => 'STOP',
+                ]],
+            ], 200),
+        ]);
+
+        $first = new AgentRequest(
+            provider: AiProvider::Gemini,
+            model: 'gemini-2.0-flash',
+            apiKey: 'test-key',
+            messages: [
+                ['role' => 'system', 'content' => 'ATURAN INTI'],
+                ['role' => 'user', 'content' => 'Berapa saldo?'],
+            ],
+            tools: $this->tools(),
+        );
+
+        $turn = app(GeminiAdapter::class)->chatWithTools($first);
+
+        // Id sintetis, tanpa signature dan tanpa id native.
+        $this->assertStringStartsWith('call_', $turn->toolCalls[0]['id']);
+        $this->assertNull($turn->toolCalls[0]['provider_id']);
+        $this->assertNull($turn->toolCalls[0]['thought_signature']);
+
+        $second = new AgentRequest(
+            provider: AiProvider::Gemini,
+            model: 'gemini-2.0-flash',
+            apiKey: 'test-key',
+            messages: [
+                ['role' => 'system', 'content' => 'ATURAN INTI'],
+                ['role' => 'user', 'content' => 'Berapa saldo?'],
+                ['role' => 'assistant', 'content' => null, 'tool_calls' => $turn->toolCalls],
+                [
+                    'role' => 'tool',
+                    'tool_call_id' => $turn->toolCalls[0]['id'],
+                    'name' => 'get_wallets',
+                    'content' => json_encode(['ok' => true, 'data' => []]),
+                ],
+            ],
+            tools: $this->tools(),
+        );
+
+        app(GeminiAdapter::class)->chatWithTools($second);
+
+        // Tanpa id/signature dari provider: body rebuild tidak menyertakan keduanya.
+        // system masuk systemInstruction → contents: [user, model, functionResponse].
+        Http::assertSent(function (Request $sent): bool {
+            $data = $sent->data();
+            $modelTurn = $data['contents'][1] ?? null;
+
+            return $modelTurn !== null
+                && ($modelTurn['role'] ?? '') === 'model'
+                && ! isset($modelTurn['parts'][0]['functionCall']['id'])
+                && ! isset($modelTurn['parts'][0]['thoughtSignature']);
+        });
+    }
+
+    /** @test */
     public function test_openai_memakai_role_tool_dan_tidak_mengirim_response_format(): void
     {
         Http::fake([

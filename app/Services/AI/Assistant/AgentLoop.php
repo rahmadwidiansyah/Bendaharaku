@@ -64,6 +64,7 @@ final class AgentLoop
 
         $toolCallsUsed = 0;
         $iterationsUsed = 0;
+        $gatheredResults = [];
 
         if ($tools === []) {
             return $this->runWithoutTools($user, $messages, $intent, $botName);
@@ -86,16 +87,25 @@ final class AgentLoop
                 $deadlineSeconds,
                 &$toolCallsUsed,
                 &$iterationsUsed,
+                &$gatheredResults,
             ): AgentTurn {
                 $adapter = $this->factory->make($provider);
                 $apiKey = $this->apiKeyFor($account, $provider);
                 $working = $messages;
                 $toolCallsUsed = 0;
                 $iterationsUsed = 0;
+                $gatheredResults = [];
                 $deadline = microtime(true) + $deadlineSeconds;
 
                 while ($iterationsUsed < $maxIterations) {
                     if (microtime(true) > $deadline) {
+                        // Data tool yang sudah terkumpul lebih berharga daripada
+                        // jalur fallback: paksa jawaban final dari data itu,
+                        // jangan buang dan mulai ulang dari wallets+transaksi.
+                        if ($toolCallsUsed > 0) {
+                            break;
+                        }
+
                         throw new AiTimeoutException($provider->value);
                     }
 
@@ -133,6 +143,12 @@ final class AgentLoop
                             chatMessageId: $userMessageId,
                         );
 
+                        $gatheredResults[] = [
+                            'tool' => (string) ($call['name'] ?? ''),
+                            'params' => is_array($call['arguments'] ?? null) ? $call['arguments'] : [],
+                            'result' => $result,
+                        ];
+
                         $working[] = [
                             'role' => 'tool',
                             'tool_call_id' => (string) ($call['id'] ?? ''),
@@ -151,10 +167,8 @@ final class AgentLoop
                 }
 
                 // Paksa final tanpa tools agar model tidak terus memanggil tool.
-                if (microtime(true) > $deadline) {
-                    throw new AiTimeoutException($provider->value);
-                }
-
+                // Tidak melempar timeout di sini: selalu ada data tool terkumpul,
+                // dan budget eksekutor tetap menjaga total latensi.
                 return $adapter->chatWithTools(new AgentRequest(
                     provider: $provider,
                     model: $model,
@@ -169,13 +183,25 @@ final class AgentLoop
                 'user_id' => $user->id,
                 'intent' => $intent,
                 'message' => $e->getMessage(),
+                'tool_calls_gathered' => count($gatheredResults),
             ]);
 
-            return $this->runFallbackWithoutTools($user, $text, $intent, $traceId, $conversationId, $userMessageId, $e);
+            return $this->runFallbackWithoutTools($user, $text, $intent, $traceId, $conversationId, $userMessageId, $e, $gatheredResults);
         }
 
         $turn = $execution['turn'];
         $parsed = AssistantResponse::parse($turn->content);
+
+        if ($parsed === null) {
+            Log::warning('AgentLoop: respons model gagal diparse sebagai AssistantResponse', [
+                'user_id' => $user->id,
+                'intent' => $intent,
+                'finish_reason' => $turn->finishReason,
+                'tool_calls' => $toolCallsUsed,
+                'content_preview' => mb_substr((string) ($turn->content ?? ''), 0, 500),
+            ]);
+        }
+
         $fallback = $parsed === null;
 
         return [
@@ -215,6 +241,14 @@ final class AgentLoop
         );
         $parsed = AssistantResponse::parse($turn->content);
 
+        if ($parsed === null) {
+            Log::warning('AgentLoop: respons non-tools gagal diparse sebagai AssistantResponse', [
+                'user_id' => $user->id,
+                'intent' => $intent,
+                'content_preview' => mb_substr((string) ($turn->content ?? ''), 0, 500),
+            ]);
+        }
+
         return [
             'response' => $parsed ?? $this->fallbackResponse($user, 'conversation'),
             'turn' => $turn,
@@ -226,8 +260,9 @@ final class AgentLoop
     }
 
     /**
-     * Fallback provider non-tools: ringkas saldo + 10 transaksi terakhir,
-     * lalu satu panggilan teks tanpa riwayat.
+     * Fallback provider non-tools: pakai hasil tool yang sudah terkumpul dari
+     * loop yang gagal bila ada; hanya bila kosong, ringkas saldo + 10 transaksi
+     * terakhir. Satu panggilan teks tanpa riwayat.
      */
     private function runFallbackWithoutTools(
         User $user,
@@ -237,21 +272,29 @@ final class AgentLoop
         ?int $conversationId,
         ?int $userMessageId,
         Throwable $original,
+        array $gatheredResults = [],
     ): array {
-        $wallets = $this->toolRegistry->execute($user, 'get_wallets', [], $traceId, $conversationId, $userMessageId);
-        $transactions = $this->toolRegistry->execute(
-            $user,
-            'get_transactions',
-            ['limit' => 10],
-            $traceId,
-            $conversationId,
-            $userMessageId,
-        );
+        if ($gatheredResults !== []) {
+            // Hasil tool dari loop yang gagal jauh lebih relevan daripada
+            // re-fetch wallets + transaksi terakhir (yang selalu bulan berjalan
+            // dan membuat model menjawab "belum ada" untuk bulan yang ditanya).
+            $summary = ['tool_results' => $gatheredResults];
+        } else {
+            $wallets = $this->toolRegistry->execute($user, 'get_wallets', [], $traceId, $conversationId, $userMessageId);
+            $transactions = $this->toolRegistry->execute(
+                $user,
+                'get_transactions',
+                ['limit' => 10],
+                $traceId,
+                $conversationId,
+                $userMessageId,
+            );
 
-        $summary = [
-            'wallets' => ($wallets['ok'] ?? false) ? ($wallets['data'] ?? []) : [],
-            'recent_transactions' => ($transactions['ok'] ?? false) ? ($transactions['data'] ?? []) : [],
-        ];
+            $summary = [
+                'wallets' => ($wallets['ok'] ?? false) ? ($wallets['data'] ?? []) : [],
+                'recent_transactions' => ($transactions['ok'] ?? false) ? ($transactions['data'] ?? []) : [],
+            ];
+        }
 
         $system = CoreInstructions::systemPrompt(
             (string) ($user->bot_name ?? 'Ken-Chan'),
@@ -291,12 +334,21 @@ final class AgentLoop
         $turn = new AgentTurn(content: (string) ($execution['text'] ?? ''), usage: [], finishReason: 'stop');
         $parsed = AssistantResponse::parse($turn->content);
 
+        if ($parsed === null) {
+            Log::warning('AgentLoop: respons fallback non-tools gagal diparse sebagai AssistantResponse', [
+                'user_id' => $user->id,
+                'intent' => $intent,
+                'gathered_results' => count($gatheredResults),
+                'content_preview' => mb_substr((string) ($turn->content ?? ''), 0, 500),
+            ]);
+        }
+
         return [
             'response' => $parsed ?? $this->fallbackResponse($user, 'conversation'),
             'turn' => $turn,
             'routing' => $execution['routing'],
             'iterations' => 1,
-            'tool_calls' => 2,
+            'tool_calls' => $gatheredResults !== [] ? count($gatheredResults) : 2,
             'fallback' => $parsed === null,
         ];
     }
